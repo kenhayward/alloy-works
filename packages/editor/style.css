@@ -452,14 +452,26 @@
  * has both; Cambria Math - which Chromium draws with on Windows - and Libertinus Math have neither,
  * so on those the line is drawn at the width of one glyph, short over `a+b`. Drawing it with a border
  * instead, as Temml's own stylesheet does, would be a second drawing of the same MathML that the
- * publish does not share; the fix is a maths face on screen, which is its own decision. */
+ * publish does not share; the fix is a maths face on screen, which is its own decision.
+ *
+ * **What an equation draws stays inside its own box**, with a margin for a glyph's ink past it: an
+ * offset the reader keeps (`mpadded`'s `voffset`) would otherwise draw text over the lines above or
+ * the editor's own controls. The domain refuses the offsets Temml writes; this is the second of the
+ * two, for MathML reaching the surface by any other route (equations 1's final review, L3). An
+ * inline equation is a box of its own so that it can clip at all - an inline box does not - and
+ * `overflow: clip`, unlike `hidden`, keeps its baseline on the text's, checked in Chromium. */
 .aw-equation {
+  display: inline-block;
+  overflow: clip;
+  overflow-clip-margin: 0.25em;
   padding: 0 0.1em;
   vertical-align: baseline;
 }
 
 .aw-equation-block {
   position: relative;
+  overflow: clip;
+  overflow-clip-margin: 0.25em;
   margin: 0.75em 0;
   padding: 0 3em;
   text-align: center;

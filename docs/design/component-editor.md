@@ -32,9 +32,12 @@ the outline (STR) and the publishing pipeline are.
 > the PDF. **Block quotations and preformatted text are built too** - a quotation with its
 > attribution, and preformatted text with its whitespace kept exactly and a **Preformatted text**
 > panel for its language label, in the `F6` ring while the cursor is in one - by
-> [editor 5](../plans/2026-09-21-editor-05-quotations-and-preformatted-text.md). What is still design
-> here: tables, footnotes, equations and figures, paste,
-> the metadata panel, undo across a reload, Recovery, lock events on the stream, the desktop's checker
+> [editor 5](../plans/2026-09-21-editor-05-quotations-and-preformatted-text.md). **Tables, footnotes,
+> figures and paste are built too**, by their own plans, and **equations are built in the editor** -
+> typed as LaTeX in a dialog, drawn as MathML, inline or as a block, with a description written for
+> the author - by [equations 1](../plans/2026-09-23-equations-01-equations-in-the-editor.md), described
+> under [Equations](#equations); publishing one is equations 2's. What is still design here: the
+> metadata panel, undo across a reload, Recovery, lock events on the stream, the desktop's checker
 > languages, and the accessibility suite.
 
 ## The shape in one paragraph
@@ -135,7 +138,7 @@ to API-008) - are [service-foundations.md](service-foundations.md)'s.
 | CNT-078, CNT-139                            | WCAG 2.2 AA and its verification are for the editor as a whole, and half of the editor is the document view, not yet designed. This slice is built to it, tested against it, and gated on it below                                            |
 | CNT-079                                     | Headings are outline nodes, rendered by the document view. Lists, tables and footnotes are exposed as structure here                                                                                                                          |
 | CNT-074                                     | Which component the cursor is in is the document view's; this slice shows the lock state of the one component open                                                                                                                            |
-| CNT-045, CNT-046, CNT-049                   | Rendering an equation in PDF and Word is the publisher's; an equation in a heading is the document view's, and **in a caption it is not representable** - see [Captions](#captions)                                                           |
+| CNT-045, CNT-046, CNT-049                   | An equation is made in the editor, in a caption too; rendering it in PDF and Word is the publisher's, which equations 2 builds, and an equation in a section's title is equations 3's - see [Equations](#equations)                           |
 | CNT-122                                     | The editor sizes an image by the shared resolver; resolving it at publish is the publisher's                                                                                                                                                  |
 | CNT-113, COL-026                            | Seeing what this session changed needs the comparison algorithm, which [storage-and-versioning.md](storage-and-versioning.md) leaves for its own design                                                                                       |
 | COL-007, API-036                            | Showing a held lock to others and delivering the change are [realtime.md](realtime.md)'s, which this design extends to a component opened on its own                                                                                          |
@@ -406,7 +409,7 @@ component change it). It is always editable. If no generator is available or it 
 missing alternative fails the publish (PUB-072). CNT-048 asks for generation "where possible", so the
 choice of engine does not decide whether this slice meets it.
 
-**Built in the editor by [equations 1](../plans/2026-09-24-equations-01-equations-in-the-editor.md)**,
+**Built in the editor by [equations 1](../plans/2026-09-23-equations-01-equations-in-the-editor.md)**,
 EQ-C and EQ-D of publishing.md's [Equations](publishing.md#equations); publishing one is equations 2's,
 and an equation in a section's title equations 3's.
 
@@ -423,14 +426,18 @@ and an equation in a section's title equations 3's.
   home a cross-reference does and never in preformatted text; and `equationBlock`, in the `block`
   group, holding `id`, `mathml`, `latex` and `numbered`. Neither takes a mark or breaks an annotation,
   and the mapping holds both with every stored member, so a component holding one opens for editing.
-  A block that would end what holds it is placed with an empty paragraph after it, and the caret
-  passes a block by ProseMirror's gap cursor without the document changing.
+  A block that no block would follow in what holds it - nothing, or a quotation's attribution - is
+  placed with an empty paragraph after it, and the caret passes a block by ProseMirror's gap cursor
+  without the document changing.
 - **Temml 0.13.5 is pinned and strict** (EQ-C) and its output is admitted by `admitTemmlMathml` in
   the domain: an overline or an underline becomes a `mover` or a `munder` with a stretchy line, a
   table's alignment classes become `columnalign`, and what the reader would lose is refused by name -
-  `\cancel` and every other enclosure, `\boxed`, `\cancelto`, an equation number written in the LaTeX
-  (the block's **Numbered** is the product's), and a line broken with `\\` outside an environment. An
-  array's column rules are dropped, not refused.
+  `\cancel` and every other enclosure, `\boxed`, `\cancelto`, a filled `\rule`, a box raised or
+  lowered (`\raisebox`, `\raise`, `\lower`), an equation number written in the LaTeX (the block's
+  **Numbered** is the product's), and a line broken with `\\` outside an environment's rows, which is
+  found in the LaTeX itself, since a display equation's output cannot show it. An array's column rules
+  are dropped, not refused, and so is negative space (`\!`), which Temml writes as a style. What an
+  equation draws is clipped to its own box, in case MathML reaches the surface by another route.
 - **It is drawn as native MathML** by one function, `drawEquation`, on the surface, in a footnote's
   open editor, in a document's text and in the dialog's preview: the stored MathML, asked of the reader
   again, parsed as XML and placed as MathML elements, never as HTML; a block in display style with a
@@ -441,7 +448,9 @@ and an equation in a section's title equations 3's.
   asks for words, with its language data from the product's own build, speaking 13 languages in
   ClearSpeak or MathSpeak; in any other base language the field is empty and says so, and the equation
   is placed with no `alttext`. Once the author has changed the words, a change of LaTeX leaves them,
-  and **Generate again** writes them afresh.
+  and **Generate again** writes them afresh. **Insert** and **Change** wait for words still being
+  written, and place the equation with them, or with none where the engine failed. The dialog, and
+  Temml with it, is loaded the first time it opens.
 - **Publishing refuses an equation by name** until equations 2, inline or block.
 
 ### Captions

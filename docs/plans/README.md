@@ -509,7 +509,7 @@ editor to hold one.
 
 | #   | Plan                                                                          | Builds                                                                                                                                                                     | Status      |
 | --- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| 1   | [Equations in the editor](2026-09-24-equations-01-equations-in-the-editor.md) | An equation typed as LaTeX in a dialog and drawn as MathML, inline or as a block, numbered or not, with its alternative generated in the component's language and editable | In progress |
+| 1   | [Equations in the editor](2026-09-23-equations-01-equations-in-the-editor.md) | An equation typed as LaTeX in a dialog and drawn as MathML, inline or as a block, numbered or not, with its alternative generated in the component's language and editable | In progress |
 
 ## Publishing
 

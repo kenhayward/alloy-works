@@ -133,8 +133,9 @@ function rewrite(element: MathElement): MathElement {
   }
   if (classes.includes('tml-cancelto')) throw refusedAs('\\cancelto');
   // Seen only in what Temml writes for a line of text: in a display equation the same \\ is an empty
-  // `mo` with nothing to tell it from \pmod's \allowbreak, which is why the editor asks this of the
-  // same LaTeX written inline before it places a block (equations 1, task 4).
+  // `mo` with nothing to tell it from \pmod's \allowbreak, which is why the editor finds a break in
+  // the LaTeX itself before it asks this (`breaksALine` in apps/web's latex.ts; equations 1's final
+  // review, M1). This stays as the second of the two for a line of text.
   if (element.name === 'mo' && attributeOf(element, 'linebreak') === 'newline') {
     throw new Refused({ ok: false, reason: 'lineBreak' });
   }
@@ -143,10 +144,24 @@ function rewrite(element: MathElement): MathElement {
       attributeOf(element, 'mathbackground') === undefined ? '\\boxed' : '\\fcolorbox',
     );
   }
+  // A rule is a space filled by its background, which the reader drops as it drops any colour, so a
+  // visible mark would be stored as a blank. A rule of no width or no height - a strut - Temml writes
+  // with no background, and it is kept: it draws nothing either way (equations 1's final review, L2).
+  if (element.name === 'mspace' && attributeOf(element, 'mathbackground') !== undefined) {
+    throw refusedAs('\\rule');
+  }
 
   const children = element.children.map((child) =>
     typeof child === 'string' ? child : rewrite(child),
   );
+  // A box moved up or down, which the three commands write alike. The reader keeps `voffset`, and
+  // Chromium draws it wherever its value says, outside the equation's line and over whatever stands
+  // there - the lines above, or the editor's own controls - and equations 2's converter has no such
+  // offset to write (publishing.md's EQ-C). Its content is read first, so that a raised rule is
+  // named as the rule it is (equations 1's final review, L3).
+  if (element.name === 'mpadded' && attributeOf(element, 'voffset') !== undefined) {
+    throw refusedAs('\\raisebox, \\raise or \\lower');
+  }
   if (element.name === 'menclose') return enclosure(element, children);
   if (element.name === 'mtd') return aligned(element, classes, children);
   return { ...element, children };

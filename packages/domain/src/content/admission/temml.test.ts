@@ -70,6 +70,10 @@ const refusedConstructs: Record<string, string> = {
   boxed: '\\boxed',
   fcolorbox: '\\fcolorbox',
   cancelto: '\\cancelto',
+  rule: '\\rule',
+  'raised rule': '\\rule',
+  raisebox: '\\raisebox, \\raise or \\lower',
+  lower: '\\raisebox, \\raise or \\lower',
 };
 
 const numbered = new Set(['tag', 'align']);
@@ -131,7 +135,7 @@ describe("Temml's output, admitted as the one form an equation is stored in", ()
     );
   });
 
-  it('refuses \\cancel, \\boxed and every other enclosure it cannot draw, naming the command', () => {
+  it('refuses \\cancel, \\boxed and everything else it cannot keep or draw, naming the command', () => {
     for (const [name, construct] of Object.entries(refusedConstructs)) {
       for (const source of outputsOf(name)) {
         expect(admitTemmlMathml(source), name).toEqual({
@@ -141,6 +145,31 @@ describe("Temml's output, admitted as the one form an equation is stored in", ()
         });
       }
     }
+  });
+
+  it('refuses a filled rule and a box moved off its line, naming them, and keeps a strut, which draws nothing', () => {
+    // The reader drops a rule's colour, as it drops any colour, and would store a filled box as an
+    // empty space; and it keeps an offset, which draws a raised box wherever its value says - over the
+    // lines above, or the editor's own controls (equations 1's final review, L2 and L3).
+    for (const name of ['rule', 'raised rule']) {
+      for (const source of outputsOf(name)) {
+        expect(admitTemmlMathml(source), name).toEqual({
+          ok: false,
+          reason: 'construct',
+          construct: '\\rule',
+        });
+      }
+    }
+    for (const name of ['raisebox', 'lower']) {
+      for (const source of outputsOf(name)) {
+        expect(admitTemmlMathml(source), name).toEqual({
+          ok: false,
+          reason: 'construct',
+          construct: '\\raisebox, \\raise or \\lower',
+        });
+      }
+    }
+    for (const source of outputsOf('strut')) expect(admitted(source)).toBe(readerAlone(source));
   });
 
   it("refuses an equation number Temml drew, since a block's number is the product's to set", () => {
@@ -157,7 +186,7 @@ describe("Temml's output, admitted as the one form an equation is stored in", ()
       });
     }
     // A display equation draws the same break as an empty operator, and so does \pmod's \allowbreak:
-    // nothing in a block's output tells them apart, so the editor asks of the inline one (task 4).
+    // nothing in a block's output tells them apart, so the editor finds the break in the LaTeX.
     const broken = fixture('line break').block;
     expect(broken).toContain('<mi>a</mi><mo></mo><mi>b</mi>');
     expect(fixture('pmod').block).toContain('<mi>a</mi><mo></mo><mspace');
@@ -172,7 +201,7 @@ describe("Temml's output, admitted as the one form an equation is stored in", ()
         !numbered.has(name) &&
         !brokenLines.has(name),
     );
-    expect(others).toHaveLength(18);
+    expect(others).toHaveLength(19);
     for (const { name } of others) {
       for (const source of outputsOf(name)) {
         expect(admitted(source), name).toBe(readerAlone(source));

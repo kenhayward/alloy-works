@@ -557,6 +557,29 @@ describe('placing an equation (equations 1)', () => {
       'paragraph',
     ]);
     expect(() => fromEditor(placed.doc)).not.toThrow();
+    // At the end of a quotation's text, where its attribution follows: no caret stands between a
+    // block and the attribution, and Enter there leaves the quotation, so without the paragraph the
+    // quotation could not go on after the equation (equations 1's final review, L1).
+    const quoted = stateOf(
+      documentOf({
+        type: 'blockquote',
+        id: 'q1',
+        content: [paragraph('b1', text('Said'))],
+        attribution: [text('Ada')],
+      }),
+    );
+    const quoting = run(caretIn(quoted, startOf(quoted.doc, 'b1'), 4), insertEquation(BLOCK)).next;
+    const [quotation] = stored(quoting);
+    expect(quotation).toMatchObject({
+      type: 'blockquote',
+      content: [
+        { type: 'paragraph', id: 'b1' },
+        { type: 'equation' },
+        { type: 'paragraph', content: [] },
+      ],
+      attribution: [text('Ada')],
+    });
+    expect(() => fromEditor(quoting.doc)).not.toThrow();
   });
 
   it('places a block one wherever a block may stand, and nowhere in a table or out of a paragraph', () => {
@@ -763,6 +786,27 @@ describe('the editor stylesheet, for an equation (equations 1, ruling R5)', () =
     expect(rule('.aw-equation-block.ProseMirror-selectednode')).toMatch(/outline:/);
     expect(rule('.aw-equation-undescribed')).toMatch(/border:[^;]*dashed/);
     expect(rule('.aw-equation-unshown')).toMatch(/border:[^;]*dashed/);
+  });
+
+  it('keeps what an equation draws inside its own box, inline and as a block', () => {
+    // The domain refuses the offsets Temml writes (`\raisebox`), and this is the second of the two:
+    // MathML that reaches the surface by any route draws nothing over the lines around it or the
+    // editor's controls (equations 1's final review, L3). An inline one is a box of its own so that
+    // it can clip at all - an inline box does not.
+    const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    const rule = (selector: string) =>
+      [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+        .filter((match) => match[1]!.split(',').some((each) => each.trim() === selector))
+        .map((match) => match[2])
+        .join(';');
+    expect(rule('.aw-equation')).toMatch(/display:\s*inline-block/);
+    for (const selector of ['.aw-equation', '.aw-equation-block']) {
+      expect(rule(selector), selector).toMatch(/overflow:\s*clip/);
+      expect(rule(selector), selector).toMatch(/overflow-clip-margin:/);
+    }
   });
 
   it("draws the gap cursor, as prosemirror-gapcursor's own stylesheet does, only while the surface has the focus", () => {

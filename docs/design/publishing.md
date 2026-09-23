@@ -818,7 +818,7 @@ it fetches its language data from a CDN unless told otherwise.
 | EQ-H | **Two pull requests**: equations in the editor (EQ-C, EQ-D and the dialog); then equations published (EQ-A, EQ-B, EQ-E, EQ-F, EQ-G). Word's OMML comes with Word output                                                                                     | Yes, as footnotes and cross-references were split. Each lands usable, and an equation refuses the publish by name until the second                                                                                                                                                             |
 
 **The first of EQ-H's pull requests is built, and the second is now two.**
-[Equations 1](../plans/2026-09-24-equations-01-equations-in-the-editor.md) builds EQ-C and EQ-D in the
+[Equations 1](../plans/2026-09-23-equations-01-equations-in-the-editor.md) builds EQ-C and EQ-D in the
 editor - an equation typed as LaTeX in the **Equation** dialog, Temml's output admitted by
 `admitTemmlMathml` in `packages/domain`, and its alternative written by the speech rule engine in the
 component's language, from the product's own files - as component-editor.md's

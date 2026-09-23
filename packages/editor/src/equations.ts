@@ -138,12 +138,13 @@ export function equationPlaceable(state: EditorState, display: 'inline' | 'block
  *   stead.
  * - **Block**, after the paragraph the selection is in, or in its place where that paragraph is empty,
  *   since an empty paragraph is where an author stands to put something new - as a figure and a table
- *   are placed. **Where nothing would follow it in what holds it, an empty paragraph follows it**: an
- *   equation is an atom with nothing inside it to type into, unlike a figure's caption or a table's
- *   note. **The gap cursor does not make this redundant**: it stands only where both sides are closed
- *   all the way up, so past an equation ending the component, but not past one ending a list's item
- *   with another item after it, or a list with a paragraph after it - there the arrow moves on to the
- *   next text and nothing would reach the end of the item.
+ *   are placed. **Where no block would follow it in what holds it, an empty paragraph follows it**
+ *   - nothing at all, or a quotation's attribution: an equation is an atom with nothing inside it to
+ *   type into, unlike a figure's caption or a table's note. **The gap cursor does not make this
+ *   redundant**: it stands only where both sides are closed all the way up, so past an equation ending
+ *   the component, but not past one ending a list's item with another item after it, or a list with a
+ *   paragraph after it - there the arrow moves on to the next text and nothing would reach the end of
+ *   the item - and never between a block and an attribution, where `Enter` would leave the quotation.
  *
  * Neither carries an identifier from here: the identity plugin names the block as it names any
  * block, and the paragraph after it, and an inline equation has none to name.
@@ -172,7 +173,10 @@ export function insertEquation(choice: EquationChoice): Command {
         ? state.tr.replaceWith(start, $from.after(depth), equation)
         : state.tr.insert(start, equation);
       const after = start + equation.nodeSize;
-      if (tr.doc.resolve(after).nodeAfter === null) tr.insert(after, paragraphNode.create());
+      // Nothing after it, or nothing a caret can reach from it: a quotation's attribution follows
+      // its blocks, and no caret stands between a block and it (equations 1's final review, L1).
+      const next = tr.doc.resolve(after).nodeAfter;
+      if (next === null || !next.type.isInGroup('block')) tr.insert(after, paragraphNode.create());
       dispatch(tr.setSelection(NodeSelection.create(tr.doc, start)).scrollIntoView());
     }
     return true;

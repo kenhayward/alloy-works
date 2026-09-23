@@ -81,6 +81,10 @@ let loading: Promise<Engine> | null = null;
  * copies of the XML libraries it uses in Node, which a browser does without. `engineReady` waits for
  * the setup it starts itself - its base rules and English, which it keeps as the fallback for any
  * rule another language lacks - through the loader above.
+ *
+ * **A load that fails is not kept**: the request it was for fails, and the next one tries again, so
+ * a chunk that did not arrive once - a moment offline - does not leave every later request failing
+ * until the page is reloaded (equations 1's final review, L4).
  */
 function engine(): Promise<Engine> {
   loading ??= (async () => {
@@ -88,7 +92,10 @@ function engine(): Promise<Engine> {
     const loaded = await import('speech-rule-engine/mjs/index.js');
     await loaded.engineReady();
     return loaded;
-  })();
+  })().catch((error: unknown) => {
+    loading = null;
+    throw error;
+  });
   return loading;
 }
 

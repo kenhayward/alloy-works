@@ -280,9 +280,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   opens a dialog for writing an equation in LaTeX - `\frac{a}{b}`, `x^2` - and draws it beneath
   the field as you type, as it will stand in the text, or says what is wrong with it: where Temml,
   which reads the LaTeX, stopped and why, or that the equation uses something that cannot be kept -
-  `\cancel`, `\boxed`, a number written into it, or a line broken with `\\` outside an
-  environment such as `aligned`, each with what to do instead. `Enter` in the field starts a new line,
-  and `Ctrl` or `Cmd` and `Enter` inserts. **Description** is written for you, in the component's
+  `\cancel`, `\boxed`, a filled `\rule`, a box raised or lowered with `\raisebox`, a number written
+  into it, or a line broken with `\\` outside an environment such as `aligned`, each with what to do
+  instead. `Enter` in the field starts a new line, and `Ctrl` or `Cmd` and `Enter` inserts; pressed
+  while the description is still being written, **Insert** says so and waits for it. **Description** is written for you, in the component's
   language, as the words a screen reader says - in Afrikaans, Catalan, Danish, English, French, German,
   Hindi, Italian, Korean, Norwegian, Spanish or Swedish; in any other language it stays empty and says
   so, for you to write. Change the words and they are yours: changing the LaTeX afterwards leaves

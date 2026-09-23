@@ -55,6 +55,9 @@ function languageName(tag: string): string {
  * opening - until the author changes it, after which it is left as they wrote it and **Generate
  * again** writes it anew on asking. Where the engine does not speak the language, the field is left
  * empty and says so, and an equation placed with none is marked _No description_ where it stands.
+ * **Insert and Change wait for words still being written**, the button saying so, and place the
+ * equation with them once they are, or with none where none could be; a change of the equation or
+ * of the description meanwhile is the author's, and waits for Insert again.
  *
  * **An equation stored without LaTeX** - pasted from another component that had none, say - opens with
  * the field empty and a sentence saying that typing replaces it; left empty, the equation is kept as
@@ -86,6 +89,9 @@ export function EquationDialog({
   // written for them, so opening an equation never changes its words.
   const [changed, setChanged] = useState(false);
   const [writing, setWriting] = useState(false);
+  // Insert or Change was asked for while words were being written: the equation is placed once they
+  // are, with them (equations 1's final review, M2).
+  const [placing, setPlacing] = useState(false);
   const [unwritten, setUnwritten] = useState(false);
   const [kept, setKept] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
@@ -123,6 +129,9 @@ export function EquationDialog({
         if (ticket !== asked.current) return;
         setWriting(false);
         setUnwritten(true);
+        // Words written for the equation as it was are not words for it now: an equation placed
+        // after this is placed with none, and marked so, unless the author writes some.
+        if (words.current === 'engine') setAlternative('');
       },
     );
   };
@@ -142,15 +151,22 @@ export function EquationDialog({
     }
     const before = withAlternative(current!.mathml, null) ?? current!.mathml;
     const ticket = (asked.current += 1);
+    // Asking whose the words are is part of writing them: Insert waits for it too.
+    setWriting(true);
     describeEquation(before, language).then(
       (answer) => {
         if (words.current === 'unknown') words.current = answer === stored ? 'engine' : 'author';
         if (ticket !== asked.current) return;
-        if (words.current === 'engine') write(source);
-        else setKept(true);
+        if (words.current === 'engine') {
+          write(source);
+          return;
+        }
+        setWriting(false);
+        setKept(true);
       },
       () => {
         if (words.current === 'unknown') words.current = 'author';
+        if (ticket === asked.current) setWriting(false);
       },
     );
     // `write` and `current` are the render's own; what the effect answers to is the equation.
@@ -185,6 +201,13 @@ export function EquationDialog({
       field.current?.focus();
       return;
     }
+    // Words still being written are waited for, and placed with the equation once they are, or
+    // without them if none could be written: pressed straight after typing, Insert would otherwise
+    // place the equation with no description and drop the words the engine wrote a moment later.
+    if (writing) {
+      setPlacing(true);
+      return;
+    }
     const given = alternative.trim() === '' ? null : alternative.trim();
     const described = withAlternative(mathml, given);
     if (described === null) {
@@ -202,6 +225,15 @@ export function EquationDialog({
       ),
     );
   };
+
+  // Placed as soon as the words it waited for are written. `submit` is the render's own, so it reads
+  // the words this render has.
+  useEffect(() => {
+    if (!placing || writing) return;
+    setPlacing(false);
+    submit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [placing, writing]);
 
   /**
    * The stops `Tab` reaches, as the browser takes them: every box and button that is not disabled, and
@@ -232,9 +264,12 @@ export function EquationDialog({
     stops[event.shiftKey ? stops.length - 1 : 0]?.focus();
   };
 
+  // A change made while an equation waits to be placed is one the author has not finished: it waits
+  // for Insert again.
   const change = () => {
     setChanged(true);
     setSaid(null);
+    setPlacing(false);
   };
 
   const described = [
@@ -358,9 +393,11 @@ export function EquationDialog({
                 .join(' ')}
               onChange={(event) => {
                 words.current = 'author';
-                // Anything asked of the engine before this is no longer wanted.
+                // Anything asked of the engine before this is no longer wanted, and nor is an
+                // equation waiting for it: the author is writing the words themselves.
                 asked.current += 1;
                 setWriting(false);
+                setPlacing(false);
                 setAlternative(event.target.value);
               }}
             />
@@ -412,7 +449,7 @@ export function EquationDialog({
               Cancel
             </button>
             <button type="submit" className="primary">
-              {current === null ? 'Insert' : 'Change'}
+              {placing ? 'Writing the description' : current === null ? 'Insert' : 'Change'}
             </button>
           </div>
         </form>

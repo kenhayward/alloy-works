@@ -77,8 +77,58 @@ describe('LaTeX made into an equation (equations 1, ruling R1)', () => {
     expect(latexToMathml('a \\\\ b', 'inline')).toEqual({ ok: false, said });
     expect(latexToMathml('\\text{a \\\\ b}', 'block')).toEqual({ ok: false, said });
     // Rows of an environment are lines it keeps, and \pmod's break in a block is written exactly as
-    // a line break is there: only the same LaTeX written inline tells the two apart.
+    // a line break is there, as an empty operator: only the LaTeX tells the two apart.
     for (const latex of ['\\begin{aligned} a &= b \\\\ c &= d \\end{aligned}', 'a \\pmod{2}']) {
+      expect(latexToMathml(latex, 'block').ok, latex).toBe(true);
+    }
+  });
+
+  it('finds a line break in the LaTeX wherever Temml would drop it, beside an environment only a block may hold too', () => {
+    const said =
+      'A line cannot be broken with \\\\ on its own. For several lines, use an environment such as aligned.';
+    for (const latex of [
+      // The final review's: an environment Temml draws only in display style, which a line of text
+      // cannot hold, beside a break outside it.
+      '\\begin{align*}a\\end{align*}\\\\b',
+      '\\begin{split}a&=b\\end{split}\\\\ c',
+      '\\begin{gather*}a\\end{gather*} \\\\ b',
+      '\\begin{equation*}a\\end{equation*}\\\\b',
+      '\\begin{multline*}a\\\\b\\end{multline*}\\\\c',
+      'a \\\\ \\begin{CD}A @>>> B\\end{CD}',
+      // Inside a group, a fraction, a pair of delimiters or text, even within an environment: its
+      // rows are separated only where its cells are, and a break anywhere else is an empty operator.
+      '\\frac{a\\\\b}{c}',
+      '\\begin{aligned}{a\\\\b}\\end{aligned}',
+      '\\begin{aligned}\\text{a\\\\b}\\end{aligned}',
+      '\\begin{aligned}\\left(a\\\\b\\right)\\end{aligned}',
+      // An environment of one row, whose break is dropped as one outside it is.
+      '\\begin{equation*}a\\\\b\\end{equation*}',
+      // Written another way: with a space after it, as \newline, or inside a macro of the author's.
+      'a\\\\[2pt]b',
+      'a\\newline b',
+      '\\def\\nl{\\\\}a\\nl b',
+    ]) {
+      expect(latexToMathml(latex, 'block'), latex).toEqual({ ok: false, said });
+    }
+    for (const latex of ['\\frac{a\\\\b}{c}', 'a\\newline b', 'a\\\\[2pt]b']) {
+      expect(latexToMathml(latex, 'inline'), latex).toEqual({ ok: false, said });
+    }
+    for (const latex of [
+      '\\begin{align*}a&=b\\\\c&=d\\end{align*}',
+      '\\begin{split}a&=b\\\\c&=d\\end{split}',
+      '\\begin{gather*}a\\\\b\\end{gather*}',
+      '\\begin{multline*}a\\\\b\\\\c\\end{multline*}',
+      '\\begin{CD}A @>>> B\\\\C @>>> D\\end{CD}',
+      '\\begin{aligned}a&=b\\\\[2pt]c&=d\\end{aligned}',
+      '\\begin{aligned}a\\newline b\\end{aligned}',
+      '\\begin{aligned}a\\cr b\\end{aligned}',
+      '\\begin{cases}a\\\\b\\end{cases}',
+      '\\begin{pmatrix}\\begin{matrix}a\\\\b\\end{matrix}\\\\c\\end{pmatrix}',
+      '\\sum_{\\substack{i\\\\j}} x',
+      // Not a break at all: a backslash in verbatim text, and one in a comment.
+      '\\verb!a\\\\b!',
+      'a % a comment, not a break \\\\\n+ b',
+    ]) {
       expect(latexToMathml(latex, 'block').ok, latex).toBe(true);
     }
   });

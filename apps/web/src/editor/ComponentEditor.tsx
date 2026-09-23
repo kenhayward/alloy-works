@@ -43,13 +43,12 @@ import {
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import styles from './ComponentEditor.module.css';
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 
 import { positionAtTextOffset } from './caret.js';
 import { ComponentHeader } from './ComponentHeader.js';
 import { EditorToolbar } from './EditorToolbar.js';
-import { EquationDialog } from './EquationDialog.js';
 import { FigureDialog } from './FigureDialog.js';
 import { FigurePanel } from './FigurePanel.js';
 import { Icon } from './Icon.js';
@@ -76,6 +75,17 @@ import {
 import { useStatus } from '../shell/Status.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
+
+/**
+ * The Equation dialog, loaded the first time it opens, and Temml with it (equations 1's final review,
+ * L5): Temml is about 50 kB compressed, and a page that never opens the dialog - most pages, and
+ * every one with no editor on it - need not load it, as the Markdown reader is loaded only for Paste
+ * as Markdown. A file of the product's own build, in both deliveries; nothing is fetched from
+ * elsewhere.
+ */
+const EquationDialog = lazy(() =>
+  import('./EquationDialog.js').then(({ EquationDialog }) => ({ default: EquationDialog })),
+);
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -1267,40 +1277,43 @@ export function ComponentEditor({
         )}
       {equating !== null &&
         surface !== null &&
-        // Beside the article, as the prompt is, and for the same reason.
+        // Beside the article, as the prompt is, and for the same reason. Nothing stands in its place
+        // while it loads, from the build's own files.
         createPortal(
-          <EquationDialog
-            current={equating.current}
-            blockPlaceable={equating.blockPlaceable}
-            // The component's base language as it is now, which the header may have changed.
-            language={headerOf(surface.state.doc).language}
-            onDone={(choice) => {
-              // As the Reference dialog asks: the phase as it is now, since the lock can be lost
-              // while the dialog stands.
-              const now = controls.current?.view().phase;
-              const into = equating.view;
-              if (
-                !shown.mayEdit ||
-                now === undefined ||
-                !isEditablePhase(now) ||
-                into.isDestroyed
-              ) {
-                return 'This component can no longer be edited here, so the equation was not placed.';
-              }
-              const command =
-                equating.current === null
-                  ? insertEquation(choice)
-                  : changeEquation(equating.current.pos, choice);
-              if (!command(into.state, into.dispatch.bind(into))) {
-                return equating.current === null
-                  ? 'An equation cannot be placed where the cursor is.'
-                  : 'That equation is not there any more.';
-              }
-              setEquating(null);
-              return null;
-            }}
-            onCancel={() => setEquating(null)}
-          />,
+          <Suspense fallback={null}>
+            <EquationDialog
+              current={equating.current}
+              blockPlaceable={equating.blockPlaceable}
+              // The component's base language as it is now, which the header may have changed.
+              language={headerOf(surface.state.doc).language}
+              onDone={(choice) => {
+                // As the Reference dialog asks: the phase as it is now, since the lock can be lost
+                // while the dialog stands.
+                const now = controls.current?.view().phase;
+                const into = equating.view;
+                if (
+                  !shown.mayEdit ||
+                  now === undefined ||
+                  !isEditablePhase(now) ||
+                  into.isDestroyed
+                ) {
+                  return 'This component can no longer be edited here, so the equation was not placed.';
+                }
+                const command =
+                  equating.current === null
+                    ? insertEquation(choice)
+                    : changeEquation(equating.current.pos, choice);
+                if (!command(into.state, into.dispatch.bind(into))) {
+                  return equating.current === null
+                    ? 'An equation cannot be placed where the cursor is.'
+                    : 'That equation is not there any more.';
+                }
+                setEquating(null);
+                return null;
+              }}
+              onCancel={() => setEquating(null)}
+            />
+          </Suspense>,
           document.body,
         )}
       {asking &&

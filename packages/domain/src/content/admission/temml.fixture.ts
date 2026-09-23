@@ -375,5 +375,48 @@ export function temmlOutput(): readonly TemmlFixture[] {
       block:
         '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="tml-display" style="display:block math;"><mrow><mi>a</mi><mo></mo><mspace width="1em"></mspace><mrow><mo fence="true" form="prefix" stretchy="false">(</mo><mpadded lspace="0"><mi>mod</mi></mpadded><mspace width="0.3333em"></mspace><mn>2</mn><mo fence="true" form="postfix" stretchy="false">)</mo></mrow></mrow></math>',
     },
+    // A rule, which Temml draws as a space filled by its background, and a box moved up or down,
+    // which it draws with an offset the reader keeps (equations 1's final review, L2 and L3). A rule
+    // of no width is a strut, and draws nothing.
+    {
+      name: 'rule',
+      tex: '\\rule{1em}{1em}',
+      inline:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML"><mspace mathbackground="black" width="1em" height="1em"></mspace></math>',
+      block:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="tml-display" style="display:block math;"><mspace mathbackground="black" width="1em" height="1em"></mspace></math>',
+    },
+    {
+      name: 'raised rule',
+      tex: '\\rule[1ex]{2em}{1pt}',
+      inline:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML"><mpadded height="+0.431em" voffset="0.431em"><mspace mathbackground="black" width="2em" height="0.9963pt"></mspace></mpadded></math>',
+      block:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="tml-display" style="display:block math;"><mpadded height="+0.431em" voffset="0.431em"><mspace mathbackground="black" width="2em" height="0.9963pt"></mspace></mpadded></math>',
+    },
+    {
+      name: 'strut',
+      tex: '\\rule{0pt}{2ex}',
+      inline:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML"><mspace width="0pt" height="0.862em"></mspace></math>',
+      block:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="tml-display" style="display:block math;"><mspace width="0pt" height="0.862em"></mspace></math>',
+    },
+    {
+      name: 'raisebox',
+      tex: '\\raisebox{1em}{x}',
+      inline:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML"><mpadded voffset="1em" style="padding:1em 0 0 0;"><mstyle scriptlevel="0" displaystyle="false"><mtext>x</mtext></mstyle></mpadded></math>',
+      block:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="tml-display" style="display:block math;"><mpadded voffset="1em" style="padding:1em 0 0 0;"><mstyle scriptlevel="0" displaystyle="false"><mtext>x</mtext></mstyle></mpadded></math>',
+    },
+    {
+      name: 'lower',
+      tex: '\\lower{1em}{x}',
+      inline:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML"><mpadded voffset="-1em" style="padding:0 0 1em 0;"><mi>x</mi></mpadded></math>',
+      block:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="tml-display" style="display:block math;"><mpadded voffset="-1em" style="padding:0 0 1em 0;"><mi>x</mi></mpadded></math>',
+    },
   ];
 }

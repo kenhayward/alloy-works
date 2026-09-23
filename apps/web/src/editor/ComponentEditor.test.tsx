@@ -4809,6 +4809,8 @@ describe('equations in the editor (equations 1)', () => {
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Numbered' }));
     await write(dialog, 'E = mc^2');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    // Placed once its description is written, which Insert waits for.
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(equationsIn(view)).toMatchObject([
       { type: 'equation', id: expect.any(String), latex: 'E = mc^2', numbered: true },
     ]);
@@ -4828,6 +4830,7 @@ describe('equations in the editor (equations 1)', () => {
     expect(within(dialog).queryByRole('radio')).toBeNull();
     await write(dialog, 'x^2');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     const [block] = fromEditor(view.state.doc).content as unknown as [
       { content: [unknown, { content: { content: unknown[] }[] }] },
     ];
@@ -4835,6 +4838,39 @@ describe('equations in the editor (equations 1)', () => {
       { type: 'text', value: 'See' },
       { type: 'equation', latex: 'x^2' },
       { type: 'text', value: '.' },
+    ]);
+  });
+
+  it('waits for a description still being written before it places the equation, by Insert or by Ctrl and Enter', async () => {
+    // The final whole-branch review's M2: an equation inserted the moment its LaTeX was typed was
+    // placed with no description, and the words the engine wrote a moment later were thrown away.
+    const { surface } = openWith(blocksOf(para('b1', 'Where it grows.')));
+    const view = await surface();
+    caretIn(view, 'b1');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    let dialog = await opens();
+    fireEvent.change(latexOf(dialog), { target: { value: '\\frac{a+b}{c}' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    // Not yet placed, and the button says why.
+    expect(
+      within(dialog).getByRole('button', { name: 'Writing the description' }),
+    ).toBeInTheDocument();
+    expect(equationsIn(view)).toEqual([]);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(equationsIn(view)).toEqual([
+      { type: 'equation', mathml: stored(FRACTION, SPOKEN), latex: '\\frac{a+b}{c}' },
+    ]);
+
+    caretIn(view, 'b1');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    dialog = await opens();
+    fireEvent.change(latexOf(dialog), { target: { value: '\\frac{a+b}{c}' } });
+    fireEvent.keyDown(latexOf(dialog), { key: 'Enter', ctrlKey: true });
+    expect(equationsIn(view)).toHaveLength(1);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(equationsIn(view).map((each) => equationAlternative(each.mathml as string))).toEqual([
+      SPOKEN,
+      SPOKEN,
     ]);
   });
 

@@ -174,6 +174,58 @@ text in the reader's own fonts today, and equations are drawn the same way.
 - **Tests that used a block equation as what the editor cannot hold** - two in the mapping, one in the
   clipboard and one in `apps/web` - now use a paragraph holding a citation, still unsupported.
 
+The final whole-branch review found two medium findings, five low ones and three in the docs; these
+were changed:
+
+- **M1, a block's line break slipped past beside a display-only environment.** Rendering the same
+  LaTeX inline failed open: `align*`, `split`, `gather*`, `equation*`, `multline*` and `CD` cannot be
+  drawn in a line of text, so the inline rendering threw, and a `\\` beside one was stored as an empty
+  operator. The break is now found in the LaTeX by a scanner in `latex.ts`, `breaksALine`, and the
+  inline rendering is gone. A `\\`, `\\[2pt]`, `\newline` or `\cr` is a row's end only at the depth of
+  its environment's cells; anywhere else - outside any environment, inside a group, a fraction's part,
+  `\text`, or `\left` and `\right`, even within an environment, or in `equation*`, which has one row -
+  Temml drops it from a display equation, which was measured for each, and it is refused. `\substack`'s
+  argument is rows; a comment and `\verb`'s text are skipped. It reads the LaTeX as written, so a `\\`
+  inside a macro of the author's is refused wherever the macro would be used. **An inline `\\` is
+  still refused**, by the scanner first and the domain's `linebreak` refusal second: an equation in a
+  line of text stands on that line, and Temml draws it there as a table of lines inside the text.
+- **M2, Insert straight after typing placed the equation with no description**, and dropped the words
+  the engine wrote a moment later. **Insert**, **Change** and `Ctrl` and `Enter` now wait while words
+  are being written - asking whose the stored words are counts as writing them - the button reading
+  _Writing the description_, and place the equation once they are. Where they cannot be written the
+  equation is placed with none, and words the engine wrote for the equation as it was before are
+  cleared rather than kept for it as it is now. A change of the equation or of the description while
+  it waits is the author's, and waits for Insert again, so a first letter typed into the description
+  is not placed as the whole of it. A new `EquationDialog.test.tsx` drives the dialog over an engine
+  answered by hand; two existing tests that inserted straight after typing now wait for the dialog to
+  close.
+- **L1, a block equation at the end of a quotation's text left nowhere to go on writing it.** The
+  attribution follows, no caret stands between a block and it, and `Enter` there leaves the
+  quotation, so an empty paragraph now follows a block equation wherever no block would: nothing, or
+  an attribution.
+- **L2, `\rule` was stored as a blank space.** Its fill is a background the reader drops, so a filled
+  rule is refused by name; a strut, a rule with no width or height, carries no fill and is kept.
+  **Negative space is still dropped** - `\!`, `\hspace{-x}`, `\kern{-x}` and `\mkern{-x}` are an empty
+  `mrow` whose `margin-left` style the reader removes, so `\int\!\!\int` loses its kerning - which is
+  cosmetic, and left.
+- **L3, `\raisebox` drew its content anywhere on the page.** An `mpadded` with a `voffset`, which
+  `\raisebox`, `\raise`, `\lower` and a raised `\rule` write, is refused by name, as equations 2's
+  converter would refuse it (publishing.md). As a second defence the stylesheet clips an equation to
+  its own box with a quarter of an em's margin, the inline one made an `inline-block` so that it can
+  clip; `overflow: clip` keeps its baseline on the text's, and a tall integral, a root and an
+  overline draw exactly as before, checked in Chromium.
+- **L4, a failed load of the speech rule engine was kept** for the life of the page. It is dropped
+  when it fails, and the next request tries again.
+- **L5, Temml sat in the main chunk.** `EquationDialog` is now loaded by `React.lazy` the first time
+  it opens, and Temml with it, as the Markdown reader is loaded for Paste as Markdown; the drift test
+  imports `latex.ts` directly and is unchanged. The main chunk went from 1,224.73 kB (368.28 kB
+  compressed) to 1,007.58 kB (304.27 kB), and the dialog's chunk is 217.45 kB (65.06 kB).
+- **D1, D2 and the date.** component-editor.md's _Left unclaimed_ row for CNT-045, CNT-046 and
+  CNT-049 said an equation in a caption could not be represented; it can, and is made now, and the row
+  says what remains - publishing, and a section's title. Its opening status note listed equations,
+  and tables, footnotes, figures and paste, as design; it now says they are built. This plan was dated
+  a day ahead, and is renamed to 2026-09-23 with every link to it and the changelog's date.
+
 ## Tasks
 
 1. **`packages/domain`**: R2, with tests over Temml's real output kept as fixtures (strings, not the
