@@ -721,19 +721,19 @@ describe('the component editor', () => {
   });
 
   it('opens content this editor cannot change for reading only, saying what it holds', async () => {
-    // An equation: lists, tables and figures are carried now, and this is about a block the editor
+    // A citation: every block is carried since equations 1, and this is about content the editor
     // still has no node for.
-    const withEquation = content('Before');
-    withEquation.content.push({
-      type: 'equation',
+    const withCitation = content('Before');
+    withCitation.content.push({
+      type: 'paragraph',
       id: 't1',
-      mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
-      numbered: false,
+      style: 'body',
+      content: [{ type: 'citation', entry: 'ada-1843' }],
     } as never);
-    open({ 'GET /v1/components/{id}': () => json(200, opened({ content: withEquation })) });
+    open({ 'GET /v1/components/{id}': () => json(200, opened({ content: withCitation })) });
     expect(
       await screen.findByText(
-        'This component holds content this editor cannot change yet (equation), so it is shown for reading only.',
+        'This component holds content this editor cannot change yet (citation), so it is shown for reading only.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).toBeNull();

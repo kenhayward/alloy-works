@@ -1,6 +1,6 @@
 import { Schema, type Attrs, type MarkSpec, type TagParseRule } from 'prosemirror-model';
 import { tableNodes } from 'prosemirror-tables';
-import { isLanguageLabel, kindWord } from '@alloy-works/domain';
+import { equationAlternative, isLanguageLabel, kindWord } from '@alloy-works/domain';
 
 /**
  * Renders a mark's element, always carrying `data-mark-id`, so that the view can read its own output
@@ -138,9 +138,9 @@ export const editorSchema = new Schema({
       group: 'block',
       // Text, an inline image (figures 4, ruling R2) and a footnote (footnotes 1, ruling R2): a
       // paragraph is the one place either stands in a run, wherever the paragraph is - running text, a
-      // list, a quotation, a table's cell. A cross-reference stands here as in every inline home
-      // (cross-references 1, ruling R4).
-      content: '(text | image | footnote | crossReference)*',
+      // list, a quotation, a table's cell. A cross-reference and an equation stand here as in every
+      // inline home (cross-references 1, ruling R4; equations 1, ruling R3).
+      content: '(text | image | footnote | crossReference | equation)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing is read back from the DOM through these rules, so a paragraph the browser makes is
@@ -250,7 +250,7 @@ export const editorSchema = new Schema({
      * is what makes a term inline content rather than a string.
      */
     term: {
-      content: '(text | crossReference)*',
+      content: '(text | crossReference | equation)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'dt' }],
@@ -326,7 +326,7 @@ export const editorSchema = new Schema({
     },
     /** The caption: inline content, typed in place above the table, as a quotation's attribution is. */
     tableCaption: {
-      content: '(text | crossReference)*',
+      content: '(text | crossReference | equation)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption' }],
@@ -339,7 +339,7 @@ export const editorSchema = new Schema({
      * never reaches into the table above it.
      */
     tableNote: {
-      content: '(text | crossReference)*',
+      content: '(text | crossReference | equation)*',
       marks: '_',
       defining: true,
       isolating: true,
@@ -387,7 +387,7 @@ export const editorSchema = new Schema({
     },
     /** A figure's caption: inline content below the image, typed in place as a table's is. */
     figureCaption: {
-      content: '(text | crossReference)*',
+      content: '(text | crossReference | equation)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption[data-figure-caption]', priority: 60 }],
@@ -458,7 +458,7 @@ export const editorSchema = new Schema({
      * is the mapping's second spelling of it, as `definitionList` is of a list.
      */
     footnoteParagraph: {
-      content: '(text | crossReference)*',
+      content: '(text | crossReference | equation)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing in the footnote's own editor is read back through this rule, which wins over a
@@ -495,10 +495,69 @@ export const editorSchema = new Schema({
         (node.attrs.target as { kind: string }).kind === 'node' ? kindWord('section') : 'Reference',
       ],
     },
+    /**
+     * An equation in a run of text (equations 1, ruling R3): inline, an atom, with its MathML - the one
+     * form the MathML reader writes, which the stored model has already judged - and the LaTeX it was
+     * typed as, null where none was (CNT-043: the MathML is the equation, the LaTeX a record of how it
+     * was entered). Its spoken alternative is the MathML's own `alttext`, so nothing is held beside it
+     * (ruling R4). **No marks**, as a reference has none: `imagesUnmarked` takes off any a command puts
+     * on one, and an annotation either side of one is still one annotation. It stands in every inline
+     * home a reference does, because each content expression names it, and never in preformatted text,
+     * whose content is a string.
+     *
+     * `toDOM` is what a read-only rendering and a copy see until the view half draws the MathML
+     * itself (ruling R5): the words it is spoken by, as plain text. No `parseDOM`, for a footnote's
+     * reason: an equation enters a component through its dialog or the product's own clipboard alone,
+     * never guessed from an element.
+     */
+    equation: {
+      inline: true,
+      atom: true,
+      selectable: true,
+      draggable: false,
+      marks: '',
+      attrs: { mathml: {}, latex: { default: null } },
+      toDOM: (node) => [
+        'span',
+        { class: 'aw-equation', 'data-equation': '' },
+        equationAlternative(node.attrs.mathml as string) ?? '',
+      ],
+    },
+    /**
+     * An equation set as a block of its own (equations 1, ruling R3): the inline one's MathML and
+     * LaTeX, with the block's identifier - which the identity plugin fills, as it does any block's,
+     * and which a reference to the equation names - and whether it is numbered (CNT-047: numbered or
+     * explicitly not, with no third state). An atom and a leaf: there is nothing inside it to type
+     * into, so it is selected whole and changed through its dialog.
+     *
+     * In the block group, so it stands wherever a block does - the component's top level, a list's
+     * item, a definition's body, a quotation - and **not in a table's cell**, whose content expression
+     * names paragraphs and lists alone. A list inside a cell admits any block, which the content model
+     * refuses (tables 1, decision T-D), so the Equation command asks as a figure's does, and a paste is
+     * judged whole by the store's own rules before it lands. `toDOM` and the missing `parseDOM` are the
+     * inline one's, for its reasons.
+     */
+    equationBlock: {
+      group: 'block',
+      atom: true,
+      selectable: true,
+      draggable: false,
+      attrs: {
+        id: { default: null },
+        mathml: {},
+        latex: { default: null },
+        numbered: { default: false },
+      },
+      toDOM: (node) => [
+        'div',
+        { class: 'aw-equation-block', 'data-equation-block': '' },
+        equationAlternative(node.attrs.mathml as string) ?? '',
+      ],
+    },
     ...tableSpecs,
     /** Outside the block group, as a term is: it belongs to its quotation, not to a sequence. */
     attribution: {
-      content: '(text | crossReference)*',
+      content: '(text | crossReference | equation)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'footer' }],

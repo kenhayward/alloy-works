@@ -418,11 +418,14 @@ export function applyMarkCommand(
 function rangeToMark(state: EditorState, type: MarkType): { from: number; to: number } | null {
   // An image selected whole is nothing to put a mark on: it carries none (figures 4, ruling R1).
   // Nor is a footnote selected whole: its mark carries none, and its text is edited in its own
-  // editor (footnotes 1). Nor is a cross-reference, which carries none (cross-references 1, R6).
+  // editor (footnotes 1). Nor is a cross-reference, which carries none (cross-references 1, R6), nor
+  // an equation, inline or a block of its own (equations 1, ruling R3).
   if (
     state.selection instanceof NodeSelection &&
     (state.selection.node.type.name === 'image' ||
       state.selection.node.type.name === 'crossReference' ||
+      state.selection.node.type.name === 'equation' ||
+      state.selection.node.type.name === 'equationBlock' ||
       isFootnote(state.selection.node))
   ) {
     return null;

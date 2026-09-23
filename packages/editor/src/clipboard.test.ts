@@ -155,26 +155,27 @@ describe('pasting', () => {
   });
 
   it('refuses what the pipeline admits and this editor cannot hold, by name', () => {
-    // A block equation: the one block the editor still has no node for.
-    const equation = JSON.stringify({
+    // A citation: every block has a node since equations 1, and a citation is among the inline
+    // nodes the editor still has none for.
+    const cited = JSON.stringify({
       format: 'alloy-works/content',
       schemaVersion: 1,
       content: [
         {
-          type: 'equation',
-          mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
-          numbered: false,
+          type: 'paragraph',
+          style: 'body',
+          content: [{ type: 'citation', entry: 'ada-1843' }],
         },
       ],
     });
     const outcome = pasteInto(
       stateOf([paragraph('b1', 'York')]),
-      readClipboard(clipboard({ [PRODUCT_CLIPBOARD_TYPE]: equation }), 'blocks'),
+      readClipboard(clipboard({ [PRODUCT_CLIPBOARD_TYPE]: cited }), 'blocks'),
       counter(),
     );
     expect(outcome.ok).toBe(false);
     expect(outcome.report.slice(-2)).toMatchObject([
-      { action: 'discarded', subject: 'unrepresentable', detail: 'equation' },
+      { action: 'discarded', subject: 'unrepresentable', detail: 'citation' },
       { action: 'refused', subject: 'invalid' },
     ]);
   });

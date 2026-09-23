@@ -40,12 +40,15 @@ const openedDoc = (stored: ContentDocument): Node => {
 
 const root = { title: 'Install the printer', language: 'en-GB', direction: 'ltr' };
 
-/** A block equation: the one block this editor still has no node for, since figures 2 gave figures one. */
-const equation = (id: string): BlockNode => ({
-  type: 'equation',
+/**
+ * A paragraph holding a citation: every block has a node since equations 1 gave an equation one, and
+ * a citation is among the inline nodes nothing in T1 can write, which the editor still has none for.
+ */
+const cited = (id: string): BlockNode => ({
+  type: 'paragraph',
   id,
-  mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
-  numbered: false,
+  style: 'body',
+  content: [{ type: 'citation', entry: 'ada-1843' }],
 });
 
 /** One unordered list of one item per line of text. */
@@ -269,11 +272,11 @@ describe('the mapping between the stored model and the editor', () => {
   });
 
   it('refuses to open for editing anything it has no counterpart for, naming what it found', () => {
-    // An equation, not a list, a table or a figure: all three are carried now, and the block this
-    // schema still has no node for is the one the promise is about.
+    // A citation, not a list, a table, a figure or an equation: every block is carried now, and an
+    // inline node this schema still has no counterpart for is the one the promise is about.
     const stored = document([
       paragraph('b1', 'Before'),
-      equation('t1'),
+      cited('t1'),
       {
         type: 'paragraph',
         id: 'b3',
@@ -290,7 +293,7 @@ describe('the mapping between the stored model and the editor', () => {
     ]);
     expect(toEditor(stored)).toEqual({
       editable: false,
-      unsupported: ['equation', 'mark:suggestion'],
+      unsupported: ['citation', 'mark:suggestion'],
     });
   });
 
@@ -470,10 +473,10 @@ describe('the mapping carries a list, both ways', () => {
     });
   });
 
-  it('opens read-only for a block it cannot edit that is inside a list item, naming it', () => {
-    expect(toEditor(document([listHolding(equation('t1'))]))).toEqual({
+  it('opens read-only for a node it cannot edit that is inside a list item, naming it', () => {
+    expect(toEditor(document([listHolding(cited('t1'))]))).toEqual({
       editable: false,
-      unsupported: ['equation'],
+      unsupported: ['citation'],
     });
   });
 
@@ -854,5 +857,138 @@ describe('a cross-reference through the mapping (cross-references 1)', () => {
       ]),
     ]);
     expect(() => fromEditor(doc)).toThrow('Block p1 has no identifier');
+  });
+});
+
+describe('an equation through the mapping (equations 1)', () => {
+  const NS = 'http://www.w3.org/1998/Math/MathML';
+  const SQUARED = `<math xmlns="${NS}" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>`;
+  type Inline = Extract<BlockNode, { type: 'paragraph' }>['content'][number];
+  const text = (value: string): Inline => ({ type: 'text', value, marks: [] });
+  /** Typed as LaTeX, and so carrying it; the other was stored with none. */
+  const typed: Inline = { type: 'equation', mathml: SQUARED, latex: 'x^2' };
+  const untyped: Inline = { type: 'equation', mathml: SQUARED };
+  const roundTrip = (stored: ContentDocument) => fromEditor(openedDoc(stored));
+  const inlineOf = (content: Inline[], id = 'p0'): BlockNode => ({
+    type: 'paragraph',
+    id,
+    style: 'body',
+    content,
+  });
+
+  it('carries one in every inline home and as a block wherever one may stand, both ways', () => {
+    const stored = parseContentDocument(
+      document([
+        inlineOf([
+          text('Where '),
+          typed,
+          text(' grows'),
+          {
+            type: 'footnote',
+            id: 'f1',
+            anchor: { kind: 'span' },
+            content: [inlineOf([text('Also '), untyped], 'fp1')],
+          },
+        ]),
+        { type: 'equation', id: 'e1', mathml: SQUARED, latex: 'x^2', numbered: true },
+        {
+          type: 'list',
+          id: 'd1',
+          kind: 'definition',
+          items: [
+            {
+              term: [text('Square '), typed],
+              content: [
+                paragraph('d2', 'Weight.'),
+                { type: 'equation', id: 'e2', mathml: SQUARED, numbered: false },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'list',
+          id: 'l1',
+          kind: 'ordered',
+          items: [{ content: [{ type: 'equation', id: 'e3', mathml: SQUARED, numbered: true }] }],
+        },
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [
+            paragraph('q2', 'Words.'),
+            { type: 'equation', id: 'e4', mathml: SQUARED, latex: 'x^2', numbered: false },
+          ],
+          attribution: [text('Ada, '), untyped],
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [text('Readings of '), typed],
+          headerRows: 0,
+          headerColumns: 0,
+          note: [text('Estimated as '), untyped],
+          rows: [
+            {
+              cells: [
+                { content: [inlineOf([text('North '), typed], 'c1')], colspan: 1, rowspan: 1 },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'figure',
+          id: 'g1',
+          asset: '00000000-0000-4000-8000-00000000a551',
+          imageStyle: 'figure',
+          caption: [text('Visits, as '), untyped],
+          alternative: { kind: 'decorative' },
+        },
+      ]),
+    );
+    expect(roundTrip(stored)).toEqual(stored);
+  });
+
+  it('keeps LaTeX exactly as stored: absent stays absent, inline and as a block', () => {
+    const stored = parseContentDocument(
+      document([
+        inlineOf([text('Where '), untyped, text(' and '), typed]),
+        { type: 'equation', id: 'e1', mathml: SQUARED, numbered: false },
+        { type: 'equation', id: 'e2', mathml: SQUARED, latex: 'x^2', numbered: true },
+      ]),
+    );
+    const doc = openedDoc(stored);
+    const held: Record<string, unknown>[] = [];
+    doc.descendants((node) => {
+      if (node.type.name === 'equation' || node.type.name === 'equationBlock') {
+        held.push({ type: node.type.name, ...node.attrs });
+      }
+    });
+    expect(held).toEqual([
+      { type: 'equation', mathml: SQUARED, latex: null },
+      { type: 'equation', mathml: SQUARED, latex: 'x^2' },
+      { type: 'equationBlock', id: 'e1', mathml: SQUARED, latex: null, numbered: false },
+      { type: 'equationBlock', id: 'e2', mathml: SQUARED, latex: 'x^2', numbered: true },
+    ]);
+    const back = fromEditor(doc).content;
+    const [first] = back as [Extract<BlockNode, { type: 'paragraph' }>];
+    expect(Object.keys(first.content[1]!)).not.toContain('latex');
+    expect(Object.keys(back[1]!)).not.toContain('latex');
+    expect(back).toEqual(stored.content);
+  });
+
+  it('opens a component holding one for editing, inline or as a block', () => {
+    expect(toEditor(document([inlineOf([text('Where '), typed])])).editable).toBe(true);
+    expect(
+      toEditor(document([{ type: 'equation', id: 'e1', mathml: SQUARED, numbered: true }]))
+        .editable,
+    ).toBe(true);
+  });
+
+  it('refuses to store a block equation the editor has not identified', () => {
+    const doc = editorSchema.node('doc', root, [
+      editorSchema.nodes.equationBlock!.create({ mathml: SQUARED }),
+    ]);
+    expect(() => fromEditor(doc)).toThrow('Block 0 has no identifier');
   });
 });
