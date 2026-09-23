@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.60.1 - 2026-09-23 (PR #215)
+
+### Changed
+
+- **Footnotes are designed**, ready for review before any of it is built: where a footnote may stand
+  and why only in a paragraph, how its number is the one the outline shows, how it is edited beside the
+  text it belongs to, how a note on a table as a whole is written and published, and what a publication
+  refuses. Measured against the typesetting engine first: a footnote in a caption or a heading would be
+  printed twice, once in the contents or list and once in place, so none may stand there.
+
 ## 0.60.0 - 2026-09-23 (PR #214)
 
 ### Added

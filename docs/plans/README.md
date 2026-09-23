@@ -473,6 +473,14 @@ inline images in the editor and then published, since each is the size of figure
 | 4   | [Inline images in the editor](2026-09-23-figures-04-inline-images-in-the-editor.md) | An image placed inside a paragraph - in running text, a list, a quotation or a table cell - through the figure's dialog and panel, opened for editing; publishing it waits for figures 5                                       | Built (PR #213) |
 | 5   | [Publishing inline images](2026-09-23-figures-05-publishing-inline-images.md)       | An image in a line of text or a table cell published one line high, tagged with its alternative text in its language or as decorative, inside the paragraph or cell it stands in; one wider than its room refused              | Built (PR #214) |
 
+## Footnotes
+
+The footnotes design is publishing.md's [Footnotes](../design/publishing.md#footnotes) with
+component-editor.md's footnote rows under [Tables and footnotes](../design/component-editor.md#tables-and-footnotes),
+measured against the pinned engine on 2026-09-23 (decisions FN-A to FN-F). Planned as two pull requests
+(decision FN-F): footnotes and the table's note in the editor, then both published. No plan is written
+yet.
+
 ## Publishing
 
 A document version to a PDF somebody can download, cite and keep, designed in
