@@ -61,6 +61,10 @@ export const reportMessages = {
       'Blocks, footnotes and cross-references were given new identifiers, so they cannot be mistaken for the ones they were copied from.',
     crossReferenceTarget:
       'Cross-references copied with what they refer to were pointed at the copy.',
+    // The editor's, after admission (cross-references 1, R8): a reference the receiving component
+    // still held, left behind when what it named was cut, pointed at that block pasted back.
+    crossReferenceRepointed:
+      'Cross-references to what was cut were pointed at where it was pasted.',
     markIdentifier: 'Marks were given new identifiers.',
     // A reader's: kept, but not as what it was.
     heading: "A heading was kept as a paragraph. A document's headings are its section titles.",

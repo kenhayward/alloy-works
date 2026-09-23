@@ -10,6 +10,7 @@ import { readHtml, readPlainText } from '@alloy-works/readers';
 import { Fragment, Slice, type Node } from 'prosemirror-model';
 import { TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
 
+import { KEEPS_IDENTIFIERS } from './identity.js';
 import { fromEditor, toEditor } from './mapping.js';
 import { editorSchema } from './schema.js';
 
@@ -19,6 +20,8 @@ import { editorSchema } from './schema.js';
  * What it holds is `writeProductClipboard`'s text, trusted no further than any other paste.
  */
 export const PRODUCT_CLIPBOARD_TYPE = 'application/vnd.alloy-works.content+json';
+
+const crossReferenceNode = editorSchema.nodes.crossReference!;
 
 /** What a paste event's `clipboardData` offers: the types it holds, and each one's text. */
 export interface ClipboardSource {
@@ -98,9 +101,19 @@ export type PasteOutcome =
  * Admitted content this editor cannot hold - a table from another component - is refused whole and
  * by name, as opening one is: placing part of it would be the silent loss the pipeline exists to stop.
  *
- * **Into a footnote's text** (footnotes 1, ruling R10), what arrives must be paragraphs of runs, which
- * become the footnote's paragraphs; anything else - a list, a table, an image, a footnote - is refused
- * whole and by name, as a component that cannot hold it is.
+ * **Into a footnote's text** (footnotes 1, ruling R10), what arrives must be paragraphs of runs and
+ * cross-references, which become the footnote's paragraphs; anything else - a list, a table, an image,
+ * a footnote - is refused whole and by name, as a component that cannot hold it is.
+ *
+ * **What admission named keeps its name** (cross-references 1, rulings R7 and R8). The transaction
+ * says so (`KEEPS_IDENTIFIERS`), so the identity plugin leaves every pasted identifier no other node
+ * holds as admission allocated it, rather than renaming a block standing where nothing descended - and
+ * leaving a reference admission pointed at it pointing at nothing. And **a reference left behind is
+ * re-pointed**: one the component still holds, whose `block` target the placed document no longer
+ * holds and which admission renamed to a block the paste placed, points at that block. So a cut and a
+ * paste keeps a reference to what was cut, a copy and a paste changes nothing, the original still
+ * standing, and every pasted block is still newly named (CNT-132). Identifiers are 128 random bits, so
+ * a paste from another component cannot match one by chance. The report counts what was re-pointed.
  */
 export function pasteInto(
   state: EditorState,
@@ -136,7 +149,7 @@ export function pasteInto(
         return;
       }
       block.forEach((child) => {
-        if (!child.isText) refused.add(child.type.name);
+        if (!child.isText && child.type !== crossReferenceNode) refused.add(child.type.name);
       });
       paragraphs.push(editorSchema.nodes.footnoteParagraph!.create(block.attrs, block.content));
     });
@@ -159,7 +172,12 @@ export function pasteInto(
   if (footnote !== null) {
     placed.setSelection(TextSelection.near(placed.doc.resolve(placed.mapping.map(to)), -1));
   }
-  const transaction = placed.scrollIntoView().setMeta('paste', true).setMeta('uiEvent', 'paste');
+  const repointed = repointLeftBehind(placed, admitted.renamed);
+  const transaction = placed
+    .scrollIntoView()
+    .setMeta('paste', true)
+    .setMeta('uiEvent', 'paste')
+    .setMeta(KEEPS_IDENTIFIERS, true);
   // **Placed, the paste must still be a document the store takes.** The admitted blocks are valid on
   // their own, but where they land can make them not so: a quotation pasted into a list in a table's
   // cell fits ProseMirror's schema - a list item holds any block - and not the model's (tables 1,
@@ -171,7 +189,38 @@ export function pasteInto(
     report.add('validate', 'refused', 'invalid');
     return { ok: false, report: report.entries };
   }
-  return { ok: true, transaction, report: admitted.report };
+  if (repointed === 0) return { ok: true, transaction, report: admitted.report };
+  const report = createReport(admitted.report);
+  report.add('reidentify', 'rewritten', 'crossReferenceRepointed', { count: repointed });
+  return { ok: true, transaction, report: report.entries };
+}
+
+/**
+ * Points every reference in the placed document whose `block` target it no longer holds at the block
+ * admission renamed that target to, where the paste placed one (ruling R8), and answers how many.
+ * A reference that travelled with its target was pointed at the copy by admission already, and one
+ * whose target still stands is left alone. Attribute steps move nothing, so the positions read from
+ * the placed document hold for every change.
+ */
+function repointLeftBehind(placed: Transaction, renamed: ReadonlyMap<string, string>): number {
+  const doc = placed.doc;
+  const held = new Set<string>();
+  doc.descendants((node) => {
+    if (typeof node.attrs.id === 'string') held.add(node.attrs.id);
+  });
+  let repointed = 0;
+  doc.descendants((node, pos) => {
+    if (node.type !== crossReferenceNode) return true;
+    const target = node.attrs.target as { kind: string; block?: string };
+    if (target.kind !== 'block' || target.block === undefined || held.has(target.block))
+      return false;
+    const now = renamed.get(target.block);
+    if (now === undefined || !held.has(now)) return false;
+    placed.setNodeAttribute(pos, 'target', { kind: 'block', block: now });
+    repointed += 1;
+    return false;
+  });
+  return repointed;
 }
 
 /**
