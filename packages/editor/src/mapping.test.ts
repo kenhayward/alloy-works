@@ -50,6 +50,14 @@ const figure = (id: string): BlockNode => ({
   alternative: { kind: 'decorative' },
 });
 
+/** A block equation: the one block this editor still has no node for, since figures 2 gave figures one. */
+const equation = (id: string): BlockNode => ({
+  type: 'equation',
+  id,
+  mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"></math>',
+  numbered: false,
+});
+
 /** One unordered list of one item per line of text. */
 const unorderedList = (id: string, lines: readonly string[]): BlockNode => ({
   type: 'list',
@@ -271,11 +279,11 @@ describe('the mapping between the stored model and the editor', () => {
   });
 
   it('refuses to open for editing anything it has no counterpart for, naming what it found', () => {
-    // A figure, not a list or a table: both are carried now, and the block this schema still has no
-    // node for is the one the promise is about.
+    // An equation, not a list, a table or a figure: all three are carried now, and the block this
+    // schema still has no node for is the one the promise is about.
     const stored = document([
       paragraph('b1', 'Before'),
-      figure('t1'),
+      equation('t1'),
       {
         type: 'paragraph',
         id: 'b3',
@@ -292,7 +300,7 @@ describe('the mapping between the stored model and the editor', () => {
     ]);
     expect(toEditor(stored)).toEqual({
       editable: false,
-      unsupported: ['figure', 'mark:suggestion'],
+      unsupported: ['equation', 'mark:suggestion'],
     });
   });
 
@@ -473,9 +481,9 @@ describe('the mapping carries a list, both ways', () => {
   });
 
   it('opens read-only for a block it cannot edit that is inside a list item, naming it', () => {
-    expect(toEditor(document([listHolding(figure('t1'))]))).toEqual({
+    expect(toEditor(document([listHolding(equation('t1'))]))).toEqual({
       editable: false,
-      unsupported: ['figure'],
+      unsupported: ['equation'],
     });
   });
 

@@ -85,6 +85,10 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
           for (const cell of row.cells) namesWithNoNode(cell.content, found);
         if (block.note !== undefined) marksWithNoType(block.note, found);
         break;
+      case 'figure':
+        // Its caption is inline content, walked as a table's is (figures 2).
+        marksWithNoType(block.caption, found);
+        break;
       default:
         found.add(block.type);
     }
@@ -205,6 +209,19 @@ function nodeOf(block: BlockNode): Node {
             block.headerColumns,
           ),
         ],
+      );
+    case 'figure':
+      // Two nodes for one (figures 2, ruling R1): the figure with its asset version, image style and
+      // alternative text, and the caption below the image.
+      return editorSchema.node(
+        'figure',
+        {
+          id: block.id,
+          asset: block.asset,
+          imageStyle: block.imageStyle,
+          alternative: block.alternative,
+        },
+        [editorSchema.node('figureCaption', null, block.caption.flatMap(toRun))],
       );
     default:
       // Unreachable: `toEditor` refuses a block with no node before it builds anything, and this is
@@ -467,6 +484,17 @@ function storedBlock(node: Node, at: string): unknown {
         ...(node.attrs.keyColumns === null ? {} : { keyColumns: node.attrs.keyColumns }),
         ...(node.attrs.note === null ? {} : { note: node.attrs.note }),
         rows,
+      };
+    }
+    case 'figure': {
+      const id = identifierOf(node, at);
+      return {
+        type: 'figure',
+        id,
+        asset: node.attrs.asset as string,
+        imageStyle: node.attrs.imageStyle as string,
+        caption: runsOf(node.child(0), id),
+        alternative: node.attrs.alternative as object,
       };
     }
     default:
