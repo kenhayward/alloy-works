@@ -54,7 +54,9 @@ export const inlineEquationNodeSchema = z.strictObject({
  *   occurrence in the resolving document - and failed by name, never guessed, where it has none or
  *   several (STR-062). Named by the component rather than by an occurrence so that the reference
  *   survives the component being used in a second document.
- * - `node`: an outline node, which only a section title may hold.
+ * - `node`: an outline node - a section, from a section title or from a component's text (XR-B).
+ *   It belongs to one document's outline, so a component's resolves in that document and fails by
+ *   name in any other the component is placed in (STR-029).
  *
  * Which kind may stand where is `checkInlineContent`'s rule, not this schema's, because the schema
  * does not know whether it is parsing a component or a title. A bibliography entry (STR-026) is not
@@ -149,3 +151,13 @@ export const inlineNodeSchema = z.discriminatedUnion('type', [
 ]);
 
 export type InlineNode = z.infer<typeof inlineNodeSchema>;
+
+/** What a cross-reference points at, as the model stores it (STR-026). */
+export type CrossReferenceTarget = z.infer<typeof crossReferenceTargetSchema>;
+
+/**
+ * What a cross-reference shows (CNT-027): a number, a title, both, a page, or where the target stands
+ * - `above` or `below`. The stored enum, named once, so an editor offering forms and a function saying
+ * what each prints cannot offer one the model would refuse.
+ */
+export type CrossReferenceDisplay = z.infer<typeof crossReferenceNodeSchema>['display'];

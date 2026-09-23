@@ -16161,7 +16161,7 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 215,
+      "line": 216,
       "kind": "title"
     },
     {
@@ -16917,7 +16917,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 182,
+      "line": 188,
       "kind": "title"
     },
     {
@@ -17145,49 +17145,49 @@
     {
       "id": "AST-014",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1817,
+      "line": 1840,
       "kind": "title"
     },
     {
       "id": "CNT-042",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2325,
+      "line": 2348,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1076,
+      "line": 1099,
       "kind": "title"
     },
     {
       "id": "PUB-033",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1817,
+      "line": 1840,
       "kind": "title"
     },
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 605,
+      "line": 628,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 799,
+      "line": 822,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 683,
+      "line": 706,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 772,
+      "line": 795,
       "kind": "title"
     },
     {
@@ -17439,13 +17439,13 @@
     {
       "id": "CNT-038",
       "file": "packages/editor/src/footnotes.test.ts",
-      "line": 671,
+      "line": 661,
       "kind": "title"
     },
     {
       "id": "CNT-002",
       "file": "packages/editor/src/identity.test.ts",
-      "line": 234,
+      "line": 236,
       "kind": "title"
     },
     {
@@ -17499,19 +17499,19 @@
     {
       "id": "CNT-004",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 188,
+      "line": 192,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 627,
+      "line": 631,
       "kind": "title"
     },
     {
       "id": "CNT-127",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 306,
+      "line": 310,
       "kind": "title"
     },
     {

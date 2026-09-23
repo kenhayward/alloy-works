@@ -13,7 +13,7 @@ import { Fragment, useRef, useState, type KeyboardEvent, type Ref } from 'react'
 import { Icon } from './Icon.js';
 import styles from './EditorToolbar.module.css';
 
-import { pressCommand, type AskForValue, type MarkCommand } from './press.js';
+import { pressCommand, type AskForValue, type MarkCommand, type OpenDialog } from './press.js';
 
 /** The commands a divider follows: the last mark, and the last list action. */
 const GROUP_ENDS = new Set(['Language', 'Lift item']);
@@ -43,6 +43,11 @@ export interface EditorToolbarProps {
    * simply had nothing to do: the words belong to whoever renders the notice.
    */
   readonly onRefused?: (command: MarkCommand) => void;
+  /**
+   * Opens the dialog a block action that prompts asks through - **Reference**'s (cross-references 1,
+   * ruling R11). Without one, that button does nothing.
+   */
+  readonly openDialog?: OpenDialog;
   /**
    * **Paste as Markdown**, offered as the last button where given. It is not a command in the
    * editor's registry: it reads the clipboard, which only the page can ask the browser for, and it
@@ -152,6 +157,7 @@ export function EditorToolbar({
   newIdentifier,
   prompt,
   onRefused,
+  openDialog,
   onPasteMarkdown,
   onInsertFigure,
   figurePlaceable = true,
@@ -205,10 +211,10 @@ export function EditorToolbar({
 
   /** What the button says it is: a dialog, a toggle and what it is toggled to, or neither. */
   const announces = (command: EditorCommand) => {
+    // A command that asks for something first opens a dialog, mark or block alike, and is no toggle.
+    if (command.prompts) return { 'aria-haspopup': 'dialog' as const };
     if (command.kind === 'mark') {
-      return command.prompts
-        ? { 'aria-haspopup': 'dialog' as const }
-        : { 'aria-pressed': view !== null && markThroughout(view.state, command.mark) };
+      return { 'aria-pressed': view !== null && markThroughout(view.state, command.mark) };
     }
     const inside = PRESSED_INSIDE[command.action];
     if (inside === undefined) return {};
@@ -221,7 +227,7 @@ export function EditorToolbar({
     if (!enabled || view === null) return;
     // What the press itself does is `press.ts`, shared with the keyboard's own route to these same
     // commands, so a shortcut and a button cannot come to mean two different things (CNT-077).
-    pressCommand({ view, command, newIdentifier, prompt, onRefused });
+    pressCommand({ view, command, newIdentifier, prompt, onRefused, openDialog });
   };
 
   return (

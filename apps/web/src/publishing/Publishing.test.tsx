@@ -334,6 +334,22 @@ describe('publishing from the document page', () => {
     );
   });
 
+  it('names a cross-reference as something that cannot be published yet', async () => {
+    const fake = failing([
+      {
+        stage: 'compose',
+        code: 'inline_not_publishable',
+        node: null,
+        block: 'b1',
+        detail: 'crossReference',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent('A cross-reference cannot be published yet.');
+  });
+
   it("blames the layout, not the document, for the layout's own words and language", async () => {
     const fake = failing([
       { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+0627' },

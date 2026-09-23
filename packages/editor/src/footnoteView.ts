@@ -14,6 +14,7 @@ import { EditorView, type NodeView } from 'prosemirror-view';
 
 import { pasteInto, readClipboard, type ClipboardSource, type PasteOutcome } from './clipboard.js';
 import { footnoteAt, openFootnote, recordOpenFootnote } from './footnotes.js';
+import { referenceContextOf, referenceDecorations, referenceView } from './referenceView.js';
 import { footnotePluginsOf } from './state.js';
 
 /** A transaction the footnote's editor takes from the surface, which is not sent back to it. */
@@ -133,6 +134,25 @@ export function footnoteView(
         dir: outer.state.doc.attrs.direction as string,
       }),
       dispatchTransaction: forward,
+      // A reference in the footnote's text is drawn as one in the component's is (cross-references
+      // 1, ruling R10), from the surface's context and **the surface's document**: its target is a
+      // block of the component, which the footnote alone does not hold, and whether it is above or
+      // below is where the two stand there. Read on every update of this view - the surface refreshes
+      // it on every one of its own, so a change of context or a table deleted reaches it though the
+      // footnote itself did not change.
+      nodeViews: {
+        crossReference: (node, _view, _getPos, decorations) =>
+          referenceView(node, document, decorations),
+      },
+      decorations: (state) => {
+        const pos = getPos();
+        return pos === undefined
+          ? null
+          : referenceDecorations(state.doc, referenceContextOf(outer.state), {
+              component: outer.state.doc,
+              offset: pos + 1,
+            });
+      },
       handleDOMEvents: {
         paste: (_view, event) => {
           event.preventDefault();

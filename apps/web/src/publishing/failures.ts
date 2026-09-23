@@ -19,11 +19,13 @@ const BLOCKS: Readonly<Record<string, string>> = {
 /**
  * What an inline item an author can place is called, when it cannot be published yet. A footnote is
  * published under a layout since footnotes 2, so this sentence is left for a request made before
- * layouts, which could never publish one.
+ * layouts, which could never publish one. A cross-reference is placed in the editor since
+ * cross-references 1 and published from cross-references 2, so until then it is refused by name.
  */
 const INLINES: Readonly<Record<string, string>> = {
   image: 'An image in a line of text cannot be published yet.',
   footnote: 'A footnote cannot be published yet.',
+  crossReference: 'A cross-reference cannot be published yet.',
 };
 
 /**

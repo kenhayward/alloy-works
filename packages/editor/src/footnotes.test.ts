@@ -335,7 +335,7 @@ describe('placing and deleting a footnote (footnotes 1)', () => {
     expect(stored(pressed.next)).toEqual(document.content);
   });
 
-  it('deletes the footnote with its mark, and undo brings it back whole, newly named', () => {
+  it('deletes the footnote with its mark, and undo brings it back whole, under its own identifiers', () => {
     const document = documentOf(
       paragraph(
         'p1',
@@ -347,20 +347,10 @@ describe('placing and deleting a footnote (footnotes 1)', () => {
     const selected = selectWhole(stateOf(document), 'f1');
     const deleted = selected.apply(selected.tr.deleteSelection());
     expect(stored(deleted)).toEqual([paragraph('p1', text('Visited twice.'))]);
-    // Whole, under new identifiers: what an undo puts back is placed, and ADR-0023's descent rule
-    // names whatever is placed, as it does a block brought back the same way.
-    const restored = stored(run(deleted, undo).next);
-    const unnamed = (value: unknown): unknown =>
-      Array.isArray(value)
-        ? value.map(unnamed)
-        : typeof value === 'object' && value !== null
-          ? Object.fromEntries(
-              Object.entries(value)
-                .filter(([key]) => key !== 'id')
-                .map(([key, member]) => [key, unnamed(member)]),
-            )
-          : value;
-    expect(unnamed(restored)).toEqual(unnamed(document.content));
+    // Whole, under the identifiers it had: what an undo puts back keeps every identifier no other
+    // node holds (cross-references 1, ruling R7), so a reference to the footnote still reaches it.
+    // Footnotes 1 brought it back newly named, by the descent rule alone.
+    expect(stored(run(deleted, undo).next)).toEqual(document.content);
   });
 });
 

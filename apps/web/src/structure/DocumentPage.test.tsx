@@ -3082,3 +3082,119 @@ describe('publishing from the document page', () => {
     );
   });
 });
+
+describe('a cross-reference in the document page (cross-references 1)', () => {
+  afterEach(() => window.history.replaceState(null, '', '#'));
+
+  /** The printer's text: a paragraph referring to its own table, and the table. */
+  const referring = {
+    schemaVersion: 1,
+    title: 'Install the printer',
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [
+          { type: 'text', value: 'Unbox the printer, as ', marks: [] },
+          {
+            type: 'crossReference',
+            id: 'x1',
+            target: { kind: 'block', block: 't1' },
+            display: 'number',
+          },
+          { type: 'text', value: ' lists.', marks: [] },
+        ],
+      },
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [{ type: 'text', value: 'Parts', marks: [] }],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [
+              {
+                content: [
+                  {
+                    type: 'paragraph',
+                    id: 'c1',
+                    style: 'body',
+                    content: [{ type: 'text', value: 'Tray', marks: [] }],
+                  },
+                ],
+                colspan: 1,
+                rowspan: 1,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  it("shows a reference's label in the text, and in the editor opened in place", async () => {
+    const user = userEvent.setup();
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)])]),
+      { holds: { [PRINTER]: [parts] } },
+    );
+    const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      if (path === `/v1/documents/${DOCUMENT}/texts`) {
+        return json(200, {
+          document: DOCUMENT,
+          version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
+          occurrences: [{ node: RESULTS, version: 'vvvvvvvv-0000-4000-8000-000000000001' }],
+          versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: referring }],
+        });
+      }
+      if (path === `/v1/components/${PRINTER}`) {
+        return json(200, {
+          id: PRINTER,
+          space: { id: SPACE, name: 'General' },
+          version: {
+            id: 'vvvvvvvv-0000-4000-8000-000000000001',
+            number: '0.3',
+            author: ADA,
+            createdAt: '2026-09-18T09:00:00.000Z',
+            note: null,
+          },
+          content: referring,
+          mayEdit: false,
+          lock: null,
+        });
+      }
+      return fake.fetch(request);
+    }) as typeof globalThis.fetch;
+    render(
+      <StrictMode>
+        <DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />
+      </StrictMode>,
+    );
+
+    const text = await screen.findByRole('region', { name: "The document's text" });
+    await within(text).findByText(/Unbox the printer/);
+    // Numbered by the page once it has heard what the occurrence holds.
+    await waitFor(() =>
+      expect(
+        [...text.querySelectorAll('[data-reference]')].map((each) => each.textContent),
+      ).toEqual(['Table 1.1']),
+    );
+
+    await user.click(within(text).getByText(/Unbox the printer/));
+    const surface = await within(text).findByRole('textbox', {
+      name: 'Content of Install the printer',
+    });
+    await waitFor(() =>
+      expect(
+        [...surface.querySelectorAll('[data-reference]')].map((each) => each.textContent),
+      ).toEqual(['Table 1.1']),
+    );
+  });
+});

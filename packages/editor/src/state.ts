@@ -27,6 +27,8 @@ import { identityPlugin } from './identity.js';
 import { tableHeadersAgree } from './tables.js';
 import { imagesUnmarked, marksPastImages } from './images.js';
 import { commandKeymap, spansOf } from './marks.js';
+import type { ReferenceContext } from './referenceText.js';
+import { referenceContextOf, referenceDecorations, referencesPlugin } from './referenceView.js';
 
 // A footnote's paragraph is a paragraph to CNT-023 (footnotes 1, ruling R6): the stored model has one
 // paragraph type, and holds two empty ones apart in a footnote as it does anywhere else.
@@ -356,12 +358,20 @@ export interface EditorStateOptions {
    */
   readonly selection?: Selection;
   /**
-   * Called when a shortcut for a mark whose value the author has to supply is pressed - a link, a
-   * language - and answering whether the renderer took it. A value can only be typed into something
-   * this package does not own, so the editor's part is to carry the key out to whatever is asking
-   * for it; with nothing listening the key does nothing, rather than being swallowed (CNT-077).
+   * Called when a shortcut for a command whose value the author has to supply is pressed - a link or
+   * a language, by the mark's name, and a cross-reference, by its action, `reference` - and answering
+   * whether the renderer took it. A value can only be typed into something this package does not
+   * own, so the editor's part is to carry the key out to whatever is asking for it; with nothing
+   * listening the key does nothing, rather than being swallowed (CNT-077).
    */
-  readonly onPrompt?: (mark: string) => boolean;
+  readonly onPrompt?: (name: string) => boolean;
+  /**
+   * The document the component is being edited in, as the host numbers it (cross-references 1,
+   * ruling R10): what each reference shows is read from it. Null, or left out, on its own. It is
+   * the surface's state, so a host that makes a fresh state for the same surface - a version cut -
+   * carries the one it had across with `referenceContextOf`.
+   */
+  readonly referenceContext?: ReferenceContext | null;
 }
 
 /**
@@ -500,8 +510,9 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       identityPlugin(options.newIdentifier),
       noAdjacentEmptyParagraphs(),
       attributionAlwaysThere,
-      // An image and a footnote carry no marks (figures 4, footnotes 1), taken off before annotations
-      // are made whole, so the two pieces of one either side of either are still read as one.
+      // An image, a footnote and a cross-reference carry no marks (figures 4, footnotes 1,
+      // cross-references 1), taken off before annotations are made whole, so the two pieces of one
+      // either side of any of them are still read as one.
       imagesUnmarked,
       // And what is typed straight after one carries on the marks it stands in.
       marksPastImages,
@@ -515,14 +526,19 @@ export function createEditorState(options: EditorStateOptions): EditorState {
         footnotePlugins: footnoteEditingPlugins(options),
         view: () => ({ update: (view) => openFootnote(view)?.setProps({}) }),
       }),
-      // One decorations plugin, holding both the spellcheck rule and the empty attribution's
-      // placeholder: the view merges every plugin's set anyway, and one set is one thing to test.
+      // The host's reference context (cross-references 1, ruling R10), which a transaction of its own
+      // changes and the history never holds.
+      referencesPlugin(options.referenceContext ?? null),
+      // One decorations plugin, holding the spellcheck rule, the empty attribution's placeholder and
+      // what each cross-reference shows: the view merges every plugin's set anyway, and one set is one
+      // thing to test.
       new Plugin({
         props: {
           decorations: (state) =>
             DecorationSet.create(state.doc, [
               ...spellcheckDecorations(state.doc).find(),
               ...placeholderDecorations(state.doc).find(),
+              ...referenceDecorations(state.doc, referenceContextOf(state)).find(),
             ]),
         },
       }),

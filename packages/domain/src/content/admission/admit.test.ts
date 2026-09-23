@@ -432,6 +432,70 @@ describe('admitting content', () => {
   });
 });
 
+describe('what an admission renamed', () => {
+  it('answers each block and footnote by the identifier it arrived with, and nothing else', () => {
+    const note = {
+      type: 'footnote',
+      id: 'f1',
+      anchor: { kind: 'span' },
+      content: [{ type: 'paragraph', id: 'fp1', content: [text('Ibid.')] }],
+    };
+    const reference = {
+      type: 'crossReference',
+      id: 'x1',
+      target: { kind: 'block', block: 'p2' },
+      display: 'number',
+    };
+    const outcome = admit(
+      foreign([
+        paragraph([text('York', [{ type: 'strong', id: 'm1' }]), note], { id: 'p1' }),
+        paragraph([text('See '), reference], { id: 'p2' }),
+      ]),
+      receiver(),
+    );
+    // p1 is a1, its mark a2, the footnote a3 and its paragraph a4; p2 is a5, the reference a6. A
+    // mark's identifier and a reference's are never a target, so neither is answered.
+    expect(outcome.ok && [...outcome.renamed]).toEqual([
+      ['p1', 'a1'],
+      ['f1', 'a3'],
+      ['fp1', 'a4'],
+      ['p2', 'a5'],
+    ]);
+  });
+
+  it('leaves out an identifier that arrived on more than one block, since no one block answers it', () => {
+    const outcome = admit(
+      foreign([
+        paragraph([text('York')], { id: 'p1' }),
+        paragraph([text('Leeds')], { id: 'p1' }),
+        paragraph([text('Hull')], { id: 'p3' }),
+      ]),
+      receiver(),
+    );
+    expect(outcome.ok && [...outcome.renamed]).toEqual([['p3', 'a3']]);
+  });
+
+  it('keeps a reference to a section as it arrived, neither re-pointed nor counted as unresolved', () => {
+    // A node target names a document's section, which no paste renames and no component holds, so
+    // whether it resolves is a document's question, answered at resolution (structure.md, XR-B).
+    const target = { kind: 'node', node: 'a'.repeat(26) };
+    const outcome = admit(
+      foreign([
+        paragraph([text('See '), { type: 'crossReference', id: 'x1', target, display: 'title' }]),
+      ]),
+      receiver(),
+    );
+    expect(outcome.ok && outcome.content).toEqual([
+      paragraph([text('See '), { type: 'crossReference', id: 'a2', target, display: 'title' }], {
+        id: 'a1',
+      }),
+    ]);
+    expect(happened(outcome.report)).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+    ]);
+  });
+});
+
 describe('refusing an admission', () => {
   it('refuses content from a schema version newer than the build can read, by name, and admits nothing', () => {
     const outcome = admit(

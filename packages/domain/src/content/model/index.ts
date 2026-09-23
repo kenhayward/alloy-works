@@ -2,7 +2,12 @@ export { markSchema, markTypes, allowedLinkSchemes } from './marks.js';
 export type { Mark, MarkType } from './marks.js';
 
 export { inlineNodeSchema, alternativeSchema } from './inline.js';
-export type { InlineNode, Alternative } from './inline.js';
+export type {
+  InlineNode,
+  Alternative,
+  CrossReferenceDisplay,
+  CrossReferenceTarget,
+} from './inline.js';
 
 export { blockNodeSchema } from './blocks.js';
 export type { BlockNode } from './blocks.js';

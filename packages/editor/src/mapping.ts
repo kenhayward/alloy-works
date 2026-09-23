@@ -103,6 +103,9 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
  * attribution, a caption or a table's note either still opens the component read-only by name, rather
  * than being dropped. A footnote's own paragraphs are walked as runs that are in no paragraph, since
  * neither may stand in one (CNT-129).
+ *
+ * **A cross-reference has one in every inline home** (cross-references 1, ruling R5) - a footnote's
+ * paragraphs included, which CNT-129 admits it to - so wherever this walk meets one, it passes.
  */
 function marksWithNoType(
   content: readonly InlineNode[],
@@ -110,6 +113,7 @@ function marksWithNoType(
   inParagraph = false,
 ): void {
   for (const inline of content) {
+    if (inline.type === 'crossReference') continue;
     if (inline.type === 'image' && inParagraph) continue;
     if (inline.type === 'footnote' && inParagraph) {
       for (const paragraph of footnoteParagraphs(inline)) marksWithNoType(paragraph.content, found);
@@ -173,6 +177,19 @@ function toRun(inline: InlineNode): Node[] {
           ),
         ),
       ),
+    ];
+  }
+  if (inline.type === 'crossReference') {
+    // Every stored member, as stored; a form for an output with no pages that is absent is null here,
+    // as a list's start is, and `runsOf` spells it back as absence (ruling R5).
+    const { id, target, display, withoutPages } = inline;
+    return [
+      editorSchema.nodes.crossReference!.create({
+        id,
+        target,
+        display,
+        withoutPages: withoutPages ?? null,
+      }),
     ];
   }
   const text = inline as Extract<InlineNode, { type: 'text' }>;
@@ -352,8 +369,8 @@ function markOf(mark: EditorMark): unknown {
  * spurious version. `parseContentDocument` merges back any two adjacent runs the editor left split
  * carrying one mark set, so what this returns has one stored spelling (issue #154).
  *
- * An image and a footnote are runs of their own, a footnote carrying its paragraphs back as the stored
- * model's. Any other child that is not a text node is **refused by name**, as a block with no
+ * An image, a footnote and a cross-reference are runs of their own, a footnote carrying its paragraphs
+ * back as the stored model's, and a reference its `withoutPages` only where it has one. Any other child that is not a text node is **refused by name**, as a block with no
  * identifier is, rather than coerced into a run with no text: this says which node has no run yet
  * instead of storing a document quietly missing it.
  *
@@ -386,6 +403,18 @@ function runsOf(textblock: Node, id: string): unknown[] {
         });
       });
       runs.push({ type: 'footnote', id: footnote, anchor: child.attrs.anchor as object, content });
+      return;
+    }
+    if (child.type.name === 'crossReference') {
+      // Named by the block it stands in where it has no identifier, as a footnote is.
+      const { target, display, withoutPages } = child.attrs;
+      runs.push({
+        type: 'crossReference',
+        id: identifierOf(child, id),
+        target: target as object,
+        display: display as string,
+        ...(withoutPages === null ? {} : { withoutPages }),
+      });
       return;
     }
     if (child.type.name !== 'text') {

@@ -37,6 +37,22 @@ export {
 } from './figures.js';
 export { MISSING_IMAGE } from './figureView.js';
 export { footnoteAt, insertFootnote, openFootnote, type FootnoteAt } from './footnotes.js';
+export {
+  changeReference,
+  insertReference,
+  referenceAt,
+  type ReferenceAt,
+  type ReferenceChoice,
+} from './references.js';
+export {
+  BROKEN_REFERENCE,
+  IN_ANOTHER_COMPONENT,
+  ownTargets,
+  referencesShown,
+  type ReferenceContext,
+  type ReferenceShown,
+} from './referenceText.js';
+export { referenceContextOf, setReferenceContext } from './referenceView.js';
 export { pasteIntoOpenFootnote } from './footnoteView.js';
 export {
   deleteImage,

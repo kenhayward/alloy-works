@@ -121,9 +121,10 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     shortcutSaid: 'Ctrl or Cmd, Shift and L',
     prompts: true,
   },
-  // The block actions, after the nine marks. None of them prompts: nothing about making a list
-  // is a value only the author can give, and a list's start and numbering are set over a list that
-  // already exists, in the renderer's own list panel, rather than asked for before one is made.
+  // The block actions, after the nine marks. None of them prompts but Reference, at the end: nothing
+  // about making a list is a value only the author can give, and a list's start and numbering are set
+  // over a list that already exists, in the renderer's own list panel, rather than asked for before
+  // one is made.
   {
     kind: 'block',
     action: 'bulletedList',
@@ -203,6 +204,17 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     shortcutSaid: 'Ctrl or Cmd, Alt and F',
     prompts: false,
   },
+  // Cross-references 1, ruling R9: beside Footnote, on the same chord's X. The one block action that
+  // prompts: its target and its form are chosen in a dialog only the renderer can open, so its
+  // shortcut is handed out as a link's is, and the renderer places what the author chose.
+  {
+    kind: 'block',
+    action: 'reference',
+    label: 'Reference',
+    shortcut: 'Mod-Alt-x',
+    shortcutSaid: 'Ctrl or Cmd, Alt and X',
+    prompts: true,
+  },
 ];
 
 /**
@@ -277,7 +289,8 @@ export function spansOf(
   type Span = { mark: EditorMark; from: number; to: number };
   const spans: Span[] = [];
   // `open` is the span a range is still in, or undefined once text without the mark has ended it:
-  // only a text node ends a span, so a block boundary, an image and a footnote's mark are passed over.
+  // only a text node ends a span, so a block boundary, an image, a footnote's mark and a
+  // cross-reference are passed over.
   const walk = (parent: Node, start: number, range: { open?: Span | undefined }) => {
     parent.forEach((node, offset) => {
       const pos = start + offset;
@@ -405,10 +418,12 @@ export function applyMarkCommand(
 function rangeToMark(state: EditorState, type: MarkType): { from: number; to: number } | null {
   // An image selected whole is nothing to put a mark on: it carries none (figures 4, ruling R1).
   // Nor is a footnote selected whole: its mark carries none, and its text is edited in its own
-  // editor (footnotes 1).
+  // editor (footnotes 1). Nor is a cross-reference, which carries none (cross-references 1, R6).
   if (
     state.selection instanceof NodeSelection &&
-    (state.selection.node.type.name === 'image' || isFootnote(state.selection.node))
+    (state.selection.node.type.name === 'image' ||
+      state.selection.node.type.name === 'crossReference' ||
+      isFootnote(state.selection.node))
   ) {
     return null;
   }
@@ -565,11 +580,13 @@ export function markThroughout(state: EditorState, mark: string): boolean {
  * it. That is also why `Mod-]` and `Mod-[` are written here and nowhere else - `state.ts` binds
  * `Tab` and `Shift-Tab` literally, and those two deliberately have no row.
  *
- * The two commands that need a value from the author are bound to one that **asks the renderer**,
- * because a value can only be typed into something the editor does not own. It reports the key
- * handled exactly when a renderer is listening: returning true with nobody there would swallow the
- * key and leave the author pressing it at nothing, and returning true from the editor when the
- * dialog is what handled it would be a claim this package cannot make.
+ * The commands that need a value from the author are bound to one that **asks the renderer**,
+ * because a value can only be typed into something the editor does not own: the two marks by the
+ * mark's name, and **Reference** by its action, and only where one could be placed, so a press in
+ * preformatted text opens no dialog. It reports the key handled exactly when a renderer is listening:
+ * returning true with nobody there would swallow the key and leave the author pressing it at nothing,
+ * and returning true from the editor when the dialog is what handled it would be a claim this package
+ * cannot make.
  */
 /**
  * The text nodes of a range of the component's own text: a footnote's paragraphs are passed over,
@@ -587,12 +604,15 @@ function textIn(state: EditorState, from: number, to: number): Node[] {
 
 export function commandKeymap(
   newIdentifier: () => string,
-  onPrompt?: (mark: string) => boolean,
+  onPrompt?: (name: string) => boolean,
 ): Record<string, Command> {
   const bound: Record<string, Command> = {};
   for (const command of EDITOR_COMMANDS) {
     if (command.kind === 'block') {
-      bound[command.shortcut] = blockCommand(command.action, newIdentifier);
+      const run = blockCommand(command.action, newIdentifier);
+      bound[command.shortcut] = command.prompts
+        ? (state) => run(state) && (onPrompt?.(command.action) ?? false)
+        : run;
     } else {
       bound[command.shortcut] = command.prompts
         ? () => onPrompt?.(command.mark) ?? false

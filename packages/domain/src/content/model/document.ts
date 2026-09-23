@@ -263,10 +263,13 @@ function mergeRuns(inlines: readonly InlineNode[]): InlineNode[] {
  *   (CNT-002, issue #122). A cross-reference targets a footnote by identity (STR-026), so one it
  *   shared would name two things. Each is in NFC, and so is the block a target names, because the
  *   stored form is.
- * - **A cross-reference targets only what its home can reach.** In a component, never an outline
- *   node: a node belongs to one document's outline, and a component is used in many. In a section
- *   title, an outline node alone: a title is in no component, and an outline is answered with a
- *   component the reader may not read withheld, which a title's reference would carry past.
+ * - **A cross-reference targets only what its home can reach.** In a component, anything - an
+ *   outline node included (structure.md, XR-B), so body text can say "see Section 4.2": a node
+ *   belongs to one document's outline and a component is used in many, so such a reference resolves
+ *   in the document holding the node and fails by name in any other (STR-029), which is resolution's
+ *   to say rather than this walk's. In a section title, an outline node alone: a title is in no
+ *   component, and an outline is answered with a component the reader may not read withheld, which a
+ *   title's reference would carry past.
  * - **A reference in a section title shows a number or a page, and nothing that could be a title.**
  *   Resolving a title that shows a title resolves that title, so a node naming itself, or two titles
  *   naming each other, would never finish. The `withoutPages` form a page reference falls back to is
@@ -352,9 +355,6 @@ export function checkInlineContent(
     if (inline.type === 'crossReference') {
       claim(inline.id, claimed.ids);
       if (inline.target.kind !== 'node') refuseUnnormalised(inline.target.block, 'Target');
-      if (home === 'component' && inline.target.kind === 'node') {
-        throw new Error(`Cross-reference ${inline.id} in a component targets an outline node`);
-      }
       if (home === 'title' && inline.target.kind !== 'node') {
         throw new Error(`Cross-reference ${inline.id} in a title targets what a title cannot name`);
       }
@@ -625,7 +625,7 @@ export type InlineHome = 'component' | 'title';
  * Eleven rules the schema cannot express on its own, because each is about a document rather than a
  * node: identifiers are unique within the component (CNT-002), two adjacent empty paragraphs are
  * refused (CNT-023), a footnote's content is a restricted block sequence (CNT-129), a
- * cross-reference in a component never targets an outline node, a mark identifier carries one value
+ * cross-reference in a title targets an outline node alone, a mark identifier carries one value
  * (CNT-004) over one contiguous range of runs, a sequence of inline content comes back with its
  * runs merged (issue #154), a term stands only on a definition list's item, a term that is there
  * holds visible text, a start and a numbering stand only on an ordered list, and a list starts at 0

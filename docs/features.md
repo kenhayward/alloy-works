@@ -11,8 +11,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > published as a laid-out PDF with
 > a cover, a contents, lists of figures and tables and numbered pages that carries all of that
 > formatting.
-> Footnotes and a table's note are written and published; nothing holds an equation, and nothing is
-> cross-referenced.
+> Footnotes and a table's note are written and published, and cross-references are made and shown
+> in the editor but not yet published; nothing holds an equation.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -251,6 +251,28 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   A published document prints each footnote at the foot of the page its mark is on, numbered with
   the document's number for it (see Publishing).
 
+- **Cross-references.** **Reference** on the formatting toolbar, or `Ctrl+Alt+X` (`Cmd+Option+X` on a
+  Mac), opens a dialog for pointing at something from the cursor. Editing a component in its
+  document's page, **Refer to** lists the document's sections by number and title and every figure,
+  table and footnote its components hold, by number and caption; a component opened on its own lists
+  its own figures, tables and footnotes, by kind and caption, since only a document numbers them.
+  **Show as** offers the forms the chosen target has - **Number**, **Title**, **Number and title**,
+  **Page** and **Above or below**, a footnote having no title - and a line says what the reference
+  will show. **Insert** places it after any words you have selected, in a paragraph, a list, a
+  quotation, a table's cell, a caption, a term, an attribution, a table's note or a footnote's text,
+  though never in preformatted text. In the text it shows what it will print - _Table 1.1_, a
+  section's title, _above_ - or, on its own or for something the page has not numbered yet, the
+  target's kind and caption, such as _Table: Readings_; a reference whose target has been deleted
+  says _Broken reference_, or _Broken reference to a section_ where the section is not in the
+  document, drawn apart and said so to a screen reader. Copied to another application, it carries
+  the words it shows. Select a reference and press **Reference** again to change what it points at
+  or how it shows, with **Change**; delete it to delete it. It takes no formatting of its own.
+  Deleting a table and pressing `Ctrl+Z` leaves every reference to it pointing at it, and so does
+  cutting a figure and pasting it back into the same component, which the paste report says. A
+  component holding a reference opens for editing. The document's text on its page shows each
+  reference as the editor does. **A published document refuses a cross-reference by name, for now**,
+  and the words it shows - _page of_, _above_, _below_ - are English until the layout's own arrive.
+
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
   Its outline is a tree: add a section, put a component in it, move one under another with the mouse
@@ -289,8 +311,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   opens the document with that part chosen and marked, however the outline has been reordered since.
   Beneath the outline, the document lists its **figures, tables and equations**, each with its number
   and caption and a link to where it is placed, renumbered at once when you move anything. A number
-  that would depend on a component you may not read is left off. Nothing resolves a cross-reference
-  yet, and nothing tracks where you are as you read - there is no reading view.
+  that would depend on a component you may not read is left off. A cross-reference in the text shows
+  the number the page gives its target, but nothing resolves one in a publication yet, and nothing
+  tracks where you are as you read - there is no reading view.
 
   **This is structure, not the document.** There is no document view:
   the outline is a tree you build, and you still open a component on its own to edit it. A section's
@@ -319,7 +342,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   publication, so somebody given a single document does not see its publications unless given them
   too. When a document cannot be published you are told every reason at once, each at its place in the
   outline: a component you may not read, without saying which; a footnote or any other block that
-  cannot be published yet; a table with no caption, or whose header cell reaches down into rows that
+  cannot be published yet; a cross-reference, which cannot be published yet; a table with no caption, or whose header cell reaches down into rows that
   are not header rows; a defined term, which has no control and no published form yet; or a
   character no typeface can set.
 
@@ -417,8 +440,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   text, one anchored to a table as a whole, and one anchored to a table's cell the table does not have.
 
   **This is a PDF of paragraphs, lists, quotations, preformatted text, tables and their notes,
-  figures, images in a line of text and footnotes, not publishing.** No equations - a document holding
-  one is refused, naming it. A table too wide
+  figures, images in a line of text and footnotes, not publishing.** No equations or cross-references - a
+  document holding either is refused, naming it. A table too wide
   for the page is not turned, shrunk or split, and how it breaks across pages is not yet chosen by a
   style: every table repeats its header rows. A citation
   in a quotation's attribution cannot be written or published yet. A list nested
@@ -447,11 +470,11 @@ Named explicitly so nobody has to read the source to find out:
   nothing yet lets an administrator add another or change which is the default.
 - No way to delete a component or a document, including one made by mistake.
 - No document view: a document's outline is a tree you build, and a component still opens on its own
-  to be edited. No cross-references resolved, and no reading view. No reuse or transclusion. No way to
+  to be edited. No cross-reference resolved or published, and no reading view. No reuse or transclusion. No way to
   make a figure or a table unnumbered: every one takes a number.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
   quotations, preformatted text, tables and their notes, figures, images in a line of text and
-  footnotes: no equations in a publication, no definition-list structure of PDF's own, no list of equations, no caption
+  footnotes: no equations or cross-references in a publication, no definition-list structure of PDF's own, no list of equations, no caption
   labels, no theme, no monospace face for inline code, no Word, no preview, and no way to approve a
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,
@@ -459,8 +482,8 @@ Named explicitly so nobody has to read the source to find out:
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
 - No search, no metadata anybody can fill in, no taxonomy, no workflow, and no revisions, baselines or
-  comparison: versions are cut and kept, and nothing yet compares or designates one. Cross-reference
-  resolution, conditional text and suggestion handling are all described in the content model and
-  none of them runs: content can say a paragraph refers to a figure, and nothing resolves it.
+  comparison: versions are cut and kept, and nothing yet compares or designates one. Conditional text
+  and suggestion handling are described in the content model and neither runs, and a cross-reference
+  is made and shown in the editor but nothing resolves one in a publication.
 - No signed or published release - the installer builds locally and is unsigned.
 - No auto-update.

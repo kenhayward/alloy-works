@@ -63,9 +63,10 @@ describe('pasting', () => {
     const state = paste(at(stateOf([paragraph('b1', 'York Leeds')]), 6), {
       'text/plain': 'and\nHull ',
     });
-    // The receiving paragraph keeps its identifier, and what followed the caret is a new block, named
-    // by the identity plugin exactly as a split's second half is.
-    expect(stored(state)).toEqual([paragraph('b1', 'York and'), paragraph('n1', 'Hull Leeds')]);
+    // The receiving paragraph keeps its identifier, and what followed the caret is the last pasted
+    // block, under the name admission gave it: a paste keeps what admission named (cross-references
+    // 1, ruling R8), where footnotes 1 had the identity plugin name it again as a split's second half.
+    expect(stored(state)).toEqual([paragraph('b1', 'York and'), paragraph('p2', 'Hull Leeds')]);
   });
 
   it('pastes HTML with its structure, a list staying a list', () => {
@@ -382,5 +383,201 @@ describe('copying', () => {
     const attribution = state.doc.firstChild!.lastChild!;
     const start = state.doc.content.size - 1 - attribution.nodeSize;
     expect(productClipboard(state, start + 1, start + 3)).toBeUndefined();
+  });
+});
+
+/**
+ * Cross-references 1, ruling R8: a paste re-points the references its component still holds at the
+ * block they named, where the paste brought that block back under a new identifier - a cut and a
+ * paste - and changes nothing where the block still stands - a copy and a paste. Every paste is
+ * applied through `createEditorState`'s own plugins, so the identity plugin has had its say.
+ */
+describe('pasting what a cross-reference points at', () => {
+  type Inline = Extract<
+    ContentDocument['content'][number],
+    { type: 'paragraph' }
+  >['content'][number];
+  const text = (value: string): Inline => ({ type: 'text', value, marks: [] });
+  const to = (id: string, block: string): Inline => ({
+    type: 'crossReference',
+    id,
+    target: { kind: 'block', block },
+    display: 'number',
+  });
+  const withRuns = (id: string, ...content: Inline[]) => ({
+    type: 'paragraph' as const,
+    id,
+    style: 'body',
+    content,
+  });
+  const table = (id: string) => ({
+    type: 'table' as const,
+    id,
+    style: 'table',
+    caption: [text('Readings')],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [{ cells: [{ content: [paragraph(`${id}c`, 'North')], colspan: 1, rowspan: 1 }] }],
+  });
+
+  /** Where the node carrying this identifier starts, and where it ends. */
+  const rangeOf = (state: EditorState, id: string) => {
+    let from = -1;
+    state.doc.descendants((node, pos) => {
+      if (from === -1 && node.attrs.id === id) from = pos;
+      return from === -1;
+    });
+    if (from === -1) throw new Error(`no ${id}`);
+    return { from, to: from + state.doc.nodeAt(from)!.nodeSize };
+  };
+
+  /** The product's clipboard for the whole of the block carrying this identifier. */
+  const copyOf = (state: EditorState, id: string) => {
+    const { from, to } = rangeOf(state, id);
+    const copied = productClipboard(state, from, to);
+    if (copied === undefined) throw new Error(`nothing copied of ${id}`);
+    return { [PRODUCT_CLIPBOARD_TYPE]: copied };
+  };
+
+  /** The state with the block carrying this identifier taken out, as a cut takes it. */
+  const cut = (state: EditorState, id: string) => {
+    const { from, to } = rangeOf(state, id);
+    return state.apply(state.tr.delete(from, to));
+  };
+
+  /** A caret at the end of the textblock carrying this identifier. */
+  const atEndOf = (state: EditorState, id: string) => at(state, rangeOf(state, id).to - 1);
+
+  /** Every reference's identifier and the block it points at, in document order. */
+  const referencesIn = (state: EditorState): [unknown, unknown][] => {
+    const found: [unknown, unknown][] = [];
+    state.doc.descendants((node) => {
+      if (node.type.name === 'crossReference') {
+        found.push([node.attrs.id, (node.attrs.target as { block?: string }).block]);
+      }
+    });
+    return found;
+  };
+
+  /** Pastes, answering the state afterwards and the report the paste returned. */
+  const pasted = (state: EditorState, data: Record<string, string>) => {
+    const outcome = pasteInto(state, readClipboard(clipboard(data), 'blocks'), counter('p'));
+    if (!outcome.ok) throw new Error(outcome.report.at(-1)?.message);
+    return { state: state.apply(outcome.transaction), report: outcome.report };
+  };
+
+  const tableIds = (state: EditorState) =>
+    stored(state)
+      .filter((block) => block.type === 'table')
+      .map((block) => block.id);
+
+  it('points a reference left behind at a table cut and pasted back, the table newly named', () => {
+    const state = stateOf([
+      withRuns('b1', text('See '), to('x1', 't1')),
+      table('t1'),
+      paragraph('b2', 'End'),
+    ]);
+    const clipped = copyOf(state, 't1');
+    const { state: back, report } = pasted(atEndOf(cut(state, 't1'), 'b2'), clipped);
+    const [id] = tableIds(back);
+    expect(id).not.toBe('t1');
+    expect(referencesIn(back)).toEqual([['x1', id]]);
+    expect(report).toContainEqual(
+      expect.objectContaining({
+        action: 'rewritten',
+        subject: 'crossReferenceRepointed',
+        count: 1,
+      }),
+    );
+    expect(() => fromEditor(back.doc)).not.toThrow();
+  });
+
+  it('leaves a reference alone when what it points at was copied and still stands', () => {
+    const state = stateOf([
+      withRuns('b1', text('See '), to('x1', 't1')),
+      table('t1'),
+      paragraph('b2', 'End'),
+    ]);
+    const { state: next, report } = pasted(atEndOf(state, 'b2'), copyOf(state, 't1'));
+    const ids = tableIds(next);
+    expect(ids).toHaveLength(2);
+    expect(ids[0]).toBe('t1');
+    expect(ids[1]).not.toBe('t1');
+    expect(referencesIn(next)).toEqual([['x1', 't1']]);
+    expect(report.map((entry) => entry.subject)).not.toContain('crossReferenceRepointed');
+  });
+
+  it('keeps a reference that travelled with its table pointing at the copy, after identity has run', () => {
+    const state = stateOf([
+      withRuns('b1', text('See '), to('x1', 't1')),
+      table('t1'),
+      paragraph('b2', 'End'),
+    ]);
+    const { from } = rangeOf(state, 'b1');
+    const { to: end } = rangeOf(state, 't1');
+    const copied = productClipboard(state, from, end)!;
+    const { state: next } = pasted(atEndOf(state, 'b2'), { [PRODUCT_CLIPBOARD_TYPE]: copied });
+    const [, copy] = tableIds(next);
+    const references = referencesIn(next);
+    expect(references).toHaveLength(2);
+    expect(references[0]).toEqual(['x1', 't1']);
+    // The copy's reference is newly named and points at the copied table, as admission left it.
+    expect(references[1]![0]).not.toBe('x1');
+    expect(references[1]![1]).toBe(copy);
+  });
+
+  it('pastes a reference copied within the product, still pointing at what the component holds', () => {
+    const state = stateOf([
+      withRuns('b1', text('See '), to('x1', 't1')),
+      table('t1'),
+      paragraph('b2', 'End'),
+    ]);
+    const { state: next } = pasted(atEndOf(state, 'b2'), copyOf(state, 'b1'));
+    const references = referencesIn(next);
+    expect(references).toHaveLength(2);
+    expect(references[1]![0]).not.toBe('x1');
+    expect(references[1]![1]).toBe('t1');
+  });
+
+  it("re-points a reference in a footnote's text, and takes one pasted into a footnote", () => {
+    const footnote = (id: string, ...content: Inline[]): Inline => ({
+      type: 'footnote',
+      id,
+      anchor: { kind: 'span' },
+      content: [withRuns(`${id}p`, ...content)],
+    });
+    const state = stateOf([
+      withRuns('b1', text('Visited'), footnote('f1', text('See '), to('x1', 't1'))),
+      table('t1'),
+      paragraph('b2', 'End'),
+      withRuns('b3', text('Noted'), footnote('f2', text('Also'))),
+    ]);
+    // Cut and pasted back: the reference in the footnote's text is re-pointed with the rest.
+    const { state: back } = pasted(atEndOf(cut(state, 't1'), 'b2'), copyOf(state, 't1'));
+    const [id] = tableIds(back);
+    expect(referencesIn(back)).toEqual([['x1', id]]);
+    // And a paragraph holding a reference, pasted into another footnote's text, stands there.
+    const intoNote = atEndOf(back, 'f2p');
+    const reference = pasted(intoNote, {
+      [PRODUCT_CLIPBOARD_TYPE]: JSON.stringify({
+        format: 'alloy-works/content',
+        schemaVersion: 1,
+        content: [withRuns('z1', text(' and '), to('z2', id!))],
+      }),
+    }).state;
+    const note = (stored(reference)[3] as { content: { type: string; content?: unknown }[] })
+      .content[1]!;
+    expect(note).toMatchObject({
+      type: 'footnote',
+      id: 'f2',
+      content: [
+        {
+          content: [
+            { type: 'text', value: 'Also and ' },
+            { type: 'crossReference', target: { kind: 'block', block: id } },
+          ],
+        },
+      ],
+    });
   });
 });

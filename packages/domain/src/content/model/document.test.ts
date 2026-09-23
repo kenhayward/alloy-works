@@ -746,21 +746,30 @@ describe('a cross-reference, where a component holds one', () => {
     }
   });
 
-  it('reaches a block of its own component or of another, and never an outline node', () => {
+  it('reaches a block of its own component or of another, and an outline node', () => {
+    // A node belongs to one document's outline and a component is used in many, so a component's
+    // reference to one resolves in the document holding that node and fails by name in any other
+    // (structure.md, XR-B) - which is resolution's to say, not the walk's.
     for (const target of [
       { kind: 'block', block: 'b2' },
       { kind: 'component', component: COMPONENT, block: 'b2' },
+      { kind: 'node', node: 'a'.repeat(26) },
     ]) {
       expect(() =>
         parseContentDocument(doc([citing('b1', [reference('x1', target)]), paragraph('b2')])),
       ).not.toThrow();
     }
-    // A node belongs to one document's outline, and a component is used in many.
-    expect(() =>
-      parseContentDocument(
-        doc([citing('b1', [reference('x1', { kind: 'node', node: 'a'.repeat(26) })])]),
-      ),
-    ).toThrow(/outline node/);
+    // And in every inline home a component has, a footnote's paragraphs included.
+    const toNode = reference('x1', { kind: 'node', node: 'a'.repeat(26) });
+    const noted = citing('b1', [
+      {
+        type: 'footnote',
+        id: 'f1',
+        anchor: { kind: 'span' },
+        content: [{ ...citing('fb1', [toNode]), style: 'footnote' }],
+      },
+    ]);
+    expect(() => parseContentDocument(doc([noted]))).not.toThrow();
   });
 });
 

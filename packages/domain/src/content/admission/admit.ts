@@ -53,6 +53,14 @@ export type AdmissionOutcome =
       readonly ok: true;
       readonly content: readonly BlockNode[];
       readonly report: readonly ReportEntry[];
+      /**
+       * Each admitted block's and footnote's new identifier, by the one it arrived with - re-identify's
+       * (CNT-132), leaving out any identifier that arrived on more than one, since no single new one
+       * answers it. A cut and a paste in one component leaves the references to what was cut naming
+       * the old identifiers; this is what lets the editor re-point them at the blocks that came back
+       * (structure.md, XR-E), while every pasted block is still newly named.
+       */
+      readonly renamed: ReadonlyMap<string, string>;
     }
   | AdmissionRefused;
 
@@ -106,7 +114,12 @@ export function admit(input: AdmissionInput, receiver: Receiver): AdmissionOutco
       direction,
       content,
     });
-    return { ok: true, content: document.content, report: report.entries };
+    return {
+      ok: true,
+      content: document.content,
+      report: report.entries,
+      renamed: identified.renamed,
+    };
   } catch (error) {
     report.add('validate', 'refused', 'invalid');
     return refuse('invalid', error instanceof Error ? error.message : String(error));

@@ -84,6 +84,7 @@ const LABELS = [
   'Preformatted text',
   'Table',
   'Footnote',
+  'Reference',
 ];
 
 /** The seven marks that apply where they stand; the two after them open a dialog first. */

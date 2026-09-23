@@ -1,14 +1,16 @@
 import {
   conditions,
+  documentTargets,
   number,
   resolve,
   sectionNumbers,
+  walkOutline,
   type Contribution,
   type NumberingScheme,
   type OutlineView,
   type OutlineViewNode,
 } from '@alloy-works/domain';
-import { renderContent } from '@alloy-works/editor';
+import { renderContent, type ReferenceContext } from '@alloy-works/editor';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { textOffsetIn } from '../editor/caret.js';
@@ -17,8 +19,36 @@ import { Lozenge } from '../states/Lozenge.js';
 import styles from './DocumentText.module.css';
 import { nodeName, type Names } from './tree.js';
 
-/** What the text knows of any occurrence's contributions, as the outline panel does: nothing. */
+/** What the text knows of an occurrence's contributions until the page has heard: nothing. */
 const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
+
+/**
+ * **What each occurrence's references are shown against** (cross-references 1, rulings R11 and R12):
+ * by occurrence node, `documentTargets` for that occurrence, numbered by the same pipeline a publish
+ * numbers with, over the outline the page holds and the contributions it last heard. One map for the
+ * text and for the editor opened in place, so a reference reads the same in the card and on the
+ * surface it opens into. Without a scheme nothing is numbered, and every target is offered with no
+ * label rather than with one a publication would not print.
+ */
+function referenceContexts(
+  outline: OutlineView,
+  scheme: NumberingScheme | null,
+  contributions: ReadonlyMap<string, readonly Contribution[]>,
+): ReadonlyMap<string, ReferenceContext> {
+  const numbering =
+    scheme === null
+      ? { scheme: '', entries: [] }
+      : number(conditions(resolve(outline, contributions)), scheme);
+  const contexts = new Map<string, ReferenceContext>();
+  walkOutline(outline.nodes, (node) => {
+    if (node.type !== 'reference' || node.component === null) return;
+    const editing = { component: node.component, node: node.id };
+    contexts.set(node.id, {
+      targets: documentTargets({ outline, numbering, contributions, editing }),
+    });
+  });
+  return contexts;
+}
 
 /** Said where a component's text does not read, or holds what the editor cannot show yet. */
 const CANNOT_SHOW = 'This component holds content this editor cannot show yet.';
@@ -31,6 +61,8 @@ export interface Place {
   readonly openAt?: number;
   /** Closes it, as Done does. */
   readonly onDone: () => void;
+  /** What the document offers its references, for the occurrence being edited (ruling R11). */
+  readonly referenceContext?: ReferenceContext | null;
 }
 
 /**
@@ -58,13 +90,16 @@ function offsetOfClick(root: HTMLElement, x: number, y: number): number | null {
  */
 function RenderedText({
   content,
+  context,
   onOpen,
 }: {
   content: unknown;
+  /** What its references print from, where it stands in a document (ruling R12). */
+  context: ReferenceContext | null;
   onOpen?: (openAt: number) => void;
 }) {
   const place = useRef<HTMLDivElement>(null);
-  const rendered = useMemo(() => renderContent(content, document), [content]);
+  const rendered = useMemo(() => renderContent(content, document, context), [content, context]);
   useEffect(() => {
     const host = place.current;
     if (!host || rendered === null) return undefined;
@@ -118,6 +153,7 @@ export function DocumentText({
   editing = null,
   onEdit,
   editor,
+  contributions = NOTHING_KNOWN,
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
@@ -130,6 +166,12 @@ export function DocumentText({
   onEdit?: (node: string | null) => void;
   /** The editor for a component, put in its card in place of its text, where it stands. */
   editor?: (component: string, place: Place) => React.ReactNode;
+  /**
+   * What each occurrence contributes, by node, as the page last heard it: what a reference to a
+   * figure, a table or a footnote is numbered from. Until it is heard, those show their kind and
+   * caption, and a section its number.
+   */
+  contributions?: ReadonlyMap<string, readonly Contribution[]>;
 }) {
   // Where the text was clicked to open the one card being edited; read once, as that editor opens.
   const [openAt, setOpenAt] = useState<number | undefined>(undefined);
@@ -143,6 +185,10 @@ export function DocumentText({
         ? new Map<string, string>()
         : sectionNumbers(number(conditions(resolve(outline, NOTHING_KNOWN)), scheme)),
     [outline, scheme],
+  );
+  const contexts = useMemo(
+    () => referenceContexts(outline, scheme, contributions),
+    [outline, scheme, contributions],
   );
 
   const titled = (node: OutlineViewNode, depth: number) => {
@@ -196,11 +242,13 @@ export function DocumentText({
                       ? {}
                       : { number: numbers.get(node.id)! }),
                     ...(openAt === undefined ? {} : { openAt }),
+                    referenceContext: contexts.get(node.id) ?? null,
                     onDone: () => onEdit?.(null),
                   })
                 : texts?.has(node.id) && (
                     <RenderedText
                       content={texts.get(node.id)}
+                      context={contexts.get(node.id) ?? null}
                       {...(onEdit && editor ? { onOpen: open(node.id) } : {})}
                     />
                   ))}
