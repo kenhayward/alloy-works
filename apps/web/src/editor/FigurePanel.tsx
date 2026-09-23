@@ -2,9 +2,10 @@ import type { createApiClient } from '@alloy-works/api-client';
 import type { Alternative } from '@alloy-works/domain';
 import {
   deleteFigure,
+  deleteImage,
   setFigureAlternative,
+  setImageAlternative,
   type EditorView,
-  type FigureAt,
 } from '@alloy-works/editor';
 import { useEffect, useId, useRef, useState, type Ref } from 'react';
 
@@ -14,8 +15,17 @@ type Client = ReturnType<typeof createApiClient>;
 
 export interface FigurePanelProps {
   readonly view: EditorView;
-  /** The figure the cursor stands in, as `figureAt` reads it. */
-  readonly figure: FigureAt;
+  /**
+   * What the panel is about: the figure the cursor stands in, as `figureAt` reads it, or an inline image
+   * selected whole, as `imageAt` does (figures 4, ruling R7). The two are described alike.
+   */
+  readonly figure: {
+    readonly pos: number;
+    readonly asset: string;
+    readonly alternative: Alternative;
+  };
+  /** A figure's panel or an inline image's: its name, and the commands that change it. */
+  readonly kind?: 'figure' | 'image';
   readonly enabled: boolean;
   readonly client: Client;
   /** Opens the Figure dialog to give this figure another image. */
@@ -38,7 +48,18 @@ type Described =
  * as it was until something is typed. **Rendered only while the cursor is in a figure**, as the table
  * panel is only in a table.
  */
-export function FigurePanel({ view, figure, enabled, client, onReplace, ref }: FigurePanelProps) {
+export function FigurePanel({
+  view,
+  figure,
+  kind = 'figure',
+  enabled,
+  client,
+  onReplace,
+  ref,
+}: FigurePanelProps) {
+  const named = kind === 'figure' ? 'Figure' : 'Image';
+  const setAlternative = kind === 'figure' ? setFigureAlternative : setImageAlternative;
+  const remove = kind === 'figure' ? deleteFigure : deleteImage;
   const id = useId();
   const [choice, setChoice] = useState<Alternative['kind']>(figure.alternative.kind);
   const [own, setOwn] = useState(figure.alternative.kind === 'own' ? figure.alternative.text : '');
@@ -83,7 +104,7 @@ export function FigurePanel({ view, figure, enabled, client, onReplace, ref }: F
   const apply = (alternative: Alternative) => {
     // Nothing to set where the figure holds this already, and nothing the effect would hear about.
     if (!enabled || alternative === figure.alternative) return;
-    const set = setFigureAlternative(alternative);
+    const set = setAlternative(alternative);
     if (!set(view.state)) return;
     sent.current = alternative;
     set(view.state, view.dispatch);
@@ -106,7 +127,7 @@ export function FigurePanel({ view, figure, enabled, client, onReplace, ref }: F
   };
 
   return (
-    <div ref={ref} role="group" aria-label="Figure" tabIndex={-1} className={styles['panel']}>
+    <div ref={ref} role="group" aria-label={named} tabIndex={-1} className={styles['panel']}>
       <fieldset disabled={!enabled}>
         <legend>Alternative text</legend>
         <label>
@@ -169,9 +190,9 @@ export function FigurePanel({ view, figure, enabled, client, onReplace, ref }: F
         type="button"
         aria-disabled={!enabled}
         onMouseDown={(event) => event.preventDefault()}
-        onClick={() => enabled && deleteFigure(view.state, view.dispatch)}
+        onClick={() => enabled && remove(view.state, view.dispatch)}
       >
-        Delete figure
+        {kind === 'figure' ? 'Delete figure' : 'Delete image'}
       </button>
     </div>
   );

@@ -283,6 +283,18 @@
   vertical-align: text-bottom;
 }
 
+/* An inline image that does not load: marked in its place, as a figure is, in a line of its text. */
+.aw-inline-image-holder.aw-image-missing .aw-inline-image {
+  display: none;
+}
+
+.aw-inline-image-holder.aw-image-missing::after {
+  content: attr(data-missing);
+  padding: 0 0.25em;
+  border: 1px dashed var(--muted);
+  color: var(--muted);
+}
+
 .aw-figure-caption {
   margin-top: 0.25em;
 }

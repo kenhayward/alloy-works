@@ -48,6 +48,8 @@ const PATHS: Record<string, readonly string[]> = {
   Move: ['M8 3v10M5.2 10.2 8 13l2.8-2.8'],
   // A picture in a frame: a hill and the sun, as every image button draws one.
   Figure: ['M2.5 3h11v10h-11z', 'M2.5 11.5 6 8l3 3 2-2 2.5 2.5', 'M10.5 5.8h.01'],
+  // A small picture standing on a line of text: an image in a run, where a figure stands alone.
+  Image: ['M2 13h12', 'M5 4.5h6v6H5z', 'M5 9.5 7 7.5l1.5 1.5 1-1 1.5 1.5'],
   // A clipboard holding Markdown's own mark, an M and a downward arrow.
   'Paste as Markdown': [
     'M5.4 3H3.2v10.8h9.6V3h-2.2M5.8 1.8h4.4v2.4H5.8z',
