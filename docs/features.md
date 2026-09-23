@@ -11,8 +11,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > published as a laid-out PDF with
 > a cover, a contents, lists of figures and tables and numbered pages that carries all of that
 > formatting.
-> Footnotes, a table's note and cross-references are written and published; nothing holds an
-> equation.
+> Footnotes, a table's note and cross-references are written and published, and equations are
+> written in the editor but not yet published.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -184,9 +184,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   columns and merged cells.
 
   **This is formatted paragraphs, lists, quotations, preformatted text and tables, not the editor.** A
-  component holding an equation, or a footnote or an image anywhere but a paragraph - in a caption, a
-  term, an attribution or a table's note - opens for reading only. There is no control for
-  a defined term or a citation, an image or an equation cannot be pasted, changes saved but never made into a version are
+  component holding a footnote or an image anywhere but a paragraph - in a caption, a term, an
+  attribution or a table's note - opens for reading only. There is no control for
+  a defined term or a citation, an image cannot be pasted and an equation only from another
+  component, changes saved but never made into a version are
   kept and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
   A list stops nesting at thirty levels: every control that would build a level becomes unavailable
   there, and `Tab` moves the focus on. `Backspace` at the start of a definition's term, or `Delete`
@@ -243,7 +244,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   no number: the number is the document's, and a component on its own has none. Selecting the mark
   opens its text again, `Enter` on the mark puts the cursor there and `Escape` takes it back to the
   mark. A footnote's text is paragraphs you format as any others, from the toolbar or the keyboard,
-  with links and languages; nothing else the toolbar makes can go there, and says so. Pasting into it
+  with links and languages, and a cross-reference or an equation can stand in it too; nothing else the
+  toolbar makes can go there, and says so. Pasting into it
   keeps paragraphs and their formatting and refuses anything else, and `Ctrl+Z` undoes what you typed
   there with the rest of the component. Delete the mark to delete the footnote. One copied within the
   product pastes as one. A footnote cannot be placed in a caption, a term, an attribution, a table's
@@ -273,6 +275,33 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   reference as the editor does. In a document, _above_ and _below_ are the document's layout's own
   words, as a publication prints them; on its own, and for a page, which only a publication knows,
   the words are English. A published document prints each reference (see Publishing).
+
+- **Equations.** **Equation** on the formatting toolbar, or `Ctrl+Shift+E` (`Cmd+Shift+E` on a Mac),
+  opens a dialog for writing an equation in LaTeX - `\frac{a}{b}`, `x^2` - and draws it beneath
+  the field as you type, as it will stand in the text, or says what is wrong with it: where Temml,
+  which reads the LaTeX, stopped and why, or that the equation uses something that cannot be kept -
+  `\cancel`, `\boxed`, a number written into it, or a line broken with `\\` outside an
+  environment such as `aligned`, each with what to do instead. `Enter` in the field starts a new line,
+  and `Ctrl` or `Cmd` and `Enter` inserts. **Description** is written for you, in the component's
+  language, as the words a screen reader says - in Afrikaans, Catalan, Danish, English, French, German,
+  Hindi, Italian, Korean, Norwegian, Spanish or Swedish; in any other language it stays empty and says
+  so, for you to write. Change the words and they are yours: changing the LaTeX afterwards leaves
+  them, and **Generate again** writes them afresh. Where a block may stand, **Place as** chooses
+  **Inline**, in the text after any words you have selected, or **Block**, an equation of its own
+  after the paragraph, which can be **Numbered**. An inline equation can stand anywhere text can but
+  preformatted text - a list, a quotation, a table's cell, a caption, a term, an attribution, a
+  table's note and a footnote's text; a block one in running text, a list or a quotation, never in a
+  table's cell or a footnote. On the
+  page an equation is drawn by the browser as mathematics, a numbered one with _(#)_ beside it, since
+  the number is the document's, and one with no description says _No description_, to a screen reader
+  too. Select one with the arrow keys and press `Enter`, **Equation** or the shortcut to change it,
+  with **Change**; delete it to delete it. The arrow keys pass a block equation at the start or the end
+  of the component without changing anything, and typing there starts a paragraph. It takes no
+  formatting of its own. The words for a description are loaded the first time they are asked for,
+  from the product itself, never from anywhere else. A component holding an equation opens for
+  editing, one copied within the product pastes as one, and the document's text on its page shows it
+  as the editor does. **A published document refuses an equation by name, for now**, and an equation
+  cannot yet stand in a section's title.
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
@@ -476,8 +505,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 Named explicitly so nobody has to read the source to find out:
 
 - No way to author anything but formatted paragraphs, lists, quotations, preformatted text,
-  tables, figures, images in a line of text, footnotes and tables' notes: a component holding an
-  equation, or a footnote or an image anywhere but a paragraph, still opens for reading only, and
+  tables, figures, images in a line of text, footnotes and tables' notes, cross-references and
+  equations: a component holding a footnote or an image anywhere but a paragraph still opens for
+  reading only, an equation cannot stand in a section's title, and
   there is no control for a defined term or a
   citation. A paste from outside the product keeps no footnote, image or equation, reads Markdown only when **Paste as
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a

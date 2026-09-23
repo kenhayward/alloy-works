@@ -817,6 +817,17 @@ it fetches its language data from a CDN unless told otherwise.
 | EQ-G | **Every context CNT-046 names**, a section's title included                                                                                                                                                                                                 | Yes, measured to pass in each. **Or leave the title out of T1**: the outline panel's title field would need an equation control of its own, and the bookmark shows the glyphs rather than the alternative. Keeping it costs one control; cutting it leaves CNT-046 unclaimed, naming the title |
 | EQ-H | **Two pull requests**: equations in the editor (EQ-C, EQ-D and the dialog); then equations published (EQ-A, EQ-B, EQ-E, EQ-F, EQ-G). Word's OMML comes with Word output                                                                                     | Yes, as footnotes and cross-references were split. Each lands usable, and an equation refuses the publish by name until the second                                                                                                                                                             |
 
+**The first of EQ-H's pull requests is built, and the second is now two.**
+[Equations 1](../plans/2026-09-24-equations-01-equations-in-the-editor.md) builds EQ-C and EQ-D in the
+editor - an equation typed as LaTeX in the **Equation** dialog, Temml's output admitted by
+`admitTemmlMathml` in `packages/domain`, and its alternative written by the speech rule engine in the
+component's language, from the product's own files - as component-editor.md's
+[Equations](component-editor.md#equations) describes; a publish still refuses an equation by name,
+inline or block. Publishing one - EQ-A, EQ-B, EQ-E, EQ-F and every context of EQ-G's but the title - is equations 2. **EQ-G's section title
+moved to a third slice, equations 3**: a section's title is edited in the outline in a plain text
+field, and holding an equation there makes that field an inline editor of its own, which is more than
+the one control EQ-G counted on.
+
 ## The layout
 
 A **layout** is an artifact kind of its own, versioned by the chain (PUB-013), and like a style

@@ -405,8 +405,12 @@ describe('the citations in the committed model', () => {
   // 279, from 272: cross-references 2 cites STR-028, STR-029, STR-031, STR-032, STR-056 and STR-062
   // in packages/domain's assemble.test.ts, where references are resolved and printed by the publish,
   // and STR-027 in apps/worker's references.test.ts, where each form is read back from the PDF.
+  // 282, from 279: equations 1 cites CNT-044, CNT-048 and CNT-080 in apps/web's ComponentEditor.test.tsx,
+  // where an equation is typed as LaTeX in the dialog and stored with it, its alternative generated in
+  // the component's language and changed by the author, and it is drawn as MathML, reached and opened
+  // by keyboard.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(279);
+    expect(model.citations).toHaveLength(282);
   });
 
   it('cites no identifier the corpus does not hold', () => {
