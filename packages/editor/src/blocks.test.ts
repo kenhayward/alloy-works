@@ -1356,11 +1356,11 @@ describe('quotations and preformatted text: the commands and the keys (editor 5)
     expect(shapeOf(made.next.doc)).toEqual(['doc', ['preformatted', 'Bold and a link']]);
     const undone = run(made.next, undo);
     expect(undone.handled).toBe(true);
-    // The text, both marks and the marks' identifiers come back exactly. The paragraph itself
-    // takes a new block identifier, as every block an undo reinserts does under ADR-0023's descent
-    // rule - nothing outside the session can have pointed at it in between.
+    // The text, both marks and the marks' identifiers come back exactly, and so does the paragraph's
+    // own identifier: what an undo puts back keeps one no other node holds (cross-references 1, R7).
     const back = undone.next.doc.firstChild!;
     expect(back.type.name).toBe('paragraph');
+    expect(back.attrs.id).toBe('b1');
     expect(back.content.eq(doc.firstChild!.content)).toBe(true);
     expect(() => stored(undone.next.doc)).not.toThrow();
   });

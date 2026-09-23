@@ -1,6 +1,7 @@
 import { blockIdentifierFrom } from '@alloy-works/domain';
+import { isHistoryTransaction } from 'prosemirror-history';
 import type { Node } from 'prosemirror-model';
-import { Plugin } from 'prosemirror-state';
+import { Plugin, type Transaction } from 'prosemirror-state';
 import { Mapping } from 'prosemirror-transform';
 
 /**
@@ -33,6 +34,22 @@ function identified(doc: Node): { readonly id: unknown; readonly pos: number }[]
 }
 
 /**
+ * The meta a transaction carries to say it has named what it places itself, so the identity plugin
+ * keeps every identifier in it that no other node holds (cross-references 1, ruling R7). `pasteInto`
+ * sets it: admission has already given every pasted block an identifier new to the component
+ * (CNT-132), and a reference it pointed at one of them - or one the paste re-points - is pointing at
+ * that identifier, which a rename would leave pointing at nothing.
+ */
+export const KEEPS_IDENTIFIERS = 'keepsIdentifiers';
+
+/**
+ * Whether a transaction puts back or places nodes whose identifiers are already right: an undo or a
+ * redo, which restores what the author had, and one that says so (`KEEPS_IDENTIFIERS`).
+ */
+const keepsIdentifiers = (transaction: Transaction): boolean =>
+  isHistoryTransaction(transaction) || transaction.getMeta(KEEPS_IDENTIFIERS) === true;
+
+/**
  * ADR-0023's descent rule, as one plugin, applied at every depth. A block standing at its
  * identifier's forward-mapped position descends from the block that held it and keeps it; every other
  * block holding that identifier - a split's second half, something inserted - and every block with
@@ -44,6 +61,14 @@ function identified(doc: Node): { readonly id: unknown; readonly pos: number }[]
  * paragraph made inside a list item and a list made by sinking one are judged by exactly the rule a
  * top-level paragraph is - which is why `state.test.ts`'s top-level cases are the regression that
  * says so.
+ *
+ * **What an undo or a redo puts back keeps its identifiers** (cross-references 1, ruling R7, XR-E), as
+ * does what a transaction marked `KEEPS_IDENTIFIERS` places: in such a transaction a node standing
+ * anywhere keeps an identifier **no other node in the new document holds**. Read by the descent rule
+ * alone, a table deleted and brought back by `Ctrl+Z` is placed, not descended from anything, and was
+ * renamed - leaving every reference to it pointing at nothing. An identifier held twice is still the
+ * descent rule's to settle, so a redo of a split, whose second half carries the first's identifier,
+ * still names the half that did not descend anew; so ADR-0023 stands as written.
  *
  * **Every position is collected before any attribute is set.** `tr.setNodeAttribute` produces an
  * `AttrStep`, which maps every position to itself, so the one pass over the positions read from
@@ -63,11 +88,25 @@ export function identityPlugin(newIdentifier: () => string): Plugin {
         if (typeof id === 'string') heir.set(id, mapping.map(pos, 1));
       }
 
+      const now = identified(newState.doc);
+      // How many nodes hold each identifier now, where the transaction keeps what it places.
+      const held = new Map<string, number>();
+      if (changed.some(keepsIdentifiers)) {
+        for (const { id } of now) {
+          if (typeof id === 'string') held.set(id, (held.get(id) ?? 0) + 1);
+        }
+      }
+
       const kept = new Set<string>();
       const renew: number[] = [];
-      for (const { id, pos } of identified(newState.doc)) {
-        if (typeof id === 'string' && !kept.has(id) && heir.get(id) === pos) kept.add(id);
-        else renew.push(pos);
+      for (const { id, pos } of now) {
+        if (
+          typeof id === 'string' &&
+          !kept.has(id) &&
+          (heir.get(id) === pos || held.get(id) === 1)
+        ) {
+          kept.add(id);
+        } else renew.push(pos);
       }
       if (renew.length === 0) return null;
 

@@ -937,8 +937,8 @@ function quotation(newIdentifier: () => string): Command {
  * **Preformatted text** over paragraphs of one parent joins them into one block, a line each; in a
  * preformatted block it turns it back into paragraphs, one per line. The paragraphs' marks are
  * **dropped**: the loss is visible, it answers the author's own command, and one undo restores them
- * exactly, the marks' identifiers included (Ken, at plan review; decision K) - the paragraph takes a
- * new block identifier, as every block an undo reinserts does under ADR-0023's descent rule. It
+ * exactly, the marks' identifiers included (Ken, at plan review; decision K) - and the paragraph's
+ * own, since an undo keeps an identifier no other node holds (cross-references 1, ruling R7). It
  * **declines over a paragraph holding anything but text** - an inline image, since figures 4 - because
  * that is content, not formatting, and preformatted text holds text alone (final review of figures 4).
  */

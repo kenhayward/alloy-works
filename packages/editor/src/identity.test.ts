@@ -1,8 +1,10 @@
+import { redo, undo } from 'prosemirror-history';
 import type { Node } from 'prosemirror-model';
 import { sinkListItem, splitListItem } from 'prosemirror-schema-list';
 import { Selection, type EditorState, type Transaction } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
 
+import { KEEPS_IDENTIFIERS } from './identity.js';
 import { editorSchema } from './schema.js';
 import { createEditorState, enterWithoutEmpties } from './state.js';
 
@@ -256,5 +258,101 @@ describe('block identity at depth', () => {
     expect(new Set(ids).size).toBe(ids.length);
     // `b1` was offered first and refused, because the component carries it already.
     expect(drawn).toEqual(['b1', 'n1', 'n2', 'n3']);
+  });
+});
+
+/**
+ * Cross-references 1, ruling R7: what an undo or a redo puts back, and what a transaction says it has
+ * named itself, keeps an identifier no other node holds - so a reference to a table deleted and
+ * brought back still points at it. Everything else is judged by the descent rule, as above.
+ */
+describe('identity through undo and redo', () => {
+  const table = (id: string, cell: string) =>
+    editorSchema.node('tableFigure', { id }, [
+      editorSchema.node('tableCaption', null, [editorSchema.text('Readings')]),
+      editorSchema.node('table', null, [
+        editorSchema.node('table_row', null, [
+          editorSchema.node('table_cell', null, [paragraph(cell, 'North')]),
+        ]),
+      ]),
+    ]);
+
+  const history = (state: EditorState, command: typeof undo) => run(state, command);
+
+  /** The state with the node carrying this identifier deleted, in one transaction of its own. */
+  const deleted = (state: EditorState, id: string) => {
+    let from = -1;
+    state.doc.descendants((node, pos) => {
+      if (node.attrs.id === id) from = pos;
+    });
+    return state.apply(state.tr.delete(from, from + state.doc.nodeAt(from)!.nodeSize));
+  };
+
+  it('brings a deleted table back under the identifiers it had, its cells included', () => {
+    const state = stateOf(documentOf(paragraph('b1', 'See the table.'), table('t1', 'c1')));
+    const gone = deleted(state, 't1');
+    expect(identifiersIn(gone.doc)).toEqual(['b1']);
+    expect(identifiersIn(history(gone, undo).doc)).toEqual(['b1', 't1', 'c1']);
+  });
+
+  it('brings a deleted paragraph back under its identifier', () => {
+    const state = stateOf(documentOf(paragraph('b1', 'alpha'), paragraph('b2', 'beta')));
+    expect(paragraphsIn(history(deleted(state, 'b2'), undo).doc)).toEqual([
+      ['alpha', 'b1'],
+      ['beta', 'b2'],
+    ]);
+  });
+
+  it('keeps them through a redo of the deletion and a second undo', () => {
+    const state = stateOf(documentOf(paragraph('b1', 'See the table.'), table('t1', 'c1')));
+    const undone = history(deleted(state, 't1'), undo);
+    const redone = history(undone, redo);
+    expect(identifiersIn(redone.doc)).toEqual(['b1']);
+    expect(identifiersIn(history(redone, undo).doc)).toEqual(['b1', 't1', 'c1']);
+  });
+
+  it("still names a split's second half anew, and a redo of the split brings that name back", () => {
+    const state = stateOf(documentOf(paragraph('b1', 'Unbox the printer.')));
+    const split = run(
+      state.apply(
+        state.tr.setSelection(
+          Selection.near(state.doc.resolve(within(state.doc, 'Unbox the printer.', 5))),
+        ),
+      ),
+      enterWithoutEmpties,
+    );
+    expect(paragraphsIn(split.doc)).toEqual([
+      ['Unbox', 'b1'],
+      [' the printer.', 'n1'],
+    ]);
+    // The history redoes the split as it was left, the second half already named, and a name held
+    // once is kept: the redo restores what the author had rather than naming it a third time.
+    const redone = history(history(split, undo), redo);
+    expect(paragraphsIn(redone.doc)).toEqual([
+      ['Unbox', 'b1'],
+      [' the printer.', 'n1'],
+    ]);
+  });
+
+  it('renames an ordinary insertion carrying an identifier no longer held, as it always has', () => {
+    const state = stateOf(documentOf(paragraph('b1', 'alpha')));
+    const next = state.apply(state.tr.insert(state.doc.content.size, paragraph('gone', 'beta')));
+    expect(paragraphsIn(next.doc)).toEqual([
+      ['alpha', 'b1'],
+      ['beta', 'n1'],
+    ]);
+  });
+
+  it('keeps what a transaction says it has named itself, where no other node holds it', () => {
+    const state = stateOf(documentOf(paragraph('b1', 'alpha')));
+    const tr = state.tr
+      .insert(state.doc.content.size, [paragraph('p1', 'beta'), paragraph('b1', 'gamma')])
+      .setMeta(KEEPS_IDENTIFIERS, true);
+    // `p1` is held once and kept; the second `b1` is held twice and judged by the descent rule.
+    expect(paragraphsIn(state.apply(tr).doc)).toEqual([
+      ['alpha', 'b1'],
+      ['beta', 'p1'],
+      ['gamma', 'n1'],
+    ]);
   });
 });
