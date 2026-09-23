@@ -21,6 +21,14 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - A table pasted into the middle of a paragraph no longer takes the rest of the paragraph into its
   last cell: the text after the cursor stays in a paragraph after the table (#208).
 
+## 0.56.1 - 2026-09-23 (PR #211)
+
+### Fixed
+
+- The build no longer fails at random when a busy test machine runs two of the editor's long
+  randomised checks a little slowly: they are given the time the others like them already have
+  (#210).
+
 ## 0.56.0 - 2026-09-23 (PR #207)
 
 ### Added
