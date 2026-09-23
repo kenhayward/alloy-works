@@ -3,6 +3,31 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.64.0 - 2026-09-23 (PR #220)
+
+### Added
+
+- **Cross-references are published.** Each prints what it was set to show: the number the document
+  gives its target, such as _Table 1.1_, its title or caption, both, the page it is on in that part's
+  own numbering, or above or below by where it stands. One component placed in two documents, or
+  twice in one, prints each place's own number, and a document published again after its outline is
+  reordered prints the new numbers.
+- **A reference in running text is a link** to what it points at, in a list, a quotation, a table's
+  cell and a footnote too. In a caption, a heading, a term, an attribution, a table's note or a
+  table's header row it is plain text, since those are printed again elsewhere.
+- **The layout has words for above and below**, and the default layout says _above_ and _below_. The
+  editor shows a reference in the document's layout's own words, as the publication prints it.
+
+### Changed
+
+- **Publishing says why a cross-reference cannot be published**, rather than refusing every one: one
+  pointing at something the document does not hold, or at a component it holds more than once or not
+  at all, and one asking for what its target has not got - a number or a title of a paragraph, a page
+  in a section's heading, or anything in a table's header rows, which are printed again on every
+  page. Each is named at its place in the outline.
+- **A section's heading holding a reference shows its number** on the document's page, as the
+  publication prints it, where before the reference was left out.
+
 ## 0.63.0 - 2026-09-23 (PR #219)
 
 ### Added

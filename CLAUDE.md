@@ -35,9 +35,11 @@ a web application and a desktop application**.
 > sets the footnote at the foot of its anchor's page and the note beneath its table. A
 > cross-reference to a section, a figure, a table or a footnote is placed and changed from the
 > Reference dialog, by toolbar or `Ctrl+Alt+X`, over the targets `packages/domain/src/structure/references.ts`
-> offers, and shows what it will print from the document page's numbering, or its target's kind and
-> caption on its own, or that it is broken; an undo keeps the identifiers it puts back and a cut and
-> paste re-points the references left behind, and a publish refuses one by name. A
+> offers, and shows what it will print from the document page's numbering and its layout's words, or
+> its target's kind and caption on its own, or that it is broken; an undo keeps the identifiers it
+> puts back and a cut and paste re-points the references left behind, and a publish resolves it in
+> the document it publishes and prints its number, title, both, page, or above or below, a link in a
+> paragraph's text, or fails naming it. A
 > document can be created in a space and its outline - a tree of front matter, sections and component
 > references - restructured a version at a time, through `packages/domain/src/structure/`, the same
 > chain and the documents page in `apps/web`, which numbers its sections with the environment's
@@ -54,7 +56,7 @@ a web application and a desktop application**.
 > **Not approved** on every page, through the `publish` job in `apps/worker` and the routes in
 > `apps/service/src/publishing.ts` - and nothing else authors or
 > publishes content: no image pasted from outside the product, no equation written or pasted, no metadata panel,
-> no making a component type, no defined term written or resolved, no cross-reference resolved or published, no
+> no making a component type, no defined term written or resolved, no
 > document view, no list of equations, no
 > choosing or editing a layout, and no theme, preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and
 > nothing renders it any more. [`docs/features.md`](docs/features.md) lists what does and does not

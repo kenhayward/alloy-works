@@ -49,6 +49,7 @@ interface DocumentBody {
     version: { id: string; number: string };
     language: string;
     scheme: Record<string, unknown>;
+    words: Record<string, unknown>;
   };
 }
 
@@ -263,6 +264,9 @@ describe('documents through the service', () => {
       version: { id: declared.versionId, number: declared.number },
       language: declared.layout.language,
       scheme: declared.layout.scheme,
+      // What a relative cross-reference prints for above and below (cross-references 2, ruling R9),
+      // beside the rest of the layout's own words.
+      words: declared.layout.words,
     };
     expect(document.layout).toEqual(expected);
     // Every answer carrying the outline carries it, so the page never has to ask a second route.

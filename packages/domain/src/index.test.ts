@@ -139,6 +139,10 @@ describe('the domain package', () => {
         'formsFor',
         'kindWord',
         'printed',
+        // And how one resolves in the document that publishes it, promoted in the plan that builds it
+        // (docs/plans/2026-09-23-cross-references-02-publishing-references.md).
+        'referenceResolver',
+        'printableForms',
         // Publishing: the published document, its failures and assemble (publishing.md).
         'DRAFT_NOTICE',
         'PUBLISHING_SCHEMA',
@@ -157,6 +161,8 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_6',
         'PUBLISHING_SCHEMA_7',
         'PUBLISHING_SCHEMA_8',
+        // Frozen by cross-references 2, which made `publishing/10`: the schema template 9 reads.
+        'PUBLISHING_SCHEMA_9',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',
@@ -169,6 +175,9 @@ describe('the domain package', () => {
         'LAYOUT_SCHEMA_VERSION',
         'PUBLISHING_FORMATS',
         'layoutSchema',
+        // A layout's words alone, for a caller shown only that much of a layout - the document page
+        // reads a relative reference's above and below from it (cross-references 2, ruling R9).
+        'layoutWordsSchema',
         'parseLayout',
         'readLayout',
         'layoutMigrationChain',
@@ -178,6 +187,9 @@ describe('the domain package', () => {
         'FIRST_DEFAULT_LAYOUT',
         // Its second, as 0019 stored it, promoted by figures 3 when 0.3 took the default's name.
         'SECOND_DEFAULT_LAYOUT',
+        // Its third, as 0021 stored it at schema 2, promoted by cross-references 2 when 0.4 took the
+        // default's name.
+        'THIRD_DEFAULT_LAYOUT',
         'LISTED_SEQUENCES',
         'speaksFor',
         'unsupportedFormats',

@@ -29,11 +29,14 @@ import {
   PUBLISHING_SCHEMA_6,
   PUBLISHING_SCHEMA_7,
   PUBLISHING_SCHEMA_8,
+  PUBLISHING_SCHEMA_9,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
   type PublishedItem,
   type PublishedList,
+  type PublishedNode,
+  type PublishedReferenceRun,
   type PublishedRun,
 } from './published.js';
 
@@ -228,6 +231,7 @@ describe('assemble', () => {
     expect(assembled.document.nodes).toEqual([
       {
         id: id('intro'),
+        anchor: null,
         depth: 1,
         matter: 'body',
         number: '1',
@@ -238,19 +242,28 @@ describe('assemble', () => {
         children: [
           {
             id: id('calib'),
+            anchor: null,
             depth: 2,
             matter: 'body',
             number: '1.1',
             title: 'Calibration',
             language: null,
             direction: null,
-            blocks: [{ type: 'paragraph', id: 'p1', runs: [{ text: 'Set the tray.', marks: [] }] }],
+            blocks: [
+              {
+                type: 'paragraph',
+                id: 'p1',
+                anchor: null,
+                runs: [{ text: 'Set the tray.', marks: [] }],
+              },
+            ],
             children: [],
           },
         ],
       },
       {
         id: id('scope'),
+        anchor: null,
         depth: 1,
         matter: 'body',
         number: '2',
@@ -416,17 +429,24 @@ describe('assemble', () => {
     ]);
   });
 
-  it('refuses a cross-reference by name, whatever it targets, until references are published', () => {
-    // Cross-references 1 lets a component hold a reference to a section (structure.md, XR-B); none is
-    // resolved at publish until cross-references 2, so each is refused by name, never set as nothing.
+  it('refuses a cross-reference by name where there is no layout, since publishing/1 is frozen', () => {
+    // Cross-references 2 publishes a reference under a layout; a request made before layouts makes the
+    // first slice's shape, whose run is text alone, so each is refused by name there, never set as
+    // nothing - as a footnote is.
     for (const target of [
       { kind: 'block', block: 'b1' },
       { kind: 'component', component: '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27', block: 'b9' },
       { kind: 'node', node: 'a'.repeat(26) },
     ]) {
-      const result = assemble(
-        oneParagraph(text('See '), { type: 'crossReference', id: 'x1', target, display: 'number' }),
-      );
+      const result = assemble({
+        ...oneParagraph(text('See '), {
+          type: 'crossReference',
+          id: 'x1',
+          target,
+          display: 'number',
+        }),
+        layout: null,
+      });
       expect(failuresOf(result)).toEqual([
         {
           stage: 'compose',
@@ -991,8 +1011,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/9, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/9');
+  it('assembles under a layout as publishing/10, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/10');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1021,6 +1041,7 @@ describe('assemble', () => {
       {
         type: 'list',
         id: 'L1',
+        anchor: null,
         kind: 'ordered',
         start: 5,
         format: 'alphabetic',
@@ -1028,13 +1049,23 @@ describe('assemble', () => {
           {
             term: null,
             blocks: [
-              { type: 'paragraph', id: 'b1', runs: [{ text: 'Check the readings', marks: [] }] },
+              {
+                type: 'paragraph',
+                id: 'b1',
+                anchor: null,
+                runs: [{ text: 'Check the readings', marks: [] }],
+              },
             ],
           },
           {
             term: null,
             blocks: [
-              { type: 'paragraph', id: 'b2', runs: [{ text: 'Note the serial', marks: [] }] },
+              {
+                type: 'paragraph',
+                id: 'b2',
+                anchor: null,
+                runs: [{ text: 'Note the serial', marks: [] }],
+              },
             ],
           },
         ],
@@ -1089,6 +1120,7 @@ describe('assemble', () => {
           {
             type: 'paragraph',
             id: 'b1',
+            anchor: null,
             runs: [{ text: 'The stress a sample takes before it parts.', marks: [] }],
           },
         ],
@@ -1129,6 +1161,7 @@ describe('assemble', () => {
     expect(block).toEqual({
       type: 'paragraph',
       id: 'b1',
+      anchor: null,
       runs: [{ text: 'The innermost step', marks: [] }],
     });
   });
@@ -1317,7 +1350,14 @@ describe('assemble', () => {
       { term: null, blocks: [] },
       {
         term: null,
-        blocks: [{ type: 'paragraph', id: 'b2', runs: [{ text: 'Note the serial', marks: [] }] }],
+        blocks: [
+          {
+            type: 'paragraph',
+            id: 'b2',
+            anchor: null,
+            runs: [{ text: 'Note the serial', marks: [] }],
+          },
+        ],
       },
     ]);
 
@@ -1453,7 +1493,13 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
 
   it('publishes preformatted text line by line, its tabs expanded and its label kept', () => {
     expect(blocksOf(assemble(underFaces(pre('p1', '\u{9}a\u{A}\u{A}  b', 'sql'))))).toEqual([
-      { type: 'preformatted', id: 'p1', label: 'sql', lines: [`${' '.repeat(8)}a`, '', '  b'] },
+      {
+        type: 'preformatted',
+        id: 'p1',
+        anchor: null,
+        label: 'sql',
+        lines: [`${' '.repeat(8)}a`, '', '  b'],
+      },
     ]);
     expect(blocksOf(assemble(underFaces(pre('p1', 'x'))))[0]).toMatchObject({ label: null });
   });
@@ -1495,8 +1541,9 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
       {
         type: 'blockquote',
         id: 'q1',
+        anchor: null,
         blocks: [
-          { type: 'paragraph', id: 'b1', runs: [{ text: 'Quoted.', marks: [] }] },
+          { type: 'paragraph', id: 'b1', anchor: null, runs: [{ text: 'Quoted.', marks: [] }] },
           expect.objectContaining({ type: 'list', id: 'L1' }),
         ],
         attribution: [{ text: 'Ada', marks: [] }],
@@ -1518,13 +1565,14 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/9, and publishing/4 to publishing/8 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/9');
+  it('makes publishing/10, and publishing/4 to publishing/9 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/10');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
     expect(PUBLISHING_SCHEMA_7).toBe('publishing/7');
     expect(PUBLISHING_SCHEMA_8).toBe('publishing/8');
+    expect(PUBLISHING_SCHEMA_9).toBe('publishing/9');
   });
 });
 
@@ -1562,6 +1610,7 @@ describe('a table, published (tables 2)', () => {
   const published = (runs: string) => ({
     type: 'paragraph',
     id: runs,
+    anchor: null,
     runs: [
       {
         text: { c1: 'Site', c2: 'Values', c3: 'York', c4: '1', c5: '2', c6: '3', c7: '4' }[runs],
@@ -1573,11 +1622,12 @@ describe('a table, published (tables 2)', () => {
   it('publishes a table with its number, its caption, its header counts and every cell', () => {
     const assembled = assemble(oneComponent(stored()));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/9');
+    expect(assembled.document.schema).toBe(PUBLISHING_SCHEMA);
     expect(blocksOf(assembled)).toEqual([
       {
         type: 'table',
         id: 't1',
+        anchor: null,
         label: 'Table 1.1',
         caption: [
           { text: 'Readings ', marks: [] },
@@ -1740,10 +1790,11 @@ describe('a figure, published (figures 3)', () => {
 
   it('publishes a figure with its number, its caption, its image and its alternative text', () => {
     const assembled = assemble(withAssets({ [RED]: asset() }, stored()));
-    expect(assembled.ok && assembled.document.schema).toBe('publishing/9');
+    expect(assembled.ok && assembled.document.schema).toBe(PUBLISHING_SCHEMA);
     expect(figureIn(assembled)).toEqual({
       type: 'figure',
       id: 'f1',
+      anchor: null,
       label: 'Figure 1.1',
       caption: [
         { text: 'Shapes ', marks: [] },
@@ -1954,11 +2005,12 @@ describe('an inline image, published (figures 5)', () => {
       withAssets({ [RED]: asset() }, inParagraph(text('Press '), image(), text(' to start.'))),
     );
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/9');
+    expect(assembled.document.schema).toBe(PUBLISHING_SCHEMA);
     expect(blocksOf(assembled)).toEqual([
       {
         type: 'paragraph',
         id: 'p1',
+        anchor: null,
         runs: [
           { text: 'Press ', marks: [] },
           {
@@ -2220,16 +2272,23 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
       {
         footnote: {
           label: '1',
+          anchor: null,
           paragraphs: [
             {
               type: 'paragraph',
               id: 'fp1',
+              anchor: null,
               runs: [
                 { text: 'Once in ', marks: [] },
                 { text: 'spring', marks: [{ kind: 'emphasis' }] },
               ],
             },
-            { type: 'paragraph', id: 'fp2', runs: [{ text: 'Once in autumn.', marks: [] }] },
+            {
+              type: 'paragraph',
+              id: 'fp2',
+              anchor: null,
+              runs: [{ text: 'Once in autumn.', marks: [] }],
+            },
           ],
         },
       },
@@ -2517,5 +2576,841 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
     ]);
     expect(noteOf({})).toBeNull();
     expect(noteOf({ note: [] })).toBeNull();
+  });
+});
+
+describe('cross-references, published (cross-references 2)', () => {
+  const xref = (name: string, target: object, display = 'number') => ({
+    type: 'crossReference',
+    id: name,
+    target,
+    display,
+  });
+  const toBlock = (block: string) => ({ kind: 'block', block });
+  const toNode = (name: string) => ({ kind: 'node', node: id(name) });
+  const toComponent = (component: string, block: string) => ({
+    kind: 'component',
+    component,
+    block,
+  });
+  const footnote = (name: string, ...paragraphs: unknown[]) => ({
+    type: 'footnote',
+    id: name,
+    anchor: { kind: 'span' },
+    content: paragraphs,
+  });
+  const cellOf = (...blocks: unknown[]) => ({ content: blocks, colspan: 1, rowspan: 1 });
+  /** A table of one cell, captioned "Readings" unless `caption` says otherwise. */
+  const table = (name: string, caption: unknown[] = [text('Readings')], over: object = {}) => ({
+    type: 'table',
+    id: name,
+    style: 'table',
+    caption,
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [{ cells: [cellOf(paragraph(`${name}c`, text('12')))] }],
+    ...over,
+  });
+  /** The section `intro`, and under it the occurrence `calib` of one component holding `blocks`. */
+  const inIntro = (...blocks: unknown[]) =>
+    input({
+      outline: outline([section('intro', 'Introduction', [reference('calib')])]),
+      occurrences: new Map([[id('calib'), component(blocks)]]),
+    });
+  /** A block's anchor and a node's, as the published document spells them. */
+  const B = (node: string, block: string) => `b-${id(node)}-${block}`;
+  const N = (node: string) => `n-${id(node)}`;
+  const failed = (code: string, block: string, detail: string, node = id('calib')) => ({
+    stage: 'compose',
+    code,
+    node,
+    block,
+    detail,
+  });
+
+  /**
+   * Every reference run the document publishes and every anchor it carries - on a node, a block, a
+   * footnote or a marker - wherever each stands, in document order. A refusal throws, naming it.
+   */
+  const publishedOf = (assembled: Assembled<PublishedDocument>) => {
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const references: PublishedReferenceRun['reference'][] = [];
+    const anchors: string[] = [];
+    const carry = (anchor: string | null) => {
+      if (anchor !== null) anchors.push(anchor);
+    };
+    const runs = (inlines: readonly PublishedInline[] | null) => {
+      for (const run of inlines ?? []) {
+        if ('reference' in run) references.push(run.reference);
+        if ('footnote' in run) {
+          carry(run.footnote.anchor);
+          for (const each of run.footnote.paragraphs) {
+            carry(each.anchor);
+            runs(each.runs);
+          }
+        }
+      }
+    };
+    const blocks = (list: readonly PublishedBlock[]) => {
+      for (const block of list) {
+        carry(block.anchor);
+        if (block.type === 'paragraph') runs(block.runs);
+        if (block.type === 'list') {
+          for (const item of block.items) {
+            runs(item.term);
+            blocks(item.blocks);
+          }
+        }
+        if (block.type === 'blockquote') {
+          blocks(block.blocks);
+          runs(block.attribution);
+        }
+        if (block.type === 'table') {
+          runs(block.caption);
+          for (const row of block.rows) for (const cell of row.cells) blocks(cell.blocks);
+          runs(block.note);
+        }
+        if (block.type === 'figure') runs(block.caption);
+      }
+    };
+    const nodes = (list: readonly PublishedNode[]) => {
+      for (const node of list) {
+        carry(node.anchor);
+        blocks(node.blocks);
+        nodes(node.children);
+      }
+    };
+    nodes(assembled.document.nodes);
+    return { references, anchors };
+  };
+  /**
+   * A reference as it is published: a page where there is no text, linked unless `link` says not, and
+   * the layout's own words where `relative` says so.
+   */
+  const printed = (anchor: string, text: string | null, link = true, relative = false) => ({
+    anchor,
+    text,
+    page: text === null,
+    relative,
+    link,
+  });
+
+  it('prints a number, a title, both, a page, and where the target stands', () => {
+    const assembled = assemble(
+      inIntro(
+        table('t1'),
+        paragraph('p1', text('Measured'), footnote('n1', paragraph('np1', text('Twice.')))),
+        paragraph(
+          'b1',
+          text('See '),
+          xref('x1', toBlock('t1'), 'number'),
+          xref('x2', toBlock('t1'), 'title'),
+          xref('x3', toBlock('t1'), 'numberAndTitle'),
+          xref('x4', toBlock('t1'), 'page'),
+          xref('x5', toBlock('t1'), 'relative'),
+          xref('x6', toNode('intro'), 'numberAndTitle'),
+          xref('x7', toNode('calib'), 'title'),
+          xref('x8', toBlock('n1'), 'number'),
+          xref('x9', toBlock('p1'), 'page'),
+          xref('x10', toBlock('b2'), 'relative'),
+        ),
+        paragraph('b2', text('Later.')),
+      ),
+    );
+    expect(publishedOf(assembled).references).toEqual([
+      printed(B('calib', 't1'), 'Table 1.1'),
+      printed(B('calib', 't1'), 'Readings'),
+      printed(B('calib', 't1'), 'Table 1.1 Readings'),
+      // The page is the template's to print, from where the target is set.
+      printed(B('calib', 't1'), null),
+      printed(B('calib', 't1'), 'above', true, true),
+      printed(N('intro'), '1 Introduction'),
+      // An occurrence is a heading, titled by its component.
+      printed(N('calib'), 'Calibration'),
+      printed(B('calib', 'n1'), '1'),
+      printed(B('calib', 'p1'), null),
+      printed(B('calib', 'b2'), 'below', true, true),
+    ]);
+  });
+
+  it("prints above and below in the layout's own words", () => {
+    const worded = layoutWith((layout) => {
+      layout.words.above = 'earlier';
+      layout.words.below = 'later';
+    });
+    const assembled = assemble({
+      ...inIntro(
+        table('t1'),
+        paragraph(
+          'b1',
+          xref('x1', toBlock('t1'), 'relative'),
+          text(' and '),
+          xref('x2', toBlock('b2'), 'relative'),
+        ),
+        paragraph('b2', text('Later.')),
+      ),
+      layout: worded,
+    });
+    expect(publishedOf(assembled).references.map((each) => each.text)).toEqual([
+      'earlier',
+      'later',
+    ]);
+  });
+
+  it("says which references print the layout's own words, so the template sets them in the layout's language", () => {
+    const assembled = assemble(
+      inIntro(
+        table('t1'),
+        paragraph(
+          'b1',
+          xref('x1', toBlock('t1'), 'relative'),
+          xref('x2', toBlock('t1'), 'number'),
+          xref('x3', toBlock('t1'), 'title'),
+          xref('x4', toBlock('t1'), 'page'),
+        ),
+      ),
+    );
+    expect(publishedOf(assembled).references.map((each) => each.relative)).toEqual([
+      true,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it('fails a relative reference under a layout with no words for above and below, naming the form', () => {
+    const wordless = layoutWith((layout) => {
+      delete layout.words.above;
+      delete layout.words.below;
+    });
+    const assembled = assemble({
+      ...inIntro(
+        table('t1'),
+        paragraph(
+          'b1',
+          xref('x1', toBlock('t1'), 'relative'),
+          text(' and '),
+          xref('x2', toBlock('t1'), 'number'),
+        ),
+      ),
+      layout: wordless,
+    });
+    expect(failuresOf(assembled)).toEqual([
+      failed('cross_reference_form_unavailable', 'x1', 'relative'),
+    ]);
+  });
+
+  it("checks the layout's words for above and below against the faces, as its other words", () => {
+    const greek = layoutWith((layout) => {
+      layout.words.above = String.fromCodePoint(0x3c0, 0x3ac);
+      layout.words.below = 'below';
+    });
+    expect(
+      failuresOf(assemble({ ...inIntro(paragraph('b1', text('Set.'))), layout: greek })),
+    ).toEqual([
+      { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+03C0' },
+      { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+03AC' },
+    ]);
+  });
+
+  it('says above for a target before the reference or holding it, and below for one after it', () => {
+    const assembled = assemble(
+      input({
+        outline: outline([
+          section('intro', 'Introduction', [reference('calib'), reference('other', OTHER)]),
+        ]),
+        occurrences: new Map([
+          [
+            id('calib'),
+            component([
+              table('t1'),
+              paragraph(
+                'b1',
+                // Forward, to another component placed after this one.
+                xref('x1', toComponent(OTHER, 't2'), 'relative'),
+                // The section this reference stands in, the occurrence, and the paragraph itself.
+                xref('x2', toNode('intro'), 'relative'),
+                xref('x3', toNode('calib'), 'relative'),
+                xref('x4', toBlock('b1'), 'relative'),
+              ),
+            ]),
+          ],
+          [
+            id('other'),
+            component([
+              table('t2'),
+              paragraph(
+                'b2',
+                // Backward, to a component placed before this one.
+                xref('x5', toComponent(COMPONENT, 't1'), 'relative'),
+                // And a footnote set after the reference, in the same paragraph.
+                xref('x6', toBlock('n2'), 'relative'),
+                footnote('n2', paragraph('np2', text('Once.'))),
+              ),
+            ]),
+          ],
+        ]),
+      }),
+    );
+    expect(publishedOf(assembled).references.map((each) => [each.anchor, each.text])).toEqual([
+      [B('other', 't2'), 'below'],
+      [N('intro'), 'above'],
+      [N('calib'), 'above'],
+      [B('calib', 'b1'), 'above'],
+      [B('calib', 't1'), 'above'],
+      [B('other', 'n2'), 'below'],
+    ]);
+  });
+
+  it('prints the number of the section a reference stands in', () => {
+    const assembled = assemble(
+      inIntro(paragraph('b1', text('As '), xref('x1', toNode('intro'), 'number'), text(' says.'))),
+    );
+    expect(publishedOf(assembled).references).toEqual([printed(N('intro'), '1')]);
+  });
+
+  it("links a reference in a paragraph's text, and sets it as text in a header row, a caption, a term, an attribution or a note", () => {
+    const see = (name: string) => xref(name, toNode('intro'), 'number');
+    const assembled = assemble(
+      inIntro(
+        paragraph(
+          'p1',
+          text('Running '),
+          see('x1'),
+          footnote('n1', paragraph('np1', text('Noted '), see('x2'))),
+        ),
+        storedList('L1', 'definition', [
+          {
+            term: [text('Term '), see('x3')],
+            content: [paragraph('i1', text('Item '), see('x4'))],
+          },
+        ]),
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [paragraph('q1p', text('Quoted '), see('x5'))],
+          attribution: [text('Ada '), see('x6')],
+        },
+        {
+          ...table('t1', [text('Readings '), see('x7')]),
+          headerRows: 1,
+          rows: [
+            { cells: [cellOf(paragraph('h1', text('Head '), see('x8')))] },
+            { cells: [cellOf(paragraph('c1', text('Body '), see('x9')))] },
+          ],
+          note: [text('Noted '), see('x10')],
+        },
+      ),
+    );
+    expect(publishedOf(assembled).references.map((each) => each.link)).toEqual([
+      true, // running text
+      true, // a footnote's text
+      false, // a term
+      true, // a list's item
+      true, // a quotation
+      false, // an attribution
+      false, // a caption
+      false, // a header row, set again as an artifact on every page the table reaches
+      true, // a body cell
+      false, // a table's note
+    ]);
+  });
+
+  it('carries an anchor on exactly the nodes, blocks and footnotes a reference names, and null on every other', () => {
+    const assembled = assemble(
+      inIntro(
+        table('t1'),
+        storedList('L1', 'unordered', [{ content: [paragraph('i1', text('Item'))] }]),
+        paragraph('p1', text('Measured'), footnote('n1', paragraph('np1', text('Twice.')))),
+        paragraph('p2', text('Unnamed')),
+        { type: 'blockquote', id: 'q1', content: [paragraph('q1p', text('Quoted'))] },
+        paragraph(
+          'b1',
+          xref('x1', toBlock('t1'), 'number'),
+          xref('x2', toBlock('i1'), 'page'),
+          xref('x3', toBlock('n1'), 'number'),
+          xref('x4', toBlock('q1'), 'page'),
+          xref('x5', toNode('intro'), 'number'),
+          xref('x6', toNode('calib'), 'number'),
+          // Named twice, carried once.
+          xref('x7', toBlock('t1'), 'title'),
+        ),
+      ),
+    );
+    expect(publishedOf(assembled).anchors).toEqual([
+      N('intro'),
+      N('calib'),
+      B('calib', 't1'),
+      B('calib', 'i1'),
+      B('calib', 'n1'),
+      B('calib', 'q1'),
+    ]);
+    if (!assembled.ok) throw new Error('refused');
+    expect(assembled.document.nodes[0]!.children[0]!.blocks[3]).toEqual({
+      type: 'paragraph',
+      id: 'p2',
+      anchor: null,
+      runs: [{ text: 'Unnamed', marks: [] }],
+    });
+  });
+
+  it('sets a named target that publishes nothing as an empty marker in its place', () => {
+    const assembled = assemble(
+      inIntro(
+        blank('e1'),
+        // A quotation of nothing publishes nothing, so its paragraph's marker stands in its place.
+        { type: 'blockquote', id: 'q1', content: [blank('e2')] },
+        paragraph('m1', text('Middle')),
+        { type: 'preformatted', id: 'pre1', text: '' },
+        paragraph('m2', text('Middle')),
+        storedList('L1', 'unordered', [{ content: [blank('e3')] }]),
+        paragraph('m3', text('Middle')),
+        // Unnamed, so nothing at all.
+        blank('e4'),
+        paragraph(
+          'b1',
+          xref('x1', toBlock('e1'), 'page'),
+          xref('x2', toBlock('e2'), 'page'),
+          xref('x3', toBlock('pre1'), 'relative'),
+          xref('x4', toBlock('L1'), 'page'),
+          xref('x5', toBlock('e3'), 'page'),
+        ),
+      ),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const blocks = assembled.document.nodes[0]!.children[0]!.blocks;
+    expect(blocks.map((block) => [block.type, block.anchor])).toEqual([
+      ['marker', B('calib', 'e1')],
+      ['marker', B('calib', 'e2')],
+      ['paragraph', null],
+      ['marker', B('calib', 'pre1')],
+      ['paragraph', null],
+      ['marker', B('calib', 'L1')],
+      ['marker', B('calib', 'e3')],
+      ['paragraph', null],
+      ['paragraph', null],
+    ]);
+    expect(blocks[0]).toEqual({ type: 'marker', anchor: B('calib', 'e1') });
+  });
+
+  it('STR-032 publishes a reference to its own component and one to another component of the same document', () => {
+    const assembled = assemble(
+      input({
+        outline: outline([
+          section('intro', 'Introduction', [reference('calib'), reference('other', OTHER)]),
+        ]),
+        occurrences: new Map([
+          [
+            id('calib'),
+            component([
+              table('t1'),
+              paragraph(
+                'b1',
+                xref('x1', toBlock('t1'), 'number'),
+                text(' and '),
+                xref('x2', toComponent(OTHER, 't2'), 'number'),
+              ),
+            ]),
+          ],
+          [id('other'), component([table('t2', [text('Weights')])])],
+        ]),
+      }),
+    );
+    expect(publishedOf(assembled).references).toEqual([
+      printed(B('calib', 't1'), 'Table 1.1'),
+      printed(B('other', 't2'), 'Table 1.2'),
+    ]);
+  });
+
+  it('STR-056 resolves a component placed twice against the occurrence each reference is read in', () => {
+    const content = component([
+      table('t1'),
+      paragraph('b1', text('See '), xref('x1', toBlock('t1'), 'number')),
+    ]);
+    const assembled = assemble(
+      input({
+        outline: outline([
+          section('first', 'First', [reference('once')]),
+          section('second', 'Second', [reference('twice')]),
+        ]),
+        occurrences: new Map([
+          [id('once'), content],
+          [id('twice'), content],
+        ]),
+      }),
+    );
+    expect(publishedOf(assembled)).toEqual({
+      references: [printed(B('once', 't1'), 'Table 1.1'), printed(B('twice', 't1'), 'Table 2.1')],
+      anchors: [B('once', 't1'), B('twice', 't1')],
+    });
+  });
+
+  it("STR-062 resolves a component's block against that component's one occurrence, and fails by name where it has none or several", () => {
+    const referring = component([
+      table('t1'),
+      paragraph(
+        'b1',
+        // Its own block resolves in the occurrence it is read in, wherever the other is placed.
+        xref('x1', toBlock('t1'), 'number'),
+        text(' and '),
+        xref('x2', toComponent(OTHER, 't2'), 'number'),
+      ),
+    ]);
+    const weights = component([table('t2', [text('Weights')])]);
+    const withOther = (...others: string[]) =>
+      input({
+        outline: outline([
+          section('intro', 'Introduction', [
+            reference('calib'),
+            ...others.map((name) => reference(name, OTHER)),
+          ]),
+        ]),
+        occurrences: new Map([
+          [id('calib'), referring],
+          ...others.map((name): [string, ContentDocument] => [id(name), weights]),
+        ]),
+      });
+    expect(publishedOf(assemble(withOther('other'))).references).toEqual([
+      printed(B('calib', 't1'), 'Table 1.1'),
+      printed(B('other', 't2'), 'Table 1.2'),
+    ]);
+    const unresolved = [failed('cross_reference_unresolved', 'x2', `component ${OTHER} block t2`)];
+    expect(failuresOf(assemble(withOther('other', 'again')))).toEqual(unresolved);
+    expect(failuresOf(assemble(withOther()))).toEqual(unresolved);
+    // A block of the component it is read in, named by its component - as a reference pasted in from
+    // another component stores it - is its own block (STR-056): placed twice, each prints its own.
+    const selfNamed = component([
+      table('t1'),
+      paragraph('b1', text('See '), xref('x1', toComponent(COMPONENT, 't1'), 'number')),
+    ]);
+    const twice = input({
+      outline: outline([
+        section('first', 'First', [reference('once')]),
+        section('second', 'Second', [reference('twice')]),
+      ]),
+      occurrences: new Map([
+        [id('once'), selfNamed],
+        [id('twice'), selfNamed],
+      ]),
+    });
+    expect(publishedOf(assemble(twice)).references).toEqual([
+      printed(B('once', 't1'), 'Table 1.1'),
+      printed(B('twice', 't1'), 'Table 2.1'),
+    ]);
+  });
+
+  it('STR-029 fails the publish naming every reference whose target the document does not hold, and its target', () => {
+    const titled = {
+      ...section('intro', 'Introduction', [reference('calib')]),
+      title: [text('Introduction to '), xref('x0', toNode('gone'), 'number')],
+    };
+    const assembled = assemble(
+      input({
+        outline: outline([titled]),
+        occurrences: new Map([
+          [
+            id('calib'),
+            component([
+              table('t1', [text('Readings '), xref('x4', toBlock('absent'), 'number')]),
+              paragraph(
+                'b1',
+                xref('x1', toBlock('missing'), 'page'),
+                xref('x2', toNode('elsewhere'), 'number'),
+                xref('x3', toComponent(OTHER, 't9'), 'number'),
+                footnote('n1', paragraph('np1', text('See '), xref('x5', toBlock('none'), 'page'))),
+              ),
+            ]),
+          ],
+        ]),
+      }),
+    );
+    expect(failuresOf(assembled)).toEqual([
+      failed('cross_reference_unresolved', 'x0', `node ${id('gone')}`, id('intro')),
+      failed('cross_reference_unresolved', 'x4', 'block absent'),
+      failed('cross_reference_unresolved', 'x1', 'block missing'),
+      failed('cross_reference_unresolved', 'x2', `node ${id('elsewhere')}`),
+      failed('cross_reference_unresolved', 'x3', `component ${OTHER} block t9`),
+      failed('cross_reference_unresolved', 'x5', 'block none'),
+    ]);
+  });
+
+  it("publishes a footnote's own paragraph as a target, by its page and where it stands, its anchor on the paragraph", () => {
+    const assembled = assemble(
+      inIntro(
+        paragraph(
+          'p1',
+          text('Measured'),
+          footnote(
+            'n1',
+            paragraph('np1', text('Twice.')),
+            // Empty, so it publishes nothing of its own - but named, so it stays to carry its anchor.
+            blank('np2'),
+            paragraph('np3', text('As '), xref('x3', toBlock('np1'), 'relative')),
+          ),
+        ),
+        paragraph('b1', xref('x1', toBlock('np1'), 'page'), xref('x2', toBlock('np2'), 'relative')),
+      ),
+    );
+    expect(publishedOf(assembled)).toEqual({
+      references: [
+        printed(B('calib', 'np1'), 'above', true, true),
+        printed(B('calib', 'np1'), null),
+        printed(B('calib', 'np2'), 'above', true, true),
+      ],
+      anchors: [B('calib', 'np1'), B('calib', 'np2')],
+    });
+    if (!assembled.ok) throw new Error('refused');
+    const [run] = paragraphRuns(assembled.document.nodes[0]!.children[0]!.blocks[0]).filter(
+      (each) => 'footnote' in each,
+    );
+    expect(
+      run !== undefined && 'footnote' in run
+        ? run.footnote.paragraphs.map((each) => [each.id, each.anchor, each.runs.length])
+        : null,
+    ).toEqual([
+      ['np1', B('calib', 'np1'), 1],
+      ['np2', B('calib', 'np2'), 0],
+      ['np3', null, 2],
+    ]);
+    // A paragraph has no number and no title, in a footnote as anywhere.
+    expect(
+      failuresOf(
+        assemble(
+          inIntro(
+            paragraph('p1', text('Measured'), footnote('n1', paragraph('np1', text('Twice.')))),
+            paragraph('b1', xref('x1', toBlock('np1'), 'number')),
+          ),
+        ),
+      ),
+    ).toEqual([failed('cross_reference_form_unavailable', 'x1', 'number')]);
+  });
+
+  it("prints a caption's own references as their targets' numbers where a title reads it, so a title never loops", () => {
+    const assembled = assemble(
+      inIntro(
+        table('t1', [text('See '), xref('c1', toBlock('t2'), 'title'), text(' for more')]),
+        table('t2', [
+          text('Weights by '),
+          xref('c2', toBlock('t1'), 'title'),
+          text(', on '),
+          xref('c3', toBlock('b1'), 'page'),
+        ]),
+        paragraph(
+          'b1',
+          xref('x1', toBlock('t1'), 'title'),
+          xref('x2', toBlock('t2'), 'numberAndTitle'),
+        ),
+      ),
+    );
+    expect(publishedOf(assembled).references.map((each) => each.text)).toEqual([
+      // Each caption's title, its references as their numbers: a paragraph, which has none, by its kind.
+      'Weights by Table 1.1, on Paragraph',
+      'See Table 1.2 for more',
+      null,
+      'See Table 1.2 for more',
+      'Table 1.2 Weights by Table 1.1, on Paragraph',
+    ]);
+  });
+
+  it('fails a form its target lacks, naming the reference and the form', () => {
+    const assembled = assemble(
+      input({
+        outline: outline([
+          section('intro', 'Introduction', [reference('calib')]),
+          { ...section('aside', 'Aside'), numbered: false },
+        ]),
+        occurrences: new Map([
+          [
+            id('calib'),
+            component([
+              paragraph('p1', text('Measured'), footnote('n1', paragraph('np1', text('Once.')))),
+              storedList('L1', 'unordered', [{ content: [paragraph('i1', text('Item'))] }]),
+              paragraph(
+                'b1',
+                xref('x1', toBlock('p1'), 'number'),
+                xref('x2', toBlock('n1'), 'title'),
+                xref('x3', toBlock('L1'), 'numberAndTitle'),
+                xref('x4', toNode('aside'), 'number'),
+                // What each has is published.
+                xref('x5', toBlock('p1'), 'page'),
+                xref('x6', toNode('aside'), 'title'),
+              ),
+            ]),
+          ],
+        ]),
+      }),
+    );
+    expect(failuresOf(assembled)).toEqual([
+      failed('cross_reference_form_unavailable', 'x1', 'number'),
+      failed('cross_reference_form_unavailable', 'x2', 'title'),
+      failed('cross_reference_form_unavailable', 'x3', 'numberAndTitle'),
+      failed('cross_reference_form_unavailable', 'x4', 'number'),
+    ]);
+  });
+
+  it("fails a reference to what stands in a table's header rows, which the engine sets on every page", () => {
+    // Measured against the pinned engine (cross-references 2, task 4): a header row is set again on
+    // every page a table reaches, and a label on what it holds goes with it, so a table crossing a
+    // page carries the label twice and the compile is refused, "label occurs multiple times". Where
+    // the table breaks is the engine's to know, so every such target fails, naming the form asked of
+    // it - as a footnote there is refused wherever the table breaks. A header column is set once.
+    const assembled = assemble(
+      inIntro(
+        table('t1', [text('Readings')], {
+          headerRows: 1,
+          headerColumns: 1,
+          rows: [
+            {
+              cells: [
+                cellOf(paragraph('h1', text('Site'))),
+                cellOf(
+                  storedList('hL', 'unordered', [{ content: [paragraph('hi', text('Value'))] }]),
+                ),
+                // Empty, so what carries its anchor is a marker, in the header all the same.
+                cellOf({ type: 'paragraph', id: 'h3', style: 'body', content: [] }),
+              ],
+            },
+            {
+              cells: [
+                cellOf(paragraph('c1', text('York'))),
+                cellOf(paragraph('c2', text('12'))),
+                cellOf(paragraph('c3', text('3'))),
+              ],
+            },
+          ],
+        }),
+        paragraph(
+          'b1',
+          xref('x1', toBlock('h1'), 'page'),
+          xref('x2', toBlock('hL'), 'relative'),
+          xref('x3', toBlock('hi'), 'page'),
+          xref('x4', toBlock('h3'), 'page'),
+          // A header column's cell and a body cell are set once, and are published.
+          xref('x5', toBlock('c1'), 'page'),
+          xref('x6', toBlock('c2'), 'relative'),
+          xref('x7', toBlock('t1'), 'page'),
+        ),
+      ),
+    );
+    expect(failuresOf(assembled)).toEqual([
+      failed('cross_reference_form_unavailable', 'x1', 'page'),
+      failed('cross_reference_form_unavailable', 'x2', 'relative'),
+      failed('cross_reference_form_unavailable', 'x3', 'page'),
+      failed('cross_reference_form_unavailable', 'x4', 'page'),
+    ]);
+  });
+
+  it("sets a section title's reference as its number in the title's words", () => {
+    const results = {
+      ...section('results', 'Results'),
+      title: [text('Results of '), xref('x1', toNode('methods'), 'number')],
+    };
+    const assembled = assemble(
+      input({
+        outline: outline([
+          section('methods', 'Methods'),
+          results,
+          section('intro', 'Introduction', [reference('calib')]),
+        ]),
+        occurrences: new Map([
+          [
+            id('calib'),
+            component([paragraph('b1', xref('x2', toNode('results'), 'numberAndTitle'))]),
+          ],
+        ]),
+      }),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const [methods, published] = assembled.document.nodes;
+    expect(published!.title).toBe('Results of 1');
+    // The section it names carries its anchor; the title's reference is words, never a run or a link.
+    expect(methods!.anchor).toBe(N('methods'));
+    // A reference to that section's title prints the words it is published with.
+    expect(publishedOf(assembled).references).toEqual([printed(N('results'), '2 Results of 1')]);
+  });
+
+  it("fails a page, an unnumbered section and a target it cannot find in a section title's reference", () => {
+    const titled = (name: string, inline: object) => ({
+      ...section(name, 'Results'),
+      title: [text('Results of '), inline],
+    });
+    const assembled = assemble(
+      input({
+        outline: outline([
+          { ...section('aside', 'Aside'), numbered: false },
+          titled('paged', xref('x1', toNode('aside'), 'page')),
+          titled('unnumbered', xref('x2', toNode('aside'), 'number')),
+          titled('lost', xref('x3', toNode('gone'), 'number')),
+        ]),
+      }),
+    );
+    expect(failuresOf(assembled)).toEqual([
+      failed('cross_reference_form_unavailable', 'x1', 'page', id('paged')),
+      failed('cross_reference_form_unavailable', 'x2', 'number', id('unnumbered')),
+      failed('cross_reference_unresolved', 'x3', `node ${id('gone')}`, id('lost')),
+    ]);
+  });
+
+  it("keeps a request made before layouts saying a title's reference is what cannot be published", () => {
+    const titled = {
+      ...section('results', 'Results'),
+      title: [text('Results of '), xref('x1', toNode('methods'), 'number')],
+    };
+    expect(
+      failuresOf(
+        assemble({
+          ...input({ outline: outline([section('methods', 'Methods'), titled]) }),
+          layout: null,
+        }),
+      ),
+    ).toEqual([
+      {
+        stage: 'compose',
+        code: 'title_not_publishable',
+        node: id('results'),
+        block: null,
+        detail: 'crossReference',
+      },
+    ]);
+  });
+
+  it('STR-028 resolves a reference in the document publishing it, never in the component holding it', () => {
+    const content = component([
+      table('t1'),
+      paragraph('b1', text('See '), xref('x1', toBlock('t1'), 'number')),
+    ]);
+    const publishedIn = (nodes: unknown[]) =>
+      publishedOf(
+        assemble(
+          input({ outline: outline(nodes), occurrences: new Map([[id('calib'), content]]) }),
+        ),
+      ).references;
+    // One component, two documents: each prints the number its own outline gives.
+    expect(publishedIn([section('intro', 'Introduction', [reference('calib')])])).toEqual([
+      printed(B('calib', 't1'), 'Table 1.1'),
+    ]);
+    expect(
+      publishedIn([
+        section('scope', 'Scope'),
+        section('method', 'Method'),
+        section('intro', 'Introduction', [reference('calib')]),
+      ]),
+    ).toEqual([printed(B('calib', 't1'), 'Table 3.1')]);
+  });
+
+  it('STR-031 prints the number the outline gives when it is published, after the outline is reordered', () => {
+    const occurrences = new Map([
+      [
+        id('calib'),
+        component([paragraph('b1', xref('x1', toComponent(OTHER, 't2'), 'numberAndTitle'))]),
+      ],
+      [id('other'), component([table('t2', [text('Weights')])])],
+    ]);
+    const first = section('first', 'First', [reference('calib')]);
+    const second = section('second', 'Second', [reference('other', OTHER)]);
+    const printedUnder = (nodes: unknown[]) =>
+      publishedOf(assemble(input({ outline: outline(nodes), occurrences }))).references;
+    expect(printedUnder([first, second])).toEqual([printed(B('other', 't2'), 'Table 2.1 Weights')]);
+    expect(printedUnder([second, first])).toEqual([printed(B('other', 't2'), 'Table 1.1 Weights')]);
   });
 });

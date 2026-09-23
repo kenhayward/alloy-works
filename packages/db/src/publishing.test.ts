@@ -422,8 +422,8 @@ describe('requesting and recording a publication', () => {
           },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.3 since 0021, so the version recorded after it is 0.4.
-        expect((await defaultLayout(trx)).number).toBe('0.4');
+        // The default is at 0.4 since 0023, so the version recorded after it is 0.5.
+        expect((await defaultLayout(trx)).number).toBe('0.5');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.layout).toEqual({ versionId: declared.versionId, layout: declared.layout });

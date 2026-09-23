@@ -19,13 +19,38 @@ const BLOCKS: Readonly<Record<string, string>> = {
 /**
  * What an inline item an author can place is called, when it cannot be published yet. A footnote is
  * published under a layout since footnotes 2, so this sentence is left for a request made before
- * layouts, which could never publish one. A cross-reference is placed in the editor since
- * cross-references 1 and published from cross-references 2, so until then it is refused by name.
+ * layouts, which could never publish one. A cross-reference is resolved and printed under a layout
+ * since cross-references 2 (`cross_reference_unresolved` and `cross_reference_form_unavailable` say
+ * why one there fails); this sentence is what is left for a request made before layouts, which has no
+ * layout to resolve one under at all. So it names no layout - the request has none - and says what
+ * mends it: every publish asked for now is made under the document's layout (the final review of
+ * cross-references 2).
  */
 const INLINES: Readonly<Record<string, string>> = {
   image: 'An image in a line of text cannot be published yet.',
   footnote: 'A footnote cannot be published yet.',
-  crossReference: 'A cross-reference cannot be published yet.',
+  crossReference: 'A cross-reference cannot be published from this request. Publish again.',
+};
+
+/**
+ * The form a cross-reference asked for, in the words the dialog offers it in (`FORM_WORDS`,
+ * `referenceChoices.ts`), for `cross_reference_form_unavailable`'s detail: never the author's text,
+ * only which of the five forms could not be shown, and why - a paragraph or a list has no number or
+ * title (R3); a section's title cannot hold a page, since the running heads and the contents set the
+ * title again in a different place (R6); above and below need words the layout may not give (R2); and
+ * a target standing in a table's header row cannot be pointed at for its page or as above or below,
+ * since the header repeats it and a repeated label refuses the compile (cross-references 2, task 4).
+ */
+const FORMS: Readonly<Record<string, string>> = {
+  number:
+    'A cross-reference asks for a number, and what it points at has none: a paragraph, a list, or a section with no number of its own.',
+  title:
+    'A cross-reference asks for a title, and what it points at has none: a paragraph, a list, or a footnote.',
+  numberAndTitle:
+    'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, or a section with no number of its own.',
+  page: "A cross-reference asks for a page. A section's title cannot hold one, since the running heads and the contents set the title again in a different place; nor can something standing in a table's header row, which the page repeats.",
+  relative:
+    "A cross-reference asks for above or below. Either this publication's layout has no words for them, or what it points at stands in a table's header row, which repeats.",
 };
 
 /**
@@ -114,6 +139,17 @@ export function failureWords(failure: Failure): string {
     // number, and this part of the document has no numbered section before it (final review).
     case 'footnote_unnumbered':
       return 'A footnote here would print with no number: the layout numbers footnotes within sections, and no numbered section comes before it.';
+    // Cross-references 2's ruling R7: the target is missing from this document, a component target's
+    // document holds it more than once, or not at all - never which, since neither is the author's to
+    // read from another component (STR-062).
+    case 'cross_reference_unresolved':
+      return 'A cross-reference points at something this document does not hold, or at a component it holds more than once.';
+    // Ruling R7 again: `detail` is the form asked, never the author's text.
+    case 'cross_reference_form_unavailable':
+      return (
+        FORMS[failure.detail ?? ''] ??
+        'A cross-reference asks for a form of its target that cannot be shown.'
+      );
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

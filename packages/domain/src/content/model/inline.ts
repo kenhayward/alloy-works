@@ -53,7 +53,8 @@ export const inlineEquationNodeSchema = z.strictObject({
  * - `component`: a block or a footnote of another component, resolved against that component's one
  *   occurrence in the resolving document - and failed by name, never guessed, where it has none or
  *   several (STR-062). Named by the component rather than by an occurrence so that the reference
- *   survives the component being used in a second document.
+ *   survives the component being used in a second document. One naming the component it is stored
+ *   in - a paste from another component leaves it so - resolves as a `block` target does.
  * - `node`: an outline node - a section, from a section title or from a component's text (XR-B).
  *   It belongs to one document's outline, so a component's resolves in that document and fails by
  *   name in any other the component is placed in (STR-029).

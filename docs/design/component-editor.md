@@ -339,8 +339,10 @@ inline content CNT-129 allows, and no table or image - so the restriction is str
 
 Designed in structure.md's [Making, showing and printing a reference](structure.md#making-showing-and-printing-a-reference),
 decisions XR-A to XR-G, and built in the editor by
-[cross-references 1](../plans/2026-09-23-cross-references-01-references-in-the-editor.md); publishing
-one is cross-references 2's, and until then a publish refuses it by name.
+[cross-references 1](../plans/2026-09-23-cross-references-01-references-in-the-editor.md);
+publishing one is
+[cross-references 2](../plans/2026-09-23-cross-references-02-publishing-references.md)'s, which also
+gives the editor the layout's own words for above and below.
 
 - **Reference** on the toolbar, or `Ctrl+Alt+X` (`Cmd+Option+X` on a Mac), opens a dialog listing what
   may be pointed at - in a document's page, its sections and every figure, table and footnote its
@@ -359,8 +361,8 @@ one is cross-references 2's, and until then a publish refuses it by name.
   is one annotation, as with an inline image. A component holding a reference opens for editing.
 - **What it shows** is drawn by a node view from a decoration, so it redraws when its target or the
   page's numbering changes: in a document, what it will print - _Table 1.1_, a section's title,
-  _above_ - from the numbering the page holds; a target the page has not numbered yet, and any
-  target in a component on its own, by kind and caption - _Table: Readings_; a section or another
+  the layout's word for _above_ - from the numbering and the layout the page holds; a target the
+  page has not numbered yet, and any target in a component on its own, by kind and caption - _Table: Readings_; a section or another
   component's block on its own, _Section_ or _In another component_, since only a document can judge
   it. A reference whose target has gone shows _Broken reference_, drawn apart by more than colour -
   _to a section_ or _to another component_ where that is what it pointed at; a block's kind went

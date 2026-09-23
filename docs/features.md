@@ -11,8 +11,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > published as a laid-out PDF with
 > a cover, a contents, lists of figures and tables and numbered pages that carries all of that
 > formatting.
-> Footnotes and a table's note are written and published, and cross-references are made and shown
-> in the editor but not yet published; nothing holds an equation.
+> Footnotes, a table's note and cross-references are written and published; nothing holds an
+> equation.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -270,8 +270,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   Deleting a table and pressing `Ctrl+Z` leaves every reference to it pointing at it, and so does
   cutting a figure and pasting it back into the same component, which the paste report says. A
   component holding a reference opens for editing. The document's text on its page shows each
-  reference as the editor does. **A published document refuses a cross-reference by name, for now**,
-  and the words it shows - _page of_, _above_, _below_ - are English until the layout's own arrive.
+  reference as the editor does. In a document, _above_ and _below_ are the document's layout's own
+  words, as a publication prints them; on its own, and for a page, which only a publication knows,
+  the words are English. A published document prints each reference (see Publishing).
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
@@ -312,8 +313,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   Beneath the outline, the document lists its **figures, tables and equations**, each with its number
   and caption and a link to where it is placed, renumbered at once when you move anything. A number
   that would depend on a component you may not read is left off. A cross-reference in the text shows
-  the number the page gives its target, but nothing resolves one in a publication yet, and nothing
-  tracks where you are as you read - there is no reading view.
+  what the page gives its target, as a publication prints it. Nothing tracks where you are as you
+  read - there is no reading view.
 
   **This is structure, not the document.** There is no document view:
   the outline is a tree you build, and you still open a component on its own to edit it. A section's
@@ -342,7 +343,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   publication, so somebody given a single document does not see its publications unless given them
   too. When a document cannot be published you are told every reason at once, each at its place in the
   outline: a component you may not read, without saying which; a footnote or any other block that
-  cannot be published yet; a cross-reference, which cannot be published yet; a table with no caption, or whose header cell reaches down into rows that
+  cannot be published yet; a cross-reference to something the document does not hold, or asking for
+  what its target cannot show; a table with no caption, or whose header cell reaches down into rows that
   are not header rows; a defined term, which has no control and no published form yet; or a
   character no typeface can set.
 
@@ -439,9 +441,24 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   printed again on every page the table reaches - is refused, naming where it is, as is one with no
   text, one anchored to a table as a whole, and one anchored to a table's cell the table does not have.
 
+  **A cross-reference prints** what it was set to show: the number the document gives its target -
+  _Table 1.1_, _2.1_ for a section, _3_ for a footnote - its title or caption, both, the number of
+  the page it is on, in that part's own numbering, so a page in the front matter reads _iv_, or
+  _above_ or _below_ by where it stands in the document, in the layout's words. In a paragraph's
+  text - a list, a quotation, a table's cell or a footnote included - it is a link a reader can
+  follow to its target; in a caption, a heading, a term, an attribution, a table's note or a table's
+  header row it is plain text, because those are printed again in the contents, the lists or on
+  every page. A reference in a section's heading prints its number, and so does that heading
+  wherever it is printed again. One component placed in two documents, or twice in one, prints each
+  place's own number. A reference whose target the document does not hold, or that points at a
+  component the document holds more than once or not at all, is refused, as is one asking for what
+  its target has not got - a number or a title of a paragraph, a title of a footnote, a page in a
+  section's heading - and one pointing at anything in a table's header rows, which are printed again
+  on every page the table reaches. Every one is named.
+
   **This is a PDF of paragraphs, lists, quotations, preformatted text, tables and their notes,
-  figures, images in a line of text and footnotes, not publishing.** No equations or cross-references - a
-  document holding either is refused, naming it. A table too wide
+  figures, images in a line of text, footnotes and cross-references, not publishing.** No equations - a
+  document holding one is refused, naming it. A table too wide
   for the page is not turned, shrunk or split, and how it breaks across pages is not yet chosen by a
   style: every table repeats its header rows. A citation
   in a quotation's attribution cannot be written or published yet. A list nested
@@ -470,11 +487,11 @@ Named explicitly so nobody has to read the source to find out:
   nothing yet lets an administrator add another or change which is the default.
 - No way to delete a component or a document, including one made by mistake.
 - No document view: a document's outline is a tree you build, and a component still opens on its own
-  to be edited. No cross-reference resolved or published, and no reading view. No reuse or transclusion. No way to
+  to be edited. No reading view. No reuse or transclusion. No way to
   make a figure or a table unnumbered: every one takes a number.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
-  quotations, preformatted text, tables and their notes, figures, images in a line of text and
-  footnotes: no equations or cross-references in a publication, no definition-list structure of PDF's own, no list of equations, no caption
+  quotations, preformatted text, tables and their notes, figures, images in a line of text,
+  footnotes and cross-references: no equations in a publication, no definition-list structure of PDF's own, no list of equations, no caption
   labels, no theme, no monospace face for inline code, no Word, no preview, and no way to approve a
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,
@@ -483,7 +500,6 @@ Named explicitly so nobody has to read the source to find out:
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
 - No search, no metadata anybody can fill in, no taxonomy, no workflow, and no revisions, baselines or
   comparison: versions are cut and kept, and nothing yet compares or designates one. Conditional text
-  and suggestion handling are described in the content model and neither runs, and a cross-reference
-  is made and shown in the editor but nothing resolves one in a publication.
+  and suggestion handling are described in the content model and neither runs.
 - No signed or published release - the installer builds locally and is unsigned.
 - No auto-update.

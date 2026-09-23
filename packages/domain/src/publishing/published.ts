@@ -5,14 +5,14 @@ import type { SlotPart } from './layout.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/9` is the document under a layout whose runs carry their marks and may be images or
- * footnotes, and whose blocks may be lists, quotations, preformatted text, tables with their notes and
- * figures, with its generated lists after the contents, which `apps/worker/templates/publication/9/`
- * reads. It is never stored - only its digest is,
- * on the publication - so a later shape is a new schema string and a new template version, not a
- * migration.
+ * `publishing/10` is the document under a layout whose runs carry their marks and may be images,
+ * footnotes or cross-references, and whose blocks may be lists, quotations, preformatted text, tables
+ * with their notes and figures, each carrying its anchor where a reference names it, with its
+ * generated lists after the contents, which `apps/worker/templates/publication/10/` reads. It is never
+ * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
+ * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/9';
+export const PUBLISHING_SCHEMA = 'publishing/10';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -71,6 +71,14 @@ export const PUBLISHING_SCHEMA_7 = 'publishing/7';
  * asserts it, and a template version and the publications made with it are a record.
  */
 export const PUBLISHING_SCHEMA_8 = 'publishing/8';
+
+/**
+ * The document under a layout as it stood before a run could be a cross-reference and a block, a
+ * footnote or a node carried an anchor, frozen by cross-references 2 for the reason `publishing/8` is:
+ * `apps/worker/templates/publication/9/` asserts it, and a template version and the publications made
+ * with it are a record.
+ */
+export const PUBLISHING_SCHEMA_9 = 'publishing/9';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -153,21 +161,69 @@ export interface PublishedImageRun {
 /**
  * A footnote (footnotes 2, ruling R2): the numbering table's label for it, which the template sets as
  * its mark and at the foot of the page, and its paragraphs, published as a paragraph's are. Only a
- * paragraph's runs hold one, and a footnote's own paragraphs hold none (CNT-129).
+ * paragraph's runs hold one, and a footnote's own paragraphs hold none (CNT-129). Each paragraph
+ * carries its anchor where a reference names it (CNT-125), and one a reference names is kept even
+ * where it holds no runs, so the template sets its label where it would have begun.
  */
 export interface PublishedFootnoteRun {
   readonly footnote: {
     readonly label: string;
+    /** Its anchor where a reference names it (cross-references 2, ruling R4), else null. */
+    readonly anchor: string | null;
     readonly paragraphs: readonly PublishedParagraph[];
   };
 }
 
-/** One piece of a published run sequence: text with its marks, an image, or a footnote. */
-export type PublishedInline = PublishedRun | PublishedImageRun | PublishedFootnoteRun;
+/**
+ * A cross-reference (cross-references 2, rulings R3 to R5), resolved in the document publishing it:
+ * `anchor` is its target's - `b-<node>-<block>` for a block or a footnote of an occurrence, `n-<node>`
+ * for a node - which the file carries on that target, or on an empty marker where the target publishes
+ * nothing, so a template never names a label the document lacks.
+ *
+ * - `text` is what it prints - a number, a title, both, or the layout's word for above or below - and
+ *   **null where `page` is asked for**, since a page is known only once the document is typeset: the
+ *   template prints the target's page number, in the numbering of the matter it stands in.
+ * - `relative` is whether `text` is the layout's own word for above or below, which the template sets
+ *   in the layout's language, as it sets the layout's other words - a French paragraph's "earlier" is
+ *   read in the English of the layout that gave it (the final review of cross-references 2). A number
+ *   or a title is the document's, and false; so is a page.
+ * - `link` is whether it is set as a link to its target: in a paragraph's text, and never in a table's
+ *   header rows, a caption, a term, an attribution or a table's note, where it is text (XR-D) - a link
+ *   in a repeated header row is refused by the engine, and a caption is set again in the lists.
+ *
+ * It carries no marks, as its stored node carries none.
+ */
+export interface PublishedReferenceRun {
+  readonly reference:
+    | {
+        readonly anchor: string;
+        readonly text: string;
+        readonly page: false;
+        readonly relative: boolean;
+        readonly link: boolean;
+      }
+    | {
+        readonly anchor: string;
+        readonly text: null;
+        readonly page: true;
+        readonly relative: false;
+        readonly link: boolean;
+      };
+}
 
+/** One piece of a published run sequence: text with its marks, an image, a footnote or a reference. */
+export type PublishedInline =
+  PublishedRun | PublishedImageRun | PublishedFootnoteRun | PublishedReferenceRun;
+
+/**
+ * Every published block carries `anchor`: the label a template sets on it where a cross-reference in
+ * the document names it (`b-<node>-<block>`), and **null where none does** - so the file labels what
+ * a reference points at and nothing more (cross-references 2, ruling R4).
+ */
 export interface PublishedParagraph {
   readonly type: 'paragraph';
   readonly id: string;
+  readonly anchor: string | null;
   readonly runs: readonly PublishedInline[];
 }
 
@@ -196,6 +252,7 @@ export interface PublishedItem {
 export interface PublishedList {
   readonly type: 'list';
   readonly id: string;
+  readonly anchor: string | null;
   readonly kind: 'ordered' | 'unordered' | 'definition';
   readonly start: number | null;
   readonly format: 'decimal' | 'alphabetic' | 'roman' | null;
@@ -211,6 +268,7 @@ export interface PublishedList {
 export interface PublishedPreformatted {
   readonly type: 'preformatted';
   readonly id: string;
+  readonly anchor: string | null;
   readonly label: string | null;
   readonly lines: readonly string[];
 }
@@ -223,6 +281,7 @@ export interface PublishedPreformatted {
 export interface PublishedQuotation {
   readonly type: 'blockquote';
   readonly id: string;
+  readonly anchor: string | null;
   readonly blocks: readonly PublishedBlock[];
   readonly attribution: readonly PublishedInline[] | null;
 }
@@ -250,6 +309,7 @@ export interface PublishedCell {
 export interface PublishedTable {
   readonly type: 'table';
   readonly id: string;
+  readonly anchor: string | null;
   readonly label: string | null;
   readonly caption: readonly PublishedInline[];
   readonly headerRows: number;
@@ -275,6 +335,7 @@ export interface PublishedTable {
 export interface PublishedFigure {
   readonly type: 'figure';
   readonly id: string;
+  readonly anchor: string | null;
   readonly label: string | null;
   readonly caption: readonly PublishedInline[];
   readonly path: string;
@@ -283,13 +344,29 @@ export interface PublishedFigure {
   readonly alternative: { readonly text: string; readonly language: PublishedLanguage } | null;
 }
 
+/**
+ * **A target that publishes nothing** (cross-references 2, ruling R4, XR-D): an empty paragraph, an
+ * empty preformatted block, a quotation or a list with nothing in it, named by a reference. Such a
+ * block is not published - an empty `P` is no content - but a reference to it must still find its
+ * label, or the engine refuses the whole document, so `assemble` emits this in its place: its anchor
+ * and nothing else, which a template sets as an empty `metadata` carrying the label, measured to take
+ * a link and a page. A block kind rather than a run, because what it stands for is a block and it
+ * stands where the block would have; and it is emitted only where a reference names the target, so a
+ * document with no references holds none.
+ */
+export interface PublishedMarker {
+  readonly type: 'marker';
+  readonly anchor: string;
+}
+
 export type PublishedBlock =
   | PublishedParagraph
   | PublishedList
   | PublishedPreformatted
   | PublishedQuotation
   | PublishedTable
-  | PublishedFigure;
+  | PublishedFigure
+  | PublishedMarker;
 
 /** A generated list the template sets after the contents: which sequence, under which title. */
 export interface PublishedGeneratedList {
@@ -336,6 +413,8 @@ export interface PublishedNode1 {
  */
 export interface PublishedNode {
   readonly id: string;
+  /** `n-<node>` where a cross-reference names the node, else null (cross-references 2, ruling R4). */
+  readonly anchor: string | null;
   readonly depth: number;
   readonly matter: OutlineMatter;
   readonly number: string | null;

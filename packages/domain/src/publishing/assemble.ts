@@ -2,8 +2,9 @@ import { ADMITTED_FORMATS } from '../assets/header.js';
 import type { AssetVersionContent } from '../assets/version.js';
 import { startsOutsideItsNumbering, type BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
-import type { InlineNode } from '../content/model/inline.js';
+import type { CrossReferenceTarget, InlineNode } from '../content/model/inline.js';
 import type { Mark } from '../content/model/marks.js';
+import { hasText } from '../content/model/text.js';
 import { contributionsOf, type Contribution } from '../structure/contributions.js';
 import { contents, listOf } from '../structure/lists.js';
 import {
@@ -13,7 +14,19 @@ import {
   sectionNumbers,
   type NumberingTable,
 } from '../structure/numbering.js';
-import type { OutlineDocument, OutlineMatter, OutlineNode } from '../structure/outline.js';
+import {
+  walkOutline,
+  type OutlineDocument,
+  type OutlineMatter,
+  type OutlineNode,
+} from '../structure/outline.js';
+import {
+  kindWord,
+  printableForms,
+  referenceResolver,
+  type BoundTarget,
+  type ReferenceResolution,
+} from '../structure/references.js';
 import { defaultNumberingScheme, type NumberFormat } from '../structure/scheme.js';
 
 import type { PublishFailure } from './failures.js';
@@ -236,9 +249,12 @@ export function assemble(input: AssembleInput): Assembled {
     const slotWords = [...head, ...foot]
       .flat()
       .flatMap((part) => (part.kind === 'words' ? [part.text] : []));
-    const { contents: title, notice, noticeSentence } = layout.words;
+    const { contents: title, notice, noticeSentence, above, below } = layout.words;
     const listTitles = layout.matter.lists.map((list) => list.title);
-    for (const words of [title, notice, noticeSentence, ...slotWords, ...listTitles]) {
+    // A relative reference prints the layout's words for above and below (cross-references 2, R2),
+    // where it has them.
+    const relative = [above, below].flatMap((words) => (words === undefined ? [] : [words]));
+    for (const words of [title, notice, noticeSentence, ...slotWords, ...listTitles, ...relative]) {
       for (const { codePoint } of characterProblems(words, input.covers, 'body')) {
         failures.push(
           failure('compose', 'layout_glyph_missing', null, null, codePointName(codePoint)),
@@ -246,6 +262,29 @@ export function assemble(input: AssembleInput): Assembled {
       }
     }
   }
+
+  // Every cross-reference in the document, resolved before anything is projected (cross-references 2):
+  // a reference can point forwards, and whether a block carries its anchor depends on references not
+  // yet reached. Under a layout alone - `publishing/1` has no run to put one in, so without a layout a
+  // reference is refused by name where it stands, as it always was.
+  const resolved =
+    layout === null
+      ? NO_REFERENCES
+      : resolveReferences(input, numbering, layout.words.above, layout.words.below);
+  failures.push(...resolved.failures);
+  /** A block's or a footnote's anchor where a reference names it, else null. */
+  const anchorOf = (node: string, block: string): string | null => {
+    const anchor = blockAnchor(node, block);
+    return resolved.named.has(anchor) ? anchor : null;
+  };
+  /**
+   * What a block that publishes nothing leaves in its place: an empty marker carrying its anchor where
+   * a reference names it (XR-D), so the reference finds its label, and nothing where none does.
+   */
+  const markerOf = (node: string, block: string): PublishedBlock[] => {
+    const anchor = anchorOf(node, block);
+    return anchor === null ? [] : [{ type: 'marker', anchor }];
+  };
 
   // `publishing/1` holds a run of text alone and is frozen, so a mark is refused outright when there
   // is no layout; under a layout a run carries the nine of `PUBLISHED_MARK_ORDER`.
@@ -267,6 +306,11 @@ export function assemble(input: AssembleInput): Assembled {
    * are a paragraph's, with the table the paragraph stands in, if any, which a footnote anchored to a
    * cell resolves against. Anywhere else - a caption, a term, an attribution, a table's note - one is
    * refused by name, naming `block`.
+   *
+   * **And so is a cross-reference, as `resolveReferences` printed it** (cross-references 2): a link to
+   * its target in a paragraph's text - `inParagraph`, a footnote's paragraphs among them - outside a
+   * table's header rows, and text everywhere else (R5, XR-D). One that did not resolve, or asked for a
+   * form its target lacks, has already failed by name and is not set.
    */
   const publishedRuns = (
     content: readonly InlineNode[],
@@ -288,6 +332,14 @@ export function assemble(input: AssembleInput): Assembled {
         }
         const published = publishedFootnote(inline, node, block, inParagraph.table);
         if (published !== null) runs.push(published);
+        continue;
+      }
+      if (inline.type === 'crossReference' && layout !== null) {
+        const printed = resolved.printed.get(referenceKey(node, inline.id));
+        // A header row is set again on every page the table reaches, as an artifact, where the engine
+        // refuses a link; a caption, a term, an attribution and a note are set again or read apart.
+        const link = inParagraph !== null && !inParagraph.heading;
+        if (printed !== undefined) runs.push({ reference: { ...printed, link } });
         continue;
       }
       // A caption's height is estimated from its words, and the list after the contents sets it again,
@@ -375,11 +427,22 @@ export function assemble(input: AssembleInput): Assembled {
       if (paragraph.style !== BODY) {
         failures.push(failure('compose', 'style_missing', node, footnote.id, paragraph.style));
       }
-      const runs = publishedRuns(paragraph.content, node, footnote.id);
-      return runs.length === 0 ? [] : [{ type: 'paragraph' as const, id: paragraph.id, runs }];
+      // A footnote's text is a paragraph's text, where a reference is a link (R5); a footnote holds no
+      // footnote (CNT-129), so nothing here asks the table the flag carries.
+      const runs = publishedRuns(paragraph.content, node, footnote.id, 0, false, {
+        table,
+        heading: false,
+      });
+      // A footnote's own paragraph is a block a reference can name (CNT-125), and carries its anchor
+      // where one does. An empty one is dropped unless it is named: then it stays, holding nothing,
+      // and the template sets its label where it would have begun, as a marker stands for a block.
+      const anchor = anchorOf(node, paragraph.id);
+      return runs.length === 0 && anchor === null
+        ? []
+        : [{ type: 'paragraph' as const, id: paragraph.id, anchor, runs }];
     });
     check(label, node, footnote.id);
-    return { footnote: { label, paragraphs } };
+    return { footnote: { label, anchor: anchorOf(node, footnote.id), paragraphs } };
   };
 
   /**
@@ -410,7 +473,10 @@ export function assemble(input: AssembleInput): Assembled {
           table,
           heading,
         });
-        return runs.length === 0 ? [] : [{ type: 'paragraph', id: block.id, runs }];
+        // An empty paragraph is where a cursor stands and publishes nothing (CNT-124), unless a
+        // reference names it: then its marker stands where it would have.
+        if (runs.length === 0) return markerOf(node, block.id);
+        return [{ type: 'paragraph', id: block.id, anchor: anchorOf(node, block.id), runs }];
       }
       case 'list': {
         // `publishing/1` and `publishing/2` hold paragraphs alone and their bytes are frozen
@@ -459,13 +525,15 @@ export function assemble(input: AssembleInput): Assembled {
         // An item that came out empty is **kept**: it is storable because that is where a cursor
         // stands after Enter (CNT-124's reason), and an item that vanished would renumber every
         // item below it - a reader shown numbers the author never wrote. A list with nothing at
-        // all in it is another matter: it contributes nothing rather than an empty `L`.
-        return items.every((item) => item.term === null && item.blocks.length === 0)
-          ? []
+        // all in it is another matter: it contributes nothing rather than an empty `L` - but a marker
+        // for it, or for what is in it, where a reference names either, since a marker sets nothing.
+        return items.every((item) => item.term === null && item.blocks.every(isMarker))
+          ? [...markerOf(node, block.id), ...items.flatMap((item) => item.blocks)]
           : [
               {
                 type: 'list',
                 id: block.id,
+                anchor: anchorOf(node, block.id),
                 kind: block.kind,
                 start: block.start ?? null,
                 format: block.format ?? null,
@@ -480,7 +548,7 @@ export function assemble(input: AssembleInput): Assembled {
           return [];
         }
         // An empty block is where a cursor stands, as an empty paragraph is (decision P).
-        if (block.text === '') return [];
+        if (block.text === '') return markerOf(node, block.id);
         const lines = block.text.split('\n').map(expandTabs);
         const most = columnsAt(publishedPdf(layout.formats.pdf), indent);
         lines.forEach((line, index) => {
@@ -498,7 +566,15 @@ export function assemble(input: AssembleInput): Assembled {
             );
           }
         });
-        return [{ type: 'preformatted', id: block.id, label: block.language ?? null, lines }];
+        return [
+          {
+            type: 'preformatted',
+            id: block.id,
+            anchor: anchorOf(node, block.id),
+            label: block.language ?? null,
+            lines,
+          },
+        ];
       }
       case 'blockquote': {
         if (layout === null) {
@@ -514,12 +590,15 @@ export function assemble(input: AssembleInput): Assembled {
             ? []
             : publishedRuns(block.attribution, node, block.id, indent + 2 * QUOTATION_INDENT);
         // Nothing to show and nothing to attribute contributes nothing, rather than an empty
-        // `BlockQuote` (decision P).
-        if (blocks.length === 0 && attribution.length === 0) return [];
+        // `BlockQuote` (decision P) - but the markers it and what it quotes leave, as a list does.
+        if (blocks.every(isMarker) && attribution.length === 0) {
+          return [...markerOf(node, block.id), ...blocks];
+        }
         return [
           {
             type: 'blockquote',
             id: block.id,
+            anchor: anchorOf(node, block.id),
             blocks,
             attribution: attribution.length === 0 ? null : attribution,
           },
@@ -568,6 +647,7 @@ export function assemble(input: AssembleInput): Assembled {
           {
             type: 'table',
             id: block.id,
+            anchor: anchorOf(node, block.id),
             label,
             caption,
             headerRows: block.headerRows,
@@ -632,7 +712,11 @@ export function assemble(input: AssembleInput): Assembled {
         const across = textMeasure(format) - indent;
         const said =
           (label === null ? '' : `${label} `) +
-          caption.map((run) => ('text' in run ? run.text : '')).join('');
+          caption
+            .map((run) =>
+              'text' in run ? run.text : 'reference' in run ? (run.reference.text ?? '') : '',
+            )
+            .join('');
         const left = textBlockHeight(format) - captionHeight(columnsOf(said), across);
         const tooLong = left < FIGURE_LEAST_HEIGHT;
         if (tooLong) failures.push(failure('compose', 'caption_too_long', node, block.id, null));
@@ -647,6 +731,7 @@ export function assemble(input: AssembleInput): Assembled {
           {
             type: 'figure',
             id: block.id,
+            anchor: anchorOf(node, block.id),
             label,
             caption,
             path: publishedImagePath(asset),
@@ -766,10 +851,25 @@ export function assemble(input: AssembleInput): Assembled {
   const project = (node: OutlineNode, depth: number, matter: OutlineMatter): PublishedNode => {
     const numberText = numbers.get(node.id) ?? null;
     if (numberText !== null) check(numberText, node.id, null);
-    const shell = { id: node.id, depth, matter, number: numberText };
+    const anchor = nodeAnchor(node.id);
+    const shell = {
+      id: node.id,
+      anchor: resolved.named.has(anchor) ? anchor : null,
+      depth,
+      matter,
+      number: numberText,
+    };
 
     if (node.type === 'section') {
-      const title = textOf(node.title);
+      // A title's reference is its number in the title's words (R6): a published title is a string,
+      // set again in the contents and the running heads. One that failed has said so and prints nothing.
+      // Without a layout the title is refused for it, as `publishing/1` always did.
+      const title = textOf(
+        node.title,
+        layout === null
+          ? null
+          : (reference) => resolved.printed.get(referenceKey(node.id, reference.id))?.text ?? '',
+      );
       // A footnote in a title would be set twice, in the contents and where it stands (FN-B).
       // Under a layout alone: a request made before layouts keeps saying what it always said.
       if (layout !== null && 'unpublishable' in title && title.unpublishable === 'footnote') {
@@ -941,6 +1041,10 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
       throw new Error(
         `publishing/1 holds paragraphs alone, and block ${block.id} is a ${block.type}`,
       );
+    case 'marker':
+      // Unreachable too: without a layout no reference is resolved, so nothing is named and no marker
+      // is made.
+      throw new Error(`publishing/1 holds paragraphs alone, not a marker for ${block.anchor}`);
     default: {
       // As in `publishable`: the assignment keeps the compile failure and the throw names what
       // arrived, so a third published kind can never be folded into the frozen shape as `undefined`.
@@ -950,6 +1054,305 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
       );
     }
   }
+}
+
+/** A cross-reference as the content model stores it. */
+type ReferenceNode = Extract<InlineNode, { type: 'crossReference' }>;
+
+/**
+ * What a resolved reference prints, before where it stands says whether it is a link. `relative` says
+ * the text is the layout's own word for above or below, which the template sets in the layout's
+ * language (the final review of cross-references 2); a number or a title is the document's.
+ */
+type Printed =
+  | {
+      readonly anchor: string;
+      readonly text: string;
+      readonly page: false;
+      readonly relative: boolean;
+    }
+  | { readonly anchor: string; readonly text: null; readonly page: true; readonly relative: false };
+
+/** Every reference in a document, resolved: what each prints, what is named, and what failed. */
+interface ResolvedReferences {
+  /** What each reference that resolved to a form it can print prints, by `referenceKey`. */
+  readonly printed: ReadonlyMap<string, Printed>;
+  /** The anchor of every target such a reference names: what the file labels, and nothing more. */
+  readonly named: ReadonlySet<string>;
+  readonly failures: readonly PublishFailure[];
+}
+
+/** Nothing resolved: a request made before layouts, which refuses a reference where it stands. */
+const NO_REFERENCES: ResolvedReferences = { printed: new Map(), named: new Set(), failures: [] };
+
+/**
+ * The anchors of the published document (publishing.md, "The published document"): a block or a
+ * footnote by its occurrence and its identifier together, since one component placed twice holds the
+ * same identifiers twice (STR-010), and a node by its own. A node's identifier is 26 characters of
+ * `[a-z2-7]`, so the hyphen after it cannot be confused with one in a block's identifier.
+ */
+const blockAnchor = (node: string, block: string) => `b-${node}-${block}`;
+const nodeAnchor = (node: string) => `n-${node}`;
+
+/** A reference by where it is read - its occurrence, or the section it titles - and its identifier. */
+const referenceKey = (node: string, reference: string) => `${node}\u{0}${reference}`;
+
+const isMarker = (block: PublishedBlock): boolean => block.type === 'marker';
+
+/** What a failure names of a target it could not find (R7): its kind and identifiers, never text. */
+function targetNamed(target: CrossReferenceTarget): string {
+  switch (target.kind) {
+    case 'block':
+      return `block ${target.block}`;
+    case 'component':
+      return `component ${target.component} block ${target.block}`;
+    case 'node':
+      return `node ${target.node}`;
+    default: {
+      const unreachable: never = target;
+      throw new Error(`No name for a target of kind ${(unreachable as CrossReferenceTarget).kind}`);
+    }
+  }
+}
+
+/** A reference found in the document: where it is read, whether in a title, and where it stands. */
+interface Found {
+  readonly node: string;
+  readonly reference: ReferenceNode;
+  readonly inTitle: boolean;
+  readonly at: number;
+}
+
+/**
+ * **Every cross-reference in the document, resolved and printed** (cross-references 2, rulings R3 to
+ * R7), before anything is projected, since a reference may point forwards and a target carries its
+ * anchor only where one names it.
+ *
+ * **One walk, in the order the publish sets things**, gives every reference and every target a place
+ * in document order: a node where its heading is set, before its content and its children; a block
+ * where it begins, before what it holds; a footnote where its mark stands in its text. So a target
+ * that holds a reference - the section it stands in, its paragraph, the table whose caption it is in -
+ * comes before it, and `relative` prints _above_ for it (R3). The walk reaches every place inline
+ * content is stored: a section's title, and in a component a paragraph, a list's term and items at any
+ * depth, a quotation and its attribution, a table's caption, cells and note, a figure's caption, and a
+ * footnote's paragraphs - a footnote refused for where it stands included, so every reference's
+ * failure is said, not only those in what is published. A footnote's paragraph is a target too
+ * (CNT-125), placed after its footnote's mark, where its note begins.
+ *
+ * Each is resolved in the occurrence it is read in (`referenceResolver`, R1), and then:
+ *
+ * - **one that does not resolve** fails `cross_reference_unresolved`, naming where it is read, the
+ *   reference and its target (STR-029, STR-062);
+ * - **one asking for a form its target cannot print** fails `cross_reference_form_unavailable`, naming
+ *   the form: one `printableForms` does not offer, a page in a section's title (R6) - which the
+ *   running heads and the contents set again, where a page would be computed per place - a
+ *   relative form under a layout with no words for above and below (R2), and **any form of a target
+ *   standing in a table's header rows** (cross-references 2, task 4, measured): the engine sets a
+ *   header row again on every page the table reaches, the target's label with it, and a label set
+ *   twice refuses the compile - "label occurs multiple times" - wherever the table happens to break,
+ *   which only the engine knows. Refused wherever it breaks, as a footnote there is. A header
+ *   column is set once, and is published;
+ * - **every other** prints its form: the label, the title, both with a space between, the layout's
+ *   word for above or below, or nothing for a page, which the template prints - and its target's
+ *   anchor is named.
+ *
+ * A section's title is the words it is **published** with, its own references as their numbers, so a
+ * reference to it prints what its heading shows. A title's reference is a number or a page alone
+ * (`checkInlineContent`), so this never asks a title for a title. **A caption, read as a title**, is
+ * its author's words with each of its own references printed as its target's number - or, where that
+ * target has none, its kind in one word - whatever form the reference itself asks for: a number never
+ * reads a caption, so a caption naming another's title, which names the first's, has an end (the final
+ * review of cross-references 2). Dropping the reference instead would print words the author never
+ * wrote, "See  for more".
+ */
+function resolveReferences(
+  input: AssembleInput,
+  numbering: NumberingTable,
+  above: string | undefined,
+  below: string | undefined,
+): ResolvedReferences {
+  const found: Found[] = [];
+  const positions = new Map<string, number>();
+  const sections = new Map<string, Extract<OutlineNode, { type: 'section' }>>();
+  /** Every figure's and table's caption, by the block's anchor, with the occurrence it is read in. */
+  const captions = new Map<
+    string,
+    { readonly node: string; readonly caption: readonly InlineNode[] }
+  >();
+  /** Every anchor standing in a table's header rows, which the engine sets on every page. */
+  const repeated = new Set<string>();
+  let at = 0;
+
+  const place = (anchor: string, inHeader: boolean) => {
+    positions.set(anchor, at++);
+    if (inHeader) repeated.add(anchor);
+  };
+  const inlines = (
+    content: readonly InlineNode[],
+    node: string,
+    inTitle: boolean,
+    inHeader: boolean,
+  ) => {
+    for (const inline of content) {
+      if (inline.type === 'crossReference') {
+        found.push({ node, reference: inline, inTitle, at: at++ });
+      } else if (inline.type === 'footnote') {
+        place(blockAnchor(node, inline.id), inHeader);
+        const paragraphs = inline.content as readonly Extract<BlockNode, { type: 'paragraph' }>[];
+        for (const paragraph of paragraphs) {
+          place(blockAnchor(node, paragraph.id), inHeader);
+          inlines(paragraph.content, node, inTitle, inHeader);
+        }
+      }
+    }
+  };
+  // A branch per stored block kind, and a `default:` that refuses what it cannot name, as
+  // `publishable` has: a block walked past here is a reference in it never resolved.
+  const block = (stored: BlockNode, node: string, inHeader: boolean): void => {
+    place(blockAnchor(node, stored.id), inHeader);
+    switch (stored.type) {
+      case 'paragraph':
+        inlines(stored.content, node, false, inHeader);
+        return;
+      case 'list':
+        for (const item of stored.items) {
+          inlines(item.term ?? [], node, false, inHeader);
+          for (const each of item.content) block(each, node, inHeader);
+        }
+        return;
+      case 'blockquote':
+        for (const each of stored.content) block(each, node, inHeader);
+        inlines(stored.attribution ?? [], node, false, inHeader);
+        return;
+      case 'table':
+        captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });
+        inlines(stored.caption, node, false, inHeader);
+        stored.rows.forEach((row, index) => {
+          const header = inHeader || index < stored.headerRows;
+          for (const cell of row.cells) for (const each of cell.content) block(each, node, header);
+        });
+        inlines(stored.note ?? [], node, false, inHeader);
+        return;
+      case 'figure':
+        captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });
+        inlines(stored.caption, node, false, inHeader);
+        return;
+      case 'preformatted':
+      case 'equation':
+        return;
+      default: {
+        const unreachable: never = stored;
+        throw new Error(`No reference walk for a block of kind ${(unreachable as BlockNode).type}`);
+      }
+    }
+  };
+  walkOutline(input.outline.nodes, (node) => {
+    place(nodeAnchor(node.id), false);
+    if (node.type === 'section') {
+      sections.set(node.id, node);
+      inlines(node.title, node.id, true, false);
+      return;
+    }
+    for (const each of input.occurrences.get(node.id)?.content ?? []) block(each, node.id, false);
+  });
+
+  const resolve = referenceResolver({
+    outline: input.outline,
+    occurrences: input.occurrences,
+    numbering,
+  });
+  const resolutions = new Map<string, ReferenceResolution>();
+  for (const { node, reference } of found) {
+    resolutions.set(referenceKey(node, reference.id), resolve(reference.target, { node }));
+  }
+  /** The number a reference resolved to, or its target's kind where it has none; nothing if it failed. */
+  const numberOf = (node: string, reference: ReferenceNode): string => {
+    const resolution = resolutions.get(referenceKey(node, reference.id));
+    return resolution?.ok === true
+      ? (resolution.target.label ?? kindWord(resolution.target.kind))
+      : '';
+  };
+  /**
+   * A section's title as it is published: its references as the numbers they resolved to. And a
+   * figure's or a table's caption as a title form prints it: its words, its references as their
+   * numbers, each falling back to its kind.
+   */
+  const published = (target: BoundTarget): BoundTarget => {
+    const captioned =
+      target.block === null ? undefined : captions.get(blockAnchor(target.node, target.block));
+    if (captioned !== undefined) {
+      const words = captioned.caption
+        .map((inline) => {
+          if (inline.type === 'text') return inline.value;
+          if (inline.type === 'crossReference') return numberOf(captioned.node, inline);
+          return '';
+        })
+        .join('');
+      return { ...target, title: hasText(words) ? words : null };
+    }
+    const section = target.block === null ? sections.get(target.node) : undefined;
+    if (section === undefined) return target;
+    const title = textOf(section.title, (reference) => {
+      const resolution = resolutions.get(referenceKey(section.id, reference.id));
+      return resolution?.ok === true ? (resolution.target.label ?? '') : '';
+    });
+    // A marked title is refused where it stands, and keeps the words resolution read.
+    if (!('words' in title)) return target;
+    return { ...target, title: hasText(title.words) ? title.words : null };
+  };
+
+  const printed = new Map<string, Printed>();
+  const named = new Set<string>();
+  const failures: PublishFailure[] = [];
+  for (const { node, reference, inTitle, at: where } of found) {
+    const key = referenceKey(node, reference.id);
+    const resolution = resolutions.get(key)!;
+    if (!resolution.ok) {
+      failures.push(
+        failure(
+          'compose',
+          'cross_reference_unresolved',
+          node,
+          reference.id,
+          targetNamed(reference.target),
+        ),
+      );
+      continue;
+    }
+    const target = published(resolution.target);
+    const { display } = reference;
+    const anchor =
+      target.block === null ? nodeAnchor(target.node) : blockAnchor(target.node, target.block);
+    const unavailable =
+      !printableForms(target).includes(display) ||
+      (inTitle && display === 'page') ||
+      (display === 'relative' && (above === undefined || below === undefined)) ||
+      repeated.has(anchor);
+    if (unavailable) {
+      failures.push(
+        failure('compose', 'cross_reference_form_unavailable', node, reference.id, display),
+      );
+      continue;
+    }
+    named.add(anchor);
+    // Found by the same walk, so every target resolution reaches has its place.
+    const before = positions.get(anchor)! <= where;
+    const label = target.label ?? '';
+    const title = target.title ?? '';
+    const text: Record<Exclude<typeof display, 'page'>, string> = {
+      number: label,
+      title,
+      numberAndTitle: `${label} ${title}`,
+      relative: (before ? above : below) ?? '',
+    };
+    printed.set(
+      key,
+      display === 'page'
+        ? { anchor, text: null, page: true, relative: false }
+        : { anchor, text: text[display], page: false, relative: display === 'relative' },
+    );
+  }
+  return { printed, named, failures };
 }
 
 /** A stored table, as a footnote's cell anchor resolves against one. */
@@ -1151,12 +1554,21 @@ function publishedMark(mark: Exclude<CarriedMark, { type: 'language' }>): Publis
  * published: an inline's node type, or a mark's. A title is published as a string and has nowhere to
  * put a mark, so a marked title is refused rather than flattened into words the author did not
  * write - and the refusal names what to look for, as a block that cannot be published names its kind.
+ *
+ * **A cross-reference is words** where `reference` says what it prints (cross-references 2, ruling
+ * R6): its number, set in the title's string. Null where there is no layout, and then a reference is
+ * what cannot be published, as it always was.
  */
 function textOf(
   title: readonly InlineNode[],
+  reference: ((inline: ReferenceNode) => string) | null,
 ): { readonly words: string } | { readonly unpublishable: string } {
   let words = '';
   for (const inline of title) {
+    if (inline.type === 'crossReference' && reference !== null) {
+      words += reference(inline);
+      continue;
+    }
     if (inline.type !== 'text') return { unpublishable: inline.type };
     const [mark] = inline.marks;
     if (mark !== undefined) return { unpublishable: mark.type };

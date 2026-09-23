@@ -16,6 +16,19 @@ import type { Node } from 'prosemirror-model';
  */
 export interface ReferenceContext {
   readonly targets: readonly ReferenceTarget[];
+  /**
+   * What a `relative` reference prints for _above_ and _below_, in the layout's own words
+   * (cross-references 2, ruling R9). Absent where there is no document, or its layout gives neither -
+   * `printed` falls back to the English literal, exactly as before layouts had words of their own.
+   */
+  readonly words?: { readonly above: string; readonly below: string };
+  /**
+   * The component being edited, where the host knows it. A `component` target naming it - a reference
+   * pasted in from another component keeps the target it had there - is a block of its own, and is
+   * shown exactly as a `block` target is, since a publish binds it to the occurrence being read
+   * (STR-056). Absent, such a target is shown as another component's.
+   */
+  readonly component?: string;
 }
 
 /** What one reference shows, and where it stands in the document it was read from. */
@@ -69,6 +82,8 @@ interface Held {
  *   the document: the kind of thing it is and a figure's or a table's caption, _Table: Readings_,
  *   _Figure_, _Footnote_, _Paragraph_, read from the live document. Not broken: it is there, and a
  *   number is simply not known yet;
+ * - a `component` target naming the component being edited (`context.component`): a block of its own,
+ *   shown as a `block` target naming that block is;
  * - a `node` or a `component` target in a document: what the context says it prints, or _Broken
  *   reference to a section_ or _to another component_, and broken, where the document does not offer
  *   it; on its own, _Section_ or _In another component_, and not broken, since nothing there can judge
@@ -93,8 +108,12 @@ export function referencesShown(
     if (node.type.name !== 'crossReference') return true;
     held ??= identified(component);
     offered ??= new Map(context?.targets.map((each) => [keyOf(each.target), each]));
-    const target = node.attrs.target as CrossReferenceTarget;
+    const stored = node.attrs.target as CrossReferenceTarget;
     const display = node.attrs.display as CrossReferenceDisplay;
+    const target: CrossReferenceTarget =
+      stored.kind === 'component' && stored.component === context?.component
+        ? { kind: 'block', block: stored.block }
+        : stored;
     const found = offered.get(keyOf(target));
     if (target.kind === 'block') {
       const own = held.get(target.block);
@@ -102,7 +121,7 @@ export function referencesShown(
         shown.push({ pos, text: BROKEN_REFERENCE, broken: true });
       } else if (found !== undefined) {
         const relative = own.pos < pos + offset ? 'above' : 'below';
-        shown.push({ pos, text: printed(found, display, relative), broken: false });
+        shown.push({ pos, text: printed(found, display, relative, context?.words), broken: false });
       } else {
         shown.push({ pos, text: named(own.node), broken: false });
       }
@@ -110,7 +129,11 @@ export function referencesShown(
       const text = target.kind === 'node' ? kindWord('section') : IN_ANOTHER_COMPONENT;
       shown.push({ pos, text, broken: false });
     } else if (found !== undefined) {
-      shown.push({ pos, text: printed(found, display, found.relative), broken: false });
+      shown.push({
+        pos,
+        text: printed(found, display, found.relative, context?.words),
+        broken: false,
+      });
     } else {
       const text = target.kind === 'node' ? BROKEN_SECTION_REFERENCE : BROKEN_COMPONENT_REFERENCE;
       shown.push({ pos, text, broken: true });

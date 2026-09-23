@@ -181,7 +181,8 @@ const kindsIn = (document: PublishedDocument) => {
         marksIn(block.runs);
         continue;
       }
-      if (block.type === 'preformatted') continue;
+      // A marker, like preformatted text, holds no runs.
+      if (block.type === 'preformatted' || block.type === 'marker') continue;
       if (block.type === 'figure') {
         marksIn(block.caption);
         continue;

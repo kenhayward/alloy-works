@@ -6,16 +6,16 @@ import {
   recordPublication,
   type TenantDatabase,
 } from '@alloy-works/db';
-import {
-  assemble,
-  PUBLISHING_SCHEMA,
-  PUBLISHING_SCHEMA_1,
-  type PublishFailure,
-} from '@alloy-works/domain';
+import { assemble, PUBLISHING_SCHEMA_1, type PublishFailure } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import { PINNED_FONT_FILES, type PinnedFonts } from '../fonts.js';
 import { JobRefused } from '../refusal.js';
-import { PUBLICATION_TEMPLATE, TEMPLATE_READING, type PublishedSchema } from '../template.js';
+import {
+  PUBLICATION_TEMPLATE,
+  PUBLISHING_SCHEMA_CURRENT,
+  TEMPLATE_READING,
+  type PublishedSchema,
+} from '../template.js';
 import type { RootImage, Typst } from '../typst.js';
 import type { JobHandler } from '../worker.js';
 
@@ -30,17 +30,20 @@ import type { JobHandler } from '../worker.js';
  * before one could be a table, and version 6 before one could be a figure - each named only by the
  * publications it made. Version 6 was also the first whose compile runs with
  * `--features a11y-extras` (`typstArguments`), 7 the first to read images from the store, 8 the
- * first to set one in a run of text, and 9 the first to set a footnote and a table's note.
+ * first to set one in a run of text, 9 the first to set a footnote and a table's note, and 10 the
+ * first to resolve and print a cross-reference.
  *
- * **Both keys are computed.** Repoint `PUBLISHING_SCHEMA` and the key moves while the value stays
- * behind, and the `satisfies` clause cannot catch it because `PublishedSchema` derives from the
- * same constant: every publication the new pipeline makes would record itself as made by the old
- * one, in the single field this constant exists for. `template.test.ts` pins this map as a LITERAL
- * object so that a bump left half-done goes red rather than lying in a PDF's own provenance.
+ * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
+ * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
+ * derives from the same constant: every publication the new pipeline made would record itself as
+ * made by the old one, in the single field this constant exists for. `PUBLISHING_SCHEMA_CURRENT` is
+ * annotated with its literal, so a repoint fails the typecheck where it is declared, and
+ * `template.test.ts` still pins this map as a LITERAL object so that a bump left half-done goes red
+ * rather than lying in a PDF's own provenance.
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA]: '9',
+  [PUBLISHING_SCHEMA_CURRENT]: '10',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */

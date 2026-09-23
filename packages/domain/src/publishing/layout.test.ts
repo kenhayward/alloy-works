@@ -9,10 +9,12 @@ import {
   defaultLayout,
   FIRST_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
+  layoutWordsSchema,
   parseLayout,
   readLayout,
   SECOND_DEFAULT_LAYOUT,
   speaksFor,
+  THIRD_DEFAULT_LAYOUT,
   unsupportedFormats,
   type Layout,
 } from './layout.js';
@@ -42,12 +44,15 @@ describe('a layout', () => {
 
   it('holds the default layout to its own schema', () => {
     const expected: Layout = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       language: 'en',
       words: {
         contents: 'Contents',
         notice: DRAFT_NOTICE.page,
         noticeSentence: DRAFT_NOTICE.text,
+        // Version 0.4's: what a relative reference prints (cross-references 2, ruling R2).
+        above: 'above',
+        below: 'below',
       },
       scheme: defaultNumberingScheme,
       matter: {
@@ -86,7 +91,7 @@ describe('a layout', () => {
         },
       },
     };
-    expect(LAYOUT_SCHEMA_VERSION).toBe(2);
+    expect(LAYOUT_SCHEMA_VERSION).toBe(3);
     expect(defaultLayout).toEqual(expected);
     expect(parseLayout(defaultLayout)).toEqual(expected);
 
@@ -98,25 +103,105 @@ describe('a layout', () => {
   });
 
   it("keeps the default layout's 0.2, as migration 0019 stored it, with its list of tables alone", () => {
+    expect(SECOND_DEFAULT_LAYOUT.schemaVersion).toBe(2);
     expect(SECOND_DEFAULT_LAYOUT.matter.lists).toEqual([{ sequence: 'table', title: 'Tables' }]);
     expect({
       ...SECOND_DEFAULT_LAYOUT,
       matter: { ...SECOND_DEFAULT_LAYOUT.matter, lists: [] },
     }).toEqual({
-      ...defaultLayout,
-      matter: { ...defaultLayout.matter, lists: [] },
+      ...THIRD_DEFAULT_LAYOUT,
+      matter: { ...THIRD_DEFAULT_LAYOUT.matter, lists: [] },
     });
   });
 
+  it("keeps the default layout's 0.3, as migration 0021 stored it at schema 2, and 0.4 is 0.3 with its words for above and below", () => {
+    expect(THIRD_DEFAULT_LAYOUT.schemaVersion).toBe(2);
+    expect(THIRD_DEFAULT_LAYOUT.words).toEqual({
+      contents: 'Contents',
+      notice: DRAFT_NOTICE.page,
+      noticeSentence: DRAFT_NOTICE.text,
+    });
+    expect(THIRD_DEFAULT_LAYOUT.matter.lists).toEqual([
+      { sequence: 'figure', title: 'Figures' },
+      { sequence: 'table', title: 'Tables' },
+    ]);
+    expect(defaultLayout).toEqual({
+      ...THIRD_DEFAULT_LAYOUT,
+      schemaVersion: 3,
+      words: { ...THIRD_DEFAULT_LAYOUT.words, above: 'above', below: 'below' },
+    });
+  });
+
+  it('reads a layout stored at schema version 2 as one with no words for above and below', () => {
+    // A migration cannot know another language's words, so it gives none (ruling R2).
+    for (const stored of [SECOND_DEFAULT_LAYOUT, THIRD_DEFAULT_LAYOUT]) {
+      const read = readLayout(JSON.parse(JSON.stringify(stored)), {
+        artifact: 'layout-artifact',
+        version: 'layout-version',
+      });
+      if (!read.ok) throw new Error(read.failure);
+      expect(read.layout).toEqual({ ...stored, schemaVersion: 3 });
+      expect(read.layout.words).not.toHaveProperty('above');
+      expect(read.layout.words).not.toHaveProperty('below');
+    }
+  });
+
+  it('holds the words for above and below together, or neither, each words that say something', () => {
+    const both = copy();
+    both.words = { ...both.words, above: 'ci-dessus', below: 'ci-dessous' };
+    expect(parseLayout(both).words).toMatchObject({ above: 'ci-dessus', below: 'ci-dessous' });
+
+    const neither = copy();
+    delete neither.words.above;
+    delete neither.words.below;
+    expect(parseLayout(neither).words).toEqual({
+      contents: 'Contents',
+      notice: DRAFT_NOTICE.page,
+      noticeSentence: DRAFT_NOTICE.text,
+    });
+
+    for (const alone of ['above', 'below'] as const) {
+      const one = copy();
+      delete one.words[alone];
+      expect(() => parseLayout(one), alone).toThrow(/above and below together/);
+    }
+
+    for (const said of ['above', 'below'] as const) {
+      const blank = copy();
+      blank.words[said] = '   ';
+      expect(() => parseLayout(blank), said).toThrow(/say something/);
+      const empty = copy();
+      empty.words[said] = '';
+      expect(() => parseLayout(empty), said).toThrow(/say something/);
+      const nul = copy();
+      nul.words[said] = `ab${String.fromCharCode(0)}ove`;
+      expect(() => parseLayout(nul), said).toThrow(/cannot be stored/);
+    }
+  });
+
+  it("checks a layout's words on their own, for a caller shown only that much of the layout (cross-references 2, ruling R9)", () => {
+    // The default's own words, exactly as the whole layout holds them.
+    expect(layoutWordsSchema.parse(defaultLayout.words)).toEqual(defaultLayout.words);
+    // Neither above nor below: still a layout's words, as a layout stored before them reads.
+    const neither = { contents: 'Contents', notice: 'DRAFT', noticeSentence: 'This is a draft.' };
+    expect(layoutWordsSchema.parse(neither)).toEqual(neither);
+    // One without the other refuses, as the whole layout does.
+    expect(() => layoutWordsSchema.parse({ ...neither, above: 'above' })).toThrow(
+      /above and below together/,
+    );
+  });
+
   it('reports a stored layout it cannot read with its artifact and version, and yields nothing', () => {
-    const newer = { ...copy(), schemaVersion: 3 };
+    const newer = { ...copy(), schemaVersion: LAYOUT_SCHEMA_VERSION + 1 };
     const read = readLayout(newer, { artifact: 'layout-artifact', version: 'layout-version' });
     expect(read).toMatchObject({
       ok: false,
       artifact: 'layout-artifact',
       version: 'layout-version',
     });
-    expect(read.ok === false && read.failure).toMatch(/layout.*3/);
+    expect(read.ok === false && read.failure).toMatch(
+      new RegExp(`layout.*${LAYOUT_SCHEMA_VERSION + 1}`),
+    );
   });
 
   it('reads a layout stored at schema version 1 as one that generates no lists', () => {
