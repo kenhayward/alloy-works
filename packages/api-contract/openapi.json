@@ -7281,6 +7281,8 @@
                               "footnote_anchor_unresolved",
                               "footnote_empty",
                               "footnote_unnumbered",
+                              "cross_reference_unresolved",
+                              "cross_reference_form_unavailable",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10026,6 +10028,8 @@
                               "footnote_anchor_unresolved",
                               "footnote_empty",
                               "footnote_unnumbered",
+                              "cross_reference_unresolved",
+                              "cross_reference_form_unavailable",
                               "engine_failed",
                               "store_failed"
                             ]
