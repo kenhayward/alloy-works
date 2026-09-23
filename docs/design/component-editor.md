@@ -180,25 +180,25 @@ a `null` identifier, so an unidentified block can never reach storage.
 The slice boundary, stated for every node and mark rather than left to be inferred. **Create** means a
 command makes a new one; **edit** means an existing one can be changed.
 
-| Content                                                                         | Create                                 | Edit                                                                                   | Where it waits                                                               |
-| ------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Paragraph                                                                       | Yes                                    | Text, and its style from the theme's allowed list                                      |                                                                              |
-| Emphasis, strong, underline, subscript, superscript, inline code, quoted phrase | Yes, toolbar and shortcut              | Apply and remove                                                                       |                                                                              |
-| Hyperlink                                                                       | Yes, over a selection                  | Target and title; removal                                                              |                                                                              |
-| Language                                                                        | Yes, over a selection                  | Tag; removal                                                                           |                                                                              |
-| Defined term                                                                    | No                                     | Removal only                                                                           | LIB's terms, T6                                                              |
-| List, three kinds                                                               | Yes                                    | Kind, nesting, start and format                                                        |                                                                              |
-| Table                                                                           | Yes                                    | Cells, spans, header rows and columns, key columns, caption, note                      |                                                                              |
-| Preformatted                                                                    | Yes                                    | Text and language label                                                                |                                                                              |
-| Block quotation                                                                 | Yes                                    | Content and attribution                                                                |                                                                              |
-| Equation, inline and block                                                      | Yes                                    | LaTeX or MathML, alternative text, numbered or not                                     |                                                                              |
-| Footnote                                                                        | Yes, in all four anchor kinds          | Content, restricted to CNT-129's                                                       |                                                                              |
-| Figure, inline image                                                            | Yes, from a file ([Figures](#figures)) | Caption, alternative text state, the image; image style once themes give more than one | Both built (figures 2 and 4); an inline image is placed in a paragraph alone |
-| Cross-reference                                                                 | No                                     | Removal only                                                                           | STR, in the document view, where its targets are                             |
-| Citation                                                                        | No                                     | Removal only                                                                           | LIB's bibliography, T6                                                       |
-| Variable                                                                        | No                                     | Removal only                                                                           | REU, T4                                                                      |
-| Binding                                                                         | No                                     | Removal only                                                                           | DAT, T2                                                                      |
-| Condition, suggestion, comment anchor                                           | No                                     | None                                                                                   | REU, T4, and COL, T3. Nothing in T1 creates one                              |
+| Content                                                                         | Create                                              | Edit                                                                                   | Where it waits                                                                            |
+| ------------------------------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Paragraph                                                                       | Yes                                                 | Text, and its style from the theme's allowed list                                      |                                                                                           |
+| Emphasis, strong, underline, subscript, superscript, inline code, quoted phrase | Yes, toolbar and shortcut                           | Apply and remove                                                                       |                                                                                           |
+| Hyperlink                                                                       | Yes, over a selection                               | Target and title; removal                                                              |                                                                                           |
+| Language                                                                        | Yes, over a selection                               | Tag; removal                                                                           |                                                                                           |
+| Defined term                                                                    | No                                                  | Removal only                                                                           | LIB's terms, T6                                                                           |
+| List, three kinds                                                               | Yes                                                 | Kind, nesting, start and format                                                        |                                                                                           |
+| Table                                                                           | Yes                                                 | Cells, spans, header rows and columns, key columns, caption, note                      |                                                                                           |
+| Preformatted                                                                    | Yes                                                 | Text and language label                                                                |                                                                                           |
+| Block quotation                                                                 | Yes                                                 | Content and attribution                                                                |                                                                                           |
+| Equation, inline and block                                                      | Yes                                                 | LaTeX or MathML, alternative text, numbered or not                                     |                                                                                           |
+| Footnote                                                                        | Yes, anchored to a span alone (publishing.md, FN-A) | Content, restricted to CNT-129's                                                       | Built in two slices, publishing.md's FN-F; one stored by key or position is kept as it is |
+| Figure, inline image                                                            | Yes, from a file ([Figures](#figures))              | Caption, alternative text state, the image; image style once themes give more than one | Both built (figures 2 and 4); an inline image is placed in a paragraph alone              |
+| Cross-reference                                                                 | No                                                  | Removal only                                                                           | STR, in the document view, where its targets are                                          |
+| Citation                                                                        | No                                                  | Removal only                                                                           | LIB's bibliography, T6                                                                    |
+| Variable                                                                        | No                                                  | Removal only                                                                           | REU, T4                                                                                   |
+| Binding                                                                         | No                                                  | Removal only                                                                           | DAT, T2                                                                                   |
+| Condition, suggestion, comment anchor                                           | No                                                  | None                                                                                   | REU, T4, and COL, T3. Nothing in T1 creates one                                           |
 
 **Nothing in T1 can put a condition, a suggestion or a comment anchor into a component** - the admission
 pipeline drops annotations whose owner does not travel (CNT-133) and follows CNT-Q14's recommendation to
@@ -256,7 +256,8 @@ panel reached from the table's toolbar and by keyboard. **What the tables slice 
 - **A table panel** - a region in the `F6` ring while the cursor is in a table, as the list panel is -
   holds the number of header rows and header columns, adding a row or a column on either side of the
   cursor, deleting one, merging the selected cells and splitting a merged one, and deleting the table.
-  Key columns and the note wait for footnotes, which are all they are for.
+  The note comes with footnotes (publishing.md, FN-C); key columns wait for a table whose rows are
+  generated, which is all they are for (FN-A).
 - **The header counts are the model's truth.** `prosemirror-tables` marks each cell as a header or a
   data cell, where the model stores two counts, so a plugin keeps every cell's kind agreeing with the
   counts after every transaction, as the identity plugin keeps identifiers.
@@ -269,12 +270,33 @@ panel reached from the table's toolbar and by keyboard. **What the tables slice 
   resizing plugin owns the table's DOM and ignores `toDOM`, so it cannot emit the caption TAB-039 requires.
   A table's widths are the theme's.
 
-| Footnote anchored to | Inserted by                                                                                       | Survives                                                                                                                  |
-| -------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| A span of text       | **Insert footnote** at the cursor                                                                 | Any edit that keeps the anchor node                                                                                       |
-| A cell, by key       | **Insert footnote** in a cell of a table with key columns; the key is that row's key-column value | Reordering rows. If the key value changes or the row goes, the anchor shows as unresolved, and publishing fails (CNT-042) |
-| A cell, by position  | **Insert footnote** in a cell of a table without key columns                                      | Nothing that moves the cell. Shown with a marker saying it is the weaker form (CNT-107)                                   |
-| The table as a whole | **Add note** in the table panel                                                                   | Anything that keeps the table                                                                                             |
+**Footnotes, designed on 2026-09-23** with publishing.md's [Footnotes](publishing.md#footnotes), whose
+decisions FN-A to FN-F these follow:
+
+| Footnote anchored to | Made by                                                                                   | Survives                                                                                                  |
+| -------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| A span of text       | **Footnote** on the toolbar, or `Ctrl+Alt+F` as Word has it, at the cursor in a paragraph | Any edit that keeps the mark; in a table's cell it moves with its row, since it stands in the cell's text |
+| A cell, by key       | Nothing in T1 (FN-A): a table whose rows are generated is T2's (CNT-039)                  | Opened and saved as it was stored; publishing resolves it or refuses it (CNT-042)                         |
+| A cell, by position  | Nothing in T1, as by key                                                                  | As by key                                                                                                 |
+| The table as a whole | Nothing (FN-C): a note on a table is the table's **note**                                 | Refused at publish, by name                                                                               |
+
+- **A footnote stands in a paragraph and nowhere else** (FN-B) - running text, a list's item, a
+  quotation, a table's cell. **Footnote** is unavailable anywhere else, and a stored footnote in a
+  caption, a term, an attribution or a table's note opens the component read-only, naming it, as an
+  inline image there does.
+- **Its mark** is an inline atom in the text, drawn as a small raised marker that a screen reader
+  announces as _Footnote_. It shows **no number**: the number is the outline's (CNT-041), and a
+  component opened on its own has none. Deleting the mark deletes the footnote, and `Ctrl+Z` brings it
+  back whole.
+- **Its paragraphs are edited inline** (FN-E), beneath the paragraph the mark stands in, in a nested
+  editor over the node's own content - ProseMirror's footnote pattern - opened by selecting the mark or
+  pressing `Enter` on it, and left with `Escape` for the mark again. Its schema is the restricted one,
+  paragraphs of runs with the nine marks and links, so what CNT-129 excludes cannot be typed there;
+  equations, citations and cross-references wait for their own slices. What it holds is the footnote's
+  node content, so identity, the adjacency rule and the annotation repair reach it as they reach any
+  paragraph, and one undo stack covers both editors.
+- **The table's note** (CNT-038) is added and removed from the Table panel (**Add note**, **Remove
+  note**) and edited in place beneath the table, a line of inline content as a caption is.
 
 A footnote's content is a nested editor on the **restricted schema** - paragraphs only, holding the
 inline content CNT-129 allows, and no table or image - so the restriction is structural, not a check.

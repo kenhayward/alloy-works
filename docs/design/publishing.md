@@ -578,6 +578,69 @@ caption again, so the image would be read twice. Building figures 3 changed thes
   breakable was measured and set aside: the pinned engine then writes no `BBox` on any `Figure`,
   which ISO 32000-1 asks of a figure. A caption of capitals throughout may still be estimated short.
 
+## Footnotes
+
+Designed on 2026-09-23 against the pinned engine, as tables and figures were. A footnote is the content
+model's `footnote`: an inline node holding paragraphs (CNT-129), with an anchor in one of four kinds -
+a span, a cell by key, a cell by position, or the table as a whole - and a number `number` gives it,
+straight through the document (CNT-041, STR-022). A table also carries an optional **note** of its own
+(CNT-038), inline content that is not a footnote.
+
+### What the pinned Typst does with a footnote, measured
+
+Throwaway files compiled by the pinned Typst 0.15.1 with the worker's flags - PDF/UA-1 and
+`--features a11y-extras` - checked by the pinned veraPDF and read back with pdf.js and from the file's
+own structure elements.
+
+| Case                                                                               | Result                                                                                                                                                                                                                                                                                        |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `footnote[..]` in a paragraph                                                      | A `Note` with an `/ID`, holding the note's text; the mark in the text and the mark before the note are each a `Lbl` inside a `Link` to the other. veraPDF passes, 0 rules failed                                                                                                              |
+| `footnote(numbering: _ => "4")[..]`, and another with `"9"`                        | The marks read **4** and **9**, in the text and at the foot, whatever the engine's own counter says. So the number is `number`'s, set per footnote, never the engine's                                                                                                                        |
+| In a table's cell, in a list's item and in a quotation                             | A `Note` each, the mark in the `TD`, the `LBody` or the `BlockQuote`, the note at the foot of the page. veraPDF passes                                                                                                                                                                        |
+| A note too long for what is left of its anchor's page                              | The note **begins on the anchor's page** and carries on at the foot of the next - the engine's own rule, and the conventional one. PUB-016 holds                                                                                                                                              |
+| Text in another language inside a note                                             | The `Note` carries its `/Lang`. But `text(lang: "de")` alone inherits the document's region and says `de-GB`: the template's `language()` passes the region explicitly, null included, as it does for a run                                                                                   |
+| **In a table's caption or a section's title, with a list of tables or a contents** | **The footnote is set twice**, once in the list and once where it stands, under two numbers, with two `Note`s. No show rule keeps it out of an outline entry - tried on the outline, on each entry, and around the entry's body - because the engine lays the caption out again for the entry |
+| The same heading's text in a running head, `show footnote: none` around it         | No footnote in the head. A running head can hold a title safely; a contents cannot                                                                                                                                                                                                            |
+| A paragraph of the table's note under the table, in its own `block`                | Set and read, but tagged as nothing of the table's: a `Span` beside it. Setting it **inside** the table's `figure` is the build's to measure (FN-D)                                                                                                                                           |
+
+### How a footnote is published
+
+- **A footnote is published where it stands in a paragraph** - running text, a list's item, a
+  quotation, a table's cell - as a Typst `footnote` whose numbering is `number`'s label for it, so the
+  mark in the text and the mark at the foot are the number the numbering route and the outline panel
+  show (STR-036).
+- **Nowhere else.** A footnote in a caption, a section's title, a term, an attribution or a table's note
+  is refused by name, `footnote_not_publishable_here`, naming the block that holds it and not the
+  footnote's text: in a caption or a title it would be set twice (measured above), and the others are
+  refused with them rather than earning a rule each. The editor never places one there (FN-B).
+- **Its content is paragraphs of runs**, published as a paragraph's are, with the same checks - marks,
+  glyphs, languages - and failures naming the footnote. What CNT-129 admits and the editor cannot yet
+  make - an inline equation, a citation, a cross-reference, a variable, a binding - is refused by name,
+  as it is in a paragraph.
+- **An anchor to a cell resolves against the table the footnote stands in** (CNT-042): by key, the key
+  columns must name a row whose values are the anchor's key; by position, the grid must hold that row
+  and column. Either way the footnote is set where it stands, since in an authored table it stands in
+  its cell's text already. One that does not resolve fails `footnote_anchor_unresolved`, naming the
+  footnote and its component. A footnote anchored to **the table as a whole** is refused
+  `footnote_not_publishable_here`: the table's note is how a note on a table is published (FN-C).
+- **The table's note** (CNT-038) is published beneath the table, inside the table's own `figure`, as a
+  paragraph of runs in the body text's size less a point, with no label of its own - the layout has no
+  word for one, and adding one is a layout schema change nothing else needs yet.
+- **The published document gains** a run kind for a footnote -
+  `{ footnote: { label, paragraphs } }` beside a text run and an image - and a table's `note` as runs or
+  null. `publishing/9`, template 9.
+
+### Decisions for Ken
+
+| #    | Decision                                                                                                                                                                                                                                                                                          | Recommended                                                                                                                                                                               |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FN-A | **The editor makes footnotes anchored to a span alone.** A footnote typed in a table's cell is anchored to its span there, which already moves with its row. Key columns, and anchors by key or by position, are for a table whose rows are generated (CNT-039, T2), and nothing edits them in T1 | Yes. CNT-107 stays covered by the model, and CNT-042 by publishing resolving whatever anchors are stored. Building key columns in the Table panel now would build a control for a T2 case |
+| FN-B | **A footnote stands in a paragraph and nowhere else**, in the editor and in a publication                                                                                                                                                                                                         | Yes: in a caption or a title the engine sets it twice, measured, and no show rule prevents it. Or refuse only captions and titles, and publish terms, attributions and notes              |
+| FN-C | **CNT-038 is met by the table's note**, edited in the Table panel as **Add note** and published beneath the table; a footnote anchored to the table as a whole is refused                                                                                                                         | Yes. Two ways to say one thing about a table is one too many, and the note is the one a reader sees beside the table                                                                      |
+| FN-D | **The note is set inside the table's `figure`**, after the table, so it travels with the table across a page and is grouped with it in the structure tree - the tagging measured in the build, and the note set as a plain paragraph beside the table if the engine tags it wrongly there         | Yes                                                                                                                                                                                       |
+| FN-E | **The editor shows a footnote as a mark in the text and edits its paragraphs inline**, beneath the paragraph it stands in - ProseMirror's own footnote pattern, a nested editor over the node's content - never a dialog (component-editor.md, "Accessibility")                                   | Yes. A dialog would hide the text a note belongs to. The mark shows no number: the number is the outline's (CNT-041), and a component has none of its own                                 |
+| FN-F | **Two pull requests**: footnotes in the editor, with the table's note; then footnotes and notes published. Each lands usable, and a footnote refuses the publish by name until the second, as a figure did                                                                                        | Yes                                                                                                                                                                                       |
+
 ## The layout
 
 A **layout** is an artifact kind of its own, versioned by the chain (PUB-013), and like a style
