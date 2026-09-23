@@ -12,6 +12,7 @@ export const artifactKinds = [
   'publication',
   ...definitionKinds,
   'layout',
+  'asset',
 ] as const;
 
 export type ArtifactKind = (typeof artifactKinds)[number];
@@ -25,4 +26,5 @@ export type ContentKind = (typeof contentKinds)[number];
 export const spacedKinds = [
   ...contentKinds,
   'publication',
+  'asset',
 ] as const satisfies readonly ArtifactKind[];
