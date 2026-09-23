@@ -206,6 +206,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0019_default_layout_lists',
       '0020_assets',
       '0021_default_layout_figures',
+      '0022_publication_assets',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -222,6 +223,11 @@ describe('migration 0018, which gives every environment its default layout', () 
       {
         relname: 'publication',
         tgname: 'publication_recorded_whole',
+        tgenabled: 'O',
+      },
+      {
+        relname: 'publication_asset',
+        tgname: 'publication_asset_while_queued',
         tgenabled: 'O',
       },
       {
@@ -242,6 +248,11 @@ describe('migration 0018, which gives every environment its default layout', () 
       {
         relname: 'publication_request',
         tgname: 'publication_request_made_under_a_layout',
+        tgenabled: 'O',
+      },
+      {
+        relname: 'publication_request_asset',
+        tgname: 'publication_request_asset_while_queued',
         tgenabled: 'O',
       },
       {
@@ -503,6 +514,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0019_default_layout_lists',
       '0020_assets',
       '0021_default_layout_figures',
+      '0022_publication_assets',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -581,7 +593,10 @@ describe('migration 0021, which gives the default layout a list of figures', () 
     if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
 
     // 0021 runs and leaves it: its 0.3 is the environment's own, so no list of figures goes on top.
-    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual(['0021_default_layout_figures']);
+    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
+      '0021_default_layout_figures',
+      '0022_publication_assets',
+    ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
       artifactId: DEFAULT_LAYOUT_ID,

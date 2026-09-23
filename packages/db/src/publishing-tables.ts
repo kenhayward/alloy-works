@@ -34,6 +34,22 @@ export interface PublicationRequestOccurrenceTable {
   component_kind: ColumnType<'component', never, never>;
 }
 
+/** An image a request's components place, as its publisher could read it (figures 3, ruling R6). */
+export interface PublicationRequestAssetTable {
+  request_id: ColumnType<string, string, never>;
+  version_id: ColumnType<string, string, never>;
+  asset_id: ColumnType<string, string, never>;
+  asset_kind: ColumnType<'asset', never, never>;
+}
+
+/** An image a publication printed: exactly its request's, insert and read and nothing else. */
+export interface PublicationAssetTable {
+  publication_id: ColumnType<string, string, never>;
+  version_id: ColumnType<string, string, never>;
+  asset_id: ColumnType<string, string, never>;
+  asset_kind: ColumnType<'asset', never, never>;
+}
+
 /** Insert and read, nothing else (PUB-050). */
 export interface PublicationTable {
   id: ColumnType<string, string, never>;
