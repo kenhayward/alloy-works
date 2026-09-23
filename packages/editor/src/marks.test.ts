@@ -129,7 +129,7 @@ describe('the command registry', () => {
   // rows through the real chain, `EditorToolbar.test.tsx` for the toolbar's own row, and
   // `ComponentEditor.test.tsx` for F6 and Shift-F6 between the regions of the view.
   it('gives every command a shortcut and one label, with no shortcut used twice', () => {
-    expect(EDITOR_COMMANDS).toHaveLength(18);
+    expect(EDITOR_COMMANDS).toHaveLength(19);
     for (const command of EDITOR_COMMANDS) {
       expect(command.label, command.label).toMatch(/^[A-Z][a-z ]+$/);
       // No fancy dashes in anything an author reads; a plain hyphen would be allowed. Written by
@@ -138,7 +138,7 @@ describe('the command registry', () => {
       expect(command.label + command.shortcutSaid).not.toMatch(fancy);
       if (command.kind === 'mark') expect(editorSchema.marks[command.mark]).toBeDefined();
     }
-    expect(new Set(EDITOR_COMMANDS.map((c) => c.shortcut)).size).toBe(18);
+    expect(new Set(EDITOR_COMMANDS.map((c) => c.shortcut)).size).toBe(19);
   });
 
   it('names every block action once, in the order the toolbar shows them', () => {
@@ -152,19 +152,23 @@ describe('the command registry', () => {
       'preformatted',
       'table',
       'footnote',
+      'reference',
     ]);
   });
 
-  it('asks for a value only where a mark has one the author must supply', () => {
+  it('asks for a value only where the author must supply one: two marks, and a reference', () => {
     const prompting = EDITOR_COMMANDS.filter(
       (command) => command.kind === 'mark' && command.prompts,
     ).map((c) => (c.kind === 'mark' ? c.mark : c.action));
     expect(prompting).toEqual(['hyperlink', 'language']);
-    // A block action never prompts. Nothing about making a list is a value only the author can
-    // give; a list's start and its numbering are set in the list panel, over a list that exists.
+    // One block action prompts, for its target and form (cross-references 1, ruling R9). Nothing
+    // about making a list is a value only the author can give; a list's start and its numbering are
+    // set in the list panel, over a list that exists.
     expect(
-      EDITOR_COMMANDS.filter((command) => command.kind === 'block' && command.prompts),
-    ).toEqual([]);
+      EDITOR_COMMANDS.filter((command) => command.kind === 'block' && command.prompts).map((c) =>
+        c.kind === 'block' ? c.action : c.mark,
+      ),
+    ).toEqual(['reference']);
   });
 });
 
@@ -626,7 +630,7 @@ function inParagraph(state: EditorState, nth: number): number {
 describe('the keymap', () => {
   it('CNT-077 binds every command in the registry, and makes and nests a list from the keyboard alone', () => {
     const bound = commandKeymap(counter());
-    expect(Object.keys(bound)).toHaveLength(18);
+    expect(Object.keys(bound)).toHaveLength(19);
     for (const command of EDITOR_COMMANDS) {
       expect(Object.keys(bound), command.label).toContain(command.shortcut);
     }

@@ -6,6 +6,7 @@ import { Selection, TextSelection, type Command, type EditorState } from 'prosem
 import { ReplaceAroundStep, ReplaceStep } from 'prosemirror-transform';
 
 import { insertFootnote } from './footnotes.js';
+import { canPlaceReference } from './references.js';
 import { editorSchema } from './schema.js';
 import { insertTable } from './tables.js';
 
@@ -141,7 +142,8 @@ export type BlockAction =
   | 'quotation'
   | 'preformatted'
   | 'table'
-  | 'footnote';
+  | 'footnote'
+  | 'reference';
 
 /** The innermost list the cursor stands in, with the position it stands at, or null. */
 function innermostList(state: EditorState): { node: Node; pos: number } | null {
@@ -745,6 +747,11 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
     // consumer of this kind asks only whether it is available and runs it.
     case 'footnote':
       return insertFootnote(newIdentifier);
+    // A registry command like Footnote whose target only the author can give (cross-references 1,
+    // ruling R9): as a command it answers where one could be placed and places nothing, and the
+    // renderer's dialog runs `insertReference` with the answer.
+    case 'reference':
+      return canPlaceReference;
   }
 }
 

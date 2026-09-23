@@ -356,12 +356,13 @@ export interface EditorStateOptions {
    */
   readonly selection?: Selection;
   /**
-   * Called when a shortcut for a mark whose value the author has to supply is pressed - a link, a
-   * language - and answering whether the renderer took it. A value can only be typed into something
-   * this package does not own, so the editor's part is to carry the key out to whatever is asking
-   * for it; with nothing listening the key does nothing, rather than being swallowed (CNT-077).
+   * Called when a shortcut for a command whose value the author has to supply is pressed - a link or
+   * a language, by the mark's name, and a cross-reference, by its action, `reference` - and answering
+   * whether the renderer took it. A value can only be typed into something this package does not
+   * own, so the editor's part is to carry the key out to whatever is asking for it; with nothing
+   * listening the key does nothing, rather than being swallowed (CNT-077).
    */
-  readonly onPrompt?: (mark: string) => boolean;
+  readonly onPrompt?: (name: string) => boolean;
 }
 
 /**

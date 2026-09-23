@@ -7,18 +7,26 @@ import type {
 } from '@alloy-works/domain';
 import { Fragment, type Node } from 'prosemirror-model';
 import {
+  EditorState,
   NodeSelection,
   TextSelection,
   type Command,
-  type EditorState,
   type Transaction,
 } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
 
+import { blockCommand } from './blocks.js';
 import { fromEditor, toEditor } from './mapping.js';
-import { markThroughout, somewhereToPutMark, toggleMarkCommand } from './marks.js';
+import {
+  commandKeymap,
+  EDITOR_COMMANDS,
+  markThroughout,
+  somewhereToPutMark,
+  toggleMarkCommand,
+} from './marks.js';
+import { changeReference, insertReference, referenceAt } from './references.js';
 import { editorSchema } from './schema.js';
-import { createEditorState } from './state.js';
+import { createEditorState, footnotePluginsOf } from './state.js';
 
 const { nodes } = editorSchema;
 
@@ -235,5 +243,222 @@ describe('marks around a cross-reference (cross-references 1)', () => {
   it('offers nowhere to put a mark on a reference selected whole', () => {
     const state = stateOf(documentOf(paragraph('p1', text('See '), toTable(), text(' below'))));
     expect(somewhereToPutMark(selectWhole(state, 'x1'), 'hyperlink')).toBe(false);
+  });
+});
+
+/** A stored figure `g1`, captioned. */
+const figure = (caption: InlineNode[]): BlockNode => ({
+  type: 'figure',
+  id: 'g1',
+  asset: '00000000-0000-4000-8000-00000000a551',
+  imageStyle: 'figure',
+  caption,
+  alternative: { kind: 'decorative' },
+});
+
+/** A caret this many characters into the inline content of the node starting at `start`. */
+const caretIn = (state: EditorState, start: number, offset = 0) =>
+  select(state, start + 1 + offset);
+
+/** The footnote's own editing state, as its nested editor holds it: its node is the document. */
+function footnoteState(outer: EditorState, id: string, offset = 0): EditorState {
+  const node = outer.doc.nodeAt(startOf(outer.doc, id))!;
+  const state = EditorState.create({ doc: node, plugins: footnotePluginsOf(outer)(() => 'en-GB') });
+  return state.apply(state.tr.setSelection(TextSelection.create(state.doc, 1 + offset)));
+}
+
+const TABLE_NUMBER = { target: { kind: 'block', block: 't1' }, display: 'number' } as const;
+
+describe('placing and changing a cross-reference (cross-references 1)', () => {
+  it('places one at the caret in a paragraph, selected whole and named as a block is', () => {
+    const state = caretIn(
+      stateOf(documentOf(paragraph('p1', text('See below.')), table([text('Readings')]))),
+      0,
+      3,
+    );
+    const { handled, next } = run(state, insertReference(TABLE_NUMBER));
+    expect(handled).toBe(true);
+    expect(stored(next)[0]).toEqual(paragraph('p1', text('See'), toTable('n1'), text(' below.')));
+    expect(referenceAt(next)).toEqual({
+      pos: 4,
+      id: 'n1',
+      target: { kind: 'block', block: 't1' },
+      display: 'number',
+      withoutPages: null,
+    });
+  });
+
+  it('places it at the end of a selection, leaving the selected words where they are', () => {
+    const state = select(stateOf(documentOf(paragraph('p1', text('See below.')))), 1, 4);
+    const { next } = run(state, insertReference(TABLE_NUMBER));
+    expect(stored(next)).toEqual([paragraph('p1', text('See'), toTable('n1'), text(' below.'))]);
+  });
+
+  it('places one in every inline home, and never in preformatted text or over a table', () => {
+    const state = stateOf(
+      documentOf(
+        {
+          type: 'list',
+          id: 'l1',
+          kind: 'definition',
+          items: [{ term: [text('Load')], content: [paragraph('i1', text('Weight'))] }],
+        },
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [paragraph('b1', text('Said'))],
+          attribution: [text('Ada')],
+        },
+        { ...table([text('Readings')]), note: [text('Estimated')] } as BlockNode,
+        figure([text('Visits')]),
+        { type: 'preformatted', id: 'pre1', text: 'code' },
+      ),
+    );
+    const available = (at: EditorState) => insertReference(TABLE_NUMBER)(at);
+    const term = startOf(state.doc, 'l1') + 2;
+    const attribution =
+      startOf(state.doc, 'b1') + state.doc.nodeAt(startOf(state.doc, 'b1'))!.nodeSize;
+    const tableAt = startOf(state.doc, 't1');
+    const homes: [string, number][] = [
+      ['term', term],
+      ['list item', startOf(state.doc, 'i1')],
+      ['quotation', startOf(state.doc, 'b1')],
+      ['attribution', attribution],
+      ['caption', tableAt + 1],
+      ['cell', startOf(state.doc, 'c1')],
+      [
+        'note',
+        tableAt +
+          state.doc.nodeAt(tableAt)!.nodeSize -
+          1 -
+          state.doc.nodeAt(tableAt)!.lastChild!.nodeSize,
+      ],
+      ['figure caption', startOf(state.doc, 'g1') + 1],
+    ];
+    for (const [name, start] of homes) {
+      expect(state.doc.nodeAt(start)!.inlineContent, name).toBe(true);
+      const at = caretIn(state, start, 1);
+      expect(available(at), name).toBe(true);
+      const { next } = run(at, insertReference(TABLE_NUMBER));
+      expect(referenceAt(next), name).toMatchObject({ target: { kind: 'block', block: 't1' } });
+      expect(() => fromEditor(next.doc), name).not.toThrow();
+    }
+    expect(available(caretIn(state, startOf(state.doc, 'pre1'), 1)), 'preformatted').toBe(false);
+    const wholeTable = state.apply(state.tr.setSelection(NodeSelection.create(state.doc, tableAt)));
+    expect(available(wholeTable), 'a table selected whole').toBe(false);
+  });
+
+  it("places one in a footnote's own text, from its nested editor", () => {
+    const outer = stateOf(
+      documentOf(
+        paragraph('p1', text('Visited'), {
+          type: 'footnote',
+          id: 'f1',
+          anchor: { kind: 'span' },
+          content: [paragraph('fp1', text('Once'))],
+        }),
+        table([text('Readings')]),
+      ),
+    );
+    const inside = footnoteState(outer, 'f1', 4);
+    const { handled, next } = run(inside, insertReference(TABLE_NUMBER));
+    expect(handled).toBe(true);
+    expect(next.doc.firstChild!.lastChild!.type.name).toBe('crossReference');
+    expect(blockCommand('reference', counter())(inside)).toBe(true);
+  });
+
+  it('answers the reference selected whole, and nothing for a caret or anything else', () => {
+    const state = stateOf(
+      documentOf(
+        paragraph('p1', text('See '), {
+          type: 'crossReference',
+          id: 'x1',
+          target: { kind: 'node', node: 'abcdefghijklmnopqrstuvwxyz' },
+          display: 'page',
+          withoutPages: 'title',
+        }),
+      ),
+    );
+    expect(referenceAt(state)).toBeNull();
+    expect(referenceAt(selectWhole(state, 'x1'))).toEqual({
+      pos: 5,
+      id: 'x1',
+      target: { kind: 'node', node: 'abcdefghijklmnopqrstuvwxyz' },
+      display: 'page',
+      withoutPages: 'title',
+    });
+    expect(referenceAt(selectWhole(state, 'p1'))).toBeNull();
+  });
+
+  it('changes a reference in place, keeping its identifier, and drops a form for no pages unless it is a page', () => {
+    const state = selectWhole(
+      stateOf(
+        documentOf(
+          paragraph('p1', text('See '), {
+            type: 'crossReference',
+            id: 'x1',
+            target: { kind: 'block', block: 't1' },
+            display: 'page',
+            withoutPages: 'number',
+          }),
+          table([text('Readings')]),
+          figure([text('Visits')]),
+        ),
+      ),
+      'x1',
+    );
+    const pos = referenceAt(state)!.pos;
+    // Still a page: the declared alternative is kept.
+    const repointed = run(
+      state,
+      changeReference(pos, { target: { kind: 'block', block: 'g1' }, display: 'page' }),
+    ).next;
+    expect(referenceAt(repointed)).toEqual({
+      pos,
+      id: 'x1',
+      target: { kind: 'block', block: 'g1' },
+      display: 'page',
+      withoutPages: 'number',
+    });
+    // No longer a page: the alternative goes, which the stored model would otherwise refuse.
+    const { handled, next } = run(repointed, changeReference(pos, TABLE_NUMBER));
+    expect(handled).toBe(true);
+    expect(referenceAt(next)).toEqual({ pos, id: 'x1', ...TABLE_NUMBER, withoutPages: null });
+    expect(stored(next)[0]).toEqual(paragraph('p1', text('See '), toTable('x1')));
+    // Nothing to change where no reference stands.
+    expect(changeReference(1, TABLE_NUMBER)(next)).toBe(false);
+  });
+
+  it('is a registry command, Reference, on Ctrl or Cmd, Alt and X, which asks the renderer', () => {
+    const entry = EDITOR_COMMANDS.find((command) => command.label === 'Reference');
+    expect(entry).toEqual({
+      kind: 'block',
+      action: 'reference',
+      label: 'Reference',
+      shortcut: 'Mod-Alt-x',
+      shortcutSaid: 'Ctrl or Cmd, Alt and X',
+      prompts: true,
+    });
+    const state = stateOf(
+      documentOf(paragraph('p1', text('See')), { type: 'preformatted', id: 'pre1', text: 'code' }),
+    );
+    const inText = caretIn(state, startOf(state.doc, 'p1'), 3);
+    const inCode = caretIn(state, startOf(state.doc, 'pre1'), 1);
+    // As a block command it answers where one could be placed, and places nothing: its target is a
+    // value only the renderer's dialog can ask for.
+    const reference = blockCommand('reference', counter());
+    expect(reference(inText)).toBe(true);
+    expect(reference(inCode)).toBe(false);
+    expect(run(inText, reference).next.doc.eq(inText.doc)).toBe(true);
+    // Its shortcut is handed to the renderer where one could be placed, and nowhere else.
+    const asked: string[] = [];
+    const listening = commandKeymap(counter(), (name) => {
+      asked.push(name);
+      return true;
+    });
+    expect(listening['Mod-Alt-x']!(inText, () => undefined)).toBe(true);
+    expect(listening['Mod-Alt-x']!(inCode, () => undefined)).toBe(false);
+    expect(asked).toEqual(['reference']);
+    expect(commandKeymap(counter())['Mod-Alt-x']!(inText, () => undefined)).toBe(false);
   });
 });

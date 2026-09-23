@@ -34,6 +34,8 @@ const PATHS: Record<string, readonly string[]> = {
   Table: ['M2.5 3h11v10h-11z', 'M2.5 6.4h11M2.5 9.7h11M6.2 3v10M9.8 3v10'],
   // Lines of text and a raised mark after the first, which carries no number (footnotes 1).
   Footnote: ['M2.5 5h7M2.5 8.5h11M2.5 12h8', 'M12.3 2.2v3.2M10.9 3l2.8 1.6M13.7 3l-2.8 1.6'],
+  // Lines of text, and an arrow from the last one pointing away to what it names (cross-references 1).
+  Reference: ['M2.5 4.5h11M2.5 8h6M2.5 11.5h4', 'M8.5 11.5h5M11.3 9.3l2.2 2.2-2.2 2.2'],
   'Save version': ['M3 2.6h7.2L13.4 5.8V13.4H3z', 'M5.6 2.6v3.6h4.8'],
   'Done editing': ['M3.2 8.4 6.3 11.5 12.8 5'],
   Close: ['M4.2 4.2 11.8 11.8M11.8 4.2 4.2 11.8'],
