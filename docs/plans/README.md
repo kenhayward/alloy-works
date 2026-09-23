@@ -504,6 +504,12 @@ The equations design is publishing.md's [Equations](../design/publishing.md#equa
 content model's MathML and the editor's and Word's earlier designs, measured against the pinned engine
 on 2026-09-23 (decisions EQ-A to EQ-H). Planned as two pull requests (decision EQ-H): equations in the
 editor, then equations published; Word's OMML comes with Word output.
+An equation in a section's title is a third, since the outline's title field must become an inline
+editor to hold one.
+
+| #   | Plan                                                                          | Builds                                                                                                                                                                     | Status      |
+| --- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 1   | [Equations in the editor](2026-09-24-equations-01-equations-in-the-editor.md) | An equation typed as LaTeX in a dialog and drawn as MathML, inline or as a block, numbered or not, with its alternative generated in the component's language and editable | In progress |
 
 ## Publishing
 
