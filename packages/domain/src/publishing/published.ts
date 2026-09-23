@@ -5,13 +5,14 @@ import type { SlotPart } from './layout.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/8` is the document under a layout whose runs carry their marks and may be images, and
- * whose blocks may be lists, quotations, preformatted text, tables and figures, with its generated
- * lists after the contents, which `apps/worker/templates/publication/8/` reads. It is never stored - only its digest is,
+ * `publishing/9` is the document under a layout whose runs carry their marks and may be images or
+ * footnotes, and whose blocks may be lists, quotations, preformatted text, tables with their notes and
+ * figures, with its generated lists after the contents, which `apps/worker/templates/publication/9/`
+ * reads. It is never stored - only its digest is,
  * on the publication - so a later shape is a new schema string and a new template version, not a
  * migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/8';
+export const PUBLISHING_SCHEMA = 'publishing/9';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -63,6 +64,13 @@ export const PUBLISHING_SCHEMA_6 = 'publishing/6';
  * and the publications made with it are a record.
  */
 export const PUBLISHING_SCHEMA_7 = 'publishing/7';
+
+/**
+ * The document under a layout as it stood before a run could be a footnote and a table carried its
+ * note, frozen by footnotes 2 for the reason `publishing/7` is: `apps/worker/templates/publication/8/`
+ * asserts it, and a template version and the publications made with it are a record.
+ */
+export const PUBLISHING_SCHEMA_8 = 'publishing/8';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -142,8 +150,20 @@ export interface PublishedImageRun {
   };
 }
 
-/** One piece of a published run sequence: text with its marks, or an image. */
-export type PublishedInline = PublishedRun | PublishedImageRun;
+/**
+ * A footnote (footnotes 2, ruling R2): the numbering table's label for it, which the template sets as
+ * its mark and at the foot of the page, and its paragraphs, published as a paragraph's are. Only a
+ * paragraph's runs hold one, and a footnote's own paragraphs hold none (CNT-129).
+ */
+export interface PublishedFootnoteRun {
+  readonly footnote: {
+    readonly label: string;
+    readonly paragraphs: readonly PublishedParagraph[];
+  };
+}
+
+/** One piece of a published run sequence: text with its marks, an image, or a footnote. */
+export type PublishedInline = PublishedRun | PublishedImageRun | PublishedFootnoteRun;
 
 export interface PublishedParagraph {
   readonly type: 'paragraph';
@@ -237,6 +257,11 @@ export interface PublishedTable {
   /** How many columns the grid is wide, which a template gives its table as that many equal columns. */
   readonly columns: number;
   readonly rows: readonly { readonly cells: readonly PublishedCell[] }[];
+  /**
+   * A note on the table as a whole (CNT-038, footnotes 2), as runs a template sets beneath the table
+   * inside its figure, or null where the table has none or it says nothing.
+   */
+  readonly note: readonly PublishedInline[] | null;
 }
 
 /**

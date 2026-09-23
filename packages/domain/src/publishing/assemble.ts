@@ -262,6 +262,11 @@ export function assemble(input: AssembleInput): Assembled {
    * its proportions and no wider than the room where it stands - `indent` is what the measure has
    * lost by then, a table's cell included - and described as a figure is. Its failures name `block`,
    * the block that holds it.
+   *
+   * **So is a footnote, in a paragraph's runs alone** (footnotes 2, FN-B): `inParagraph` says the runs
+   * are a paragraph's, with the table the paragraph stands in, if any, which a footnote anchored to a
+   * cell resolves against. Anywhere else - a caption, a term, an attribution, a table's note - one is
+   * refused by name, naming `block`.
    */
   const publishedRuns = (
     content: readonly InlineNode[],
@@ -269,9 +274,19 @@ export function assemble(input: AssembleInput): Assembled {
     block: string,
     indent = 0,
     caption = false,
+    inParagraph: { readonly table: TableNode | null } | null = null,
   ): PublishedInline[] => {
     const runs: PublishedInline[] = [];
     for (const inline of content) {
+      if (inline.type === 'footnote' && layout !== null) {
+        if (inParagraph === null) {
+          failOnce(failure('compose', 'footnote_not_publishable_here', node, block, null));
+          continue;
+        }
+        const published = publishedFootnote(inline, node, block, inParagraph.table);
+        if (published !== null) runs.push(published);
+        continue;
+      }
       // A caption's height is estimated from its words, and the list after the contents sets it again,
       // so an image in one is refused rather than set (final review of figures 5).
       if (inline.type === 'image' && layout !== null && caption) {
@@ -306,6 +321,55 @@ export function assemble(input: AssembleInput): Assembled {
   };
 
   /**
+   * A footnote as the template sets it (footnotes 2), or null where it is refused.
+   *
+   * - **Anchored to the table as a whole** it is refused, naming the block it stands in: a note on a
+   *   table is the table's note (FN-C).
+   * - **Anchored to a cell**, the anchor must resolve against the table it stands in (CNT-042), or the
+   *   publish fails naming the footnote. It is set where it stands either way.
+   * - **With no text at all** it is refused, naming it: a numbered mark over nothing would publish a
+   *   note the author never wrote. Judged on what is stored, so a footnote whose only words are refused
+   *   for a mark is told about the mark and not called empty as well.
+   * - **Its paragraphs are a paragraph's**, body style, marks, glyphs and languages, and their failures
+   *   name the footnote. An empty one is dropped, as a component's is.
+   */
+  const publishedFootnote = (
+    footnote: Extract<InlineNode, { type: 'footnote' }>,
+    node: string,
+    block: string,
+    table: TableNode | null,
+  ): PublishedInline | null => {
+    const { anchor } = footnote;
+    if (anchor.kind === 'table') {
+      failOnce(failure('compose', 'footnote_not_publishable_here', node, block, null));
+      return null;
+    }
+    if (anchor.kind !== 'span' && !anchorResolves(anchor, table)) {
+      failures.push(failure('compose', 'footnote_anchor_unresolved', node, footnote.id, null));
+      return null;
+    }
+    const content = footnote.content as readonly Extract<BlockNode, { type: 'paragraph' }>[];
+    if (content.every((paragraph) => paragraph.content.length === 0)) {
+      failures.push(failure('compose', 'footnote_empty', node, footnote.id, null));
+      return null;
+    }
+    const paragraphs = content.flatMap((paragraph) => {
+      if (paragraph.style !== BODY) {
+        failures.push(failure('compose', 'style_missing', node, footnote.id, paragraph.style));
+      }
+      const runs = publishedRuns(paragraph.content, node, footnote.id);
+      return runs.length === 0 ? [] : [{ type: 'paragraph' as const, id: paragraph.id, runs }];
+    });
+    // Unknown only where an occurrence before it could not be read, which has failed the publish
+    // already, so it is never guessed at (ruling R6).
+    const label =
+      numbering.entries.find((entry) => entry.node === node && entry.block === footnote.id)
+        ?.label ?? '';
+    check(label, node, footnote.id);
+    return { footnote: { label, paragraphs } };
+  };
+
+  /**
    * A block the template can set, or a failure naming what it is. **A branch per stored block kind,
    * and a `default:` that refuses what it cannot name**, so an eighth kind added to `BlockNode`
    * fails to compile and, if one ever arrived anyway, is thrown on rather than skipped: a block
@@ -317,13 +381,18 @@ export function assemble(input: AssembleInput): Assembled {
    * the glyph check reach a paragraph at any depth because both are asked in the paragraph branch
    * the recursion arrives at.
    */
-  const publishable = (block: BlockNode, node: string, indent = 0): PublishedBlock[] => {
+  const publishable = (
+    block: BlockNode,
+    node: string,
+    indent = 0,
+    table: TableNode | null = null,
+  ): PublishedBlock[] => {
     switch (block.type) {
       case 'paragraph': {
         if (block.style !== BODY) {
           failures.push(failure('compose', 'style_missing', node, block.id, block.style));
         }
-        const runs = publishedRuns(block.content, node, block.id, indent);
+        const runs = publishedRuns(block.content, node, block.id, indent, false, { table });
         return runs.length === 0 ? [] : [{ type: 'paragraph', id: block.id, runs }];
       }
       case 'list': {
@@ -366,7 +435,7 @@ export function assemble(input: AssembleInput): Assembled {
           return {
             term: term.length === 0 ? null : term,
             blocks: item.content.flatMap((each) =>
-              publishable(each, node, indent + listIndent(block)),
+              publishable(each, node, indent + listIndent(block), table),
             ),
           };
         });
@@ -461,13 +530,10 @@ export function assemble(input: AssembleInput): Assembled {
         if (spansBody) {
           failures.push(failure('compose', 'table_header_spans_body', node, block.id, null));
         }
-        // A note on the table as a whole (CNT-038) is refused by name until footnotes 2 sets it
-        // beneath the table, rather than the table being published without it (footnotes 1, R12).
-        // One that says nothing, which another route may store, has nothing to refuse.
-        if (block.note !== undefined && block.note.length > 0) {
-          failures.push(failure('compose', 'inline_not_publishable', node, block.id, 'note'));
-        }
         const caption = publishedRuns(block.caption, node, block.id, indent, true);
+        // A note on the table as a whole (CNT-038, FN-C), set beneath it in its figure (footnotes 2,
+        // ruling R7). One that says nothing, which another route may store, is none.
+        const note = publishedRuns(block.note ?? [], node, block.id, indent);
         const label =
           numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
             ?.label ?? null;
@@ -494,13 +560,14 @@ export function assemble(input: AssembleInput): Assembled {
                 // Paragraphs and lists alone (decision T-D), each published as it is anywhere else -
                 // in the room the cell has: its share of the measure, less the engine's inset each side.
                 blocks: cell.content.flatMap((each) =>
-                  publishable(each, node, cellIndent(indent, columns, cell.colspan)),
+                  publishable(each, node, cellIndent(indent, columns, cell.colspan), block),
                 ),
                 colspan: cell.colspan,
                 rowspan: cell.rowspan,
                 scope: scopeAt(rowIndex, starts[rowIndex]![cellIndex]!),
               })),
             })),
+            note: note.length === 0 ? null : note,
           },
         ];
       }
@@ -679,7 +746,10 @@ export function assemble(input: AssembleInput): Assembled {
 
     if (node.type === 'section') {
       const title = textOf(node.title);
-      if ('unpublishable' in title) {
+      // A footnote in a title would be set twice, in the contents and where it stands (FN-B).
+      if ('unpublishable' in title && title.unpublishable === 'footnote') {
+        failures.push(failure('compose', 'footnote_not_publishable_here', node.id, null, null));
+      } else if ('unpublishable' in title) {
         failures.push(
           failure('compose', 'title_not_publishable', node.id, null, title.unpublishable),
         );
@@ -862,6 +932,45 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
  * cell above has spanned into - the walk `checkGrid` makes when the table is read, which is why the
  * grid is known here to be whole and rectangular.
  */
+/** A stored table, as a footnote's cell anchor resolves against one. */
+type TableNode = Extract<BlockNode, { type: 'table' }>;
+
+/**
+ * Whether a footnote's anchor to a cell names a cell of the table it stands in (CNT-042, footnotes 2,
+ * ruling R5). By position, the grid must hold that row and that column. By key, the table must declare
+ * **one** key column and have a row whose key cell's words are the key: a key over several key columns
+ * is not yet defined - nothing makes one, and the key-columns slice decides how one is spelt - so it
+ * does not resolve rather than being matched by a rule invented here. Standing in no table, neither
+ * resolves.
+ */
+function anchorResolves(
+  anchor: Exclude<Extract<InlineNode, { type: 'footnote' }>['anchor'], { kind: 'span' | 'table' }>,
+  table: TableNode | null,
+): boolean {
+  if (table === null) return false;
+  const { columns, starts } = gridOf(table);
+  if (anchor.kind === 'cellPosition') {
+    return anchor.row < table.rows.length && anchor.column < columns;
+  }
+  const [key, ...others] = table.keyColumns ?? [];
+  if (key === undefined || others.length > 0) return false;
+  return table.rows.some((row, rowIndex) =>
+    row.cells.some((cell, cellIndex) => {
+      const start = starts[rowIndex]![cellIndex]!;
+      return start <= key && key < start + cell.colspan && wordsOf(cell) === anchor.key;
+    }),
+  );
+}
+
+/** A cell's words: the text of its paragraphs' runs, a footnote's excepted, trimmed. */
+function wordsOf(cell: TableNode['rows'][number]['cells'][number]): string {
+  return cell.content
+    .flatMap((block) => (block.type === 'paragraph' ? block.content : []))
+    .map((inline) => (inline.type === 'text' ? inline.value : ''))
+    .join('')
+    .trim();
+}
+
 function gridOf(table: Extract<BlockNode, { type: 'table' }>): {
   columns: number;
   starts: number[][];

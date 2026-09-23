@@ -28,6 +28,7 @@ import {
   PUBLISHING_SCHEMA_5,
   PUBLISHING_SCHEMA_6,
   PUBLISHING_SCHEMA_7,
+  PUBLISHING_SCHEMA_8,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -967,8 +968,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/8, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/8');
+  it('assembles under a layout as publishing/9, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/9');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1494,12 +1495,13 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/8, and publishing/4 to publishing/7 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/8');
+  it('makes publishing/9, and publishing/4 to publishing/8 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/9');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
     expect(PUBLISHING_SCHEMA_7).toBe('publishing/7');
+    expect(PUBLISHING_SCHEMA_8).toBe('publishing/8');
   });
 });
 
@@ -1548,7 +1550,7 @@ describe('a table, published (tables 2)', () => {
   it('publishes a table with its number, its caption, its header counts and every cell', () => {
     const assembled = assemble(oneComponent(stored()));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/8');
+    expect(assembled.document.schema).toBe('publishing/9');
     expect(blocksOf(assembled)).toEqual([
       {
         type: 'table',
@@ -1585,16 +1587,9 @@ describe('a table, published (tables 2)', () => {
             ],
           },
         ],
+        note: null,
       },
     ]);
-  });
-
-  it("refuses a table's note by name until footnotes 2 publishes it, rather than dropping it", () => {
-    expect(failuresOf(assemble(oneComponent(stored({ note: [text('Estimated.')] }))))).toEqual([
-      failed('inline_not_publishable', 'note'),
-    ]);
-    // A note that says nothing - another route may store one - has nothing to publish or refuse.
-    expect(failuresOf(assemble(oneComponent(stored({ note: [] }))))).toEqual([]);
   });
 
   it('refuses a table with no caption, naming it, since a caption is what names a table to a reader', () => {
@@ -1722,7 +1717,7 @@ describe('a figure, published (figures 3)', () => {
 
   it('publishes a figure with its number, its caption, its image and its alternative text', () => {
     const assembled = assemble(withAssets({ [RED]: asset() }, stored()));
-    expect(assembled.ok && assembled.document.schema).toBe('publishing/8');
+    expect(assembled.ok && assembled.document.schema).toBe('publishing/9');
     expect(figureIn(assembled)).toEqual({
       type: 'figure',
       id: 'f1',
@@ -1936,7 +1931,7 @@ describe('an inline image, published (figures 5)', () => {
       withAssets({ [RED]: asset() }, inParagraph(text('Press '), image(), text(' to start.'))),
     );
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/8');
+    expect(assembled.document.schema).toBe('publishing/9');
     expect(blocksOf(assembled)).toEqual([
       {
         type: 'paragraph',
@@ -2132,5 +2127,272 @@ describe('an inline image, published (figures 5)', () => {
         assemble(withAssets({ [RED]: asset({ width: 3300, height: 100 }) }, cellOf(image()))),
       ),
     ).toEqual([failed('image_too_wide', 'p1')]);
+  });
+});
+
+describe('footnotes and the table note, published (footnotes 2)', () => {
+  const span = { kind: 'span' };
+  const footnote = (name: string, paragraphs: unknown[], anchor: object = span) => ({
+    type: 'footnote',
+    id: name,
+    anchor,
+    content: paragraphs,
+  });
+  const emphasis = { type: 'emphasis', id: 'm1' };
+  const cellOf = (...blocks: unknown[]) => ({ content: blocks, colspan: 1, rowspan: 1 });
+  /** Two rows of two columns, the first column's words the row's key where it declares one. */
+  const table = (over: object, north: unknown[] = [text('North')]) => ({
+    type: 'table',
+    id: 't1',
+    style: 'table',
+    caption: [text('Readings')],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [
+      { cells: [cellOf(paragraph('k1', ...north)), cellOf(paragraph('v1', text('12')))] },
+      { cells: [cellOf(paragraph('k2', text('South'))), cellOf(paragraph('v2', text('7')))] },
+    ],
+    ...over,
+  });
+  const failed = (code: string, block: string | null, detail: string | null = null) => ({
+    stage: 'compose',
+    code,
+    node: id('calib'),
+    block,
+    detail,
+  });
+  /** The footnote runs of every paragraph the node publishes, at any depth, in document order. */
+  const footnotesOf = (assembled: Assembled<PublishedDocument>) => {
+    const found: { label: string; paragraphs: readonly { id: string }[] }[] = [];
+    const walk = (blocks: readonly PublishedBlock[]) => {
+      for (const block of blocks) {
+        if (block.type === 'paragraph') {
+          for (const run of block.runs) if ('footnote' in run) found.push(run.footnote);
+        } else if (block.type === 'list') {
+          for (const item of block.items) walk(item.blocks);
+        } else if (block.type === 'blockquote') {
+          walk(block.blocks);
+        } else if (block.type === 'table') {
+          for (const row of block.rows) for (const cell of row.cells) walk(cell.blocks);
+        }
+      }
+    };
+    walk(blocksOf(assembled));
+    return found;
+  };
+
+  it('publishes a footnote in running text as a run carrying its number and its paragraphs', () => {
+    const assembled = assemble(
+      oneParagraph(
+        text('Visited'),
+        footnote('f1', [
+          paragraph('fp1', text('Once in '), marked('spring', emphasis)),
+          paragraph('fp2', text('Once in autumn.')),
+        ]),
+        text(' twice.'),
+      ),
+    );
+    expect(paragraphRuns(blocksOf(assembled)[0])).toEqual([
+      { text: 'Visited', marks: [] },
+      {
+        footnote: {
+          label: '1',
+          paragraphs: [
+            {
+              type: 'paragraph',
+              id: 'fp1',
+              runs: [
+                { text: 'Once in ', marks: [] },
+                { text: 'spring', marks: [{ kind: 'emphasis' }] },
+              ],
+            },
+            { type: 'paragraph', id: 'fp2', runs: [{ text: 'Once in autumn.', marks: [] }] },
+          ],
+        },
+      },
+      { text: ' twice.', marks: [] },
+    ]);
+  });
+
+  it("numbers footnotes straight through, in a list's item, a quotation and a table's cell", () => {
+    const assembled = assemble(
+      oneComponent(
+        storedList('L1', 'unordered', [
+          { content: [paragraph('i1', text('Item'), footnote('f1', [paragraph('a', text('A'))]))] },
+        ]),
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [paragraph('b1', text('Said'), footnote('f2', [paragraph('b', text('B'))]))],
+        },
+        table({}, [text('North'), footnote('f3', [paragraph('c', text('C'))])]),
+      ),
+    );
+    expect(footnotesOf(assembled).map((each) => each.label)).toEqual(['1', '2', '3']);
+  });
+
+  it('drops the empty paragraphs of a footnote, and refuses one with no text at all', () => {
+    const assembled = assemble(
+      oneParagraph(
+        text('Visited'),
+        footnote('f1', [paragraph('fp1', text('Once.')), paragraph('fp2')]),
+      ),
+    );
+    expect(footnotesOf(assembled)[0]!.paragraphs.map((each) => each.id)).toEqual(['fp1']);
+    expect(
+      failuresOf(assemble(oneParagraph(text('Visited'), footnote('f1', [paragraph('fp1')])))),
+    ).toEqual([failed('footnote_empty', 'f1')]);
+  });
+
+  it('names the footnote for what in its paragraphs cannot be published', () => {
+    expect(
+      failuresOf(
+        assemble(
+          oneParagraph(
+            text('Visited'),
+            footnote('f1', [
+              styled('fp1', 'aside', text('Once')),
+              paragraph('fp2', marked('Twice', { type: 'definedTerm', id: 'm2', term: 'twice' })),
+            ]),
+          ),
+        ),
+      ),
+    ).toEqual([
+      failed('style_missing', 'f1', 'aside'),
+      failed('inline_not_publishable', 'f1', 'definedTerm'),
+    ]);
+  });
+
+  it('refuses a footnote in a caption, a term, an attribution or a table note, naming what holds it', () => {
+    const inside = () => footnote('f1', [paragraph('fp1', text('Once.'))]);
+    const cases: [unknown, string][] = [
+      [table({ caption: [text('Readings'), inside()] }), 't1'],
+      [table({ note: [text('Estimated'), inside()] }), 't1'],
+      [
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [paragraph('b1', text('Said'))],
+          attribution: [text('Ada'), inside()],
+        },
+        'q1',
+      ],
+      [
+        storedList('L1', 'definition', [
+          { term: [text('Word'), inside()], content: [paragraph('d1', text('Meaning'))] },
+        ]),
+        'L1',
+      ],
+    ];
+    for (const [block, holder] of cases) {
+      expect(failuresOf(assemble(oneComponent(block))), holder).toEqual([
+        failed('footnote_not_publishable_here', holder),
+      ]);
+    }
+  });
+
+  it("refuses a footnote in a section's title, naming the section", () => {
+    const titled = {
+      ...section('intro', 'Intro'),
+      title: [text('Intro'), footnote('f1', [paragraph('fp1', text('Once.'))])],
+    };
+    expect(failuresOf(assemble(input({ outline: outline([titled]) })))).toEqual([
+      {
+        stage: 'compose',
+        code: 'footnote_not_publishable_here',
+        node: id('intro'),
+        block: null,
+        detail: null,
+      },
+    ]);
+  });
+
+  it('refuses a footnote anchored to the table as a whole: a note on a table is its note (FN-C)', () => {
+    expect(
+      failuresOf(
+        assemble(
+          oneComponent(
+            table({}, [
+              text('North'),
+              footnote('f1', [paragraph('fp1', text('Once.'))], { kind: 'table' }),
+            ]),
+          ),
+        ),
+      ),
+    ).toEqual([failed('footnote_not_publishable_here', 'k1')]);
+  });
+
+  it('CNT-042 fails the publish, naming the footnote, where its anchor to a cell does not resolve', () => {
+    const anchored = (anchor: object, over: object = {}) =>
+      table(over, [text('North'), footnote('f1', [paragraph('fp1', text('Once.'))], anchor)]);
+    const unresolved = [failed('footnote_anchor_unresolved', 'f1')];
+    // By position: the grid is two rows by two columns.
+    expect(
+      failuresOf(assemble(oneComponent(anchored({ kind: 'cellPosition', row: 2, column: 0 })))),
+    ).toEqual(unresolved);
+    expect(
+      failuresOf(assemble(oneComponent(anchored({ kind: 'cellPosition', row: 0, column: 2 })))),
+    ).toEqual(unresolved);
+    // By key: none declared, no row with that key, and a key over two key columns, not yet defined.
+    expect(failuresOf(assemble(oneComponent(anchored({ kind: 'cell', key: 'North' }))))).toEqual(
+      unresolved,
+    );
+    expect(
+      failuresOf(
+        assemble(oneComponent(anchored({ kind: 'cell', key: 'East' }, { keyColumns: [0] }))),
+      ),
+    ).toEqual(unresolved);
+    expect(
+      failuresOf(
+        assemble(oneComponent(anchored({ kind: 'cell', key: 'North' }, { keyColumns: [0, 1] }))),
+      ),
+    ).toEqual(unresolved);
+    // And a footnote anchored to a cell with no table around it at all.
+    expect(
+      failuresOf(
+        assemble(
+          oneParagraph(
+            text('Visited'),
+            footnote('f1', [paragraph('fp1', text('Once.'))], {
+              kind: 'cellPosition',
+              row: 0,
+              column: 0,
+            }),
+          ),
+        ),
+      ),
+    ).toEqual(unresolved);
+  });
+
+  it('publishes a footnote whose anchor to a cell resolves, where it stands', () => {
+    const anchored = (anchor: object, over: object = {}) =>
+      table(over, [text('North'), footnote('f1', [paragraph('fp1', text('Once.'))], anchor)]);
+    for (const [anchor, over] of [
+      [{ kind: 'cellPosition', row: 1, column: 1 }, {}],
+      [{ kind: 'cell', key: 'South' }, { keyColumns: [0] }],
+    ] as const) {
+      const assembled = assemble(oneComponent(anchored(anchor, over)));
+      expect(
+        footnotesOf(assembled).map((each) => each.label),
+        anchor.kind,
+      ).toEqual(['1']);
+    }
+  });
+
+  it("publishes a table's note on the table, and none where it has none or it says nothing", () => {
+    const noteOf = (over: object) => {
+      const [block] = blocksOf(assemble(oneComponent(table(over))));
+      if (block?.type !== 'table') throw new Error('not a table');
+      return block.note;
+    };
+    expect(
+      noteOf({ note: [text('Figures are '), marked('estimated', emphasis), text('.')] }),
+    ).toEqual([
+      { text: 'Figures are ', marks: [] },
+      { text: 'estimated', marks: [{ kind: 'emphasis' }] },
+      { text: '.', marks: [] },
+    ]);
+    expect(noteOf({})).toBeNull();
+    expect(noteOf({ note: [] })).toBeNull();
   });
 });
