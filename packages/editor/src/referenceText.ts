@@ -153,13 +153,48 @@ const CAPTIONS: Readonly<Record<string, string>> = {
  */
 function named(node: Node): string {
   const word = kindWord(kindOf(node));
+  const words = captionOf(node);
+  return words === '' ? word : `${word}: ${words}`;
+}
+
+/** A figure's or a table's caption's words, spaces run together; empty for anything else. */
+function captionOf(node: Node): string {
   const captionType = CAPTIONS[node.type.name];
   let caption = '';
   node.forEach((child) => {
     if (child.type.name === captionType) caption = child.textContent;
   });
-  const words = caption.replace(/\s+/g, ' ').trim();
-  return words === '' ? word : `${word}: ${words}`;
+  return caption.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * **What a component offers a reference of its own** (ruling R11): every figure, table and footnote
+ * it holds, in document order, each as a `block` target by its kind and a figure's or a table's
+ * caption - read from the live document, so a table placed a moment ago is offered before any page
+ * has numbered it. **No label**: a number is the document's to give, and a component on its own has
+ * none; the dialog takes the label from the page's context where the page has numbered the block.
+ *
+ * `at`, where given, is where the reference would stand in `doc`, and each target is _above_ or
+ * _below_ it by position, as `referencesShown` judges a reference already placed; without it, null.
+ * A paragraph, a list or a cell is never offered, as XR-A offers none.
+ */
+export function ownTargets(doc: Node, at?: number): readonly ReferenceTarget[] {
+  const targets: ReferenceTarget[] = [];
+  doc.descendants((node, pos) => {
+    const id = node.attrs.id as unknown;
+    const kind = kindOf(node);
+    if (typeof id !== 'string' || kind === 'block') return true;
+    const caption = captionOf(node);
+    targets.push({
+      target: { kind: 'block', block: id },
+      kind,
+      label: null,
+      title: caption === '' ? null : caption,
+      relative: at === undefined ? null : pos < at ? 'above' : 'below',
+    });
+    return true;
+  });
+  return targets;
 }
 
 /** A target's key, so a reference finds the context's entry for exactly what it stores. */

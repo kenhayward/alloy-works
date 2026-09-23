@@ -10,7 +10,7 @@ import type { Node } from 'prosemirror-model';
 import { describe, expect, it } from 'vitest';
 
 import { toEditor } from './mapping.js';
-import { referencesShown, type ReferenceContext } from './referenceText.js';
+import { ownTargets, referencesShown, type ReferenceContext } from './referenceText.js';
 
 const SECTION = 'aaaaaaaaaaaaaaaaaaaaaaaaaa';
 const OTHER = '00000000-0000-4000-8000-0000000a1ce0';
@@ -265,5 +265,47 @@ describe('what a cross-reference shows (cross-references 1, ruling R10)', () => 
         'Table: Readings',
       );
     });
+  });
+});
+
+describe('what a component offers a reference of its own (cross-references 1, ruling R11)', () => {
+  const withEverything = () =>
+    docOf(
+      para('b1', text('Visited'), {
+        type: 'footnote',
+        id: 'f1',
+        anchor: { kind: 'span' },
+        content: [para('fp1', text('Twice.'))],
+      } as InlineNode),
+      figure('g1', 'The site'),
+      table('t1', 'Readings'),
+      table('t2', ''),
+    );
+
+  it('offers its figures, tables and footnotes in document order, by kind and caption, with no label', () => {
+    expect(ownTargets(withEverything())).toEqual([
+      target({ kind: 'block', block: 'f1' }, 'footnote', null, null),
+      target({ kind: 'block', block: 'g1' }, 'figure', null, 'The site'),
+      target({ kind: 'block', block: 't1' }, 'table', null, 'Readings'),
+      target({ kind: 'block', block: 't2' }, 'table', null, null),
+    ]);
+  });
+
+  it('says which stand above and which below a place in it, where it is given one', () => {
+    const doc = withEverything();
+    let at = -1;
+    doc.forEach((node, offset) => {
+      if (node.attrs.id === 'g1') at = offset + node.nodeSize;
+    });
+    expect(ownTargets(doc, at).map((each) => [each.target, each.relative])).toEqual([
+      [{ kind: 'block', block: 'f1' }, 'above'],
+      [{ kind: 'block', block: 'g1' }, 'above'],
+      [{ kind: 'block', block: 't1' }, 'below'],
+      [{ kind: 'block', block: 't2' }, 'below'],
+    ]);
+  });
+
+  it('offers no paragraph, list or cell, and nothing from a component that holds none', () => {
+    expect(ownTargets(docOf(para('b1', text('Visited'))))).toEqual([]);
   });
 });

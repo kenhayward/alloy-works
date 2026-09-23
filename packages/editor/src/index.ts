@@ -47,6 +47,7 @@ export {
 export {
   BROKEN_REFERENCE,
   IN_ANOTHER_COMPONENT,
+  ownTargets,
   referencesShown,
   type ReferenceContext,
   type ReferenceShown,
