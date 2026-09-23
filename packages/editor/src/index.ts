@@ -44,6 +44,14 @@ export {
   type ReferenceAt,
   type ReferenceChoice,
 } from './references.js';
+export {
+  BROKEN_REFERENCE,
+  IN_ANOTHER_COMPONENT,
+  referencesShown,
+  type ReferenceContext,
+  type ReferenceShown,
+} from './referenceText.js';
+export { referenceContextOf, setReferenceContext } from './referenceView.js';
 export { pasteIntoOpenFootnote } from './footnoteView.js';
 export {
   deleteImage,

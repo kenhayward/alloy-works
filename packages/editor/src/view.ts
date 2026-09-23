@@ -12,6 +12,7 @@ import {
 import { figureView } from './figureView.js';
 import { footnoteView } from './footnoteView.js';
 import { imageView } from './imageView.js';
+import { referenceView } from './referenceView.js';
 import { newBlockIdentifier } from './identity.js';
 
 export interface MountOptions {
@@ -88,6 +89,9 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
           pasted: options.pasted,
           refused: options.refused,
         }),
+      // A cross-reference, drawn with the text its decoration carries (cross-references 1, R10).
+      crossReference: (node, owner, _getPos, decorations) =>
+        referenceView(node, owner.dom.ownerDocument, decorations),
     },
     handleDOMEvents: {
       paste: (target, event) => {

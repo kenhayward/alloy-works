@@ -378,3 +378,31 @@
 .aw-figure-caption {
   margin-top: 0.25em;
 }
+
+/* A cross-reference (cross-references 1, ruling R10): the words it will print, set apart from the
+ * text they stand in by a faint tint and a dotted underline - not the link's colour, since a
+ * reference is not a link an author follows, and not a solid underline, which the underline mark
+ * draws. Not scoped to the surface, since a document's text shows the same reference (R12). */
+.aw-reference {
+  padding: 0 0.15em;
+  border-radius: 3px;
+  background: var(--chip-bg);
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+/* A reference selected whole - which is how the dialog opens on it - is outlined, as an image is. */
+.aw-reference.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* A reference whose target has gone: its words say so, and it is drawn apart by the shape of its
+ * underline and a dashed border as well as by colour, so a reader who cannot see the colour can
+ * still tell it from one that resolves. */
+.aw-reference.aw-reference-broken {
+  border: 1px dashed var(--danger);
+  color: var(--danger);
+  font-style: italic;
+  text-decoration: underline wavy var(--danger);
+}
