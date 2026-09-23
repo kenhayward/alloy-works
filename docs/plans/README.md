@@ -461,14 +461,16 @@ publication.
 
 The figures design is [assets.md](../design/assets.md) with publishing.md's
 [Figures](../design/publishing.md#figures) and component-editor.md's [Figures](../design/component-editor.md#figures),
-taken by Ken as recommended on 2026-09-23 (decisions F-A to F-P). Built in four pull requests (decision
-F-O): assets, the figure in the editor, figures published, then inline images.
+taken by Ken as recommended on 2026-09-23 (decisions F-A to F-P). Planned as four pull requests (decision
+F-O): assets, the figure in the editor, figures published, then inline images - the last split in two,
+inline images in the editor and then published, since each is the size of figures 2 and 3 (figures 4's plan says why).
 
-| #   | Plan                                                                          | Builds                                                                                                                                                                                                                         | Status          |
-| --- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------- |
-| 1   | [Assets](2026-09-23-figures-01-assets.md)                                     | An image uploaded into a space through the API, checked by its header in the service and decoded whole by sharp in a worker job, stored by its hash and read by who may read the space; AST-051 from #206, superseding AST-003 | Built (PR #207) |
-| 2   | [The figure in the editor](2026-09-23-figures-02-the-figure-in-the-editor.md) | The figure and its caption as nodes, opened for editing; a dialog that uploads an image with its description or as decorative; a panel for the three states of its alternative text, replacing its image and deleting it       | Built (PR #209) |
-| 3   | [Publishing figures](2026-09-23-figures-03-publishing-figures.md)             | A figure published sized to its page, captioned below, tagged with its alternative text in its language or as decorative, and listed after the contents; its images resolved as the publisher and recorded on the publication  | Built (PR #212) |
+| #   | Plan                                                                                | Builds                                                                                                                                                                                                                         | Status          |
+| --- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------- |
+| 1   | [Assets](2026-09-23-figures-01-assets.md)                                           | An image uploaded into a space through the API, checked by its header in the service and decoded whole by sharp in a worker job, stored by its hash and read by who may read the space; AST-051 from #206, superseding AST-003 | Built (PR #207) |
+| 2   | [The figure in the editor](2026-09-23-figures-02-the-figure-in-the-editor.md)       | The figure and its caption as nodes, opened for editing; a dialog that uploads an image with its description or as decorative; a panel for the three states of its alternative text, replacing its image and deleting it       | Built (PR #209) |
+| 3   | [Publishing figures](2026-09-23-figures-03-publishing-figures.md)                   | A figure published sized to its page, captioned below, tagged with its alternative text in its language or as decorative, and listed after the contents; its images resolved as the publisher and recorded on the publication  | Built (PR #212) |
+| 4   | [Inline images in the editor](2026-09-23-figures-04-inline-images-in-the-editor.md) | An image placed inside a paragraph - in running text, a list, a quotation or a table cell - through the figure's dialog and panel, opened for editing; publishing it waits for figures 5                                       | In progress     |
 
 ## Publishing
 
