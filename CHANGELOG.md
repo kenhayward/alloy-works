@@ -3,6 +3,14 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.56.1 - 2026-09-23 (PR #211)
+
+### Fixed
+
+- The build no longer fails at random when a busy test machine runs two of the editor's long
+  randomised checks a little slowly: they are given the time the others like them already have
+  (#210).
+
 ## 0.56.0 - 2026-09-23 (PR #207)
 
 ### Added
