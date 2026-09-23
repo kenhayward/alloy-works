@@ -995,7 +995,7 @@
       "area": "AST",
       "statement": "An upload must be scanned for malware before it can be referenced by anything",
       "tranche": "Constraint",
-      "status": "Specified",
+      "status": "Superseded by AST-051",
       "document": "AST-assets-and-media.md",
       "line": 48
     },
@@ -1038,7 +1038,7 @@
     {
       "id": "AST-035",
       "area": "AST",
-      "statement": "An upload awaiting its scan (AST-003) must be in a named quarantined state, visible to the uploader, and must not be referenceable, listable as available, or usable by anything until it clears",
+      "statement": "An upload awaiting its check (AST-051) must be in a named quarantined state, visible to the uploader, and must not be referenceable, listable as available, or usable by anything until it clears",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
@@ -1056,11 +1056,20 @@
     {
       "id": "AST-037",
       "area": "AST",
-      "statement": "An upload that fails its scan must be refused, must never become referenceable, and the refusal must be audited without retaining the file anywhere content could reach it",
+      "statement": "An upload that fails its check (AST-051) must be refused, must never become referenceable, and the refusal must be audited without retaining the file anywhere content could reach it",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 55
+    },
+    {
+      "id": "AST-051",
+      "area": "AST",
+      "statement": "Each format admitted as an asset must declare how an upload of it is made safe before anything can reference it: scanned for malware, or proved by a strict parse of its structure and a full decode to hold nothing but content of that format. A format that can carry active content - script, links, or embedded files, such as SVG, PDF or an Office document - must be scanned",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "AST-assets-and-media.md",
+      "line": 56
     },
     {
       "id": "AST-038",
@@ -1069,7 +1078,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 56
+      "line": 57
     },
     {
       "id": "AST-040",
@@ -1078,7 +1087,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 57
+      "line": 58
     },
     {
       "id": "AST-041",
@@ -1087,7 +1096,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 58
+      "line": 59
     },
     {
       "id": "AST-042",
@@ -1096,7 +1105,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 59
+      "line": 60
     },
     {
       "id": "AST-008",
@@ -1105,7 +1114,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 87
+      "line": 95
     },
     {
       "id": "AST-009",
@@ -1114,7 +1123,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 88
+      "line": 96
     },
     {
       "id": "AST-010",
@@ -1123,7 +1132,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 89
+      "line": 97
     },
     {
       "id": "AST-011",
@@ -1132,7 +1141,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 90
+      "line": 98
     },
     {
       "id": "AST-046",
@@ -1141,7 +1150,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 91
+      "line": 99
     },
     {
       "id": "AST-047",
@@ -1150,7 +1159,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 92
+      "line": 100
     },
     {
       "id": "AST-048",
@@ -1159,7 +1168,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 93
+      "line": 101
     },
     {
       "id": "AST-049",
@@ -1168,7 +1177,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 94
+      "line": 102
     },
     {
       "id": "AST-012",
@@ -1177,7 +1186,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 112
+      "line": 120
     },
     {
       "id": "AST-013",
@@ -1186,7 +1195,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 113
+      "line": 121
     },
     {
       "id": "AST-014",
@@ -1195,7 +1204,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 114
+      "line": 122
     },
     {
       "id": "AST-015",
@@ -1204,7 +1213,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 115
+      "line": 123
     },
     {
       "id": "AST-039",
@@ -1213,7 +1222,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 116
+      "line": 124
     },
     {
       "id": "AST-016",
@@ -1222,7 +1231,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 132
+      "line": 140
     },
     {
       "id": "AST-017",
@@ -1231,7 +1240,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 133
+      "line": 141
     },
     {
       "id": "AST-018",
@@ -1240,7 +1249,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 134
+      "line": 142
     },
     {
       "id": "AST-019",
@@ -1249,7 +1258,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 135
+      "line": 143
     },
     {
       "id": "AST-020",
@@ -1258,7 +1267,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 136
+      "line": 144
     },
     {
       "id": "AST-031",
@@ -1267,7 +1276,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 137
+      "line": 145
     },
     {
       "id": "AST-032",
@@ -1276,7 +1285,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 138
+      "line": 146
     },
     {
       "id": "AST-033",
@@ -1285,7 +1294,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 139
+      "line": 147
     },
     {
       "id": "AST-034",
@@ -1294,7 +1303,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 140
+      "line": 148
     },
     {
       "id": "AST-021",
@@ -1303,7 +1312,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 158
+      "line": 166
     },
     {
       "id": "AST-022",
@@ -1312,7 +1321,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 159
+      "line": 167
     },
     {
       "id": "AST-023",
@@ -1321,7 +1330,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 160
+      "line": 168
     },
     {
       "id": "AST-024",
@@ -1330,7 +1339,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 161
+      "line": 169
     },
     {
       "id": "AST-025",
@@ -1339,7 +1348,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 162
+      "line": 170
     },
     {
       "id": "AST-043",
@@ -1348,7 +1357,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 163
+      "line": 171
     },
     {
       "id": "AST-044",
@@ -1357,7 +1366,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 164
+      "line": 172
     },
     {
       "id": "AST-045",
@@ -1366,7 +1375,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 165
+      "line": 173
     },
     {
       "id": "AST-026",
@@ -1375,7 +1384,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 187
+      "line": 195
     },
     {
       "id": "AST-027",
@@ -1384,7 +1393,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 188
+      "line": 196
     },
     {
       "id": "AST-028",
@@ -1393,7 +1402,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 189
+      "line": 197
     },
     {
       "id": "AST-029",
@@ -1402,7 +1411,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 190
+      "line": 198
     },
     {
       "id": "AST-030",
@@ -1411,7 +1420,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 191
+      "line": 199
     },
     {
       "id": "AST-050",
@@ -1420,7 +1429,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
-      "line": 192
+      "line": 200
     },
     {
       "id": "CNT-116",
@@ -12549,25 +12558,25 @@
       "id": "AST-N01",
       "statement": "**Not a digital asset management product.** This manages the assets used in documents, not a media library for a business",
       "document": "AST-assets-and-media.md",
-      "line": 198
+      "line": 206
     },
     {
       "id": "AST-N02",
       "statement": "**No image editing.** Cropping, retouching and annotating happen elsewhere; an asset arrives finished",
       "document": "AST-assets-and-media.md",
-      "line": 199
+      "line": 207
     },
     {
       "id": "AST-N03",
       "statement": "**No arbitrary file storage.** An asset is something content references, not an attachment locker",
       "document": "AST-assets-and-media.md",
-      "line": 200
+      "line": 208
     },
     {
       "id": "AST-N04",
       "statement": "**No embedding of an original where a derivative will do**, and no derivative that cannot be regenerated",
       "document": "AST-assets-and-media.md",
-      "line": 201
+      "line": 209
     },
     {
       "id": "CNT-N01",
@@ -13292,42 +13301,42 @@
       "question": "**Which formats are permitted (AST-001)?** SVG in particular is a document format that can carry script, and refusing it costs real capability",
       "settledBy": "A security decision: sanitise SVG on ingest, or rasterise it, or refuse it",
       "document": "AST-assets-and-media.md",
-      "line": 207
+      "line": 215
     },
     {
       "id": "AST-Q02",
       "question": "**Are video and audio in scope at all?** They have no place in a PDF and an obvious one in an HTML reading view",
       "settledBy": "Whether HTML output becomes a real reading format",
       "document": "AST-assets-and-media.md",
-      "line": 208
+      "line": 216
     },
     {
       "id": "AST-Q03",
       "question": "**Where does malware scanning happen (AST-003)?** A third-party service is the usual answer and it means uploads leave the tenant boundary",
       "settledBy": "A decision with **IAM**, and a customer with data residency requirements will force it",
       "document": "AST-assets-and-media.md",
-      "line": 209
+      "line": 217
     },
     {
       "id": "AST-Q04",
       "question": "**Does licence enforcement (AST-023) block or warn?** Blocking a publish over a metadata field somebody forgot will not be popular",
       "settledBy": "Whether customers treat asset licensing as a control or as a record",
       "document": "AST-assets-and-media.md",
-      "line": 210
+      "line": 218
     },
     {
       "id": "AST-Q05",
       "question": "**Which classes of file are assets (AST-038)?** The purpose said \"embedded objects\", which is wider than anything the requirements describe, and AST-N03 rules out an attachment locker without saying where the line is",
       "settledBy": "A decision taken with **AST-Q01** and **AST-Q02**, which each move it. Raster images and vector graphics are in; a spreadsheet a figure embeds, a CAD drawing, a PDF placed as a page are each a separate yes or no",
       "document": "AST-assets-and-media.md",
-      "line": 211
+      "line": 219
     },
     {
       "id": "AST-Q06",
       "question": "**Who renders an attribution required by a licence (AST-045)?** Recording the requirement is this area's; a credit line under a figure, in a list of illustrations, or in a colophon is a layout decision",
       "settledBy": "A decision with **PUB** and **STY**. The requirement to record it does not wait on the answer",
       "document": "AST-assets-and-media.md",
-      "line": 212
+      "line": 220
     },
     {
       "id": "CNT-Q01",
@@ -14263,6 +14272,18 @@
         {
           "id": "AST-006",
           "howItIsMet": "The job refuses, `asset_unreadable`, a file whose dimensions or colour space cannot be read, whose two readings disagree, or that does not decode whole"
+        },
+        {
+          "id": "AST-051",
+          "howItIsMet": "The two admitted formats are made safe by proof, as `ADMITTED_FORMATS` declares each: a strict walk that refuses any byte after the image's end, and a full decode under the pixel limit, whose dimensions must equal the walk's. No format that can carry active content is admitted, so none needs the scan AST-051 requires of one"
+        },
+        {
+          "id": "AST-035",
+          "howItIsMet": "`checking` is the named state an upload waits in: its uploader alone sees it, it names no asset version, and nothing can place it until the job records one"
+        },
+        {
+          "id": "AST-037",
+          "howItIsMet": "A refused upload is `refused` with its reason - kept as the record, never deleted - never names an asset version, and its bytes are removed from the store unless an asset already holds the same ones"
         },
         {
           "id": "AST-026",
@@ -15904,7 +15925,49 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 323,
+      "line": 351,
+      "kind": "title"
+    },
+    {
+      "id": "AST-001",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 213,
+      "kind": "title"
+    },
+    {
+      "id": "AST-002",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 213,
+      "kind": "title"
+    },
+    {
+      "id": "AST-026",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 268,
+      "kind": "title"
+    },
+    {
+      "id": "AST-035",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 253,
+      "kind": "title"
+    },
+    {
+      "id": "AST-038",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 213,
+      "kind": "title"
+    },
+    {
+      "id": "AST-040",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 225,
+      "kind": "title"
+    },
+    {
+      "id": "AST-051",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 225,
       "kind": "title"
     },
     {
@@ -15922,7 +15985,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 368,
+      "line": 421,
       "kind": "title"
     },
     {
@@ -16148,6 +16211,30 @@
       "kind": "title"
     },
     {
+      "id": "AST-005",
+      "file": "apps/worker/src/ingest.test.ts",
+      "line": 136,
+      "kind": "title"
+    },
+    {
+      "id": "AST-006",
+      "file": "apps/worker/src/ingest.test.ts",
+      "line": 163,
+      "kind": "title"
+    },
+    {
+      "id": "AST-037",
+      "file": "apps/worker/src/ingest.test.ts",
+      "line": 163,
+      "kind": "title"
+    },
+    {
+      "id": "AST-051",
+      "file": "apps/worker/src/ingest.test.ts",
+      "line": 175,
+      "kind": "title"
+    },
+    {
       "id": "PUB-007",
       "file": "apps/worker/src/layout.test.ts",
       "line": 296,
@@ -16265,6 +16352,18 @@
       "id": "IAM-062",
       "file": "packages/db/src/access-schema.test.ts",
       "line": 127,
+      "kind": "title"
+    },
+    {
+      "id": "AST-005",
+      "file": "packages/db/src/assets.test.ts",
+      "line": 89,
+      "kind": "title"
+    },
+    {
+      "id": "AST-041",
+      "file": "packages/db/src/assets.test.ts",
+      "line": 89,
       "kind": "title"
     },
     {
@@ -16412,6 +16511,54 @@
       "kind": "title"
     },
     {
+      "id": "AST-002",
+      "file": "packages/domain/src/assets/header.test.ts",
+      "line": 131,
+      "kind": "title"
+    },
+    {
+      "id": "AST-005",
+      "file": "packages/domain/src/assets/header.test.ts",
+      "line": 149,
+      "kind": "title"
+    },
+    {
+      "id": "AST-006",
+      "file": "packages/domain/src/assets/header.test.ts",
+      "line": 250,
+      "kind": "title"
+    },
+    {
+      "id": "AST-038",
+      "file": "packages/domain/src/assets/header.test.ts",
+      "line": 131,
+      "kind": "title"
+    },
+    {
+      "id": "AST-040",
+      "file": "packages/domain/src/assets/header.test.ts",
+      "line": 250,
+      "kind": "title"
+    },
+    {
+      "id": "AST-005",
+      "file": "packages/domain/src/assets/version.test.ts",
+      "line": 24,
+      "kind": "title"
+    },
+    {
+      "id": "AST-012",
+      "file": "packages/domain/src/assets/version.test.ts",
+      "line": 24,
+      "kind": "title"
+    },
+    {
+      "id": "AST-041",
+      "file": "packages/domain/src/assets/version.test.ts",
+      "line": 24,
+      "kind": "title"
+    },
+    {
       "id": "CNT-056",
       "file": "packages/domain/src/content/admission/admit.test.ts",
       "line": 241,
@@ -16480,115 +16627,115 @@
     {
       "id": "CNT-001",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 34,
+      "line": 37,
       "kind": "title"
     },
     {
       "id": "CNT-002",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 75,
+      "line": 78,
       "kind": "title"
     },
     {
       "id": "CNT-011",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 44,
+      "line": 47,
       "kind": "title"
     },
     {
       "id": "CNT-016",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 223,
+      "line": 226,
       "kind": "title"
     },
     {
       "id": "CNT-017",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 236,
+      "line": 239,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 263,
+      "line": 296,
       "kind": "title"
     },
     {
       "id": "CNT-021",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 252,
+      "line": 285,
       "kind": "title"
     },
     {
       "id": "CNT-022",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 236,
+      "line": 239,
       "kind": "title"
     },
     {
       "id": "CNT-023",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 119,
+      "line": 122,
       "kind": "title"
     },
     {
       "id": "CNT-059",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 62,
+      "line": 65,
       "kind": "title"
     },
     {
       "id": "CNT-107",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 223,
+      "line": 226,
       "kind": "title"
     },
     {
       "id": "CNT-117",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 167,
+      "line": 170,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 206,
+      "line": 209,
       "kind": "title"
     },
     {
       "id": "CNT-124",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 71,
+      "line": 74,
       "kind": "title"
     },
     {
       "id": "CNT-129",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 270,
+      "line": 303,
       "kind": "title"
     },
     {
       "id": "CNT-140",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 56,
+      "line": 59,
       "kind": "title"
     },
     {
       "id": "CNT-142",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 51,
+      "line": 54,
       "kind": "title"
     },
     {
       "id": "CNT-146",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 38,
+      "line": 41,
       "kind": "title"
     },
     {
       "id": "CNT-153",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 520,
+      "line": 553,
       "kind": "title"
     },
     {
@@ -16720,7 +16867,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 164,
+      "line": 176,
       "kind": "title"
     },
     {
@@ -17285,6 +17432,12 @@
       "id": "CNT-130",
       "file": "packages/readers/src/html.test.ts",
       "line": 368,
+      "kind": "title"
+    },
+    {
+      "id": "AST-005",
+      "file": "tests/e2e/src/stack.test.ts",
+      "line": 388,
       "kind": "title"
     }
   ]

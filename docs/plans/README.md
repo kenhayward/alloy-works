@@ -464,9 +464,9 @@ The figures design is [assets.md](../design/assets.md) with publishing.md's
 taken by Ken as recommended on 2026-09-23 (decisions F-A to F-P). Built in four pull requests (decision
 F-O): assets, the figure in the editor, figures published, then inline images.
 
-| #   | Plan                                      | Builds                                                                                                                                                                                                                         | Status      |
-| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
-| 1   | [Assets](2026-09-23-figures-01-assets.md) | An image uploaded into a space through the API, checked by its header in the service and decoded whole by sharp in a worker job, stored by its hash and read by who may read the space; AST-051 from #206, superseding AST-003 | In progress |
+| #   | Plan                                      | Builds                                                                                                                                                                                                                         | Status          |
+| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------- |
+| 1   | [Assets](2026-09-23-figures-01-assets.md) | An image uploaded into a space through the API, checked by its header in the service and decoded whole by sharp in a worker job, stored by its hash and read by who may read the space; AST-051 from #206, superseding AST-003 | Built (PR #207) |
 
 ## Publishing
 

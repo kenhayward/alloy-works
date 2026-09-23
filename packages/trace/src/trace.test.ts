@@ -21,6 +21,8 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1388, from 1387: AST-051, each asset format declaring how it is made safe - scanned, or proved
+    // by a strict parse and a full decode - superseding AST-003's scan of everything (issue #206).
     // 1387, from 1386: TAB-049, header rows associated in every output and header columns wherever
     // the format can express one, superseding TAB-031, which Word could never meet (issue #202).
     // 1386, from 1385: CNT-153, an ordered list's start number of 1 or more except in decimal,
@@ -60,9 +62,11 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1387);
+    expect(model.requirements).toHaveLength(1388);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 425, from 422: figures 1. assets.md claims AST-051, and AST-035 and AST-037 once they speak of
+    // an upload's check rather than its scan.
     // 422, from 413: the figures design. assets.md claims eight - AST-001, AST-002, AST-038 and
     // AST-040 (what an upload may be, read from its bytes and proved by decoding it), AST-041, AST-005
     // and AST-006 (its hash and its recorded properties) and AST-026 (an asset in a space) - and
@@ -144,7 +148,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(422);
+    ).toBe(425);
   });
 });
 
@@ -361,6 +365,12 @@ describe('the citations in the committed model', () => {
   // The list tests beside it keep their words and no identifier: the start rule's requirement is
   // filed later in the same plan, and a second PUB-052 in that file would hide behind the one
   // already there, because a citation is kept once per identifier per kind per file.
+  // 253, from 231: figures 1 cites the AST ingest rows where each test demonstrates them whole -
+  // the header walk in packages/domain (AST-002, AST-005, AST-006, AST-038, AST-040), the stored shape
+  // (AST-005, AST-012, AST-041), the database (AST-005, AST-041), the routes (AST-001, AST-002,
+  // AST-026, AST-035, AST-038, AST-040, AST-051), the ingest job (AST-005, AST-006, AST-037, AST-051)
+  // and the whole system (AST-005) - and CNT-017 once more, in document.test.ts, for a figure naming
+  // an asset version. AST-039 is left to figures 2: its second clause is about a figure's own text.
   // 231, from 229: tables 2 cites PUB-032 and TAB-040 once each in apps/worker/src/tables.test.ts,
   // whose body publishes a table with a header row, a header column and spans across a page, passes
   // it through veraPDF and counts its rows and header cells in the whole file. PUB-038 stays uncited:
@@ -374,7 +384,7 @@ describe('the citations in the committed model', () => {
   // paste report beside the surface. CNT-060, CNT-061 and CNT-062 stay uncited: a paste keeps no
   // table or footnote, and reads no Markdown.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(231);
+    expect(model.citations).toHaveLength(253);
   });
 
   it('cites no identifier the corpus does not hold', () => {

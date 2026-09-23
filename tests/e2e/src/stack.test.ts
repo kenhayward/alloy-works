@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { crc32, deflateSync } from 'node:zlib';
 import { request as httpRequest } from 'node:http';
 import { createApiClient, followStream } from '@alloy-works/api-client';
 import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
@@ -88,6 +89,29 @@ async function signIn(): Promise<string> {
     .find((pair) => pair.startsWith('__Host-aw_session='));
   if (!session) throw new Error(`signing in did not finish: ${finished.status}`);
   return session;
+}
+
+/** A PNG six by four, every pixel red, built with Node alone so the suite needs no image library. */
+function redSquare(): Buffer {
+  const chunk = (type: string, data: Buffer) => {
+    const body = Buffer.concat([Buffer.from(type, 'latin1'), data]);
+    const length = Buffer.alloc(4);
+    length.writeUInt32BE(data.length);
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(crc32(body));
+    return Buffer.concat([length, body, crc]);
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(6, 0);
+  header.writeUInt32BE(4, 4);
+  header.set([8, 2, 0, 0, 0], 8);
+  const row = Buffer.from([0, ...Array.from({ length: 6 }, () => [255, 0, 0]).flat()]);
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', header),
+    chunk('IDAT', deflateSync(Buffer.concat([row, row, row, row]))),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
 }
 
 describe('the whole system', () => {
@@ -359,5 +383,53 @@ describe('the whole system', () => {
     // The contents page names itself and lists the preface it made a page of (PUB-037).
     expect(spoken(read.taggedText[1]!)).toContain('Contents');
     expect(spoken(read.taggedText[1]!)).toContain('Preface');
+  }, 120_000);
+
+  it('AST-005 uploads an image, proves it in the worker and hands the same bytes back', async () => {
+    // The worker's image carries sharp and its native binaries: this is the one test that runs them
+    // where they will run, in the container built from the lock file.
+    const api = client();
+    const { data: spaces } = await api.GET('/v1/spaces');
+    const general = spaces!.items.find((space) => space.name === 'General')!;
+    const { data: upload } = await api.POST('/v1/spaces/{space}/asset-uploads', {
+      params: { path: { space: general.id } },
+      body: { alternative: { text: 'A red square', language: 'en-GB' } },
+    });
+    expect(upload?.state).toBe('awaiting');
+
+    const image = redSquare();
+    const filled = await asTheSignedIn(`${SERVICE}/v1/asset-uploads/${upload!.id}/bytes`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/octet-stream' },
+      body: image,
+    });
+    expect(filled.status).toBe(200);
+
+    let version: string | null = null;
+    await vi.waitFor(
+      async () => {
+        const { data } = await api.GET('/v1/asset-uploads/{id}', {
+          params: { path: { id: upload!.id } },
+        });
+        expect(data?.reason).toBeNull();
+        expect(data?.state).toBe('ready');
+        version = data!.assetVersion;
+      },
+      { timeout: 60_000, interval: 250 },
+    );
+
+    const { data: recorded } = await api.GET('/v1/asset-versions/{id}', {
+      params: { path: { id: version! } },
+    });
+    expect(recorded).toMatchObject({
+      format: 'png',
+      width: 6,
+      height: 4,
+      alternative: { text: 'A red square', language: 'en-GB' },
+    });
+    const content = await asTheSignedIn(`${SERVICE}/v1/asset-versions/${version!}/content`);
+    expect(content.headers.get('content-type')).toBe('image/png');
+    expect(content.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(Buffer.from(await content.arrayBuffer()).equals(image)).toBe(true);
   }, 120_000);
 });

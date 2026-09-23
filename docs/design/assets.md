@@ -13,8 +13,11 @@ VER-011), [access.md](access.md) (who may read an artifact), [system.md](system.
 store, and heavy work in workers) and [publishing.md](publishing.md#figures), which says how a
 figure reaches the PDF.
 
-> **None of this is built.** Nothing ingests an asset today, which is why the editor cannot make a
-> figure. The decisions at the end are Ken's to take before the first plan is written.
+> **Built through the API** by [figures 1](../plans/2026-09-23-figures-01-assets.md): an image is
+> uploaded into a space, checked in the service and in a worker's `ingest` job, stored by its hash and
+> read back by who may read the space. Nothing in the editor uses it yet - that is figures 2 - and
+> [`../architecture.md`](../architecture.md) describes it as it stands. **Ken's answer (2026-09-23):
+> decisions F-A to F-P taken as recommended**, by merging this design and asking to continue.
 
 ## The shape in one paragraph
 
@@ -35,21 +38,22 @@ a document places into the compile root under its hash.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                                                                                                                                        |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **AST-001** | An upload is refused, `asset_format_not_permitted`, unless its bytes begin as a PNG or a JPEG does; the service refuses it before anything is stored                                                                                                                                                 |
-| **AST-002** | The format is read from the file's first bytes - the PNG signature, the JPEG start-of-image marker - and the name and the claimed content type are never read                                                                                                                                        |
-| **AST-038** | The one class T1 admits is **raster images**, declared as `ADMITTED_FORMATS` in `packages/domain`: PNG and JPEG. Any other file is refused rather than stored                                                                                                                                        |
-| **AST-040** | The job decodes the whole file under a pixel limit, so a file whose header promises more than it holds, or whose decoded size exceeds the limit, is refused; the header walk refuses dimensions over the limit before the decoder runs. Neither admitted format nests, so there is no depth to bound |
-| **AST-041** | The store keeps the original under the SHA-256 of its bytes (`put` already chooses no other key), and that hash is what the asset version records and what a figure's bytes are fetched by                                                                                                           |
-| **AST-005** | The asset version records format, dimensions as displayed, the EXIF orientation that turned them, colour space, bit depth, alpha, and the resolution the file declares, or none. Page count and duration do not apply to either admitted format                                                      |
-| **AST-006** | The job refuses, `asset_unreadable`, a file whose dimensions or colour space cannot be read, whose two readings disagree, or that does not decode whole                                                                                                                                              |
-| **AST-026** | An asset is in exactly one space - the space of the component it was uploaded into - and reading it is decided on the asset, like any artifact's                                                                                                                                                     |
+| ID          | How it is met                                                                                                                                                                                                                                                                                                                         |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **AST-001** | An upload is refused, `asset_format_not_permitted`, unless its bytes begin as a PNG or a JPEG does; the service refuses it before anything is stored                                                                                                                                                                                  |
+| **AST-002** | The format is read from the file's first bytes - the PNG signature, the JPEG start-of-image marker - and the name and the claimed content type are never read                                                                                                                                                                         |
+| **AST-038** | The one class T1 admits is **raster images**, declared as `ADMITTED_FORMATS` in `packages/domain`: PNG and JPEG. Any other file is refused rather than stored                                                                                                                                                                         |
+| **AST-040** | The job decodes the whole file under a pixel limit, so a file whose header promises more than it holds, or whose decoded size exceeds the limit, is refused; the header walk refuses dimensions over the limit before the decoder runs. Neither admitted format nests, so there is no depth to bound                                  |
+| **AST-041** | The store keeps the original under the SHA-256 of its bytes (`put` already chooses no other key), and that hash is what the asset version records and what a figure's bytes are fetched by                                                                                                                                            |
+| **AST-005** | The asset version records format, dimensions as displayed, the EXIF orientation that turned them, colour space, bit depth, alpha, and the resolution the file declares, or none. Page count and duration do not apply to either admitted format                                                                                       |
+| **AST-006** | The job refuses, `asset_unreadable`, a file whose dimensions or colour space cannot be read, whose two readings disagree, or that does not decode whole                                                                                                                                                                               |
+| **AST-051** | The two admitted formats are made safe by proof, as `ADMITTED_FORMATS` declares each: a strict walk that refuses any byte after the image's end, and a full decode under the pixel limit, whose dimensions must equal the walk's. No format that can carry active content is admitted, so none needs the scan AST-051 requires of one |
+| **AST-035** | `checking` is the named state an upload waits in: its uploader alone sees it, it names no asset version, and nothing can place it until the job records one                                                                                                                                                                           |
+| **AST-037** | A refused upload is `refused` with its reason - kept as the record, never deleted - never names an asset version, and its bytes are removed from the store unless an asset already holds the same ones                                                                                                                                |
+| **AST-026** | An asset is in exactly one space - the space of the component it was uploaded into - and reading it is decided on the asset, like any artifact's                                                                                                                                                                                      |
 
-AST-003, AST-035 and AST-037 - scanning for malware, the quarantined state a scan needs, and a failed
-scan - are **not claimed**. The design has the state (`checking`) and the refusal they describe, but
-not the scan: [AST-003 is challenged below](#requirements-challenged), and the three are claimed, or
-replaced, once Ken answers decision F-A.
+AST-003 is superseded by AST-051 (decision F-A, issue #206), and AST-035 and AST-037 now speak of an
+upload's **check** rather than its scan; so all three are claimed above.
 
 ## What this document does not own
 
@@ -113,7 +117,9 @@ sequenceDiagram
     participant S as Service
     participant O as Object store
     participant W as Worker (ingest)
-    E->>S: POST /v1/spaces/{space}/assets (the bytes, a default alternative text, its language)
+    E->>S: POST /v1/spaces/{space}/asset-uploads (a default alternative text, its language)
+    S-->>E: the upload, awaiting
+    E->>S: PUT /v1/asset-uploads/{id}/bytes (the bytes)
     S->>S: create in the space? size under the limit? PNG or JPEG by its first bytes? header walk?
     S->>O: put(bytes) - keyed by its hash
     S-->>E: 202, the upload, checking
@@ -219,13 +225,13 @@ reference follows in an outline, and deliberately not a second rule for images.
 
 **The bytes are served by the service**, not by a signed link to the store:
 
-| Route                                 | Decided               | Answers                                                                                                                                                                                                               |
-| ------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST /v1/spaces/{space}/assets`      | `create` in the space | `202` and the upload, `checking`. `413` over the byte limit; `400 asset_format_not_permitted`; `400 asset_too_large` over the pixel limit; `400 asset_unreadable` where the header walk refuses it                    |
-| `GET /v1/asset-uploads/{id}`          | The uploader alone    | The upload's state, and its asset version once ready or its reason once refused                                                                                                                                       |
-| `GET /v1/asset-versions/{id}`         | `read` on the asset   | The version's recorded properties                                                                                                                                                                                     |
-| `GET /v1/asset-versions/{id}/content` | `read` on the asset   | The bytes, `Content-Type` from the recorded format, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: sandbox`, and `Cache-Control: private, max-age=31536000, immutable` - a version's bytes never change |
-| `POST /v1/assets/{id}/versions`       | `edit` on the asset   | A new version with a changed default alternative text and the same object                                                                                                                                             |
+| Route                                   | Decided               | Answers                                                                                                                                                                                                                                                                    |
+| --------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/spaces/{space}/asset-uploads` | `create` in the space | The upload, `awaiting` its bytes, with the description it was given                                                                                                                                                                                                        |
+| `PUT /v1/asset-uploads/{id}/bytes`      | The uploader alone    | The upload, `checking`. `413 asset_too_large` over the byte limit, read no further, which leaves it awaiting; `413 asset_too_large` over the pixel limit, `400 asset_format_not_permitted` and `400 asset_unreadable`, each of which refuses it; `409 asset_upload_filled` |
+| `GET /v1/asset-uploads/{id}`            | The uploader alone    | The upload's state, and its asset version once ready or its reason once refused                                                                                                                                                                                            |
+| `GET /v1/asset-versions/{id}`           | `read` on the asset   | The version's recorded properties                                                                                                                                                                                                                                          |
+| `GET /v1/asset-versions/{id}/content`   | `read` on the asset   | The bytes, `Content-Type` from the recorded format, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: sandbox`, and `Cache-Control: private, max-age=31536000, immutable` - a version's bytes never change                                                      |
 
 A signed store link expires - five minutes for a download - and an editor stays open for hours, so an
 image would break mid-session. A route on the application's origin also keeps the store's address out
@@ -284,3 +290,14 @@ check" and "fails its check", and this design claims all three. Decision F-A.
 | F-G | **Bytes served by a service route**, with `nosniff`, a sandboxing policy and an immutable cache, not by signed store links                                                                    | Yes                                                                                                                |
 | F-H | **A figure references an asset version**, pinned; floating at latest is T2's AST-017                                                                                                          | Yes                                                                                                                |
 | F-I | **The content model's `asset` tightened in place** to an artifact version identifier, at schema version 1, on a read-only count of stored figures                                             | Yes, if the count is zero; a migration otherwise                                                                   |
+
+## Changed while planning and building the first slice
+
+| What                                                                                          | Why                                                                                                                                                                                                    |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Two requests, not one**: an upload is made with its description, then filled with its bytes | The contract declares JSON bodies, and a description in a header or a query string is somewhere a log keeps it. The contract grew a raw body of one type for the second request (figures 1, R1 and R2) |
+| **An upload is `awaiting` before it is `checking`**                                           | The first request makes it and the second fills it. A body over the byte limit is refused before it is read and leaves it awaiting; every other refusal at the door refuses it                         |
+| **`unchecked`**, a reason the design did not have                                             | A job that fails for the last time for the store's or the database's reasons - never the bytes' - must not leave an upload checking for ever, so its `failed` handler refuses it as unchecked          |
+| **The walk refuses too many pixels on the header alone**                                      | A bomb is refused by what its header claims, before anything after it is read                                                                                                                          |
+| **Changing a default description is not built**                                               | Nothing in these slices changes one, and the editor's panel does not (component-editor.md); the route waits for the asset library                                                                      |
+| **A PNG carrying an EXIF orientation is refused**                                             | Nobody has measured what the engine does with one, so an orientation that would turn the image is refused rather than guessed at                                                                       |

@@ -139,7 +139,7 @@ describe('the header walk (figures 1)', () => {
       expect(admittedFormat(bytes([0x89, 0x50]))).toBeNull();
     });
 
-    it('AST-001 refuses a file that is not a PNG or a JPEG as not permitted', () => {
+    it('refuses a file that is not a PNG or a JPEG as not permitted', () => {
       expect(refusal(bytes('GIF89a', [1, 0, 1, 0]))).toBe('not_permitted');
       expect(refusal(bytes('%PDF-1.7'))).toBe('not_permitted');
       expect(refusal(new Uint8Array())).toBe('not_permitted');
@@ -247,7 +247,7 @@ describe('the header walk (figures 1)', () => {
     });
   });
 
-  describe('AST-040 AST-051 AST-006 what the walk refuses', () => {
+  describe('AST-040 AST-006 what the walk refuses', () => {
     it('refuses a byte after a PNG ends, which is where a second file hides', () => {
       expect(refusal(png({ after: [0] }))).toBe('malformed');
       expect(refusal(png({ after: [...bytes('PK'), 3, 4] }))).toBe('malformed');

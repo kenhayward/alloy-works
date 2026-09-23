@@ -75,6 +75,15 @@ ASSET_MAX_PIXELS` and `failOn: 'error'`. The lock file must carry its Linux x64 
 | `asset` on a figure        | R4, on every content write path, since they all parse through `parseContentDocument`                                                             |
 | Recursion                  | None: the shape is flat                                                                                                                          |
 
+## What the build changed
+
+Recorded in assets.md's [Changed while planning and building the first slice](../design/assets.md#changed-while-planning-and-building-the-first-slice):
+an `unchecked` reason for a job that fails for the last time, the walk refusing too many pixels on the
+header alone, a PNG carrying an EXIF orientation refused, and the route that would change a default
+description left for the asset library. Migration 0020 fires the deferred checks 0019's insert left
+pending before it alters `artifact_version`, which Postgres otherwise refuses within the one migration
+transaction.
+
 ## Tasks
 
 1. **`packages/domain`, assets.** `ADMITTED_FORMATS` (each with `madeSafeBy: 'proof'`, AST-051),

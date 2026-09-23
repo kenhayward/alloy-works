@@ -199,6 +199,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   title, the language and the direction can be changed as you work: each is part of the document, so
   each is undone by `Ctrl+Z` and recorded in the next version you cut.
 
+- **Images, through the API.** An image can be uploaded into a space you may create in - a PNG or a
+  JPEG of up to 25 MB and 50 million pixels, with a description for somebody who cannot see it, in a
+  language. It is checked twice before anything may use it: by what its own bytes say it is, never its
+  name, and then decoded whole by the worker, so a file that is not exactly one image - with another
+  file hidden after it, or pixels that do not decode - is refused, saying why, and its bytes are not
+  kept. Its width and height are recorded as it is displayed, turned the way the camera meant.
+  Everybody who may read the space may see it. **Nothing in the application uses an image yet**: this
+  is what figures will be made from, and there is no button for it until they are.
+
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
   Its outline is a tree: add a section, put a component in it, move one under another with the mouse
@@ -359,7 +368,7 @@ Named explicitly so nobody has to read the source to find out:
 - No way to author anything but formatted paragraphs, lists, quotations, preformatted text and
   tables: a component holding a figure, a footnote or an equation still opens for reading only, and
   there is no control for a defined term or a
-  citation. A paste keeps no footnote, image or equation, reads Markdown only when **Paste as
+  citation. An image can be uploaded through the API and placed nowhere. A paste keeps no footnote, image or equation, reads Markdown only when **Paste as
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
   published PDF of a document's paragraphs, lists, quotations, preformatted text and tables. The one sample document is a fixed template with
   no content of yours in it.

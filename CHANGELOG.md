@@ -3,6 +3,23 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.56.0 - 2026-09-23 (PR #207)
+
+### Added
+
+- **Images can be uploaded into a space, through the API.** A PNG or a JPEG of up to 25 MB and 50
+  million pixels, with a description for somebody who cannot see it. Before anything can use it, it is
+  checked by what its own bytes say it is, never its name, and then decoded whole in the background, so
+  a file that is not exactly one image is refused, with the reason, and not kept. Whoever may read the
+  space may see it. Nothing in the application places an image yet: this is what figures will be made
+  from.
+
+### Changed
+
+- An uploaded image is made safe by being proved to be only an image, rather than by a malware scan,
+  which PNG and JPEG files gain little from (AST-051, replacing AST-003). A format that can carry
+  scripts or embedded files will still be scanned when one is admitted.
+
 ## 0.55.1 - 2026-09-23 (PR #205)
 
 ### Changed
