@@ -192,7 +192,8 @@ wait for becomes a job, and ends with a notification.
 ### Files
 
 An upload is checked by its content, not its name (AST-002), stored as an object under its hash and
-the tenant's prefix, and recorded as an asset version. Downloads are signed links the service issues
+the tenant's prefix, and recorded as an asset version once a worker's `ingest` job has decoded it whole
+([assets.md](assets.md)); until then nothing can place it. Downloads are signed links the service issues
 after checking permission, so the object store never decides who may read anything.
 
 ## Tenant isolation across the containers

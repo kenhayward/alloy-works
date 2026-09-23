@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.55.1 - 2026-09-23 (PR #205)
+
+### Changed
+
+- **Figures are designed**, ready for review before any of it is built: how an image arrives and is
+  proved to be a real PNG or JPEG before anything can place it, who may see it, how the editor asks
+  for its description, and how it is printed so that a screen reader is told what it shows. Measured
+  against the engine the product publishes with. Nothing changes in the application yet.
+
 ## 0.55.0 - 2026-09-22 (PR #204)
 
 ### Added

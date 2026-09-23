@@ -63,6 +63,10 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1387);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 422, from 413: the figures design. assets.md claims eight - AST-001, AST-002, AST-038 and
+    // AST-040 (what an upload may be, read from its bytes and proved by decoding it), AST-041, AST-005
+    // and AST-006 (its hash and its recorded properties) and AST-026 (an asset in a space) - and
+    // publishing.md claims AST-014. AST-003, AST-035 and AST-037 wait on decision F-A.
     // 413, from 412: publishing.md claims TAB-049 with tables 2 - header rows and columns tagged in
     // the PDF, measured, and Word's report naming each table whose header column it could not mark,
     // as word-output.md designs it. TAB-031, which it supersedes, was never claimed.
@@ -140,7 +144,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(413);
+    ).toBe(422);
   });
 });
 
