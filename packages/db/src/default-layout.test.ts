@@ -1,6 +1,7 @@
 import {
   defaultLayout as productDefaultLayout,
   FIRST_DEFAULT_LAYOUT,
+  SECOND_DEFAULT_LAYOUT,
   type Layout,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
@@ -56,7 +57,7 @@ describe('the layout every environment starts with', () => {
     );
   const firstVersion = (tenant: Tenant) => versionOf(tenant, 1);
 
-  it('is declared in every environment, at 0.2, authored by nobody and in no space', async () => {
+  it('is declared in every environment, at 0.3, authored by nobody and in no space', async () => {
     for (const tenant of [acme, other]) {
       const { declared, artifact } = await service.withTenant(tenant, async (trx) => ({
         declared: await defaultLayout(trx),
@@ -68,10 +69,11 @@ describe('the layout every environment starts with', () => {
       }));
       const first = await firstVersion(tenant);
       const second = await versionOf(tenant, 2);
+      const third = await versionOf(tenant, 3);
       expect(declared).toEqual({
         artifactId: DEFAULT_LAYOUT_ID,
-        versionId: second.id,
-        number: '0.2',
+        versionId: third.id,
+        number: '0.3',
         layout: productDefaultLayout,
       });
       expect(artifact).toMatchObject({ kind: 'layout', space_id: null });
@@ -83,14 +85,17 @@ describe('the layout every environment starts with', () => {
       };
       expect(first).toMatchObject({ ...unauthored, schema_version: 1 });
       expect(second).toMatchObject({ ...unauthored, schema_version: 2 });
+      expect(third).toMatchObject({ ...unauthored, schema_version: 2 });
     }
   });
 
-  it("holds both of the domain's default layouts exactly, with the digests the domain computes", async () => {
-    // 0.1 as 0018 stored it, at layout schema 1, and 0.2 as 0019 stored it, with a list of tables.
+  it("holds each of the domain's default layouts exactly, with the digests the domain computes", async () => {
+    // 0.1 as 0018 stored it, at layout schema 1, 0.2 as 0019 stored it, with a list of tables, and
+    // 0.3 as 0021 stored it, with a list of figures before it.
     const cases = [
       [1, FIRST_DEFAULT_LAYOUT as unknown as Layout],
-      [2, productDefaultLayout],
+      [2, SECOND_DEFAULT_LAYOUT],
+      [3, productDefaultLayout],
     ] as const;
     for (const [number, layout] of cases) {
       const version = await versionOf(acme, number);
@@ -142,7 +147,7 @@ describe('the layout every environment starts with', () => {
           },
         }),
       ).rejects.toThrow(/lists/);
-      expect(await versions()).toBe(2);
+      expect(await versions()).toBe(3);
 
       const next: Layout = {
         ...productDefaultLayout,
@@ -157,11 +162,11 @@ describe('the layout every environment starts with', () => {
       return { recorded, declared: await defaultLayout(trx), next };
     });
     if (answer.recorded.answer !== 'recorded') throw new Error(answer.recorded.answer);
-    expect(answer.recorded.version).toMatchObject({ kind: 'layout', revision: 0, version: 3 });
+    expect(answer.recorded.version).toMatchObject({ kind: 'layout', revision: 0, version: 4 });
     expect(answer.declared).toEqual({
       artifactId: DEFAULT_LAYOUT_ID,
       versionId: answer.recorded.version.id,
-      number: '0.3',
+      number: '0.4',
       layout: answer.next,
     });
   });

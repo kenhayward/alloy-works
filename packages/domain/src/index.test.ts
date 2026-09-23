@@ -166,6 +166,8 @@ describe('the domain package', () => {
         // The default layout's first version as 0018 stored it, and the sequences a layout lists,
         // promoted by tables 2 for the store's own test and the worker's.
         'FIRST_DEFAULT_LAYOUT',
+        // Its second, as 0019 stored it, promoted by figures 3 when 0.3 took the default's name.
+        'SECOND_DEFAULT_LAYOUT',
         'LISTED_SEQUENCES',
         'speaksFor',
         'unsupportedFormats',

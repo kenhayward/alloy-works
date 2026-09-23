@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   FIRST_DEFAULT_LAYOUT,
+  SECOND_DEFAULT_LAYOUT,
   defaultNumberingScheme,
   type Layout,
   type PublishFailure,
@@ -25,7 +26,7 @@ import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 import { versionDigests } from './version-digest.js';
-import type { StoredVersion } from './versions.js';
+import { recordVersion, type StoredVersion } from './versions.js';
 
 const ISSUER = 'https://idp.example';
 const FAILED: PublishFailure = {
@@ -204,6 +205,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0018_layouts',
       '0019_default_layout_lists',
       '0020_assets',
+      '0021_default_layout_figures',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -500,6 +502,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0018_layouts',
       '0019_default_layout_lists',
       '0020_assets',
+      '0021_default_layout_figures',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -517,6 +520,74 @@ describe('migration 0018, which gives every environment its default layout', () 
       number: '0.1',
       // Read at schema 2: the layout it stored, generating no lists.
       layout: { ...own, schemaVersion: 2, matter: { ...own.matter, lists: [] } },
+    });
+  });
+});
+
+describe('migration 0021, which gives the default layout a list of figures', () => {
+  let db: TestDatabase;
+  let service: TenantDatabase;
+  let before: string;
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    // Every tenant migration up to 0020 and none after, so a tenant stands where every environment
+    // stood before figures could be published.
+    before = await mkdtemp(join(tmpdir(), 'aw-before-0021-'));
+    await cp(new URL('../migrations/', import.meta.url), before, {
+      recursive: true,
+      filter: (source) => {
+        const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
+        return numbered === null || Number(numbered[1]) < 21;
+      },
+    });
+    service = createTenantDatabase(db.serviceUrl);
+  });
+
+  afterAll(async () => {
+    await service?.close();
+    await rm(before, { recursive: true, force: true });
+    await db?.drop();
+  });
+
+  it('leaves a layout version an environment recorded after 0.2 as the one it declares', async () => {
+    const id = db.newTenantId();
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    const tenant = await provisionTenant(db.adminUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id, name: 'Own 0.3' },
+      hostnames: [`${id}.alloy.test`],
+    });
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    const own: Layout = {
+      ...SECOND_DEFAULT_LAYOUT,
+      words: { ...SECOND_DEFAULT_LAYOUT.words, contents: 'Table of contents' },
+    };
+    const recorded = await service.withTenant({ ...tenant, id }, async (trx) => {
+      const ada = await trx
+        .insertInto('principal')
+        .values({ issuer: ISSUER, subject: 'ada', email: null, display_name: 'Ada' })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const opened = await defaultLayout(trx);
+      return recordVersion(trx, {
+        artifactId: DEFAULT_LAYOUT_ID,
+        openedFrom: opened.versionId,
+        author: ada.id,
+        substance: { kind: 'layout', content: own },
+      });
+    });
+    if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+
+    // 0021 runs and leaves it: its 0.3 is the environment's own, so no list of figures goes on top.
+    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual(['0021_default_layout_figures']);
+    const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
+    expect(declared).toEqual({
+      artifactId: DEFAULT_LAYOUT_ID,
+      versionId: recorded.version.id,
+      number: '0.3',
+      layout: own,
     });
   });
 });
