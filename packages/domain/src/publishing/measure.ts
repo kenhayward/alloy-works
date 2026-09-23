@@ -95,6 +95,11 @@ export function captionHeight(graphemes: number, width: number): number {
   return lines * CAPTION_LINE + CAPTION_GAP;
 }
 
+/** How high an image in a run of text is printed (decision F-K's `inline` style): 1.2 em of the body. */
+export const INLINE_IMAGE_HEIGHT = 1.2 * BODY_SIZE;
+/** What a table's cell insets its content by on each side: the engine's default, 5 points. */
+export const CELL_INSET = 5;
+
 /** A caption's grapheme taken as this many points across: 0.6 em of the body text. */
 export const CAPTION_ADVANCE = 0.6 * BODY_SIZE;
 /** A caption's line taken as this many points down: 1.5 em of the body text. */

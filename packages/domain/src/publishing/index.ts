@@ -52,6 +52,9 @@ export {
   // Frozen by figures 3, which made `publishing/7`: the schema template 6 reads, and the schema of
   // every publication made before a block could be a figure.
   PUBLISHING_SCHEMA_6,
+  // Frozen by figures 5, which made `publishing/8`: the schema template 7 reads, and the schema of
+  // every publication made before a run could be an image.
+  PUBLISHING_SCHEMA_7,
 } from './published.js';
 export type {
   PublishedBlock,
@@ -59,6 +62,8 @@ export type {
   PublishedDocument,
   PublishedDocument1,
   PublishedFigure,
+  PublishedImageRun,
+  PublishedInline,
   PublishedItem,
   PublishedLanguage,
   PublishedList,
