@@ -71,13 +71,32 @@ export function typstBinaryPath(): string {
   return process.env.TYPST_BINARY ?? fetchedBinary(new URL('../', import.meta.url));
 }
 
+/** An image a template reads, at its place in the compile root: `assets/<sha256>.<png|jpg>`. */
+export interface RootImage {
+  readonly path: string;
+  readonly bytes: Uint8Array;
+}
+
+/**
+ * Where an image may stand in the compile root, and nowhere else: its own directory, named by a hash
+ * and an extension the product admits (figures 3, ruling R7). Asked before Typst starts, so no path a
+ * document carries can put a file beside the template or outside the root.
+ */
+const IMAGE_PLACE = /^assets\/[0-9a-f]{64}\.(png|jpg)$/;
+
 export interface Typst {
   version(): Promise<string>;
   /**
    * A template compiled over this JSON text, which it reads as data and never as source, as PDF/UA-1,
-   * in the pinned fonts alone, with the creation time given.
+   * in the pinned fonts alone, with the creation time given - and the images given, each at its
+   * place in the root, which holds nothing else.
    */
-  compile(template: string, data: string, createdAt: Date): Promise<Buffer>;
+  compile(
+    template: string,
+    data: string,
+    createdAt: Date,
+    images?: readonly RootImage[],
+  ): Promise<Buffer>;
 }
 
 export function createTypst(options: {
@@ -101,18 +120,26 @@ export function createTypst(options: {
       }
     },
 
-    async compile(template, data, createdAt) {
+    async compile(template, data, createdAt, images = []) {
+      for (const image of images) {
+        if (!IMAGE_PLACE.test(image.path)) {
+          throw new TypstFailed(`${image.path} is not an image's place in the root`);
+        }
+      }
       // Checked before every compile, not only at start-up: with no faces Typst exits 0 with blank
       // pages (#145). A face missing or altered is FontsUnavailable, thrown before Typst starts.
       const faces = await readPinnedFaces(options.fonts.directory);
-      // The compile root holds the template, the data and the pinned faces, and nothing else
-      // (PUB-062). The faces are the bytes just checked, so Typst reads no file that was not.
+      // The compile root holds the template, the data, the pinned faces and the images handed in, and
+      // nothing else (PUB-062). The faces are the bytes just checked, and the images the bytes the job
+      // checked against their hashes, so Typst reads no file that was not.
       const root = await mkdtemp(join(tmpdir(), 'aw-render-'));
       try {
         await copyFile(template, join(root, 'main.typ'));
         await writeFile(join(root, 'data.json'), data);
         await mkdir(join(root, 'fonts'));
         for (const face of faces) await writeFile(join(root, 'fonts', face.file), face.bytes);
+        if (images.length > 0) await mkdir(join(root, 'assets'));
+        for (const image of images) await writeFile(join(root, image.path), image.bytes);
         await run(options.binary, typstArguments(root, join(root, 'fonts'), createdAt), {
           cwd: root,
           env: {},

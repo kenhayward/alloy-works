@@ -82,6 +82,7 @@ const holding = (text: string): AssembleInput => ({
   layout: defaultLayout,
   revision: '0.1',
   covers: fonts.covers,
+  assets: new Map(),
 });
 
 const depthOf = (bookmarks: readonly Bookmark[]): number =>
@@ -96,6 +97,7 @@ describe('the publishing regression corpus', () => {
       layout: defaultLayout,
       revision: '0.1',
       covers: fonts.covers,
+      assets: new Map(),
     });
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     // Under the default layout, so `publishing/4` through template 4: what every request made since

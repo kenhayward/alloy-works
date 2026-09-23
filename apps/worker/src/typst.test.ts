@@ -3,6 +3,7 @@ import { cp, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import pino from 'pino';
+import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, FontsUnavailable, loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
 import { JobRefused } from './refusal.js';
@@ -94,6 +95,43 @@ describe('the pinned Typst', () => {
     const once = await typst.compile(SAMPLE_TEMPLATE, data, at);
     const again = await typst.compile(SAMPLE_TEMPLATE, data, at);
     expect(once.equals(again)).toBe(true);
+  });
+
+  it('places each image it is handed in the compile root at its path, and no other file', async () => {
+    // A template that reads one image, as a publication template reads a figure's.
+    const directory = await mkdtemp(join(tmpdir(), 'aw-image-template-'));
+    try {
+      const template = join(directory, 'main.typ');
+      const hash = 'ab'.repeat(32);
+      await writeFile(
+        template,
+        [
+          '#set document(title: "Images")',
+          '#set text(lang: "en")',
+          `#image("assets/${hash}.png", width: 10pt, alt: "A square")`,
+        ].join('\n'),
+      );
+      const square = await sharp({
+        create: { width: 4, height: 4, channels: 3, background: { r: 200, g: 30, b: 30 } },
+      })
+        .png()
+        .toBuffer();
+      const pdf = await typst.compile(template, '{}', at, [
+        { path: `assets/${hash}.png`, bytes: square },
+      ]);
+      expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      // Not handed it, the template cannot read it: the root holds nothing it was not given.
+      await expect(typst.compile(template, '{}', at)).rejects.toBeInstanceOf(JobRefused);
+      // And a path outside the images' own directory is refused before Typst starts.
+      for (const path of ['main.typ', '../escape.png', `assets/${hash}.gif`, 'assets/x/y.png']) {
+        await expect(
+          typst.compile(template, '{}', at, [{ path, bytes: square }]),
+          path,
+        ).rejects.toThrow(/not an image's place in the root/);
+      }
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 
   it('says plainly when the binary is not there', async () => {

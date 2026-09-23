@@ -117,6 +117,7 @@ const inputOf = (nodes: readonly Node[], layout: Layout): AssembleInput => {
     layout,
     revision: '0.7',
     covers: fonts.covers,
+    assets: new Map(),
   };
 };
 
