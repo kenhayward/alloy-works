@@ -1340,6 +1340,71 @@ describe('requesting and recording a publication', () => {
     });
   });
 
+  it('resolves an image in a run of text as the publisher too, in a paragraph and in a table cell', async () => {
+    // Figures 5, ruling R5: an inline image is resolved as a figure's is, and a refusal names the block
+    // holding it.
+    const inline = (asset: string) => ({
+      type: 'image' as const,
+      asset,
+      imageStyle: 'inline',
+      alternative: { kind: 'decorative' as const },
+    });
+    await service.withTenant(production, async (trx) => {
+      const open = await image(trx, general, grace, '2');
+      const secret = await image(trx, quality, grace, '3');
+      const placed = await holding(trx, grace, [
+        {
+          type: 'paragraph',
+          id: 'p1',
+          style: 'body',
+          content: [{ type: 'text', value: 'Press ', marks: [] }, inline(open.id)],
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [{ type: 'text', value: 'Readings', marks: [] }],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [
+            {
+              cells: [
+                {
+                  // Two it may not read in one paragraph, which is named once.
+                  content: [
+                    {
+                      type: 'paragraph',
+                      id: 'c1',
+                      style: 'body',
+                      content: [inline(secret.id), inline(secret.id)],
+                    },
+                  ],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+              ],
+            },
+          ],
+        },
+      ]);
+      const placement = reference(placed.artifactId);
+      const version = await documentWith(trx, [placement]);
+      const adas = await requested(trx, version, ada);
+      expect(await failuresIn(trx, adas)).toEqual([
+        {
+          stage: 'resolve',
+          code: 'asset_unreadable',
+          node: placement.id,
+          block: 'c1',
+          detail: null,
+        },
+      ]);
+      expect(await requestAssets(trx, adas)).toEqual([
+        { version_id: open.id, asset_id: open.artifactId },
+      ]);
+    });
+  });
+
   it('records the images a publication printed, and never one on a request once it is finished', async () => {
     const { id, red } = await service.withTenant(production, async (trx) => {
       const red = await image(trx, general, ada, '1');
