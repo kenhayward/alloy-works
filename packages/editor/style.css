@@ -406,3 +406,72 @@
   font-style: italic;
   text-decoration: underline wavy var(--danger);
 }
+
+/* An equation (equations 1, ruling R5): its stored MathML drawn natively, in the reader's own maths
+ * font - no maths face is shipped for the screen in this slice. Inline, it sits on the baseline of the
+ * text it stands in, as MathML's own layout sets it; a block stands on its own line, centred, with
+ * room either side for the marker that says it is numbered, which stands at the right - the number
+ * itself is the document's. Not scoped to the surface, since a document's text shows the same
+ * equation.
+ *
+ * **A known shortfall, not fixed here**: an overline or an underline is stored as a stretchy U+203E or
+ * U+005F over or under its content (equations 1, ruling R2), and a line stretches only where the
+ * maths font has a horizontal construction for that character. STIX Two Math, the publishing face,
+ * has both; Cambria Math - which Chromium draws with on Windows - and Libertinus Math have neither,
+ * so on those the line is drawn at the width of one glyph, short over `a+b`. Drawing it with a border
+ * instead, as Temml's own stylesheet does, would be a second drawing of the same MathML that the
+ * publish does not share; the fix is a maths face on screen, which is its own decision. */
+.aw-equation {
+  padding: 0 0.1em;
+  vertical-align: baseline;
+}
+
+.aw-equation-block {
+  position: relative;
+  margin: 0.75em 0;
+  padding: 0 3em;
+  text-align: center;
+}
+
+.aw-equation-number {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  color: var(--muted);
+}
+
+/* An equation selected whole - which is how its dialog opens on it - is outlined, as an image is. */
+.aw-equation.ProseMirror-selectednode,
+.aw-equation-block.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* An equation with no spoken alternative: a dashed border and the words _No description_ beside it,
+ * so it is told by its shape and its words, not by colour alone (CNT-138). Beneath a block, since the
+ * block's MathML fills its line. */
+.aw-equation-undescribed {
+  border: 1px dashed var(--muted);
+  border-radius: 3px;
+}
+
+.aw-equation-undescribed-marker {
+  margin-inline-start: 0.35em;
+  color: var(--muted);
+  font-size: 0.75em;
+  font-style: italic;
+}
+
+.aw-equation-block .aw-equation-undescribed-marker {
+  display: block;
+  margin: 0.25em 0 0;
+}
+
+/* An equation whose MathML is not what the reader keeps: only words stand in its place, marked as an
+ * image that does not load is. */
+.aw-equation-unshown {
+  padding: 0 0.25em;
+  border: 1px dashed var(--muted);
+  color: var(--muted);
+}

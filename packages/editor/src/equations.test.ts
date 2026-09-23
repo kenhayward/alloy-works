@@ -1,4 +1,6 @@
 import type { BlockNode, ContentDocument, InlineNode, Mark } from '@alloy-works/domain';
+import { readFileSync } from 'node:fs';
+
 import { undo } from 'prosemirror-history';
 import { Fragment, type Node } from 'prosemirror-model';
 import {
@@ -734,5 +736,31 @@ describe('Equation in the registry (equations 1)', () => {
       ),
     );
     expect(blockCommand('equation', counter())(footnoteState(outer, 'f1', 2))).toBe(true);
+  });
+});
+
+describe('the editor stylesheet, for an equation (equations 1, ruling R5)', () => {
+  it('sets a block on its own line with its number marker at the right, outlines one selected, and marks one undescribed or unshown by more than colour', () => {
+    // Pinned in the stylesheet itself, as a reference's is: jsdom applies no stylesheet a package
+    // ships.
+    const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    // Every declaration of every rule whose selector list names this selector exactly.
+    const rule = (selector: string) =>
+      [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+        .filter((match) => match[1]!.split(',').some((each) => each.trim() === selector))
+        .map((match) => match[2])
+        .join(';');
+    expect(rule('.aw-equation')).toMatch(/vertical-align:\s*baseline/);
+    expect(rule('.aw-equation-block')).toMatch(/text-align:\s*center/);
+    expect(rule('.aw-equation-block')).toMatch(/position:\s*relative/);
+    expect(rule('.aw-equation-number')).toMatch(/position:\s*absolute/);
+    expect(rule('.aw-equation-number')).toMatch(/right:\s*0/);
+    expect(rule('.aw-equation.ProseMirror-selectednode')).toMatch(/outline:/);
+    expect(rule('.aw-equation-block.ProseMirror-selectednode')).toMatch(/outline:/);
+    expect(rule('.aw-equation-undescribed')).toMatch(/border:[^;]*dashed/);
+    expect(rule('.aw-equation-unshown')).toMatch(/border:[^;]*dashed/);
   });
 });
