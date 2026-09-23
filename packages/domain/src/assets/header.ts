@@ -78,6 +78,14 @@ export function crc32(bytes: Uint8Array): number {
 
 class Malformed extends Error {}
 
+/** Thrown the moment a header claims more pixels than the limit, so nothing after it is read. */
+class TooManyPixels extends Error {}
+
+/** Refuses dimensions over the pixel limit as soon as they are read (AST-040). */
+function bounded(width: number, height: number): void {
+  if (width * height > ASSET_MAX_PIXELS) throw new TooManyPixels();
+}
+
 // A declaration, not an arrow: only a declared `never` function narrows the code after a call to it.
 function malformed(detail: string): never {
   throw new Malformed(detail);
@@ -113,12 +121,9 @@ export function readImageHeader(bytes: Uint8Array): HeaderReading {
   const format = admittedFormat(bytes);
   if (format === null) return { ok: false, refusal: 'not_permitted' };
   try {
-    const header = format === 'png' ? walkPng(bytes) : walkJpeg(bytes);
-    if (header.width * header.height > ASSET_MAX_PIXELS) {
-      return { ok: false, refusal: 'too_many_pixels' };
-    }
-    return { ok: true, header };
+    return { ok: true, header: format === 'png' ? walkPng(bytes) : walkJpeg(bytes) };
   } catch (error) {
+    if (error instanceof TooManyPixels) return { ok: false, refusal: 'too_many_pixels' };
     if (error instanceof Malformed)
       return { ok: false, refusal: 'malformed', detail: error.message };
     throw error;
@@ -163,6 +168,7 @@ function walkPng(bytes: Uint8Array): ImageHeader {
       const colourType = read.u8(dataAt + 9);
       const rule = PNG_COLOUR[colourType];
       if (width === 0 || height === 0) malformed('zero dimension');
+      bounded(width, height);
       if (rule === undefined || !rule.depths.includes(depth)) malformed('colour type and depth');
       if (read.u8(dataAt + 10) !== 0 || read.u8(dataAt + 11) !== 0 || read.u8(dataAt + 12) > 1) {
         malformed('compression, filter or interlace');
@@ -246,6 +252,7 @@ function walkJpeg(bytes: Uint8Array): ImageHeader {
       if (![1, 3, 4].includes(components)) malformed('components');
       frame = { height: read.u16(payload + 1), width: read.u16(payload + 3), components };
       if (frame.width === 0 || frame.height === 0) malformed('zero dimension');
+      bounded(frame.width, frame.height);
     } else if (marker === 0xe0 && length >= 16 && read.ascii(payload, 5) === 'JFIF\u0000') {
       const units = read.u8(payload + 7);
       const x = read.u16(payload + 8);

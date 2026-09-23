@@ -316,5 +316,13 @@ describe('the header walk (figures 1)', () => {
       expect(refusal(jpeg({ width: 7072, height: 7071 }))).toBe('too_many_pixels');
       expect(refusal(png({ width: 7071, height: 7071 }))).toBe('accepted');
     });
+
+    it('AST-040 refuses too many pixels on the header alone, before walking whatever follows it', () => {
+      // A bomb is refused by what its header claims, so the service never reads the rest of it.
+      const whole = png({ width: 8000, height: 8000 });
+      expect(refusal(whole.subarray(0, 33))).toBe('too_many_pixels');
+      const photo = jpeg({ width: 8000, height: 8000 });
+      expect(refusal(photo.subarray(0, photo.indexOf(0xc4, 90) - 1))).toBe('too_many_pixels');
+    });
   });
 });
