@@ -60,6 +60,9 @@ export {
   // Frozen by footnotes 2, which made `publishing/9`: the schema template 8 reads, and the schema of
   // every publication made before a run could be a footnote.
   PUBLISHING_SCHEMA_8,
+  // Frozen by cross-references 2, which made `publishing/10`: the schema template 9 reads, and the
+  // schema of every publication made before a run could be a cross-reference.
+  PUBLISHING_SCHEMA_9,
 } from './published.js';
 export type {
   PublishedBlock,
@@ -73,6 +76,7 @@ export type {
   PublishedItem,
   PublishedLanguage,
   PublishedList,
+  PublishedMarker,
   PublishedPreformatted,
   PublishedQuotation,
   PublishedMark,
@@ -82,6 +86,7 @@ export type {
   PublishedParagraph1,
   PublishedPattern,
   PublishedPdfFormat,
+  PublishedReferenceRun,
   PublishedRun,
   PublishedRun1,
 } from './published.js';

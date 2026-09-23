@@ -67,6 +67,13 @@ export const publishFailureCodes = [
   // compose, from the final review of footnotes 2: a footnote the layout's scheme gives no number,
   // which would print as a mark with nothing in it.
   'footnote_unnumbered',
+  // compose, from cross-references 2 (XR-F): a reference whose target the document publishing it does
+  // not hold, or holds more than once where it names another component (STR-029, STR-062); and one
+  // asking its target for a form it lacks - a number of a paragraph, a title of a footnote, a page in a
+  // section's title, or above and below under a layout with no words for them. Each names the
+  // reference, and the target or the form, never the author's text.
+  'cross_reference_unresolved',
+  'cross_reference_form_unavailable',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',
