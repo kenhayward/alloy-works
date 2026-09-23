@@ -1,6 +1,5 @@
 import type { ContentDocument } from '../model/document.js';
 
-import type { StageResult } from './migrate.js';
 import type { ReportCollector } from './report.js';
 
 /** The component content is being admitted into, and what it needs from its caller. */
@@ -18,6 +17,22 @@ export type Receiver = {
    */
   readonly newIdentifier: () => string;
 };
+
+/**
+ * What re-identifying answers: the candidate under its new identifiers, and `renamed` - each block's
+ * and footnote's new identifier by the one it arrived with, leaving out any that arrived on more than
+ * one, since no single new one answers it. `admit` hands `renamed` on, so a paste can re-point a
+ * reference its receiving component still holds at the block that came back (cross-references 1,
+ * R8): what this stage does for the references that travel, the editor then does for the ones left
+ * behind.
+ */
+export type Reidentified =
+  | {
+      readonly ok: true;
+      readonly value: Record<string, unknown>;
+      readonly renamed: ReadonlyMap<string, string>;
+    }
+  | { readonly ok: false; readonly failure: string };
 
 /** How many times an identifier that is empty or already used is drawn again before giving up. */
 const ATTEMPTS = 8;
@@ -43,7 +58,7 @@ export function reidentify(
   candidate: Record<string, unknown>,
   receiver: Receiver,
   report: ReportCollector,
-): StageResult<Record<string, unknown>> {
+): Reidentified {
   const held = namesIn(receiver.document.content);
   const state: State = {
     taken: new Set([...held.reserved, ...namesIn(candidate.content).reserved]),
@@ -72,7 +87,7 @@ export function reidentify(
     if (state.marks.size > 0) {
       report.add('reidentify', 'rewritten', 'markIdentifier', { count: state.marks.size });
     }
-    return { ok: true, value: { ...candidate, content } };
+    return { ok: true, value: { ...candidate, content }, renamed: state.renamed };
   } catch (error) {
     if (!(error instanceof AllocationFailed)) throw error;
     report.add('reidentify', 'refused', 'identifiers');

@@ -416,6 +416,29 @@ describe('assemble', () => {
     ]);
   });
 
+  it('refuses a cross-reference by name, whatever it targets, until references are published', () => {
+    // Cross-references 1 lets a component hold a reference to a section (structure.md, XR-B); none is
+    // resolved at publish until cross-references 2, so each is refused by name, never set as nothing.
+    for (const target of [
+      { kind: 'block', block: 'b1' },
+      { kind: 'component', component: '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27', block: 'b9' },
+      { kind: 'node', node: 'a'.repeat(26) },
+    ]) {
+      const result = assemble(
+        oneParagraph(text('See '), { type: 'crossReference', id: 'x1', target, display: 'number' }),
+      );
+      expect(failuresOf(result)).toEqual([
+        {
+          stage: 'compose',
+          code: 'inline_not_publishable',
+          node: id('calib'),
+          block: 'b1',
+          detail: 'crossReference',
+        },
+      ]);
+    }
+  });
+
   it('refuses a run carrying an annotation mark, naming it, rather than setting what it hides', () => {
     const result = assemble(
       oneParagraph(

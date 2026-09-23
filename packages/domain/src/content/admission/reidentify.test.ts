@@ -63,7 +63,9 @@ const footnote = (id: string, content: unknown[]) => ({
 
 const run = (candidate: Record<string, unknown>, to: Receiver = receiver()) => {
   const report = createReport();
-  const outcome = reidentify(candidate, to, report);
+  const identified = reidentify(candidate, to, report);
+  // What was renamed is asserted through `admit`, which hands it on; these assert the content.
+  const outcome = identified.ok ? { ok: true, value: identified.value } : identified;
   return { outcome, entries: report.entries.map(({ message: _, ...entry }) => entry) };
 };
 
