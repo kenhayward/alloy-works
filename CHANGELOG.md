@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.62.1 - 2026-09-23 (PR #218)
+
+### Changed
+
+- **Cross-references are designed**, ready for review before any of it is built: how an author points
+  at a section, a figure, a table or a footnote from a dialog in the editor, what a reference shows as
+  they write and what a publication prints - a number, a title, both, a page, or "above" and "below" -
+  where it is a link, and what happens to a reference when its target is deleted and put back or cut
+  and pasted. Measured against the typesetting engine first: a link in a running head stops a
+  publication outright, so a reference in a heading or a caption is printed as text.
+
 ## 0.62.0 - 2026-09-23 (PR #217)
 
 ### Added

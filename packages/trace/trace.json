@@ -14951,7 +14951,7 @@
         },
         {
           "id": "STR-027",
-          "howItIsMet": "`number`, `title` and `numberAndTitle` come from `references`; `page` from Typst, at the label; `relative` is \"above\" or \"below\" by document order, in the layout's words"
+          "howItIsMet": "`number`, `title` and `numberAndTitle` come from `references`; `page` from Typst, at the label; `relative` is \"above\" or \"below\" by document order, in the layout's words, which a layout schema version adds (structure.md, XR-C)"
         },
         {
           "id": "STR-029",

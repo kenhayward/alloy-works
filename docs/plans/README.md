@@ -486,6 +486,13 @@ footnote anchored to a cell by key or by position, wait until after both (FN-A).
 | 1   | [Footnotes in the editor](2026-09-23-footnotes-01-footnotes-in-the-editor.md) | A footnote placed at the cursor in a paragraph and its paragraphs written in an editor beneath the text; a table's note added, written and removed from the Table panel; both opened for editing, and refused by name at publish             | Built (PR #216) |
 | 2   | [Publishing footnotes](2026-09-23-footnotes-02-publishing-footnotes.md)       | A footnote set at the foot of its anchor's page under the outline's number and tagged as a note, and a table's note beneath the table; a footnote where it cannot stand, anchored to a cell its table lacks, or with no text refused by name | Built (PR #217) |
 
+## Cross-references
+
+The cross-references design is structure.md's [Making, showing and printing a reference](../design/structure.md#making-showing-and-printing-a-reference),
+over the resolution structure 4 designed, measured against the pinned engine on 2026-09-23 (decisions XR-A
+to XR-G). Planned as two pull requests (decision XR-G): references in the editor, with identifiers kept
+through an undo and a cut and paste, then references published. No plan is written yet.
+
 ## Publishing
 
 A document version to a PDF somebody can download, cite and keep, designed in
