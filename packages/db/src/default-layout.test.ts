@@ -2,6 +2,7 @@ import {
   defaultLayout as productDefaultLayout,
   FIRST_DEFAULT_LAYOUT,
   SECOND_DEFAULT_LAYOUT,
+  THIRD_DEFAULT_LAYOUT,
   type Layout,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
@@ -57,7 +58,7 @@ describe('the layout every environment starts with', () => {
     );
   const firstVersion = (tenant: Tenant) => versionOf(tenant, 1);
 
-  it('is declared in every environment, at 0.3, authored by nobody and in no space', async () => {
+  it('is declared in every environment, at 0.4, authored by nobody and in no space', async () => {
     for (const tenant of [acme, other]) {
       const { declared, artifact } = await service.withTenant(tenant, async (trx) => ({
         declared: await defaultLayout(trx),
@@ -70,10 +71,11 @@ describe('the layout every environment starts with', () => {
       const first = await firstVersion(tenant);
       const second = await versionOf(tenant, 2);
       const third = await versionOf(tenant, 3);
+      const fourth = await versionOf(tenant, 4);
       expect(declared).toEqual({
         artifactId: DEFAULT_LAYOUT_ID,
-        versionId: third.id,
-        number: '0.3',
+        versionId: fourth.id,
+        number: '0.4',
         layout: productDefaultLayout,
       });
       expect(artifact).toMatchObject({ kind: 'layout', space_id: null });
@@ -86,16 +88,19 @@ describe('the layout every environment starts with', () => {
       expect(first).toMatchObject({ ...unauthored, schema_version: 1 });
       expect(second).toMatchObject({ ...unauthored, schema_version: 2 });
       expect(third).toMatchObject({ ...unauthored, schema_version: 2 });
+      expect(fourth).toMatchObject({ ...unauthored, schema_version: 3 });
     }
   });
 
   it("holds each of the domain's default layouts exactly, with the digests the domain computes", async () => {
-    // 0.1 as 0018 stored it, at layout schema 1, 0.2 as 0019 stored it, with a list of tables, and
-    // 0.3 as 0021 stored it, with a list of figures before it.
+    // 0.1 as 0018 stored it, at layout schema 1, 0.2 as 0019 stored it, with a list of tables, 0.3 as
+    // 0021 stored it, with a list of figures before it, and 0.4 as 0023 stored it, with words for above
+    // and below a relative reference.
     const cases = [
       [1, FIRST_DEFAULT_LAYOUT as unknown as Layout],
       [2, SECOND_DEFAULT_LAYOUT as unknown as Layout],
-      [3, productDefaultLayout],
+      [3, THIRD_DEFAULT_LAYOUT as unknown as Layout],
+      [4, productDefaultLayout],
     ] as const;
     for (const [number, layout] of cases) {
       const version = await versionOf(acme, number);
@@ -147,7 +152,7 @@ describe('the layout every environment starts with', () => {
           },
         }),
       ).rejects.toThrow(/lists/);
-      expect(await versions()).toBe(3);
+      expect(await versions()).toBe(4);
 
       const next: Layout = {
         ...productDefaultLayout,
@@ -162,11 +167,11 @@ describe('the layout every environment starts with', () => {
       return { recorded, declared: await defaultLayout(trx), next };
     });
     if (answer.recorded.answer !== 'recorded') throw new Error(answer.recorded.answer);
-    expect(answer.recorded.version).toMatchObject({ kind: 'layout', revision: 0, version: 4 });
+    expect(answer.recorded.version).toMatchObject({ kind: 'layout', revision: 0, version: 5 });
     expect(answer.declared).toEqual({
       artifactId: DEFAULT_LAYOUT_ID,
       versionId: answer.recorded.version.id,
-      number: '0.4',
+      number: '0.5',
       layout: answer.next,
     });
   });

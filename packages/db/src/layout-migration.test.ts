@@ -3,9 +3,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
+  defaultLayout as productDefaultLayout,
   FIRST_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
   SECOND_DEFAULT_LAYOUT,
+  THIRD_DEFAULT_LAYOUT,
   defaultNumberingScheme,
   type Layout,
   type PublishFailure,
@@ -208,6 +210,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0020_assets',
       '0021_default_layout_figures',
       '0022_publication_assets',
+      '0023_default_layout_relative_words',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -516,6 +519,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0020_assets',
       '0021_default_layout_figures',
       '0022_publication_assets',
+      '0023_default_layout_relative_words',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -605,6 +609,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
       '0021_default_layout_figures',
       '0022_publication_assets',
+      '0023_default_layout_relative_words',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -612,6 +617,111 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       versionId: recorded.version.id,
       number: '0.3',
       layout: own,
+    });
+  });
+});
+
+describe('migration 0023, which gives the default layout words for a relative reference', () => {
+  let db: TestDatabase;
+  let service: TenantDatabase;
+  let before: string;
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    // Every tenant migration up to 0022 and none after, so a tenant stands where every environment
+    // stood before a relative reference could print its words.
+    before = await mkdtemp(join(tmpdir(), 'aw-before-0023-'));
+    await cp(new URL('../migrations/', import.meta.url), before, {
+      recursive: true,
+      filter: (source) => {
+        const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
+        return numbered === null || Number(numbered[1]) < 23;
+      },
+    });
+    service = createTenantDatabase(db.serviceUrl);
+  });
+
+  afterAll(async () => {
+    await service?.close();
+    await rm(before, { recursive: true, force: true });
+    await db?.drop();
+  });
+
+  it('leaves a layout version an environment recorded after 0.3 as the one it declares', async () => {
+    const id = db.newTenantId();
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    const tenant = await provisionTenant(db.adminUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id, name: 'Own 0.4' },
+      hostnames: [`${id}.alloy.test`],
+    });
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    // Recorded through today's schema, which is all `recordVersion` takes: 0.3's scheme and lists,
+    // and words of its own for above and below.
+    const own: Layout = {
+      ...THIRD_DEFAULT_LAYOUT,
+      schemaVersion: LAYOUT_SCHEMA_VERSION,
+      words: { ...THIRD_DEFAULT_LAYOUT.words, above: 'from above', below: 'from below' },
+    };
+    const recorded = await service.withTenant({ ...tenant, id }, async (trx) => {
+      const ada = await trx
+        .insertInto('principal')
+        .values({ issuer: ISSUER, subject: 'ada', email: null, display_name: 'Ada' })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const opened = await defaultLayout(trx);
+      return recordVersion(trx, {
+        artifactId: DEFAULT_LAYOUT_ID,
+        openedFrom: opened.versionId,
+        author: ada.id,
+        substance: { kind: 'layout', content: own },
+      });
+    });
+    if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+
+    // 0023 runs and leaves it: its 0.4 is the environment's own, so no words of the product's go on top.
+    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
+      '0023_default_layout_relative_words',
+    ]);
+    const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
+    expect(declared).toEqual({
+      artifactId: DEFAULT_LAYOUT_ID,
+      versionId: recorded.version.id,
+      number: '0.4',
+      layout: own,
+    });
+  });
+
+  it("gives an environment still at the product's 0.3 the words above and below", async () => {
+    const id = db.newTenantId();
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    const tenant = await provisionTenant(db.adminUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id, name: 'Still 0.3' },
+      hostnames: [`${id}.alloy.test`],
+    });
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+
+    // 0023 runs and adds 0.4 on top of the product's own, untouched 0.3.
+    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
+      '0023_default_layout_relative_words',
+    ]);
+    const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
+    const fourth = await service.withTenant({ ...tenant, id }, (trx) =>
+      trx
+        .selectFrom('artifact_version')
+        .selectAll()
+        .where('artifact_id', '=', DEFAULT_LAYOUT_ID)
+        .where('revision_no', '=', 0)
+        .where('version_no', '=', 4)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(declared).toEqual({
+      artifactId: DEFAULT_LAYOUT_ID,
+      versionId: fourth.id,
+      number: '0.4',
+      layout: productDefaultLayout,
     });
   });
 });
