@@ -478,8 +478,12 @@ inline images in the editor and then published, since each is the size of figure
 The footnotes design is publishing.md's [Footnotes](../design/publishing.md#footnotes) with
 component-editor.md's footnote rows under [Tables and footnotes](../design/component-editor.md#tables-and-footnotes),
 measured against the pinned engine on 2026-09-23 (decisions FN-A to FN-F). Planned as two pull requests
-(decision FN-F): footnotes and the table's note in the editor, then both published. No plan is written
-yet.
+(decision FN-F): footnotes and the table's note in the editor, then both published. Key columns, and a
+footnote anchored to a cell by key or by position, wait until after both (FN-A).
+
+| #   | Plan                                                                          | Builds                                                                                                                                                                                                                           | Status      |
+| --- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 1   | [Footnotes in the editor](2026-09-23-footnotes-01-footnotes-in-the-editor.md) | A footnote placed at the cursor in a paragraph and its paragraphs written in an editor beneath the text; a table's note added, written and removed from the Table panel; both opened for editing, and refused by name at publish | In progress |
 
 ## Publishing
 
