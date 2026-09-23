@@ -3122,6 +3122,58 @@ describe('cross-references, published (cross-references 2)', () => {
     ]);
   });
 
+  it("fails a reference to what stands in a table's header rows, which the engine sets on every page", () => {
+    // Measured against the pinned engine (cross-references 2, task 4): a header row is set again on
+    // every page a table reaches, and a label on what it holds goes with it, so a table crossing a
+    // page carries the label twice and the compile is refused, "label occurs multiple times". Where
+    // the table breaks is the engine's to know, so every such target fails, naming the form asked of
+    // it - as a footnote there is refused wherever the table breaks. A header column is set once.
+    const assembled = assemble(
+      inIntro(
+        table('t1', [text('Readings')], {
+          headerRows: 1,
+          headerColumns: 1,
+          rows: [
+            {
+              cells: [
+                cellOf(paragraph('h1', text('Site'))),
+                cellOf(
+                  storedList('hL', 'unordered', [{ content: [paragraph('hi', text('Value'))] }]),
+                ),
+                // Empty, so what carries its anchor is a marker, in the header all the same.
+                cellOf({ type: 'paragraph', id: 'h3', style: 'body', content: [] }),
+              ],
+            },
+            {
+              cells: [
+                cellOf(paragraph('c1', text('York'))),
+                cellOf(paragraph('c2', text('12'))),
+                cellOf(paragraph('c3', text('3'))),
+              ],
+            },
+          ],
+        }),
+        paragraph(
+          'b1',
+          xref('x1', toBlock('h1'), 'page'),
+          xref('x2', toBlock('hL'), 'relative'),
+          xref('x3', toBlock('hi'), 'page'),
+          xref('x4', toBlock('h3'), 'page'),
+          // A header column's cell and a body cell are set once, and are published.
+          xref('x5', toBlock('c1'), 'page'),
+          xref('x6', toBlock('c2'), 'relative'),
+          xref('x7', toBlock('t1'), 'page'),
+        ),
+      ),
+    );
+    expect(failuresOf(assembled)).toEqual([
+      failed('cross_reference_form_unavailable', 'x1', 'page'),
+      failed('cross_reference_form_unavailable', 'x2', 'relative'),
+      failed('cross_reference_form_unavailable', 'x3', 'page'),
+      failed('cross_reference_form_unavailable', 'x4', 'page'),
+    ]);
+  });
+
   it("sets a section title's reference as its number in the title's words", () => {
     const results = {
       ...section('results', 'Results'),

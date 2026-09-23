@@ -1131,8 +1131,13 @@ interface Found {
  *   reference and its target (STR-029, STR-062);
  * - **one asking for a form its target cannot print** fails `cross_reference_form_unavailable`, naming
  *   the form: one `printableForms` does not offer, a page in a section's title (R6) - which the
- *   running heads and the contents set again, where a page would be computed per place - and a
- *   relative form under a layout with no words for above and below (R2);
+ *   running heads and the contents set again, where a page would be computed per place - a
+ *   relative form under a layout with no words for above and below (R2), and **any form of a target
+ *   standing in a table's header rows** (cross-references 2, task 4, measured): the engine sets a
+ *   header row again on every page the table reaches, the target's label with it, and a label set
+ *   twice refuses the compile - "label occurs multiple times" - wherever the table happens to break,
+ *   which only the engine knows. Refused wherever it breaks, as a footnote there is. A header
+ *   column is set once, and is published;
  * - **every other** prints its form: the label, the title, both with a space between, the layout's
  *   word for above or below, or nothing for a page, which the template prints - and its target's
  *   anchor is named.
@@ -1151,46 +1156,58 @@ function resolveReferences(
   const found: Found[] = [];
   const positions = new Map<string, number>();
   const sections = new Map<string, Extract<OutlineNode, { type: 'section' }>>();
+  /** Every anchor standing in a table's header rows, which the engine sets on every page. */
+  const repeated = new Set<string>();
   let at = 0;
 
-  const inlines = (content: readonly InlineNode[], node: string, inTitle: boolean) => {
+  const place = (anchor: string, inHeader: boolean) => {
+    positions.set(anchor, at++);
+    if (inHeader) repeated.add(anchor);
+  };
+  const inlines = (
+    content: readonly InlineNode[],
+    node: string,
+    inTitle: boolean,
+    inHeader: boolean,
+  ) => {
     for (const inline of content) {
       if (inline.type === 'crossReference') {
         found.push({ node, reference: inline, inTitle, at: at++ });
       } else if (inline.type === 'footnote') {
-        positions.set(blockAnchor(node, inline.id), at++);
+        place(blockAnchor(node, inline.id), inHeader);
         const paragraphs = inline.content as readonly Extract<BlockNode, { type: 'paragraph' }>[];
-        for (const paragraph of paragraphs) inlines(paragraph.content, node, inTitle);
+        for (const paragraph of paragraphs) inlines(paragraph.content, node, inTitle, inHeader);
       }
     }
   };
   // A branch per stored block kind, and a `default:` that refuses what it cannot name, as
   // `publishable` has: a block walked past here is a reference in it never resolved.
-  const block = (stored: BlockNode, node: string): void => {
-    positions.set(blockAnchor(node, stored.id), at++);
+  const block = (stored: BlockNode, node: string, inHeader: boolean): void => {
+    place(blockAnchor(node, stored.id), inHeader);
     switch (stored.type) {
       case 'paragraph':
-        inlines(stored.content, node, false);
+        inlines(stored.content, node, false, inHeader);
         return;
       case 'list':
         for (const item of stored.items) {
-          inlines(item.term ?? [], node, false);
-          for (const each of item.content) block(each, node);
+          inlines(item.term ?? [], node, false, inHeader);
+          for (const each of item.content) block(each, node, inHeader);
         }
         return;
       case 'blockquote':
-        for (const each of stored.content) block(each, node);
-        inlines(stored.attribution ?? [], node, false);
+        for (const each of stored.content) block(each, node, inHeader);
+        inlines(stored.attribution ?? [], node, false, inHeader);
         return;
       case 'table':
-        inlines(stored.caption, node, false);
-        for (const row of stored.rows) {
-          for (const cell of row.cells) for (const each of cell.content) block(each, node);
-        }
-        inlines(stored.note ?? [], node, false);
+        inlines(stored.caption, node, false, inHeader);
+        stored.rows.forEach((row, index) => {
+          const header = inHeader || index < stored.headerRows;
+          for (const cell of row.cells) for (const each of cell.content) block(each, node, header);
+        });
+        inlines(stored.note ?? [], node, false, inHeader);
         return;
       case 'figure':
-        inlines(stored.caption, node, false);
+        inlines(stored.caption, node, false, inHeader);
         return;
       case 'preformatted':
       case 'equation':
@@ -1202,13 +1219,13 @@ function resolveReferences(
     }
   };
   walkOutline(input.outline.nodes, (node) => {
-    positions.set(nodeAnchor(node.id), at++);
+    place(nodeAnchor(node.id), false);
     if (node.type === 'section') {
       sections.set(node.id, node);
-      inlines(node.title, node.id, true);
+      inlines(node.title, node.id, true, false);
       return;
     }
-    for (const each of input.occurrences.get(node.id)?.content ?? []) block(each, node.id);
+    for (const each of input.occurrences.get(node.id)?.content ?? []) block(each, node.id, false);
   });
 
   const resolve = referenceResolver({
@@ -1253,18 +1270,19 @@ function resolveReferences(
     }
     const target = published(resolution.target);
     const { display } = reference;
+    const anchor =
+      target.block === null ? nodeAnchor(target.node) : blockAnchor(target.node, target.block);
     const unavailable =
       !printableForms(target).includes(display) ||
       (inTitle && display === 'page') ||
-      (display === 'relative' && (above === undefined || below === undefined));
+      (display === 'relative' && (above === undefined || below === undefined)) ||
+      repeated.has(anchor);
     if (unavailable) {
       failures.push(
         failure('compose', 'cross_reference_form_unavailable', node, reference.id, display),
       );
       continue;
     }
-    const anchor =
-      target.block === null ? nodeAnchor(target.node) : blockAnchor(target.node, target.block);
     named.add(anchor);
     // Found by the same walk, so every target resolution reaches has its place.
     const before = positions.get(anchor)! <= where;
