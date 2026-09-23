@@ -17409,13 +17409,13 @@
     {
       "id": "CNT-036",
       "file": "packages/editor/src/footnotes.test.ts",
-      "line": 152,
+      "line": 153,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "packages/editor/src/footnotes.test.ts",
-      "line": 652,
+      "line": 671,
       "kind": "title"
     },
     {

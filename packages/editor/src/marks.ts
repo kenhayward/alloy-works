@@ -548,9 +548,11 @@ export function markAt(state: EditorState, mark: string): Record<string, unknown
 export function markThroughout(state: EditorState, mark: string): boolean {
   const type = editorSchema.marks[mark];
   if (type === undefined) return false;
-  const { $from, from, to, empty } = state.selection;
+  const { $from, empty, ranges } = state.selection;
   if (empty) return type.isInSet(state.storedMarks ?? $from.marks()) !== undefined;
-  const text = textIn(state, from, to);
+  // Every range, not the selection's `from` and `to`, which a cell selection takes from one cell
+  // alone: the toggle takes a mark off where this says it is on (re-review of footnotes 1).
+  const text = ranges.flatMap((range) => textIn(state, range.$from.pos, range.$to.pos));
   return text.length > 0 && text.every((node) => type.isInSet(node.marks) !== undefined);
 }
 

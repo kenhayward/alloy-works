@@ -9,6 +9,7 @@ import {
   type Command,
   type Transaction,
 } from 'prosemirror-state';
+import { CellSelection } from 'prosemirror-tables';
 import { describe, expect, it } from 'vitest';
 
 import { pasteInto, PRODUCT_CLIPBOARD_TYPE, productClipboard, readClipboard } from './clipboard.js';
@@ -509,6 +510,24 @@ describe('marks around and inside a footnote (footnotes 1)', () => {
         paragraph('p1', text('Visited'), between, text(' twice')),
       ]);
     }
+  });
+
+  it('reads every cell of a cell selection, so Strong over cells half bold makes all of them bold (re-review)', () => {
+    const strongRun = (value: string) => text(value, { type: 'strong', id: 's1' });
+    const state = stateOf(
+      documentOf(table([[paragraph('c1', text('North'))], [paragraph('c2', strongRun('South'))]])),
+    );
+    const cellAt = (id: string) => state.doc.resolve(startOf(state.doc, id) - 1);
+    const cells = state.apply(state.tr.setSelection(new CellSelection(cellAt('c1'), cellAt('c2'))));
+    expect(markThroughout(cells, 'strong')).toBe(false);
+    const next = run(cells, toggleMarkCommand('strong', counter('s'))).next;
+    const runs = (
+      stored(next)[0] as { rows: { cells: { content: { content: InlineNode[] }[] }[] }[] }
+    ).rows[0]!.cells.map((cell) => cell.content[0]!.content[0]);
+    expect(runs.map((each) => (each as { marks: Mark[] }).marks.map((mark) => mark.type))).toEqual([
+      ['strong'],
+      ['strong'],
+    ]);
   });
 
   it("reads a range's marks past a footnote's text", () => {

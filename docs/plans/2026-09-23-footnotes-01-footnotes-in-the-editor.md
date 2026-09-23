@@ -121,6 +121,9 @@ The final whole-branch review found three things and five smaller; these were ch
   undo from a footnote that closed it left the focus nowhere, and now gives it to the surface; a paste
   over all of a footnote's text warned; and a stored table note of no text was refused at publish, and
   now is not. Architecture's count of block actions is nine.
+- **The re-review found the toggle deciding from one cell of a cell selection**: `markThroughout` read
+  the selection's first range alone, so Strong over two cells, one bold, took it off both. It now reads
+  every range, which also makes the pressed button right over cells.
 
 ## Tasks
 
