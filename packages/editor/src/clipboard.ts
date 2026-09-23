@@ -22,6 +22,7 @@ import { editorSchema } from './schema.js';
 export const PRODUCT_CLIPBOARD_TYPE = 'application/vnd.alloy-works.content+json';
 
 const crossReferenceNode = editorSchema.nodes.crossReference!;
+const equationNode = editorSchema.nodes.equation!;
 
 /** What a paste event's `clipboardData` offers: the types it holds, and each one's text. */
 export interface ClipboardSource {
@@ -101,9 +102,10 @@ export type PasteOutcome =
  * Admitted content this editor cannot hold - a table from another component - is refused whole and
  * by name, as opening one is: placing part of it would be the silent loss the pipeline exists to stop.
  *
- * **Into a footnote's text** (footnotes 1, ruling R10), what arrives must be paragraphs of runs and
- * cross-references, which become the footnote's paragraphs; anything else - a list, a table, an image,
- * a footnote - is refused whole and by name, as a component that cannot hold it is.
+ * **Into a footnote's text** (footnotes 1, ruling R10), what arrives must be paragraphs of runs,
+ * cross-references and inline equations (equations 1), which become the footnote's paragraphs;
+ * anything else - a list, a table, a block equation, an image, a footnote - is refused whole and by
+ * name, as a component that cannot hold it is.
  *
  * **What admission named keeps its name** (cross-references 1, rulings R7 and R8). The transaction
  * says so (`KEEPS_IDENTIFIERS`), so the identity plugin leaves every pasted identifier no other node
@@ -149,7 +151,9 @@ export function pasteInto(
         return;
       }
       block.forEach((child) => {
-        if (!child.isText && child.type !== crossReferenceNode) refused.add(child.type.name);
+        if (!child.isText && child.type !== crossReferenceNode && child.type !== equationNode) {
+          refused.add(child.type.name);
+        }
       });
       paragraphs.push(editorSchema.nodes.footnoteParagraph!.create(block.attrs, block.content));
     });
@@ -234,7 +238,11 @@ function repointLeftBehind(placed: Transaction, renamed: ReadonlyMap<string, str
  * from, which the receiving component then joins to its own text as any paste is joined.
  */
 /** The stored model's name for an editor block whose type is spelt differently. */
-const STORED_NAMES: Record<string, string> = { definitionList: 'list', tableFigure: 'table' };
+const STORED_NAMES: Record<string, string> = {
+  definitionList: 'list',
+  tableFigure: 'table',
+  equationBlock: 'equation',
+};
 
 /**
  * Whether the selection stands in a footnote's text, both ends in the one footnote: true, false where
