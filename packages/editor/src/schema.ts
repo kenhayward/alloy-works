@@ -136,9 +136,10 @@ export const editorSchema = new Schema({
     // list (CNT-124, held by the content model).
     paragraph: {
       group: 'block',
-      // Text, and an inline image (figures 4, ruling R2): a paragraph is the one place an image stands
-      // in a run, wherever the paragraph is - running text, a list, a quotation, a table's cell.
-      content: '(text | image)*',
+      // Text, an inline image (figures 4, ruling R2) and a footnote (footnotes 1, ruling R2): a
+      // paragraph is the one place either stands in a run, wherever the paragraph is - running text, a
+      // list, a quotation, a table's cell.
+      content: '(text | image | footnote)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing is read back from the DOM through these rules, so a paragraph the browser makes is
@@ -301,15 +302,16 @@ export const editorSchema = new Schema({
      * A stored table, as the editor holds it (tables 1, ruling R1): its caption above a
      * `prosemirror-tables` table. Two nodes for one because `TableMap` reads every child of a table as
      * a row, so the caption cannot stand inside it. It carries every one of the stored table's own
-     * members - `keyColumns` and `note` untouched, since nothing edits them until footnotes - and
-     * **the header counts are the truth** the cells' kinds follow (`tableHeadersAgree`).
+     * members - `keyColumns` untouched, since nothing edits them until after footnotes (FN-A) - and
+     * **the header counts are the truth** the cells' kinds follow (`tableHeadersAgree`). Its note, where
+     * it has one, is its last child (footnotes 1, ruling R1).
      *
      * Isolating, so no join or lift crosses its edge: a Backspace after a table selects it, and never
      * pulls a paragraph into its caption.
      */
     tableFigure: {
       group: 'block',
-      content: 'tableCaption table',
+      content: 'tableCaption table tableNote?',
       isolating: true,
       attrs: {
         id: { default: null },
@@ -317,7 +319,6 @@ export const editorSchema = new Schema({
         headerRows: { default: 0 },
         headerColumns: { default: 0 },
         keyColumns: { default: null },
-        note: { default: null },
       },
       parseDOM: [{ tag: 'figure[data-table]' }],
       toDOM: () => ['figure', { 'data-table': '', class: 'aw-table' }, 0],
@@ -329,6 +330,20 @@ export const editorSchema = new Schema({
       defining: true,
       parseDOM: [{ tag: 'figcaption' }],
       toDOM: () => ['figcaption', { class: 'aw-table-caption' }, 0],
+    },
+    /**
+     * A table's note (CNT-038, footnotes 1, ruling R11): a line of inline content beneath the table,
+     * which is how a note on a table as a whole is written (FN-C). Optional, and added and removed from
+     * the Table panel. **Isolating**, so a Backspace at its start finds nothing to join or select and
+     * never reaches into the table above it.
+     */
+    tableNote: {
+      content: 'text*',
+      marks: '_',
+      defining: true,
+      isolating: true,
+      parseDOM: [{ tag: 'p[data-table-note]', priority: 60 }],
+      toDOM: () => ['p', { class: 'aw-table-note', 'data-table-note': '' }, 0],
     },
     /**
      * A figure (figures 2, ruling R1): an asset version, an image style, an alternative text in one of
@@ -407,6 +422,48 @@ export const editorSchema = new Schema({
           'data-asset': node.attrs.asset as string,
         },
       ],
+    },
+    /**
+     * A footnote (footnotes 1, ruling R1): inline, an atom, standing in a paragraph alone (FN-B), with
+     * its identifier, its stored anchor - kept whatever its kind, `span` for one the editor makes (FN-A)
+     * - and its paragraphs as its own content, so identity, the adjacency rule and the annotation
+     * repair reach them as they reach any paragraph (FN-E). `footnoteParagraph+` is the restriction
+     * CNT-129 asks for, made structural: nothing that admits an image, a footnote, a list or a table
+     * can stand in one.
+     *
+     * The surface draws it through `footnoteView`, as a mark with its text edited beneath. `toDOM` is
+     * what a read-only rendering and a copy see: the mark with its text beside it. No `parseDOM`, for
+     * an image's reason: a footnote enters a component through its command or the product's own
+     * clipboard alone.
+     */
+    footnote: {
+      inline: true,
+      atom: true,
+      selectable: true,
+      draggable: false,
+      marks: '',
+      content: 'footnoteParagraph+',
+      attrs: { id: { default: null }, anchor: { default: { kind: 'span' } } },
+      toDOM: () => [
+        'span',
+        { class: 'aw-footnote', 'data-footnote': '' },
+        ['span', { class: 'aw-footnote-text' }, 0],
+      ],
+    },
+    /**
+     * A footnote's paragraph: a paragraph's identifier and style, and runs of text with every mark -
+     * but outside the `block` group and holding text alone, so it stands in a footnote and nowhere
+     * else, and nothing CNT-129 excludes stands in it. The stored model has one paragraph type; this
+     * is the mapping's second spelling of it, as `definitionList` is of a list.
+     */
+    footnoteParagraph: {
+      content: 'text*',
+      marks: '_',
+      attrs: { id: { default: null }, style: { default: 'body' } },
+      // Typing in the footnote's own editor is read back through this rule, which wins over a
+      // paragraph's where the parent is a footnote.
+      parseDOM: [{ tag: 'p', context: 'footnote/', priority: 60 }],
+      toDOM: () => ['p', { class: 'aw-footnote-paragraph' }, 0],
     },
     ...tableSpecs,
     /** Outside the block group, as a term is: it belongs to its quotation, not to a sequence. */

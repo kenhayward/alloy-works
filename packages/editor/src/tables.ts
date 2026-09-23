@@ -31,6 +31,8 @@ export interface TableAt {
   readonly headerColumns: number;
   readonly rows: number;
   readonly columns: number;
+  /** Whether the table has a note beneath it (footnotes 1, ruling R11). */
+  readonly note: boolean;
 }
 
 /** The innermost table the selection stands in - its caption or any cell - or null. */
@@ -47,6 +49,7 @@ export function tableAt(state: EditorState): TableAt | null {
       headerColumns: node.attrs.headerColumns as number,
       rows: map.height,
       columns: map.width,
+      note: node.childCount > 2,
     };
   }
   return null;
@@ -231,7 +234,9 @@ export type TableAction =
   | 'deleteColumn'
   | 'merge'
   | 'split'
-  | 'deleteTable';
+  | 'deleteTable'
+  | 'addNote'
+  | 'removeNote';
 
 /**
  * Removes the whole table, caption and all. `prosemirror-tables`' own `deleteTable` removes the
@@ -252,6 +257,40 @@ const deleteTableFigure: Command = (state, dispatch) => {
       : state.tr.delete(table.pos, end);
     const near = TextSelection.near(tr.doc.resolve(Math.min(table.pos, tr.doc.content.size)));
     dispatch(tr.setSelection(near).scrollIntoView());
+  }
+  return true;
+};
+
+/**
+ * Adds an empty note beneath the table and puts the cursor in it (CNT-038, footnotes 1, ruling R11):
+ * a note on the table as a whole, which is how the model says one (FN-C). Declines where the table
+ * has one already.
+ */
+const addNote: Command = (state, dispatch) => {
+  const table = tableAt(state);
+  if (table === null || table.note) return false;
+  if (dispatch) {
+    const end = table.pos + state.doc.nodeAt(table.pos)!.nodeSize - 1;
+    const tr = state.tr.insert(end, editorSchema.nodes.tableNote!.create());
+    dispatch(tr.setSelection(TextSelection.create(tr.doc, end + 1)).scrollIntoView());
+  }
+  return true;
+};
+
+/**
+ * Removes the table's note, whatever it holds; `Ctrl+Z` brings it back. A cursor in it goes to the
+ * end of the table's last cell. Declines where the table has none.
+ */
+const removeNote: Command = (state, dispatch) => {
+  const table = tableAt(state);
+  if (table === null || !table.note) return false;
+  if (dispatch) {
+    const figure = state.doc.nodeAt(table.pos)!;
+    const note = figure.child(2);
+    const end = table.pos + figure.nodeSize - 1;
+    const tr = state.tr.delete(end - note.nodeSize, end);
+    const $near = tr.doc.resolve(tr.mapping.map(state.selection.from, -1));
+    dispatch(tr.setSelection(TextSelection.near($near, -1)).scrollIntoView());
   }
   return true;
 };
@@ -283,5 +322,9 @@ export function tableCommand(action: TableAction): Command {
       return splitCell;
     case 'deleteTable':
       return deleteTableFigure;
+    case 'addNote':
+      return addNote;
+    case 'removeNote':
+      return removeNote;
   }
 }

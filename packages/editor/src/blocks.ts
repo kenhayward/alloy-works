@@ -5,6 +5,7 @@ import { liftListItem, sinkListItem, splitListItem, wrapInList } from 'prosemirr
 import { Selection, TextSelection, type Command, type EditorState } from 'prosemirror-state';
 import { ReplaceAroundStep, ReplaceStep } from 'prosemirror-transform';
 
+import { insertFootnote } from './footnotes.js';
 import { editorSchema } from './schema.js';
 import { insertTable } from './tables.js';
 
@@ -18,6 +19,7 @@ const preformattedNode = editorSchema.nodes.preformatted;
 const blockquoteNode = editorSchema.nodes.blockquote;
 const attributionNode = editorSchema.nodes.attribution;
 const figureCaptionNode = editorSchema.nodes.figureCaption;
+const tableNoteNode = editorSchema.nodes.tableNote;
 
 /** What the stored model's `format` may say, and nothing else (CNT-153, and the start rule below). */
 const NUMBERINGS = new Set(['decimal', 'alphabetic', 'roman']);
@@ -138,7 +140,8 @@ export type BlockAction =
   | 'liftItem'
   | 'quotation'
   | 'preformatted'
-  | 'table';
+  | 'table'
+  | 'footnote';
 
 /** The innermost list the cursor stands in, with the position it stands at, or null. */
 function innermostList(state: EditorState): { node: Node; pos: number } | null {
@@ -738,6 +741,10 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
       return preformatted(newIdentifier);
     case 'table':
       return insertTable(newIdentifier);
+    // Inline rather than a block, but a registry command like Table (footnotes 1, ruling R7): every
+    // consumer of this kind asks only whether it is available and runs it.
+    case 'footnote':
+      return insertFootnote(newIdentifier);
   }
 }
 
@@ -794,13 +801,16 @@ function innermostQuotation(state: EditorState): { node: Node; pos: number } | n
 /**
  * `Enter` in an attribution leaves the quotation for a paragraph after it: an attribution is one
  * line, and there is nothing it could split into. A figure's caption is left the same way, which is
- * also the way past a figure that is the component's last block (figures 2, final review).
+ * also the way past a figure that is the component's last block (figures 2, final review), and so is a
+ * table's note, the way past a table (footnotes 1, ruling R11).
  */
 function exitAttribution(newIdentifier: () => string): Command {
   return (state, dispatch) => {
     const { $from } = state.selection;
     const parent = $from.parent.type;
-    if (parent !== attributionNode && parent !== figureCaptionNode) return false;
+    if (parent !== attributionNode && parent !== figureCaptionNode && parent !== tableNoteNode) {
+      return false;
+    }
     if (dispatch) {
       const after = $from.after(-1);
       const tr = state.tr.insert(after, paragraphNode.create({ id: newIdentifier() }));

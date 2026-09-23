@@ -4,6 +4,7 @@ import type { Mark as EditorMark, MarkType, Node } from 'prosemirror-model';
 import { NodeSelection, type Command, type EditorState } from 'prosemirror-state';
 
 import { blockCommand, type BlockAction } from './blocks.js';
+import { isFootnote, sparingFootnotes } from './footnotes.js';
 import { editorSchema } from './schema.js';
 
 /** What every row of the registry says, whatever it acts on. */
@@ -191,6 +192,17 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     shortcutSaid: 'Ctrl or Cmd, Shift and 0',
     prompts: false,
   },
+  // Footnotes 1, ruling R7: Word's own chord for a footnote (component-editor.md, "Tables and
+  // footnotes"). An AltGr character is never taken by it: the keymap matches the key a layout
+  // produces, so on a layout where AltGr and F type a character, that character is what is typed.
+  {
+    kind: 'block',
+    action: 'footnote',
+    label: 'Footnote',
+    shortcut: 'Mod-Alt-f',
+    shortcutSaid: 'Ctrl or Cmd, Alt and F',
+    prompts: false,
+  },
 ];
 
 /**
@@ -246,10 +258,15 @@ function accepted(
  * also joins across an inline node that is not text, which is the same answer for the same reason:
  * an emphasis over a phrase holding an equation is one annotation, not two.
  *
+ * **A footnote's text is a range of its own** (footnotes 1, ruling R5): its paragraphs are walked
+ * as a span sequence of their own, and the range outside carries on across the footnote's mark, which
+ * is not a run. So an emphasis either side of a footnote is one annotation, and the same identifier
+ * inside the footnote's text is a second piece.
+ *
  * **This is the same predicate the content model holds**: `claimRange` in
  * `packages/domain/src/content/model/document.ts` closes an identifier on a text run that does not
- * carry it and on nothing else, so what the editor calls one annotation is what the stored model
- * calls one range. The two are written apart because neither package may import the other's world,
+ * carry it and on nothing else, and keeps a footnote's content a range of its own, so what the editor
+ * calls one annotation is what the stored model calls one range. The two are written apart because neither package may import the other's world,
  * and they must be changed together. Exported for `annotationsInOnePiece` in `state.ts`, which is
  * what keeps the editor unable to produce what that rule refuses; not part of the package's surface.
  */
@@ -257,16 +274,35 @@ export function spansOf(
   doc: Node,
   type: MarkType,
 ): { mark: EditorMark; from: number; to: number }[] {
-  const spans: { mark: EditorMark; from: number; to: number }[] = [];
-  doc.descendants((node, pos) => {
-    if (!node.isText) return;
-    const mark = node.marks.find((carried) => carried.type === type);
-    if (mark === undefined) return;
-    const last = spans[spans.length - 1];
-    if (last !== undefined && last.mark.eq(mark) && doc.textBetween(last.to, pos) === '')
-      last.to = pos + node.nodeSize;
-    else spans.push({ mark, from: pos, to: pos + node.nodeSize });
-  });
+  type Span = { mark: EditorMark; from: number; to: number };
+  const spans: Span[] = [];
+  // `open` is the span a range is still in, or undefined once text without the mark has ended it:
+  // only a text node ends a span, so a block boundary, an image and a footnote's mark are passed over.
+  const walk = (parent: Node, start: number, range: { open?: Span | undefined }) => {
+    parent.forEach((node, offset) => {
+      const pos = start + offset;
+      if (isFootnote(node)) {
+        walk(node, pos + 1, {});
+        return;
+      }
+      if (!node.isText) {
+        walk(node, pos + 1, range);
+        return;
+      }
+      const mark = node.marks.find((carried) => carried.type === type);
+      if (mark === undefined) {
+        range.open = undefined;
+        return;
+      }
+      if (range.open !== undefined && range.open.mark.eq(mark)) {
+        range.open.to = pos + node.nodeSize;
+        return;
+      }
+      range.open = { mark, from: pos, to: pos + node.nodeSize };
+      spans.push(range.open);
+    });
+  };
+  walk(doc, 0, {});
   return spans;
 }
 
@@ -302,7 +338,11 @@ export function toggleMarkCommand(
     if (type === undefined) return false;
     const members = accepted(mark, newIdentifier(), attrs);
     if (members === null) return false;
-    return toggleMark(type, members, { removeWhenPresent: false })(state, dispatch, view);
+    return sparingFootnotes(toggleMark(type, members, { removeWhenPresent: false }))(
+      state,
+      dispatch,
+      view,
+    );
   };
 }
 
@@ -333,12 +373,14 @@ export function applyMarkCommand(
     if (members === null) return false;
     const range = rangeToMark(state, type);
     if (range === null) return false;
-    if (dispatch) {
-      const tr = state.tr.removeMark(range.from, range.to, type);
-      tr.addMark(range.from, range.to, type.create(members));
-      dispatch(tr.scrollIntoView());
-    }
-    return true;
+    return sparingFootnotes((_state, apply) => {
+      if (apply) {
+        const tr = state.tr.removeMark(range.from, range.to, type);
+        tr.addMark(range.from, range.to, type.create(members));
+        apply(tr.scrollIntoView());
+      }
+      return true;
+    })(state, dispatch);
   };
 }
 
@@ -349,7 +391,12 @@ export function applyMarkCommand(
  */
 function rangeToMark(state: EditorState, type: MarkType): { from: number; to: number } | null {
   // An image selected whole is nothing to put a mark on: it carries none (figures 4, ruling R1).
-  if (state.selection instanceof NodeSelection && state.selection.node.type.name === 'image') {
+  // Nor is a footnote selected whole: its mark carries none, and its text is edited in its own
+  // editor (footnotes 1).
+  if (
+    state.selection instanceof NodeSelection &&
+    (state.selection.node.type.name === 'image' || isFootnote(state.selection.node))
+  ) {
     return null;
   }
   const { from, to, empty } = state.selection;
@@ -397,7 +444,8 @@ export function somewhereToPutMark(state: EditorState, mark: string): boolean {
  */
 function annotationAt(state: EditorState, type: MarkType): { from: number; to: number } | null {
   const { $from, from, to, empty } = state.selection;
-  if (!empty) return state.doc.rangeHasMark(from, to, type) ? { from, to } : null;
+  if (!empty)
+    return textIn(state, from, to).some((node) => type.isInSet(node.marks)) ? { from, to } : null;
   const found = (state.storedMarks ?? $from.marks()).find((mark) => mark.type === type);
   if (found === undefined) return null;
   const spans: { from: number; to: number }[] = [];
@@ -437,8 +485,10 @@ export function removeMarkCommand(mark: string): Command {
     if (type === undefined) return false;
     const range = annotationAt(state, type);
     if (range === null) return false;
-    if (dispatch) dispatch(state.tr.removeMark(range.from, range.to, type));
-    return true;
+    return sparingFootnotes((_state, apply) => {
+      apply?.(state.tr.removeMark(range.from, range.to, type));
+      return true;
+    })(state, dispatch);
   };
 }
 
@@ -446,11 +496,11 @@ export function removeMarkCommand(mark: string): Command {
 function markIn(state: EditorState, type: MarkType): EditorMark | undefined {
   const { $from, from, to, empty } = state.selection;
   if (empty) return (state.storedMarks ?? $from.marks()).find((mark) => mark.type === type);
-  let found: EditorMark | undefined;
-  state.doc.nodesBetween(from, to, (node) => {
-    found ??= node.marks.find((mark) => mark.type === type);
-  });
-  return found;
+  for (const node of textIn(state, from, to)) {
+    const found = node.marks.find((mark) => mark.type === type);
+    if (found !== undefined) return found;
+  }
+  return undefined;
 }
 
 /**
@@ -487,14 +537,8 @@ export function markThroughout(state: EditorState, mark: string): boolean {
   if (type === undefined) return false;
   const { $from, from, to, empty } = state.selection;
   if (empty) return type.isInSet(state.storedMarks ?? $from.marks()) !== undefined;
-  let carried = false;
-  let missing = false;
-  state.doc.nodesBetween(from, to, (node) => {
-    if (!node.isText) return;
-    if (type.isInSet(node.marks)) carried = true;
-    else missing = true;
-  });
-  return carried && !missing;
+  const text = textIn(state, from, to);
+  return text.length > 0 && text.every((node) => type.isInSet(node.marks) !== undefined);
 }
 
 /**
@@ -512,6 +556,20 @@ export function markThroughout(state: EditorState, mark: string): boolean {
  * key and leave the author pressing it at nothing, and returning true from the editor when the
  * dialog is what handled it would be a claim this package cannot make.
  */
+/**
+ * The text nodes of a range of the component's own text: a footnote's paragraphs are passed over,
+ * since they are a range of their own and not what an author selected around its mark (ruling R5).
+ */
+function textIn(state: EditorState, from: number, to: number): Node[] {
+  const found: Node[] = [];
+  state.doc.nodesBetween(from, to, (node) => {
+    if (isFootnote(node)) return false;
+    if (node.isText) found.push(node);
+    return true;
+  });
+  return found;
+}
+
 export function commandKeymap(
   newIdentifier: () => string,
   onPrompt?: (mark: string) => boolean,

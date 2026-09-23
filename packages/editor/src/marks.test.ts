@@ -129,7 +129,7 @@ describe('the command registry', () => {
   // rows through the real chain, `EditorToolbar.test.tsx` for the toolbar's own row, and
   // `ComponentEditor.test.tsx` for F6 and Shift-F6 between the regions of the view.
   it('gives every command a shortcut and one label, with no shortcut used twice', () => {
-    expect(EDITOR_COMMANDS).toHaveLength(17);
+    expect(EDITOR_COMMANDS).toHaveLength(18);
     for (const command of EDITOR_COMMANDS) {
       expect(command.label, command.label).toMatch(/^[A-Z][a-z ]+$/);
       // No fancy dashes in anything an author reads; a plain hyphen would be allowed. Written by
@@ -138,7 +138,7 @@ describe('the command registry', () => {
       expect(command.label + command.shortcutSaid).not.toMatch(fancy);
       if (command.kind === 'mark') expect(editorSchema.marks[command.mark]).toBeDefined();
     }
-    expect(new Set(EDITOR_COMMANDS.map((c) => c.shortcut)).size).toBe(17);
+    expect(new Set(EDITOR_COMMANDS.map((c) => c.shortcut)).size).toBe(18);
   });
 
   it('names every block action once, in the order the toolbar shows them', () => {
@@ -151,6 +151,7 @@ describe('the command registry', () => {
       'quotation',
       'preformatted',
       'table',
+      'footnote',
     ]);
   });
 
@@ -625,7 +626,7 @@ function inParagraph(state: EditorState, nth: number): number {
 describe('the keymap', () => {
   it('CNT-077 binds every command in the registry, and makes and nests a list from the keyboard alone', () => {
     const bound = commandKeymap(counter());
-    expect(Object.keys(bound)).toHaveLength(17);
+    expect(Object.keys(bound)).toHaveLength(18);
     for (const command of EDITOR_COMMANDS) {
       expect(Object.keys(bound), command.label).toContain(command.shortcut);
     }
