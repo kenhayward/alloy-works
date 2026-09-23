@@ -44,8 +44,8 @@ bibliography entry still missing. Nothing here demonstrates any of them in full.
     other block (a paragraph, a list), which only content written by another route points at.
   - `formsFor(kind): readonly CrossReferenceDisplay[]` (XR-C): a section, a figure and a table have all
     five; a footnote `number`, `page`, `relative`; any other block `page` and `relative`.
-  - `ReferenceTarget { target; kind; label: string | null; title: string | null; relative: 'above' |
-'below' | null }` - `target` as a reference in the component being edited stores it.
+  - `ReferenceTarget`: `target`, as a reference in the component being edited stores it; `kind`;
+    `label` and `title`, each a string or null; and `relative`, `'above'`, `'below'` or null.
   - `documentTargets({ outline, numbering, contributions, editing: { component, node } })`: in document
     order, every section - `node` target, its number's label and its title's words - then, in each
     reference node's place, every figure, table and footnote its occurrence contributes: a `block`
@@ -118,6 +118,60 @@ bibliography entry still missing. Nothing here demonstrates any of them in full.
 - **R13. Publishing refuses one by name until cross-references 2**, as it already does
   (`inline_not_publishable`, detail `crossReference`); the publishing page says _A cross-reference
   cannot be published yet._
+
+## What the build changed
+
+- **R3 offers sections alone as `node` targets**: a reference node is a numbered heading too, but its
+  title is the component's, which the domain does not hold, so "see 1.2" at an occurrence's heading is
+  not offered. Nor is a section title's own footnote, which no target kind can name, nor an equation.
+  Another occurrence of the component being edited offers nothing, even where the occurrence being
+  edited is missing from the outline: a `component` target naming the component that holds it is not
+  something to store. `printed`'s `page` form reads _page of 2.1_ until the layout's words arrive, and
+  a `block` target's kind word is _Paragraph_, whatever the block is.
+- **R1 needed no reader changed**: re-identify leaves a `node` target as it arrived and counts it as
+  nothing, since whether it resolves is the document's question, and the Word reader and writer work
+  on the scaffolding's model, which stores no target. `assemble` refuses a reference whatever it
+  targets; a test now holds that for all three kinds.
+- **R7 reaches further than what admission named.** The identity plugin keeps any identifier one node
+  holds in a transaction carrying `keepsIdentifiers`, so a paste over blocks keeps the name of a
+  receiving block's tail ProseMirror left standing away from its heir position, where before it was
+  renamed. Nothing else holds that name, so nothing is lost; narrowing it to the names `admit` gave
+  is the alternative. The last paragraph of a paste now keeps admission's name rather than the
+  plugin's, and is still newly named (CNT-132). **A redo of a split gives the second half back the
+  name it had**, since the history replays the document as it was left after the split renamed it.
+- **Footnotes 1's undo test passed either way**: it stripped every identifier before comparing. It now
+  asserts the footnote comes back under its own identifiers, and was watched failing on the plugin
+  before R7; the preformatted command's comment and its undo test, which said a paragraph put back
+  took a new identifier, say it keeps its own.
+- **R8's report is a sentence of its own**, `crossReferenceRepointed` - _Cross-references to what was
+  cut were pointed at where it was pasted._ - rather than a second entry under the copy's subject,
+  whose sentence says the references were pointed at the copy, which is untrue of one left behind. A
+  paste into a footnote's text now admits a paragraph holding a reference, where it refused every
+  child that was not text.
+- **R9's Reference is a block row that prompts**: the registry's `prompts` already meant "the author
+  supplies a value first", so no third kind of row was made. `blockCommand('reference')` answers
+  whether one could be placed and places nothing, and the keymap hands the key to the host only where
+  one could be. The toolbar announces every prompting command as opening a dialog. With no
+  decoration, a reference draws _Section_ for a `node` target and _Reference_ for anything else.
+- **R10's decorations are in the surface's one decorations plugin**, beside spellcheck and the
+  placeholders, not on `referencesPlugin`, which holds the context alone: the state's test pins one
+  plugin that decorates, so one set is one thing to test. The text rides in the decoration's spec,
+  where a change of it redraws the reference, and the broken class in its attributes. The initial
+  context is `createEditorState`'s option, since it is plugin state, and every fresh state the
+  component editor makes - a refused claim, a version cut - is given the page's current one. A
+  footnote's editor decorates its own document from the surface's context rather than mapping the
+  surface's decorations into it.
+- **R11's own targets come from the live document**, through `ownTargets` in `referenceText.ts`, and
+  the page's numbering only names them: one the page has numbered takes its label and title, one it
+  has not keeps its kind and caption, and one the page numbered and the author has since deleted is not
+  offered. **The dialog's line says what the surface will draw**: an unnumbered target shows its
+  name - _Table: Readings_ - whatever the form, since that is what the reference shows until the page
+  numbers it, and the relative form reads _above_ or _below_ from where the reference stands. A
+  reference whose target is not offered - broken, a paragraph, a section in a component on its own -
+  is listed first, named as the surface shows it, and kept by **Change**. The context is computed once,
+  in the document's text, and reaches the editor opened in place through `Place`; the page passes its
+  contributions. The targets are two groups of radio buttons, not a listbox, and the dialog's button
+  says **Insert** or **Change**. Two targets of the same kind and caption, or with none, share a name.
 
 ## Tasks
 

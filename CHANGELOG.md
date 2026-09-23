@@ -3,6 +3,33 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.63.0 - 2026-09-23 (PR #PRNUM)
+
+### Added
+
+- **Cross-references, made in the editor.** **Reference** on the toolbar, or `Ctrl+Alt+X`, opens a
+  dialog for pointing at something from the cursor: editing a component in its document's page, any
+  of the document's sections and any figure, table or footnote its components hold; in a component
+  opened on its own, its own figures, tables and footnotes. Choose how it shows - its number, its
+  title, both, its page, or above or below - and the dialog says what that will be before you insert
+  it. The reference shows it in the text, such as _Table 1.1_, or the target's kind and caption, such
+  as _Table: Readings_, where nothing has numbered it yet; one whose target has been deleted says
+  _Broken reference_. Select a reference and press **Reference** again to change it, or delete it to
+  delete it. A reference can stand anywhere text can but preformatted text, a footnote's text
+  included.
+- **A reference follows what it points at.** Delete a table and press `Ctrl+Z`, or cut a figure and
+  paste it back in the same component, and every reference to it still points at it; the paste report
+  says how many references were pointed again.
+- A document's text on its page shows each reference with the number the document gives its target.
+- A component holding a cross-reference now opens for editing rather than for reading only.
+
+### Changed
+
+- **Publishing refuses a cross-reference by name**, saying _A cross-reference cannot be published
+  yet._, until the next release publishes them.
+- **Undo puts back exactly what it took away.** A footnote, a table or a paragraph brought back by
+  `Ctrl+Z` or redone by `Ctrl+Y` is the same one it was, rather than a copy given a new identity.
+
 ## 0.62.1 - 2026-09-23 (PR #218)
 
 ### Changed
