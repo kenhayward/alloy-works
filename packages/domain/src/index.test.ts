@@ -133,6 +133,12 @@ describe('the domain package', () => {
         // (docs/plans/2026-09-18-structure-03-navigation.md).
         'contents',
         'listOf',
+        // What a document offers a reference and what one prints, promoted in the plan that builds
+        // them (docs/plans/2026-09-23-cross-references-01-references-in-the-editor.md).
+        'documentTargets',
+        'formsFor',
+        'kindWord',
+        'printed',
         // Publishing: the published document, its failures and assemble (publishing.md).
         'DRAFT_NOTICE',
         'PUBLISHING_SCHEMA',

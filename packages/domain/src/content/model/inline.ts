@@ -151,3 +151,13 @@ export const inlineNodeSchema = z.discriminatedUnion('type', [
 ]);
 
 export type InlineNode = z.infer<typeof inlineNodeSchema>;
+
+/** What a cross-reference points at, as the model stores it (STR-026). */
+export type CrossReferenceTarget = z.infer<typeof crossReferenceTargetSchema>;
+
+/**
+ * What a cross-reference shows (CNT-027): a number, a title, both, a page, or where the target stands
+ * - `above` or `below`. The stored enum, named once, so an editor offering forms and a function saying
+ * what each prints cannot offer one the model would refuse.
+ */
+export type CrossReferenceDisplay = z.infer<typeof crossReferenceNodeSchema>['display'];
