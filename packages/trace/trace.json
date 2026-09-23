@@ -16255,6 +16255,24 @@
       "kind": "title"
     },
     {
+      "id": "CNT-036",
+      "file": "apps/worker/src/footnotes.test.ts",
+      "line": 172,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-038",
+      "file": "apps/worker/src/footnotes.test.ts",
+      "line": 187,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-016",
+      "file": "apps/worker/src/footnotes.test.ts",
+      "line": 159,
+      "kind": "title"
+    },
+    {
       "id": "AST-005",
       "file": "apps/worker/src/ingest.test.ts",
       "line": 136,
@@ -16899,7 +16917,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 181,
+      "line": 182,
       "kind": "title"
     },
     {
@@ -17127,43 +17145,49 @@
     {
       "id": "AST-014",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1822,
+      "line": 1817,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-042",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 2325,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1075,
+      "line": 1076,
       "kind": "title"
     },
     {
       "id": "PUB-033",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1822,
+      "line": 1817,
       "kind": "title"
     },
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 604,
+      "line": 605,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 798,
+      "line": 799,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 682,
+      "line": 683,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 771,
+      "line": 772,
       "kind": "title"
     },
     {

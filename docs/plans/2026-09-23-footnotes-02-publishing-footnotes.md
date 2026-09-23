@@ -63,6 +63,24 @@ by position is resolved and published, since publishing.md says so; nothing make
   `footnote_empty` - _A footnote has no text. Write it, or delete its mark._ The codes join the
   contract's enum, and `openapi.json` and the client are regenerated.
 
+## What the build changed
+
+- **R7's note is set after the table's figure, not inside it.** Measured: a figure whose body is more
+  than its table is tagged a `Div` holding the `Caption` beside a second `Div` of the `Table` and the
+  note, so the caption stops being the table's own first child and the table loses its programmatic
+  caption (TAB-039). After the figure the note is a `P` straight after the `Table`, which the regression
+  case holds, with the caption still the `Table`'s first child. It no longer travels with the table: at
+  a page's end the note can begin the next page.
+- **R8's body is not a `par` per paragraph.** The regression case caught it: the engine sets the number
+  before the note's body, and a body opening with a `par` put the number in a paragraph of its own
+  above the words, so at the foot of a page the number stayed beneath its anchor while the words went
+  to the next page. Keeping each note whole instead was measured and rejected - a note taller than a
+  page left its anchor's page and ran off the foot of another. Joined by paragraph breaks, the number
+  opens the first paragraph and a long note begins on its anchor's page and carries on; the regression
+  case holds an eighty-paragraph note to both.
+- **The measurements were made with throwaway spikes** that printed the structure tree with the text
+  under each element; none is kept.
+
 ## Tasks
 
 1. **`packages/domain`, `assemble`**: `publishing/9` with a footnote run and a table's note (R1, R2,

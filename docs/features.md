@@ -11,8 +11,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > published as a laid-out PDF with
 > a cover, a contents, lists of figures and tables and numbered pages that carries all of that
 > formatting.
-> A footnote and a table's note are written but not yet published; nothing holds an equation, and
-> nothing is cross-referenced.
+> Footnotes and a table's note are written and published; nothing holds an equation, and nothing is
+> cross-referenced.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -248,7 +248,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   there with the rest of the component. Delete the mark to delete the footnote. One copied within the
   product pastes as one. A footnote cannot be placed in a caption, a term, an attribution, a table's
   note or preformatted text, and one stored by a table's key or by row and column is kept as it is.
-  **A published document refuses a footnote or a table's note by name, for now.**
+  A published document prints each footnote at the foot of the page its mark is on, numbered with
+  the document's number for it (see Publishing).
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
@@ -405,9 +406,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   refused, naming where it is, as are the same things a figure is refused for, and so is one in a
   figure's or a table's caption, which is set again in the lists after the contents.
 
-  **This is a PDF of paragraphs, lists, quotations, preformatted text, tables, figures and images in
-  a line of text, not publishing.** No footnotes, tables' notes or equations - a document holding any
-  of them is refused, naming it. A table too wide
+  **A footnote prints** at the foot of the page its mark is on, with the document's number for it -
+  numbered straight through - in the text and before the note, and a screen reader reads it as a
+  note; one too long for what is left of its page begins there and carries on over the next. A
+  table's note prints beneath the table, a little smaller. A footnote in a caption, a heading, a
+  definition's term, a quotation's attribution or a table's note is refused, naming where it is, as is
+  one with no text, one anchored to a table as a whole, and one anchored to a table's cell the table
+  does not have.
+
+  **This is a PDF of paragraphs, lists, quotations, preformatted text, tables and their notes,
+  figures, images in a line of text and footnotes, not publishing.** No equations - a document holding
+  one is refused, naming it. A table too wide
   for the page is not turned, shrunk or split, and how it breaks across pages is not yet chosen by a
   style: every table repeats its header rows. A citation
   in a quotation's attribution cannot be written or published yet. A list nested
@@ -439,8 +448,8 @@ Named explicitly so nobody has to read the source to find out:
   to be edited. No cross-references resolved, and no reading view. No reuse or transclusion. No way to
   make a figure or a table unnumbered: every one takes a number.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
-  quotations, preformatted text, tables, figures and images in a line of text: no footnotes, tables'
-  notes or equations in a publication, no definition-list structure of PDF's own, no list of equations, no caption
+  quotations, preformatted text, tables and their notes, figures, images in a line of text and
+  footnotes: no equations in a publication, no definition-list structure of PDF's own, no list of equations, no caption
   labels, no theme, no monospace face for inline code, no Word, no preview, and no way to approve a
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,
