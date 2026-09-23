@@ -396,8 +396,11 @@ describe('the citations in the committed model', () => {
   // where the Image button places one.
   // 264, from 262: figures 5 cites CNT-086 and CNT-087 in apps/worker's figures.test.ts, where an image
   // in a table's cell and one in a run of text are published and read back from the PDF.
+  // 268, from 264: footnotes 1 cites CNT-036 and CNT-038 in packages/editor's footnotes.test.ts,
+  // placing a footnote at the cursor and a note on a table and storing each, and both again in
+  // ComponentEditor.test.tsx, where the Footnote button and the Table panel's Add note make them.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(264);
+    expect(model.citations).toHaveLength(268);
   });
 
   it('cites no identifier the corpus does not hold', () => {

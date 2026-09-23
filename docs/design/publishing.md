@@ -641,6 +641,11 @@ own structure elements.
 | FN-E | **The editor shows a footnote as a mark in the text and edits its paragraphs inline**, beneath the paragraph it stands in - ProseMirror's own footnote pattern, a nested editor over the node's content - never a dialog (component-editor.md, "Accessibility")                                   | Yes. A dialog would hide the text a note belongs to. The mark shows no number: the number is the outline's (CNT-041), and a component has none of its own                                 |
 | FN-F | **Two pull requests**: footnotes in the editor, with the table's note; then footnotes and notes published. Each lands usable, and a footnote refuses the publish by name until the second, as a figure did                                                                                        | Yes                                                                                                                                                                                       |
 
+**FN-F's first pull request is built**: [footnotes 1](../plans/2026-09-23-footnotes-01-footnotes-in-the-editor.md)
+puts footnotes and the table's note in the editor. Until footnotes 2, a publish refuses a footnote by
+name, `inline_not_publishable` with the detail `footnote`, and a table's note the same way with the
+detail `note`, rather than setting the table without it.
+
 ## The layout
 
 A **layout** is an artifact kind of its own, versioned by the chain (PUB-013), and like a style

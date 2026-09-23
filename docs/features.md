@@ -11,7 +11,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > published as a laid-out PDF with
 > a cover, a contents, lists of figures and tables and numbered pages that carries all of that
 > formatting.
-> Nothing holds a footnote or an equation, and nothing is cross-referenced.
+> A footnote and a table's note are written but not yet published; nothing holds an equation, and
+> nothing is cross-referenced.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -176,14 +177,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   from the last cell or the first the focus moves on out of the table. While the cursor is in a table
   a **Table** panel offers how many **Header rows** and **Header columns** it has, and **Row above**,
   **Row below**, **Column before**, **Column after**, **Delete row**, **Delete column**, **Merge cells**
-  (over cells you have selected by dragging), **Split cell** and **Delete table**; a button that would
+  (over cells you have selected by dragging), **Split cell**, **Delete table**, and **Add note** and
+  **Remove note** for a note on the table as a whole, written beneath it; a button that would
   do nothing says it is unavailable. `F6` reaches the panel like the other regions. A table pasted
   from a web page, Word, Google Docs or Markdown arrives as a table, with its caption, header rows and
   columns and merged cells.
 
   **This is formatted paragraphs, lists, quotations, preformatted text and tables, not the editor.** A
-  component holding an equation, a footnote, or an image anywhere but a paragraph - in a caption, a
-  term or an attribution - opens for reading only. There is no control for
+  component holding an equation, or a footnote or an image anywhere but a paragraph - in a caption, a
+  term, an attribution or a table's note - opens for reading only. There is no control for
   a defined term or a citation, an image or an equation cannot be pasted, changes saved but never made into a version are
   kept and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
   A list stops nesting at thirty levels: every control that would build a level becomes unavailable
@@ -233,6 +235,20 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   formatting of its own, and a link or a mark over the words either side of it is still one. One copied within the
   product pastes as one, and a published document prints it (see Publishing). One cannot be placed
   in a caption, a term, an attribution or preformatted text.
+
+- **Footnotes.** **Footnote** on the formatting toolbar, or `Ctrl+Alt+F` (`Cmd+Option+F` on a Mac),
+  places a footnote at the cursor in a paragraph - in running text, a list, a quotation or a table's
+  cell - after any words you have selected, and opens its text beneath the paragraph with the cursor
+  in it. Its mark in the text is a small raised asterisk, read to a screen reader as _Footnote_, with
+  no number: the number is the document's, and a component on its own has none. Selecting the mark
+  opens its text again, `Enter` on the mark puts the cursor there and `Escape` takes it back to the
+  mark. A footnote's text is paragraphs you format as any others, from the toolbar or the keyboard,
+  with links and languages; nothing else the toolbar makes can go there, and says so. Pasting into it
+  keeps paragraphs and their formatting and refuses anything else, and `Ctrl+Z` undoes what you typed
+  there with the rest of the component. Delete the mark to delete the footnote. One copied within the
+  product pastes as one. A footnote cannot be placed in a caption, a term, an attribution, a table's
+  note or preformatted text, and one stored by a table's key or by row and column is kept as it is.
+  **A published document refuses a footnote or a table's note by name, for now.**
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
@@ -390,7 +406,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   figure's or a table's caption, which is set again in the lists after the contents.
 
   **This is a PDF of paragraphs, lists, quotations, preformatted text, tables, figures and images in
-  a line of text, not publishing.** No footnotes or equations - a document holding either is refused. A table too wide
+  a line of text, not publishing.** No footnotes, tables' notes or equations - a document holding any
+  of them is refused, naming it. A table too wide
   for the page is not turned, shrunk or split, and how it breaks across pages is not yet chosen by a
   style: every table repeats its header rows. A citation
   in a quotation's attribution cannot be written or published yet. A list nested
@@ -408,10 +425,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 Named explicitly so nobody has to read the source to find out:
 
 - No way to author anything but formatted paragraphs, lists, quotations, preformatted text,
-  tables, figures and images in a line of text: a component holding a footnote, an equation or an
-  image anywhere but a paragraph still opens for reading only, and
+  tables, figures, images in a line of text, footnotes and tables' notes: a component holding an
+  equation, or a footnote or an image anywhere but a paragraph, still opens for reading only, and
   there is no control for a defined term or a
-  citation. A paste keeps no footnote, image or equation, reads Markdown only when **Paste as
+  citation. A paste from outside the product keeps no footnote, image or equation, reads Markdown only when **Paste as
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
   published PDF of a document's paragraphs, lists, quotations, preformatted text and tables. The one sample document is a fixed template with
   no content of yours in it.
@@ -422,8 +439,8 @@ Named explicitly so nobody has to read the source to find out:
   to be edited. No cross-references resolved, and no reading view. No reuse or transclusion. No way to
   make a figure or a table unnumbered: every one takes a number.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
-  quotations, preformatted text, tables and figures: no footnotes, equations or images in a line of
-  text in a publication, no definition-list structure of PDF's own, no list of equations, no caption
+  quotations, preformatted text, tables, figures and images in a line of text: no footnotes, tables'
+  notes or equations in a publication, no definition-list structure of PDF's own, no list of equations, no caption
   labels, no theme, no monospace face for inline code, no Word, no preview, and no way to approve a
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,

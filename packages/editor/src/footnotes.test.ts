@@ -11,7 +11,7 @@ import {
 } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
 
-import { pasteInto, readClipboard } from './clipboard.js';
+import { pasteInto, PRODUCT_CLIPBOARD_TYPE, productClipboard, readClipboard } from './clipboard.js';
 import { footnoteAt, insertFootnote } from './footnotes.js';
 import { fromEditor, toEditor } from './mapping.js';
 import {
@@ -234,7 +234,7 @@ describe('a footnote in the editor (footnotes 1)', () => {
     expect(toEditor(document)).toEqual({ editable: false, unsupported: ['mark:comment'] });
   });
 
-  it("holds nothing in a footnote's paragraphs that CNT-129 excludes, by its content expressions", () => {
+  it("holds no image, footnote or block in a footnote's paragraphs, by its content expressions", () => {
     const { nodes } = editorSchema;
     const image = nodes.image!.create({ asset: 'a1', alternative: { kind: 'decorative' } });
     const inner = nodes.footnote!.create(
@@ -682,6 +682,35 @@ describe('a paste into a footnote (footnotes 1)', () => {
     expect(paragraphs.map((each) => (each as { content: InlineNode[] }).content)).toEqual([
       [text('Once.')],
       [text('Twice.')],
+    ]);
+  });
+
+  it('a footnote copied within the product pastes as one, newly named', () => {
+    const state = stateOf(
+      documentOf(
+        paragraph('p1', text('Visited'), footnote('f1', [paragraph('fp1', text('Once.'))])),
+        paragraph('p2', text('Later')),
+      ),
+    );
+    const end = startOf(state.doc, 'f1') + state.doc.nodeAt(startOf(state.doc, 'f1'))!.nodeSize;
+    const copied = productClipboard(state, 1, end);
+    if (copied === undefined) throw new Error('nothing copied');
+    const at = into(state, 'p2', 5);
+    const outcome = pasteInto(
+      at,
+      readClipboard({ types: [PRODUCT_CLIPBOARD_TYPE], getData: () => copied }, 'blocks'),
+      counter('c'),
+    );
+    if (!outcome.ok) throw new Error(outcome.report.at(-1)?.message);
+    const [, second] = stored(at.apply(outcome.transaction)) as Extract<
+      BlockNode,
+      { type: 'paragraph' }
+    >[];
+    const pasted = second!.content.find((inline) => inline.type === 'footnote');
+    expect(pasted).toMatchObject({ type: 'footnote', anchor: { kind: 'span' } });
+    expect(pasted).not.toMatchObject({ id: 'f1' });
+    expect((pasted as { content: { content: unknown[] }[] }).content[0]!.content).toEqual([
+      text('Once.'),
     ]);
   });
 

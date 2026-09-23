@@ -87,6 +87,24 @@ key or by position. One stored that way is opened and saved as it was stored; no
   brackets and smaller, and a table's note beneath the table, so nothing a component holds is hidden
   from a reader.
 
+## What the build changed
+
+- **R7's undo brings a footnote back whole, under new identifiers.** What an undo puts back is placed,
+  and ADR-0023's descent rule names whatever is placed, as it does a block brought back the same way.
+  A command's own identifiers are renamed by the identity plugin for the same reason.
+- **`Enter` on a footnote selected whole is always taken** (`enterFootnote`): left to the split, it
+  replaced the selected footnote with a paragraph break. With a view it puts the focus in the
+  footnote's text.
+- **R8: a transaction that only moves the footnote's caret is sent on to the surface empty**, kept out
+  of the history, so the toolbar reading the footnote's marks hears of it. A change of the same size
+  coming back from the surface - an identifier allocated, a mark renamed - keeps the footnote's caret
+  where it was rather than mapping it to the end of what was replaced.
+- **R10's paste into a footnote is a plain replace of the selection**: `replaceSelection` widened the
+  range to where the pasted paragraph would fit, which from inside a footnote was past its edge.
+- **A footnote copied within the product pastes as one**, newly named, through the product's clipboard
+  and admission's re-identify, as an image does; a test holds it.
+- **R13's rendering test passed on its first run**: the `toDOM` it reads came with task 1's schema.
+
 ## Tasks
 
 1. **`packages/editor`, the model half**: the nodes (R1, R2), the mapping (R3), marks and ranges
