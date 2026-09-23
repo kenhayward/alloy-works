@@ -49,7 +49,7 @@ const text = (value: string) => [{ type: 'text', value, marks: [] }];
 const figure = (id: string, caption: string) => ({
   type: 'figure',
   id,
-  asset: 'asset',
+  asset: '00000000-0000-4000-8000-00000000a551',
   imageStyle: 'wide',
   caption: [{ type: 'text', value: caption, marks: [] }],
   alternative: { kind: 'decorative' },

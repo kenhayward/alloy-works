@@ -44,7 +44,7 @@ const root = { title: 'Install the printer', language: 'en-GB', direction: 'ltr'
 const figure = (id: string): BlockNode => ({
   type: 'figure',
   id,
-  asset: 'asset-1',
+  asset: '00000000-0000-4000-8000-00000000a551',
   imageStyle: 'wide',
   caption: [{ type: 'text', value: 'Readings', marks: [] }],
   alternative: { kind: 'decorative' },

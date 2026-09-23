@@ -131,7 +131,7 @@ describe('canonical serialisation', () => {
         {
           type: 'figure',
           id: 'b2',
-          asset: 'asset-1',
+          asset: '00000000-0000-4000-8000-00000000a551',
           imageStyle: 'column-width',
           caption: [{ type: 'text', value: 'Dose', marks: [] }],
           alternative: { kind: 'decorative' },
@@ -162,7 +162,7 @@ describe('canonical serialisation', () => {
           alternative: { kind: 'decorative' },
           caption: [{ type: 'text', value: 'Dose', marks: [] }],
           imageStyle: 'column-width',
-          asset: 'asset-1',
+          asset: '00000000-0000-4000-8000-00000000a551',
           id: 'b2',
           type: 'figure',
         },

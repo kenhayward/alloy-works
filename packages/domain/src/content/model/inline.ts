@@ -110,7 +110,8 @@ export const bindingNodeSchema = z.strictObject({
 
 export const imageNodeSchema = z.strictObject({
   type: z.literal('image'),
-  asset: z.string().min(1),
+  // An asset version, pinned, as a figure's is (figures 1, R4).
+  asset: artifactIdentifierSchema,
   imageStyle: z.string().min(1),
   alternative: alternativeSchema,
 });

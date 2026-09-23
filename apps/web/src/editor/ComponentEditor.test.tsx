@@ -714,7 +714,7 @@ describe('the component editor', () => {
     withFigure.content.push({
       type: 'figure',
       id: 't1',
-      asset: 'asset-1',
+      asset: '00000000-0000-4000-8000-00000000a551',
       imageStyle: 'wide',
       caption: [{ type: 'text', value: 'Readings', marks: [] }],
       alternative: { kind: 'decorative' },

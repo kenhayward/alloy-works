@@ -70,7 +70,7 @@ const block = (component: number, index: number) => {
       return {
         type: 'figure',
         id,
-        asset: 'asset',
+        asset: '00000000-0000-4000-8000-00000000a551',
         imageStyle: 'wide',
         caption: [{ type: 'text', value: `Figure caption ${index}` }],
         alternative: { kind: 'decorative' },

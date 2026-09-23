@@ -40,7 +40,7 @@ const reference = (name: string, over: Partial<NumberableNode> = {}): Numberable
 const figure = (block: string, caption: string) => ({
   type: 'figure',
   id: block,
-  asset: 'asset',
+  asset: '00000000-0000-4000-8000-00000000a551',
   imageStyle: 'wide',
   caption: caption === '' ? [] : [{ type: 'text', value: caption, marks: [] }],
   alternative: { kind: 'decorative' },

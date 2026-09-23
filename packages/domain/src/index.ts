@@ -17,8 +17,12 @@ export type {
   DefinitionSubstance,
   DocumentSubstance,
   LayoutSubstance,
+  AssetSubstance,
   VersionSubstance,
 } from './version/substance.js';
+
+// Assets: an upload read from its bytes, and what an asset version records (docs/design/assets.md).
+export * from './assets/index.js';
 
 // Access: who may do what to which artifact, and why (docs/design/access.md). The caller loads facts.
 export * from './access/index.js';
