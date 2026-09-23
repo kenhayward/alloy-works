@@ -64,6 +64,9 @@ export const publishFailureCodes = [
   'footnote_not_publishable_here',
   'footnote_anchor_unresolved',
   'footnote_empty',
+  // compose, from the final review of footnotes 2: a footnote the layout's scheme gives no number,
+  // which would print as a mark with nothing in it.
+  'footnote_unnumbered',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

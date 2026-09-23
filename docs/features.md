@@ -406,13 +406,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   refused, naming where it is, as are the same things a figure is refused for, and so is one in a
   figure's or a table's caption, which is set again in the lists after the contents.
 
-  **A footnote prints** at the foot of the page its mark is on, with the document's number for it -
-  numbered straight through - in the text and before the note, and a screen reader reads it as a
-  note; one too long for what is left of its page begins there and carries on over the next. A
-  table's note prints beneath the table, a little smaller. A footnote in a caption, a heading, a
-  definition's term, a quotation's attribution or a table's note is refused, naming where it is, as is
-  one with no text, one anchored to a table as a whole, and one anchored to a table's cell the table
-  does not have.
+  **A footnote prints** at the foot of the page its mark is on, with the document's number for it in
+  the text and before the note - numbered straight through the body, and on their own in front matter
+  and in each appendix - and a screen reader reads it as a note, in the language of the text its mark
+  stands in; one too long for what is left of its page begins there and carries on over the next. A
+  table's note prints beneath the table, a little smaller; it does not travel with the table, so a
+  table that ends a page can have its note begin the next. A footnote in a caption, a heading, a
+  definition's term, a quotation's attribution, a table's note or a table's header row - which is
+  printed again on every page the table reaches - is refused, naming where it is, as is one with no
+  text, one anchored to a table as a whole, and one anchored to a table's cell the table does not have.
 
   **This is a PDF of paragraphs, lists, quotations, preformatted text, tables and their notes,
   figures, images in a line of text and footnotes, not publishing.** No equations - a document holding

@@ -8,16 +8,18 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 ### Added
 
 - **Footnotes are published.** Each footnote prints at the foot of the page its mark is on, with the
-  document's number for it in the text and before the note, numbered straight through; a note too long
-  for what is left of its page begins there and carries on over the next. A screen reader reads each
-  as a note.
+  document's number for it in the text and before the note, numbered straight through the body and on
+  their own in front matter and each appendix; a note too long for what is left of its page begins there
+  and carries on over the next. A screen reader reads each as a note, in the language of the text its
+  mark stands in.
 - **A table's note is published**, beneath the table and a little smaller than the text.
 
 ### Changed
 
 - **Publishing says why a footnote cannot be published**: one in a caption, a heading, a definition's
-  term, a quotation's attribution or a table's note, or anchored to a whole table, is named with where
-  it is; so is one with no text, and one anchored to a table's cell the table does not have.
+  term, a quotation's attribution, a table's note or a table's header row, or anchored to a whole table,
+  is named with where it is; so is one with no text, one anchored to a table's cell the table does not
+  have, and one the layout would give no number.
 
 ## 0.61.0 - 2026-09-23 (PR #216)
 

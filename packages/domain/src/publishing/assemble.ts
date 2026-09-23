@@ -274,12 +274,15 @@ export function assemble(input: AssembleInput): Assembled {
     block: string,
     indent = 0,
     caption = false,
-    inParagraph: { readonly table: TableNode | null } | null = null,
+    inParagraph: { readonly table: TableNode | null; readonly heading: boolean } | null = null,
   ): PublishedInline[] => {
     const runs: PublishedInline[] = [];
     for (const inline of content) {
       if (inline.type === 'footnote' && layout !== null) {
-        if (inParagraph === null) {
+        // A table's header rows repeat on every page it reaches, and the engine refuses a footnote in
+        // a repeated header outright - a link in an artifact - naming nothing (final review of
+        // footnotes 2). Refused always, since whether a table crosses a page is not known here.
+        if (inParagraph === null || inParagraph.heading) {
           failOnce(failure('compose', 'footnote_not_publishable_here', node, block, null));
           continue;
         }
@@ -340,19 +343,34 @@ export function assemble(input: AssembleInput): Assembled {
     table: TableNode | null,
   ): PublishedInline | null => {
     const { anchor } = footnote;
+    // Every reason at once, never the first alone (PUB-052), so each is said before any returns.
+    let refused = false;
     if (anchor.kind === 'table') {
       failOnce(failure('compose', 'footnote_not_publishable_here', node, block, null));
-      return null;
-    }
-    if (anchor.kind !== 'span' && !anchorResolves(anchor, table)) {
+      refused = true;
+    } else if (anchor.kind !== 'span' && !anchorResolves(anchor, table)) {
       failures.push(failure('compose', 'footnote_anchor_unresolved', node, footnote.id, null));
-      return null;
+      refused = true;
     }
     const content = footnote.content as readonly Extract<BlockNode, { type: 'paragraph' }>[];
-    if (content.every((paragraph) => paragraph.content.length === 0)) {
+    // Words, not runs: spaces alone say nothing, as a caption of spaces names nothing.
+    const says = content.some((paragraph) =>
+      paragraph.content.some((inline) => inline.type !== 'text' || inline.value.trim() !== ''),
+    );
+    if (!says) {
       failures.push(failure('compose', 'footnote_empty', node, footnote.id, null));
-      return null;
+      refused = true;
     }
+    // A layout whose scheme prefixes footnotes with their chapter gives none in a part with no
+    // numbered section before it, and a mark with nothing in it is no footnote (final review).
+    const label =
+      numbering.entries.find((entry) => entry.node === node && entry.block === footnote.id)
+        ?.label ?? null;
+    if (label === null) {
+      failures.push(failure('compose', 'footnote_unnumbered', node, footnote.id, null));
+      refused = true;
+    }
+    if (refused || label === null) return null;
     const paragraphs = content.flatMap((paragraph) => {
       if (paragraph.style !== BODY) {
         failures.push(failure('compose', 'style_missing', node, footnote.id, paragraph.style));
@@ -360,11 +378,6 @@ export function assemble(input: AssembleInput): Assembled {
       const runs = publishedRuns(paragraph.content, node, footnote.id);
       return runs.length === 0 ? [] : [{ type: 'paragraph' as const, id: paragraph.id, runs }];
     });
-    // Unknown only where an occurrence before it could not be read, which has failed the publish
-    // already, so it is never guessed at (ruling R6).
-    const label =
-      numbering.entries.find((entry) => entry.node === node && entry.block === footnote.id)
-        ?.label ?? '';
     check(label, node, footnote.id);
     return { footnote: { label, paragraphs } };
   };
@@ -386,13 +399,17 @@ export function assemble(input: AssembleInput): Assembled {
     node: string,
     indent = 0,
     table: TableNode | null = null,
+    heading = false,
   ): PublishedBlock[] => {
     switch (block.type) {
       case 'paragraph': {
         if (block.style !== BODY) {
           failures.push(failure('compose', 'style_missing', node, block.id, block.style));
         }
-        const runs = publishedRuns(block.content, node, block.id, indent, false, { table });
+        const runs = publishedRuns(block.content, node, block.id, indent, false, {
+          table,
+          heading,
+        });
         return runs.length === 0 ? [] : [{ type: 'paragraph', id: block.id, runs }];
       }
       case 'list': {
@@ -435,7 +452,7 @@ export function assemble(input: AssembleInput): Assembled {
           return {
             term: term.length === 0 ? null : term,
             blocks: item.content.flatMap((each) =>
-              publishable(each, node, indent + listIndent(block), table),
+              publishable(each, node, indent + listIndent(block), table, heading),
             ),
           };
         });
@@ -534,6 +551,7 @@ export function assemble(input: AssembleInput): Assembled {
         // A note on the table as a whole (CNT-038, FN-C), set beneath it in its figure (footnotes 2,
         // ruling R7). One that says nothing, which another route may store, is none.
         const note = publishedRuns(block.note ?? [], node, block.id, indent);
+        const noteSays = note.some((run) => !('text' in run) || run.text.trim() !== '');
         const label =
           numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
             ?.label ?? null;
@@ -560,14 +578,20 @@ export function assemble(input: AssembleInput): Assembled {
                 // Paragraphs and lists alone (decision T-D), each published as it is anywhere else -
                 // in the room the cell has: its share of the measure, less the engine's inset each side.
                 blocks: cell.content.flatMap((each) =>
-                  publishable(each, node, cellIndent(indent, columns, cell.colspan), block),
+                  publishable(
+                    each,
+                    node,
+                    cellIndent(indent, columns, cell.colspan),
+                    block,
+                    rowIndex < block.headerRows,
+                  ),
                 ),
                 colspan: cell.colspan,
                 rowspan: cell.rowspan,
                 scope: scopeAt(rowIndex, starts[rowIndex]![cellIndex]!),
               })),
             })),
-            note: note.length === 0 ? null : note,
+            note: noteSays ? note : null,
           },
         ];
       }
@@ -747,7 +771,8 @@ export function assemble(input: AssembleInput): Assembled {
     if (node.type === 'section') {
       const title = textOf(node.title);
       // A footnote in a title would be set twice, in the contents and where it stands (FN-B).
-      if ('unpublishable' in title && title.unpublishable === 'footnote') {
+      // Under a layout alone: a request made before layouts keeps saying what it always said.
+      if (layout !== null && 'unpublishable' in title && title.unpublishable === 'footnote') {
         failures.push(failure('compose', 'footnote_not_publishable_here', node.id, null, null));
       } else if ('unpublishable' in title) {
         failures.push(
@@ -927,11 +952,6 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
   }
 }
 
-/**
- * A stored table's width and the column each cell starts in, placing a cell in the first place no
- * cell above has spanned into - the walk `checkGrid` makes when the table is read, which is why the
- * grid is known here to be whole and rectangular.
- */
 /** A stored table, as a footnote's cell anchor resolves against one. */
 type TableNode = Extract<BlockNode, { type: 'table' }>;
 
@@ -971,6 +991,11 @@ function wordsOf(cell: TableNode['rows'][number]['cells'][number]): string {
     .trim();
 }
 
+/**
+ * A stored table's width and the column each cell starts in, placing a cell in the first place no
+ * cell above has spanned into - the walk `checkGrid` makes when the table is read, which is why the
+ * grid is known here to be whole and rectangular.
+ */
 function gridOf(table: Extract<BlockNode, { type: 'table' }>): {
   columns: number;
   starts: number[][];

@@ -1222,17 +1222,22 @@ have left such a request unable to finish at all.
   the footnote and the paragraphs published as a paragraph's are, their failures naming the footnote.
   Only a paragraph's runs hold one: `publishedRuns` takes whether it is publishing a paragraph's runs,
   with the table the paragraph stands in, and anywhere else - a caption, a term, an attribution, a
-  table's note, a section's title - refuses one, `footnote_not_publishable_here`, as it does one
-  anchored to the table as a whole. An anchor to a cell must resolve against that table
+  table's note, a section's title, a table's header row, which the engine refuses a link in once it
+  repeats - refuses one, `footnote_not_publishable_here`, as it does one anchored to the table as a
+  whole. An anchor to a cell must resolve against that table
   (`anchorResolves`: by position within the grid; by key, one declared key column and a row whose key
   cell's words are the key), or `footnote_anchor_unresolved` names the footnote; a footnote with no
-  text is `footnote_empty`. A `PublishedTable` carries its `note` as runs, or null. Template 9 sets a
-  footnote as `footnote(numbering: _ => label, body)`, the paragraphs joined by paragraph breaks so
-  the number opens the first, and the note as a paragraph a point smaller straight after the table's
+  text is `footnote_empty`, and one the scheme gives no number `footnote_unnumbered`. Every reason a
+  footnote is refused is said. A `PublishedTable` carries its `note` as runs, or null. Template 9 sets
+  a footnote as `context footnote(numbering: _ => label, text(lang:, region:, dir:, body))` - the
+  language where the mark stands carried to the foot of the page, which the engine would otherwise
+  give the document's - the paragraphs joined by paragraph breaks so the number opens the first, and
+  the note as a paragraph a point smaller straight after the table's
   figure - inside it, the engine tags the figure so that the caption stops being the table's.
   `apps/worker/src/footnotes.test.ts` is the regression case: footnotes in running text, a list, a
   quotation and a cell, a report long enough that they fall on several pages, a note longer than a
-  page, and a table with a note, through veraPDF and read back.
+  page, a note in another language, and a table with a note, through veraPDF and read back; `readPdf`
+  reports each `Note`'s spoken language.
 - **Images in a line of text (`publishing/8`, template 8).** A published run may also be a
   `PublishedImageRun`: `{ image: { path, width, height, alternative } }` beside the `{ text, marks }`
   a run is, wherever runs are published. `assemble` sets it 1.2 ems of the body text high

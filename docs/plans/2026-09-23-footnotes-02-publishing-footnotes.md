@@ -48,8 +48,9 @@ by position is resolved and published, since publishing.md says so; nothing make
   resolve rather than being matched by a rule invented here. One standing outside any table does not
   resolve. Each fails `footnote_anchor_unresolved`, naming the footnote. A resolved footnote is set
   where it stands, since in an authored table it stands in its cell's text already.
-- **R6. The label** is the numbering table's for the footnote. It is unknown only where an occurrence
-  before it could not be read, which fails the publish already, so it is never guessed.
+- **R6. The label** is the numbering table's for the footnote, never guessed. (The final review found
+  it can also be unknown where a scheme prefixes footnotes and no numbered section comes before one; see
+  below.)
 - **R7. The table's note** (CNT-038, FN-D) is published as runs on the table - `note`, or null where
   there is none or it holds no text - and set inside the table's `figure`, after the table, a point
   smaller than the body. Its tagging is measured in the build; if the engine tags it wrongly inside the
@@ -80,6 +81,29 @@ by position is resolved and published, since publishing.md says so; nothing make
   case holds an eighty-paragraph note to both.
 - **The measurements were made with throwaway spikes** that printed the structure tree with the text
   under each element; none is kept.
+
+The final whole-branch review found three things and seven smaller; these were changed, each test
+first:
+
+- **A footnote in a table's header row made the engine refuse a table that crosses a page** - the
+  repeated header is an artifact, and a link in one is refused outright, naming nothing. `assemble`
+  refuses it, `footnote_not_publishable_here`, naming its paragraph; a header column is published.
+- **A note was tagged in the document's language**, not its component's: the engine lays it out at the
+  foot of the page. Template 9 carries the language and direction at the mark into the note, and
+  `readPdf` gains each `Note`'s spoken language, read up the tree as a figure's is.
+- **R6 was wrong**: a scheme that prefixes footnotes with their chapter gives none a number in a part
+  with no numbered section before it, and the footnote printed with an empty mark. It is refused,
+  `footnote_unnumbered`, naming it, with a sentence on the publishing page. The layout's parse is not
+  tightened instead: layout versions are insert-only.
+- **Smaller**: spaces alone make a footnote empty and a note none; every reason a footnote is refused
+  is said; a request made before layouts keeps its old sentence for a title's footnote; template 9's
+  header comment and a split doc comment corrected; and the docs no longer say footnotes are numbered
+  straight through without saying the front matter and each appendix count on their own, and say that
+  a table's note can begin the next page.
+- **Not changed**: a cell anchor resolves against any cell the table has, not only the footnote's own
+  (R5, and publishing.md now says so for the key-columns slice); and near a page's end a table's caption
+  stops being its `Table`'s first child whatever it holds - template 8 does the same, so it is not this
+  slice's, and is raised on its own.
 
 ## Tasks
 

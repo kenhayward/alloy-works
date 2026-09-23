@@ -2379,6 +2379,106 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
     }
   });
 
+  it("refuses a footnote in a table's header row, which the engine would set again on every page (final review)", () => {
+    const headed = table({ headerRows: 1 }, [
+      text('North'),
+      footnote('f1', [paragraph('fp1', text('Once.'))]),
+    ]);
+    expect(failuresOf(assemble(oneComponent(headed)))).toEqual([
+      failed('footnote_not_publishable_here', 'k1'),
+    ]);
+    // A header column is set once, so a footnote there is published.
+    const columned = table({ headerColumns: 1 }, [
+      text('North'),
+      footnote('f1', [paragraph('fp1', text('Once.'))]),
+    ]);
+    expect(footnotesOf(assemble(oneComponent(columned))).map((each) => each.label)).toEqual(['1']);
+  });
+
+  it('refuses a footnote the layout gives no number, rather than printing it with none (final review)', () => {
+    const prefixed = layoutWith((layout) => {
+      for (const matter of ['front', 'body', 'appendix'] as const) {
+        layout.scheme.sequences['footnote']![matter].prefix = 1;
+      }
+    });
+    const preface = {
+      ...inMatter('front', reference('pref')),
+      numbered: false,
+    };
+    const assembled = assemble(
+      input({
+        layout: prefixed,
+        outline: outline([preface]),
+        occurrences: new Map([
+          [
+            id('pref'),
+            component([
+              paragraph('b1', text('Preface'), footnote('f1', [paragraph('fp1', text('Once.'))])),
+            ]),
+          ],
+        ]),
+      }),
+    );
+    expect(failuresOf(assembled)).toEqual([
+      {
+        stage: 'compose',
+        code: 'footnote_unnumbered',
+        node: id('pref'),
+        block: 'f1',
+        detail: null,
+      },
+    ]);
+  });
+
+  it('calls a footnote or a note of spaces alone empty, as a caption of spaces is (final review)', () => {
+    expect(
+      failuresOf(
+        assemble(oneParagraph(text('Visited'), footnote('f1', [paragraph('fp1', text('   '))]))),
+      ),
+    ).toEqual([failed('footnote_empty', 'f1')]);
+    const [block] = blocksOf(assemble(oneComponent(table({ note: [text('   ')] }))));
+    expect(block?.type === 'table' && block.note).toBeNull();
+  });
+
+  it('names every reason a footnote cannot be published, not the first alone (final review)', () => {
+    expect(
+      failuresOf(
+        assemble(
+          oneComponent(
+            table({}, [
+              text('North'),
+              footnote('f1', [paragraph('fp1')], { kind: 'cellPosition', row: 9, column: 0 }),
+              footnote('f2', [paragraph('fp2')], { kind: 'table' }),
+            ]),
+          ),
+        ),
+      ),
+    ).toEqual([
+      failed('footnote_anchor_unresolved', 'f1'),
+      failed('footnote_empty', 'f1'),
+      failed('footnote_not_publishable_here', 'k1'),
+      failed('footnote_empty', 'f2'),
+    ]);
+  });
+
+  it("keeps a request made before layouts saying a title's footnote is what cannot be published (final review)", () => {
+    const titled = {
+      ...section('intro', 'Intro'),
+      title: [text('Intro'), footnote('f1', [paragraph('fp1', text('Once.'))])],
+    };
+    expect(
+      failuresOf(assemble({ ...input({ outline: outline([titled]) }), layout: null })),
+    ).toEqual([
+      {
+        stage: 'compose',
+        code: 'title_not_publishable',
+        node: id('intro'),
+        block: null,
+        detail: 'footnote',
+      },
+    ]);
+  });
+
   it("publishes a table's note on the table, and none where it has none or it says nothing", () => {
     const noteOf = (over: object) => {
       const [block] = blocksOf(assemble(oneComponent(table(over))));

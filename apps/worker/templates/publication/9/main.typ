@@ -3,7 +3,7 @@
 // quotations, preformatted text, tables with their notes and figures, with its generated lists after
 // the contents, `publishing/9`, from data.json as values and evaluates nothing: no content reaches
 // Typst as source (ADR-0013, PUB-062). A version is immutable - an edit is a new directory, and a test
-// holds each version's hash. It is version 8 with a footnote branch of `run` and a table's note inside
+// holds each version's hash. It is version 8 with a footnote branch of `run` and a table's note after
 // its figure, and nothing else: template 8 and the publications made with it are a record, never
 // migrated.
 #let doc = json("data.json")
@@ -185,11 +185,19 @@
 // number and nothing else, which at a page's foot the engine left there and carried the words over to
 // the next page. Joined by paragraph breaks, the number opens the first paragraph. Only a paragraph's
 // runs hold a footnote: `assemble` refuses one in a caption or a title, which the lists after the
-// contents and the running heads would set a second time. As measured (publishing.md, "What the
-// pinned Typst does with a footnote", and footnotes 2's plan).
-#let footnote-run(n) = footnote(
+// contents and the running heads would set a second time. The note is laid out at the foot of the page,
+// where the engine gives it the DOCUMENT's language: so the language and direction where its mark stands
+// are read there and set around its body, and a German component's note is read in German, not in the
+// document's English (final review of footnotes 2). As measured (publishing.md, "What the pinned Typst
+// does with a footnote", and footnotes 2's plan).
+#let footnote-run(n) = context footnote(
   numbering: _ => n.label,
-  n.paragraphs.map(p => p.runs.map(base-run).join()).join(parbreak()),
+  text(
+    lang: text.lang,
+    region: text.region,
+    dir: text.dir,
+    n.paragraphs.map(p => p.runs.map(base-run).join()).join(parbreak()),
+  ),
 )
 #let run(r) = if "footnote" in r { footnote-run(r.footnote) } else { base-run(r) }
 

@@ -91,7 +91,7 @@ const content = [
   ),
 ];
 
-const compile = async (blocks: unknown[] = content) => {
+const compile = async (blocks: unknown[] = content, language = 'en-GB') => {
   const assembled = assemble({
     outline: parseOutlineDocument({
       schemaVersion: OUTLINE_SCHEMA_VERSION,
@@ -118,7 +118,7 @@ const compile = async (blocks: unknown[] = content) => {
         parseContentDocument({
           schemaVersion: 1,
           title: 'Report',
-          language: 'en-GB',
+          language,
           direction: 'ltr',
           content: blocks,
         }) as ContentDocument,
@@ -225,5 +225,22 @@ describe('a note longer than a page (footnotes 2)', () => {
     for (const baselines of read.textBaselines) {
       if (baselines !== null) expect(baselines.bottom).toBeGreaterThanOrEqual(72);
     }
+  }, 120_000);
+});
+
+describe('a note in a component in another language (footnotes 2, final review)', () => {
+  it("is read in the language of the text its mark stands in, not the document's", async () => {
+    const read = await readPdf(
+      await compile([para('de1', text('Guten Tag'), footnote('f-de', 'Eine Anmerkung.'))], 'de-DE'),
+    );
+    expect(read.notes).toEqual([{ spoken: 'de-DE' }]);
+    expect(
+      await checkPdfUa1(
+        await compile(
+          [para('de1', text('Guten Tag'), footnote('f-de', 'Eine Anmerkung.'))],
+          'de-DE',
+        ),
+      ),
+    ).toMatchObject({ compliant: true });
   }, 120_000);
 });

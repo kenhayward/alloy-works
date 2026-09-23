@@ -64,6 +64,11 @@ export interface ReadPdf {
    * parent's), and its layout box, `[left, bottom, right, top]` in points on its page.
    */
   readonly figures: readonly TaggedFigure[];
+  /**
+   * Every `Note` structure element in the file - a footnote at the foot of its page - in the order it
+   * is written, with the language a reader is told it is in, read up the tree as a figure's is.
+   */
+  readonly notes: readonly { readonly spoken: string | null }[];
   readonly marked: boolean;
   readonly pdfuaPart: string | null;
   readonly title: string | null;
@@ -253,14 +258,42 @@ function pdfString(text: string, at: number): string | null {
   return bytes;
 }
 
-/** Every `Figure` structure element, read from the objects themselves as `structureElements` reads. */
-function taggedFigures(text: string): TaggedFigure[] {
-  const figures: TaggedFigure[] = [];
-  // Every object by its number, so a `Figure`'s `/P` can be followed to the element it stands in.
+/** Every object by its number, so an element's `/P` can be followed to the element it stands in. */
+function objectsOf(text: string): Map<string, string> {
   const objects = new Map<string, string>();
   for (const object of text.matchAll(/(\d+)\s+0\s+obj\b([\s\S]*?)\bendobj\b/g)) {
     objects.set(object[1]!, object[2] ?? '');
   }
+  return objects;
+}
+
+/**
+ * The language a reader is told an element is in: its own `/Lang`, or the nearest ancestor's, or null
+ * where none declares one and the document's own stands.
+ */
+function spokenOf(body: string, objects: ReadonlyMap<string, string>): string | null {
+  let at: string | undefined = body;
+  for (let depth = 0; at !== undefined && depth < 64; depth += 1) {
+    const declared = /\/Lang\s*([(<])/.exec(at);
+    if (declared !== null) return pdfString(at, declared.index + declared[0].length - 1);
+    const held = /\/P\s+(\d+)\s+0\s+R/.exec(at);
+    at = held === null ? undefined : objects.get(held[1]!);
+  }
+  return null;
+}
+
+/** Every `Note` structure element, with the language it is read in (footnotes 2). */
+function taggedNotes(text: string): { spoken: string | null }[] {
+  const objects = objectsOf(text);
+  return [...objects.values()]
+    .filter((body) => /\/Type\s*\/StructElem\b/.test(body) && /\/S\s*\/Note\b/.test(body))
+    .map((body) => ({ spoken: spokenOf(body, objects) }));
+}
+
+/** Every `Figure` structure element, read from the objects themselves as `structureElements` reads. */
+function taggedFigures(text: string): TaggedFigure[] {
+  const figures: TaggedFigure[] = [];
+  const objects = objectsOf(text);
   for (const body of objects.values()) {
     if (!/\/Type\s*\/StructElem\b/.test(body) || !/\/S\s*\/Figure\b/.test(body)) continue;
     const valueOf = (key: string) => {
@@ -273,16 +306,7 @@ function taggedFigures(text: string): TaggedFigure[] {
       alt: valueOf('Alt'),
       lang: valueOf('Lang'),
       box: corners?.length === 4 ? (corners as [number, number, number, number]) : null,
-      spoken: (() => {
-        let at: string | undefined = body;
-        for (let depth = 0; at !== undefined && depth < 64; depth += 1) {
-          const declared = /\/Lang\s*([(<])/.exec(at);
-          if (declared !== null) return pdfString(at, declared.index + declared[0].length - 1);
-          const held = /\/P\s+(\d+)\s+0\s+R/.exec(at);
-          at = held === null ? undefined : objects.get(held[1]!);
-        }
-        return null;
-      })(),
+      spoken: spokenOf(body, objects),
       parent: (() => {
         const held = /\/P\s+(\d+)\s+0\s+R/.exec(body);
         const above = held === null ? undefined : objects.get(held[1]!);
@@ -418,6 +442,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       roles,
       elements: structureElements(text),
       figures: taggedFigures(text),
+      notes: taggedNotes(text),
       marked: markInfo?.get('Marked') === true,
       pdfuaPart: metadata.metadata?.get('pdfuaid:part') ?? null,
       title: info.Title ?? null,

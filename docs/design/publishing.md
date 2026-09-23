@@ -583,7 +583,8 @@ caption again, so the image would be read twice. Building figures 3 changed thes
 Designed on 2026-09-23 against the pinned engine, as tables and figures were. A footnote is the content
 model's `footnote`: an inline node holding paragraphs (CNT-129), with an anchor in one of four kinds -
 a span, a cell by key, a cell by position, or the table as a whole - and a number `number` gives it,
-straight through the document (CNT-041, STR-022). A table also carries an optional **note** of its own
+straight through the body and on its own in front matter and each appendix under the default scheme
+(CNT-041, STR-022). A table also carries an optional **note** of its own
 (CNT-038), inline content that is not a footnote.
 
 ### What the pinned Typst does with a footnote, measured
@@ -661,7 +662,27 @@ puts footnotes and the table's note in the editor, and
   empty paragraph, and a numbered mark over nothing would publish a note the author never wrote.
 - **A key over several key columns does not resolve**, `footnote_anchor_unresolved`: how one is spelt
   is not yet defined, and nothing makes one, so it is refused rather than matched by a rule invented in
-  the publisher. A key over one key column is that column's cell's words.
+  the publisher. A key over one key column is that column's cell's words. **Resolving says only that
+  the table has such a cell**, not that it is the cell the footnote stands in, and a key can match a
+  header row's cell: nothing makes a key or a position anchor in T1, and the key-columns slice decides
+  whether an anchor must name the footnote's own cell.
+
+The final whole-branch review found three things and several smaller; these were changed:
+
+- **A footnote in a table's header row is refused**, `footnote_not_publishable_here`, naming the
+  paragraph it stands in. The header rows repeat on every page a table reaches, set as artifacts, and
+  the engine refuses a footnote's link inside one outright, naming nothing - measured with a table of
+  ninety rows. It is refused whether or not the table crosses a page, since that is not known before
+  the layout. A footnote in a header column is set once and is published.
+- **A note is read in the language its mark stands in.** The engine lays a note out at the foot of the
+  page in the document's language, so a German component's note was tagged English. Template 9 reads
+  the language and direction where the mark stands and sets them around the note's body.
+- **A footnote the layout's scheme gives no number is refused**, `footnote_unnumbered`, naming it. A
+  scheme may prefix footnotes with their chapter, and in a part with no numbered section before it
+  `number` gives none; the footnote would have printed as a mark with nothing in it.
+- **Smaller**: a footnote or a table's note of spaces alone is empty, as a caption of spaces is; a
+  footnote is told every reason it is refused, not the first; and a request made before layouts keeps
+  saying a title's footnote is what cannot be published, as it did.
 
 ## The layout
 

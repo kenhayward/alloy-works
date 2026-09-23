@@ -108,6 +108,10 @@ export function failureWords(failure: Failure): string {
       return 'A footnote is anchored to a cell its table does not have.';
     case 'footnote_empty':
       return 'A footnote has no text. Write it, or delete its mark.';
+    // The layout's rule, not the document's: its scheme prefixes footnotes with their section's
+    // number, and this part of the document has no numbered section before it (final review).
+    case 'footnote_unnumbered':
+      return 'A footnote here would print with no number: the layout numbers footnotes within sections, and no numbered section comes before it.';
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

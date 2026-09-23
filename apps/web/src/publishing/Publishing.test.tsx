@@ -319,6 +319,7 @@ describe('publishing from the document page', () => {
         detail: null,
       },
       { stage: 'compose', code: 'footnote_empty', node: null, block: 'f2', detail: null },
+      { stage: 'compose', code: 'footnote_unnumbered', node: null, block: 'f3', detail: null },
     ]);
     open(fake.fetch);
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
@@ -328,6 +329,9 @@ describe('publishing from the document page', () => {
     );
     expect(why).toHaveTextContent('A footnote is anchored to a cell its table does not have.');
     expect(why).toHaveTextContent('A footnote has no text. Write it, or delete its mark.');
+    expect(why).toHaveTextContent(
+      'A footnote here would print with no number: the layout numbers footnotes within sections, and no numbered section comes before it.',
+    );
   });
 
   it("blames the layout, not the document, for the layout's own words and language", async () => {

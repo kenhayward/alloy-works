@@ -7280,6 +7280,7 @@
                               "footnote_not_publishable_here",
                               "footnote_anchor_unresolved",
                               "footnote_empty",
+                              "footnote_unnumbered",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10024,6 +10025,7 @@
                               "footnote_not_publishable_here",
                               "footnote_anchor_unresolved",
                               "footnote_empty",
+                              "footnote_unnumbered",
                               "engine_failed",
                               "store_failed"
                             ]
