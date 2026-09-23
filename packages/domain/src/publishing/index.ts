@@ -1,5 +1,5 @@
 export { assemble } from './assemble.js';
-export type { Assembled, AssembleInput } from './assemble.js';
+export type { Assembled, AssembleInput, PublishingAsset } from './assemble.js';
 export { publishFailureCodes } from './failures.js';
 export type { PublishFailure, PublishFailureCode, PublishStage } from './failures.js';
 // The question the worker's pinned fonts answer, asked of one family at a time (editor 5).
@@ -49,12 +49,16 @@ export {
   // Frozen by tables 2, which made `publishing/6`: the schema template 5 reads, and the schema of
   // every publication made before a block could be a table.
   PUBLISHING_SCHEMA_5,
+  // Frozen by figures 3, which made `publishing/7`: the schema template 6 reads, and the schema of
+  // every publication made before a block could be a figure.
+  PUBLISHING_SCHEMA_6,
 } from './published.js';
 export type {
   PublishedBlock,
   PublishedBlock1,
   PublishedDocument,
   PublishedDocument1,
+  PublishedFigure,
   PublishedItem,
   PublishedLanguage,
   PublishedList,

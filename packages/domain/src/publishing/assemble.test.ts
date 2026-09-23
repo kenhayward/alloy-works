@@ -9,7 +9,7 @@ import {
   type OutlineDocument,
 } from '../structure/outline.js';
 
-import { assemble, type Assembled, type AssembleInput } from './assemble.js';
+import { assemble, type Assembled, type AssembleInput, type PublishingAsset } from './assemble.js';
 import type { PublishFailure } from './failures.js';
 import { publishedLanguage } from './language.js';
 import {
@@ -26,6 +26,7 @@ import {
   PUBLISHING_SCHEMA_3,
   PUBLISHING_SCHEMA_4,
   PUBLISHING_SCHEMA_5,
+  PUBLISHING_SCHEMA_6,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedItem,
@@ -102,6 +103,7 @@ const input = (over: Partial<UnderALayout>): UnderALayout => ({
   layout: defaultLayout,
   revision: '0.1',
   covers: latin,
+  assets: new Map(),
   ...over,
 });
 
@@ -959,8 +961,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/6, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/6');
+  it('assembles under a layout as publishing/7, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/7');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1486,10 +1488,11 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/6, and publishing/4 and publishing/5 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/6');
+  it('makes publishing/7, and publishing/4 to publishing/6 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/7');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
+    expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
   });
 });
 
@@ -1538,7 +1541,7 @@ describe('a table, published (tables 2)', () => {
   it('publishes a table with its number, its caption, its header counts and every cell', () => {
     const assembled = assemble(oneComponent(stored()));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/6');
+    expect(assembled.document.schema).toBe('publishing/7');
     expect(blocksOf(assembled)).toEqual([
       {
         type: 'table',
@@ -1650,5 +1653,189 @@ describe('a table, published (tables 2)', () => {
     expect(failuresOf(assemble({ ...oneComponent(stored()), layout }))).toEqual([
       { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+2016' },
     ]);
+  });
+});
+
+describe('a figure, published (figures 3)', () => {
+  const RED = '00000000-0000-4000-8000-00000000a551';
+  const HASH = 'ab'.repeat(32);
+  /** An asset version as the request hands it on: its key, format, size as displayed and default. */
+  const asset = (over: Partial<PublishingAsset> = {}): PublishingAsset => ({
+    object: `t_acme/sha256/${HASH}`,
+    format: 'png',
+    width: 800,
+    height: 600,
+    alternative: { text: 'Two red squares', language: 'en-GB' },
+    ...over,
+  });
+  const stored = (over: object = {}) => ({
+    type: 'figure',
+    id: 'f1',
+    asset: RED,
+    imageStyle: 'figure',
+    caption: [text('Shapes '), marked('at rest', { type: 'emphasis', id: 'm1' })],
+    alternative: { kind: 'inherited' },
+    ...over,
+  });
+  /** One component holding these blocks, with the asset versions the request resolved. */
+  const withAssets = (assets: Record<string, PublishingAsset>, ...blocks: unknown[]) => ({
+    ...oneComponent(...blocks),
+    assets: new Map(Object.entries(assets)),
+  });
+  const failed = (code: string, detail: string | null, stage = 'compose') => ({
+    stage,
+    code,
+    node: id('calib'),
+    block: 'f1',
+    detail,
+  });
+  const figureIn = (assembled: Assembled<PublishedDocument>) => {
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const found: PublishedBlock[] = [];
+    const walk = (blocks: readonly PublishedBlock[]) => {
+      for (const block of blocks) {
+        if (block.type === 'figure') found.push(block);
+        if (block.type === 'list') for (const item of block.items) walk(item.blocks);
+        if (block.type === 'blockquote') walk(block.blocks);
+      }
+    };
+    walk(assembled.document.nodes[0]!.blocks);
+    const [figure, ...others] = found;
+    expect(others).toEqual([]);
+    return figure;
+  };
+
+  it('publishes a figure with its number, its caption, its image and its alternative text', () => {
+    const assembled = assemble(withAssets({ [RED]: asset() }, stored()));
+    expect(assembled.ok && assembled.document.schema).toBe('publishing/7');
+    expect(figureIn(assembled)).toEqual({
+      type: 'figure',
+      id: 'f1',
+      label: 'Figure 1.1',
+      caption: [
+        { text: 'Shapes ', marks: [] },
+        { text: 'at rest', marks: [{ kind: 'emphasis' }] },
+      ],
+      // Named by its hash and the extension its format declares, and nothing else of the asset.
+      path: `assets/${HASH}.png`,
+      // The full measure of an A4 page less two inches, the height from the proportions.
+      width: 451.28,
+      height: 338.46,
+      alternative: { text: 'Two red squares', language: { lang: 'en', region: 'GB' } },
+    });
+  });
+
+  it('names a JPEG by the extension its format declares', () => {
+    const assembled = assemble(withAssets({ [RED]: asset({ format: 'jpeg' }) }, stored()));
+    expect(figureIn(assembled)).toMatchObject({ path: `assets/${HASH}.jpg` });
+  });
+
+  it('keeps a tall image to sixty per cent of the text block, rather than letting it run off the page', () => {
+    // 500 by 2000 at the full measure would stand 1805 points tall; the engine would say nothing.
+    const assembled = assemble(
+      withAssets({ [RED]: asset({ width: 500, height: 2000 }) }, stored()),
+    );
+    // 0.6 of 841.89 less two inches, and the width from the proportions.
+    expect(figureIn(assembled)).toMatchObject({ width: 104.68, height: 418.73 });
+  });
+
+  it('takes the room a quotation leaves it, not the whole measure', () => {
+    const quoted = { type: 'blockquote', id: 'q1', content: [stored()] };
+    const assembled = assemble(withAssets({ [RED]: asset() }, quoted));
+    // The measure less an em on each side.
+    expect(figureIn(assembled)).toMatchObject({ width: 429.28, height: 321.96 });
+  });
+
+  it("gives a figure's own text the component's language, and an inherited one the language it declares", () => {
+    const own = assemble(
+      withAssets({ [RED]: asset() }, stored({ alternative: { kind: 'own', text: 'Our logo' } })),
+    );
+    expect(figureIn(own)).toMatchObject({
+      alternative: { text: 'Our logo', language: { lang: 'en', region: 'GB' } },
+    });
+    const german = assemble(
+      withAssets(
+        { [RED]: asset({ alternative: { text: 'Zwei Formen', language: 'de' } }) },
+        stored(),
+      ),
+    );
+    expect(figureIn(german)).toMatchObject({
+      alternative: { text: 'Zwei Formen', language: { lang: 'de', region: null } },
+    });
+  });
+
+  it('publishes a decorative figure with its caption and number, and no alternative text', () => {
+    const assembled = assemble(
+      withAssets(
+        { [RED]: asset({ alternative: null }) },
+        stored({ alternative: { kind: 'decorative' } }),
+      ),
+    );
+    expect(figureIn(assembled)).toMatchObject({ label: 'Figure 1.1', alternative: null });
+  });
+
+  it('PUB-033 AST-014 refuses a figure given alternative text by neither itself nor its image, naming it', () => {
+    expect(
+      failuresOf(assemble(withAssets({ [RED]: asset({ alternative: null }) }, stored()))),
+    ).toEqual([failed('alternative_missing', null)]);
+  });
+
+  it('refuses inherited text in a language the engine cannot carry, naming the tag', () => {
+    const serbian = asset({ alternative: { text: 'Два квадрата', language: 'sr-Latn' } });
+    expect(failuresOf(assemble(withAssets({ [RED]: serbian }, stored())))).toEqual([
+      failed('language_not_publishable', 'sr-Latn'),
+    ]);
+  });
+
+  it('refuses a figure with no caption, naming it, as a table with none is refused', () => {
+    for (const caption of [[], [text('  ')]]) {
+      expect(failuresOf(assemble(withAssets({ [RED]: asset() }, stored({ caption }))))).toEqual([
+        failed('figure_without_caption', null),
+      ]);
+    }
+  });
+
+  it('refuses a figure whose image the request did not resolve, and says nothing of the image', () => {
+    expect(failuresOf(assemble(withAssets({}, stored())))).toEqual([
+      failed('asset_unreadable', null, 'resolve'),
+    ]);
+    // Where the request already recorded why, it is said once.
+    const recorded = failed('asset_unreadable', null, 'resolve') as PublishFailure;
+    expect(failuresOf(assemble({ ...withAssets({}, stored()), refused: [recorded] }))).toEqual([
+      recorded,
+    ]);
+  });
+
+  it('refuses a figure in an image style the template does not set, as a paragraph is refused', () => {
+    expect(
+      failuresOf(assemble(withAssets({ [RED]: asset() }, stored({ imageStyle: 'wide' })))),
+    ).toEqual([failed('style_missing', 'wide')]);
+  });
+
+  it('refuses a figure where there is no layout, since the frozen first shape holds paragraphs alone', () => {
+    expect(
+      failuresOf(assemble({ ...withAssets({ [RED]: asset() }, stored()), layout: null })),
+    ).toEqual([failed('block_not_publishable', 'figure')]);
+  });
+
+  it('lists the figures after the contents, before the tables, and only where there is one', () => {
+    const table = {
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Readings')],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [{ content: [paragraph('c1', text('1'))], colspan: 1, rowspan: 1 }] }],
+    };
+    const both = assemble(withAssets({ [RED]: asset() }, stored(), table));
+    if (!both.ok) throw new Error(JSON.stringify(both.failures));
+    expect(both.document.front.lists).toEqual([
+      { sequence: 'figure', title: 'Figures' },
+      { sequence: 'table', title: 'Tables' },
+    ]);
+    const tableAlone = assemble(oneComponent(table));
+    if (!tableAlone.ok) throw new Error(JSON.stringify(tableAlone.failures));
+    expect(tableAlone.document.front.lists).toEqual([{ sequence: 'table', title: 'Tables' }]);
   });
 });

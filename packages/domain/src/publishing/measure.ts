@@ -73,6 +73,15 @@ export function textMeasure(format: PublishedPdfFormat): number {
 }
 
 /**
+ * The height of the text block the template lays pages out in: down, less the top and bottom margins,
+ * where the running head and foot stand. What a figure is kept to a share of (figures 3, ruling R3).
+ */
+export function textBlockHeight(format: PublishedPdfFormat): number {
+  const down = format.orientation === 'landscape' ? format.width : format.height;
+  return down - format.margins.top - format.margins.bottom;
+}
+
+/**
  * How far a list's content stands in from its own edge, in points: two ems for a definition list,
  * and otherwise the widest marker the list prints, at a full em a character, and half an em after
  * it. **Deliberately conservative** (#164): `assemble` has no font metrics, and an em a character is

@@ -148,6 +148,7 @@ describe('the domain package', () => {
         // made `publishing/5`.
         'PUBLISHING_SCHEMA_4',
         'PUBLISHING_SCHEMA_5',
+        'PUBLISHING_SCHEMA_6',
         'assemble',
         'publishFailureCodes',
         'setWithoutAGlyph',
