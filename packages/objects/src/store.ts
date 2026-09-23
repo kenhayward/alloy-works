@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 import type { Tenant, TenantTransaction } from '@alloy-works/db';
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { open } from './seal.js';
 import { tenantPrefix } from './provision.js';
@@ -10,6 +15,12 @@ export interface TenantStore {
   /** Keeps the bytes under their own hash, and says where. The caller never chooses a key. */
   put(body: Uint8Array, contentType: string): Promise<StoredObject>;
   get(key: string): Promise<Buffer>;
+  /**
+   * Removes the object under this key; removing one already gone is not an error. The caller decides
+   * that nothing else names these bytes first - a key is a hash, so two uploads of the same bytes share
+   * it (docs/design/assets.md, a refused upload).
+   */
+  remove(key: string): Promise<void>;
   /**
    * A link anyone may follow until it expires, and nobody may follow after. Given a file name, the
    * bytes are saved under it. The name is an identifier, never a title: the link's query string
@@ -96,6 +107,12 @@ export function createObjectStores(settings: StoreSettings, sealingKey: Buffer):
             new GetObjectCommand({ Bucket: bucket, Key: assertTenantKey(tenant, key) }),
           );
           return Buffer.from(await answer.Body!.transformToByteArray());
+        },
+
+        async remove(key) {
+          await client.send(
+            new DeleteObjectCommand({ Bucket: bucket, Key: assertTenantKey(tenant, key) }),
+          );
         },
 
         async signedLink(key, seconds, fileName) {

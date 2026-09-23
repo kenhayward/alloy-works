@@ -108,6 +108,16 @@ describe("a tenant's own corner of the object store", () => {
   it("refuses a key that is not this tenant's before it asks the store", async () => {
     await expect(forA.get(`${b.role}/sha256/${'0'.repeat(64)}`)).rejects.toThrow(/this tenant/);
     await expect(forA.signedLink('../elsewhere', 60)).rejects.toThrow(/this tenant/);
+    await expect(forA.remove(`${b.role}/sha256/${'0'.repeat(64)}`)).rejects.toThrow(/this tenant/);
+  });
+
+  it('removes an object, and leaves its tenant nothing to fetch under that key', async () => {
+    // Figures 1, R8: a refused upload keeps no bytes (AST-037's "without retaining the file").
+    const stored = await forA.put(bytes('refused upload'), 'image/png');
+    await forA.remove(stored.key);
+    await expect(forA.get(stored.key)).rejects.toThrow();
+    // Removing what is already gone is not an error: a job retried after its removal must finish.
+    await expect(forA.remove(stored.key)).resolves.toBeUndefined();
   });
 
   it('signs a link that fetches the object, and one that has expired fetches nothing', async () => {
