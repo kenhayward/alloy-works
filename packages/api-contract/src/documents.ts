@@ -76,6 +76,12 @@ export const DocumentView = z.object({
       scheme: z
         .record(z.string(), z.unknown())
         .describe('The numbering scheme this document is numbered and published with'),
+      words: z
+        .record(z.string(), z.unknown())
+        .describe(
+          "The layout's own words - the contents' title, the draft notice, and, both or neither, " +
+            'what a relative cross-reference prints for above and below (cross-references 2, ruling R9)',
+        ),
     })
     .describe(
       "The environment's layout at its latest version, which is the version a publish requested " +

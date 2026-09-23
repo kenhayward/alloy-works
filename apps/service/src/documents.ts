@@ -106,6 +106,7 @@ async function documentView(
       version: { id: layout.versionId, number: layout.number },
       language: layout.layout.language,
       scheme: { ...layout.layout.scheme },
+      words: { ...layout.layout.words },
     },
   };
 }

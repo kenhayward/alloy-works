@@ -2475,6 +2475,10 @@ export interface operations {
                             scheme: {
                                 [key: string]: unknown;
                             };
+                            /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9) */
+                            words: {
+                                [key: string]: unknown;
+                            };
                         };
                     };
                 };
@@ -3213,6 +3217,10 @@ export interface operations {
                             scheme: {
                                 [key: string]: unknown;
                             };
+                            /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9) */
+                            words: {
+                                [key: string]: unknown;
+                            };
                         };
                     };
                 };
@@ -3266,6 +3274,10 @@ export interface operations {
                                 language: string;
                                 /** @description The numbering scheme this document is numbered and published with */
                                 scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9) */
+                                words: {
                                     [key: string]: unknown;
                                 };
                             };
@@ -3378,6 +3390,10 @@ export interface operations {
                                 language: string;
                                 /** @description The numbering scheme this document is numbered and published with */
                                 scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9) */
+                                words: {
                                     [key: string]: unknown;
                                 };
                             };
@@ -6264,6 +6280,10 @@ export interface operations {
                             language: string;
                             /** @description The numbering scheme this document is numbered and published with */
                             scheme: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9) */
+                            words: {
                                 [key: string]: unknown;
                             };
                         };

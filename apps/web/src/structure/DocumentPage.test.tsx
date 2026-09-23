@@ -41,13 +41,20 @@ const LAYOUT_V2 = { id: 'llllllll-0000-4000-8000-000000000003', number: '0.2' };
 
 /**
  * The environment's layout as `DocumentView` carries it (publishing.md, "The layout"): its id, the
- * version read, the language its generated words are in, and that version's numbering scheme.
+ * version read, the language its generated words are in, that version's numbering scheme, and its own
+ * words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference
+ * prints for above and below (cross-references 2, ruling R9).
  */
-const layoutView = (scheme: unknown, version = LAYOUT_V1) => ({
+const layoutView = (
+  scheme: unknown,
+  version = LAYOUT_V1,
+  words: unknown = defaultLayout.words,
+) => ({
   id: LAYOUT,
   version,
   language: defaultLayout.language,
   scheme,
+  words,
 });
 
 /**
@@ -3195,6 +3202,124 @@ describe('a cross-reference in the document page (cross-references 1)', () => {
       expect(
         [...surface.querySelectorAll('[data-reference]')].map((each) => each.textContent),
       ).toEqual(['Table 1.1']),
+    );
+  });
+
+  it("shows the layout's own words for above and below, in the page's text and in the editor opened in place (cross-references 2, ruling R9)", async () => {
+    const user = userEvent.setup();
+    /** The printer's text: a paragraph referring to its own table as above or below it. */
+    const relative = {
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'See ', marks: [] },
+            {
+              type: 'crossReference',
+              id: 'x1',
+              target: { kind: 'block', block: 't1' },
+              display: 'relative',
+            },
+            { type: 'text', value: '.', marks: [] },
+          ],
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [{ type: 'text', value: 'Parts', marks: [] }],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [
+            {
+              cells: [
+                {
+                  content: [
+                    {
+                      type: 'paragraph',
+                      id: 'c1',
+                      style: 'body',
+                      content: [{ type: 'text', value: 'Tray', marks: [] }],
+                    },
+                  ],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)])]),
+      {
+        holds: { [PRINTER]: [parts] },
+        layout: layoutView(defaultLayout.scheme, LAYOUT_V1, {
+          ...defaultLayout.words,
+          above: 'plus haut',
+          below: 'plus bas',
+        }),
+      },
+    );
+    const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      if (path === `/v1/documents/${DOCUMENT}/texts`) {
+        return json(200, {
+          document: DOCUMENT,
+          version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
+          occurrences: [{ node: RESULTS, version: 'vvvvvvvv-0000-4000-8000-000000000001' }],
+          versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: relative }],
+        });
+      }
+      if (path === `/v1/components/${PRINTER}`) {
+        return json(200, {
+          id: PRINTER,
+          space: { id: SPACE, name: 'General' },
+          version: {
+            id: 'vvvvvvvv-0000-4000-8000-000000000001',
+            number: '0.3',
+            author: ADA,
+            createdAt: '2026-09-18T09:00:00.000Z',
+            note: null,
+          },
+          content: relative,
+          mayEdit: false,
+          lock: null,
+        });
+      }
+      return fake.fetch(request);
+    }) as typeof globalThis.fetch;
+    render(
+      <StrictMode>
+        <DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />
+      </StrictMode>,
+    );
+
+    const text = await screen.findByRole('region', { name: "The document's text" });
+    await within(text).findByText(/See/);
+    // The table stands after the paragraph in the component's own order.
+    await waitFor(() =>
+      expect(
+        [...text.querySelectorAll('[data-reference]')].map((each) => each.textContent),
+      ).toEqual(['plus bas']),
+    );
+
+    await user.click(within(text).getByText(/See/));
+    const surface = await within(text).findByRole('textbox', {
+      name: 'Content of Install the printer',
+    });
+    await waitFor(() =>
+      expect(
+        [...surface.querySelectorAll('[data-reference]')].map((each) => each.textContent),
+      ).toEqual(['plus bas']),
     );
   });
 });

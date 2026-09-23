@@ -3871,13 +3871,22 @@
                           },
                           "additionalProperties": {},
                           "description": "The numbering scheme this document is numbered and published with"
+                        },
+                        "words": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9)"
                         }
                       },
                       "required": [
                         "id",
                         "version",
                         "language",
-                        "scheme"
+                        "scheme",
+                        "words"
                       ],
                       "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                     }
@@ -6417,13 +6426,22 @@
                           },
                           "additionalProperties": {},
                           "description": "The numbering scheme this document is numbered and published with"
+                        },
+                        "words": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9)"
                         }
                       },
                       "required": [
                         "id",
                         "version",
                         "language",
-                        "scheme"
+                        "scheme",
+                        "words"
                       ],
                       "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                     }
@@ -6568,13 +6586,22 @@
                               },
                               "additionalProperties": {},
                               "description": "The numbering scheme this document is numbered and published with"
+                            },
+                            "words": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {},
+                              "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9)"
                             }
                           },
                           "required": [
                             "id",
                             "version",
                             "language",
-                            "scheme"
+                            "scheme",
+                            "words"
                           ],
                           "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                         }
@@ -6829,13 +6856,22 @@
                               },
                               "additionalProperties": {},
                               "description": "The numbering scheme this document is numbered and published with"
+                            },
+                            "words": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {},
+                              "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9)"
                             }
                           },
                           "required": [
                             "id",
                             "version",
                             "language",
-                            "scheme"
+                            "scheme",
+                            "words"
                           ],
                           "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                         }
@@ -13099,13 +13135,22 @@
                           },
                           "additionalProperties": {},
                           "description": "The numbering scheme this document is numbered and published with"
+                        },
+                        "words": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9)"
                         }
                       },
                       "required": [
                         "id",
                         "version",
                         "language",
-                        "scheme"
+                        "scheme",
+                        "words"
                       ],
                       "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                     }

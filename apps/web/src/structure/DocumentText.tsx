@@ -28,12 +28,15 @@ const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
  * numbers with, over the outline the page holds and the contributions it last heard. One map for the
  * text and for the editor opened in place, so a reference reads the same in the card and on the
  * surface it opens into. Without a scheme nothing is numbered, and every target is offered with no
- * label rather than with one a publication would not print.
+ * label rather than with one a publication would not print. `words` is the layout's own for above and
+ * below (cross-references 2, ruling R9), carried into every context alike so a relative reference
+ * prints what a publish would, wherever in the document it stands.
  */
 function referenceContexts(
   outline: OutlineView,
   scheme: NumberingScheme | null,
   contributions: ReadonlyMap<string, readonly Contribution[]>,
+  words: { readonly above: string; readonly below: string } | null,
 ): ReadonlyMap<string, ReferenceContext> {
   const numbering =
     scheme === null
@@ -45,6 +48,7 @@ function referenceContexts(
     const editing = { component: node.component, node: node.id };
     contexts.set(node.id, {
       targets: documentTargets({ outline, numbering, contributions, editing }),
+      ...(words === null ? {} : { words }),
     });
   });
   return contexts;
@@ -148,6 +152,7 @@ const Heading = ({ depth, children }: { depth: number; children: React.ReactNode
 export function DocumentText({
   outline,
   scheme,
+  words = null,
   names,
   texts,
   editing = null,
@@ -157,6 +162,8 @@ export function DocumentText({
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
+  /** What a relative cross-reference prints for above and below (cross-references 2, ruling R9). */
+  words?: { readonly above: string; readonly below: string } | null;
   names: Names;
   /** Each occurrence's content by node, once read; absent until then, and for a withheld one. */
   texts?: ReadonlyMap<string, unknown>;
@@ -187,8 +194,8 @@ export function DocumentText({
     [outline, scheme],
   );
   const contexts = useMemo(
-    () => referenceContexts(outline, scheme, contributions),
-    [outline, scheme, contributions],
+    () => referenceContexts(outline, scheme, contributions, words),
+    [outline, scheme, contributions, words],
   );
 
   const titled = (node: OutlineViewNode, depth: number) => {

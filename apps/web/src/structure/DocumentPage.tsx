@@ -1,6 +1,7 @@
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import {
   conditions,
+  layoutWordsSchema,
   number,
   numberingSchemeSchema,
   readOutlineView,
@@ -61,6 +62,13 @@ interface Opened {
    * `null` where the view carried no layout, or one whose scheme the domain refuses.
    */
   readonly scheme: NumberingScheme | null;
+  /**
+   * What a relative cross-reference prints for above and below, in the layout's own words
+   * (cross-references 2, ruling R9), so a reference shown here is what a publish would print. `null`
+   * where the view carried no layout, one whose words the domain refuses, or one that gives neither -
+   * the editor falls back to the English literal, as `printed` does without this.
+   */
+  readonly words: { readonly above: string; readonly below: string } | null;
 }
 
 type Read = Opened | 'unreadable' | undefined;
@@ -92,6 +100,14 @@ function documentIn(data: unknown): Read {
   // none, or one the domain refuses, numbers nothing at all: falling back to the product's default
   // would show the author numbers no publish under this layout could produce.
   const scheme = isRecord(layout) ? numberingSchemeSchema.safeParse(layout.scheme) : undefined;
+  // The layout's own words, read the same way (ruling R9): both above and below, or neither, is
+  // `layoutWordsSchema`'s to enforce, so what falls out of a failed parse is null rather than one
+  // word alone.
+  const words = isRecord(layout) ? layoutWordsSchema.safeParse(layout.words) : undefined;
+  const relativeWords =
+    words?.success && words.data.above !== undefined && words.data.below !== undefined
+      ? { above: words.data.above, below: words.data.below }
+      : null;
   return {
     id,
     space: { id: space.id, name: space.name },
@@ -100,6 +116,7 @@ function documentIn(data: unknown): Read {
     mayEdit,
     mayPublish,
     scheme: scheme?.success ? scheme.data : null,
+    words: relativeWords,
   };
 }
 
@@ -720,6 +737,7 @@ export function DocumentPage({
           <DocumentText
             outline={document.outline}
             scheme={document.scheme}
+            words={document.words}
             names={names}
             texts={texts}
             // What each occurrence holds, as the lists beside it number it: what a reference in the
