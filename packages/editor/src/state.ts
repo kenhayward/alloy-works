@@ -224,10 +224,12 @@ export function annotationsInOnePiece(newIdentifier: () => string): Plugin {
 export function placeholderDecorations(doc: Node): DecorationSet {
   const decorations: Decoration[] = [];
   doc.descendants((node, pos) => {
-    // An attribution and a table's caption: each is where an author types something optional-looking
+    // An attribution and a table's or a figure's caption: each is where an author types something optional-looking
     // that a reader needs, and an empty one says what it is for.
     if (
-      (node.type.name === 'attribution' || node.type.name === 'tableCaption') &&
+      (node.type.name === 'attribution' ||
+        node.type.name === 'tableCaption' ||
+        node.type.name === 'figureCaption') &&
       node.content.size === 0
     ) {
       decorations.push(Decoration.node(pos, pos + node.nodeSize, { class: 'aw-empty' }));

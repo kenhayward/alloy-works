@@ -154,30 +154,95 @@ describe('pasting', () => {
   });
 
   it('refuses what the pipeline admits and this editor cannot hold, by name', () => {
-    // A figure: the one block the editor still has no node for.
-    const figure = JSON.stringify({
+    // A block equation: the one block the editor still has no node for.
+    const equation = JSON.stringify({
       format: 'alloy-works/content',
       schemaVersion: 1,
       content: [
         {
-          type: 'figure',
-          asset: '00000000-0000-4000-8000-00000000a551',
-          imageStyle: 'wide',
-          caption: [{ type: 'text', value: 'Visits', marks: [] }],
-          alternative: { kind: 'decorative' },
+          type: 'equation',
+          mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
+          numbered: false,
         },
       ],
     });
     const outcome = pasteInto(
       stateOf([paragraph('b1', 'York')]),
-      readClipboard(clipboard({ [PRODUCT_CLIPBOARD_TYPE]: figure }), 'blocks'),
+      readClipboard(clipboard({ [PRODUCT_CLIPBOARD_TYPE]: equation }), 'blocks'),
       counter(),
     );
     expect(outcome.ok).toBe(false);
     expect(outcome.report.slice(-2)).toMatchObject([
-      { action: 'discarded', subject: 'unrepresentable', detail: 'figure' },
+      { action: 'discarded', subject: 'unrepresentable', detail: 'equation' },
       { action: 'refused', subject: 'invalid' },
     ]);
+  });
+
+  it('keeps the rest of the paragraph out of a pasted table, rather than in its last cell', () => {
+    const table = {
+      type: 'table',
+      style: 'table',
+      caption: [],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [{ content: [paragraph('c1', 'Cell')], colspan: 1, rowspan: 1 }] }],
+    };
+    const outcome = pasteInto(
+      stateOf([paragraph('b1', 'York')]),
+      readClipboard(
+        clipboard({
+          [PRODUCT_CLIPBOARD_TYPE]: JSON.stringify({
+            format: 'alloy-works/content',
+            schemaVersion: 1,
+            content: [table],
+          }),
+        }),
+        'blocks',
+      ),
+      counter(),
+    );
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.transaction.doc.textContent).toBe('CellYork');
+    const pasted = fromEditor(outcome.transaction.doc).content.find(
+      (block) => block.type === 'table',
+    ) as { rows: { cells: { content: unknown[] }[] }[] };
+    expect(pasted.rows[0]!.cells[0]!.content).toMatchObject([{ content: [{ value: 'Cell' }] }]);
+  });
+
+  it('keeps a figure copied within the product, its image, caption and alternative text and all', () => {
+    // Figures 2: the product's own clipboard carries a figure whole (component-editor.md, "Figures").
+    const figure = {
+      type: 'figure',
+      asset: '00000000-0000-4000-8000-00000000a551',
+      imageStyle: 'figure',
+      caption: [{ type: 'text', value: 'Visits', marks: [] }],
+      alternative: { kind: 'own', text: 'Two red squares' },
+    };
+    const outcome = pasteInto(
+      stateOf([paragraph('b1', 'York')]),
+      readClipboard(
+        clipboard({
+          [PRODUCT_CLIPBOARD_TYPE]: JSON.stringify({
+            format: 'alloy-works/content',
+            schemaVersion: 1,
+            content: [figure],
+          }),
+        }),
+        'blocks',
+      ),
+      counter(),
+    );
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    const pasted = fromEditor(outcome.transaction.doc).content.find(
+      (block) => block.type === 'figure',
+    );
+    expect(pasted).toMatchObject({
+      asset: figure.asset,
+      caption: figure.caption,
+      alternative: figure.alternative,
+    });
   });
 });
 

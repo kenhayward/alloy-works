@@ -118,8 +118,11 @@ export function pasteInto(
     return { ok: false, report: report.entries };
   }
 
+  // Opened as far as it goes but never into an isolating node - a figure, a table - whose inside the
+  // text either side of the caret would otherwise run into: its caption or its last cell took the
+  // rest of the paragraph (figures 2, final review).
   const transaction = state.tr
-    .replaceSelection(Slice.maxOpen(opened.doc.content))
+    .replaceSelection(Slice.maxOpen(opened.doc.content, false))
     .scrollIntoView()
     .setMeta('paste', true)
     .setMeta('uiEvent', 'paste');

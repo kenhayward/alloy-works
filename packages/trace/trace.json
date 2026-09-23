@@ -16093,39 +16093,51 @@
       "kind": "title"
     },
     {
+      "id": "AST-015",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 3477,
+      "kind": "title"
+    },
+    {
+      "id": "AST-039",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 3395,
+      "kind": "title"
+    },
+    {
       "id": "CNT-018",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3076,
+      "line": 3080,
       "kind": "title"
     },
     {
       "id": "CNT-063",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 475,
+      "line": 481,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2888,
+      "line": 2892,
       "kind": "title"
     },
     {
       "id": "CNT-098",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2005,
+      "line": 2009,
       "kind": "title"
     },
     {
       "id": "CNT-147",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2015,
+      "line": 2019,
       "kind": "title"
     },
     {
       "id": "CNT-152",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2406,
+      "line": 2410,
       "kind": "title"
     },
     {
@@ -17323,6 +17335,24 @@
       "kind": "title"
     },
     {
+      "id": "AST-013",
+      "file": "packages/editor/src/figures.test.ts",
+      "line": 212,
+      "kind": "title"
+    },
+    {
+      "id": "AST-015",
+      "file": "packages/editor/src/figures.test.ts",
+      "line": 219,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-017",
+      "file": "packages/editor/src/figures.test.ts",
+      "line": 93,
+      "kind": "title"
+    },
+    {
       "id": "CNT-002",
       "file": "packages/editor/src/identity.test.ts",
       "line": 234,
@@ -17331,37 +17361,37 @@
     {
       "id": "CNT-003",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 173,
+      "line": 171,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 636,
+      "line": 634,
       "kind": "title"
     },
     {
       "id": "CNT-031",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 153,
+      "line": 151,
       "kind": "title"
     },
     {
       "id": "CNT-117",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 322,
+      "line": 320,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 355,
+      "line": 353,
       "kind": "title"
     },
     {
       "id": "CNT-126",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 196,
+      "line": 194,
       "kind": "title"
     },
     {

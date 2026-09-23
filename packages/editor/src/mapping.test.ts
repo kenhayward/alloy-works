@@ -40,14 +40,12 @@ const openedDoc = (stored: ContentDocument): Node => {
 
 const root = { title: 'Install the printer', language: 'en-GB', direction: 'ltr' };
 
-/** A block this editor has no node for, wherever it is put: a figure, until the assets design. */
-const figure = (id: string): BlockNode => ({
-  type: 'figure',
+/** A block equation: the one block this editor still has no node for, since figures 2 gave figures one. */
+const equation = (id: string): BlockNode => ({
+  type: 'equation',
   id,
-  asset: '00000000-0000-4000-8000-00000000a551',
-  imageStyle: 'wide',
-  caption: [{ type: 'text', value: 'Readings', marks: [] }],
-  alternative: { kind: 'decorative' },
+  mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
+  numbered: false,
 });
 
 /** One unordered list of one item per line of text. */
@@ -271,11 +269,11 @@ describe('the mapping between the stored model and the editor', () => {
   });
 
   it('refuses to open for editing anything it has no counterpart for, naming what it found', () => {
-    // A figure, not a list or a table: both are carried now, and the block this schema still has no
-    // node for is the one the promise is about.
+    // An equation, not a list, a table or a figure: all three are carried now, and the block this
+    // schema still has no node for is the one the promise is about.
     const stored = document([
       paragraph('b1', 'Before'),
-      figure('t1'),
+      equation('t1'),
       {
         type: 'paragraph',
         id: 'b3',
@@ -292,7 +290,7 @@ describe('the mapping between the stored model and the editor', () => {
     ]);
     expect(toEditor(stored)).toEqual({
       editable: false,
-      unsupported: ['figure', 'mark:suggestion'],
+      unsupported: ['equation', 'mark:suggestion'],
     });
   });
 
@@ -473,9 +471,9 @@ describe('the mapping carries a list, both ways', () => {
   });
 
   it('opens read-only for a block it cannot edit that is inside a list item, naming it', () => {
-    expect(toEditor(document([listHolding(figure('t1'))]))).toEqual({
+    expect(toEditor(document([listHolding(equation('t1'))]))).toEqual({
       editable: false,
-      unsupported: ['figure'],
+      unsupported: ['equation'],
     });
   });
 

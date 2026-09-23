@@ -25,6 +25,17 @@ export {
   type TableAction,
   type TableAt,
 } from './tables.js';
+export {
+  assetContentPath,
+  deleteFigure,
+  figureAt,
+  IMAGE_OWN_DESCRIPTION,
+  insertFigure,
+  replaceFigureImage,
+  setFigureAlternative,
+  type FigureAt,
+} from './figures.js';
+export { MISSING_IMAGE } from './figureView.js';
 export { fromEditor, toEditor, type Opened } from './mapping.js';
 export { identityPlugin, newBlockIdentifier } from './identity.js';
 export {

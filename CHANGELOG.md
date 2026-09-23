@@ -3,6 +3,24 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.57.0 - 2026-09-23 (PR #209)
+
+### Added
+
+- **Figures in the editor.** **Figure** on the formatting toolbar uploads a PNG or a JPEG and places
+  it, with a caption line beneath it. It asks you to describe the image for someone who cannot see it,
+  or to say it is decorative, before it uploads; if the image is refused, it says why and places
+  nothing. While the cursor is in a figure, a Figure panel lets you use the image's own description,
+  describe it for this figure alone, or mark it decorative, and replace its image or delete it. An
+  image you cannot see is marked in its place. A component holding a figure now opens for editing.
+  Publishing a document with a figure in it is still refused, and an image cannot yet be pasted or
+  placed in a line of text.
+
+### Fixed
+
+- A table pasted into the middle of a paragraph no longer takes the rest of the paragraph into its
+  last cell: the text after the cursor stays in a paragraph after the table (#208).
+
 ## 0.56.1 - 2026-09-23 (PR #211)
 
 ### Fixed

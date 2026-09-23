@@ -9,6 +9,7 @@ import {
   readClipboard,
   type ClipboardSource,
 } from './clipboard.js';
+import { figureView } from './figureView.js';
 import { newBlockIdentifier } from './identity.js';
 
 export interface MountOptions {
@@ -74,6 +75,8 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
       ...(options.editable() ? {} : { tabindex: '-1' }),
     }),
     dispatchTransaction: (transaction) => options.dispatch(transaction, view),
+    // A figure marks an image that does not load in its place (figures 2, ruling R6).
+    nodeViews: { figure: (node, owner) => figureView(node, owner.dom.ownerDocument) },
     handleDOMEvents: {
       paste: (target, event) => {
         // Taken here, before ProseMirror parses anything, and never handed on: a surface being read

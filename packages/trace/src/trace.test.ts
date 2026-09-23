@@ -385,8 +385,11 @@ describe('the citations in the committed model', () => {
   // and CNT-063 once in apps/web/src/editor/ComponentEditor.test.tsx, whose body pastes and reads the
   // paste report beside the surface. CNT-060, CNT-061 and CNT-062 stay uncited: a paste keeps no
   // table or footnote, and reads no Markdown.
+  // 255, from 250: figures 2 cites CNT-017, AST-013 and AST-015 in packages/editor's figures.test.ts,
+  // storing each state and reading it back, and AST-039 and AST-015 in ComponentEditor.test.tsx, where
+  // the dialog and the panel make and change a figure. AST-012 stays figures 1's shape, uncited.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(250);
+    expect(model.citations).toHaveLength(255);
   });
 
   it('cites no identifier the corpus does not hold', () => {

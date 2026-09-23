@@ -180,25 +180,25 @@ a `null` identifier, so an unidentified block can never reach storage.
 The slice boundary, stated for every node and mark rather than left to be inferred. **Create** means a
 command makes a new one; **edit** means an existing one can be changed.
 
-| Content                                                                         | Create                                 | Edit                                                                                   | Where it waits                                   |
-| ------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Paragraph                                                                       | Yes                                    | Text, and its style from the theme's allowed list                                      |                                                  |
-| Emphasis, strong, underline, subscript, superscript, inline code, quoted phrase | Yes, toolbar and shortcut              | Apply and remove                                                                       |                                                  |
-| Hyperlink                                                                       | Yes, over a selection                  | Target and title; removal                                                              |                                                  |
-| Language                                                                        | Yes, over a selection                  | Tag; removal                                                                           |                                                  |
-| Defined term                                                                    | No                                     | Removal only                                                                           | LIB's terms, T6                                  |
-| List, three kinds                                                               | Yes                                    | Kind, nesting, start and format                                                        |                                                  |
-| Table                                                                           | Yes                                    | Cells, spans, header rows and columns, key columns, caption, note                      |                                                  |
-| Preformatted                                                                    | Yes                                    | Text and language label                                                                |                                                  |
-| Block quotation                                                                 | Yes                                    | Content and attribution                                                                |                                                  |
-| Equation, inline and block                                                      | Yes                                    | LaTeX or MathML, alternative text, numbered or not                                     |                                                  |
-| Footnote                                                                        | Yes, in all four anchor kinds          | Content, restricted to CNT-129's                                                       |                                                  |
-| Figure, inline image                                                            | Yes, from a file ([Figures](#figures)) | Caption, alternative text state, the image; image style once themes give more than one | Built in four slices, publishing.md's F-O        |
-| Cross-reference                                                                 | No                                     | Removal only                                                                           | STR, in the document view, where its targets are |
-| Citation                                                                        | No                                     | Removal only                                                                           | LIB's bibliography, T6                           |
-| Variable                                                                        | No                                     | Removal only                                                                           | REU, T4                                          |
-| Binding                                                                         | No                                     | Removal only                                                                           | DAT, T2                                          |
-| Condition, suggestion, comment anchor                                           | No                                     | None                                                                                   | REU, T4, and COL, T3. Nothing in T1 creates one  |
+| Content                                                                         | Create                                 | Edit                                                                                   | Where it waits                                                     |
+| ------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Paragraph                                                                       | Yes                                    | Text, and its style from the theme's allowed list                                      |                                                                    |
+| Emphasis, strong, underline, subscript, superscript, inline code, quoted phrase | Yes, toolbar and shortcut              | Apply and remove                                                                       |                                                                    |
+| Hyperlink                                                                       | Yes, over a selection                  | Target and title; removal                                                              |                                                                    |
+| Language                                                                        | Yes, over a selection                  | Tag; removal                                                                           |                                                                    |
+| Defined term                                                                    | No                                     | Removal only                                                                           | LIB's terms, T6                                                    |
+| List, three kinds                                                               | Yes                                    | Kind, nesting, start and format                                                        |                                                                    |
+| Table                                                                           | Yes                                    | Cells, spans, header rows and columns, key columns, caption, note                      |                                                                    |
+| Preformatted                                                                    | Yes                                    | Text and language label                                                                |                                                                    |
+| Block quotation                                                                 | Yes                                    | Content and attribution                                                                |                                                                    |
+| Equation, inline and block                                                      | Yes                                    | LaTeX or MathML, alternative text, numbered or not                                     |                                                                    |
+| Footnote                                                                        | Yes, in all four anchor kinds          | Content, restricted to CNT-129's                                                       |                                                                    |
+| Figure, inline image                                                            | Yes, from a file ([Figures](#figures)) | Caption, alternative text state, the image; image style once themes give more than one | A figure is built (figures 2); an inline image waits for figures 4 |
+| Cross-reference                                                                 | No                                     | Removal only                                                                           | STR, in the document view, where its targets are                   |
+| Citation                                                                        | No                                     | Removal only                                                                           | LIB's bibliography, T6                                             |
+| Variable                                                                        | No                                     | Removal only                                                                           | REU, T4                                                            |
+| Binding                                                                         | No                                     | Removal only                                                                           | DAT, T2                                                            |
+| Condition, suggestion, comment anchor                                           | No                                     | None                                                                                   | REU, T4, and COL, T3. Nothing in T1 creates one                    |
 
 **Nothing in T1 can put a condition, a suggestion or a comment anchor into a component** - the admission
 pipeline drops annotations whose owner does not travel (CNT-133) and follows CNT-Q14's recommendation to
@@ -352,11 +352,11 @@ shows _An image you may not see_ in its place, and one that no longer resolves n
 **A Figure panel**, beside the surface while the cursor is in a figure and in the `F6` ring like the
 table panel, sets the alternative text's state:
 
-| Choice                          | Stores                             | Shows                                                                                                                |
-| ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **Use the image's description** | `inherited`                        | The asset's default and its language, or _The image has no description_ where it has none - which publishing refuses |
-| **Describe it here**            | `own`, in the component's language | A text field; empty is not saved, and the previous state stays until something is typed                              |
-| **Decorative**                  | `decorative`                       | Nothing is read to a screen reader; the caption still is                                                             |
+| Choice                          | Stores                             | Shows                                                                                                                       |
+| ------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Use the image's description** | `inherited`                        | The asset's default and its language, or, where it has none, that the figure cannot be published until it is given one here |
+| **Describe it here**            | `own`, in the component's language | A text field; empty is not saved, and the previous state stays until something is typed                                     |
+| **Decorative**                  | `decorative`                       | Nothing is read to a screen reader; the caption still is                                                                    |
 
 and offers **Replace image**, which uploads another file into the same figure, keeping its caption,
 identity and number, and **Delete figure**. Changing the image's own default description - a new
@@ -374,6 +374,38 @@ today and still will after them.
 
 **Inline images** - an image in a run of text and in a table cell (CNT-086, CNT-087) - use the same
 dialog and the same panel, and come in the last of the four slices (publishing.md's F-O).
+
+**Built by [figures 2](../plans/2026-09-23-figures-02-the-figure-in-the-editor.md)**, all but inline
+images, and publishing still refuses a figure by name until figures 3. Building it, and its final
+review, changed these things here:
+
+- **The height rule is the stylesheet's**, no taller than 60 per cent of the viewport, not a function
+  in `packages/domain` shared with the publisher: the publisher's rule is figures 3's, and the
+  function waits for it rather than being written with one caller.
+- **An image that does not load says _An image you may not see_, whatever the reason.** A browser's
+  `error` on an image does not say whether the service refused it or found nothing, so an image that
+  no longer resolves is not yet named; that waits for Unresolvable content.
+- **The marker is drawn by a node view, `figureView`**, not the capturing listener the plan ruled
+  (its R6): it renders the node's own `toDOM` and adds only the marker, and tells ProseMirror to
+  redraw the figure when its image or alternative text changes, which a listener could not.
+- **A figure's own text is stored as typed**, trailing spaces and all: the panel sets it on every
+  keystroke, so trimming it would take the space an author has just typed between two words. Text of
+  spaces alone is still not stored: **an emptied field gives the figure back what it held** before
+  its own text was begun, and says so, rather than keeping the last letter left in it.
+- **A figure is placed from a paragraph only, never in a table's cell**, after it, or in its place
+  where it is empty. A cell holds paragraphs and lists alone (tables 1, decision T-D); an image there
+  is an inline image, figures 4's. **Figure** is unavailable wherever it could not be placed, and a
+  figure whose image arrives after the component has stopped being editable - the lock lost while it
+  was checked - is not placed, and the dialog says so.
+- **`Enter` in a caption leaves the figure** for a paragraph after it, as it leaves an attribution:
+  a caption is one line, and it is the keyboard's way past a figure that is the component's last
+  block.
+- **The dialog checks the description's language** by the rule a component's own is held to before
+  anything is sent, and says an upload refused because the author may not add to the space in words
+  of its own.
+- **Not changed:** a selection from a paragraph into a caption, deleted, takes the figure with it and
+  joins what is left of the caption to the paragraph. It is ProseMirror's own deletion across an
+  isolating node, `Ctrl+Z` gives it back, and a rule of its own waits for evidence it is met.
 
 ## Theme and rendering
 

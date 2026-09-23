@@ -50,6 +50,14 @@ export interface EditorToolbarProps {
    */
   readonly onPasteMarkdown?: () => void;
   /**
+   * **Figure**, offered after Paste as Markdown where given (figures 2, ruling R7). It is the page's,
+   * not a registry command: it opens a dialog and uploads an image, which only the page can do, and it
+   * has no shortcut.
+   */
+  readonly onInsertFigure?: () => void;
+  /** Whether a figure could be placed where the cursor is; **Figure** is unavailable where not. */
+  readonly figurePlaceable?: boolean;
+  /**
    * The toolbar's own element. It is one of the three regions `F6` moves between (CNT-077), and the
    * view that owns that ring needs to be able to reach it and to ask whether the focus is inside it.
    */
@@ -138,12 +146,16 @@ export function EditorToolbar({
   prompt,
   onRefused,
   onPasteMarkdown,
+  onInsertFigure,
+  figurePlaceable = true,
   ref,
 }: EditorToolbarProps) {
   const [tabStop, setTabStop] = useState(0);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   // The registry's buttons, then Paste as Markdown where it is offered: one ring either way.
-  const count = EDITOR_COMMANDS.length + (onPasteMarkdown ? 1 : 0);
+  const count = EDITOR_COMMANDS.length + (onPasteMarkdown ? 1 : 0) + (onInsertFigure ? 1 : 0);
+  // Where the Figure button stands in the ring: after Paste as Markdown where that is offered.
+  const figureAt = EDITOR_COMMANDS.length + (onPasteMarkdown ? 1 : 0);
 
   const moveTo = (index: number) => {
     const at = (index + count) % count;
@@ -259,6 +271,25 @@ export function EditorToolbar({
             <Icon name="Paste as Markdown" />
           </button>
         </>
+      )}
+      {onInsertFigure && (
+        <button
+          type="button"
+          className={styles['button']}
+          aria-label="Figure"
+          ref={(element) => {
+            buttons.current[figureAt] = element;
+          }}
+          aria-disabled={!enabled || view === null || !figurePlaceable}
+          tabIndex={tabStop === figureAt ? 0 : -1}
+          title="Figure"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            if (enabled && view !== null && figurePlaceable) onInsertFigure();
+          }}
+        >
+          <Icon name="Figure" />
+        </button>
       )}
     </div>
   );

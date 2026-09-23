@@ -100,6 +100,20 @@ const tableSpecs = tableNodes({
   },
 });
 
+/**
+ * The `alt` an image carries in the surface where its figure inherits the image's own description,
+ * which the surface does not hold: the panel beside it reads the description, and this says which
+ * text a screen reader will be given without guessing at it (figures 2, ruling R1).
+ */
+export const IMAGE_OWN_DESCRIPTION = "The image, described by the image's own description";
+
+/**
+ * Where an asset version's bytes are read from. The renderer is served on the service's own origin,
+ * so one path serves the surface and a document's text alike (figures 2, ruling R1).
+ */
+export const assetContentPath = (asset: string): string =>
+  `/v1/asset-versions/${encodeURIComponent(asset)}/content`;
+
 export const editorSchema = new Schema({
   nodes: {
     doc: {
@@ -303,6 +317,59 @@ export const editorSchema = new Schema({
       defining: true,
       parseDOM: [{ tag: 'figcaption' }],
       toDOM: () => ['figcaption', { class: 'aw-table-caption' }, 0],
+    },
+    /**
+     * A figure (figures 2, ruling R1): an asset version, an image style, an alternative text in one of
+     * its three states, and the caption below the image. Two nodes for one block, as a table is,
+     * because the caption is inline content and the image is not content at all.
+     *
+     * **The image is drawn by `toDOM`, uneditable**, above the caption, from the asset version's own
+     * route - so `renderContent` and the surface show the same picture. The surface draws it through
+     * `figureView`, which renders this same spec and adds only the marker for an image that does not
+     * load, since ProseMirror does not re-render an uneditable node's inside. Its `alt`
+     * is what a screen reader in the editor is given: the figure's own text, nothing where it is
+     * decorative, and a sentence saying the image's own description is used where it inherits one.
+     * No `parseDOM`: a figure never enters a component through the DOM, only through a paste the
+     * admission pipeline reads or the Figure dialog, so nothing can be parsed into one with a guessed
+     * alternative text.
+     */
+    figure: {
+      group: 'block',
+      content: 'figureCaption',
+      isolating: true,
+      attrs: {
+        id: { default: null },
+        asset: {},
+        imageStyle: { default: 'figure' },
+        alternative: { default: { kind: 'decorative' } },
+      },
+      toDOM: (node) => {
+        const alternative = node.attrs.alternative as { kind: string; text?: string };
+        const alt =
+          alternative.kind === 'own'
+            ? (alternative.text ?? '')
+            : alternative.kind === 'decorative'
+              ? ''
+              : IMAGE_OWN_DESCRIPTION;
+        return [
+          'figure',
+          { 'data-figure': '', 'data-asset': node.attrs.asset as string, class: 'aw-figure' },
+          [
+            'div',
+            { class: 'aw-figure-image', contenteditable: 'false' },
+            ['img', { src: assetContentPath(node.attrs.asset as string), alt }],
+          ],
+          ['div', { class: 'aw-figure-body' }, 0],
+        ];
+      },
+    },
+    /** A figure's caption: inline content below the image, typed in place as a table's is. */
+    figureCaption: {
+      content: 'text*',
+      marks: '_',
+      defining: true,
+      parseDOM: [{ tag: 'figcaption[data-figure-caption]', priority: 60 }],
+      toDOM: () => ['figcaption', { class: 'aw-figure-caption', 'data-figure-caption': '' }, 0],
     },
     ...tableSpecs,
     /** Outside the block group, as a term is: it belongs to its quotation, not to a sequence. */

@@ -3,7 +3,10 @@ import { parseContentDocument, type ReportEntry } from '@alloy-works/domain';
 import {
   createEditorState,
   EDITOR_COMMANDS,
+  figureAt,
   fromEditor,
+  insertFigure,
+  replaceFigureImage,
   headerOf,
   listAt,
   preformattedAt,
@@ -31,6 +34,8 @@ import { createPortal } from 'react-dom';
 import { positionAtTextOffset } from './caret.js';
 import { ComponentHeader } from './ComponentHeader.js';
 import { EditorToolbar } from './EditorToolbar.js';
+import { FigureDialog } from './FigureDialog.js';
+import { FigurePanel } from './FigurePanel.js';
 import { Icon } from './Icon.js';
 import { ListPanel } from './ListPanel.js';
 import { PasteReport, shownOfPaste } from './PasteReport.js';
@@ -39,6 +44,7 @@ import { TablePanel } from './TablePanel.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
 import { askAndApply, pressCommand, type AskForValue, type MarkCommand } from './press.js';
 import { SaveIndicator } from './SaveIndicator.js';
+import { uploadImage } from './upload.js';
 import { editingSessionFor, sessionService } from './service.js';
 import {
   browserClock,
@@ -228,6 +234,10 @@ export function ComponentEditor({
   const preformattedRegion = useRef<HTMLDivElement | null>(null);
   // The table panel's, which comes and goes the same way, with a table (tables 1).
   const tableRegion = useRef<HTMLDivElement | null>(null);
+  // The figure panel's, while the cursor stands in a figure (figures 2, ruling R5).
+  const figureRegion = useRef<HTMLDivElement | null>(null);
+  // The Figure dialog, open to make a figure or to give one another image, or closed.
+  const [figureDialog, setFigureDialog] = useState<'Figure' | 'Replace image' | null>(null);
   // The paste report's, which comes and goes too: it is there from a paste with something to say
   // until it is closed or the next paste replaces it.
   const pasteRegion = useRef<HTMLElement | null>(null);
@@ -682,6 +692,7 @@ export function ComponentEditor({
       listRegion.current,
       preformattedRegion.current,
       tableRegion.current,
+      figureRegion.current,
       pasteRegion.current,
       place.current,
     ].filter((region) => region !== null);
@@ -763,7 +774,12 @@ export function ComponentEditor({
   const list = surface === null ? null : listAt(surface.state);
   const preformatted = surface === null ? null : preformattedAt(surface.state);
   const table = surface === null ? null : tableAt(surface.state);
+  const figure = surface === null ? null : figureAt(surface.state);
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
+  // Asked of the command itself, without dispatching, so **Figure** is offered exactly where a figure
+  // can go - never in a caption, a cell or preformatted text, where an upload would place nothing.
+  const mayPlaceFigure =
+    surface !== null && insertFigure('', { kind: 'decorative' }, () => '')(surface.state);
 
   /**
    * **Paste as Markdown**: the clipboard's plain text read as Markdown and placed as a paste is,
@@ -817,7 +833,7 @@ export function ComponentEditor({
         aria-labelledby="component-title"
         className={styles['card']}
         data-in-place={onDone !== undefined}
-        inert={asking !== null}
+        inert={asking !== null || figureDialog !== null}
         onKeyDown={moveRegion}
       >
         <div className={styles['strip']}>
@@ -917,6 +933,8 @@ export function ComponentEditor({
               than absent, so what the editor can do with the text is visible before the lock is. */}
             <EditorToolbar
               onPasteMarkdown={() => void pasteMarkdown()}
+              onInsertFigure={() => setFigureDialog('Figure')}
+              figurePlaceable={mayPlaceFigure}
               ref={toolbarRegion}
               view={surface}
               enabled={mayFormat}
@@ -972,6 +990,20 @@ export function ComponentEditor({
             {surface !== null && table !== null && (
               <TablePanel ref={tableRegion} view={surface} table={table} enabled={mayFormat} />
             )}
+            {/* And only while the cursor stands in a figure: how its alternative text is given,
+                and what can be done to its image. */}
+            {surface !== null && figure !== null && (
+              <FigurePanel
+                // One panel per figure, so what was typed for one is never offered to the next.
+                key={figure.id ?? figure.pos}
+                ref={figureRegion}
+                view={surface}
+                figure={figure}
+                enabled={mayFormat}
+                client={client}
+                onReplace={() => setFigureDialog('Replace image')}
+              />
+            )}
             {/* What the last paste changed, while the surface takes changes: a report about a paste
                 into a component that has since been lost to someone else is about nothing here. */}
             {surface !== null && pasteReport !== null && mayFormat && (
@@ -1004,6 +1036,45 @@ export function ComponentEditor({
           In the application the status bar is that region, outside the article for the same
           reason; this one is for an editor rendered with no shell around it. */}
       {status === null && <p role="status">{notice}</p>}
+      {figureDialog !== null &&
+        surface !== null &&
+        // Beside the article, as the prompt is, and for the same reason.
+        createPortal(
+          <FigureDialog
+            title={figureDialog}
+            language={headerOf(surface.state.doc).language}
+            upload={(bytes, alternative) =>
+              uploadImage(client, { space: shown.space.id, bytes, alternative })
+            }
+            onDone={({ assetVersion, alternative }) => {
+              // The phase as it is now, from the session, not as this render saw it: the lock can
+              // be lost while the image is checked, and a command dispatches whatever the surface's
+              // own `editable` says (figures 2, final review).
+              const now = controls.current?.view().phase;
+              if (!shown.mayEdit || now === undefined || !isEditablePhase(now)) {
+                return 'This component can no longer be edited here, so the image was not placed.';
+              }
+              const dispatch = surface.dispatch.bind(surface);
+              const placed =
+                figureDialog === 'Figure'
+                  ? insertFigure(
+                      assetVersion,
+                      alternative,
+                      newBlockIdentifier,
+                    )(surface.state, dispatch)
+                  : replaceFigureImage(assetVersion, alternative)(surface.state, dispatch);
+              if (!placed) return 'The image could not be placed where the cursor is.';
+              setFigureDialog(null);
+              surface.focus();
+              return null;
+            }}
+            onCancel={() => {
+              setFigureDialog(null);
+              surface.focus();
+            }}
+          />,
+          document.body,
+        )}
       {asking &&
         // Beside the article rather than inside it, because the article is what it makes inert:
         // a dialog within an inert subtree is a dialog nothing can reach. Keyed by which opening

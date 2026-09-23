@@ -57,9 +57,15 @@ function service(answers: Record<string, Answer>) {
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
+    // An image's bytes are bytes, never JSON (figures 2): recorded by their length.
+    const bytes = request.headers.get('content-type') === 'application/octet-stream';
     const text =
-      request.method === 'GET' || request.method === 'DELETE' ? '' : await request.text();
-    const body = text === '' ? undefined : (JSON.parse(text) as unknown);
+      request.method === 'GET' || request.method === 'DELETE' || bytes ? '' : await request.text();
+    const body = bytes
+      ? { bytes: (await request.arrayBuffer()).byteLength }
+      : text === ''
+        ? undefined
+        : (JSON.parse(text) as unknown);
     const route = `${request.method} ${url.pathname.replace(COMPONENT, '{id}').replace(SESSION, '{session}')}`;
     asked.push({ route, body });
     const answer = answers[route];
@@ -708,21 +714,19 @@ describe('the component editor', () => {
   });
 
   it('opens content this editor cannot change for reading only, saying what it holds', async () => {
-    // A figure: lists and tables are carried now, and this is about a block the editor still has no
-    // node for.
-    const withFigure = content('Before');
-    withFigure.content.push({
-      type: 'figure',
+    // An equation: lists, tables and figures are carried now, and this is about a block the editor
+    // still has no node for.
+    const withEquation = content('Before');
+    withEquation.content.push({
+      type: 'equation',
       id: 't1',
-      asset: '00000000-0000-4000-8000-00000000a551',
-      imageStyle: 'wide',
-      caption: [{ type: 'text', value: 'Readings', marks: [] }],
-      alternative: { kind: 'decorative' },
+      mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
+      numbered: false,
     } as never);
-    open({ 'GET /v1/components/{id}': () => json(200, opened({ content: withFigure })) });
+    open({ 'GET /v1/components/{id}': () => json(200, opened({ content: withEquation })) });
     expect(
       await screen.findByText(
-        'This component holds content this editor cannot change yet (figure), so it is shown for reading only.',
+        'This component holds content this editor cannot change yet (equation), so it is shown for reading only.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).toBeNull();
@@ -3302,5 +3306,367 @@ describe('the table panel (tables 1)', () => {
     view.focus();
     await userEvent.keyboard('{Shift>}{F6}{/Shift}');
     expect(within(panel).getByLabelText('Header rows')).toHaveFocus();
+  });
+});
+
+describe('a figure in the editor (figures 2)', () => {
+  const UPLOAD = '7a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
+  const RED = '00000000-0000-4000-8000-00000000a551';
+  const BLUE = '00000000-0000-4000-8000-00000000b10e';
+  const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+  const uploadView = (state: string, extra: Record<string, unknown> = {}) => ({
+    id: UPLOAD,
+    space: 's1',
+    state,
+    reason: null,
+    assetVersion: null,
+    ...extra,
+  });
+  /** The asset routes, answering an upload that is made, filled and ready as this version. */
+  const uploads = (version: string, filled: Answer = () => json(200, uploadView('checking'))) => ({
+    'POST /v1/spaces/s1/asset-uploads': () => json(200, uploadView('awaiting')),
+    [`PUT /v1/asset-uploads/${UPLOAD}/bytes`]: filled,
+    [`GET /v1/asset-uploads/${UPLOAD}`]: () =>
+      json(200, uploadView('ready', { assetVersion: version })),
+  });
+  const assetVersion = (id: string, alternative: unknown) => ({
+    [`GET /v1/asset-versions/${id}`]: () =>
+      json(200, {
+        id,
+        asset: 'a1',
+        number: '0.1',
+        format: 'png',
+        bytes: 11,
+        width: 4,
+        height: 3,
+        resolution: null,
+        alternative,
+      }),
+  });
+  // Every iteration a test here can make: typing into the panel saves as the author goes, and a slower
+  // machine batches fewer keystrokes into each save, so eight ran out on CI - the ninth answered 404,
+  // the session stopped, and the last letters typed were refused as read-only.
+  const everySave = Object.fromEntries(
+    Array.from({ length: 64 }, (_, at) => [
+      `PUT /v1/components/{id}/iterations/{session}/${at + 1}`,
+      () => json(200, { sequence: at + 1, lock }),
+    ]),
+  );
+  const openWith = (stored: unknown, extra: Record<string, Answer> = {}) =>
+    open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: stored })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        ...everySave,
+        ...extra,
+      },
+      quick,
+      true,
+    );
+  const figureOf = (view: EditorView) =>
+    fromEditor(view.state.doc).content.find((block) => block.type === 'figure') as
+      { id: string; asset: string; alternative: unknown } | undefined;
+  const aFigure = (alternative: unknown) =>
+    blocksOf(para('b1', 'Before.'), {
+      type: 'figure',
+      id: 'f1',
+      asset: RED,
+      imageStyle: 'figure',
+      caption: [{ type: 'text', value: 'Shapes', marks: [] }],
+      alternative,
+    });
+  /** The caret into the caption of the figure counted from the first, the first unless said. */
+  const caretInCaption = (view: EditorView, which = 0) =>
+    act(() => {
+      let at = -1;
+      let seen = 0;
+      view.state.doc.descendants((node, pos) => {
+        if (at === -1 && node.type.name === 'figureCaption' && seen++ === which) at = pos + 1;
+        return at === -1;
+      });
+      view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(at))));
+    });
+  const chooseImage = async (dialog: HTMLElement) =>
+    userEvent.upload(
+      within(dialog).getByLabelText('Image'),
+      new File([pngBytes], 'shapes.png', { type: 'image/png' }),
+    );
+
+  it("AST-039 makes a figure from an image described in the language the author chose, and gives it its own text in the component's", async () => {
+    const { asked, surface } = openWith(content('Unbox the printer.'), {
+      ...uploads(RED),
+      ...assetVersion(RED, { text: 'Zwei Formen', language: 'de' }),
+    });
+    const view = await surface();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Figure' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Figure' });
+    await chooseImage(dialog);
+    await userEvent.type(within(dialog).getByLabelText('Description'), 'Zwei Formen');
+    const language = within(dialog).getByLabelText('Language');
+    expect(language).toHaveValue('en-GB');
+    await userEvent.clear(language);
+    await userEvent.type(language, 'de');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() => expect(figureOf(view)).toMatchObject({ asset: RED }));
+    expect(figureOf(view)!.alternative).toEqual({ kind: 'inherited' });
+    expect(asked.find((each) => each.route === 'POST /v1/spaces/s1/asset-uploads')?.body).toEqual({
+      alternative: { text: 'Zwei Formen', language: 'de' },
+    });
+    expect(asked.find((each) => each.route.startsWith('PUT /v1/asset-uploads'))?.body).toEqual({
+      bytes: pngBytes.length,
+    });
+    expect(screen.queryByRole('dialog', { name: 'Figure' })).toBeNull();
+
+    // The panel reads the image's own description, and its own text takes the component's language,
+    // which the model holds without a tag of its own.
+    const panel = await screen.findByRole('group', { name: 'Figure' });
+    expect(await within(panel).findByText(/Zwei Formen/)).toBeInTheDocument();
+    await userEvent.click(within(panel).getByLabelText('Describe it here'));
+    await userEvent.type(within(panel).getByLabelText('Its own description'), 'Two shapes');
+    await waitFor(() =>
+      expect(figureOf(view)!.alternative).toEqual({ kind: 'own', text: 'Two shapes' }),
+    );
+    expect(fromEditor(view.state.doc).language).toBe('en-GB');
+  });
+
+  it('will not upload until the image is described or said to be decorative, and makes a decorative one', async () => {
+    const { asked, surface } = openWith(content('Unbox the printer.'), uploads(RED));
+    const view = await surface();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Figure' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Figure' });
+    await chooseImage(dialog);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+    expect(
+      within(dialog).getByText('Describe the image, or say it is decorative.'),
+    ).toBeInTheDocument();
+    expect(asked.some((each) => each.route.includes('asset-uploads'))).toBe(false);
+
+    await userEvent.click(within(dialog).getByLabelText('It is decorative'));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+    await waitFor(() =>
+      expect(figureOf(view)).toMatchObject({ alternative: { kind: 'decorative' } }),
+    );
+    expect(asked.find((each) => each.route === 'POST /v1/spaces/s1/asset-uploads')?.body).toEqual({
+      alternative: null,
+    });
+  });
+
+  it('says why an image was refused, in words, and inserts nothing', async () => {
+    const { surface } = openWith(
+      content('Unbox the printer.'),
+      uploads(RED, () =>
+        json(400, { code: 'asset_format_not_permitted', message: 'x', traceId: 't' }),
+      ),
+    );
+    const view = await surface();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Figure' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Figure' });
+    await chooseImage(dialog);
+    await userEvent.click(within(dialog).getByLabelText('It is decorative'));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+    expect(
+      await within(dialog).findByText('This is not a PNG or a JPEG image.'),
+    ).toBeInTheDocument();
+    expect(figureOf(view)).toBeUndefined();
+  });
+
+  it('AST-015 sets a figure decorative from its panel, and deletes it', async () => {
+    const { surface } = openWith(aFigure({ kind: 'inherited' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const panel = await screen.findByRole('group', { name: 'Figure' });
+    // The image has no description of its own, which the panel says rather than leaving it to publish.
+    expect(await within(panel).findByText(/has no description/)).toBeInTheDocument();
+    await userEvent.click(within(panel).getByLabelText('Decorative'));
+    await waitFor(() => expect(figureOf(view)!.alternative).toEqual({ kind: 'decorative' }));
+    await userEvent.click(within(panel).getByRole('button', { name: 'Delete figure' }));
+    expect(figureOf(view)).toBeUndefined();
+  });
+
+  it('replaces the image and keeps the figure, its identity and its caption', async () => {
+    const { surface } = openWith(aFigure({ kind: 'own', text: 'Red' }), {
+      ...uploads(BLUE),
+      ...assetVersion(RED, null),
+      ...assetVersion(BLUE, null),
+    });
+    const view = await surface();
+    caretInCaption(view);
+    const panel = await screen.findByRole('group', { name: 'Figure' });
+    await userEvent.click(within(panel).getByRole('button', { name: 'Replace image' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Replace image' });
+    await chooseImage(dialog);
+    await userEvent.click(within(dialog).getByLabelText('It is decorative'));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+    await waitFor(() => expect(figureOf(view)).toMatchObject({ asset: BLUE }));
+    expect(figureOf(view)).toMatchObject({ id: 'f1', alternative: { kind: 'decorative' } });
+  });
+
+  it('marks an image that does not load in its place, since the reader may not see it', async () => {
+    const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
+    await surface();
+    const image = document.querySelector('.aw-figure-image img')!;
+    expect(image).not.toBeNull();
+    fireEvent.error(image);
+    expect(image.parentElement).toHaveClass('aw-image-missing');
+    expect(image.parentElement).toHaveAttribute('data-missing', 'An image you may not see');
+  });
+
+  // The final review's findings, each reproduced before it was fixed.
+  const figureBlock = (id: string, asset: string, alternative: unknown) => ({
+    type: 'figure',
+    id,
+    asset,
+    imageStyle: 'figure',
+    caption: [{ type: 'text', value: id, marks: [] }],
+    alternative,
+  });
+  const alternativeOf = (view: EditorView, id: string) =>
+    (
+      fromEditor(view.state.doc).content.find((block) => block.id === id) as
+        { alternative: unknown } | undefined
+    )?.alternative;
+
+  it('keeps the dialog open, and says so, when the service cannot be reached', async () => {
+    const { surface } = openWith(content('Unbox the printer.'), {
+      'POST /v1/spaces/s1/asset-uploads': () => {
+        throw new TypeError('Failed to fetch');
+      },
+    });
+    const view = await surface();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Figure' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Figure' });
+    await chooseImage(dialog);
+    await userEvent.click(within(dialog).getByLabelText('It is decorative'));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+    expect(
+      await within(dialog).findByText('The image could not be uploaded. Try again.'),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeEnabled();
+    expect(figureOf(view)).toBeUndefined();
+  });
+
+  it("does not carry one figure's own description over to another", async () => {
+    const { surface } = openWith(
+      blocksOf(
+        para('b1', 'Before.'),
+        figureBlock('f1', RED, { kind: 'own', text: 'Alpha text' }),
+        figureBlock('f2', BLUE, { kind: 'inherited' }),
+      ),
+      { ...assetVersion(RED, null), ...assetVersion(BLUE, null) },
+    );
+    const view = await surface();
+    caretInCaption(view, 0);
+    let panel = await screen.findByRole('group', { name: 'Figure' });
+    expect(within(panel).getByLabelText('Its own description')).toHaveValue('Alpha text');
+    caretInCaption(view, 1);
+    panel = await screen.findByRole('group', { name: 'Figure' });
+    await userEvent.click(within(panel).getByLabelText('Describe it here'));
+    expect(within(panel).getByLabelText('Its own description')).toHaveValue('');
+    expect(alternativeOf(view, 'f2')).toEqual({ kind: 'inherited' });
+  });
+
+  it('keeps nothing an emptied description held, and says the figure keeps what it had', async () => {
+    const { surface } = openWith(aFigure({ kind: 'inherited' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const panel = await screen.findByRole('group', { name: 'Figure' });
+    await userEvent.click(within(panel).getByLabelText('Describe it here'));
+    const field = within(panel).getByLabelText('Its own description');
+    await userEvent.type(field, 'Red');
+    await waitFor(() => expect(figureOf(view)!.alternative).toEqual({ kind: 'own', text: 'Red' }));
+    await userEvent.type(field, '{Backspace}{Backspace}{Backspace}');
+    await waitFor(() => expect(figureOf(view)!.alternative).toEqual({ kind: 'inherited' }));
+    expect(field).toHaveValue('');
+    expect(within(panel).getByLabelText('Describe it here')).toBeChecked();
+    expect(
+      within(panel).getByText('Until something is typed here, the figure keeps what it had.'),
+    ).toBeInTheDocument();
+  });
+
+  it('follows the figure through an undo and a redo of its own description', async () => {
+    const { surface } = openWith(aFigure({ kind: 'inherited' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const panel = await screen.findByRole('group', { name: 'Figure' });
+    await userEvent.click(within(panel).getByLabelText('Describe it here'));
+    await userEvent.type(within(panel).getByLabelText('Its own description'), 'Red');
+    await waitFor(() => expect(figureOf(view)!.alternative).toEqual({ kind: 'own', text: 'Red' }));
+    act(() => {
+      fireEvent.keyDown(view.dom, { key: 'z', ctrlKey: true });
+    });
+    await waitFor(() =>
+      expect(within(panel).getByLabelText("Use the image's description")).toBeChecked(),
+    );
+    // Redo gives the figure back the very value the panel set, which the panel must still follow.
+    act(() => {
+      fireEvent.keyDown(view.dom, { key: 'y', ctrlKey: true });
+    });
+    await waitFor(() => expect(within(panel).getByLabelText('Describe it here')).toBeChecked());
+    expect(within(panel).getByLabelText('Its own description')).toHaveValue('Red');
+  });
+
+  it('offers Figure only where a figure can be placed', async () => {
+    const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const button = screen.getByRole('button', { name: 'Figure' });
+    await waitFor(() => expect(button).toHaveAttribute('aria-disabled', 'true'));
+    await userEvent.click(button);
+    expect(screen.queryByRole('dialog', { name: 'Figure' })).toBeNull();
+    act(() => selectText(view, 3, 3));
+    await waitFor(() => expect(button).toHaveAttribute('aria-disabled', 'false'));
+  });
+
+  it('places nothing once the component can no longer be edited, and says so', async () => {
+    let checked: ((response: Response) => void) | undefined;
+    const { surface } = openWith(content('Unbox the printer.'), {
+      ...uploads(RED),
+      [`GET /v1/asset-uploads/${UPLOAD}`]: () =>
+        new Promise<Response>((resolve) => {
+          checked = resolve;
+        }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () =>
+        json(409, { code: 'iteration_stale', message: 'stale', traceId: 't', latest: 7 }),
+    });
+    const view = await surface();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Figure' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Figure' });
+    await chooseImage(dialog);
+    await userEvent.click(within(dialog).getByLabelText('It is decorative'));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+    await waitFor(() => expect(checked).toBeDefined());
+    act(() => view.dispatch(view.state.tr.insertText(' Keep the box.', 19)));
+    await screen.findByRole('button', { name: 'Continue' });
+    act(() => checked!(json(200, uploadView('ready', { assetVersion: RED }))));
+    expect(
+      await within(dialog).findByText(
+        'This component can no longer be edited here, so the image was not placed.',
+      ),
+    ).toBeInTheDocument();
+    expect(figureOf(view)).toBeUndefined();
+  });
+
+  it('will not upload a description in a language that is not a tag, and says so', async () => {
+    const { asked, surface } = openWith(content('Unbox the printer.'), uploads(RED));
+    const view = await surface();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Figure' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Figure' });
+    await chooseImage(dialog);
+    await userEvent.type(within(dialog).getByLabelText('Description'), 'Two shapes');
+    const language = within(dialog).getByLabelText('Language');
+    await userEvent.clear(language);
+    await userEvent.type(language, 'en GB');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+    expect(
+      within(dialog).getByText('Give the language as a tag, such as en-GB.'),
+    ).toBeInTheDocument();
+    expect(asked.some((each) => each.route.includes('asset-uploads'))).toBe(false);
   });
 });
