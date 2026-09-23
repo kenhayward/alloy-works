@@ -5,6 +5,8 @@ import type { AssetUploadTable } from './assets-tables.js';
 import type {
   PublicationInputTable,
   PublicationOutputTable,
+  PublicationAssetTable,
+  PublicationRequestAssetTable,
   PublicationRequestOccurrenceTable,
   PublicationRequestTable,
   PublicationTable,
@@ -330,6 +332,8 @@ export interface TenantTables {
   publication: PublicationTable;
   publication_input: PublicationInputTable;
   publication_output: PublicationOutputTable;
+  publication_request_asset: PublicationRequestAssetTable;
+  publication_asset: PublicationAssetTable;
   asset_upload: AssetUploadTable;
 }
 

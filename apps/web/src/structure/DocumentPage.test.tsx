@@ -2982,6 +2982,7 @@ describe("the layout's scheme in the page", () => {
       layout: upperRomanLayout,
       revision: '0.1',
       covers: () => true,
+      assets: new Map(),
     });
     const printed = new Map<string, string | null>();
     const walk = (nodes: readonly PublishedNode[]) => {
@@ -3071,8 +3072,8 @@ describe('publishing from the document page', () => {
     const said = [...why.querySelectorAll('li')].map((each) => each.textContent);
     expect(said).toEqual([
       '1.1 A component: A component you may not read is placed here. Only someone who may read every component can publish this document.',
-      '2 Method: This paragraph or table uses a style the publication template does not set.',
-      'A part no longer in this document: This paragraph or table uses a style the publication template does not set.',
+      '2 Method: This paragraph, table or figure uses a style the publication template does not set.',
+      'A part no longer in this document: This paragraph, table or figure uses a style the publication template does not set.',
     ]);
     expect(why).not.toHaveTextContent('Install the printer');
     expect(why).not.toHaveTextContent(PRINTER);

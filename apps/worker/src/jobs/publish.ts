@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { publishedImagePath, type PublishingAsset } from '@alloy-works/domain';
 import {
   failPublicationRequest,
   publicationInputs,
@@ -15,7 +16,7 @@ import type { ObjectStores } from '@alloy-works/objects';
 import { PINNED_FONT_FILES, type PinnedFonts } from '../fonts.js';
 import { JobRefused } from '../refusal.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING, type PublishedSchema } from '../template.js';
-import type { Typst } from '../typst.js';
+import type { RootImage, Typst } from '../typst.js';
 import type { JobHandler } from '../worker.js';
 
 /**
@@ -26,8 +27,9 @@ import type { JobHandler } from '../worker.js';
  * notice included. Version 1 is still made, for a request made before layouts (Ken's answer F);
  * version 2 is what a request under a layout made before a run carried its marks, version 3 what
  * one made before a block could be a list, version 4 before one could be a quotation, and version 5
- * before one could be a table - each named only by the publications it made. Version 6 is also the
- * first whose compile runs with `--features a11y-extras` (`typstArguments`).
+ * before one could be a table, and version 6 before one could be a figure - each named only by the
+ * publications it made. Version 6 was also the first whose compile runs with
+ * `--features a11y-extras` (`typstArguments`), and 7 the first to read images from the store.
  *
  * **Both keys are computed.** Repoint `PUBLISHING_SCHEMA` and the key moves while the value stays
  * behind, and the `satisfies` clause cannot catch it because `PublishedSchema` derives from the
@@ -37,7 +39,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA]: '6',
+  [PUBLISHING_SCHEMA]: '7',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -50,6 +52,30 @@ export class PublishRefused extends JobRefused {
 /** The store would not take the output, or the database its record. Worth another attempt. */
 class StoreFailed extends Error {
   readonly code = 'store_failed';
+}
+
+/**
+ * Every image the request recorded, read from the tenant's store and placed where the published
+ * document names it (figures 3, ruling R7): `assets/<sha256>.<extension>`, the hash its key ends in and
+ * the extension its format declares. The bytes are held to that hash before they are handed on, as the
+ * faces are, so Typst reads no image that is not the one recorded. Bytes that are not are a broken
+ * store: thrown, never a refusal, so the job is tried again and then failed at the engine's stage.
+ */
+export async function rootImages(
+  assets: ReadonlyMap<string, PublishingAsset>,
+  get: (key: string) => Promise<Uint8Array>,
+): Promise<RootImage[]> {
+  const images: RootImage[] = [];
+  for (const asset of assets.values()) {
+    const hash = asset.object.slice(asset.object.lastIndexOf('/') + 1);
+    const bytes = await get(asset.object);
+    if (createHash('sha256').update(bytes).digest('hex') !== hash) {
+      throw new Error(`The bytes under ${asset.object} are not the bytes it names`);
+    }
+    // The place the published document names it at, by the one rule that names it.
+    images.push({ path: publishedImagePath(asset), bytes });
+  }
+  return images;
 }
 
 /**
@@ -89,7 +115,7 @@ export function publishJob(deps: {
       }));
       // Nothing to do: finished by another attempt.
       if (!read.inputs) return;
-      const { request, outline, occurrences, refused, layout, revision } = read.inputs;
+      const { request, outline, occurrences, refused, layout, revision, assets } = read.inputs;
 
       const assembled = assemble({
         outline,
@@ -100,17 +126,19 @@ export function publishJob(deps: {
         layout: layout?.layout ?? null,
         revision,
         covers: deps.fonts.covers,
+        assets,
       });
       if (!assembled.ok) throw new PublishRefused(assembled.failures);
 
       // Chosen by what `assemble` made, so a document is never handed to a template that cannot read
-      // it: template 1 and pipeline 1 for `publishing/1`, template 6 and pipeline 6 for `publishing/6`.
-      // A publication under template 6 must name a layout, which only a request made under one has.
+      // it: template 1 and pipeline 1 for `publishing/1`, template 7 and pipeline 7 for `publishing/7`.
+      // A publication under template 7 must name a layout, which only a request made under one has.
       const { schema } = assembled.document;
       const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[schema]];
       // The digest is of the bytes Typst reads, so a reproduction can tell input from engine.
       const data = JSON.stringify(assembled.document);
-      const pdf = await deps.typst.compile(template.file, data, request.requestedAt);
+      const images = await rootImages(assets, (key) => read.store.get(key));
+      const pdf = await deps.typst.compile(template.file, data, request.requestedAt, images);
       const engineVersion = await deps.typst.version();
       let stored;
       try {

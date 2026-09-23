@@ -7257,6 +7257,7 @@
                             "enum": [
                               "occurrence_unreadable",
                               "occurrence_unresolved",
+                              "asset_unreadable",
                               "title_not_publishable",
                               "block_not_publishable",
                               "inline_not_publishable",
@@ -7271,6 +7272,9 @@
                               "line_too_wide",
                               "table_without_caption",
                               "table_header_spans_body",
+                              "figure_without_caption",
+                              "alternative_missing",
+                              "caption_too_long",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -9992,6 +9996,7 @@
                             "enum": [
                               "occurrence_unreadable",
                               "occurrence_unresolved",
+                              "asset_unreadable",
                               "title_not_publishable",
                               "block_not_publishable",
                               "inline_not_publishable",
@@ -10006,6 +10011,9 @@
                               "line_too_wide",
                               "table_without_caption",
                               "table_header_spans_body",
+                              "figure_without_caption",
+                              "alternative_missing",
+                              "caption_too_long",
                               "engine_failed",
                               "store_failed"
                             ]

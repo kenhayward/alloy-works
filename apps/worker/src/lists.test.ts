@@ -311,6 +311,7 @@ const inputOf = (content: ContentDocument): AssembleInput => ({
   layout: bare,
   revision: '0.1',
   covers: fonts.covers,
+  assets: new Map(),
 });
 
 /** The published document the job would hand the template, which is under a layout and so listed. */

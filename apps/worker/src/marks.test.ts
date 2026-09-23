@@ -148,6 +148,7 @@ const inputOf = (): AssembleInput => ({
   layout: bare,
   revision: '0.1',
   covers: fonts.covers,
+  assets: new Map(),
 });
 
 /** The published document the job would hand the template, which is under a layout and so marked. */
@@ -180,6 +181,10 @@ const kindsIn = (document: PublishedDocument) => {
         continue;
       }
       if (block.type === 'preformatted') continue;
+      if (block.type === 'figure') {
+        marksIn(block.caption);
+        continue;
+      }
       if (block.type === 'blockquote') {
         marksIn(block.attribution ?? []);
         inBlocks(block.blocks);

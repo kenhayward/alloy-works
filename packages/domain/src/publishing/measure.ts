@@ -73,6 +73,36 @@ export function textMeasure(format: PublishedPdfFormat): number {
 }
 
 /**
+ * The height of the text block the template lays pages out in: down, less the top and bottom margins,
+ * where the running head and foot stand. What a figure is kept to a share of (figures 3, ruling R3).
+ */
+export function textBlockHeight(format: PublishedPdfFormat): number {
+  const down = format.orientation === 'landscape' ? format.width : format.height;
+  return down - format.margins.top - format.margins.bottom;
+}
+
+/**
+ * How tall a figure's caption may stand below its image, in points, estimated **generously** - more
+ * than it takes, never less - since `assemble` has no font metrics and a figure does not break, so
+ * a caption longer than the room below its image would run off its page (figures 3, final review).
+ * Each grapheme is taken as 0.6 em of the body text, wider than an ordinary letter of Liberation Serif;
+ * one line more than that fills is added for words that wrap early; each line is 1.5 em, above the
+ * template's measured pitch; and an em stands between the image and its caption, above the engine's
+ * gap. A caption of capitals throughout may still be under-estimated, which is the known limit.
+ */
+export function captionHeight(graphemes: number, width: number): number {
+  const lines = Math.ceil((graphemes * CAPTION_ADVANCE) / width) + 1;
+  return lines * CAPTION_LINE + CAPTION_GAP;
+}
+
+/** A caption's grapheme taken as this many points across: 0.6 em of the body text. */
+export const CAPTION_ADVANCE = 0.6 * BODY_SIZE;
+/** A caption's line taken as this many points down: 1.5 em of the body text. */
+export const CAPTION_LINE = 1.5 * BODY_SIZE;
+/** Between an image and its caption, taken as an em of the body text. */
+export const CAPTION_GAP = BODY_SIZE;
+
+/**
  * How far a list's content stands in from its own edge, in points: two ems for a definition list,
  * and otherwise the widest marker the list prints, at a full em a character, and half an em after
  * it. **Deliberately conservative** (#164): `assemble` has no font metrics, and an em a character is

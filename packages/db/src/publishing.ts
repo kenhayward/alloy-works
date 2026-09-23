@@ -1,4 +1,5 @@
 import {
+  parseAssetVersion,
   readContent,
   readLayout,
   readOutline,
@@ -10,6 +11,8 @@ import {
   type NumberingTable,
   type OutlineDocument,
   type PublishFailure,
+  type PublishingAsset,
+  type BlockNode,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -132,6 +135,91 @@ export async function resolveOccurrences(
   });
 }
 
+/** Each figure in these blocks at any depth, with the asset version it places. */
+function figuresIn(
+  blocks: readonly BlockNode[],
+): { readonly block: string; readonly asset: string }[] {
+  return blocks.flatMap((block) => {
+    switch (block.type) {
+      case 'figure':
+        return [{ block: block.id, asset: block.asset }];
+      case 'list':
+        return block.items.flatMap((item) => figuresIn(item.content));
+      case 'blockquote':
+        return figuresIn(block.content);
+      case 'table':
+        return block.rows.flatMap((row) => row.cells.flatMap((cell) => figuresIn(cell.content)));
+      default:
+        return [];
+    }
+  });
+}
+
+/**
+ * Every image the resolved occurrences place, decided as the publisher (figures 3, ruling R6;
+ * assets.md, "The publisher's half"): the asset versions to record on the request, each once, and a
+ * failure naming the node and the figure for each figure whose image the publisher may not read or
+ * that names no asset version - the two told apart no more than an occurrence's are, and the image
+ * never named (issue #143). An image is read on its asset by the one readable-set predicate every
+ * listing of content uses, so a component and an image are decided alike.
+ */
+async function resolveImages(
+  trx: TenantTransaction,
+  resolved: readonly { readonly node: string; readonly version: string }[],
+  principalId: string,
+): Promise<{
+  readonly assets: readonly { readonly version: string; readonly asset: string }[];
+  readonly failures: readonly PublishFailure[];
+}> {
+  if (resolved.length === 0) return { assets: [], failures: [] };
+  const rows = await trx
+    .selectFrom('artifact_version')
+    .select(['id', 'artifact_id', 'content'])
+    .where(
+      'id',
+      'in',
+      resolved.map((each) => each.version),
+    )
+    .execute();
+  const contentOf = new Map(rows.map((row) => [row.id, row]));
+  const placed = resolved.flatMap(({ node, version }) => {
+    const row = contentOf.get(version)!;
+    const read = readContent(row.content, { artifact: row.artifact_id, version });
+    if (!read.ok) throw new Error(`The component ${row.artifact_id} at ${version} does not read`);
+    return figuresIn(read.document.content).map((figure) => ({ node, ...figure }));
+  });
+  if (placed.length === 0) return { assets: [], failures: [] };
+
+  const readable = await loadReadableSet(trx, principalId);
+  const wanted = [...new Set(placed.map((each) => each.asset))];
+  const images = readable
+    ? await trx
+        .selectFrom('artifact_version as v')
+        .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+        .select(['v.id', 'v.artifact_id'])
+        .where('v.kind', '=', 'asset')
+        .where('v.id', 'in', wanted)
+        .where((eb) => readableArtifacts(eb, readable))
+        .execute()
+    : [];
+  const assetOf = new Map(images.map((row) => [row.id, row.artifact_id]));
+  const failures = placed.flatMap((each) =>
+    assetOf.has(each.asset)
+      ? []
+      : [
+          {
+            stage: 'resolve' as const,
+            code: 'asset_unreadable' as const,
+            node: each.node,
+            block: each.block,
+            detail: null,
+          },
+        ],
+  );
+  const assets = [...assetOf].map(([version, asset]) => ({ version, asset }));
+  return { assets, failures };
+}
+
 export type PublicationRequestAnswer =
   | {
       readonly answer: 'requested';
@@ -215,6 +303,8 @@ export async function requestPublication(
           },
         ],
   );
+  const resolved = outcomes.flatMap((each) => (each.outcome === 'resolved' ? [each] : []));
+  const images = await resolveImages(trx, resolved, input.requester);
   const request = await trx
     .insertInto('publication_request')
     .values({
@@ -222,13 +312,12 @@ export async function requestPublication(
       document_version_id: latest.id,
       formats: [...input.formats],
       requested_by: input.requester,
-      failures: JSON.stringify(failures),
+      failures: JSON.stringify([...failures, ...images.failures]),
       layout_id: layout.artifactId,
       layout_version_id: layout.versionId,
     })
     .returning(['id'])
     .executeTakeFirstOrThrow();
-  const resolved = outcomes.flatMap((each) => (each.outcome === 'resolved' ? [each] : []));
   if (resolved.length > 0) {
     await trx
       .insertInto('publication_request_occurrence')
@@ -238,6 +327,18 @@ export async function requestPublication(
           node: each.node,
           component_id: each.component,
           version_id: each.version,
+        })),
+      )
+      .execute();
+  }
+  if (images.assets.length > 0) {
+    await trx
+      .insertInto('publication_request_asset')
+      .values(
+        images.assets.map((each) => ({
+          request_id: request.id,
+          version_id: each.version,
+          asset_id: each.asset,
         })),
       )
       .execute();
@@ -269,6 +370,11 @@ export interface PublicationInputs {
   readonly layout: { readonly versionId: string; readonly layout: Layout } | null;
   /** The document's version as `revision.version` (VER-009): what a running foot's `revision` shows. */
   readonly revision: string;
+  /**
+   * Every image the request recorded, by asset version: where its bytes are and what `assemble` sizes
+   * and describes it from. One the publisher could not read is not here; the request says why.
+   */
+  readonly assets: ReadonlyMap<string, PublishingAsset>;
 }
 
 /**
@@ -344,6 +450,18 @@ export async function publicationInputs(
     }
     occurrences.set(row.node, { version: row.version_id, content: content.document });
   }
+  const images = await trx
+    .selectFrom('publication_request_asset as q')
+    .innerJoin('artifact_version as v', 'v.id', 'q.version_id')
+    .select(['q.version_id', 'v.content'])
+    .where('q.request_id', '=', requestId)
+    .execute();
+  const assets = new Map<string, PublishingAsset>();
+  for (const row of images) {
+    // An asset version that does not parse is a broken store, as a component that does not read is.
+    const { object, format, width, height, alternative } = parseAssetVersion(row.content);
+    assets.set(row.version_id, { object, format, width, height, alternative });
+  }
   return {
     request: {
       id: request.id,
@@ -356,10 +474,12 @@ export async function publicationInputs(
     outline: read.outline,
     occurrences,
     // Written only by requestPublication, whose failures are `PublishFailure`s it built itself - each
-    // of the resolve stage, naming a node and nothing else - so they are read back without a parse.
+    // of the resolve stage, naming a node, and for an image the figure, and nothing else - so they are
+    // read back without a parse.
     refused: request.failures as PublishFailure[],
     layout,
     revision: `${request.revision_no}.${request.version_no}`,
+    assets,
   };
 }
 
@@ -504,6 +624,24 @@ async function insertPublication(
       })),
     ])
     .execute();
+  // Exactly the images the request recorded (figures 3, ruling R6), which 0022's check holds at commit.
+  const images = await trx
+    .selectFrom('publication_request_asset')
+    .select(['version_id', 'asset_id'])
+    .where('request_id', '=', request.id)
+    .execute();
+  if (images.length > 0) {
+    await trx
+      .insertInto('publication_asset')
+      .values(
+        images.map((each) => ({
+          publication_id: artifact.id,
+          version_id: each.version_id,
+          asset_id: each.asset_id,
+        })),
+      )
+      .execute();
+  }
   await trx
     .insertInto('publication_output')
     .values({

@@ -70,6 +70,7 @@ const inputOf = (content: unknown[]): AssembleInput => ({
   layout: bare,
   revision: '0.1',
   covers: fonts.covers,
+  assets: new Map(),
 });
 
 const text = (value: string, ...marks: object[]) => ({ type: 'text', value, marks });

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   bootstrapCluster,
+  createArtifact,
   createComponent,
   createDocument,
   createJobQueue,
@@ -36,6 +37,7 @@ import {
 } from '@alloy-works/domain';
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
+import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, loadPinnedFonts, PINNED_FONT_FILES, type PinnedFonts } from './fonts.js';
 import { publishJob } from './jobs/publish.js';
@@ -113,6 +115,8 @@ describe('publishing a document, from the request to the stored PDF', () => {
     space: string,
     title: string,
     paragraphs: string[],
+    /** Blocks after the paragraphs, as the content model stores them. */
+    after: readonly unknown[] = [],
   ) => {
     const made = await createComponent(trx, {
       spaceId: space,
@@ -129,12 +133,15 @@ describe('publishing a document, from the request to the stored PDF', () => {
       title,
       language: 'en-GB',
       direction: 'ltr',
-      content: paragraphs.map((text, index) => ({
-        type: 'paragraph',
-        id: `p${index + 1}`,
-        style: 'body',
-        content: [{ type: 'text', value: text, marks: [] }],
-      })),
+      content: [
+        ...paragraphs.map((text, index): ContentDocument['content'][number] => ({
+          type: 'paragraph',
+          id: `p${index + 1}`,
+          style: 'body',
+          content: [{ type: 'text', value: text, marks: [] }],
+        })),
+        ...(after as ContentDocument['content']),
+      ],
     };
     const recorded = await recordVersion(trx, {
       artifactId: made.version.artifactId,
@@ -384,13 +391,13 @@ describe('publishing a document, from the request to the stored PDF', () => {
   it("PUB-063 records the engine, the engine's version and the template's version that made it", async () => {
     const { request } = await published();
     const row = await publicationOf(request);
-    // Made under a layout, so by template 6 and pipeline 6, under the layout its request recorded.
+    // Made under a layout, so by template 7 and pipeline 7, under the layout its request recorded.
     expect(row).toMatchObject({
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 6,
-      pipeline_version: '6',
+      template_version: 7,
+      pipeline_version: '7',
       layout_version_id: (await requestRow(request)).layout_version_id,
     });
     expect(row!.layout_version_id).not.toBeNull();
@@ -607,6 +614,91 @@ describe('publishing a document, from the request to the stored PDF', () => {
     });
   });
 
+  it('prints the images its figures place from the store, held to their hashes, and names each on the publication', async () => {
+    const bytes = await sharp({
+      create: { width: 80, height: 60, channels: 3, background: { r: 200, g: 30, b: 30 } },
+    })
+      .png()
+      .toBuffer();
+    /** A document placing one component, which holds a figure of an image kept in the store. */
+    const figured = () =>
+      requested(async (trx) => {
+        const store = await stores.forTenant(trx, tenant);
+        const kept = await store.put(bytes, 'image/png');
+        const image = await createArtifact(trx, {
+          spaceId: general,
+          author: ada,
+          substance: {
+            kind: 'asset',
+            content: {
+              schemaVersion: 1,
+              object: kept.key,
+              format: 'png',
+              bytes: bytes.length,
+              width: 80,
+              height: 60,
+              orientation: 1,
+              colour: 'rgb',
+              alpha: false,
+              depth: 8,
+              resolution: null,
+              alternative: { text: 'Two red squares', language: 'en-GB' },
+            },
+          },
+        });
+        const holder = await component(
+          trx,
+          general,
+          'Shapes',
+          ['Before the figure.'],
+          [
+            {
+              type: 'figure',
+              id: 'f1',
+              asset: image.id,
+              imageStyle: 'figure',
+              caption: [{ type: 'text', value: 'Our shapes', marks: [] }],
+              alternative: { kind: 'inherited' },
+            },
+          ],
+        );
+        return [reference(holder)];
+      });
+
+    const request = await figured();
+    expect(await work()).toBe('done');
+    const row = await publicationOf(request);
+    const read = await readPdf(await pdfOf(row!.object_key));
+    expect(read.figures.map(({ alt }) => alt)).toEqual(['Two red squares']);
+    const printed = await service.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('publication_asset')
+        .select('version_id')
+        .where('publication_id', '=', row!.publication_id)
+        .execute(),
+    );
+    expect(printed).toHaveLength(1);
+
+    // A store answering other bytes under the key than the key names: a broken store, retried and
+    // then failed at the engine's stage, never taken as the document's fault, and nothing published.
+    const tampered = await figured();
+    const tampering: ObjectStores = {
+      forTenant: async (trx, owner) => {
+        const real = await stores.forTenant(trx, owner);
+        return { ...real, get: async () => Buffer.from('not the image') };
+      },
+    };
+    const broken = { publish: publishJob({ db: worker, stores: tampering, typst, fonts }) };
+    for (const outcome of ['retry', 'retry', 'failed']) {
+      expect(await work({ handlers: broken, queue: eager() })).toBe(outcome);
+    }
+    expect(await requestRow(tampered)).toMatchObject({
+      state: 'failed',
+      failures: [{ stage: 'engine', code: 'engine_failed', node: null, block: null, detail: null }],
+    });
+    expect(await publicationOf(tampered)).toBeUndefined();
+  });
+
   it('keeps nothing of a record the database refuses, and fails the request at the store stage', async () => {
     const id = await requested(async (trx) => [
       reference(await component(trx, general, 'Calibration', ['Set the tray.'])),
@@ -654,6 +746,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       layout: inputs!.layout?.layout ?? null,
       revision: inputs!.revision,
       covers: fonts.covers,
+      assets: inputs!.assets,
     });
     if (!again.ok) throw new Error('did not assemble');
     const data = JSON.stringify(again.document);
@@ -815,6 +908,7 @@ describe('publishing a request made before layouts', () => {
         layout: null,
         revision: inputs!.revision,
         covers: fonts.covers,
+        assets: new Map(),
       });
       if (!slice1.ok) throw new Error('did not assemble');
       expect(slice1.document).toMatchObject({ schema: 'publishing/1', notice: DRAFT_NOTICE });

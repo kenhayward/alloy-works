@@ -15,8 +15,8 @@ figure reaches the PDF.
 
 > **Built through the API** by [figures 1](../plans/2026-09-23-figures-01-assets.md): an image is
 > uploaded into a space, checked in the service and in a worker's `ingest` job, stored by its hash and
-> read back by who may read the space. [Figures 2](../plans/2026-09-23-figures-02-the-figure-in-the-editor.md) places it in the editor as a figure, and
-> [`../architecture.md`](../architecture.md) describes it as it stands. **Ken's answer (2026-09-23):
+> read back by who may read the space. [Figures 2](../plans/2026-09-23-figures-02-the-figure-in-the-editor.md) places it in the editor as a figure, [figures 3](../plans/2026-09-23-figures-03-publishing-figures.md)
+> publishes it, and [`../architecture.md`](../architecture.md) describes it as it stands. **Ken's answer (2026-09-23):
 > decisions F-A to F-P taken as recommended**, by merging this design and asking to continue.
 
 ## The shape in one paragraph
@@ -256,8 +256,14 @@ asset version the resolved components place is read **as the publisher**, and on
 refuses the request by its place, as a component they may not read does. The job fetches each object,
 checks its hash against its key before writing it - the same check the fonts get - and writes it into
 the compile root as `assets/<hash>.<png|jpg>`. The published document names that path and nothing
-else of the asset. The asset versions are recorded as `publication_input` rows beside the component
-versions, so a publication names every image it printed.
+else of the asset. The asset versions are recorded beside the component versions, so a publication
+names every image it printed.
+
+**Built by [figures 3](../plans/2026-09-23-figures-03-publishing-figures.md)**, with one change: the
+versions are recorded in `publication_request_asset` and `publication_asset` rather than as
+`publication_input` rows, since an input row's `node` says where in the outline a version stood and
+an image stands at no node. Bytes that do not match their key's hash are a broken store: the job is
+tried again and then failed at the engine's stage, never refused as the document's fault.
 
 ## Requirements challenged
 

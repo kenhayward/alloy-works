@@ -294,15 +294,32 @@ export const FIRST_DEFAULT_LAYOUT = {
 } as const;
 
 /**
- * The default layout as it stands, **version 0.2** (seeded by migration 0019): the first version with
- * a list of tables after the contents, which tables brought (tables 2, ruling R6).
+ * **The default layout's version 0.2, as migration 0019 stored it**: the first version with a list of
+ * tables after the contents, which tables brought (tables 2, ruling R6). Frozen for the reason 0.1 is:
+ * `default-layout.test.ts` checks the row against it, and a request made while it was the default goes
+ * on publishing under it.
  */
-export const defaultLayout: Layout = parseLayout({
+export const SECOND_DEFAULT_LAYOUT: Layout = parseLayout({
   ...FIRST_DEFAULT_LAYOUT,
   schemaVersion: LAYOUT_SCHEMA_VERSION,
   matter: {
     ...FIRST_DEFAULT_LAYOUT.matter,
     lists: [{ sequence: 'table', title: 'Tables' }],
+  },
+});
+
+/**
+ * The default layout as it stands, **version 0.3** (seeded by migration 0021): a list of figures and
+ * then a list of tables after the contents, as convention orders them (figures 3, ruling R9).
+ */
+export const defaultLayout: Layout = parseLayout({
+  ...SECOND_DEFAULT_LAYOUT,
+  matter: {
+    ...SECOND_DEFAULT_LAYOUT.matter,
+    lists: [
+      { sequence: 'figure', title: 'Figures' },
+      { sequence: 'table', title: 'Tables' },
+    ],
   },
 });
 

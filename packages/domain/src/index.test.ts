@@ -148,7 +148,9 @@ describe('the domain package', () => {
         // made `publishing/5`.
         'PUBLISHING_SCHEMA_4',
         'PUBLISHING_SCHEMA_5',
+        'PUBLISHING_SCHEMA_6',
         'assemble',
+        'publishedImagePath',
         'publishFailureCodes',
         'setWithoutAGlyph',
         // Promoted by the editor's marks slice, so the editor can warn about a tag a publication
@@ -166,6 +168,8 @@ describe('the domain package', () => {
         // The default layout's first version as 0018 stored it, and the sequences a layout lists,
         // promoted by tables 2 for the store's own test and the worker's.
         'FIRST_DEFAULT_LAYOUT',
+        // Its second, as 0019 stored it, promoted by figures 3 when 0.3 took the default's name.
+        'SECOND_DEFAULT_LAYOUT',
         'LISTED_SEQUENCES',
         'speaksFor',
         'unsupportedFormats',

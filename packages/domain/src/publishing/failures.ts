@@ -12,6 +12,10 @@ export const publishFailureCodes = [
   // resolve: at the request, as the publisher.
   'occurrence_unreadable',
   'occurrence_unresolved',
+  // resolve, from figures 3: a figure whose image the publisher may not read, or that names no image
+  // at all - the two told apart no more than an occurrence's are, and naming the figure, never the
+  // image (issue #143).
+  'asset_unreadable',
   // compose: in `assemble`, before Typst is started.
   'title_not_publishable',
   'block_not_publishable',
@@ -41,6 +45,14 @@ export const publishFailureCodes = [
   // engine grows the header to take in every row such a cell reaches, so a data cell beside it would
   // be read out as a column header; refused, naming the table, rather than published saying that.
   'table_header_spans_body',
+  // compose, from figures 3: a figure whose caption says nothing - CNT-017's caption, refused at
+  // publish as a table's is - and one given alternative text by neither itself nor its image, which
+  // the engine would refuse the whole document for without saying which (PUB-033, AST-014).
+  'figure_without_caption',
+  'alternative_missing',
+  // compose, from the final review of figures 3: a caption too long to stand on a page beside even a
+  // small image. A figure does not break, so it would run off the page; refused, naming the figure.
+  'caption_too_long',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

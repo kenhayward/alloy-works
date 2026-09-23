@@ -541,6 +541,33 @@ migration with the same guard as 0019's: only where the environment's layout is 
 | F-P | **The editor asks for a description or "decorative" before it uploads** ([component-editor.md](component-editor.md#figures)): a description becomes the asset's default, which the figure inherits                                    | Yes. The model cannot say "not yet described", and the moment of choosing the picture is when the author knows what it shows        |
 | F-O | **Four pull requests**: assets; the figure in the editor; figures published with the list of figures; then inline images in a paragraph and a table cell. Each lands usable, and a figure refuses the publish by name until the third | Yes. Inline images last, because they need all three before them and a figure needs none of theirs                                  |
 
+**Built by [figures 3](../plans/2026-09-23-figures-03-publishing-figures.md)**, all but an image in a
+line of text or a table cell, which is figures 4's. Building it changed these things here:
+
+- **A figure with no caption is refused**, `figure_without_caption`, naming it, as a table with none
+  is. The design above said nothing either way; CNT-017 says a figure carries a caption, and a figure
+  of no words would be listed after the contents as a label alone.
+- **The width is the room where the figure stands**, the measure less any indent of a list or a
+  quotation it is inside, not always the full measure.
+- **The alternative text's language is always set around the image**, not only where it differs from
+  the component's: the engine writes `/Lang` on the `Figure` only where it differs from its parent's,
+  so the output is the same and the template never compares languages.
+- **The images are recorded in tables of their own**, `publication_request_asset` and
+  `publication_asset` (migration 0022), not as `publication_input` rows as assets.md said: an input
+  row's `node` says where in the outline a version stood, and an image stands at no node. 0018's
+  whole-record check now holds a publication's images to exactly its request's.
+- **A length is carried to hundredths of a point**, so the bytes Typst reads, and the digest a
+  publication records, do not move with floating point.
+- **A figure's own text of spaces alone is `alternative_missing`** (final review): the stored shape
+  takes any text that is not empty, and only the editor refuses a blank one.
+- **The image gives way to its caption** (final review). A figure does not break, so a caption longer
+  than the room below its image ran under the running foot and off the page. `assemble` estimates the
+  caption's height generously (`captionHeight`: 0.6 em a grapheme, a line more for wrapping, 1.5 em a
+  line, an em of gap) and holds the image to what that leaves when it is less than the 60 per cent
+  share; a caption that leaves less than an inch is refused, `caption_too_long`. Making the figure
+  breakable was measured and set aside: the pinned engine then writes no `BBox` on any `Figure`,
+  which ISO 32000-1 asks of a figure. A caption of capitals throughout may still be estimated short.
+
 ## The layout
 
 A **layout** is an artifact kind of its own, versioned by the chain (PUB-013), and like a style

@@ -95,6 +95,7 @@ const inputOf = (content: unknown[]): AssembleInput => ({
   layout: listed,
   revision: '0.1',
   covers: fonts.covers,
+  assets: new Map(),
 });
 
 const compile = async (content: unknown[]) => {

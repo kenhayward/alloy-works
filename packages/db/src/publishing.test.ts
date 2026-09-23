@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import {
   blockIdentifierFrom,
   defaultNumberingScheme,
+  type ContentDocument,
   type OutlineDocument,
   type OutlineNode,
   type ReferenceNode,
@@ -32,7 +33,7 @@ import {
   untilBlockedBy,
   type TestDatabase,
 } from './testing/database.js';
-import { recordVersion, type StoredVersion } from './versions.js';
+import { createArtifact, recordVersion, substanceOf, type StoredVersion } from './versions.js';
 
 const ISSUER = 'https://idp.example';
 const nodeId = () => blockIdentifierFrom(randomBytes(16));
@@ -421,14 +422,14 @@ describe('requesting and recording a publication', () => {
           },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.2 since 0019, so the version recorded after it is 0.3.
-        expect((await defaultLayout(trx)).number).toBe('0.3');
+        // The default is at 0.3 since 0021, so the version recorded after it is 0.4.
+        expect((await defaultLayout(trx)).number).toBe('0.4');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.layout).toEqual({ versionId: declared.versionId, layout: declared.layout });
         // The document's version as `revision.version` (VER-009): a first version is 0.1.
         expect(inputs!.revision).toBe('0.1');
-        // Thrown to roll the layout's 0.3 back: the rest of the suite publishes under the default.
+        // Thrown to roll the layout's 0.4 back: the rest of the suite publishes under the default.
         throw rolledBack;
       }),
     ).rejects.toBe(rolledBack);
@@ -1204,5 +1205,254 @@ describe('requesting and recording a publication', () => {
         sql`update publication_request set requested_by = ${grace} where id = ${id}`.execute(trx),
       ).rejects.toThrow(/permission denied/);
     });
+  });
+
+  // Figures 3, ruling R6: every image the resolved components place, decided as the publisher.
+  /** An asset version in this space, made directly, with the facts a request hands the job. */
+  const image = (trx: TenantTransaction, space: string, author: string, fill: string) =>
+    createArtifact(trx, {
+      spaceId: space,
+      author,
+      substance: {
+        kind: 'asset',
+        content: {
+          schemaVersion: 1,
+          object: `${production.role}/sha256/${fill.repeat(64)}`,
+          format: 'png',
+          bytes: 3530,
+          width: 800,
+          height: 600,
+          orientation: 1,
+          colour: 'rgb',
+          alpha: false,
+          depth: 8,
+          resolution: null,
+          alternative: { text: 'Two red squares', language: 'en-GB' },
+        },
+      },
+    });
+  const figureOf = (id: string, asset: string) => ({
+    type: 'figure' as const,
+    id,
+    asset,
+    imageStyle: 'figure' as const,
+    caption: [{ type: 'text' as const, value: 'Shapes', marks: [] }],
+    alternative: { kind: 'inherited' as const },
+  });
+  /** A component in General holding these blocks, at its second version. */
+  const holding = async (trx: TenantTransaction, author: string, blocks: unknown[]) => {
+    const first = await component(trx, general, author, 'Install the printer');
+    const substance = substanceOf(first);
+    if (substance.kind !== 'component') throw new Error('not a component');
+    const next = await recordVersion(trx, {
+      artifactId: first.artifactId,
+      openedFrom: first.id,
+      author,
+      substance: {
+        ...substance,
+        content: { ...substance.content, content: blocks as ContentDocument['content'] },
+      },
+    });
+    if (next.answer !== 'recorded') throw new Error(next.answer);
+    return next.version;
+  };
+  /** A request's failures, read in the transaction that made it. */
+  const failuresIn = (trx: TenantTransaction, id: string) =>
+    trx
+      .selectFrom('publication_request')
+      .select('failures')
+      .where('id', '=', id)
+      .executeTakeFirstOrThrow()
+      .then((row) => row.failures);
+  const requestAssets = (trx: TenantTransaction, id: string) =>
+    trx
+      .selectFrom('publication_request_asset')
+      .select(['version_id', 'asset_id'])
+      .where('request_id', '=', id)
+      .execute();
+
+  it('resolves every image a figure places as the publisher, wherever it stands, and hands the job its facts', async () => {
+    await service.withTenant(production, async (trx) => {
+      const red = await image(trx, general, ada, 'd');
+      const blue = await image(trx, general, ada, 'e');
+      const placed = await holding(trx, ada, [
+        figureOf('f1', red.id),
+        {
+          type: 'list',
+          id: 'l1',
+          kind: 'unordered',
+          items: [{ content: [figureOf('f2', blue.id)] }],
+        },
+        { type: 'blockquote', id: 'q1', content: [figureOf('f3', red.id)] },
+      ]);
+      const version = await documentWith(trx, [reference(placed.artifactId)]);
+      const id = await requested(trx, version, ada);
+
+      expect(await failuresIn(trx, id)).toEqual([]);
+      // Each version once, however many figures place it.
+      expect(new Set((await requestAssets(trx, id)).map((each) => each.version_id))).toEqual(
+        new Set([red.id, blue.id]),
+      );
+      const inputs = await publicationInputs(trx, id);
+      expect(inputs!.assets.get(red.id)).toEqual({
+        object: `${production.role}/sha256/${'d'.repeat(64)}`,
+        format: 'png',
+        width: 800,
+        height: 600,
+        alternative: { text: 'Two red squares', language: 'en-GB' },
+      });
+      expect([...inputs!.assets.keys()].sort()).toEqual([red.id, blue.id].sort());
+    });
+  });
+
+  it('refuses a figure whose image the publisher may not read, naming the figure and nothing of the image', async () => {
+    await service.withTenant(production, async (trx) => {
+      // In Quality, which Grace may read and Ada may not; placed by Grace in a component in General.
+      const secret = await image(trx, quality, grace, 'f');
+      const missing = randomUUID();
+      const placed = await holding(trx, grace, [
+        figureOf('f1', secret.id),
+        figureOf('f2', missing),
+      ]);
+      const placement = reference(placed.artifactId);
+      const version = await documentWith(trx, [placement]);
+
+      const adas = await requested(trx, version, ada);
+      const unreadable = (block: string) => ({
+        stage: 'resolve',
+        code: 'asset_unreadable',
+        node: placement.id,
+        block,
+        detail: null,
+      });
+      const refused = await failuresIn(trx, adas);
+      expect(refused).toEqual([unreadable('f1'), unreadable('f2')]);
+      expect(JSON.stringify(refused)).not.toContain(secret.id);
+      expect(JSON.stringify(refused)).not.toContain(secret.artifactId);
+      expect(await requestAssets(trx, adas)).toEqual([]);
+
+      // Grace may read the image; the one naming no version is still refused, and told the same way.
+      const graces = await requested(trx, version, grace);
+      expect(await failuresIn(trx, graces)).toEqual([unreadable('f2')]);
+      expect(await requestAssets(trx, graces)).toEqual([
+        { version_id: secret.id, asset_id: secret.artifactId },
+      ]);
+    });
+  });
+
+  it('records the images a publication printed, and never one on a request once it is finished', async () => {
+    const { id, red } = await service.withTenant(production, async (trx) => {
+      const red = await image(trx, general, ada, '1');
+      const placed = await holding(trx, ada, [figureOf('f1', red.id)]);
+      const version = await documentWith(trx, [reference(placed.artifactId)]);
+      return { id: await requested(trx, version, ada), red };
+    });
+    const publication = await service.withTenant(production, (trx) =>
+      recordPublication(trx, recording(id)),
+    );
+    const printed = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication_asset')
+        .select(['version_id', 'asset_id'])
+        .where('publication_id', '=', publication!)
+        .execute(),
+    );
+    expect(printed).toEqual([{ version_id: red.id, asset_id: red.artifactId }]);
+
+    // A publication naming fewer images than its request recorded does not commit.
+    const { id: other } = await service.withTenant(production, async (trx) => {
+      const placed = await holding(trx, ada, [figureOf('f1', red.id)]);
+      const version = await documentWith(trx, [reference(placed.artifactId)]);
+      return { id: await requested(trx, version, ada) };
+    });
+    // Written row by row as the runtime role, as recordPublication writes it, but for its image.
+    await expect(
+      service.withTenant(production, async (trx) => {
+        const made = recording(other);
+        const request = await trx
+          .selectFrom('publication_request as r')
+          .innerJoin('artifact as a', 'a.id', 'r.document_id')
+          .selectAll('r')
+          .select('a.space_id')
+          .where('r.id', '=', other)
+          .executeTakeFirstOrThrow();
+        const artifact = await trx
+          .insertInto('artifact')
+          .values({ kind: 'publication', space_id: request.space_id })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        await trx
+          .insertInto('publication')
+          .values({
+            id: artifact.id,
+            request_id: other,
+            document_id: request.document_id,
+            document_version_id: request.document_version_id,
+            publisher: request.requested_by,
+            published_at: request.requested_at,
+            approval: 'none',
+            formats: ['pdf'],
+            engine: 'typst',
+            engine_version: made.engineVersion,
+            template: 'publication',
+            template_version: made.templateVersion,
+            pipeline_version: made.pipelineVersion,
+            fonts: JSON.stringify(made.fonts),
+            data_sha256: made.dataSha256,
+            numbering: JSON.stringify(made.numbering),
+            layout_id: request.layout_id,
+            layout_version_id: request.layout_version_id,
+          })
+          .execute();
+        const occurrences = await trx
+          .selectFrom('publication_request_occurrence')
+          .select(['node', 'version_id'])
+          .where('request_id', '=', other)
+          .execute();
+        await trx
+          .insertInto('publication_input')
+          .values([
+            { publication_id: artifact.id, version_id: request.document_version_id, node: null },
+            ...occurrences.map((each) => ({
+              publication_id: artifact.id,
+              version_id: each.version_id,
+              node: each.node,
+            })),
+          ])
+          .execute();
+        await trx
+          .insertInto('publication_output')
+          .values({
+            publication_id: artifact.id,
+            format: 'pdf',
+            object_key: made.output.key,
+            sha256: made.output.sha256,
+            bytes: made.output.bytes,
+            standard: 'ua-1',
+          })
+          .execute();
+        await trx
+          .updateTable('publication_request')
+          .set({ state: 'done', finished_at: new Date() })
+          .where('id', '=', other)
+          .execute();
+      }),
+    ).rejects.toThrow(/recorded whole/);
+    expect((await stateOf(other)).state).toBe('queued');
+
+    // The request is done: an image recorded on it now would say it read what it never read.
+    await expect(
+      service.withTenant(production, (trx) =>
+        trx
+          .insertInto('publication_request_asset')
+          .values({ request_id: id, version_id: red.id, asset_id: red.artifactId })
+          .execute(),
+      ),
+    ).rejects.toThrow(/only while its request is queued/);
+    await expect(
+      service.withTenant(production, (trx) =>
+        trx.deleteFrom('publication_asset').where('publication_id', '=', publication!).execute(),
+      ),
+    ).rejects.toThrow(/permission denied/);
   });
 });

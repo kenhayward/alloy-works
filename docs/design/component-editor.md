@@ -376,7 +376,7 @@ today and still will after them.
 dialog and the same panel, and come in the last of the four slices (publishing.md's F-O).
 
 **Built by [figures 2](../plans/2026-09-23-figures-02-the-figure-in-the-editor.md)**, all but inline
-images, and publishing still refuses a figure by name until figures 3. Building it, and its final
+images; [figures 3](../plans/2026-09-23-figures-03-publishing-figures.md) publishes it. Building it, and its final
 review, changed these things here:
 
 - **The height rule is the stylesheet's**, no taller than 60 per cent of the viewport, not a function

@@ -1,3 +1,5 @@
+import { ADMITTED_FORMATS } from '../assets/header.js';
+import type { AssetVersionContent } from '../assets/version.js';
 import { startsOutsideItsNumbering, type BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
 import type { InlineNode } from '../content/model/inline.js';
@@ -16,7 +18,16 @@ import { defaultNumberingScheme, type NumberFormat } from '../structure/scheme.j
 
 import type { PublishFailure } from './failures.js';
 import { characterProblems, codePointName, type Covers, type Face } from './glyphs.js';
-import { columnsAt, columnsOf, expandTabs, listIndent, QUOTATION_INDENT } from './measure.js';
+import {
+  captionHeight,
+  columnsAt,
+  columnsOf,
+  expandTabs,
+  listIndent,
+  QUOTATION_INDENT,
+  textBlockHeight,
+  textMeasure,
+} from './measure.js';
 import { publishedLanguage } from './language.js';
 import type { Layout, PdfFormat } from './layout.js';
 import {
@@ -29,6 +40,7 @@ import {
   type PublishedCell,
   type PublishedDocument,
   type PublishedDocument1,
+  type PublishedFigure,
   type PublishedItem,
   type PublishedMark,
   type PublishedNode,
@@ -60,7 +72,19 @@ export interface AssembleInput {
   /** The document version as `revision.version` (VER-009). Ignored where `layout` is null. */
   readonly revision: string;
   readonly covers: Covers;
+  /**
+   * Every asset version the request resolved as its publisher, by identifier (figures 3, ruling R6):
+   * what a figure placing one is published from. One the publisher may not read is not here, and the
+   * request recorded why.
+   */
+  readonly assets: ReadonlyMap<string, PublishingAsset>;
 }
+
+/** What `assemble` reads of an asset version: where its bytes are, what they are, and its default. */
+export type PublishingAsset = Pick<
+  AssetVersionContent,
+  'object' | 'format' | 'width' | 'height' | 'alternative'
+>;
 
 export type Assembled<
   Document extends PublishedDocument | PublishedDocument1 = PublishedDocument | PublishedDocument1,
@@ -73,6 +97,35 @@ const BODY = 'body';
 
 /** The one table style the template sets until themes.md gives styles (tables 2, ruling R4). */
 const TABLE_STYLE = 'table';
+
+/**
+ * Where an image stands in the compile root (figures 3, ruling R2): `assets/`, the hash its key ends
+ * in, and the extension its format declares. The one rule, which the published document names and the
+ * job writes the file at, so the two cannot name different places.
+ */
+export function publishedImagePath(asset: Pick<PublishingAsset, 'object' | 'format'>): string {
+  const hash = asset.object.slice(asset.object.lastIndexOf('/') + 1);
+  return `assets/${hash}.${ADMITTED_FORMATS[asset.format].extension}`;
+}
+
+/** The one image style the template sets for a figure until themes.md gives styles (decision F-K). */
+const FIGURE_STYLE = 'figure';
+
+/**
+ * The share of the text block's height a figure may stand (decision F-K): past it, the height is held
+ * here and the width taken from the proportions - STY-017's rule with a fixed number, since the
+ * engine lets an image run off its page and says nothing.
+ */
+const FIGURE_HEIGHT_SHARE = 0.6;
+
+/**
+ * The least an image may be given, in points - an inch - where its caption takes the rest of the page:
+ * a caption that leaves less is refused, `caption_too_long`, rather than set beside a smudge.
+ */
+const FIGURE_LEAST_HEIGHT = 72;
+
+/** A length in points as a published document carries it: to hundredths, so its bytes are stable. */
+const points = (length: number) => Math.round(length * 100) / 100;
 
 /** Each number format as Typst's page numbering writes it, by name, never by position. */
 const PATTERNS: Readonly<Record<NumberFormat, PublishedPattern>> = {
@@ -122,6 +175,12 @@ export function assemble(input: AssembleInput): Assembled {
 
   // check and project: one walk, collecting every failure.
   const refusedNodes = new Set(input.refused.map((each) => each.node));
+  // A figure whose image the request could not read, where it said so: told once, not twice.
+  const refusedAssets = new Set(
+    input.refused
+      .filter((each) => each.code === 'asset_unreadable')
+      .map((each) => `${each.node} ${each.block}`),
+  );
   // Asked of the family the text will be set in (decision A): preformatted text and an inline code
   // run are set in the monospace face, everything else in the body face, and a character missing
   // from the monospace alone is `code_glyph_missing`, so the author is not told no face has it.
@@ -394,7 +453,65 @@ export function assemble(input: AssembleInput): Assembled {
           },
         ];
       }
-      case 'figure':
+      case 'figure': {
+        // Refused by name without a layout, as a list is: the frozen first shape holds paragraphs alone.
+        if (layout === null) {
+          failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
+          return [];
+        }
+        if (block.imageStyle !== FIGURE_STYLE) {
+          failures.push(failure('compose', 'style_missing', node, block.id, block.imageStyle));
+        }
+        // CNT-017's caption: a caption of no words names nothing (ruling R5), as a table's does not.
+        const words = block.caption.map((inline) => (inline.type === 'text' ? inline.value : ''));
+        if (words.join('').trim() === '') {
+          failures.push(failure('compose', 'figure_without_caption', node, block.id, null));
+        }
+        const caption = publishedRuns(block.caption, node, block.id);
+        const label =
+          numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
+            ?.label ?? null;
+        if (label !== null) check(label, node, block.id);
+
+        const asset = input.assets.get(block.asset);
+        if (asset === undefined) {
+          // The request resolved every image as the publisher and recorded why one is missing; one it
+          // did not record is an image nothing resolved, said the same way and naming no more.
+          if (!refusedAssets.has(`${node} ${block.id}`)) {
+            failures.push(failure('resolve', 'asset_unreadable', node, block.id, null));
+          }
+          return [];
+        }
+        // Sized here, never by the template (ruling R3): the width where the figure stands, the height
+        // from the proportions as displayed, and past its share of the text block - or past what its
+        // caption leaves of the page, where that is less - that height instead. A figure does not
+        // break, so image and caption must stand on one page together (final review).
+        const format = publishedPdf(layout.formats.pdf);
+        const across = textMeasure(format) - indent;
+        const said = (label === null ? '' : `${label} `) + caption.map((run) => run.text).join('');
+        const left = textBlockHeight(format) - captionHeight(columnsOf(said), across);
+        const tooLong = left < FIGURE_LEAST_HEIGHT;
+        if (tooLong) failures.push(failure('compose', 'caption_too_long', node, block.id, null));
+        // Asked whatever the caption came to, so both are said at once (PUB-052).
+        const alternative = alternativeOf(block.alternative, asset, node, block.id);
+        if (tooLong || alternative === undefined) return [];
+        const most = Math.min(textBlockHeight(format) * FIGURE_HEIGHT_SHARE, left);
+        const tall = (across * asset.height) / asset.width;
+        const [width, height] =
+          tall > most ? [(most * asset.width) / asset.height, most] : [across, tall];
+        return [
+          {
+            type: 'figure',
+            id: block.id,
+            label,
+            caption,
+            path: publishedImagePath(asset),
+            width: points(width),
+            height: points(height),
+            alternative,
+          },
+        ];
+      }
       case 'equation':
         failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
         return [];
@@ -411,6 +528,44 @@ export function assemble(input: AssembleInput): Assembled {
         );
       }
     }
+  };
+
+  /**
+   * A figure's alternative text as the template reads it (ruling R4, PUB-033): its own in the language of
+   * the component it is in, the image's in the language that declares, or null where it is decorative -
+   * or undefined, with the failure recorded, where it has none or the engine could not carry its
+   * language. The component's own language is refused where the component is, so it is not again here.
+   */
+  const alternativeOf = (
+    stored: Extract<BlockNode, { type: 'figure' }>['alternative'],
+    asset: PublishingAsset,
+    node: string,
+    block: string,
+  ): PublishedFigure['alternative'] | undefined => {
+    if (stored.kind === 'decorative') return null;
+    if (stored.kind === 'own') {
+      // Its own text of spaces alone says nothing, whatever wrote it - the stored shape takes any text
+      // that is not empty, and only the editor refuses a blank one - so it is none (final review).
+      if (stored.text.trim() === '') {
+        failures.push(failure('compose', 'alternative_missing', node, block, null));
+        return undefined;
+      }
+      const content = input.occurrences.get(node);
+      const language = content === undefined ? null : publishedLanguage(content.language);
+      return language === null ? undefined : { text: stored.text, language };
+    }
+    if (asset.alternative === null) {
+      failures.push(failure('compose', 'alternative_missing', node, block, null));
+      return undefined;
+    }
+    const language = publishedLanguage(asset.alternative.language);
+    if (language === null) {
+      failures.push(
+        failure('compose', 'language_not_publishable', node, block, asset.alternative.language),
+      );
+      return undefined;
+    }
+    return { text: asset.alternative.text, language };
   };
 
   /** A node and every node beneath it, in the matter of the top-level node that holds them. */
@@ -582,6 +737,7 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
     case 'preformatted':
     case 'blockquote':
     case 'table':
+    case 'figure':
       // Unreachable for the same reason as a list: without a layout each is refused by name first.
       throw new Error(
         `publishing/1 holds paragraphs alone, and block ${block.id} is a ${block.type}`,

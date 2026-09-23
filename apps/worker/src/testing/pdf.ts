@@ -58,6 +58,12 @@ export interface ReadPdf {
    * as whether a header repeated on a second page is a new row, this is the count to ask.
    */
   readonly elements: Readonly<Record<string, number>>;
+  /**
+   * Every `Figure` structure element in the file, in the order it is written: its `/Alt`, its
+   * `/Lang` where it declares one of its own (the engine writes none where the language is its
+   * parent's), and its layout box, `[left, bottom, right, top]` in points on its page.
+   */
+  readonly figures: readonly TaggedFigure[];
   readonly marked: boolean;
   readonly pdfuaPart: string | null;
   readonly title: string | null;
@@ -72,6 +78,12 @@ export interface ReadPdf {
    * position rather than parsed out of a page's text in the test (editor 5, task 9).
    */
   readonly items: readonly TextItem[];
+}
+
+export interface TaggedFigure {
+  readonly alt: string | null;
+  readonly lang: string | null;
+  readonly box: readonly [number, number, number, number] | null;
 }
 
 export interface TextItem {
@@ -167,6 +179,90 @@ function structureElements(text: string): Record<string, number> {
   }
   if (found === 0) throw new Error('The PDF has no structure elements');
   return counted;
+}
+
+/**
+ * A PDF string as its characters: a literal `(...)` read to its balancing parenthesis with its
+ * escapes, or a hex `<...>`; UTF-16BE where it opens with the byte order mark, and PDFDocEncoding -
+ * read as Latin-1, which it matches in every character a test writes - otherwise. `at` is where the
+ * string opens; the answer is null where there is none there.
+ */
+function pdfString(text: string, at: number): string | null {
+  let bytes = '';
+  if (text[at] === '<') {
+    const end = text.indexOf('>', at);
+    const hex = text.slice(at + 1, end).replace(/\s+/g, '');
+    for (let i = 0; i < hex.length; i += 2)
+      bytes += String.fromCharCode(parseInt(hex.slice(i, i + 2).padEnd(2, '0'), 16));
+  } else if (text[at] === '(') {
+    let depth = 0;
+    for (let i = at; i < text.length; i += 1) {
+      const c = text[i]!;
+      // An end of line in a literal string is one newline, however the file spells it (ISO 32000-1,
+      // 7.3.4.2), and a backslash before one continues the string on the next line and says nothing.
+      if (c === '\r') {
+        bytes += '\n';
+        if (text[i + 1] === '\n') i += 1;
+        continue;
+      }
+      if (c === '\\' && (text[i + 1] === '\r' || text[i + 1] === '\n')) {
+        i += text[i + 1] === '\r' && text[i + 2] === '\n' ? 2 : 1;
+        continue;
+      }
+      if (c === '\\') {
+        const next = text[i + 1]!;
+        const escapes: Record<string, string> = { n: '\n', r: '\r', t: '\t', b: '\b', f: '\f' };
+        if (/[0-7]/.test(next)) {
+          const octal = /^[0-7]{1,3}/.exec(text.slice(i + 1))![0];
+          bytes += String.fromCharCode(parseInt(octal, 8));
+          i += octal.length;
+        } else {
+          bytes += escapes[next] ?? next;
+          i += 1;
+        }
+        continue;
+      }
+      if (c === '(') {
+        depth += 1;
+        if (depth === 1) continue;
+      } else if (c === ')') {
+        depth -= 1;
+        if (depth === 0) break;
+      }
+      bytes += c;
+    }
+  } else {
+    return null;
+  }
+  if (bytes.startsWith('\u00fe\u00ff')) {
+    let decoded = '';
+    for (let i = 2; i + 1 < bytes.length; i += 2) {
+      decoded += String.fromCharCode((bytes.charCodeAt(i) << 8) | bytes.charCodeAt(i + 1));
+    }
+    return decoded;
+  }
+  return bytes;
+}
+
+/** Every `Figure` structure element, read from the objects themselves as `structureElements` reads. */
+function taggedFigures(text: string): TaggedFigure[] {
+  const figures: TaggedFigure[] = [];
+  for (const object of text.matchAll(/\sobj\b([\s\S]*?)\bendobj\b/g)) {
+    const body = object[1] ?? '';
+    if (!/\/Type\s*\/StructElem\b/.test(body) || !/\/S\s*\/Figure\b/.test(body)) continue;
+    const valueOf = (key: string) => {
+      const found = new RegExp(`/${key}\\s*([(<])`).exec(body);
+      return found === null ? null : pdfString(body, found.index + found[0].length - 1);
+    };
+    const box = /\/BBox\s*\[([^\]]*)\]/.exec(body);
+    const corners = box === null ? null : box[1]!.trim().split(/\s+/).map(Number);
+    figures.push({
+      alt: valueOf('Alt'),
+      lang: valueOf('Lang'),
+      box: corners?.length === 4 ? (corners as [number, number, number, number]) : null,
+    });
+  }
+  return figures;
 }
 
 export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
@@ -293,6 +389,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       languages,
       roles,
       elements: structureElements(text),
+      figures: taggedFigures(text),
       marked: markInfo?.get('Marked') === true,
       pdfuaPart: metadata.metadata?.get('pdfuaid:part') ?? null,
       title: info.Title ?? null,

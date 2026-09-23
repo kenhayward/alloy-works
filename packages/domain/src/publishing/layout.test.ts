@@ -11,6 +11,7 @@ import {
   LAYOUT_SCHEMA_VERSION,
   parseLayout,
   readLayout,
+  SECOND_DEFAULT_LAYOUT,
   speaksFor,
   unsupportedFormats,
   type Layout,
@@ -53,7 +54,11 @@ describe('a layout', () => {
         cover: true,
         contents: { depth: 3 },
         appendices: { newPage: true },
-        lists: [{ sequence: 'table', title: 'Tables' }],
+        // Figures before Tables, as convention has them (figures 3, ruling R9).
+        lists: [
+          { sequence: 'figure', title: 'Figures' },
+          { sequence: 'table', title: 'Tables' },
+        ],
       },
       formats: {
         pdf: {
@@ -90,6 +95,17 @@ describe('a layout', () => {
       version: 'layout-version',
     });
     expect(read).toEqual({ ok: true, layout: expected });
+  });
+
+  it("keeps the default layout's 0.2, as migration 0019 stored it, with its list of tables alone", () => {
+    expect(SECOND_DEFAULT_LAYOUT.matter.lists).toEqual([{ sequence: 'table', title: 'Tables' }]);
+    expect({
+      ...SECOND_DEFAULT_LAYOUT,
+      matter: { ...SECOND_DEFAULT_LAYOUT.matter, lists: [] },
+    }).toEqual({
+      ...defaultLayout,
+      matter: { ...defaultLayout.matter, lists: [] },
+    });
   });
 
   it('reports a stored layout it cannot read with its artifact and version, and yields nothing', () => {

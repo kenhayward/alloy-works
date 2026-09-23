@@ -5,13 +5,13 @@ import type { SlotPart } from './layout.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/6` is the document under a layout whose runs carry their marks and whose blocks may be
- * lists, quotations, preformatted text and tables, with its generated lists after the contents, which
- * `apps/worker/templates/publication/6/` reads. It is never stored - only its digest is,
+ * `publishing/7` is the document under a layout whose runs carry their marks and whose blocks may be
+ * lists, quotations, preformatted text, tables and figures, with its generated lists after the
+ * contents, which `apps/worker/templates/publication/7/` reads. It is never stored - only its digest is,
  * on the publication - so a later shape is a new schema string and a new template version, not a
  * migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/6';
+export const PUBLISHING_SCHEMA = 'publishing/7';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -49,6 +49,13 @@ export const PUBLISHING_SCHEMA_4 = 'publishing/4';
  * and the publications made with it are a record.
  */
 export const PUBLISHING_SCHEMA_5 = 'publishing/5';
+
+/**
+ * The document under a layout as it stood before a block could be a figure, frozen by figures 3 for
+ * the reason `publishing/5` is: `apps/worker/templates/publication/6/` asserts it, and a template
+ * version and the publications made with it are a record.
+ */
+export const PUBLISHING_SCHEMA_6 = 'publishing/6';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -208,8 +215,32 @@ export interface PublishedTable {
   readonly rows: readonly { readonly cells: readonly PublishedCell[] }[];
 }
 
+/**
+ * A figure (figures 3, ruling R2): `number`'s label, or null where none is given, and its caption as
+ * runs, which a template sets below the image. The image is named by its **path in the compile root**
+ * - its hash and the extension its format declares - and nothing else of the asset reaches a template.
+ * Its printed size is `assemble`'s, in points, so a template never decides how big it is and an
+ * image never runs off its page. Its alternative text is resolved - its own in the component's
+ * language, or the image's in the language that declares - or null where the figure is decorative.
+ */
+export interface PublishedFigure {
+  readonly type: 'figure';
+  readonly id: string;
+  readonly label: string | null;
+  readonly caption: readonly PublishedRun[];
+  readonly path: string;
+  readonly width: number;
+  readonly height: number;
+  readonly alternative: { readonly text: string; readonly language: PublishedLanguage } | null;
+}
+
 export type PublishedBlock =
-  PublishedParagraph | PublishedList | PublishedPreformatted | PublishedQuotation | PublishedTable;
+  | PublishedParagraph
+  | PublishedList
+  | PublishedPreformatted
+  | PublishedQuotation
+  | PublishedTable
+  | PublishedFigure;
 
 /** A generated list the template sets after the contents: which sequence, under which title. */
 export interface PublishedGeneratedList {
