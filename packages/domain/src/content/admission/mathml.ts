@@ -164,6 +164,21 @@ export function writeMathmlTree(root: MathElement): string {
   return serialise(root, false);
 }
 
+/**
+ * The words an equation is spoken by: the `alttext` on its `math` element, decoded as this reader
+ * decodes every attribute, or null where it has none or where it says nothing (equations 1, ruling
+ * R4 - the alternative is the MathML's own attribute, and nothing is stored beside it). An `alttext`
+ * on any element inside is not the equation's. Read with this reader's own parser rather than a
+ * pattern over the string, so the character references it writes (`&quot;`, a combining mark's
+ * `&#x301;`) come back as the characters they stand for.
+ */
+export function equationAlternative(mathml: string): string | null {
+  const read = readMathmlTree(mathml);
+  if (!read.ok || read.root.name !== 'math') return null;
+  const alternative = read.root.attributes.find(([name]) => name === 'alttext')?.[1];
+  return alternative === undefined || alternative.trim() === '' ? null : alternative;
+}
+
 function read(source: string): MathElement {
   if (NOT_AN_XML_CHARACTER.test(source)) {
     throw new Unreadable('it holds a character XML does not allow');
