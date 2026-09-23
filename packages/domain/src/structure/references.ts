@@ -1,9 +1,15 @@
-import type { CrossReferenceDisplay, CrossReferenceTarget } from '../content/model/inline.js';
+import type { BlockNode } from '../content/model/blocks.js';
+import type { ContentDocument } from '../content/model/document.js';
+import type {
+  CrossReferenceDisplay,
+  CrossReferenceTarget,
+  InlineNode,
+} from '../content/model/inline.js';
 import { hasText } from '../content/model/text.js';
 
 import { captionText, type Contribution } from './contributions.js';
 import type { NumberingEntry, NumberingTable } from './numbering.js';
-import { walkOutline, type OutlineViewNode } from './outline.js';
+import { walkOutline, type OutlineNode, type OutlineViewNode } from './outline.js';
 
 /**
  * What a reference can point at, as an author is offered it and a reference shows it (structure.md,
@@ -215,4 +221,245 @@ export function printed(
     case 'relative':
       return relative ?? 'above or below';
   }
+}
+
+/**
+ * **What a reference is bound to** once resolved in the document publishing it (structure 4's
+ * `references`, cross-references 2, ruling R1): `node` the occurrence that holds the target - or, for
+ * a `node` target, the node itself - `block` the block or footnote there, null for a node, and what it
+ * prints from, as `ReferenceTarget` has it: its kind, `label` the numbering table's, and `title` a
+ * section's title's words, an occurrence's component's title, or a figure's or a table's caption's -
+ * each null where there is none. It carries no display form: which of those it can print is
+ * `printableForms`'s to say, and what the form prints is `assemble`'s.
+ */
+export interface BoundTarget {
+  readonly node: string;
+  readonly block: string | null;
+  readonly kind: ReferenceKind;
+  readonly label: string | null;
+  readonly title: string | null;
+}
+
+/**
+ * Why a reference did not resolve, for the failure that names it (STR-029, STR-062):
+ *
+ * - `missing`: the occurrence it is bound to holds no such block or footnote - or its content is not
+ *   the publisher's to read, which the request has already failed by name - or the outline holds no
+ *   such node, or a `block` target is read where no occurrence is;
+ * - `componentAbsent`: a `component` target whose component the document places nowhere;
+ * - `componentRepeated`: one it places more than once, so which occurrence was meant cannot be known.
+ */
+export type UnresolvedReason = 'missing' | 'componentAbsent' | 'componentRepeated';
+
+export type ReferenceResolution =
+  | { readonly ok: true; readonly target: BoundTarget }
+  | { readonly ok: false; readonly reason: UnresolvedReason };
+
+/**
+ * What resolution reads - exactly what `assemble` holds when it walks a document, so it is handed
+ * over rather than adapted: the **stored** outline, whose every occurrence names its component (a
+ * reader's view withholds some, and a `component` target counted over it could take one occurrence
+ * for the only one); the content of each occurrence the publisher may read, keyed by its node; and
+ * `number`'s table for that outline and those contents.
+ */
+export interface ResolvingDocument {
+  readonly outline: { readonly nodes: readonly OutlineNode[] };
+  readonly occurrences: ReadonlyMap<string, ContentDocument>;
+  readonly numbering: NumberingTable;
+}
+
+/** Where a reference is read: the node of the occurrence it stands in, or of the section it titles. */
+export interface Reading {
+  readonly node: string;
+}
+
+/**
+ * **Resolution** (structure.md, "Cross-references"; cross-references 2, ruling R1): the document is
+ * indexed once, and the function returned binds each reference read in it, pure and in any order.
+ *
+ * - **A `block` target** reaches a block or footnote of **the occurrence it is read in** - never the
+ *   component, so one component placed twice resolves "see Figure 2" in each to its own (STR-056,
+ *   STR-028).
+ * - **A `component` target** reaches a block or footnote of that component's **one** occurrence in this
+ *   document, and fails where the document places it in none or in several rather than taking the
+ *   first (STR-062). It resolves alike wherever it is read.
+ * - **A `node` target** reaches the node: a section, by its number and its title's words, or an
+ *   occurrence, which is a heading, by its number and its component's title.
+ *
+ * Bound to an occurrence, a block is looked up in its content, wherever it is nested - a list's item
+ * at any depth, a quotation, a table's cell - and a footnote wherever `contributionsOf` finds one. A
+ * figure, a table and a footnote take their label from the numbering table; any other block - a
+ * paragraph, a list, a quotation, preformatted text, and an equation, which nothing points at by
+ * number until references to one are planned - is a `block`, with neither label nor title, which a
+ * page or a relative form can still name (XR-C). **A footnote's own paragraphs are not found**: they
+ * are the footnote's rather than the component's blocks - set in its note, on its page, where it
+ * stands - so a reference names the footnote, and a label inside a note is not one the engine was
+ * measured with (XR-D).
+ */
+export function referenceResolver(
+  document: ResolvingDocument,
+): (target: CrossReferenceTarget, reading: Reading) => ReferenceResolution {
+  const entries = new Map<string, NumberingEntry>();
+  for (const entry of document.numbering.entries)
+    entries.set(entryKey(entry.node, entry.block), entry);
+  const labelOf = (node: string, block: string | null): string | null => {
+    const entry = entries.get(entryKey(node, block));
+    return entry === undefined ? null : (entry.label ?? entry.number);
+  };
+
+  // Every node by its identifier, and every component's occurrences, counted over the whole outline
+  // before anything is resolved: an occurrence early in the document is ambiguous because of a late one.
+  const nodes = new Map<string, OutlineNode>();
+  const placements = new Map<string, string[]>();
+  walkOutline(document.outline.nodes, (node) => {
+    nodes.set(node.id, node);
+    if (node.type === 'reference') {
+      placements.set(node.component, [...(placements.get(node.component) ?? []), node.id]);
+    }
+  });
+
+  // Each occurrence's blocks, walked the first time a reference asks for one.
+  const indexed = new Map<string, ReadonlyMap<string, Found>>();
+  const blocksOf = (node: string): ReadonlyMap<string, Found> | undefined => {
+    const content = document.occurrences.get(node);
+    if (content === undefined) return undefined;
+    let found = indexed.get(node);
+    if (found === undefined) {
+      const index = new Map<string, Found>();
+      for (const block of content.content) findIn(block, index);
+      indexed.set(node, index);
+      found = index;
+    }
+    return found;
+  };
+
+  const inOccurrence = (node: string, block: string): ReferenceResolution => {
+    const found = blocksOf(node)?.get(block);
+    if (found === undefined) return { ok: false, reason: 'missing' };
+    const numbered = found.kind !== 'block';
+    return {
+      ok: true,
+      target: {
+        node,
+        block,
+        kind: found.kind,
+        label: numbered ? labelOf(node, block) : null,
+        title: found.caption !== null && hasText(found.caption) ? found.caption : null,
+      },
+    };
+  };
+
+  return (target, reading) => {
+    switch (target.kind) {
+      case 'block':
+        return inOccurrence(reading.node, target.block);
+      case 'component': {
+        const [only, ...others] = placements.get(target.component) ?? [];
+        if (only === undefined) return { ok: false, reason: 'componentAbsent' };
+        if (others.length > 0) return { ok: false, reason: 'componentRepeated' };
+        return inOccurrence(only, target.block);
+      }
+      case 'node': {
+        const node = nodes.get(target.node);
+        if (node === undefined) return { ok: false, reason: 'missing' };
+        const words =
+          node.type === 'section'
+            ? captionText(node.title)
+            : (document.occurrences.get(node.id)?.title ?? '');
+        return {
+          ok: true,
+          target: {
+            node: node.id,
+            block: null,
+            kind: 'section',
+            label: labelOf(node.id, null),
+            title: hasText(words) ? words : null,
+          },
+        };
+      }
+      default: {
+        // **Unreachable, and named rather than left to fall through**: a fourth kind of target - a
+        // bibliography entry, when LIB says what one is - fails to compile here until it resolves.
+        const unreachable: never = target;
+        throw new Error(
+          `No resolution for a target of kind ${(unreachable as CrossReferenceTarget).kind}`,
+        );
+      }
+    }
+  };
+}
+
+/** A block or footnote found in an occurrence: its kind, and a figure's or a table's caption words. */
+interface Found {
+  readonly kind: ReferenceKind;
+  readonly caption: string | null;
+}
+
+/**
+ * Every footnote in some inline content, as `inlineContributions` finds one, without descending into
+ * the footnote's own paragraphs - a footnote holds no footnote (CNT-129), and its paragraphs are its
+ * own, not blocks a reference names.
+ */
+function footnotesIn(inlines: readonly InlineNode[], index: Map<string, Found>): void {
+  for (const inline of inlines) {
+    if (inline.type === 'footnote') index.set(inline.id, { kind: 'footnote', caption: null });
+  }
+}
+
+/**
+ * A block and everything it holds, into the index by identifier. **A branch per stored block kind,
+ * and a `default:` that refuses what it cannot name**, as `blockContributions` has, so an eighth kind
+ * fails to compile here rather than its blocks going unfound. It walks where `blockContributions`
+ * walks, so a footnote is found exactly where it takes a number.
+ */
+function findIn(block: BlockNode, index: Map<string, Found>): void {
+  switch (block.type) {
+    case 'paragraph':
+      index.set(block.id, { kind: 'block', caption: null });
+      footnotesIn(block.content, index);
+      return;
+    case 'list':
+      index.set(block.id, { kind: 'block', caption: null });
+      for (const item of block.items) for (const each of item.content) findIn(each, index);
+      return;
+    case 'blockquote':
+      index.set(block.id, { kind: 'block', caption: null });
+      for (const each of block.content) findIn(each, index);
+      footnotesIn(block.attribution ?? [], index);
+      return;
+    case 'preformatted':
+    case 'equation':
+      index.set(block.id, { kind: 'block', caption: null });
+      return;
+    case 'table':
+      index.set(block.id, { kind: 'table', caption: captionText(block.caption) });
+      footnotesIn(block.caption, index);
+      for (const row of block.rows) {
+        for (const cell of row.cells) for (const each of cell.content) findIn(each, index);
+      }
+      footnotesIn(block.note ?? [], index);
+      return;
+    case 'figure':
+      index.set(block.id, { kind: 'figure', caption: captionText(block.caption) });
+      footnotesIn(block.caption, index);
+      return;
+    default: {
+      const unreachable: never = block;
+      throw new Error(`No resolution rule for a block of kind ${(unreachable as BlockNode).type}`);
+    }
+  }
+}
+
+/**
+ * **The forms a bound target can print**: those its kind offers (`formsFor`, XR-C), less those it has
+ * nothing to print for - a number where the table gives it none, an unnumbered section's among them,
+ * and a title where it has no words. A form asked of a target outside these is
+ * `cross_reference_form_unavailable` at publish, where `printed` in the editor would fall back.
+ */
+export function printableForms(target: BoundTarget): readonly CrossReferenceDisplay[] {
+  return formsFor(target.kind).filter((form) => {
+    const needsNumber = form === 'number' || form === 'numberAndTitle';
+    const needsTitle = form === 'title' || form === 'numberAndTitle';
+    return (!needsNumber || target.label !== null) && (!needsTitle || target.title !== null);
+  });
 }

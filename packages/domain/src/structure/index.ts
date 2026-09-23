@@ -55,5 +55,21 @@ export type { NumberFormat, NumberingRule, NumberingScheme } from './scheme.js';
 export { contents, listOf } from './lists.js';
 export type { ContentsEntry, ListEntry } from './lists.js';
 
-export { documentTargets, formsFor, kindWord, printed } from './references.js';
-export type { DocumentTargetsInput, ReferenceKind, ReferenceTarget } from './references.js';
+export {
+  documentTargets,
+  formsFor,
+  kindWord,
+  printableForms,
+  printed,
+  referenceResolver,
+} from './references.js';
+export type {
+  BoundTarget,
+  DocumentTargetsInput,
+  Reading,
+  ReferenceKind,
+  ReferenceResolution,
+  ReferenceTarget,
+  ResolvingDocument,
+  UnresolvedReason,
+} from './references.js';

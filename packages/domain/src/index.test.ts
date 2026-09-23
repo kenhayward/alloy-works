@@ -139,6 +139,10 @@ describe('the domain package', () => {
         'formsFor',
         'kindWord',
         'printed',
+        // And how one resolves in the document that publishes it, promoted in the plan that builds it
+        // (docs/plans/2026-09-23-cross-references-02-publishing-references.md).
+        'referenceResolver',
+        'printableForms',
         // Publishing: the published document, its failures and assemble (publishing.md).
         'DRAFT_NOTICE',
         'PUBLISHING_SCHEMA',
