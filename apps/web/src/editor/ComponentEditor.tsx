@@ -5,8 +5,11 @@ import {
   EDITOR_COMMANDS,
   figureAt,
   fromEditor,
+  imageAt,
   insertFigure,
+  insertImage,
   replaceFigureImage,
+  replaceImageAsset,
   headerOf,
   listAt,
   preformattedAt,
@@ -237,7 +240,9 @@ export function ComponentEditor({
   // The figure panel's, while the cursor stands in a figure (figures 2, ruling R5).
   const figureRegion = useRef<HTMLDivElement | null>(null);
   // The Figure dialog, open to make a figure or to give one another image, or closed.
-  const [figureDialog, setFigureDialog] = useState<'Figure' | 'Replace image' | null>(null);
+  const [figureDialog, setFigureDialog] = useState<'Figure' | 'Image' | 'Replace image' | null>(
+    null,
+  );
   // The paste report's, which comes and goes too: it is there from a paste with something to say
   // until it is closed or the next paste replaces it.
   const pasteRegion = useRef<HTMLElement | null>(null);
@@ -780,6 +785,9 @@ export function ComponentEditor({
   // can go - never in a caption, a cell or preformatted text, where an upload would place nothing.
   const mayPlaceFigure =
     surface !== null && insertFigure('', { kind: 'decorative' }, () => '')(surface.state);
+  // An inline image selected whole, and where one could go, asked the same way (figures 4).
+  const image = surface === null ? null : imageAt(surface.state);
+  const mayPlaceImage = surface !== null && insertImage('', { kind: 'decorative' })(surface.state);
 
   /**
    * **Paste as Markdown**: the clipboard's plain text read as Markdown and placed as a paste is,
@@ -935,6 +943,8 @@ export function ComponentEditor({
               onPasteMarkdown={() => void pasteMarkdown()}
               onInsertFigure={() => setFigureDialog('Figure')}
               figurePlaceable={mayPlaceFigure}
+              onInsertImage={() => setFigureDialog('Image')}
+              imagePlaceable={mayPlaceImage}
               ref={toolbarRegion}
               view={surface}
               enabled={mayFormat}
@@ -1004,6 +1014,20 @@ export function ComponentEditor({
                 onReplace={() => setFigureDialog('Replace image')}
               />
             )}
+            {/* Or while an inline image is selected whole: the same panel, about the image
+                (figures 4, ruling R7). An image never stands in a figure, so the two never meet. */}
+            {surface !== null && image !== null && (
+              <FigurePanel
+                key={`image-${image.pos}`}
+                kind="image"
+                ref={figureRegion}
+                view={surface}
+                figure={image}
+                enabled={mayFormat}
+                client={client}
+                onReplace={() => setFigureDialog('Replace image')}
+              />
+            )}
             {/* What the last paste changed, while the surface takes changes: a report about a paste
                 into a component that has since been lost to someone else is about nothing here. */}
             {surface !== null && pasteReport !== null && mayFormat && (
@@ -1055,14 +1079,17 @@ export function ComponentEditor({
                 return 'This component can no longer be edited here, so the image was not placed.';
               }
               const dispatch = surface.dispatch.bind(surface);
-              const placed =
+              const command =
                 figureDialog === 'Figure'
-                  ? insertFigure(
-                      assetVersion,
-                      alternative,
-                      newBlockIdentifier,
-                    )(surface.state, dispatch)
-                  : replaceFigureImage(assetVersion, alternative)(surface.state, dispatch);
+                  ? insertFigure(assetVersion, alternative, newBlockIdentifier)
+                  : figureDialog === 'Image'
+                    ? insertImage(assetVersion, alternative)
+                    : // Replacing what the panel is about: an inline image selected whole, or the
+                      // figure the cursor stands in.
+                      imageAt(surface.state) !== null
+                      ? replaceImageAsset(assetVersion, alternative)
+                      : replaceFigureImage(assetVersion, alternative);
+              const placed = command(surface.state, dispatch);
               if (!placed) return 'The image could not be placed where the cursor is.';
               setFigureDialog(null);
               surface.focus();

@@ -275,6 +275,33 @@
   color: var(--muted);
 }
 
+/* An image in a run of text (figures 4): one line high, as the published one is - 1.2 em, the
+ * `inline` image style's height - and its width from its proportions. */
+.aw-inline-image {
+  height: 1.2em;
+  width: auto;
+  vertical-align: text-bottom;
+}
+
+/* An inline image selected whole - which is how the panel for it opens - is outlined, so an author
+ * can see which it is: the browser draws no selection over a replaced element of its own. */
+.aw-inline-image-holder.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* An inline image that does not load: marked in its place, as a figure is, in a line of its text. */
+.aw-inline-image-holder.aw-image-missing .aw-inline-image {
+  display: none;
+}
+
+.aw-inline-image-holder.aw-image-missing::after {
+  content: attr(data-missing);
+  padding: 0 0.25em;
+  border: 1px dashed var(--muted);
+  color: var(--muted);
+}
+
 .aw-figure-caption {
   margin-top: 0.25em;
 }

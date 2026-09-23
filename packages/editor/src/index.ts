@@ -36,6 +36,14 @@ export {
   type FigureAt,
 } from './figures.js';
 export { MISSING_IMAGE } from './figureView.js';
+export {
+  deleteImage,
+  imageAt,
+  insertImage,
+  replaceImageAsset,
+  setImageAlternative,
+  type ImageAt,
+} from './images.js';
 export { fromEditor, toEditor, type Opened } from './mapping.js';
 export { identityPlugin, newBlockIdentifier } from './identity.js';
 export {
@@ -65,6 +73,6 @@ export {
 } from './header.js';
 export { mountEditor, type MountOptions } from './view.js';
 export { renderContent } from './render.js';
-export { Selection } from 'prosemirror-state';
+export { NodeSelection, Selection } from 'prosemirror-state';
 export type { Command, EditorState, Transaction } from 'prosemirror-state';
 export type { EditorView } from 'prosemirror-view';

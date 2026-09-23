@@ -180,25 +180,25 @@ a `null` identifier, so an unidentified block can never reach storage.
 The slice boundary, stated for every node and mark rather than left to be inferred. **Create** means a
 command makes a new one; **edit** means an existing one can be changed.
 
-| Content                                                                         | Create                                 | Edit                                                                                   | Where it waits                                                     |
-| ------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Paragraph                                                                       | Yes                                    | Text, and its style from the theme's allowed list                                      |                                                                    |
-| Emphasis, strong, underline, subscript, superscript, inline code, quoted phrase | Yes, toolbar and shortcut              | Apply and remove                                                                       |                                                                    |
-| Hyperlink                                                                       | Yes, over a selection                  | Target and title; removal                                                              |                                                                    |
-| Language                                                                        | Yes, over a selection                  | Tag; removal                                                                           |                                                                    |
-| Defined term                                                                    | No                                     | Removal only                                                                           | LIB's terms, T6                                                    |
-| List, three kinds                                                               | Yes                                    | Kind, nesting, start and format                                                        |                                                                    |
-| Table                                                                           | Yes                                    | Cells, spans, header rows and columns, key columns, caption, note                      |                                                                    |
-| Preformatted                                                                    | Yes                                    | Text and language label                                                                |                                                                    |
-| Block quotation                                                                 | Yes                                    | Content and attribution                                                                |                                                                    |
-| Equation, inline and block                                                      | Yes                                    | LaTeX or MathML, alternative text, numbered or not                                     |                                                                    |
-| Footnote                                                                        | Yes, in all four anchor kinds          | Content, restricted to CNT-129's                                                       |                                                                    |
-| Figure, inline image                                                            | Yes, from a file ([Figures](#figures)) | Caption, alternative text state, the image; image style once themes give more than one | A figure is built (figures 2); an inline image waits for figures 4 |
-| Cross-reference                                                                 | No                                     | Removal only                                                                           | STR, in the document view, where its targets are                   |
-| Citation                                                                        | No                                     | Removal only                                                                           | LIB's bibliography, T6                                             |
-| Variable                                                                        | No                                     | Removal only                                                                           | REU, T4                                                            |
-| Binding                                                                         | No                                     | Removal only                                                                           | DAT, T2                                                            |
-| Condition, suggestion, comment anchor                                           | No                                     | None                                                                                   | REU, T4, and COL, T3. Nothing in T1 creates one                    |
+| Content                                                                         | Create                                 | Edit                                                                                   | Where it waits                                                               |
+| ------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Paragraph                                                                       | Yes                                    | Text, and its style from the theme's allowed list                                      |                                                                              |
+| Emphasis, strong, underline, subscript, superscript, inline code, quoted phrase | Yes, toolbar and shortcut              | Apply and remove                                                                       |                                                                              |
+| Hyperlink                                                                       | Yes, over a selection                  | Target and title; removal                                                              |                                                                              |
+| Language                                                                        | Yes, over a selection                  | Tag; removal                                                                           |                                                                              |
+| Defined term                                                                    | No                                     | Removal only                                                                           | LIB's terms, T6                                                              |
+| List, three kinds                                                               | Yes                                    | Kind, nesting, start and format                                                        |                                                                              |
+| Table                                                                           | Yes                                    | Cells, spans, header rows and columns, key columns, caption, note                      |                                                                              |
+| Preformatted                                                                    | Yes                                    | Text and language label                                                                |                                                                              |
+| Block quotation                                                                 | Yes                                    | Content and attribution                                                                |                                                                              |
+| Equation, inline and block                                                      | Yes                                    | LaTeX or MathML, alternative text, numbered or not                                     |                                                                              |
+| Footnote                                                                        | Yes, in all four anchor kinds          | Content, restricted to CNT-129's                                                       |                                                                              |
+| Figure, inline image                                                            | Yes, from a file ([Figures](#figures)) | Caption, alternative text state, the image; image style once themes give more than one | Both built (figures 2 and 4); an inline image is placed in a paragraph alone |
+| Cross-reference                                                                 | No                                     | Removal only                                                                           | STR, in the document view, where its targets are                             |
+| Citation                                                                        | No                                     | Removal only                                                                           | LIB's bibliography, T6                                                       |
+| Variable                                                                        | No                                     | Removal only                                                                           | REU, T4                                                                      |
+| Binding                                                                         | No                                     | Removal only                                                                           | DAT, T2                                                                      |
+| Condition, suggestion, comment anchor                                           | No                                     | None                                                                                   | REU, T4, and COL, T3. Nothing in T1 creates one                              |
 
 **Nothing in T1 can put a condition, a suggestion or a comment anchor into a component** - the admission
 pipeline drops annotations whose owner does not travel (CNT-133) and follows CNT-Q14's recommendation to
@@ -406,6 +406,22 @@ review, changed these things here:
 - **Not changed:** a selection from a paragraph into a caption, deleted, takes the figure with it and
   joins what is left of the caption to the paragraph. It is ProseMirror's own deletion across an
   isolating node, `Ctrl+Z` gives it back, and a rule of its own waits for evidence it is met.
+
+**Inline images are built by [figures 4](../plans/2026-09-23-figures-04-inline-images-in-the-editor.md)**,
+and publishing one waits for figures 5. Building them settled three things the design above left open:
+
+- **An image stands in a paragraph alone**, wherever the paragraph is - running text, a list, a
+  quotation, a table's cell. A term, an attribution, a caption and preformatted text take none, and a
+  stored image in one still opens the component read-only, naming it.
+- **It carries no marks**, since the stored node carries none: a mark put over words and an image rests
+  on the words alone, and a link or an annotation over the words either side of an image is still
+  one - changed or taken off whole, and carried on by text typed straight after the image - because the
+  stored model ends an annotation only at text without it. The final review found the first draft saying "two pieces" and doing worse: the image took the
+  mark on the surface and never stored it, and a link changed from one side after a reopen changed
+  half.
+- **It has a button of its own, Image**, beside Figure, rather than Figure choosing by where the cursor
+  is: an author placing an image in running text and one placing a figure after a paragraph want
+  different things, and a button that did either would hide which.
 
 ## Theme and rendering
 

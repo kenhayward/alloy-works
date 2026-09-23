@@ -1,7 +1,7 @@
 import { markSchema } from '@alloy-works/domain';
 import { toggleMark } from 'prosemirror-commands';
 import type { Mark as EditorMark, MarkType, Node } from 'prosemirror-model';
-import type { Command, EditorState } from 'prosemirror-state';
+import { NodeSelection, type Command, type EditorState } from 'prosemirror-state';
 
 import { blockCommand, type BlockAction } from './blocks.js';
 import { editorSchema } from './schema.js';
@@ -348,6 +348,10 @@ export function applyMarkCommand(
  * the one thing `applyMarkCommand` refuses for a reason that is not about the value.
  */
 function rangeToMark(state: EditorState, type: MarkType): { from: number; to: number } | null {
+  // An image selected whole is nothing to put a mark on: it carries none (figures 4, ruling R1).
+  if (state.selection instanceof NodeSelection && state.selection.node.type.name === 'image') {
+    return null;
+  }
   const { from, to, empty } = state.selection;
   const range = empty ? annotationAt(state, type) : { from, to };
   return range === null || range.from === range.to ? null : range;
@@ -386,6 +390,10 @@ export function somewhereToPutMark(state: EditorState, mark: string): boolean {
  * same attributes, which is what `Mark.eq` compares - so taking a link off from inside it takes off
  * all of it, including the parts an edit split away (CNT-004). It stops at the annotation beside it,
  * which is a different mark under a different identifier and somebody else's decision.
+ *
+ * **It joins across an inline node that is not text** - an image, since figures 4 - as `spansOf` and
+ * the content model do: only text that does not carry the mark ends an annotation, so a link over
+ * words either side of an image is one link, changed or taken off whole (final review of figures 4).
  */
 function annotationAt(state: EditorState, type: MarkType): { from: number; to: number } | null {
   const { $from, from, to, empty } = state.selection;
@@ -394,13 +402,20 @@ function annotationAt(state: EditorState, type: MarkType): { from: number; to: n
   if (found === undefined) return null;
   const spans: { from: number; to: number }[] = [];
   let offset = $from.start();
+  // Whether text without the mark has stood since the last span ended, which is what ends one.
+  let broken = true;
   $from.parent.forEach((child) => {
     const childFrom = offset;
     offset += child.nodeSize;
-    if (!found.isInSet(child.marks)) return;
+    if (!child.isText) return;
+    if (!found.isInSet(child.marks)) {
+      broken = true;
+      return;
+    }
     const last = spans[spans.length - 1];
-    if (last !== undefined && last.to === childFrom) last.to = offset;
+    if (last !== undefined && !broken) last.to = offset;
     else spans.push({ from: childFrom, to: offset });
+    broken = false;
   });
   return spans.find((span) => span.from <= $from.pos && $from.pos <= span.to) ?? null;
 }

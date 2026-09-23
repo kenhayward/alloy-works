@@ -928,9 +928,9 @@ function quotation(newIdentifier: () => string): Command {
  * preformatted block it turns it back into paragraphs, one per line. The paragraphs' marks are
  * **dropped**: the loss is visible, it answers the author's own command, and one undo restores them
  * exactly, the marks' identifiers included (Ken, at plan review; decision K) - the paragraph takes a
- * new block identifier, as every block an undo reinserts does under ADR-0023's descent rule. A paragraph here holds `text*` and
- * nothing else, so there is no inline node that is not text for it to meet - the day one can hold a
- * footnote or a cross-reference, this must decline over it, because that is content, not formatting.
+ * new block identifier, as every block an undo reinserts does under ADR-0023's descent rule. It
+ * **declines over a paragraph holding anything but text** - an inline image, since figures 4 - because
+ * that is content, not formatting, and preformatted text holds text alone (final review of figures 4).
  */
 function preformatted(newIdentifier: () => string): Command {
   return (state, dispatch) => {
@@ -960,6 +960,11 @@ function preformatted(newIdentifier: () => string): Command {
     for (let index = range.startIndex; index < range.endIndex; index += 1) {
       const block = range.parent.child(index);
       if (block.type !== paragraphNode) return false;
+      let textAlone = true;
+      block.forEach((child) => {
+        if (!child.isText) textAlone = false;
+      });
+      if (!textAlone) return false;
       lines.push(asPreformatted(block.textContent));
     }
     if (dispatch) {

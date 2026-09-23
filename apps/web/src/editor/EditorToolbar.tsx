@@ -58,6 +58,13 @@ export interface EditorToolbarProps {
   /** Whether a figure could be placed where the cursor is; **Figure** is unavailable where not. */
   readonly figurePlaceable?: boolean;
   /**
+   * **Image**, after Figure where given (figures 4, ruling R6): the page's, as Figure is, opening the same
+   * dialog to place an image in the run the cursor is in.
+   */
+  readonly onInsertImage?: () => void;
+  /** Whether an image could be placed where the cursor is; **Image** is unavailable where not. */
+  readonly imagePlaceable?: boolean;
+  /**
    * The toolbar's own element. It is one of the three regions `F6` moves between (CNT-077), and the
    * view that owns that ring needs to be able to reach it and to ask whether the focus is inside it.
    */
@@ -148,14 +155,22 @@ export function EditorToolbar({
   onPasteMarkdown,
   onInsertFigure,
   figurePlaceable = true,
+  onInsertImage,
+  imagePlaceable = true,
   ref,
 }: EditorToolbarProps) {
   const [tabStop, setTabStop] = useState(0);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   // The registry's buttons, then Paste as Markdown where it is offered: one ring either way.
-  const count = EDITOR_COMMANDS.length + (onPasteMarkdown ? 1 : 0) + (onInsertFigure ? 1 : 0);
+  const count =
+    EDITOR_COMMANDS.length +
+    (onPasteMarkdown ? 1 : 0) +
+    (onInsertFigure ? 1 : 0) +
+    (onInsertImage ? 1 : 0);
   // Where the Figure button stands in the ring: after Paste as Markdown where that is offered.
   const figureAt = EDITOR_COMMANDS.length + (onPasteMarkdown ? 1 : 0);
+  // And the Image button's, after Figure's where that is offered.
+  const imageAt = figureAt + (onInsertFigure ? 1 : 0);
 
   const moveTo = (index: number) => {
     const at = (index + count) % count;
@@ -289,6 +304,25 @@ export function EditorToolbar({
           }}
         >
           <Icon name="Figure" />
+        </button>
+      )}
+      {onInsertImage && (
+        <button
+          type="button"
+          className={styles['button']}
+          aria-label="Image"
+          ref={(element) => {
+            buttons.current[imageAt] = element;
+          }}
+          aria-disabled={!enabled || view === null || !imagePlaceable}
+          tabIndex={tabStop === imageAt ? 0 : -1}
+          title="Image"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            if (enabled && view !== null && imagePlaceable) onInsertImage();
+          }}
+        >
+          <Icon name="Image" />
         </button>
       )}
     </div>

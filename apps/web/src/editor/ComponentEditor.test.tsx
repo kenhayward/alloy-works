@@ -1,5 +1,11 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { fromEditor, Selection, setListAttributes, type EditorView } from '@alloy-works/editor';
+import {
+  fromEditor,
+  NodeSelection,
+  Selection,
+  setListAttributes,
+  type EditorView,
+} from '@alloy-works/editor';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
@@ -3668,5 +3674,113 @@ describe('a figure in the editor (figures 2)', () => {
       within(dialog).getByText('Give the language as a tag, such as en-GB.'),
     ).toBeInTheDocument();
     expect(asked.some((each) => each.route.includes('asset-uploads'))).toBe(false);
+  });
+
+  describe('an inline image (figures 4)', () => {
+    const inline = (alternative: unknown, asset = RED) => ({
+      type: 'image',
+      asset,
+      imageStyle: 'inline',
+      alternative,
+    });
+    const aParagraphWithAnImage = (alternative: unknown) =>
+      blocksOf({
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [{ type: 'text', value: 'Press ', marks: [] }, inline(alternative)],
+      });
+    const runsOf = (view: EditorView) =>
+      (fromEditor(view.state.doc).content[0] as { content: unknown[] }).content;
+    /** The first inline image, selected whole, as a click on it selects it. */
+    const selectTheImage = (view: EditorView) =>
+      act(() => {
+        let at = -1;
+        view.state.doc.descendants((node, pos) => {
+          if (at === -1 && node.type.name === 'image') at = pos;
+          return at === -1;
+        });
+        view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, at)));
+      });
+
+    it('CNT-087 places an image in a run of text from the Image button, described as it is uploaded', async () => {
+      const { asked, surface } = openWith(content('Unbox the printer.'), {
+        ...uploads(RED),
+        ...assetVersion(RED, { text: 'A printer', language: 'en-GB' }),
+      });
+      const view = await surface();
+      selectText(view, 6, 6);
+      await userEvent.click(screen.getByRole('button', { name: 'Image' }));
+      const dialog = await screen.findByRole('dialog', { name: 'Image' });
+      await chooseImage(dialog);
+      await userEvent.type(within(dialog).getByLabelText('Description'), 'A printer');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+      await waitFor(() =>
+        expect(runsOf(view)).toEqual([
+          { type: 'text', value: 'Unbox', marks: [] },
+          inline({ kind: 'inherited' }),
+          { type: 'text', value: ' the printer.', marks: [] },
+        ]),
+      );
+      expect(asked.find((each) => each.route === 'POST /v1/spaces/s1/asset-uploads')?.body).toEqual(
+        {
+          alternative: { text: 'A printer', language: 'en-GB' },
+        },
+      );
+    });
+
+    it('offers Image only where an image may stand', async () => {
+      const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
+      const view = await surface();
+      const button = screen.getByRole('button', { name: 'Image' });
+      caretInCaption(view);
+      await waitFor(() => expect(button).toHaveAttribute('aria-disabled', 'true'));
+      act(() => selectText(view, 3, 3));
+      await waitFor(() => expect(button).toHaveAttribute('aria-disabled', 'false'));
+    });
+
+    it('describes, replaces and deletes an image selected whole, from its panel', async () => {
+      const { surface } = openWith(aParagraphWithAnImage({ kind: 'inherited' }), {
+        ...uploads(BLUE),
+        ...assetVersion(RED, null),
+        ...assetVersion(BLUE, null),
+      });
+      const view = await surface();
+      selectTheImage(view);
+      const panel = await screen.findByRole('group', { name: 'Image' });
+      // Said of the image, not a figure (final review).
+      expect(
+        await within(panel).findByText(
+          /so this image cannot be published until it is given one here/,
+        ),
+      ).toBeInTheDocument();
+      await userEvent.click(within(panel).getByLabelText('Decorative'));
+      await waitFor(() => expect(runsOf(view)[1]).toEqual(inline({ kind: 'decorative' })));
+
+      await userEvent.click(within(panel).getByRole('button', { name: 'Replace image' }));
+      const dialog = await screen.findByRole('dialog', { name: 'Replace image' });
+      await chooseImage(dialog);
+      await userEvent.click(within(dialog).getByLabelText('It is decorative'));
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+      await waitFor(() => expect(runsOf(view)[1]).toEqual(inline({ kind: 'decorative' }, BLUE)));
+
+      selectTheImage(view);
+      const again = await screen.findByRole('group', { name: 'Image' });
+      await userEvent.click(within(again).getByRole('button', { name: 'Delete image' }));
+      expect(runsOf(view)).toEqual([{ type: 'text', value: 'Press ', marks: [] }]);
+    });
+
+    it('marks an inline image that does not load in its place', async () => {
+      const { surface } = openWith(
+        aParagraphWithAnImage({ kind: 'decorative' }),
+        assetVersion(RED, null),
+      );
+      await surface();
+      const image = document.querySelector('.aw-inline-image')!;
+      expect(image).not.toBeNull();
+      fireEvent.error(image);
+      expect(image.parentElement).toHaveClass('aw-image-missing');
+      expect(image.parentElement).toHaveAttribute('data-missing', 'An image you may not see');
+    });
   });
 });

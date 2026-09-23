@@ -10,8 +10,11 @@ import type { UploadOutcome } from './upload.js';
 const languageTag = contentDocumentSchema.shape.language;
 
 export interface FigureDialogProps {
-  /** `Figure` to make one, `Replace image` to give an existing one another. */
-  readonly title: 'Figure' | 'Replace image';
+  /**
+   * `Figure` to make one, `Image` to place one in a run of text (figures 4), `Replace image` to give
+   * either another.
+   */
+  readonly title: 'Figure' | 'Image' | 'Replace image';
   /** The language a description is in unless the author says otherwise: the component's. */
   readonly language: string;
   /** Uploads the bytes with the description given, or none, and says what came of it. */

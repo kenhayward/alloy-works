@@ -103,17 +103,16 @@ describe('a figure in the editor (figures 2)', () => {
     }
   });
 
-  it('opens a component holding a figure for editing, and still one holding an inline image for reading', () => {
+  it('opens a component holding a figure for editing, and one with an image in its caption for reading', () => {
     expect(toEditor(documentOf(figure('f1', { kind: 'decorative' }))).editable).toBe(true);
-    const withImage = documentOf({
-      type: 'paragraph',
-      id: 'p1',
-      style: 'body',
-      content: [
+    // An inline image stands in a paragraph alone (figures 4, ruling R2); in a caption it has no node.
+    const imageInCaption = documentOf(
+      figure('f1', { kind: 'decorative' }, [
+        text('Shapes '),
         { type: 'image', asset: RED, imageStyle: 'inline', alternative: { kind: 'decorative' } },
-      ],
-    });
-    expect(toEditor(withImage)).toEqual({ editable: false, unsupported: ['image'] });
+      ] as unknown as ReturnType<typeof text>[]),
+    );
+    expect(toEditor(imageInCaption)).toEqual({ editable: false, unsupported: ['image'] });
   });
 
   it("renders the image from the asset version above the caption, its alt the figure's own text", () => {
