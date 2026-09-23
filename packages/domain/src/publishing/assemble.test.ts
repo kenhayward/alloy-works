@@ -1753,6 +1753,15 @@ describe('a figure, published (figures 3)', () => {
     ]);
     // 1511 characters: 24 lines, 407 points with the gap, which leaves the image 290.89 of the text
     // block - less than its share of 418.73 - and the width from the proportions.
+    // Every failure at once (PUB-052): a caption too long and no alternative text are both said.
+    const both = stored({
+      caption: [text('x'.repeat(3000))],
+      alternative: { kind: 'own', text: ' ' },
+    });
+    expect(failuresOf(assemble(withAssets({ [RED]: tall }, both)))).toEqual([
+      failed('caption_too_long', null),
+      failed('alternative_missing', null),
+    ]);
     const longish = stored({ caption: [text('x'.repeat(1500))] });
     expect(figureIn(assemble(withAssets({ [RED]: tall }, longish)))).toMatchObject({
       width: 72.72,

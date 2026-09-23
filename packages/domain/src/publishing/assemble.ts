@@ -482,9 +482,6 @@ export function assemble(input: AssembleInput): Assembled {
           }
           return [];
         }
-        const alternative = alternativeOf(block.alternative, asset, node, block.id);
-        if (alternative === undefined) return [];
-
         // Sized here, never by the template (ruling R3): the width where the figure stands, the height
         // from the proportions as displayed, and past its share of the text block - or past what its
         // caption leaves of the page, where that is less - that height instead. A figure does not
@@ -493,10 +490,11 @@ export function assemble(input: AssembleInput): Assembled {
         const across = textMeasure(format) - indent;
         const said = (label === null ? '' : `${label} `) + caption.map((run) => run.text).join('');
         const left = textBlockHeight(format) - captionHeight(columnsOf(said), across);
-        if (left < FIGURE_LEAST_HEIGHT) {
-          failures.push(failure('compose', 'caption_too_long', node, block.id, null));
-          return [];
-        }
+        const tooLong = left < FIGURE_LEAST_HEIGHT;
+        if (tooLong) failures.push(failure('compose', 'caption_too_long', node, block.id, null));
+        // Asked whatever the caption came to, so both are said at once (PUB-052).
+        const alternative = alternativeOf(block.alternative, asset, node, block.id);
+        if (tooLong || alternative === undefined) return [];
         const most = Math.min(textBlockHeight(format) * FIGURE_HEIGHT_SHARE, left);
         const tall = (across * asset.height) / asset.width;
         const [width, height] =
