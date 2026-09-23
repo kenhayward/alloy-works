@@ -3343,12 +3343,21 @@ describe('a figure in the editor (figures 2)', () => {
         alternative,
       }),
   });
+  // Every iteration a test here can make: typing into the panel saves as the author goes, and a slower
+  // machine batches fewer keystrokes into each save, so eight ran out on CI - the ninth answered 404,
+  // the session stopped, and the last letters typed were refused as read-only.
+  const everySave = Object.fromEntries(
+    Array.from({ length: 64 }, (_, at) => [
+      `PUT /v1/components/{id}/iterations/{session}/${at + 1}`,
+      () => json(200, { sequence: at + 1, lock }),
+    ]),
+  );
   const openWith = (stored: unknown, extra: Record<string, Answer> = {}) =>
     open(
       {
         'GET /v1/components/{id}': () => json(200, opened({ content: stored })),
         'POST /v1/components/{id}/lock': () => json(200, { lock }),
-        ...saves,
+        ...everySave,
         ...extra,
       },
       quick,
