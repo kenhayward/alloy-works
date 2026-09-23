@@ -4,16 +4,25 @@ import {
   markAt,
   somewhereToPutMark,
   toggleMarkCommand,
+  type BlockAction,
   type EditorCommand,
   type EditorView,
 } from '@alloy-works/editor';
 
 /**
- * A registry row that acts on a mark. Only a mark ever asks the author for a value - a block action
- * takes nothing an author has to type - so everything about prompting, about refusing a value and
- * about the dialog is written in terms of this narrower type rather than guarded at every use.
+ * A registry row that acts on a mark. Everything about asking for a mark's value, about refusing one
+ * and about the link and language dialog is written in terms of this narrower type rather than guarded
+ * at every use. The one block action that asks for something - **Reference**, whose target and form
+ * only the author can choose - asks through a dialog of its own, `OpenDialog`, and never through this.
  */
 export type MarkCommand = Extract<EditorCommand, { kind: 'mark' }>;
+
+/**
+ * Opens the dialog a prompting block action asks through, over the view it was pressed in, and
+ * answers whether one opened (cross-references 1, ruling R11). The dialog does the placing itself,
+ * with the author's answer, so nothing here waits on it.
+ */
+export type OpenDialog = (action: BlockAction, view: EditorView) => boolean;
 
 /** Asked for a value before a prompting command runs; resolves null when the author cancels. */
 export type AskForValue = (
@@ -33,10 +42,12 @@ export interface PressOptions {
    * simply had nothing to do: the words belong to whoever renders the notice.
    */
   readonly onRefused?: ((command: MarkCommand) => void) | undefined;
+  /** Where a block action that prompts opens its dialog; without one, such a press does nothing. */
+  readonly openDialog?: OpenDialog | undefined;
 }
 
 /** The same, for the asking half, which is only ever reached with a mark that prompts. */
-export interface AskOptions extends Omit<PressOptions, 'command'> {
+export interface AskOptions extends Omit<PressOptions, 'command' | 'openDialog'> {
   readonly command: MarkCommand;
 }
 
@@ -60,6 +71,11 @@ export interface AskOptions extends Omit<PressOptions, 'command'> {
  * unmaking a definition list, nesting the first item of a list, lifting a definition item that has
  * nowhere to go - and that answer is the press's answer, so a shortcut it declined is handed back to
  * the browser and a button that shows it as unavailable is showing the same thing the press does.
+ *
+ * **A block action that prompts opens its dialog where it could act, and nowhere else**: the command
+ * answers whether it could, without dispatching, and only then is the dialog asked for - so a press
+ * where nothing could be placed opens nothing, as a mark's does, and its shortcut goes back to the
+ * browser. **Reference** is the one today; `blockCommand('reference')` places nothing even when run.
  */
 export function pressCommand({
   view,
@@ -67,8 +83,13 @@ export function pressCommand({
   newIdentifier,
   prompt,
   onRefused,
+  openDialog,
 }: PressOptions): boolean {
   const dispatch = view.dispatch.bind(view);
+  if (command.kind === 'block' && command.prompts) {
+    if (!blockCommand(command.action, newIdentifier)(view.state, undefined, view)) return false;
+    return openDialog?.(command.action, view) ?? false;
+  }
   if (command.kind === 'block') {
     // With the view, so a command that opens something - a footnote's text - can put the focus there.
     return blockCommand(command.action, newIdentifier)(view.state, dispatch, view);

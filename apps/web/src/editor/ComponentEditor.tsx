@@ -1,6 +1,7 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
 import { parseContentDocument, type ReportEntry } from '@alloy-works/domain';
 import {
+  changeReference,
   createEditorState,
   EDITOR_COMMANDS,
   figureAt,
@@ -8,6 +9,7 @@ import {
   imageAt,
   insertFigure,
   insertImage,
+  insertReference,
   replaceFigureImage,
   replaceImageAsset,
   headerOf,
@@ -20,15 +22,18 @@ import {
   pasteIntoOpenFootnote,
   readMarkdownText,
   newBlockIdentifier,
+  referenceContextOf,
   removeMarkCommand,
   Selection as EditorSelection,
   setDirection,
   setLanguage,
+  setReferenceContext,
   setTitle,
   somewhereToPutMark,
   toEditor,
   type ComponentHeader as Header,
   type EditorView,
+  type ReferenceContext,
   type Selection,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
@@ -48,6 +53,8 @@ import { PreformattedPanel } from './PreformattedPanel.js';
 import { TablePanel } from './TablePanel.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
 import { askAndApply, pressCommand, type AskForValue, type MarkCommand } from './press.js';
+import { referenceChoicesIn, type ReferenceChoices } from './referenceChoices.js';
+import { ReferenceDialog } from './ReferenceDialog.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { uploadImage } from './upload.js';
 import { editingSessionFor, sessionService } from './service.js';
@@ -88,6 +95,13 @@ export interface ComponentEditorProps {
   readonly onDone?: () => void;
   /** Where the text was clicked to open it, in characters: the focus and the caret go there. */
   readonly openAt?: number;
+  /**
+   * What the document it is open in offers a reference (cross-references 1, rulings R10 and R11):
+   * `documentTargets` for this occurrence, from the page, which passes it again whenever it numbers
+   * the document again. None standalone, where a reference shows its target's kind and caption and
+   * the Reference dialog offers the component's own figures, tables and footnotes alone.
+   */
+  readonly referenceContext?: ReferenceContext | null;
 }
 
 type Loaded =
@@ -190,6 +204,7 @@ export function ComponentEditor({
   number,
   onDone,
   openAt,
+  referenceContext = null,
 }: ComponentEditorProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   // Held in a ref, so a parent passing a new inline callback on every render asks nothing again.
@@ -245,6 +260,14 @@ export function ComponentEditor({
   const [figureDialog, setFigureDialog] = useState<'Figure' | 'Image' | 'Replace image' | null>(
     null,
   );
+  // The Reference dialog, open over the view it was asked from - the surface, or a footnote's open
+  // editor - with what it offers there, or closed (cross-references 1, ruling R11).
+  const [referring, setReferring] = useState<
+    (ReferenceChoices & { readonly view: EditorView }) | null
+  >(null);
+  // What was focused as it opened, for the same reason as `opener` below, and apart from it: the
+  // two dialogs are never open together, and each puts back only what it took.
+  const referenceOpener = useRef<HTMLElement | null>(null);
   // The paste report's, which comes and goes too: it is there from a paste with something to say
   // until it is closed or the next paste replaces it.
   const pasteRegion = useRef<HTMLElement | null>(null);
@@ -403,6 +426,26 @@ export function ComponentEditor({
     back?.focus();
   }, [asking]);
 
+  /**
+   * Opens the Reference dialog over `editing` - the surface, or the footnote open in it - with what
+   * the component and the page's context offer there. Answers true: the command has already said a
+   * reference could be placed, which is what makes the press one that opens a dialog.
+   */
+  const openReference = (view: EditorView, editing: EditorView): boolean => {
+    referenceOpener.current ??=
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setReferring({ ...referenceChoicesIn(view, editing), view: editing });
+    return true;
+  };
+
+  // As for `asking`: the focus goes back once the page behind is no longer inert.
+  useEffect(() => {
+    if (referring !== null) return;
+    const back = referenceOpener.current;
+    referenceOpener.current = null;
+    back?.focus();
+  }, [referring]);
+
   // Held in refs, not the effect's own dependency list (fix round 1, finding 5): a parent that does
   // not memoise its callback, or recreates its timing object, must not tear the session down and
   // rebuild the surface from the original content on every render. Read fresh at the moment the effect
@@ -419,6 +462,12 @@ export function ComponentEditor({
   runPromptingRef.current = runPrompting;
   const openAtRef = useRef(openAt);
   openAtRef.current = openAt;
+  const openReferenceRef = useRef(openReference);
+  openReferenceRef.current = openReference;
+  // The page's latest context, which every fresh state starts from: a state rebuilt after a version is
+  // cut or a claim refused would otherwise start with none, and every reference would lose its label.
+  const referenceContextRef = useRef(referenceContext);
+  referenceContextRef.current = referenceContext;
 
   useEffect(() => {
     let current = true;
@@ -473,19 +522,24 @@ export function ComponentEditor({
         // come to mean two different things (CNT-077). It reports the key handled only where it
         // did something with it: a component being read, or a selection with nowhere to put the
         // mark, hands the key back rather than swallowing it.
-        onPrompt: (mark) => {
-          const command = EDITOR_COMMANDS.find(
-            (each) => each.kind === 'mark' && each.mark === mark,
-          );
-          if (command === undefined || command.kind !== 'mark') return false;
+        onPrompt: (name) => {
           // Restated, not a case this catches: it is the same expression `editable` below is, and
           // ProseMirror hands a keydown to a keymap only while the view is editable - so a reader
           // never reaches here at all. It stays because the two must agree, and a later `editable`
           // that grew a clause of its own would leave the keyboard the one way in.
           if (!(component.mayEdit && isEditablePhase(phase))) return false;
           // Into the footnote's own text while one is open (footnotes 1, ruling R9).
-          return runPromptingRef.current(openFootnote(view) ?? view, command);
+          const into = openFootnote(view) ?? view;
+          // **Reference** asks through its own dialog, as its button does (cross-references 1): the
+          // keymap has already asked whether one could be placed here.
+          if (name === 'reference') return openReferenceRef.current(view, into);
+          const command = EDITOR_COMMANDS.find(
+            (each) => each.kind === 'mark' && each.mark === name,
+          );
+          if (command === undefined || command.kind !== 'mark') return false;
+          return runPromptingRef.current(into, command);
         },
+        referenceContext: referenceContextRef.current,
         ...(selection ? { selection } : {}),
       });
     let base = opened.doc;
@@ -630,6 +684,15 @@ export function ComponentEditor({
       view.destroy();
     };
   }, [component, client, principalId]);
+
+  // The page numbers the document again, or opens this editor in another place: every reference on
+  // the surface, and in a footnote's open editor, is drawn again from what it now offers (R10, R11).
+  useEffect(() => {
+    if (surface === null || surface.isDestroyed) return;
+    if (referenceContextOf(surface.state) !== referenceContext) {
+      setReferenceContext(surface, referenceContext);
+    }
+  }, [surface, referenceContext]);
 
   // While there is something the service has not acknowledged, an unmount already flushes it best
   // effort (Session.dispose) but a page close does not run that cleanup at all - so a close is
@@ -854,7 +917,7 @@ export function ComponentEditor({
         aria-labelledby="component-title"
         className={styles['card']}
         data-in-place={onDone !== undefined}
-        inert={asking !== null || figureDialog !== null}
+        inert={asking !== null || figureDialog !== null || referring !== null}
         onKeyDown={moveRegion}
       >
         <div className={styles['strip']}>
@@ -965,6 +1028,9 @@ export function ComponentEditor({
               prompt={askFor}
               onRefused={(command) =>
                 editing && askAgain(editing, command, whyRefused(editing, command))
+              }
+              openDialog={(action, view) =>
+                action === 'reference' && surface !== null && openReference(surface, view)
               }
             />
             {!shown.mayEdit && (
@@ -1112,6 +1178,42 @@ export function ComponentEditor({
               setFigureDialog(null);
               surface.focus();
             }}
+          />,
+          document.body,
+        )}
+      {referring !== null &&
+        // Beside the article, as the prompt is, and for the same reason.
+        createPortal(
+          <ReferenceDialog
+            options={referring.options}
+            inDocument={referring.inDocument}
+            current={referring.current}
+            onDone={(choice) => {
+              // As the Figure dialog asks: the phase as it is now, since the lock can be lost while
+              // the dialog stands.
+              const now = controls.current?.view().phase;
+              const into = referring.view;
+              if (
+                !shown.mayEdit ||
+                now === undefined ||
+                !isEditablePhase(now) ||
+                into.isDestroyed
+              ) {
+                return 'This component can no longer be edited here, so the reference was not placed.';
+              }
+              const command =
+                referring.current === null
+                  ? insertReference(choice)
+                  : changeReference(referring.current.pos, choice);
+              if (!command(into.state, into.dispatch.bind(into))) {
+                return referring.current === null
+                  ? 'A reference cannot be placed where the cursor is.'
+                  : 'That reference is not there any more.';
+              }
+              setReferring(null);
+              return null;
+            }}
+            onCancel={() => setReferring(null)}
           />,
           document.body,
         )}

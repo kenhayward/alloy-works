@@ -1,0 +1,43 @@
+/*
+ * The Reference dialog's two groups inside the link dialog's form (MarkPrompt.module.css): what may be
+ * referred to, which can be long in a long document and so scrolls within the dialog rather than
+ * growing it past the page, and the forms, which are never more than five and wrap on one row.
+ */
+.group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.group legend {
+  padding: 0 0 var(--space-4);
+}
+
+.targets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-height: 16rem;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-10);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-6);
+}
+
+.forms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-16);
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin: 0;
+}
+
+.shows {
+  color: var(--text);
+}

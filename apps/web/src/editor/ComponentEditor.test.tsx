@@ -4001,3 +4001,428 @@ describe('footnotes and the table note in the editor (footnotes 1)', () => {
     expect(tableOf().note).toBeUndefined();
   });
 });
+
+describe('cross-references in the editor (cross-references 1)', () => {
+  // Every change saves as the author goes; enough answered that no test runs out of them.
+  const everySave = Object.fromEntries(
+    Array.from({ length: 64 }, (_, at) => [
+      `PUT /v1/components/{id}/iterations/{session}/${at + 1}`,
+      () => json(200, { sequence: at + 1, lock }),
+    ]),
+  );
+  const answers = (stored: unknown) => ({
+    'GET /v1/components/{id}': () => json(200, opened({ content: stored })),
+    'POST /v1/components/{id}/lock': () => json(200, { lock }),
+    ...everySave,
+  });
+  const openWith = (
+    stored: unknown,
+    extra: Partial<React.ComponentProps<typeof ComponentEditor>> = {},
+  ) => open(answers(stored), quick, true, extra);
+
+  const readings = {
+    type: 'table',
+    id: 't1',
+    style: 'table',
+    caption: [{ type: 'text', value: 'Readings', marks: [] }],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [{ cells: [{ content: [para('c1', 'York')], colspan: 1, rowspan: 1 }] }],
+  };
+  /** A paragraph referring to the table after it. */
+  const referring = blocksOf(
+    {
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [
+        { type: 'text', value: 'See ', marks: [] },
+        {
+          type: 'crossReference',
+          id: 'x1',
+          target: { kind: 'block', block: 't1' },
+          display: 'number',
+        },
+      ],
+    },
+    readings,
+  );
+  /** What a document offers where this component is edited in it: a section, and its table. */
+  const inADocument = {
+    targets: [
+      {
+        target: { kind: 'node', node: 'aaaaaaaaaaaaaaaaaaaaaaaaaa' },
+        kind: 'section',
+        label: '1',
+        title: 'Introduction',
+        relative: 'above',
+      },
+      {
+        target: { kind: 'block', block: 't1' },
+        kind: 'table',
+        label: 'Table 1.1',
+        title: 'Readings',
+        relative: null,
+      },
+    ],
+  } as const;
+
+  /** Every reference the stored document holds, wherever it stands, as a save would send it. */
+  const referencesIn = (view: EditorView) => {
+    const found: Record<string, unknown>[] = [];
+    const walk = (value: unknown) => {
+      if (Array.isArray(value)) value.forEach(walk);
+      else if (typeof value === 'object' && value !== null) {
+        if ((value as { type?: unknown }).type === 'crossReference') {
+          found.push(value as Record<string, unknown>);
+        }
+        Object.values(value).forEach(walk);
+      }
+    };
+    walk(fromEditor(view.state.doc));
+    return found;
+  };
+  /** What each reference on the surface shows, in order. */
+  const drawn = () =>
+    [...document.querySelectorAll('.ProseMirror [data-reference]')].map((each) => each.textContent);
+  /** The words each radio of a group is named by. */
+  const choices = (dialog: HTMLElement, group: string) =>
+    within(within(dialog).getByRole('group', { name: group }))
+      .getAllByRole('radio')
+      .map((each) => (each.closest('label') as HTMLElement).textContent);
+  /** Selects the first node of that type whole, as a click on it does. */
+  const selectFirst = (view: EditorView, type: string) =>
+    act(() => {
+      let at = -1;
+      view.state.doc.descendants((node, pos) => {
+        if (at === -1 && node.type.name === type) at = pos;
+        return at === -1;
+      });
+      view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, at)));
+    });
+
+  it('opens a component holding a reference for editing, showing what it refers to', async () => {
+    const { surface } = openWith(referring);
+    await surface();
+    expect(screen.queryByText(/shown for reading only/)).toBeNull();
+    expect(drawn()).toEqual(['Table: Readings']);
+  });
+
+  it('offers its own table on its own as "Table: Readings", and places a reference to it', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'See the readings.'), readings));
+    const view = await surface();
+    caretIn(view, 'b1');
+    const button = screen.getByRole('button', { name: 'Reference' });
+    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(button).toHaveAttribute('aria-disabled', 'false');
+    await userEvent.click(button);
+
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    expect(choices(dialog, 'Refer to')).toEqual(['Table: Readings']);
+    expect(within(dialog).getByRole('radio', { name: 'Table: Readings' })).toBeChecked();
+    expect(choices(dialog, 'Show as')).toEqual([
+      'Number',
+      'Title',
+      'Number and title',
+      'Page',
+      'Above or below',
+    ]);
+    // Numbered by no document, so it shows its kind and caption whatever the form.
+    expect(within(dialog).getByText(/It will show/)).toHaveTextContent(
+      'It will show: Table: Readings',
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(referencesIn(view)).toMatchObject([
+      { target: { kind: 'block', block: 't1' }, display: 'number' },
+    ]);
+    expect(drawn()).toEqual(['Table: Readings']);
+  });
+
+  it('opens the dialog from the keyboard alone, with Ctrl, Alt and X', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'See the readings.'), readings));
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Reference' });
+    caretIn(view, 'b1');
+
+    fireEvent.keyDown(view.dom, { key: 'x', ctrlKey: true, altKey: true });
+
+    expect(await screen.findByRole('dialog', { name: 'Reference' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Table: Readings' })).toHaveFocus();
+  });
+
+  it('in a document, offers its sections and its numbered table, and the reference shows the label', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'See the readings.'), readings), {
+      referenceContext: inADocument,
+    });
+    const view = await surface();
+    caretIn(view, 'b1');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    expect(choices(dialog, 'Refer to')).toEqual(['1 Introduction', 'Table 1.1 Readings']);
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Table 1.1 Readings' }));
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Number' }));
+    expect(within(dialog).getByText(/It will show/)).toHaveTextContent('It will show: Table 1.1');
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Above or below' }));
+    // The table stands after the paragraph the cursor is in.
+    expect(within(dialog).getByText(/It will show/)).toHaveTextContent('It will show: below');
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Number' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+
+    expect(referencesIn(view)).toMatchObject([
+      { target: { kind: 'block', block: 't1' }, display: 'number' },
+    ]);
+    expect(drawn()).toEqual(['Table 1.1']);
+  });
+
+  it('offers a footnote by its number, with only the forms a footnote has', async () => {
+    const { surface } = openWith(
+      blocksOf(
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Visited', marks: [] },
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [para('fp1', 'Twice.')],
+            },
+          ],
+        },
+        para('b2', 'Then.'),
+      ),
+      {
+        referenceContext: {
+          targets: [
+            {
+              target: { kind: 'block', block: 'f1' },
+              kind: 'footnote',
+              label: '3',
+              title: null,
+              relative: null,
+            },
+          ],
+        },
+      },
+    );
+    const view = await surface();
+    caretIn(view, 'b2');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    expect(within(dialog).getByRole('radio', { name: 'Footnote 3' })).toBeChecked();
+    expect(choices(dialog, 'Show as')).toEqual(['Number', 'Page', 'Above or below']);
+    expect(within(dialog).getByText(/It will show/)).toHaveTextContent('It will show: 3');
+  });
+
+  it('opens on a reference selected whole, and changes its form keeping its identifier', async () => {
+    const { surface } = openWith(referring, { referenceContext: inADocument });
+    const view = await surface();
+    expect(drawn()).toEqual(['Table 1.1']);
+    selectFirst(view, 'crossReference');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    expect(within(dialog).getByRole('radio', { name: 'Table 1.1 Readings' })).toBeChecked();
+    expect(within(dialog).getByRole('radio', { name: 'Number' })).toBeChecked();
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Above or below' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Change' }));
+
+    expect(referencesIn(view)).toEqual([
+      {
+        type: 'crossReference',
+        id: 'x1',
+        target: { kind: 'block', block: 't1' },
+        display: 'relative',
+      },
+    ]);
+    expect(drawn()).toEqual(['below']);
+  });
+
+  it('opens on a reference whose target has gone, offering it as it shows, and points it elsewhere', async () => {
+    const broken = blocksOf(
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [
+          { type: 'text', value: 'See ', marks: [] },
+          {
+            type: 'crossReference',
+            id: 'x1',
+            target: { kind: 'block', block: 't9' },
+            display: 'title',
+          },
+        ],
+      },
+      readings,
+    );
+    const { surface } = openWith(broken);
+    const view = await surface();
+    expect(drawn()).toEqual(['Broken reference']);
+    selectFirst(view, 'crossReference');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    expect(choices(dialog, 'Refer to')).toEqual(['Broken reference', 'Table: Readings']);
+    expect(within(dialog).getByRole('radio', { name: 'Broken reference' })).toBeChecked();
+    // Kept as it is: its own form is offered beside the ones anything has.
+    expect(choices(dialog, 'Show as')).toEqual(['Title', 'Page', 'Above or below']);
+    expect(within(dialog).getByRole('radio', { name: 'Title' })).toBeChecked();
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Table: Readings' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Change' }));
+
+    expect(referencesIn(view)).toEqual([
+      {
+        type: 'crossReference',
+        id: 'x1',
+        target: { kind: 'block', block: 't1' },
+        display: 'title',
+      },
+    ]);
+    expect(drawn()).toEqual(['Table: Readings']);
+  });
+
+  it('places nothing on Escape, and puts the focus back on what opened it', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'See the readings.'), readings));
+    const view = await surface();
+    caretIn(view, 'b1');
+    const button = screen.getByRole('button', { name: 'Reference' });
+    button.focus();
+    await userEvent.keyboard('{Enter}');
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(referencesIn(view)).toEqual([]);
+    expect(button).toHaveFocus();
+  });
+
+  it('places nothing on Cancel, and keeps the keyboard inside the dialog while it is open', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'See the readings.'), readings));
+    const view = await surface();
+    caretIn(view, 'b1');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    const close = within(dialog).getByRole('button', { name: 'Close' });
+
+    close.focus();
+    await userEvent.tab();
+    expect(within(dialog).getByRole('radio', { name: 'Table: Readings' })).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(close).toHaveFocus();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(referencesIn(view)).toEqual([]);
+  });
+
+  it('says so where nothing in the component can be referred to, and offers nothing to insert', async () => {
+    const { surface } = openWith(content('Unbox the printer.'));
+    const view = await surface();
+    caretIn(view, 'b1');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    expect(dialog).toHaveTextContent('Nothing in this component can be referred to yet.');
+    expect(within(dialog).queryByRole('radio')).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: 'Insert' })).toBeNull();
+  });
+
+  it("places the reference in a footnote's text while it is open", async () => {
+    const { surface } = openWith(
+      blocksOf(
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Visited', marks: [] },
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [para('fp1', 'See.')],
+            },
+          ],
+        },
+        readings,
+      ),
+    );
+    const view = await surface();
+    selectFirst(view, 'footnote');
+    act(() => {
+      const inner = openFootnote(view)!;
+      inner.dispatch(
+        inner.state.tr.setSelection(
+          Selection.fromJSON(inner.state.doc, { type: 'text', anchor: 4, head: 4 }),
+        ),
+      );
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    // The footnote itself is offered too; the table is chosen.
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Table: Readings' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+
+    const [block] = fromEditor(view.state.doc).content as unknown as [
+      { content: [unknown, { content: { content: unknown[] }[] }] },
+    ];
+    expect(block.content[1].content[0]!.content).toMatchObject([
+      { type: 'text', value: 'See' },
+      { type: 'crossReference', target: { kind: 'block', block: 't1' }, display: 'number' },
+      { type: 'text', value: '.' },
+    ]);
+    expect(
+      within(screen.getByRole('textbox', { name: 'Footnote text' })).getByText('Table: Readings'),
+    ).toBeInTheDocument();
+  });
+
+  it('follows the context the page gives it, and keeps it across a version cut', async () => {
+    const { client } = service({
+      ...answers(referring),
+      'POST /v1/components/{id}/versions': () =>
+        json(200, {
+          outcome: 'cut',
+          version: {
+            id: 'v2',
+            number: '0.2',
+            author: ADA,
+            createdAt: '2026-09-16T09:05:00.000Z',
+            note: null,
+          },
+        }),
+    });
+    let view: EditorView | undefined;
+    const editor = (referenceContext: typeof inADocument | null) => (
+      <ComponentEditor
+        componentId={COMPONENT}
+        client={client}
+        principalId={ADA}
+        sessionId={SESSION}
+        timing={quick}
+        onView={(mounted) => (view = mounted)}
+        referenceContext={referenceContext}
+      />
+    );
+    const { rerender } = render(editor(null));
+    await screen.findByLabelText('Title');
+    await waitFor(() => expect(drawn()).toEqual(['Table: Readings']));
+
+    rerender(editor(inADocument));
+    expect(drawn()).toEqual(['Table 1.1']);
+
+    act(() => view!.dispatch(view!.state.tr.insertText('Now s', 1, 2)));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save version' })).not.toBeDisabled(),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save version' }));
+    await screen.findByText('Version 0.2 saved.');
+    expect(drawn()).toEqual(['Table 1.1']);
+  });
+});
