@@ -111,6 +111,16 @@ export const IMAGE_OWN_DESCRIPTION = "The image, described by the image's own de
  * Where an asset version's bytes are read from. The renderer is served on the service's own origin,
  * so one path serves the surface and a document's text alike (figures 2, ruling R1).
  */
+/**
+ * The `alt` an image on the surface is given: its own text, nothing where it is decorative, and a
+ * sentence saying the image's own description is used where it inherits one - a figure's and an
+ * inline image's alike.
+ */
+function altOf(alternative: { kind: string; text?: string }): string {
+  if (alternative.kind === 'own') return alternative.text ?? '';
+  return alternative.kind === 'decorative' ? '' : IMAGE_OWN_DESCRIPTION;
+}
+
 export const assetContentPath = (asset: string): string =>
   `/v1/asset-versions/${encodeURIComponent(asset)}/content`;
 
@@ -126,7 +136,9 @@ export const editorSchema = new Schema({
     // list (CNT-124, held by the content model).
     paragraph: {
       group: 'block',
-      content: 'text*',
+      // Text, and an inline image (figures 4, ruling R2): a paragraph is the one place an image stands
+      // in a run, wherever the paragraph is - running text, a list, a quotation, a table's cell.
+      content: '(text | image)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing is read back from the DOM through these rules, so a paragraph the browser makes is
@@ -344,13 +356,7 @@ export const editorSchema = new Schema({
         alternative: { default: { kind: 'decorative' } },
       },
       toDOM: (node) => {
-        const alternative = node.attrs.alternative as { kind: string; text?: string };
-        const alt =
-          alternative.kind === 'own'
-            ? (alternative.text ?? '')
-            : alternative.kind === 'decorative'
-              ? ''
-              : IMAGE_OWN_DESCRIPTION;
+        const alt = altOf(node.attrs.alternative as { kind: string; text?: string });
         return [
           'figure',
           { 'data-figure': '', 'data-asset': node.attrs.asset as string, class: 'aw-figure' },
@@ -370,6 +376,35 @@ export const editorSchema = new Schema({
       defining: true,
       parseDOM: [{ tag: 'figcaption[data-figure-caption]', priority: 60 }],
       toDOM: () => ['figcaption', { class: 'aw-figure-caption', 'data-figure-caption': '' }, 0],
+    },
+    /**
+     * An image in a run of text (figures 4, ruling R1): the asset version it shows, its image style and
+     * its alternative text, as the stored `image` holds them - and **no marks**, since the stored node
+     * carries none, so an annotation over text either side of it is two pieces. An atom, drawn one line
+     * high from the asset version's route, with its `alt` as a figure's is; `imageView` marks one that
+     * does not load. No `parseDOM`, for the figure's reason: an image enters a component only through the
+     * dialog or the product's own clipboard, never with a guessed alternative text.
+     */
+    image: {
+      inline: true,
+      atom: true,
+      selectable: true,
+      draggable: false,
+      marks: '',
+      attrs: {
+        asset: {},
+        imageStyle: { default: 'inline' },
+        alternative: { default: { kind: 'decorative' } },
+      },
+      toDOM: (node) => [
+        'img',
+        {
+          src: assetContentPath(node.attrs.asset as string),
+          alt: altOf(node.attrs.alternative as { kind: string; text?: string }),
+          class: 'aw-inline-image',
+          'data-asset': node.attrs.asset as string,
+        },
+      ],
     },
     ...tableSpecs,
     /** Outside the block group, as a term is: it belongs to its quotation, not to a sequence. */

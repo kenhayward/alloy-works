@@ -210,6 +210,38 @@ describe('pasting', () => {
     expect(pasted.rows[0]!.cells[0]!.content).toMatchObject([{ content: [{ value: 'Cell' }] }]);
   });
 
+  it('keeps an inline image copied within the product, in the run it was copied in', () => {
+    // Figures 4, ruling R8: the product's own clipboard carries an image in a run, as it does a figure.
+    const image = {
+      type: 'image',
+      asset: '00000000-0000-4000-8000-00000000a551',
+      imageStyle: 'inline',
+      alternative: { kind: 'own', text: 'Our logo' },
+    };
+    const pasted = paste(at(stateOf([paragraph('b1', 'York')]), 5), {
+      [PRODUCT_CLIPBOARD_TYPE]: JSON.stringify({
+        format: 'alloy-works/content',
+        schemaVersion: 1,
+        content: [
+          {
+            type: 'paragraph',
+            id: 'x1',
+            style: 'body',
+            content: [{ type: 'text', value: 'Press ', marks: [] }, image],
+          },
+        ],
+      }),
+    });
+    expect(stored(pasted)).toEqual([
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [{ type: 'text', value: 'YorkPress ', marks: [] }, image],
+      },
+    ]);
+  });
+
   it('keeps a figure copied within the product, its image, caption and alternative text and all', () => {
     // Figures 2: the product's own clipboard carries a figure whole (component-editor.md, "Figures").
     const figure = {

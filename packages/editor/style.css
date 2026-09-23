@@ -275,6 +275,14 @@
   color: var(--muted);
 }
 
+/* An image in a run of text (figures 4): one line high, as the published one is - 1.2 em, the
+ * `inline` image style's height - and its width from its proportions. */
+.aw-inline-image {
+  height: 1.2em;
+  width: auto;
+  vertical-align: text-bottom;
+}
+
 .aw-figure-caption {
   margin-top: 0.25em;
 }

@@ -49,7 +49,8 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
   for (const block of blocks) {
     switch (block.type) {
       case 'paragraph':
-        marksWithNoType(block.content, found);
+        // The one inline home an image may stand in (figures 4, ruling R2).
+        marksWithNoType(block.content, found, true);
         break;
       case 'list':
         // The editor's `definitionList` holds no `start` and no `format`, and loses neither: the
@@ -95,9 +96,18 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
   }
 }
 
-/** The inline nodes and the marks of one run sequence that this schema has no counterpart for. */
-function marksWithNoType(content: readonly InlineNode[], found: Set<string>): void {
+/**
+ * The inline nodes and the marks of one run sequence that this schema has no counterpart for. An image
+ * has one only in a paragraph, so `holdsImages` is true there alone: in a term, an attribution or a
+ * caption an image still opens the component read-only by name, rather than being dropped.
+ */
+function marksWithNoType(
+  content: readonly InlineNode[],
+  found: Set<string>,
+  holdsImages = false,
+): void {
   for (const inline of content) {
+    if (inline.type === 'image' && holdsImages) continue;
     if (inline.type !== 'text') {
       found.add(inline.type);
       continue;
@@ -129,6 +139,10 @@ function toMark(mark: Mark): EditorMark {
  * the drop is an identity rather than a loss.
  */
 function toRun(inline: InlineNode): Node[] {
+  if (inline.type === 'image') {
+    const { asset, imageStyle, alternative } = inline;
+    return [editorSchema.nodes.image!.create({ asset, imageStyle, alternative })];
+  }
   const text = inline as Extract<InlineNode, { type: 'text' }>;
   if (text.value === '') return [];
   return [editorSchema.text(text.value, text.marks.map(toMark))];
@@ -320,6 +334,11 @@ function markOf(mark: EditorMark): unknown {
 function runsOf(textblock: Node, id: string): unknown[] {
   const runs: unknown[] = [];
   textblock.forEach((child) => {
+    if (child.type.name === 'image') {
+      const { asset, imageStyle, alternative } = child.attrs;
+      runs.push({ type: 'image', asset, imageStyle, alternative });
+      return;
+    }
     if (child.type.name !== 'text') {
       throw new Error(`Block ${id} holds a node this editor cannot store: ${child.type.name}`);
     }

@@ -36,6 +36,14 @@ export {
   type FigureAt,
 } from './figures.js';
 export { MISSING_IMAGE } from './figureView.js';
+export {
+  deleteImage,
+  imageAt,
+  insertImage,
+  replaceImageAsset,
+  setImageAlternative,
+  type ImageAt,
+} from './images.js';
 export { fromEditor, toEditor, type Opened } from './mapping.js';
 export { identityPlugin, newBlockIdentifier } from './identity.js';
 export {

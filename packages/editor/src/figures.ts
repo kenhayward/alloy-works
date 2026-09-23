@@ -67,7 +67,7 @@ function nowhereForAFigure(state: EditorState): boolean {
  * just typed between two words, since the panel sets the text on every keystroke - or anything else
  * as it came; null for an own text that says nothing.
  */
-function kept(alternative: Alternative): Alternative | null {
+export function kept(alternative: Alternative): Alternative | null {
   if (alternative.kind !== 'own') return alternative;
   return alternative.text.trim() === '' ? null : alternative;
 }
