@@ -26,11 +26,14 @@ import {
  *   `cases`, `aligned`, `align`, `multline` and an array's column specification all go through its
  *   table builder, which sets these classes on `mtd` alone.
  *
- * Three more things Temml writes are refused here rather than lost there: `\boxed` and `\fcolorbox`,
+ * Four more things Temml writes are refused here rather than lost there: `\boxed` and `\fcolorbox`,
  * a row whose box is drawn only by its inline style; `\cancelto`, whose arrow is only a class; and an
  * equation number, `\tag` or an unstarred numbered environment such as `align`, since a block
  * equation's number is the product's (the block's **Numbered**, and `number`'s label beside it when
- * published), never text inside the maths.
+ * published), never text inside the maths. And a **line break outside an environment**: Temml writes
+ * one as a table of lines inside a line of text, and draws it in a display equation as an empty
+ * operator, dropping the break without a word - for several lines, an environment such as `aligned`
+ * says where each begins, and keeps them.
  *
  * The result is the reader's own: the tree is read by the reader's parser, changed, written back and
  * read again by `sanitiseMathml`, so nothing here can store a form the reader would not write, and
@@ -44,12 +47,13 @@ export type TemmlAdmission = { readonly ok: true; readonly mathml: string } | Te
 /**
  * Why an equation is refused. `construct` names the LaTeX command where Temml's output says which,
  * and otherwise the MathML it could not keep (`<menclose notation="radical">`); `number` is an equation
- * number drawn inside the maths; `unkept` is what the reader would refuse or remove with its content,
- * naming it as the reader does.
+ * number drawn inside the maths; `lineBreak` a line broken outside an environment; `unkept` is
+ * what the reader would refuse or remove with its content, naming it as the reader does.
  */
 export type TemmlRefusal =
   | { readonly ok: false; readonly reason: 'construct'; readonly construct: string }
   | { readonly ok: false; readonly reason: 'number' }
+  | { readonly ok: false; readonly reason: 'lineBreak' }
   | { readonly ok: false; readonly reason: 'unkept'; readonly detail: string };
 
 /**
@@ -128,6 +132,12 @@ function rewrite(element: MathElement): MathElement {
     throw new Refused({ ok: false, reason: 'number' });
   }
   if (classes.includes('tml-cancelto')) throw refusedAs('\\cancelto');
+  // Seen only in what Temml writes for a line of text: in a display equation the same \\ is an empty
+  // `mo` with nothing to tell it from \pmod's \allowbreak, which is why the editor asks this of the
+  // same LaTeX written inline before it places a block (equations 1, task 4).
+  if (element.name === 'mo' && attributeOf(element, 'linebreak') === 'newline') {
+    throw new Refused({ ok: false, reason: 'lineBreak' });
+  }
   if (element.name === 'mrow' && BORDER.test(attributeOf(element, 'style') ?? '')) {
     throw refusedAs(
       attributeOf(element, 'mathbackground') === undefined ? '\\boxed' : '\\fcolorbox',

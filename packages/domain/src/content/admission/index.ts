@@ -11,7 +11,7 @@ export type { ReaderResult } from './clipboard.js';
 
 export { admissionLimits } from './limits.js';
 
-export { equationAlternative } from './mathml.js';
+export { equationAlternative, withAlternative } from './mathml.js';
 export { admitTemmlMathml } from './temml.js';
 export type { TemmlAdmission, TemmlRefusal } from './temml.js';
 

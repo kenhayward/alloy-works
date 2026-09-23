@@ -179,6 +179,28 @@ export function equationAlternative(mathml: string): string | null {
   return alternative === undefined || alternative.trim() === '' ? null : alternative;
 }
 
+/**
+ * The equation with `words` as its alternative - the `alttext` on its `math` element, replacing any
+ * there - or with none where `words` is null or says nothing, since the model has one spelling of
+ * none (equations 1, ruling R7). The writing half of `equationAlternative`, and written as it reads:
+ * the tree is read by this reader's parser, the attribute set on its root, and the result written and
+ * read again by `sanitiseMathml`, so the stored form escapes the words as it escapes every attribute -
+ * never a string put together by hand, where a quote or an ampersand in an author's words would end
+ * the attribute or start a reference.
+ *
+ * Null where the MathML cannot be read or is not an equation, and where the result is not one this
+ * reader keeps whole: words holding a character XML does not allow, above all.
+ */
+export function withAlternative(mathml: string, words: string | null): string | null {
+  const read = readMathmlTree(mathml);
+  if (!read.ok || read.root.name !== 'math') return null;
+  const others = read.root.attributes.filter(([name]) => name !== 'alttext');
+  const attributes: [string, string][] =
+    words === null || words.trim() === '' ? others : [...others, ['alttext', words]];
+  const written = sanitiseMathml(writeMathmlTree({ ...read.root, attributes }));
+  return written.ok && written.findings.length === 0 ? written.mathml : null;
+}
+
 function read(source: string): MathElement {
   if (NOT_AN_XML_CHARACTER.test(source)) {
     throw new Unreadable('it holds a character XML does not allow');

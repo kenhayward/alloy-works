@@ -42,6 +42,9 @@ describe('the domain package', () => {
         // And so the editor draws an equation with the words it is spoken by, read from its MathML
         // by the reader's own parser (ruling R4).
         'equationAlternative',
+        // And its writing half, so the dialog stores the alternative the author settled on in the
+        // same form, by the same parser (ruling R7).
+        'withAlternative',
         // Assets, promoted by figures 1: the formats and limits the service refuses at the door, the
         // header walk the service and the worker both run, and an asset version's stored shape.
         'ADMITTED_FORMATS',
