@@ -36,6 +36,9 @@ describe('the domain package', () => {
         'readProductClipboard',
         'readerEntry',
         'writeProductClipboard',
+        // Promoted by equations 1, so the editor's dialog stores Temml's output only in the form the
+        // MathML reader keeps, with an overline's content and a table's alignment kept (ruling R2).
+        'admitTemmlMathml',
         // Assets, promoted by figures 1: the formats and limits the service refuses at the door, the
         // header walk the service and the worker both run, and an asset version's stored shape.
         'ADMITTED_FORMATS',

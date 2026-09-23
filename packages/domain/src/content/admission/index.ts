@@ -11,6 +11,9 @@ export type { ReaderResult } from './clipboard.js';
 
 export { admissionLimits } from './limits.js';
 
+export { admitTemmlMathml } from './temml.js';
+export type { TemmlAdmission, TemmlRefusal } from './temml.js';
+
 export type { Receiver } from './reidentify.js';
 
 export { createReport, readerEntry } from './report.js';
