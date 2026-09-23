@@ -402,8 +402,11 @@ describe('the citations in the committed model', () => {
   // 272, from 268: footnotes 2 cites CNT-042 in packages/domain's assemble.test.ts, where an anchor
   // that does not resolve fails the publish naming the footnote, and PUB-016, CNT-036 and CNT-038 in
   // apps/worker's footnotes.test.ts, where footnotes and a table's note are read back from the PDF.
+  // 279, from 272: cross-references 2 cites STR-028, STR-029, STR-031, STR-032, STR-056 and STR-062
+  // in packages/domain's assemble.test.ts, where references are resolved and printed by the publish,
+  // and STR-027 in apps/worker's references.test.ts, where each form is read back from the PDF.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(272);
+    expect(model.citations).toHaveLength(279);
   });
 
   it('cites no identifier the corpus does not hold', () => {

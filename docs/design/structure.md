@@ -105,8 +105,9 @@ current outline rather than silently overwriting it.
 | **IAM-073** | Numbering never reads a component the reader may not read (`numberingInputs`), so its occurrence is unknown and `number` answers `null` for each number it could have moved: every counter in its matter, until that counter next restarts, whatever it holds ([Who is shown what](#who-is-shown-what)). A section number depends on the outline alone                                                                                                                                                                                                                                                    |
 
 STR-062 is answered here as
-resolution returning the named failure; failing the publish on it is STR-029's, left unclaimed with
-PUB (below).
+resolution returning the named failure; failing the publish on it is STR-029's, which publishing.md
+claims, since `assemble` both calls resolution and fails the publish (below). Both are cited by
+`assemble`'s tests, with STR-028, STR-031, STR-032 and STR-056.
 
 **STR-023 is not claimed, because one case is unanswered.** Every caption-bearing block takes the
 next number in the sequence for its kind ("Captions"), except **a caption met in appendix matter
@@ -147,7 +148,9 @@ each one is a design that does not exist yet rather than a detail.
 [content-model.md](content-model.md) already made for CNT-042 and CNT-054, and it applies to three of
 STR's sharpest requirements. Reference resolution returns a list of failures, each naming the
 reference and its target; PUB-072 already requires publishing to fail on an unresolved
-cross-reference. Neither design answers STR-029, STR-030 or STR-055 alone, so neither claims one.
+cross-reference. Built, the two meet in `assemble`, which calls resolution and fails the publish on
+what it returns, so publishing.md claims STR-029 and STR-055; STR-030 needs conditions, and neither
+design claims it.
 
 | Left unclaimed            | Why                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -156,8 +159,8 @@ cross-reference. Neither design answers STR-029, STR-030 or STR-055 alone, so ne
 | STR-024                   | A caption's label - the word "Figure" - is a member of the scheme, and PUB-011 says the layout declares it. The computation is here, the text is the component's, the label is PUB's: three clauses, two elsewhere                                                                                                                                                                                                                                                                                                                                                                                        |
 | STR-025                   | Caption placement is a style property, and **STY-003's six catalogues contain no caption style**. Nothing this design can do makes the requirement true - see the recommendation below                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | STR-026                   | The target union is built without one of the targets it needs, so it is not claimed. **A bibliography entry**: no `entry` arm until **LIB** says what an entry's identity is. **A component's reference to a section** was the other gap: a `node` target stood in a section title alone, so body text could not say "see Section 4.2". [Making, showing and printing a reference](#making-showing-and-printing-a-reference) lets a component hold a `node` target (XR-B), built by cross-references 1, which closes that gap in the stored shape; the bibliography entry remains, and so the claim waits |
-| STR-027                   | Number, title and number-and-title resolve here. A **page** needs the paginator, and a **relative** form needs to know what is above the reader on a page that has not been composed - STR-Q04 says so                                                                                                                                                                                                                                                                                                                                                                                                    |
-| STR-029, STR-030, STR-055 | The named failures, above. STR-030 also needs REU's condition evaluation; STR-055's member exists (`withoutPages`), and rendering it is the publisher's                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| STR-027                   | Claimed by publishing.md, which prints all five: a number, a title and both come from resolution here, a page from the engine at the target's label, and a relative form by document order in the layout's words, which only the publish holds. Built by cross-references 2                                                                                                                                                                                                                                                                                                                               |
+| STR-029, STR-030, STR-055 | The named failures, above. STR-029 and STR-055 are publishing.md's, where the publish fails; STR-030 also needs REU's condition evaluation. STR-055's member exists (`withoutPages`), and rendering it waits for a format without pages                                                                                                                                                                                                                                                                                                                                                                   |
 | STR-020, STR-042          | Condition evaluation is **REU**'s, and T4. The pipeline's second stage is shaped for it and is the identity function until then                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | STR-033                   | What references a node is the reference index read backwards, which [relationships.md](relationships.md) designs and nothing builds. T3                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | STR-034                   | **Answered for the author's own acts, not another person's.** The panel renders the outline the page holds, so it updates with every act the author makes; a colleague's change reaches it only when the author next acts and is refused, or reloads. The stream carries no document version, and one would have to be withheld from every viewer who may not read the document - a design of its own                                                                                                                                                                                                     |
@@ -642,13 +645,22 @@ reading them included, so none is built.
 resolve(outline, contributions)      -> Resolved          each occurrence's contributions, by occurrence
 conditions(resolved)                 -> Conditioned       REU's, T4; the identity function today
 number(conditioned, scheme)          -> NumberingTable
-references(conditioned, numbering)   -> Bound | Failure[] structure 4's, and not built
+references(conditioned, numbering)   -> Bound | Failure[] built as referenceResolver, cross-references 2
 ```
 
 Each stage takes the previous stage's return type, and each is a type of its own, so handing `number`
 a `Resolved` does not typecheck and `references` has nothing to be passed until `number` has run.
 `conditions` takes no profile yet; REU gives it one. REU-028 to REU-030 state the same order from the
 reuse side; this is where it is enforced.
+
+**`references` is built as `referenceResolver`** (cross-references 2), in `structure/references.ts`,
+and `assemble` calls it. It takes `number`'s table, so it still cannot run before `number`, but it
+takes the **stored** outline and each readable occurrence's content rather than a `Conditioned`,
+because that is what `assemble` holds and a reader's view withholds occurrences a `component` target
+must count. It indexes the document once and returns the function that binds each reference where it
+is read. While `conditions` is the identity the two are the same nodes; the day REU gives it a
+profile, resolution must be handed what survives it, or STR-051's order is broken by a type that
+does not say so.
 
 ## Captions
 
@@ -701,12 +713,21 @@ resolved document, the key is `(occurrence being read, block)` for a `block` tar
 `(that component's one occurrence, block)` for a `component` target, and `(node)` for a `node` target;
 the entry gives the number, and the node gives the title. A target with no entry, or a `component`
 target whose component the document holds in no occurrence or in several, is a failure naming the
-reference and the target it wanted, and that list is what PUB-072 fails a publish on.
+reference and the target it wanted, and that list is what PUB-072 fails a publish on. **Built**, a
+block that takes no number - a paragraph, a list, a quotation, preformatted text - is found in the
+occurrence's content wherever it is nested, and binds with neither number nor title, for a page or a
+relative form to name. **A footnote's own paragraphs are not found**: they are the footnote's, set in
+its note on its page, a reference names the footnote, and a label inside a note is not among the
+cases measured below. So CNT-125's "any block can be a target", which content-model.md claims for
+the model's half, is not reached at publish for a footnote's paragraph, nor demonstrated for an
+equation, which nothing publishes; no test cites it.
 
 **`display` decides the form, and two of its five are not answerable here.** `number`, `title` and
 `numberAndTitle` come from the table. `page` needs the paginator, and `relative` - "above", "below" -
-needs to know where the reader is on a page nobody has composed yet, which is STR-Q04's whole point.
-Both leave this design as a resolved target with an unresolved form, for the publisher to finish.
+was drawn as needing to know where the reader is on a page nobody has composed yet, which is
+STR-Q04's whole point. Both leave this design as a resolved target with an unresolved form, for the
+publisher to finish. **XR-C settled `relative` as document order** in the layout's words, which the
+publisher knows before anything is composed: `assemble` prints it, and the template prints a page.
 
 **A stale number is not renderable because there is no number to go stale** (STR-031). The
 cross-reference node has no member for one; the table is computed afresh from its inputs and kept by
@@ -736,6 +757,7 @@ Throwaway files compiled by the pinned Typst 0.15.1 with the worker's arguments 
 | **In a running head**                                                                             | **Refused**: "PDF artifacts may not contain links". Template 9 sets section titles in the running heads                                           |
 | **To a label that does not exist**                                                                | **Refused**: "label does not exist in the document". Every target a reference names must have its anchor in the file                              |
 | To a label on an empty marker, `metadata(none)`                                                   | A link and a page both work, and veraPDF passes, so a target that publishes nothing - an empty paragraph - can still be pointed at                |
+| **To a target in a table's header row, the table long enough to repeat it** (cross-references 2)  | **Refused**: "label occurs multiple times in the document". The repeated row sets the target's label again on every page                          |
 
 #### Where an author makes one (XR-A)
 
@@ -774,8 +796,8 @@ nothing stored. A bibliography entry still waits for LIB.
 | `relative`       | "above" or "below" by document order, in the layout's words, as publishing.md's STR-027 row already says | Anything                                 |
 
 A paragraph, a list or a quotation has no number and no title, so it offers a page and a relative form
-alone. `relative` needs two words the layout does not have yet, so it comes with a layout schema
-version that adds them.
+alone. `relative` needs two words the layout did not have, so layout schema 3 adds them, both or
+neither, and the default layout's 0.4 says _above_ and _below_ (publishing.md, "The layout").
 
 **While the author writes**, a reference is an atom showing what it will print in the document it is
 edited in, from the numbering the page already holds; opened on its own it shows the target's kind and
@@ -790,9 +812,12 @@ caption, a section's title, a term or an attribution it is set as text**: a titl
 running heads, where a link refuses the compile, and a caption and a title are set again in the lists
 and the contents, where a link nests inside the entry's own.
 
-Every published block, footnote and node carries its anchor - `b-<node>-<block>` and `n-<node>`, as
-"The published document" says - and a target that publishes nothing carries it on an empty marker, so
-no reference `assemble` has resolved can name a label the file lacks.
+Every published block, footnote and node a reference names carries its anchor - `b-<node>-<block>`
+and `n-<node>`, as publishing.md's "The published document" says - and no other does, so the file
+holds a label for every reference and no more; a target that publishes nothing carries it on an
+empty marker, so no reference `assemble` has resolved can name a label the file lacks. **A target in
+a table's header rows cannot be pointed at**, measured above: its label would be set again on every
+page the row repeats on, so a reference to it is refused, whether or not the table breaks.
 
 #### Identity through editing (XR-E)
 
@@ -811,7 +836,9 @@ In the editor, a reference whose target has gone is shown as broken, naming what
 publish, `assemble` fails `cross_reference_unresolved` naming the reference and its target for every
 failure resolution returns (STR-029, STR-062), and `cross_reference_form_unavailable` where a target
 lacks the chosen form - a number asked of a paragraph, which only content written by another route
-could hold. Neither carries the author's text.
+could hold. Neither carries the author's text. Built, the form failure also covers a page asked in a
+section's title, a relative form under a layout with no words for it, and any form of a target
+standing in a table's header rows.
 
 #### Decisions for Ken
 
@@ -825,17 +852,29 @@ could hold. Neither carries the author's text.
 | XR-F | **Named failures**, `cross_reference_unresolved` and `cross_reference_form_unavailable`                                                                                                                                     | Yes                                                                                                                                                                                           |
 | XR-G | **Two pull requests**: references in the editor, with XR-E; then references published. Word's fields (PUB-026) wait for Word output                                                                                         | Yes, as footnotes were split                                                                                                                                                                  |
 
-**XR-G's first pull request is built**: [cross-references 1](../plans/2026-09-23-cross-references-01-references-in-the-editor.md)
+**Both of XR-G's pull requests are built.** [Cross-references 1](../plans/2026-09-23-cross-references-01-references-in-the-editor.md)
 builds XR-A, XR-B, XR-C and XR-E in the editor, and XR-F's half there - a reference made and changed
 from the **Reference** dialog, shown as it will print or as broken, kept through an undo and
 re-pointed through a cut and a paste - with what a document offers and what a reference prints in
-`packages/domain/src/structure/references.ts`. Nothing resolves a reference at publish yet: until
-cross-references 2 builds XR-D and XR-F's publish half, a publish refuses one by name,
-`inline_not_publishable` with the detail `crossReference`. **XR-F's editor half names what a broken
-reference pointed at only as far as the editor can know it**: _Broken reference to a section_, _to
-another component_, but a `block` target's kind and caption went with the block, and the stored
-target names only its identifier, so that one says _Broken reference_ alone. The words a reference
-prints are English until then, since the layout's own arrive with it.
+`packages/domain/src/structure/references.ts`. **XR-F's editor half names what a broken reference
+pointed at only as far as the editor can know it**: _Broken reference to a section_, _to another
+component_, but a `block` target's kind and caption went with the block, and the stored target
+names only its identifier, so that one says _Broken reference_ alone.
+[Cross-references 2](../plans/2026-09-23-cross-references-02-publishing-references.md) resolves and
+publishes them - structure 4's resolution, XR-C's layout words, XR-D and XR-F's publish half - as
+`publishing/10` and template 10, and the editor speaks the layout's words for above and below.
+Building it changed these things here:
+
+- **Resolution is a factory over the stored outline**, under [Numbering](#numbering)'s stage table,
+  and a footnote's own paragraphs are not targets, under Cross-references above.
+- **A target in a table's header rows is refused**, measured above, as
+  `cross_reference_form_unavailable` naming the form, since the target resolves.
+- **A section's title is printed with its own reference as its number** - _Results of 1_ - where a
+  reference asks for its title, in the publish and in the editor. **A caption is printed in its
+  author's words**, a reference inside it left out, since a caption printing another could have no
+  end.
+- **A request made before layouts still refuses a reference by name**, `inline_not_publishable` with
+  the detail `crossReference`: its published document has no run to carry one.
 
 ## Navigation
 
@@ -1017,7 +1056,7 @@ them nothing they could not already read; the component routes order it the same
 
 | Where                   | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | The outline schema and its parse, the five operations as pure functions over a tree; in `src/structure/`, `scheme.ts` - the scheme, the product's default and the formats - `contributions.ts` - the contribution projection - `numbering.ts` - `resolve`, `conditions`, `number` and `sectionNumbers` - and `lists.ts` - `contents` and `listOf` - and `references.ts` - what a document offers a reference and what one prints. Not built: reference resolution                                                                                                                         |
+| `packages/domain`       | The outline schema and its parse, the five operations as pure functions over a tree; in `src/structure/`, `scheme.ts` - the scheme, the product's default and the formats - `contributions.ts` - the contribution projection - `numbering.ts` - `resolve`, `conditions`, `number` and `sectionNumbers` - and `lists.ts` - `contents` and `listOf` - and `references.ts` - what a document offers a reference, what one prints, and resolution, `referenceResolver` and `printableForms`, which `assemble` calls                                                                           |
 | `packages/db`           | The migration, `createDocument`, `readDocument`, `listReadableDocuments`, `readableComponents`, and `editOutline`, which checks a reference's target, applies an operation and records it through `recordVersion`; `numberingInputs`, which resolves each occurrence and reads what the readable ones contribute; later, the cycle check                                                                                                                                                                                                                                                  |
 | `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `apps/service`          | The handlers, and the mapping from the store's dotted answers to the wire codes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -1051,7 +1090,9 @@ cycle once there is an index to walk, and record - never rebasing one person's a
 - **Cross-references** (STR-028, STR-032, STR-056, STR-062): one component containing "see Figure 2",
   referenced twice, resolves to two different numbers in one document - the case that fails silently
   if a block identifier alone is resolved - and a `component` target whose component the document
-  holds twice fails by name rather than resolving against the first.
+  holds twice fails by name rather than resolving against the first. Built as `assemble`'s tests
+  (cross-references 2), which publish each case, and a reordered outline printing its new number
+  (STR-031).
 - **An empty outline** (STR-054): a document created, read, numbered and listed with no nodes, with
   no error anywhere.
 - **Accessibility**, which needs a browser: the panel's keymap, its announcements and its focus

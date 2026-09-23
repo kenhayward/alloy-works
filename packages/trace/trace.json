@@ -14951,11 +14951,11 @@
         },
         {
           "id": "STR-027",
-          "howItIsMet": "`number`, `title` and `numberAndTitle` come from `references`; `page` from Typst, at the label; `relative` is \"above\" or \"below\" by document order, in the layout's words, which a layout schema version adds (structure.md, XR-C)"
+          "howItIsMet": "`assemble` prints `number`, `title` and `numberAndTitle` from resolution (structure.md's `referenceResolver`); the template prints `page`, from `counter(page).at` at the target's label, in its matter's own numbering; `relative` is the layout's `above` or `below` by document order, which layout schema 3 adds (structure.md, XR-C). Each is read back from the PDF"
         },
         {
           "id": "STR-029",
-          "howItIsMet": "`references`' failures are the resolve stage's, each naming the reference and its target, and any fails the publish"
+          "howItIsMet": "`assemble` resolves every reference in the document it publishes, and each whose target the document does not hold - or a `component` target whose component it places never or twice - fails `cross_reference_unresolved` at `compose`, naming the occurrence, the reference as its block and its stored target in `detail`, never the author's text; any fails the publish"
         },
         {
           "id": "STR-050",
@@ -15981,19 +15981,19 @@
     {
       "id": "STR-054",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 238,
+      "line": 239,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 467,
+      "line": 471,
       "kind": "title"
     },
     {
       "id": "STR-061",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 210,
+      "line": 211,
       "kind": "title"
     },
     {
@@ -16191,43 +16191,43 @@
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2756,
+      "line": 2763,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 410,
+      "line": 417,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2960,
+      "line": 2967,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2796,
+      "line": 2803,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2392,
+      "line": 2399,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2438,
+      "line": 2445,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 791,
+      "line": 798,
       "kind": "title"
     },
     {
@@ -16372,6 +16372,12 @@
       "id": "CNT-018",
       "file": "apps/worker/src/quotations.test.ts",
       "line": 154,
+      "kind": "title"
+    },
+    {
+      "id": "STR-027",
+      "file": "apps/worker/src/references.test.ts",
+      "line": 322,
       "kind": "title"
     },
     {
@@ -16917,7 +16923,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 188,
+      "line": 200,
       "kind": "title"
     },
     {
@@ -17145,55 +17151,91 @@
     {
       "id": "AST-014",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1840,
+      "line": 1891,
       "kind": "title"
     },
     {
       "id": "CNT-042",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2348,
+      "line": 2407,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1099,
+      "line": 1131,
       "kind": "title"
     },
     {
       "id": "PUB-033",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1840,
+      "line": 1891,
       "kind": "title"
     },
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 628,
+      "line": 648,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 822,
+      "line": 842,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 706,
+      "line": 726,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 795,
+      "line": 815,
+      "kind": "title"
+    },
+    {
+      "id": "STR-028",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 3251,
+      "kind": "title"
+    },
+    {
+      "id": "STR-029",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 3054,
+      "kind": "title"
+    },
+    {
+      "id": "STR-031",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 3275,
+      "kind": "title"
+    },
+    {
+      "id": "STR-032",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 2968,
+      "kind": "title"
+    },
+    {
+      "id": "STR-056",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 2997,
+      "kind": "title"
+    },
+    {
+      "id": "STR-062",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 3020,
       "kind": "title"
     },
     {
       "id": "PUB-011",
       "file": "packages/domain/src/publishing/layout.test.ts",
-      "line": 27,
+      "line": 29,
       "kind": "title"
     },
     {

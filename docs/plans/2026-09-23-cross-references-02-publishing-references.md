@@ -96,6 +96,90 @@ citations (PUB-022's other half, with LIB).
   destination, each page number against the target's page, and no link in a header row, a caption, the
   contents or a running head.
 
+## What the build changed
+
+- **R1 is a factory over what `assemble` holds**, not a stage taking `Conditioned`:
+  `referenceResolver({ outline, occurrences, numbering })` indexes the document once and returns the
+  function that binds each reference, `(target, { node }) -> resolution`. It reads the **stored**
+  outline, since a reader's view withholds occurrences and a `component` target counted over one
+  could take a component's one visible occurrence for its only one. It still cannot run before
+  `number`, whose table it takes; while `conditions` is the identity the outline is what survives
+  it, and the day REU gives `conditions` a profile, resolution must be handed what survives (STR-051).
+  A `node` target naming an occurrence binds as a section, by its number and its component's title.
+  Every block that takes no number - a paragraph, a list, a quotation, preformatted text, and an
+  equation, whose number nothing offers - is kind `block`, with neither label nor title.
+- **A footnote's own paragraphs are not targets.** Resolution does not find them (`missing`): they are
+  the footnote's, set in its note on its page, a reference names the footnote, and a label inside a
+  note is not among the cases XR-D measured. With equations unpublishable too, no test can publish a
+  page reference to every kind of block, so **CNT-125 is not cited**.
+- **R2's words are optional members held together by a refinement** - _A layout gives its words for
+  above and below together, or neither_ - and `layoutWordsSchema`, the `words` member alone, is
+  exported so the document page can check them as it checks a scheme. `SECOND_DEFAULT_LAYOUT` and a
+  new `THIRD_DEFAULT_LAYOUT`, 0.3, are frozen as literals at schema 2, each parsed through today's
+  migration chain when the module loads, so a frozen default that no longer reads fails at import.
+  Migration 0023 seeds 0.4 only where 0021's unauthored 0.3 is still the latest version. `above` and
+  `below` are checked against the faces with the layout's other words, `layout_glyph_missing`.
+- **R3's title of a section is the words it is published with**, its own reference printed as its
+  number - _Results of 1_. **A caption's title is its author's words**, as resolution reads them,
+  with no reference in it resolved: a caption printing another caption could have no end. `relative`
+  comes from one walk in publish order - a node where its heading is set, a block where it begins, a
+  footnote where its mark stands - so a target holding the reference, its section, its paragraph or
+  the table whose caption it is in, is _above_.
+- **R4's anchors stand on named targets alone.** Every published block, footnote and node carries
+  `anchor`, straight after `id`, and it is null unless a reference names it. A named block that
+  publishes nothing - an empty paragraph, empty preformatted text, a list or a quotation whose items
+  are all empty - leaves a `{ type: 'marker', anchor }` block in its place, which can stand at a
+  node's level, in a list's item, in a quotation and in a table's cell. A footnote's paragraphs never
+  carry one.
+- **A target in a table's header rows is refused**, a ruling the plan did not have. Measured with the
+  pinned Typst: a reference to a paragraph in the header row of a table long enough to repeat it
+  refused the compile - _label ... occurs multiple times in the document_ - because the repeated row
+  sets the label again on every page. So `assemble` fails any reference whose target stands in a
+  header row - a paragraph, a list, a marker or a footnote there -
+  `cross_reference_form_unavailable`, naming the form asked, which can only be `page` or `relative`,
+  since nothing there has a number or a title. It is refused whether or not the table breaks, which
+  only the engine knows, as a footnote there is. It is a form failure and not `unresolved`, because
+  the target resolves: what cannot be printed is what the reference asks of it there. A header column
+  is set once, and a target there is published.
+- **R6 and R7 hold under a layout.** A request made before layouts (`publishing/1`, frozen) has no run
+  to carry a reference, so it still refuses one by name, `inline_not_publishable` with the detail
+  `crossReference`, and a title's `title_not_publishable`. The page's sentence for it is reworded
+  rather than removed: _A cross-reference cannot be published under this request's layout._
+- **R7's failures come in one place in the list**: references are resolved once, after the layout's
+  own checks and before anything is projected, so their failures follow the layout's and come before
+  every other failure of the content, in document order among themselves. A reference in a section's
+  title names that section as its node. `cross_reference_unresolved`'s detail is the stored target
+  whatever the reason - not held, its component placed nowhere, or placed twice - and the page says
+  one sentence for all three: _A cross-reference points at something this document does not hold, or
+  at a component it holds more than once._ Which of them is not an author's to read from a component
+  they may not see. `cross_reference_form_unavailable` has a sentence per form, and the page's and
+  the relative form's name a table's header row.
+- **R8's maps are guarded by a typed constant.** `template.ts` exports
+  `PUBLISHING_SCHEMA_CURRENT: 'publishing/10' = PUBLISHING_SCHEMA`, annotated with its literal, so the
+  day `PUBLISHING_SCHEMA` is repointed the typecheck fails; `TEMPLATE_READING` and `PIPELINE_VERSION`
+  key the current template by it, and their `satisfies` refuses a row for a schema nothing makes.
+  **The row `publishing/9` to template 9 is kept**, as R8 asked, although nothing makes `publishing/9`
+  now; footnotes 2 dropped 8's on that ground. It is typed and harmless, and dropping it means
+  dropping `typeof PUBLISHING_SCHEMA_9` from the `satisfies` too.
+- **Template 10 labels a heading only where a reference names it**, where template 9 labelled every
+  one: a label for every reference and no more. Every label is built with `label(..)`, never the
+  literal syntax, since a block's identifier is any stored string. A page reference asserts that its
+  target's page has a numbering, which only the cover lacks, and the cover holds no target.
+- **R9 reaches the wire.** `DocumentView.layout` carries `words` beside `scheme`, a loose record the
+  page checks with `layoutWordsSchema` as it checks the scheme; the editor's `ReferenceContext`
+  carries them into the surface and the dialog's line alike, and `printed` falls back to the English
+  words without them. **A title's own reference now shows as its number in the page too**:
+  `documentTargets` read a section's title as a caption is read, dropping the reference, so a title
+  published as _Results of 1_ was offered as _Results of_; `titleWords` resolves it from the same
+  labels.
+- **R10's read-back is what holds "no link in a caption or a title"**: veraPDF passes a link nested in
+  a contents or a list's entry, so only reading each page's links back catches one. `readPdf` gained
+  `destinations`, each internal link's rectangle and the page it goes to. The regression case uses
+  the layout's own words, _earlier_ and _further on_, so English cannot pass for them.
+- **Citations**: STR-028, STR-029, STR-031, STR-032, STR-056 and STR-062 are cited by `assemble`'s
+  tests - a failure of `assemble` is the publish's, as footnotes 2's CNT-042 test has it - and
+  STR-027 by the worker's regression case, which reads each form back from the PDF.
+
 ## Tasks
 
 1. **`packages/domain`, resolution and the layout**: R1 and R2 - `references.ts`'s resolution, layout
