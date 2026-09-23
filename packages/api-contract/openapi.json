@@ -7277,6 +7277,9 @@
                               "caption_too_long",
                               "image_too_wide",
                               "image_in_caption",
+                              "footnote_not_publishable_here",
+                              "footnote_anchor_unresolved",
+                              "footnote_empty",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10018,6 +10021,9 @@
                               "caption_too_long",
                               "image_too_wide",
                               "image_in_caption",
+                              "footnote_not_publishable_here",
+                              "footnote_anchor_unresolved",
+                              "footnote_empty",
                               "engine_failed",
                               "store_failed"
                             ]

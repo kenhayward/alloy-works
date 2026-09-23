@@ -16,11 +16,14 @@ const BLOCKS: Readonly<Record<string, string>> = {
   equation: 'An equation',
 };
 
-/** What an inline item an author can place is called, when it cannot be published yet. */
+/**
+ * What an inline item an author can place is called, when it cannot be published yet. A footnote is
+ * published under a layout since footnotes 2, so this sentence is left for a request made before
+ * layouts, which could never publish one.
+ */
 const INLINES: Readonly<Record<string, string>> = {
   image: 'An image in a line of text cannot be published yet.',
   footnote: 'A footnote cannot be published yet.',
-  note: "A table's note cannot be published yet.",
 };
 
 /**
@@ -42,8 +45,8 @@ export function failureWords(failure: Failure): string {
     // as well as for a paragraph, and names the LIST in that case, because a term carries no
     // identifier of its own. A sentence that said paragraph while pointing at a list would send an
     // author looking for something that is not there.
-    // An image in a line of text is named as one, now an author can place it (figures 4), and so are a
-    // footnote and a table's note (footnotes 1), until footnotes 2 publishes them.
+    // An image in a line of text is named as one, now an author can place it (figures 4), and so is a
+    // footnote (footnotes 1).
     case 'inline_not_publishable':
       return (
         INLINES[failure.detail ?? ''] ??
@@ -98,6 +101,13 @@ export function failureWords(failure: Failure): string {
     // The final review of figures 5: a caption is estimated from its words and set again in the lists.
     case 'image_in_caption':
       return 'A caption holds an image, which a caption cannot publish. Take the image out of the caption.';
+    // Footnotes 2's ruling R9: where a footnote may stand, and what a note on a whole table is.
+    case 'footnote_not_publishable_here':
+      return "A footnote stands where it cannot be published. A footnote can stand only in a paragraph's text; a note on a whole table is the table's note.";
+    case 'footnote_anchor_unresolved':
+      return 'A footnote is anchored to a cell its table does not have.';
+    case 'footnote_empty':
+      return 'A footnote has no text. Write it, or delete its mark.';
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:
