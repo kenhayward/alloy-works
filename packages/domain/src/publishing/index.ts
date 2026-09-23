@@ -15,6 +15,7 @@ export {
   defaultLayout,
   FIRST_DEFAULT_LAYOUT,
   SECOND_DEFAULT_LAYOUT,
+  THIRD_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
   LISTED_SEQUENCES,
   layoutMigrationChain,
@@ -27,6 +28,7 @@ export {
 } from './layout.js';
 export type {
   Layout,
+  Layout2,
   LayoutField,
   LayoutList,
   LayoutReadOutcome,

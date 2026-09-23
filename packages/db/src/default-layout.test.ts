@@ -94,7 +94,7 @@ describe('the layout every environment starts with', () => {
     // 0.3 as 0021 stored it, with a list of figures before it.
     const cases = [
       [1, FIRST_DEFAULT_LAYOUT as unknown as Layout],
-      [2, SECOND_DEFAULT_LAYOUT],
+      [2, SECOND_DEFAULT_LAYOUT as unknown as Layout],
       [3, productDefaultLayout],
     ] as const;
     for (const [number, layout] of cases) {

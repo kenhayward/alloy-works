@@ -178,6 +178,9 @@ describe('the domain package', () => {
         'FIRST_DEFAULT_LAYOUT',
         // Its second, as 0019 stored it, promoted by figures 3 when 0.3 took the default's name.
         'SECOND_DEFAULT_LAYOUT',
+        // Its third, as 0021 stored it at schema 2, promoted by cross-references 2 when 0.4 took the
+        // default's name.
+        'THIRD_DEFAULT_LAYOUT',
         'LISTED_SEQUENCES',
         'speaksFor',
         'unsupportedFormats',

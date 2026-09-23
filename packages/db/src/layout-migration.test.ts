@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   FIRST_DEFAULT_LAYOUT,
+  LAYOUT_SCHEMA_VERSION,
   SECOND_DEFAULT_LAYOUT,
   defaultNumberingScheme,
   type Layout,
@@ -530,8 +531,13 @@ describe('migration 0018, which gives every environment its default layout', () 
       artifactId: DEFAULT_LAYOUT_ID,
       versionId: versions[0]!.id,
       number: '0.1',
-      // Read at schema 2: the layout it stored, generating no lists.
-      layout: { ...own, schemaVersion: 2, matter: { ...own.matter, lists: [] } },
+      // Read at today's schema: the layout it stored, generating no lists and with no words for
+      // above and below.
+      layout: {
+        ...own,
+        schemaVersion: LAYOUT_SCHEMA_VERSION,
+        matter: { ...own.matter, lists: [] },
+      },
     });
   });
 });
@@ -572,8 +578,11 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       hostnames: [`${id}.alloy.test`],
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    // Recorded through today's schema, which is all `recordVersion` takes: 0.2's words and lists,
+    // and no words for above and below, as a layout of schema 2 reads.
     const own: Layout = {
       ...SECOND_DEFAULT_LAYOUT,
+      schemaVersion: LAYOUT_SCHEMA_VERSION,
       words: { ...SECOND_DEFAULT_LAYOUT.words, contents: 'Table of contents' },
     };
     const recorded = await service.withTenant({ ...tenant, id }, async (trx) => {

@@ -25,8 +25,13 @@ import { DRAFT_NOTICE } from './published.js';
  * **Version 2 added `matter.lists`** (tables 2): the generated lists of figures, tables and equations a
  * layout declares, each with its title. A layout stored at version 1 reads as one that generates none,
  * so it publishes exactly as it did.
+ *
+ * **Version 3 added `words.above` and `words.below`** (cross-references 2, ruling R2): what a
+ * `relative` reference prints, in the layout's own language, both or neither. A layout stored at
+ * version 2 reads as one with neither - a migration cannot know another language's words - and a
+ * relative reference under it fails by name rather than printing English into a French document.
  */
-export const LAYOUT_SCHEMA_VERSION = 2;
+export const LAYOUT_SCHEMA_VERSION = 3;
 
 /** The sequences a generated list can list: those a caption-bearing block takes (CNT-081, STR-041). */
 export const LISTED_SEQUENCES = ['figure', 'table', 'equation'] as const;
@@ -66,8 +71,18 @@ export interface Layout {
   schemaVersion: typeof LAYOUT_SCHEMA_VERSION;
   /** The one language its words are in: a BCP 47 tag the engine can carry (`publishedLanguage`). */
   language: string;
-  /** The words the product sets itself: the contents' title, the draft notice and its sentence. */
-  words: { contents: string; notice: string; noticeSentence: string };
+  /**
+   * The words the product sets itself: the contents' title, the draft notice and its sentence, and
+   * what a relative reference prints either side of its target - both, or neither where the layout
+   * has no words for them.
+   */
+  words: {
+    contents: string;
+    notice: string;
+    noticeSentence: string;
+    above?: string | undefined;
+    below?: string | undefined;
+  };
   /** The numbering scheme, in structure.md's shape, labels included (PUB-011, STR-013, STR-024). */
   scheme: NumberingScheme;
   /** The generated front and back matter (PUB-088). */
@@ -103,9 +118,10 @@ const visible = (text: string) =>
 const settable = (text: string) => !codePoints(text).some(disallowed);
 
 /**
- * Words the product sets as the layout's: the contents' title and the draft notice. Each must show
- * something - a blank notice, or one of only zero-width characters, would remove the draft's mark from
- * every page, which no layout may do.
+ * Words the product sets as the layout's: the contents' title, the draft notice, and a relative
+ * reference's _above_ and _below_. Each must show something - a blank notice, or one of only
+ * zero-width characters, would remove the draft's mark from every page, which no layout may do, and a
+ * blank _above_ would print a reference as nothing.
  */
 const words = z
   .string()
@@ -183,7 +199,20 @@ export const layoutSchema: z.ZodType<Layout> = z
         });
       }
     }),
-    words: z.strictObject({ contents: words, notice: words, noticeSentence: words }),
+    words: z
+      .strictObject({
+        contents: words,
+        notice: words,
+        noticeSentence: words,
+        above: words.optional(),
+        below: words.optional(),
+      })
+      // One without the other would print a relative reference one way and refuse it the other, so
+      // a layout says both or neither.
+      .refine(
+        ({ above, below }) => (above === undefined) === (below === undefined),
+        'A layout gives its words for above and below together, or neither',
+      ),
     scheme: numberingSchemeSchema,
     matter: z.strictObject({
       cover: z.boolean(),
@@ -217,6 +246,9 @@ export const layoutMigrationChain: MigrationChain = {
       ...layout,
       matter: { ...(layout.matter as Record<string, unknown>), lists: [] },
     }),
+    // Version 2 had no words for above and below, and reads as having neither: which words a layout
+    // in another language would give is not a migration's to guess.
+    2: (layout) => layout,
   },
 };
 
@@ -294,14 +326,33 @@ export const FIRST_DEFAULT_LAYOUT = {
 } as const;
 
 /**
+ * A layout as schema version 2 stored it: no words for above and below. The shape of the default
+ * layout's 0.2 and 0.3 rows, which are frozen at it, since a row is insert-only.
+ */
+export type Layout2 = Omit<Layout, 'schemaVersion' | 'words'> & {
+  schemaVersion: 2;
+  words: { contents: string; notice: string; noticeSentence: string };
+};
+
+/**
+ * A frozen schema-2 layout, exactly as its row holds it, checked to read through today's migration
+ * chain and parse - so a stored default that would no longer read fails the build's own import, not a
+ * publish - and returned unchanged, never as it reads.
+ */
+function frozenAt2(layout: Layout2): Layout2 {
+  parseLayout(migrateStored(layout, layoutMigrationChain));
+  return layout;
+}
+
+/**
  * **The default layout's version 0.2, as migration 0019 stored it**: the first version with a list of
  * tables after the contents, which tables brought (tables 2, ruling R6). Frozen for the reason 0.1 is:
  * `default-layout.test.ts` checks the row against it, and a request made while it was the default goes
- * on publishing under it.
+ * on publishing under it. At schema version 2, the literal it was stored at, never the constant.
  */
-export const SECOND_DEFAULT_LAYOUT: Layout = parseLayout({
+export const SECOND_DEFAULT_LAYOUT: Layout2 = frozenAt2({
   ...FIRST_DEFAULT_LAYOUT,
-  schemaVersion: LAYOUT_SCHEMA_VERSION,
+  schemaVersion: 2,
   matter: {
     ...FIRST_DEFAULT_LAYOUT.matter,
     lists: [{ sequence: 'table', title: 'Tables' }],
@@ -309,10 +360,11 @@ export const SECOND_DEFAULT_LAYOUT: Layout = parseLayout({
 });
 
 /**
- * The default layout as it stands, **version 0.3** (seeded by migration 0021): a list of figures and
- * then a list of tables after the contents, as convention orders them (figures 3, ruling R9).
+ * **The default layout's version 0.3, as migration 0021 stored it**: a list of figures and then a list
+ * of tables after the contents, as convention orders them (figures 3, ruling R9). Frozen, at schema 2,
+ * for 0.2's reason.
  */
-export const defaultLayout: Layout = parseLayout({
+export const THIRD_DEFAULT_LAYOUT: Layout2 = frozenAt2({
   ...SECOND_DEFAULT_LAYOUT,
   matter: {
     ...SECOND_DEFAULT_LAYOUT.matter,
@@ -321,6 +373,16 @@ export const defaultLayout: Layout = parseLayout({
       { sequence: 'table', title: 'Tables' },
     ],
   },
+});
+
+/**
+ * The default layout as it stands, **version 0.4**: 0.3 with the words a relative reference prints,
+ * _above_ and _below_ (cross-references 2, ruling R2), at schema version 3.
+ */
+export const defaultLayout: Layout = parseLayout({
+  ...THIRD_DEFAULT_LAYOUT,
+  schemaVersion: LAYOUT_SCHEMA_VERSION,
+  words: { ...THIRD_DEFAULT_LAYOUT.words, above: 'above', below: 'below' },
 });
 
 /**
