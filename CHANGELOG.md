@@ -24,6 +24,12 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   yet._ or _A table's note cannot be published yet._, until the next release publishes them. A table
   with a note was published without it before; now the publish says so instead.
 
+### Fixed
+
+- Pressing **Strong**, or any formatting button, over words formatted on both sides of an image in a
+  line of text now takes the formatting off, as the pressed button says it will; before, nothing
+  happened.
+
 ## 0.60.1 - 2026-09-23 (PR #215)
 
 ### Changed

@@ -463,7 +463,8 @@ export function assemble(input: AssembleInput): Assembled {
         }
         // A note on the table as a whole (CNT-038) is refused by name until footnotes 2 sets it
         // beneath the table, rather than the table being published without it (footnotes 1, R12).
-        if (block.note !== undefined) {
+        // One that says nothing, which another route may store, has nothing to refuse.
+        if (block.note !== undefined && block.note.length > 0) {
           failures.push(failure('compose', 'inline_not_publishable', node, block.id, 'note'));
         }
         const caption = publishedRuns(block.caption, node, block.id, indent, true);

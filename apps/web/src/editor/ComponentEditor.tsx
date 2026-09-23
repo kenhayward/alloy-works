@@ -301,9 +301,12 @@ export function ComponentEditor({
    * selection across blocks, which is more than the one line the dialog says it in.
    */
   const selectedText = (): string | null => {
-    const selection = surface?.state.selection;
+    // The footnote's own text while one is open, which is what the dialog's mark goes on (final
+    // review of footnotes 1, finding 4).
+    const target = surface === null ? null : (openFootnote(surface) ?? surface);
+    const selection = target?.state.selection;
     if (!selection || selection.empty || !selection.$from.sameParent(selection.$to)) return null;
-    return surface!.state.doc.textBetween(selection.from, selection.to);
+    return target!.state.doc.textBetween(selection.from, selection.to);
   };
 
   const askFor: AskForValue = (command, current) =>

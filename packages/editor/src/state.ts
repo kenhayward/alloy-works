@@ -22,7 +22,7 @@ import {
   outsideCode,
   refusePastTheLimit,
 } from './blocks.js';
-import { enterFootnote, isFootnote } from './footnotes.js';
+import { enterFootnote, isFootnote, openFootnote } from './footnotes.js';
 import { identityPlugin } from './identity.js';
 import { tableHeadersAgree } from './tables.js';
 import { imagesUnmarked, marksPastImages } from './images.js';
@@ -507,8 +507,14 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       marksPastImages,
       // A mark's identifier comes from the same source a block's does, here as in the keymap above.
       annotationsInOnePiece(options.newIdentifier),
-      // What a footnote's own editor is built with, from these same options.
-      new Plugin({ key: footnoteEditing, footnotePlugins: footnoteEditingPlugins(options) }),
+      // What a footnote's own editor is built with, from these same options - and the one open kept
+      // as fresh as the surface, so it takes changes exactly while the surface does (final review,
+      // finding 2): a surface's props changing reaches no node view of its own accord.
+      new Plugin({
+        key: footnoteEditing,
+        footnotePlugins: footnoteEditingPlugins(options),
+        view: () => ({ update: (view) => openFootnote(view)?.setProps({}) }),
+      }),
       // One decorations plugin, holding both the spellcheck rule and the empty attribution's
       // placeholder: the view merges every plugin's set anyway, and one set is one thing to test.
       new Plugin({

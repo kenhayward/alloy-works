@@ -81,7 +81,7 @@ export function insertFootnote(newIdentifier: () => string): Command {
  * taken off over a range reaches every inline node inside it, a footnote's paragraphs included, and a
  * footnote's text is a range of its own: the words either side of a footnote are what an author
  * selected, not the note beneath them. A mark command changes no node's size, so each footnote is
- * where it was and its content is put back as it stood.
+ * where it was, and each of its text nodes is given back the marks it had.
  *
  * Run over a footnote's own editing state, whose document is the footnote, there is no footnote
  * inside to spare and this changes nothing.
@@ -101,7 +101,17 @@ export function sparingFootnotes(command: Command): Command {
           for (const { pos, node } of kept) {
             const now = tr.doc.nodeAt(pos);
             if (now?.type !== footnoteNode || now.content.eq(node.content)) continue;
-            tr.replaceWith(pos + 1, pos + now.nodeSize - 1, node.content);
+            // Mark by mark, text node by text node, so no position moves: a replace of the content
+            // would read to the identity plugin as the footnote's later paragraphs placed anew, and
+            // rename them (final review, finding 1).
+            node.descendants((child, offset) => {
+              if (!child.isText) return true;
+              const from = pos + 1 + offset;
+              const to = from + child.nodeSize;
+              tr.removeMark(from, to);
+              for (const mark of child.marks) tr.addMark(from, to, mark);
+              return false;
+            });
           }
           dispatch(tr);
         }),

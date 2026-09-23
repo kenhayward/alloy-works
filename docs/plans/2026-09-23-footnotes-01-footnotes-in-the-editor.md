@@ -105,6 +105,23 @@ key or by position. One stored that way is opened and saved as it was stored; no
   and admission's re-identify, as an image does; a test holds it.
 - **R13's rendering test passed on its first run**: the `toDOM` it reads came with task 1's schema.
 
+The final whole-branch review found three things and five smaller; these were changed:
+
+- **A mark put on or taken off around a footnote renamed its later paragraphs**: `sparingFootnotes`
+  put the footnote's text back with a replace, which the identity plugin read as paragraphs placed
+  anew. It now gives each text node back its marks, which moves nothing.
+- **A component made read-only still took undo, redo and a paste through an open footnote**: the
+  footnote's editor never heard that the surface's props had changed. A plugin view on the surface now
+  refreshes it on every update, and the three keys and the paste check the component's own `editable`.
+- **A toggled mark could not be taken off a selection holding a footnote or an image**, though its
+  button showed it on: `toggleMark` counts either as missing the mark. The toggle now takes it off
+  wherever `markThroughout` - the button's own answer - says it is on. Figures 4's inline image had the
+  same fault, and is fixed with it.
+- **The link and language dialogs named the whole footnote's text**, not the words selected in it; an
+  undo from a footnote that closed it left the focus nowhere, and now gives it to the surface; a paste
+  over all of a footnote's text warned; and a stored table note of no text was refused at publish, and
+  now is not. Architecture's count of block actions is nine.
+
 ## Tasks
 
 1. **`packages/editor`, the model half**: the nodes (R1, R2), the mapping (R3), marks and ranges

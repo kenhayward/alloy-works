@@ -338,11 +338,24 @@ export function toggleMarkCommand(
     if (type === undefined) return false;
     const members = accepted(mark, newIdentifier(), attrs);
     if (members === null) return false;
-    return sparingFootnotes(toggleMark(type, members, { removeWhenPresent: false }))(
-      state,
-      dispatch,
-      view,
-    );
+    // **Taken off exactly where the button says it is on** (final review, finding 3). `toggleMark`
+    // counts an image and a footnote's mark, which carry no marks, as missing it, and so would add a
+    // mark to words either side of one that already carry it throughout, changing nothing. So a
+    // selection `markThroughout` answers yes for has the mark taken off, and anything else goes to
+    // `toggleMark` to add it.
+    const toggle = toggleMark(type, members, { removeWhenPresent: false });
+    return sparingFootnotes((current, apply, on) => {
+      if (current.selection.empty || !markThroughout(current, mark)) {
+        return toggle(current, apply, on);
+      }
+      if (apply) {
+        const tr = current.tr;
+        for (const { $from, $to } of current.selection.ranges)
+          tr.removeMark($from.pos, $to.pos, type);
+        apply(tr.scrollIntoView());
+      }
+      return true;
+    })(state, dispatch, view);
   };
 }
 

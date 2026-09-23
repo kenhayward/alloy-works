@@ -3935,6 +3935,23 @@ describe('footnotes and the table note in the editor (footnotes 1)', () => {
     }
   });
 
+  it("the link dialog names the words selected in the footnote's text (final review, finding 4)", async () => {
+    const { surface } = openWith(withFootnote);
+    const view = await surface();
+    selectTheFootnote(view);
+    act(() => {
+      const inner = openFootnote(view)!;
+      inner.dispatch(
+        inner.state.tr.setSelection(
+          Selection.fromJSON(inner.state.doc, { type: 'text', anchor: 1, head: 4 }),
+        ),
+      );
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Link' });
+    expect(within(dialog).getByText('Twi').tagName).toBe('MARK');
+  });
+
   it("a paste into the footnote's text goes through admission, and the text stays open", async () => {
     const { surface } = openWith(withFootnote);
     const view = await surface();

@@ -87,6 +87,19 @@ export function footnoteView(
     outer.dispatch(outerTr);
   };
 
+  /**
+   * Undo or redo in the component's one history, from the footnote's keys - and only while the
+   * component takes changes (final review, finding 2). One that closes the footnote, by undoing
+   * something outside it, gives the focus back to the surface rather than to nothing (finding 5).
+   */
+  const history = (command: typeof undo) => () => {
+    if (!outer.editable) return false;
+    const from = inner;
+    const done = command(outer.state, (tr) => outer.dispatch(tr));
+    if (done && openFootnote(outer) !== from) outer.focus();
+    return done;
+  };
+
   const openEditor = () => {
     if (inner !== null) return;
     const holder = document.createElement('span');
@@ -98,9 +111,9 @@ export function footnoteView(
         doc: shown,
         plugins: [
           keymap({
-            'Mod-z': () => undo(outer.state, (tr) => outer.dispatch(tr)),
-            'Mod-y': () => redo(outer.state, (tr) => outer.dispatch(tr)),
-            'Shift-Mod-z': () => redo(outer.state, (tr) => outer.dispatch(tr)),
+            'Mod-z': history(undo),
+            'Mod-y': history(redo),
+            'Shift-Mod-z': history(redo),
             // Back to the mark, still selected, so the author is where they were in the text.
             Escape: () => {
               outer.focus();
@@ -121,9 +134,10 @@ export function footnoteView(
       }),
       dispatchTransaction: forward,
       handleDOMEvents: {
-        paste: (view, event) => {
+        paste: (_view, event) => {
           event.preventDefault();
-          if (!view.editable) return true;
+          // The component's, read now: the footnote's own is only as fresh as its last update.
+          if (!outer.editable) return true;
           const data = event.clipboardData;
           const source: ClipboardSource = data
             ? { types: [...data.types], getData: (type) => data.getData(type) }
@@ -210,10 +224,13 @@ export function pasteIntoOpenFootnote(
   const at = footnoteAt(outer.state);
   if (inner === null || at === null) return null;
   const offset = at.pos + 1;
-  const { anchor, head } = inner.state.selection;
+  const { from, to } = inner.state.selection;
+  // `between`, since a selection of all the footnote's text ends at its edges, where there is no
+  // text for a text selection to stand in (final review, finding 6).
+  const { doc } = outer.state;
   const within = outer.state.apply(
     outer.state.tr.setSelection(
-      TextSelection.create(outer.state.doc, anchor + offset, head + offset),
+      TextSelection.between(doc.resolve(from + offset), doc.resolve(to + offset)),
     ),
   );
   const outcome = pasteInto(within, reading, newIdentifier);

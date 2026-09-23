@@ -15,6 +15,7 @@ import { pasteInto, PRODUCT_CLIPBOARD_TYPE, productClipboard, readClipboard } fr
 import { footnoteAt, insertFootnote } from './footnotes.js';
 import { fromEditor, toEditor } from './mapping.js';
 import {
+  applyMarkCommand,
   EDITOR_COMMANDS,
   markAt,
   markThroughout,
@@ -451,6 +452,63 @@ describe('marks around and inside a footnote (footnotes 1)', () => {
         text(' twice'),
       ),
     ]);
+  });
+
+  it('keeps every paragraph of a footnote its identifier when a mark goes on or off around it, and through undo (final review, finding 1)', () => {
+    const document = documentOf(
+      paragraph(
+        'p1',
+        text('Visited', link('k1')),
+        footnote('f1', [paragraph('fp1', text('Once')), paragraph('fp2', text('Twice'))]),
+        text(' twice', link('k1')),
+      ),
+    );
+    const idsOf = (state: EditorState) => {
+      const ids: string[] = [];
+      state.doc.descendants((node) => {
+        if (node.type.name === 'footnoteParagraph') ids.push(node.attrs.id as string);
+      });
+      return ids;
+    };
+    const state = stateOf(document, counter('fresh'));
+    const all = state.apply(
+      state.tr.setSelection(TextSelection.create(state.doc, 1, state.doc.content.size - 1)),
+    );
+    const strong = run(all, toggleMarkCommand('strong', counter('s'))).next;
+    expect(idsOf(strong), 'strong').toEqual(['fp1', 'fp2']);
+    expect(idsOf(run(strong, undo).next), 'undone').toEqual(['fp1', 'fp2']);
+    const relinked = run(
+      all,
+      applyMarkCommand('hyperlink', counter('k'), { href: 'https://example.org/b' }),
+    ).next;
+    expect(idsOf(relinked), 'relinked').toEqual(['fp1', 'fp2']);
+    const unlinked = run(into(state, 'p1', 2), removeMarkCommand('hyperlink')).next;
+    expect(idsOf(unlinked), 'unlinked').toEqual(['fp1', 'fp2']);
+  });
+
+  it('takes a toggled mark off a selection holding a footnote or an image, as its button says it would (final review, finding 3)', () => {
+    const strong = (id: string): Mark => ({ type: 'strong', id });
+    const image: InlineNode = {
+      type: 'image',
+      asset: '00000000-0000-4000-8000-00000000a551',
+      imageStyle: 'inline',
+      alternative: { kind: 'decorative' },
+    };
+    for (const between of [footnote('f1', [paragraph('fp1', text('Once'))]), image]) {
+      const state = stateOf(
+        documentOf(
+          paragraph('p1', text('Visited', strong('s1')), between, text(' twice', strong('s1'))),
+        ),
+      );
+      const all = state.apply(
+        state.tr.setSelection(TextSelection.create(state.doc, 1, state.doc.content.size - 1)),
+      );
+      expect(markThroughout(all, 'strong'), between.type).toBe(true);
+      const next = run(all, toggleMarkCommand('strong', counter('s'))).next;
+      expect(stored(next), between.type).toEqual([
+        paragraph('p1', text('Visited'), between, text(' twice')),
+      ]);
+    }
   });
 
   it("reads a range's marks past a footnote's text", () => {

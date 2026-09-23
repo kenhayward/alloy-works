@@ -16119,7 +16119,7 @@
     {
       "id": "CNT-038",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3951,
+      "line": 3968,
       "kind": "title"
     },
     {
@@ -17127,7 +17127,7 @@
     {
       "id": "AST-014",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1820,
+      "line": 1822,
       "kind": "title"
     },
     {
@@ -17139,7 +17139,7 @@
     {
       "id": "PUB-033",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1820,
+      "line": 1822,
       "kind": "title"
     },
     {
@@ -17409,13 +17409,13 @@
     {
       "id": "CNT-036",
       "file": "packages/editor/src/footnotes.test.ts",
-      "line": 151,
+      "line": 152,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "packages/editor/src/footnotes.test.ts",
-      "line": 594,
+      "line": 652,
       "kind": "title"
     },
     {
