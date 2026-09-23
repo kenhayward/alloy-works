@@ -56,6 +56,17 @@ written in - or, decorative, an artifact - inside the paragraph or the table cel
 - **The text either side of an image** is compared without its spaces: pdf.js drops the space at the
   edge of a run an image breaks, which the page itself still sets.
 
+The final whole-branch review found one thing and four smaller; these were changed:
+
+- **An image in a figure's caption could run the figure off its page** - the caption is estimated from
+  its words, and an image counted as none - and one in any caption was set again in the lists after
+  the contents. An image in a figure's or a table's caption is refused, `image_in_caption`. The editor
+  never places one there; only content written by another route could hold one.
+- **A block was named once per image, not once** - two images too wide in one paragraph said so twice.
+  `failOnce` records each reason for a block once, as the request already did.
+- **The README's publishing row** now names images in a line of text, and a test holds the room a list
+  leaves inside a cell.
+
 ## Tasks
 
 1. **`packages/domain`, `assemble`**: `publishing/8` with an image run (R2 to R4), the room in a table's

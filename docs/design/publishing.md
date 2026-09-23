@@ -549,7 +549,10 @@ the last**: an image in a run of text published one line high, in the room where
 cell's share of the measure, less the engine's inset - and refused as `image_too_wide` past it. One
 measurement it added: the engine does not always declare the alternative text's language on an inline
 image's `Figure`, but hoists it to an ancestor where that is shorter, so what a reader is told is
-right and has to be read up the tree. Building figures 3 changed these things here:
+right and has to be read up the tree. Its final review added one rule: **an image in a figure's or a
+table's caption is refused**, `image_in_caption`, since a caption's height is estimated from its
+words - an image there could run a figure off its page - and the list after the contents sets a
+caption again, so the image would be read twice. Building figures 3 changed these things here:
 
 - **A figure with no caption is refused**, `figure_without_caption`, naming it, as a table with none
   is. The design above said nothing either way; CNT-017 says a figure carries a caption, and a figure

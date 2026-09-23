@@ -86,6 +86,9 @@ export function failureWords(failure: Failure): string {
     // Figures 5's ruling R7: an image set in a line has only the line's room, or its cell's.
     case 'image_too_wide':
       return 'An image in a line of text is wider than the room it stands in. Use a narrower image, or make it a figure.';
+    // The final review of figures 5: a caption is estimated from its words and set again in the lists.
+    case 'image_in_caption':
+      return 'A caption holds an image, which a caption cannot publish. Take the image out of the caption.';
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

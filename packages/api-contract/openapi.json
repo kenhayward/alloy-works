@@ -7276,6 +7276,7 @@
                               "alternative_missing",
                               "caption_too_long",
                               "image_too_wide",
+                              "image_in_caption",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10016,6 +10017,7 @@
                               "alternative_missing",
                               "caption_too_long",
                               "image_too_wide",
+                              "image_in_caption",
                               "engine_failed",
                               "store_failed"
                             ]

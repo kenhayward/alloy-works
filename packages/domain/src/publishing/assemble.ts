@@ -180,6 +180,22 @@ export function assemble(input: AssembleInput): Assembled {
 
   // check and project: one walk, collecting every failure.
   const refusedNodes = new Set(input.refused.map((each) => each.node));
+  /**
+   * A failure recorded once however many times it is met: two images in one paragraph too wide, or
+   * both with no description, are one place to look and one reason, said once (final review of
+   * figures 5). Used where one block can meet the same reason again - its images - and nowhere else.
+   */
+  const failOnce = (next: PublishFailure) => {
+    const said = failures.some(
+      (each) =>
+        each.stage === next.stage &&
+        each.code === next.code &&
+        each.node === next.node &&
+        each.block === next.block &&
+        each.detail === next.detail,
+    );
+    if (!said) failures.push(next);
+  };
   // A figure whose image the request could not read, where it said so: told once, not twice.
   const refusedAssets = new Set(
     input.refused
@@ -252,9 +268,16 @@ export function assemble(input: AssembleInput): Assembled {
     node: string,
     block: string,
     indent = 0,
+    caption = false,
   ): PublishedInline[] => {
     const runs: PublishedInline[] = [];
     for (const inline of content) {
+      // A caption's height is estimated from its words, and the list after the contents sets it again,
+      // so an image in one is refused rather than set (final review of figures 5).
+      if (inline.type === 'image' && layout !== null && caption) {
+        failOnce(failure('compose', 'image_in_caption', node, block, null));
+        continue;
+      }
       if (inline.type === 'image' && layout !== null) {
         const published = publishedImage(inline, node, block, indent);
         if (published !== null) runs.push(published);
@@ -438,7 +461,7 @@ export function assemble(input: AssembleInput): Assembled {
         if (spansBody) {
           failures.push(failure('compose', 'table_header_spans_body', node, block.id, null));
         }
-        const caption = publishedRuns(block.caption, node, block.id, indent);
+        const caption = publishedRuns(block.caption, node, block.id, indent, true);
         const label =
           numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
             ?.label ?? null;
@@ -489,7 +512,7 @@ export function assemble(input: AssembleInput): Assembled {
         if (words.join('').trim() === '') {
           failures.push(failure('compose', 'figure_without_caption', node, block.id, null));
         }
-        const caption = publishedRuns(block.caption, node, block.id, indent);
+        const caption = publishedRuns(block.caption, node, block.id, indent, true);
         const label =
           numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
             ?.label ?? null;
@@ -571,7 +594,7 @@ export function assemble(input: AssembleInput): Assembled {
       // Its own text of spaces alone says nothing, whatever wrote it - the stored shape takes any text
       // that is not empty, and only the editor refuses a blank one - so it is none (final review).
       if (stored.text.trim() === '') {
-        failures.push(failure('compose', 'alternative_missing', node, block, null));
+        failOnce(failure('compose', 'alternative_missing', node, block, null));
         return undefined;
       }
       const content = input.occurrences.get(node);
@@ -579,12 +602,12 @@ export function assemble(input: AssembleInput): Assembled {
       return language === null ? undefined : { text: stored.text, language };
     }
     if (asset.alternative === null) {
-      failures.push(failure('compose', 'alternative_missing', node, block, null));
+      failOnce(failure('compose', 'alternative_missing', node, block, null));
       return undefined;
     }
     const language = publishedLanguage(asset.alternative.language);
     if (language === null) {
-      failures.push(
+      failOnce(
         failure('compose', 'language_not_publishable', node, block, asset.alternative.language),
       );
       return undefined;
@@ -614,13 +637,13 @@ export function assemble(input: AssembleInput): Assembled {
     indent: number,
   ): PublishedInline | null => {
     if (image.imageStyle !== INLINE_STYLE) {
-      failures.push(failure('compose', 'style_missing', node, block, image.imageStyle));
+      failOnce(failure('compose', 'style_missing', node, block, image.imageStyle));
       return null;
     }
     const asset = input.assets.get(image.asset);
     if (asset === undefined) {
       if (!refusedAssets.has(`${node} ${block}`)) {
-        failures.push(failure('resolve', 'asset_unreadable', node, block, null));
+        failOnce(failure('resolve', 'asset_unreadable', node, block, null));
       }
       return null;
     }
@@ -628,7 +651,7 @@ export function assemble(input: AssembleInput): Assembled {
     const width = (INLINE_IMAGE_HEIGHT * asset.width) / asset.height;
     const room = textMeasure(publishedPdf(layout!.formats.pdf)) - indent;
     if (width > room) {
-      failures.push(failure('compose', 'image_too_wide', node, block, null));
+      failOnce(failure('compose', 'image_too_wide', node, block, null));
       return null;
     }
     if (alternative === undefined) return null;

@@ -11,7 +11,7 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   printed one line high in the paragraph or table cell it stands in, and a screen reader is told what
   it shows, in the language its description is written in; a decorative one is passed over. An image
   wider than the room it stands in is refused, naming where it is, as is one with no description or
-  whose image you may not see.
+  whose image you may not see, and one in a caption.
 
 ## 0.59.0 - 2026-09-23 (PR #213)
 

@@ -386,7 +386,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **An image in a line of text prints** one line high, in the paragraph or table cell it stands in,
   and a screen reader is told what it shows in the language that description is written in; a
   decorative one is passed over. One wider than the room it stands in - the line, or its cell - is
-  refused, naming where it is, as are the same things a figure is refused for.
+  refused, naming where it is, as are the same things a figure is refused for, and so is one in a
+  figure's or a table's caption, which is set again in the lists after the contents.
 
   **This is a PDF of paragraphs, lists, quotations, preformatted text, tables, figures and images in
   a line of text, not publishing.** No footnotes or equations - a document holding either is refused. A table too wide

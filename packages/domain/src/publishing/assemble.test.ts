@@ -2049,4 +2049,80 @@ describe('an inline image, published (figures 5)', () => {
       failuresOf(assemble(withAssets({ [RED]: asset({ alternative: null }) }, quoted))),
     ).toEqual([failed('alternative_missing', 'q1')]);
   });
+
+  it("refuses an image in a figure's or a table's caption, which would run the figure off its page and repeat in the lists", () => {
+    // Found by the final review: the caption's height is estimated from its words, and a caption is set
+    // again in the list after the contents, so an image there is refused by name rather than set.
+    const figure = {
+      type: 'figure',
+      id: 'f1',
+      asset: RED,
+      imageStyle: 'figure',
+      caption: [text('Shapes '), image()],
+      alternative: { kind: 'decorative' },
+    };
+    expect(failuresOf(assemble(withAssets({ [RED]: asset() }, figure)))).toEqual([
+      failed('image_in_caption', 'f1'),
+    ]);
+    const table = {
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Readings '), image()],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [{ content: [paragraph('c1', text('1'))], colspan: 1, rowspan: 1 }] }],
+    };
+    expect(failuresOf(assemble(withAssets({ [RED]: asset() }, table)))).toEqual([
+      failed('image_in_caption', 't1'),
+    ]);
+  });
+
+  it('names a block once for each reason, however many of its images share it', () => {
+    const wide = asset({ width: 6000, height: 100, alternative: null });
+    expect(
+      failuresOf(
+        assemble(withAssets({ [RED]: wide }, inParagraph(image(), text(' and '), image()))),
+      ),
+    ).toEqual([failed('alternative_missing', 'p1'), failed('image_too_wide', 'p1')]);
+  });
+
+  it('takes the room a list leaves inside a cell, less than the cell itself', () => {
+    // 1100 by 100 is 145.2 points wide. A table of one column gives a cell 441.28 points, and a
+    // bulleted list inside it takes its marker's width from that: it still fits. 3300 by 100 does not.
+    const cellOf = (inline: unknown) => ({
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Readings')],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [
+        {
+          cells: [
+            {
+              content: [
+                {
+                  type: 'list',
+                  id: 'l1',
+                  kind: 'unordered',
+                  items: [{ content: [inParagraph(inline)] }],
+                },
+              ],
+              colspan: 1,
+              rowspan: 1,
+            },
+          ],
+        },
+      ],
+    });
+    expect(
+      assemble(withAssets({ [RED]: asset({ width: 1100, height: 100 }) }, cellOf(image()))).ok,
+    ).toBe(true);
+    expect(
+      failuresOf(
+        assemble(withAssets({ [RED]: asset({ width: 3300, height: 100 }) }, cellOf(image()))),
+      ),
+    ).toEqual([failed('image_too_wide', 'p1')]);
+  });
 });
