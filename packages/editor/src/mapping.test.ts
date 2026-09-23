@@ -695,3 +695,164 @@ describe('quotations and preformatted text through the mapping (editor 5)', () =
     ).toThrow('Block 0 has no identifier');
   });
 });
+
+describe('a cross-reference through the mapping (cross-references 1)', () => {
+  const SECTION = 'abcdefghijklmnopqrstuvwxyz';
+  const OTHER = '00000000-0000-4000-8000-0000000000c1';
+  type Inline = Extract<BlockNode, { type: 'paragraph' }>['content'][number];
+  const text = (value: string): Inline => ({ type: 'text', value, marks: [] });
+  const toTable: Inline = {
+    type: 'crossReference',
+    id: 'x1',
+    target: { kind: 'block', block: 't1' },
+    display: 'numberAndTitle',
+  };
+  const toSection = (id: string): Inline => ({
+    type: 'crossReference',
+    id,
+    target: { kind: 'node', node: SECTION },
+    display: 'title',
+  });
+  const toOther = (id: string): Inline => ({
+    type: 'crossReference',
+    id,
+    target: { kind: 'component', component: OTHER, block: 'f9' },
+    display: 'page',
+    withoutPages: 'number',
+  });
+  const roundTrip = (stored: ContentDocument) => fromEditor(openedDoc(stored));
+
+  it('carries one in every inline home, both ways, with every stored attribute', () => {
+    const stored = parseContentDocument(
+      document([
+        {
+          type: 'paragraph',
+          id: 'p1',
+          style: 'body',
+          content: [
+            text('See '),
+            toTable,
+            text(', noted'),
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [
+                {
+                  type: 'paragraph',
+                  id: 'fp1',
+                  style: 'body',
+                  content: [text('Also '), toOther('x2')],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'list',
+          id: 'd1',
+          kind: 'definition',
+          items: [
+            { term: [text('Load '), toSection('x3')], content: [paragraph('d2', 'Weight.')] },
+          ],
+        },
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [paragraph('q2', 'Words.')],
+          attribution: [text('Ada, '), toSection('x4')],
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [text('Readings, as '), toSection('x5')],
+          headerRows: 0,
+          headerColumns: 0,
+          note: [text('Estimated, see '), toOther('x6')],
+          rows: [
+            {
+              cells: [
+                {
+                  content: [
+                    {
+                      type: 'paragraph',
+                      id: 'c1',
+                      style: 'body',
+                      content: [text('North '), toSection('x7')],
+                    },
+                  ],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'figure',
+          id: 'g1',
+          asset: '00000000-0000-4000-8000-00000000a551',
+          imageStyle: 'figure',
+          caption: [text('Visits, after '), toSection('x8')],
+          alternative: { kind: 'decorative' },
+        },
+      ]),
+    );
+    expect(roundTrip(stored)).toEqual(stored);
+  });
+
+  it('keeps a form for an output with no pages exactly as stored: absent stays absent', () => {
+    const stored = parseContentDocument(
+      document([
+        {
+          type: 'paragraph',
+          id: 'p1',
+          style: 'body',
+          content: [
+            text('See '),
+            { ...toTable, display: 'page' } as Inline,
+            text(' and '),
+            toOther('x2'),
+          ],
+        },
+      ]),
+    );
+    const doc = openedDoc(stored);
+    const held: Record<string, unknown>[] = [];
+    doc.descendants((node) => {
+      if (node.type.name === 'crossReference') held.push(node.attrs);
+    });
+    expect(held).toEqual([
+      { id: 'x1', target: { kind: 'block', block: 't1' }, display: 'page', withoutPages: null },
+      {
+        id: 'x2',
+        target: { kind: 'component', component: OTHER, block: 'f9' },
+        display: 'page',
+        withoutPages: 'number',
+      },
+    ]);
+    const [back] = fromEditor(doc).content as [Extract<BlockNode, { type: 'paragraph' }>];
+    expect(Object.keys(back.content[1]!)).not.toContain('withoutPages');
+    expect(back.content[3]).toEqual(toOther('x2'));
+  });
+
+  it('opens a component holding one for editing', () => {
+    const opened = toEditor(
+      document([{ type: 'paragraph', id: 'p1', style: 'body', content: [text('See '), toTable] }]),
+    );
+    expect(opened.editable).toBe(true);
+  });
+
+  it('refuses to store one the editor has not identified', () => {
+    const doc = editorSchema.node('doc', root, [
+      editorSchema.node('paragraph', { id: 'p1', style: 'body' }, [
+        editorSchema.nodes.crossReference!.create({
+          target: { kind: 'block', block: 't1' },
+          display: 'number',
+        }),
+      ]),
+    ]);
+    expect(() => fromEditor(doc)).toThrow('Block p1 has no identifier');
+  });
+});

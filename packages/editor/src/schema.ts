@@ -1,6 +1,6 @@
 import { Schema, type Attrs, type MarkSpec, type TagParseRule } from 'prosemirror-model';
 import { tableNodes } from 'prosemirror-tables';
-import { isLanguageLabel } from '@alloy-works/domain';
+import { isLanguageLabel, kindWord } from '@alloy-works/domain';
 
 /**
  * Renders a mark's element, always carrying `data-mark-id`, so that the view can read its own output
@@ -138,8 +138,9 @@ export const editorSchema = new Schema({
       group: 'block',
       // Text, an inline image (figures 4, ruling R2) and a footnote (footnotes 1, ruling R2): a
       // paragraph is the one place either stands in a run, wherever the paragraph is - running text, a
-      // list, a quotation, a table's cell.
-      content: '(text | image | footnote)*',
+      // list, a quotation, a table's cell. A cross-reference stands here as in every inline home
+      // (cross-references 1, ruling R4).
+      content: '(text | image | footnote | crossReference)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing is read back from the DOM through these rules, so a paragraph the browser makes is
@@ -249,7 +250,7 @@ export const editorSchema = new Schema({
      * is what makes a term inline content rather than a string.
      */
     term: {
-      content: 'text*',
+      content: '(text | crossReference)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'dt' }],
@@ -325,7 +326,7 @@ export const editorSchema = new Schema({
     },
     /** The caption: inline content, typed in place above the table, as a quotation's attribution is. */
     tableCaption: {
-      content: 'text*',
+      content: '(text | crossReference)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption' }],
@@ -338,7 +339,7 @@ export const editorSchema = new Schema({
      * never reaches into the table above it.
      */
     tableNote: {
-      content: 'text*',
+      content: '(text | crossReference)*',
       marks: '_',
       defining: true,
       isolating: true,
@@ -386,7 +387,7 @@ export const editorSchema = new Schema({
     },
     /** A figure's caption: inline content below the image, typed in place as a table's is. */
     figureCaption: {
-      content: 'text*',
+      content: '(text | crossReference)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption[data-figure-caption]', priority: 60 }],
@@ -452,12 +453,12 @@ export const editorSchema = new Schema({
     },
     /**
      * A footnote's paragraph: a paragraph's identifier and style, and runs of text with every mark -
-     * but outside the `block` group and holding text alone, so it stands in a footnote and nowhere
-     * else, and nothing CNT-129 excludes stands in it. The stored model has one paragraph type; this
+     * but outside the `block` group and holding text and cross-references alone, so it stands in a
+     * footnote and nowhere else, and nothing CNT-129 excludes stands in it. The stored model has one paragraph type; this
      * is the mapping's second spelling of it, as `definitionList` is of a list.
      */
     footnoteParagraph: {
-      content: 'text*',
+      content: '(text | crossReference)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing in the footnote's own editor is read back through this rule, which wins over a
@@ -465,10 +466,39 @@ export const editorSchema = new Schema({
       parseDOM: [{ tag: 'p', context: 'footnote/', priority: 60 }],
       toDOM: () => ['p', { class: 'aw-footnote-paragraph' }, 0],
     },
+    /**
+     * A cross-reference (cross-references 1, ruling R4): inline, an atom, with its identifier, its
+     * target and its form exactly as the stored model holds them - `withoutPages` null where none is
+     * stored (STR-055) - and **no marks**, as an image has none: `imagesUnmarked` takes off any a
+     * command puts on one, and an annotation either side of one is still one annotation. It stands in
+     * every inline home - a paragraph, a footnote's paragraph, a term, an attribution, both captions and
+     * a table's note - because each content expression names it, and never in preformatted text, whose
+     * content is a string.
+     *
+     * `toDOM` is what a read-only rendering and a copy see without a document to resolve it in: the
+     * word a reader could be told from the node alone - _Section_ for an outline node, _Reference_ for
+     * anything else, since which kind of block a `block` target names is the component's to say, not
+     * the node's. The surface draws its text from the host's context (ruling R10). No `parseDOM`, for a
+     * footnote's reason: a reference enters a component through its command or the product's own
+     * clipboard alone, never guessed from an element.
+     */
+    crossReference: {
+      inline: true,
+      atom: true,
+      selectable: true,
+      draggable: false,
+      marks: '',
+      attrs: { id: { default: null }, target: {}, display: {}, withoutPages: { default: null } },
+      toDOM: (node) => [
+        'span',
+        { class: 'aw-reference', 'data-reference': '' },
+        (node.attrs.target as { kind: string }).kind === 'node' ? kindWord('section') : 'Reference',
+      ],
+    },
     ...tableSpecs,
     /** Outside the block group, as a term is: it belongs to its quotation, not to a sequence. */
     attribution: {
-      content: 'text*',
+      content: '(text | crossReference)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'footer' }],
