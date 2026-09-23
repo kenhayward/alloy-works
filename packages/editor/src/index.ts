@@ -36,6 +36,7 @@ export {
   type FigureAt,
 } from './figures.js';
 export { MISSING_IMAGE } from './figureView.js';
+export { NO_DESCRIPTION, UNSHOWN_EQUATION } from './equationView.js';
 export { footnoteAt, insertFootnote, openFootnote, type FootnoteAt } from './footnotes.js';
 export {
   changeEquation,

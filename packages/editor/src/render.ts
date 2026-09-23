@@ -1,6 +1,7 @@
 import { parseContentDocument, type ContentDocument } from '@alloy-works/domain';
-import { DOMSerializer } from 'prosemirror-model';
+import { DOMSerializer, type Node } from 'prosemirror-model';
 
+import { drawEquation } from './equationView.js';
 import { toEditor } from './mapping.js';
 import { BROKEN_CLASS, referencesShown, type ReferenceContext } from './referenceText.js';
 import { editorSchema } from './schema.js';
@@ -34,7 +35,34 @@ export function renderContent(
     document,
   });
   drawReferences(rendered, referencesShown(opened.doc, context));
+  drawEquations(rendered, opened.doc);
   return rendered;
+}
+
+/**
+ * Each equation as the surface draws it (equations 1, ruling R5): native MathML, a block in display
+ * style with its numbering marked, and one with no alternative marked - by the node view's own
+ * `drawEquation`, so a document's text and the surface cannot draw one differently. `toDOM` can put
+ * only its words in the page, having no document to make elements in. The serializer writes the
+ * holders in the order `descendants` meets the nodes in, a footnote's text where its element stands,
+ * as it does references.
+ */
+function drawEquations(rendered: HTMLElement | DocumentFragment, doc: Node): void {
+  const holders = rendered.querySelectorAll<HTMLElement>('[data-equation], [data-equation-block]');
+  let index = 0;
+  doc.descendants((node) => {
+    if (node.type.name !== 'equation' && node.type.name !== 'equationBlock') return true;
+    const holder = holders[index];
+    index += 1;
+    if (holder !== undefined) {
+      drawEquation(
+        holder,
+        { mathml: node.attrs.mathml as string, numbered: node.attrs.numbered === true },
+        node.type.name === 'equationBlock' ? 'block' : 'inline',
+      );
+    }
+    return false;
+  });
 }
 
 /**

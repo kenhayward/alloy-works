@@ -1,5 +1,5 @@
 import { inlineNodeSchema } from '@alloy-works/domain';
-import { NodeSelection, type Command, type EditorState } from 'prosemirror-state';
+import { NodeSelection, TextSelection, type Command, type EditorState } from 'prosemirror-state';
 
 import { editorSchema } from './schema.js';
 
@@ -213,3 +213,57 @@ export function changeEquation(pos: number, choice: EquationChoice): Command {
  */
 export const canPlaceEquation: Command = (state) =>
   equationPlaceable(state, 'inline') || equationAt(state) !== null;
+
+/**
+ * `Enter` over an equation selected whole, inline or a block (ruling R5): it opens the equation, by
+ * asking the renderer for its dialog exactly as **Equation**'s shortcut does (`commandKeymap`), so the
+ * one `onPrompt('equation')` the renderer answers serves both keys. **Taken whether or not anything
+ * answers**: the Enter it stands in front of would split the paragraph over an inline equation -
+ * deleting it, since a selection is replaced by what is typed - and put a paragraph beside a block
+ * one, neither of which an author who pressed Enter on an equation asked for.
+ */
+export function enterEquation(onPrompt?: (name: string) => boolean): Command {
+  return (state) => {
+    if (equationAt(state) === null) return false;
+    onPrompt?.('equation');
+    return true;
+  };
+}
+
+/** The arrow keys `pastEquationBlock` is bound to. */
+export type ArrowKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
+
+/**
+ * An arrow pressed on a block equation selected whole, pointing past the end or the start of what
+ * holds it (ruling R5): an empty paragraph is made there and the caret put in it. **The way past an
+ * equation that ends its component, its list's item or its quotation's body, or begins one.** It is a
+ * leaf, with nothing inside it to type into - a figure has its caption and a table its note, which is
+ * how the caret gets past those - and `Enter` over it opens it rather than making a paragraph beside
+ * it. `insertEquation` leaves a paragraph after one it places, but one can still end its container:
+ * opened from storage, pasted there, or with that paragraph deleted.
+ *
+ * ProseMirror's own answer is a gap cursor, which is a dependency this package does not have; this is
+ * the same thing made concrete at the moment the author asks to go there. Where anything stands beyond
+ * the equation, the arrow is ProseMirror's and makes nothing, so moving through a document never adds
+ * to it. Down and up point forward and back; left and right by the component's base direction, so the
+ * arrow pointing past the end of a component written right to left is the left one.
+ */
+export function pastEquationBlock(key: ArrowKey): Command {
+  return (state, dispatch) => {
+    const { selection } = state;
+    if (!(selection instanceof NodeSelection) || selection.node.type !== equationBlockNode) {
+      return false;
+    }
+    const rtl = state.doc.attrs.direction === 'rtl';
+    const forward = key === 'ArrowDown' || key === (rtl ? 'ArrowLeft' : 'ArrowRight');
+    const $side = forward ? selection.$to : selection.$from;
+    if ((forward ? $side.nodeAfter : $side.nodeBefore) !== null) return false;
+    const index = $side.index();
+    if (!$side.parent.canReplaceWith(index, index, paragraphNode)) return false;
+    if (dispatch) {
+      const tr = state.tr.insert($side.pos, paragraphNode.create());
+      dispatch(tr.setSelection(TextSelection.create(tr.doc, $side.pos + 1)).scrollIntoView());
+    }
+    return true;
+  };
+}

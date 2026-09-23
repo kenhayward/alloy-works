@@ -22,6 +22,7 @@ import {
   outsideCode,
   refusePastTheLimit,
 } from './blocks.js';
+import { enterEquation, pastEquationBlock } from './equations.js';
 import { enterFootnote, isFootnote, openFootnote } from './footnotes.js';
 import { identityPlugin } from './identity.js';
 import { tableHeadersAgree } from './tables.js';
@@ -391,7 +392,14 @@ const footnoteEditing = new PluginKey('footnoteEditing');
  */
 function footnoteEditingPlugins(options: EditorStateOptions) {
   return (language: () => unknown): Plugin[] => [
-    keymap({ Enter: chainCommands(enterOverRange(enterWithoutEmpties), enterWithoutEmpties) }),
+    // An inline equation selected whole in the footnote's text opens as one in the component's does.
+    keymap({
+      Enter: chainCommands(
+        enterEquation(options.onPrompt),
+        enterOverRange(enterWithoutEmpties),
+        enterWithoutEmpties,
+      ),
+    }),
     keymap(commandKeymap(options.newIdentifier, options.onPrompt)),
     keymap(baseKeymap),
     new Plugin({
@@ -434,8 +442,20 @@ export function createEditorState(options: EditorStateOptions): EditorState {
         // splitting the item or the block around it; in an attribution it leaves the quotation.
         //
         // **A footnote selected whole comes first** (footnotes 1): Enter opens its text for writing,
-        // and would otherwise split the paragraph over it, taking the footnote with the split.
-        Enter: chainCommands(enterFootnote, enterOverRange(enterAtCaret), enterAtCaret),
+        // and would otherwise split the paragraph over it, taking the footnote with the split. And an
+        // equation selected whole beside it (equations 1, ruling R5): Enter opens its dialog.
+        Enter: chainCommands(
+          enterFootnote,
+          enterEquation(options.onPrompt),
+          enterOverRange(enterAtCaret),
+          enterAtCaret,
+        ),
+        // The way past a block equation that ends or begins what holds it (equations 1, ruling R5),
+        // ahead of ProseMirror's own arrows, which find nowhere to go there.
+        ArrowUp: pastEquationBlock('ArrowUp'),
+        ArrowDown: pastEquationBlock('ArrowDown'),
+        ArrowLeft: pastEquationBlock('ArrowLeft'),
+        ArrowRight: pastEquationBlock('ArrowRight'),
         // **Bound literally, and only these two.** Tab and Shift-Tab have no row in
         // `EDITOR_COMMANDS` by design - they are a second route to nesting and lifting rather than
         // the named shortcut, and a shortcut written in two places is the drift the registry exists
