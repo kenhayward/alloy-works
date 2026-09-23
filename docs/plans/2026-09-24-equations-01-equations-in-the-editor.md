@@ -60,8 +60,8 @@ text in the reader's own fonts today, and equations are drawn the same way.
   each, and by `renderContent` for a reading. An equation with no alternative is drawn marked, with
   words a screen reader hears (_No description_). Selected whole, `Enter` opens it in the dialog. A
   footnote's open editor draws them the same way.
-- **R6. Commands**, in `packages/editor/src/equations.ts`: `insertEquation({ mathml, latex, display,
-numbered })` places an inline equation at the selection's end in an inline home, or a block
+- **R6. Commands**, in `packages/editor/src/equations.ts`: `insertEquation(attrs)` - its MathML, LaTeX, display
+  and numbering - places an inline equation at the selection's end in an inline home, or a block
   equation after the block the selection is in where a block may stand, and selects it whole;
   `equationAt(state)` answers the equation selected whole, inline or block, with its position and
   attributes; `changeEquation(pos, ..)` changes one in place, keeping a block's identifier. **Equation**

@@ -100,8 +100,13 @@ export type MathmlResult =
   | { readonly ok: true; readonly mathml: string; readonly findings: readonly MathmlFinding[] }
   | { readonly ok: false; readonly failure: string };
 
-type MathElement = { name: string; attributes: [string, string][]; children: MathNode[] };
-type MathNode = MathElement | string;
+/**
+ * The tree this reader reads MathML into. Exported inside the package for one caller, the rewrite of
+ * Temml's output (`temml.ts`), which must read that output exactly as this reader does and not with a
+ * second parser of its own; the package's index does not export it.
+ */
+export type MathElement = { name: string; attributes: [string, string][]; children: MathNode[] };
+export type MathNode = MathElement | string;
 
 class Unreadable extends Error {}
 
@@ -122,10 +127,7 @@ const ENTITIES: ReadonlyMap<string, string> = new Map([
 
 export function sanitiseMathml(source: string): MathmlResult {
   try {
-    if (NOT_AN_XML_CHARACTER.test(source)) {
-      throw new Unreadable('it holds a character XML does not allow');
-    }
-    const root = parse(source);
+    const root = read(source);
     if (root.name !== 'math') throw new Unreadable(`its root is <${root.name}>, not <math>`);
     const findings: MathmlFinding[] = [];
     const cleaned = clean(root, findings);
@@ -134,6 +136,39 @@ export function sanitiseMathml(source: string): MathmlResult {
     if (error instanceof Unreadable) return { ok: false, failure: error.message };
     throw error;
   }
+}
+
+/**
+ * Reads MathML into this reader's tree, refusing exactly what `sanitiseMathml` refuses as unreadable,
+ * and keeping everything it read - nothing is cleaned. For the rewrite of Temml's output only, which
+ * changes the tree and hands it back to `sanitiseMathml` through `writeMathmlTree`.
+ */
+export function readMathmlTree(
+  source: string,
+):
+  | { readonly ok: true; readonly root: MathElement }
+  | { readonly ok: false; readonly failure: string } {
+  try {
+    return { ok: true, root: read(source) };
+  } catch (error) {
+    if (error instanceof Unreadable) return { ok: false, failure: error.message };
+    throw error;
+  }
+}
+
+/**
+ * Writes a tree read by `readMathmlTree` back as it holds it - its attributes as read, the namespace
+ * where it was declared - so that `sanitiseMathml` reads it again as it would have read the source.
+ */
+export function writeMathmlTree(root: MathElement): string {
+  return serialise(root, false);
+}
+
+function read(source: string): MathElement {
+  if (NOT_AN_XML_CHARACTER.test(source)) {
+    throw new Unreadable('it holds a character XML does not allow');
+  }
+  return parse(source);
 }
 
 function readName(source: string, at: number): string | undefined {
