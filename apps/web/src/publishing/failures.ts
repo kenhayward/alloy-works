@@ -30,6 +30,9 @@ const INLINES: Readonly<Record<string, string>> = {
   image: 'An image in a line of text cannot be published yet.',
   footnote: 'A footnote cannot be published yet.',
   crossReference: 'A cross-reference cannot be published from this request. Publish again.',
+  // An equation in a line of text, named as one now an author can place it (equations 1, ruling R9),
+  // in the words a block equation's `block_not_publishable` says, until equations 2 publishes both.
+  equation: 'An equation cannot be published yet.',
 };
 
 /**
