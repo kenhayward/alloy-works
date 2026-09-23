@@ -6,6 +6,7 @@ import pg from 'pg';
 import pino from 'pino';
 import { describeWorkerConfig, loadWorkerConfig } from './config.js';
 import { loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
+import { ingestJob } from './jobs/ingest.js';
 import { publishJob } from './jobs/publish.js';
 import { sampleJob } from './jobs/sample.js';
 import { sweepExpiredSignIns } from './sweep.js';
@@ -23,6 +24,7 @@ const typst = createTypst({ binary: config.typstBinary, fonts });
 const handlers: Record<string, JobHandler> = {
   sample_pdf: sampleJob({ db, stores, typst }),
   publish: publishJob({ db, stores, typst, fonts }),
+  ingest: ingestJob({ db, stores }),
 };
 
 // A connection of its own, held open: NOTIFY wakes the worker between polls.
