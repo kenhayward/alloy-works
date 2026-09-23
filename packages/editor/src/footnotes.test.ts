@@ -324,6 +324,15 @@ describe('placing and deleting a footnote (footnotes 1)', () => {
     expect(footnoteAt(next)).not.toBeNull();
   });
 
+  it('Enter on a footnote selected whole is taken, and never splits the paragraph over it', () => {
+    const document = documentOf(
+      paragraph('p1', text('Visited'), footnote('f1', [paragraph('fp1')]), text(' twice.')),
+    );
+    const pressed = press(selectWhole(stateOf(document), 'f1'), 'Enter');
+    expect(pressed.handled).toBe(true);
+    expect(stored(pressed.next)).toEqual(document.content);
+  });
+
   it('deletes the footnote with its mark, and undo brings it back whole, newly named', () => {
     const document = documentOf(
       paragraph(

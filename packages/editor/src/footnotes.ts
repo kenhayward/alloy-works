@@ -1,5 +1,6 @@
 import type { Node } from 'prosemirror-model';
 import { NodeSelection, type Command, type EditorState, type Transaction } from 'prosemirror-state';
+import type { EditorView } from 'prosemirror-view';
 
 import { editorSchema } from './schema.js';
 
@@ -21,6 +22,33 @@ export function footnoteAt(state: EditorState): FootnoteAt | null {
   return { pos: selection.from, id: (selection.node.attrs.id as string | null) ?? null };
 }
 
+/** The footnote's own editor open in each surface, while one is (ruling R8). */
+const opened = new WeakMap<EditorView, EditorView>();
+
+/**
+ * The nested editor over the footnote a surface has selected whole, or null where none is open: what
+ * the toolbar and the prompts act on while it is (ruling R9).
+ */
+export function openFootnote(view: EditorView): EditorView | null {
+  return opened.get(view) ?? null;
+}
+
+/** Records the footnote editor open in a surface, or that none is; `footnoteView`'s alone to call. */
+export function recordOpenFootnote(view: EditorView, inner: EditorView | null): void {
+  if (inner === null) opened.delete(view);
+  else opened.set(view, inner);
+}
+
+/**
+ * `Enter` on a footnote selected whole puts the focus in its editor (ruling R8), and never falls
+ * through to a split, which would replace the selected footnote with a paragraph break.
+ */
+export const enterFootnote: Command = (state, _dispatch, view) => {
+  if (footnoteAt(state) === null) return false;
+  if (view !== undefined) openFootnote(view)?.focus();
+  return true;
+};
+
 /**
  * Places a footnote anchored to its span at the end of the selection, in a paragraph and nowhere else
  * (FN-A, FN-B), with one empty paragraph to write in, and selects it whole so its editor opens (ruling
@@ -29,7 +57,7 @@ export function footnoteAt(state: EditorState): FootnoteAt | null {
  * footnote's paragraph - which holds text alone - declines without a rule of its own.
  */
 export function insertFootnote(newIdentifier: () => string): Command {
-  return (state, dispatch) => {
+  return (state, dispatch, view) => {
     const { $to } = state.selection;
     if ($to.parent.type !== paragraphNode) return false;
     const index = $to.index();
@@ -41,6 +69,8 @@ export function insertFootnote(newIdentifier: () => string): Command {
       );
       const tr = state.tr.insert($to.pos, footnote);
       dispatch(tr.setSelection(NodeSelection.create(tr.doc, $to.pos)).scrollIntoView());
+      // Selected whole, its editor is open: the author writes the note next, as in Word.
+      if (view !== undefined) openFootnote(view)?.focus();
     }
     return true;
   };

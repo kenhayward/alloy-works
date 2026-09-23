@@ -83,6 +83,7 @@ const LABELS = [
   'Quotation',
   'Preformatted text',
   'Table',
+  'Footnote',
 ];
 
 /** The seven marks that apply where they stand; the two after them open a dialog first. */
@@ -228,14 +229,14 @@ describe('the formatting toolbar', () => {
     await userEvent.keyboard('{ArrowRight}{ArrowRight}');
     expect(document.activeElement).toBe(buttons[2]);
     await userEvent.keyboard('{End}');
-    expect(document.activeElement).toBe(buttons[16]);
+    expect(document.activeElement).toBe(buttons.at(-1));
     await userEvent.keyboard('{ArrowRight}');
     expect(document.activeElement).toBe(buttons[0]);
     // Both ways, and both wraps: a row a key can only be walked one way along is half a row.
     await userEvent.keyboard('{ArrowLeft}');
-    expect(document.activeElement).toBe(buttons[16]);
+    expect(document.activeElement).toBe(buttons.at(-1));
     await userEvent.keyboard('{ArrowLeft}');
-    expect(document.activeElement).toBe(buttons[15]);
+    expect(document.activeElement).toBe(buttons.at(-2));
     await userEvent.keyboard('{Home}');
     expect(document.activeElement).toBe(buttons[0]);
     expect(buttons[0]).toHaveAttribute('title', 'Strong (Ctrl or Cmd and B)');

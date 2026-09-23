@@ -15,7 +15,9 @@ import {
   preformattedAt,
   tableAt,
   mountEditor,
+  openFootnote,
   pasteInto,
+  pasteIntoOpenFootnote,
   readMarkdownText,
   newBlockIdentifier,
   removeMarkCommand,
@@ -478,7 +480,8 @@ export function ComponentEditor({
           // never reaches here at all. It stays because the two must agree, and a later `editable`
           // that grew a clause of its own would leave the keyboard the one way in.
           if (!(component.mayEdit && isEditablePhase(phase))) return false;
-          return runPromptingRef.current(view, command);
+          // Into the footnote's own text while one is open (footnotes 1, ruling R9).
+          return runPromptingRef.current(openFootnote(view) ?? view, command);
         },
         ...(selection ? { selection } : {}),
       });
@@ -781,13 +784,17 @@ export function ComponentEditor({
   const table = surface === null ? null : tableAt(surface.state);
   const figure = surface === null ? null : figureAt(surface.state);
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
+  // What the toolbar acts on: the footnote's own text while one is open, and the surface otherwise
+  // (footnotes 1, ruling R9). Every button is asked of that state, so a mark applies in the footnote
+  // and everything a footnote cannot hold is unavailable there, by its content expression alone.
+  const editing = surface === null ? null : (openFootnote(surface) ?? surface);
   // Asked of the command itself, without dispatching, so **Figure** is offered exactly where a figure
   // can go - never in a caption, a cell or preformatted text, where an upload would place nothing.
   const mayPlaceFigure =
-    surface !== null && insertFigure('', { kind: 'decorative' }, () => '')(surface.state);
+    editing !== null && insertFigure('', { kind: 'decorative' }, () => '')(editing.state);
   // An inline image selected whole, and where one could go, asked the same way (figures 4).
   const image = surface === null ? null : imageAt(surface.state);
-  const mayPlaceImage = surface !== null && insertImage('', { kind: 'decorative' })(surface.state);
+  const mayPlaceImage = editing !== null && insertImage('', { kind: 'decorative' })(editing.state);
 
   /**
    * **Paste as Markdown**: the clipboard's plain text read as Markdown and placed as a paste is,
@@ -810,13 +817,16 @@ export function ComponentEditor({
     const reading = await readMarkdownText(text, into);
     // The author may have closed the component while the clipboard or the parser was coming.
     if (view.isDestroyed) return;
-    const outcome = pasteInto(view.state, reading, newBlockIdentifier);
-    if (outcome.ok) view.dispatch(outcome.transaction);
+    // Into the footnote's own text while one is open (footnotes 1, ruling R9), and never over the
+    // footnote the surface has selected.
+    const intoFootnote = pasteIntoOpenFootnote(view, reading, newBlockIdentifier);
+    const outcome = intoFootnote ?? pasteInto(view.state, reading, newBlockIdentifier);
+    if (intoFootnote === null && outcome.ok) view.dispatch(outcome.transaction);
     const { beside, said } = pasteSentence(outcome.ok, outcome.report);
     setPasteReport(beside.length > 0 ? beside : null);
     setNotice(said);
     if (outcome.ok && controls.current?.view().phase !== 'editing') pasteSaid.current = said;
-    view.focus();
+    (openFootnote(view) ?? view).focus();
   };
   const size = surface === null ? undefined : sizeOf(surface.state.doc);
   const mayCut = shown.mayEdit && loaded.state === 'open';
@@ -946,12 +956,12 @@ export function ComponentEditor({
               onInsertImage={() => setFigureDialog('Image')}
               imagePlaceable={mayPlaceImage}
               ref={toolbarRegion}
-              view={surface}
+              view={editing}
               enabled={mayFormat}
               newIdentifier={newBlockIdentifier}
               prompt={askFor}
               onRefused={(command) =>
-                surface && askAgain(surface, command, whyRefused(surface, command))
+                editing && askAgain(editing, command, whyRefused(editing, command))
               }
             />
             {!shown.mayEdit && (

@@ -10,6 +10,7 @@ import {
   type ClipboardSource,
 } from './clipboard.js';
 import { figureView } from './figureView.js';
+import { footnoteView } from './footnoteView.js';
 import { imageView } from './imageView.js';
 import { newBlockIdentifier } from './identity.js';
 
@@ -80,6 +81,13 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
     nodeViews: {
       figure: (node, owner) => figureView(node, owner.dom.ownerDocument),
       image: (node, owner) => imageView(node, owner.dom.ownerDocument),
+      // A footnote's mark, and its own editor while it is selected (footnotes 1, ruling R8).
+      footnote: (node, owner, getPos) =>
+        footnoteView(node, owner, getPos, {
+          newIdentifier: options.newIdentifier ?? newBlockIdentifier,
+          pasted: options.pasted,
+          refused: options.refused,
+        }),
     },
     handleDOMEvents: {
       paste: (target, event) => {

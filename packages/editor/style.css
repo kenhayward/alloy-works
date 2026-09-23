@@ -290,6 +290,79 @@
   outline-offset: 1px;
 }
 
+/* A footnote (footnotes 1, ruling R8): its mark is a small raised asterisk with no number - the
+ * number is the outline's - and while it is selected its own editor stands beneath the paragraph it
+ * is in, over what follows, as ProseMirror's footnote pattern draws it. */
+.ProseMirror p {
+  position: relative;
+}
+
+.aw-footnote-mark {
+  padding: 0 0.1em;
+  color: var(--accent);
+  font-size: 0.75em;
+}
+
+.aw-footnote-mark::before {
+  content: '*';
+}
+
+.aw-footnote.ProseMirror-selectednode .aw-footnote-mark {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.aw-footnote-editor {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  margin-top: 0.25em;
+  padding: 0.25em 0.75em;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  background: var(--bg);
+  font-size: 0.9em;
+}
+
+.aw-footnote-editor:focus-within {
+  border-color: var(--accent);
+}
+
+/* In text rendered for reading, a footnote's words stand in brackets where its mark would (R13). */
+.aw-footnote-text {
+  font-size: 0.85em;
+}
+
+.aw-footnote-text::before {
+  content: ' [';
+}
+
+.aw-footnote-text::after {
+  content: ']';
+}
+
+.aw-footnote-text p {
+  display: inline;
+  margin: 0;
+}
+
+.aw-footnote-text p + p::before {
+  content: ' ';
+}
+
+/* A table's note (CNT-038, ruling R11), beneath the table, in the size a note is read at. */
+.aw-table-note {
+  margin: 0.4em 0 0;
+  font-size: 0.9em;
+}
+
+.ProseMirror p.aw-table-note.aw-empty::before {
+  content: 'Note';
+  color: var(--muted);
+}
+
 /* An inline image that does not load: marked in its place, as a figure is, in a line of its text. */
 .aw-inline-image-holder.aw-image-missing .aw-inline-image {
   display: none;

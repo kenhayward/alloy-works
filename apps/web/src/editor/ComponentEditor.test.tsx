@@ -2,6 +2,7 @@ import { createApiClient } from '@alloy-works/api-client';
 import {
   fromEditor,
   NodeSelection,
+  openFootnote,
   Selection,
   setListAttributes,
   type EditorView,
@@ -3782,5 +3783,204 @@ describe('a figure in the editor (figures 2)', () => {
       expect(image.parentElement).toHaveClass('aw-image-missing');
       expect(image.parentElement).toHaveAttribute('data-missing', 'An image you may not see');
     });
+  });
+});
+
+describe('footnotes and the table note in the editor (footnotes 1)', () => {
+  // Typing saves as the author goes, and a slower machine batches fewer keystrokes into each save.
+  const everySave = Object.fromEntries(
+    Array.from({ length: 64 }, (_, at) => [
+      `PUT /v1/components/{id}/iterations/{session}/${at + 1}`,
+      () => json(200, { sequence: at + 1, lock }),
+    ]),
+  );
+  const openWith = (stored: unknown) =>
+    open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: stored })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        ...everySave,
+      },
+      quick,
+      true,
+    );
+  const footnote = (id: string, ...paragraphs: unknown[]) => ({
+    type: 'footnote',
+    id,
+    anchor: { kind: 'span' },
+    content: paragraphs,
+  });
+  const withFootnote = blocksOf({
+    type: 'paragraph',
+    id: 'b1',
+    style: 'body',
+    content: [
+      { type: 'text', value: 'Unbox the printer', marks: [] },
+      footnote('f1', para('fp1', 'Twice.')),
+      { type: 'text', value: '.', marks: [] },
+    ],
+  });
+  const runsOf = (view: EditorView) =>
+    (fromEditor(view.state.doc).content[0] as { content: unknown[] }).content;
+  /** The first footnote, selected whole, as a click on its mark selects it. */
+  const selectTheFootnote = (view: EditorView) =>
+    act(() => {
+      let at = -1;
+      view.state.doc.descendants((node, pos) => {
+        if (at === -1 && node.type.name === 'footnote') at = pos;
+        return at === -1;
+      });
+      view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, at)));
+    });
+  /** Types into the footnote's own editor, as its keystrokes arrive. */
+  const typeInFootnote = (view: EditorView, text: string) =>
+    act(() => {
+      const inner = openFootnote(view)!;
+      inner.dispatch(inner.state.tr.insertText(text));
+    });
+
+  it('opens a component holding a footnote for editing, its mark named Footnote', async () => {
+    const { surface } = openWith(withFootnote);
+    await surface();
+    expect(screen.queryByText(/shown for reading only/)).toBeNull();
+    expect(screen.getByRole('img', { name: 'Footnote' })).toBeInTheDocument();
+  });
+
+  it('CNT-036 places a footnote at the cursor from the toolbar, opens its text with the focus, and saves what is typed', async () => {
+    const { asked, surface } = openWith(content('Unbox the printer.'));
+    const view = await surface();
+    selectText(view, 18, 18);
+    await userEvent.click(screen.getByRole('button', { name: 'Footnote' }));
+
+    const text = await screen.findByRole('textbox', { name: 'Footnote text' });
+    expect(text).toHaveFocus();
+    typeInFootnote(view, 'Twice.');
+    const [, note] = runsOf(view) as [unknown, { content: { content: unknown[] }[] }];
+    expect(note).toMatchObject({ type: 'footnote', anchor: { kind: 'span' } });
+    expect(note.content[0]!.content).toEqual([{ type: 'text', value: 'Twice.', marks: [] }]);
+    await waitFor(() =>
+      expect(
+        asked.some(
+          (each) =>
+            each.route.startsWith('PUT /v1/components/{id}/iterations/') &&
+            JSON.stringify(each.body).includes('Twice.'),
+        ),
+      ).toBe(true),
+    );
+  });
+
+  it('opens its text while it is selected, and closes it when the cursor leaves', async () => {
+    const { surface } = openWith(withFootnote);
+    const view = await surface();
+    expect(screen.queryByRole('textbox', { name: 'Footnote text' })).toBeNull();
+    selectTheFootnote(view);
+    const text = await screen.findByRole('textbox', { name: 'Footnote text' });
+    expect(text).toHaveTextContent('Twice.');
+    selectText(view, 2, 2);
+    expect(screen.queryByRole('textbox', { name: 'Footnote text' })).toBeNull();
+  });
+
+  it('Enter on the mark puts the focus in its text, and Escape brings it back to the mark', async () => {
+    const { surface } = openWith(withFootnote);
+    const view = await surface();
+    selectTheFootnote(view);
+    view.focus();
+    fireEvent.keyDown(view.dom, { key: 'Enter' });
+    const text = screen.getByRole('textbox', { name: 'Footnote text' });
+    expect(text).toHaveFocus();
+    expect(runsOf(view)).toHaveLength(3);
+
+    fireEvent.keyDown(text, { key: 'Escape' });
+    expect(view.hasFocus()).toBe(true);
+    expect(screen.getByRole('textbox', { name: 'Footnote text' })).toBeInTheDocument();
+  });
+
+  it("undoes the footnote's typing with the component's own history", async () => {
+    const { surface } = openWith(withFootnote);
+    const view = await surface();
+    selectTheFootnote(view);
+    typeInFootnote(view, 'Once. ');
+    expect(screen.getByRole('textbox', { name: 'Footnote text' })).toHaveTextContent(
+      'Once. Twice.',
+    );
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Footnote text' }), {
+      key: 'z',
+      ctrlKey: true,
+    });
+    expect(screen.getByRole('textbox', { name: 'Footnote text' })).toHaveTextContent('Twice.');
+    expect(JSON.stringify(runsOf(view))).not.toContain('Once.');
+  });
+
+  it("the toolbar acts on the footnote's text while it is open, and offers nothing that cannot go there", async () => {
+    const { surface } = openWith(withFootnote);
+    const view = await surface();
+    selectTheFootnote(view);
+    act(() => {
+      const inner = openFootnote(view)!;
+      inner.dispatch(
+        inner.state.tr.setSelection(
+          Selection.fromJSON(inner.state.doc, { type: 'text', anchor: 1, head: 6 }),
+        ),
+      );
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Strong' }));
+    const [first, note] = runsOf(view) as [
+      { marks: unknown[] },
+      { content: { content: { marks: { type: string }[] }[] }[] },
+    ];
+    expect(note.content[0]!.content[0]!.marks.map((mark) => mark.type)).toEqual(['strong']);
+    expect(first.marks).toEqual([]);
+    for (const name of ['Bulleted list', 'Table', 'Footnote', 'Figure', 'Image']) {
+      expect(screen.getByRole('button', { name }), name).toHaveAttribute('aria-disabled', 'true');
+    }
+  });
+
+  it("a paste into the footnote's text goes through admission, and the text stays open", async () => {
+    const { surface } = openWith(withFootnote);
+    const view = await surface();
+    selectTheFootnote(view);
+    const text = screen.getByRole('textbox', { name: 'Footnote text' });
+    act(() => {
+      text.dispatchEvent(pasteEvent({ 'text/plain': 'Once.\n\nThen again.' }));
+    });
+    const [, note] = runsOf(view) as [unknown, { content: unknown[] }];
+    expect(note.content).toHaveLength(2);
+    expect(screen.getByRole('textbox', { name: 'Footnote text' })).toBeInTheDocument();
+  });
+
+  it('CNT-038 adds a note to a table from its panel, saves what is typed in it, and removes it', async () => {
+    const { surface } = openWith(
+      blocksOf(para('b1', 'Before.'), {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [{ type: 'text', value: 'Readings', marks: [] }],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [{ cells: [{ content: [para('d1', 'York')], colspan: 1, rowspan: 1 }] }],
+      }),
+    );
+    const view = await surface();
+    caretIn(view, 'd1');
+    const panel = await screen.findByRole('group', { name: 'Table' });
+    expect(within(panel).getByRole('button', { name: 'Remove note' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    await userEvent.click(within(panel).getByRole('button', { name: 'Add note' }));
+    expect(view.state.selection.$from.parent.type.name).toBe('tableNote');
+    act(() => view.dispatch(view.state.tr.insertText('Estimated.')));
+    const tableOf = () =>
+      fromEditor(view.state.doc).content.find((block) => block.type === 'table') as {
+        note?: unknown;
+      };
+    expect(tableOf().note).toEqual([{ type: 'text', value: 'Estimated.', marks: [] }]);
+    const again = screen.getByRole('group', { name: 'Table' });
+    expect(within(again).getByRole('button', { name: 'Add note' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    await userEvent.click(within(again).getByRole('button', { name: 'Remove note' }));
+    expect(tableOf().note).toBeUndefined();
   });
 });

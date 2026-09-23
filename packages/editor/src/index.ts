@@ -36,7 +36,8 @@ export {
   type FigureAt,
 } from './figures.js';
 export { MISSING_IMAGE } from './figureView.js';
-export { footnoteAt, insertFootnote, type FootnoteAt } from './footnotes.js';
+export { footnoteAt, insertFootnote, openFootnote, type FootnoteAt } from './footnotes.js';
+export { pasteIntoOpenFootnote } from './footnoteView.js';
 export {
   deleteImage,
   imageAt,

@@ -22,7 +22,7 @@ import {
   outsideCode,
   refusePastTheLimit,
 } from './blocks.js';
-import { isFootnote } from './footnotes.js';
+import { enterFootnote, isFootnote } from './footnotes.js';
 import { identityPlugin } from './identity.js';
 import { tableHeadersAgree } from './tables.js';
 import { imagesUnmarked, marksPastImages } from './images.js';
@@ -422,7 +422,10 @@ export function createEditorState(options: EditorStateOptions): EditorState {
         // **And the code-aware links come first of all** (editor 5): in preformatted text Enter
         // types a line break, which `splitListItem` and `splitBlock` would otherwise answer by
         // splitting the item or the block around it; in an attribution it leaves the quotation.
-        Enter: chainCommands(enterOverRange(enterAtCaret), enterAtCaret),
+        //
+        // **A footnote selected whole comes first** (footnotes 1): Enter opens its text for writing,
+        // and would otherwise split the paragraph over it, taking the footnote with the split.
+        Enter: chainCommands(enterFootnote, enterOverRange(enterAtCaret), enterAtCaret),
         // **Bound literally, and only these two.** Tab and Shift-Tab have no row in
         // `EDITOR_COMMANDS` by design - they are a second route to nesting and lifting rather than
         // the named shortcut, and a shortcut written in two places is the drift the registry exists
