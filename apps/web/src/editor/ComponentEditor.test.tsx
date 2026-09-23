@@ -3579,6 +3579,28 @@ describe('a figure in the editor (figures 2)', () => {
     ).toBeInTheDocument();
   });
 
+  it('follows the figure through an undo and a redo of its own description', async () => {
+    const { surface } = openWith(aFigure({ kind: 'inherited' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const panel = await screen.findByRole('group', { name: 'Figure' });
+    await userEvent.click(within(panel).getByLabelText('Describe it here'));
+    await userEvent.type(within(panel).getByLabelText('Its own description'), 'Red');
+    await waitFor(() => expect(figureOf(view)!.alternative).toEqual({ kind: 'own', text: 'Red' }));
+    act(() => {
+      fireEvent.keyDown(view.dom, { key: 'z', ctrlKey: true });
+    });
+    await waitFor(() =>
+      expect(within(panel).getByLabelText("Use the image's description")).toBeChecked(),
+    );
+    // Redo gives the figure back the very value the panel set, which the panel must still follow.
+    act(() => {
+      fireEvent.keyDown(view.dom, { key: 'y', ctrlKey: true });
+    });
+    await waitFor(() => expect(within(panel).getByLabelText('Describe it here')).toBeChecked());
+    expect(within(panel).getByLabelText('Its own description')).toHaveValue('Red');
+  });
+
   it('offers Figure only where a figure can be placed', async () => {
     const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
     const view = await surface();

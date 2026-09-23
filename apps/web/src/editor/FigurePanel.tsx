@@ -53,7 +53,12 @@ export function FigurePanel({ view, figure, enabled, client, onReplace, ref }: F
   // what it holds. Another figure is another panel: the page keys it by the figure.
   useEffect(() => {
     const held = figure.alternative;
-    if (held === sent.current) return;
+    // Recognised once, and forgotten: a redo gives the figure back this very value, and the panel
+    // must follow that as it follows any other change (figures 2, re-review).
+    if (held === sent.current) {
+      sent.current = null;
+      return;
+    }
     setChoice(held.kind);
     if (held.kind === 'own') setOwn(held.text);
   }, [figure.alternative]);
@@ -76,7 +81,8 @@ export function FigurePanel({ view, figure, enabled, client, onReplace, ref }: F
   }, [client, figure.asset]);
 
   const apply = (alternative: Alternative) => {
-    if (!enabled) return;
+    // Nothing to set where the figure holds this already, and nothing the effect would hear about.
+    if (!enabled || alternative === figure.alternative) return;
     const set = setFigureAlternative(alternative);
     if (!set(view.state)) return;
     sent.current = alternative;
