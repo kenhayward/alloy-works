@@ -521,9 +521,9 @@ The themes design is themes.md, over ADR-0014's prototype; its PDF half is
 recorded and set by template 12, then table and image styles; the Word projection comes with Word
 output, and the theme in the editor after it.
 
-| #   | Plan                                                                 | Builds                                                                                                                                                                                                              | Status            |
-| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| 1   | [The theme in the PDF](2026-09-24-themes-01-the-theme-in-the-pdf.md) | The default theme and its six catalogues stored and recorded on every request; `publishing/12` and template 12 setting every face, size, colour, space and line from it; styles, faces and contrast refused by name | Built (PR #PRNUM) |
+| #   | Plan                                                                 | Builds                                                                                                                                                                                                              | Status          |
+| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| 1   | [The theme in the PDF](2026-09-24-themes-01-the-theme-in-the-pdf.md) | The default theme and its six catalogues stored and recorded on every request; `publishing/12` and template 12 setting every face, size, colour, space and line from it; styles, faces and contrast refused by name | Built (PR #227) |
 
 ## Publishing
 
