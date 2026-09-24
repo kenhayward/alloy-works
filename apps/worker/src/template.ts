@@ -36,13 +36,15 @@ const at = (version: number) =>
  * `publishing/6`, the same again with a block that may be a table and the lists after the contents,
  * version 7 `publishing/7`, the same again with a block that may be a figure, version 8
  * `publishing/8`, the same again with a run that may be an image, version 9 `publishing/9`, the same
- * again with a run that may be a footnote and a table that may carry a note, and version 10
+ * again with a run that may be a footnote and a table that may carry a note, version 10
  * `publishing/10`, the same again with a run that may be a cross-reference and the labels its targets
- * carry. Versions 2 to 9 are kept although `assemble` makes none of their schemas any more: they are
- * what the publications made before a run carried its marks, before a block could be a list, before
- * one could be a quotation or preformatted text, before one could be a table, before one could be a
- * figure, before a run could be an image, and before one could be a footnote or a reference, were
- * compiled with, and a published version is a record.
+ * carry, and version 11 `publishing/11`, the same again with a run and a block that may be an
+ * equation, set in the pinned maths face, and a node's title that is runs. Versions 2 to 10 are kept
+ * although `assemble` makes none of their schemas any more: they are what the publications made
+ * before a run carried its marks, before a block could be a list, before one could be a quotation or
+ * preformatted text, before one could be a table, before one could be a figure, before a run could
+ * be an image, before one could be a footnote or a reference, and before one could be an equation,
+ * were compiled with, and a published version is a record.
  */
 export const PUBLICATION_TEMPLATE = {
   1: { name: 'publication', version: 1, file: at(1) },
@@ -55,9 +57,6 @@ export const PUBLICATION_TEMPLATE = {
   8: { name: 'publication', version: 8, file: at(8) },
   9: { name: 'publication', version: 9, file: at(9) },
   10: { name: 'publication', version: 10, file: at(10) },
-  // Equations 2 repointed `PUBLISHING_SCHEMA` at `publishing/11`, and the guard above asked for this
-  // row: template 11, which task 3 of that plan writes. Until it does the file is not there, so a
-  // `publishing/11` document fails its compile by name rather than being read by template 10.
   11: { name: 'publication', version: 11, file: at(11) },
 } as const;
 

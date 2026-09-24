@@ -76,6 +76,13 @@ export interface ReadPdf {
    * is written, with the language a reader is told it is in, read up the tree as a figure's is.
    */
   readonly notes: readonly { readonly spoken: string | null }[];
+  /**
+   * Every `Formula` structure element - an equation, inline or a block - page by page in the order the
+   * page's tree holds them, as pdf.js reads the tree (equations 2): with its `/Alt`, its language, the
+   * text its own marked content holds, and the element set straight after it, where a numbered
+   * equation's number stands.
+   */
+  readonly formulas: readonly TaggedFormula[];
   readonly marked: boolean;
   readonly pdfuaPart: string | null;
   readonly title: string | null;
@@ -107,6 +114,28 @@ export interface TaggedFigure {
   readonly spoken: string | null;
 }
 
+export interface TaggedFormula {
+  /** The page it is set on, counted from 0 as `taggedText` is. */
+  readonly page: number;
+  readonly alt: string | null;
+  /** Its own `/Lang`, where it declares one. */
+  readonly lang: string | null;
+  /** The language a reader is told it is in, read up the tree as a figure's is. */
+  readonly spoken: string | null;
+  /**
+   * The structure types of the elements it stands in, the nearest first - a `P` in a `TH` in a `TR` -
+   * up to the root.
+   */
+  readonly ancestors: readonly string[];
+  /** Every string its marked content holds, joined: what the engine drew for it, as extracted. */
+  readonly text: string;
+  /**
+   * The element straight after it among its parent's, with the text that element holds, or null where
+   * it is the last. A numbered block equation's number is a `Span` here.
+   */
+  readonly next: { readonly role: string; readonly text: string } | null;
+}
+
 export interface InternalLink {
   /** Where the link stands on its page, `[left, bottom, right, top]` in points from its bottom left. */
   readonly rect: readonly [number, number, number, number];
@@ -125,6 +154,11 @@ export interface TextItem {
 interface StructNode {
   readonly role?: string;
   readonly children?: readonly StructNode[];
+  /** Where it is a page's marked content rather than an element: `content`, and its identifier. */
+  readonly type?: string;
+  readonly id?: string;
+  readonly alt?: string;
+  readonly lang?: string;
 }
 
 /** A page's own object, as pdf.js names it. */
@@ -362,12 +396,16 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
     const textLeft: (number | null)[] = [];
     const textBaselines: ({ top: number; bottom: number } | null)[] = [];
     const items: TextItem[] = [];
+    const formulas: TaggedFormula[] = [];
     for (let number = 1; number <= pdf.numPages; number += 1) {
       const page = await pdf.getPage(number);
       const content = await page.getTextContent({ includeMarkedContent: true });
       // Which marked-content sequences on this page declare a language, by their MCID.
       const declared = markedLanguages(bytes, text, page.ref as PageRef);
-      const open: { tag: string; mcid: number | null }[] = [];
+      const open: { tag: string; mcid: number | null; id: string | null }[] = [];
+      // Every string of the page by the marked-content sequence it stands in, keyed as the structure
+      // tree names its content, so an element's text can be read from the tree.
+      const held = new Map<string, string>();
       const artifacts: string[] = [];
       const tagged: string[] = [];
       const spoken: TaggedLanguage[] = [];
@@ -382,11 +420,20 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
             // by, and is null where the sequence has none.
             const marked = item as { tag?: string; id?: string | null };
             const mcid = /_mc(\d+)$/.exec(marked.id ?? '');
-            open.push({ tag: marked.tag ?? '', mcid: mcid === null ? null : Number(mcid[1]) });
+            open.push({
+              tag: marked.tag ?? '',
+              mcid: mcid === null ? null : Number(mcid[1]),
+              id: marked.id ?? null,
+            });
           } else if (item.type === 'endMarkedContent') {
             open.pop();
           }
-        } else if (item.str.trim() !== '') {
+        } else {
+          const inner = open.at(-1)?.id;
+          if (inner !== undefined && inner !== null) {
+            held.set(inner, (held.get(inner) ?? '') + item.str);
+          }
+          if (item.str.trim() === '') continue;
           if (open.some((each) => each.tag === 'Artifact')) {
             artifacts.push(item.str);
           } else {
@@ -466,6 +513,32 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       };
       const tree = (await page.getStructTree()) as StructNode | null;
       if (tree) visit(tree);
+      const textOf = (node: StructNode): string =>
+        node.type === 'content'
+          ? (held.get(node.id ?? '') ?? '')
+          : (node.children ?? []).map(textOf).join('');
+      const formulasIn = (node: StructNode, above: readonly StructNode[]) => {
+        const children = node.children ?? [];
+        children.forEach((child, index) => {
+          if (child.role === 'Formula') {
+            const next = children.slice(index + 1).find((each) => each.role !== undefined);
+            const declared = [child, node, ...above].find((each) => each.lang !== undefined);
+            formulas.push({
+              page: number - 1,
+              alt: child.alt ?? null,
+              lang: child.lang ?? null,
+              spoken: declared?.lang ?? null,
+              ancestors: [node, ...above]
+                .map((each) => each.role ?? '')
+                .filter((role) => role !== '' && role !== 'Root'),
+              text: textOf(child),
+              next: next === undefined ? null : { role: next.role!, text: textOf(next) },
+            });
+          }
+          if (child.role !== undefined) formulasIn(child, [node, ...above]);
+        });
+      };
+      if (tree) formulasIn(tree, []);
     }
     const pageLabels = (await pdf.getPageLabels()) as string[] | null;
     const metadata = await pdf.getMetadata();
@@ -484,6 +557,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       elements: structureElements(text),
       figures: taggedFigures(text),
       notes: taggedNotes(text),
+      formulas,
       marked: markInfo?.get('Marked') === true,
       pdfuaPart: metadata.metadata?.get('pdfuaid:part') ?? null,
       title: info.Title ?? null,
