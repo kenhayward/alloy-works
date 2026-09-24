@@ -150,8 +150,8 @@ or not T1's.
 | PUB-085                              | Beside the table above: with a cold veraPDF at 11.2 s a page, the ten-second p95 cannot hold alongside PUB-091's report on every publication. Ken deferred the choice - a warm checker, or changing the requirement - to slice 5                                                                                                         |
 | PUB-004                              | Nothing in T1 approves anything: baselines are T3 and revisions LIF's. Every T1 publication is a draft (decision A); an approved one arrives with `baseline_id`                                                                                                                                                                          |
 | PUB-089                              | An **approval page** has nothing to show until LIF records approvals; it is T3's since Ken's answer, and waits for them                                                                                                                                                                                                                  |
-| PUB-017                              | A table's header rows repeat and it breaks across pages ([Tables](#tables)); how it breaks is its table style's (STY-013), and there are no table styles until themes.md is built                                                                                                                                                        |
-| PUB-092                              | Keep-with-next and keep-together are hard in Typst, and widow and orphan control is a cost there. How each style property reaches the engine is themes.md's projection, and which cases the regression corpus holds for them is not designed here                                                                                        |
+| PUB-017                              | A table's header rows repeat and it breaks across pages ([Tables](#tables)); how it breaks is its table style's (STY-013), and themes.md claims it ([Themes in the PDF](themes.md#themes-in-the-pdf), TH-I)                                                                                                                              |
+| PUB-092                              | How each style property reaches the engine is themes.md's projection, measured there - the two costs, `sticky` and `breakable: false` - and themes.md claims it                                                                                                                                                                          |
 | PUB-022                              | Cross-references are internal links in a paragraph's text, and text in a caption, a title, a term, an attribution, a table's note and a header row, as measured (structure.md, XR-D) - built by cross-references 2 and read back from the PDF. Citations cannot be until LIB gives them entries to link to, and the claim waits for them |
 | PUB-031                              | Blocks are emitted in document order. Whether Typst tags a floated figure at its logical place rather than where it lands is not verified; the accessible-output slice verifies it and claims it                                                                                                                                         |
 | PUB-069                              | Typst hyphenates by each passage's `lang`, which the published document carries; which of the languages LOC admits Typst has patterns for is not known                                                                                                                                                                                   |
@@ -1701,9 +1701,11 @@ Each slice is a plan, lands into something that runs, and cites only what its te
    and caption labels, which slice 2 deliberately left out because every list of a document of
    paragraphs would be empty (decision A). Cites PUB-003, PUB-016, PUB-033, PUB-038, CNT-042,
    CNT-049, CNT-054, STR-024, STR-027 and STR-029.
-4. **Themes and typefaces.** The default theme's Typst projection; themes.md's typeface and theme
-   artifacts replace the image's faces, and the coverage check reads theirs. Its claims are
-   themes.md's.
+4. **Themes and typefaces.** Designed in themes.md's [Themes in the PDF](themes.md#themes-in-the-pdf),
+   measured against the pinned engine: the theme and its catalogues stored and recorded, the default
+   theme's Typst projection in `publishing/12` and template 12, and table and image styles, in two
+   slices (TH-K). The faces stay in the image, the theme recording them by hash (TH-B), and the
+   coverage check asks each style's face. Its claims are themes.md's.
 5. **Accessible output, checked.** veraPDF per publication and its report kept; reading order of floats
    verified; the budget measured. Cites PUB-091; claims and cites PUB-085 once a warm checker or a
    changed requirement settles it against PUB-091 (Ken's deferral); claims PUB-031 once verified.

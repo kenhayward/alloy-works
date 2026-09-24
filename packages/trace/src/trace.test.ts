@@ -65,6 +65,9 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1388);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 429, from 425: themes.md claims STY-069, PUB-017, TAB-032 and PUB-092 once its Themes in the
+    // PDF section designs the contrast check, table styles' page breaks and the keep rules against
+    // the pinned engine.
     // 425, from 424: equations 3. component-editor.md claims CNT-046 once a section's title takes an
     // equation in the outline, so every context it names is made in the editor, and publishing.md's
     // equations 2 sets each in the PDF.
@@ -152,7 +155,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(425);
+    ).toBe(429);
   });
 });
 

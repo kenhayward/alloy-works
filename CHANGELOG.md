@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.67.1 - 2026-09-24 (PR #226)
+
+### Changed
+
+- **Themes for the PDF are designed**, ready for review before any of it is built: a publication's
+  typefaces, sizes, colours, spacing and page-break behaviour coming from a stored theme rather than
+  being fixed, and each publication recording the theme it was made with. Measured against the
+  typesetting engine first. Small capitals are left out because the product's typefaces have none,
+  and a floated image can sit only at the top or foot of a page. A table's "continued" label is
+  possible, and its words come from the layout.
+
 ## 0.67.0 - 2026-09-24 (PR #225)
 
 ### Added
