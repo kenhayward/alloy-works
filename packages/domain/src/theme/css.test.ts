@@ -9,23 +9,24 @@ const css = projectCss(resolved());
 describe('projectCss', () => {
   it('writes every property it projects of a paragraph style at its resolved value', () => {
     expect(css).toContain(
-      '.aw-p-heading-1 { margin: 0 0 -1.391pt 0; font-family: "Liberation Serif"; font-size: 16pt; ' +
+      '.aw-p-heading-1 { margin: 0 0 -1.581pt 0; font-family: "Liberation Serif"; font-size: 16pt; ' +
         'font-weight: 700; font-style: normal; color: #000000; text-indent: 0pt; ' +
-        'padding-top: 23.791pt; padding-bottom: 12.8pt; line-height: 20.5pt; }',
+        'padding-top: 11.911pt; padding-bottom: 4.57pt; line-height: 20.88pt; }',
     );
   });
 
   it('spaces blocks with padding, which adds, never with collapsing margins (STY-050)', () => {
-    // A table's note: 6pt before, and its half-leading, (12.5 - 1.107 x 10) / 2 = 0.713pt, above that.
-    expect(css).toMatch(/\.aw-p-table-note \{[^}]*padding-top: 6\.713pt; padding-bottom: 6pt;/);
+    // A table's note: no space before, its half-leading, (13.05 - 1.107 x 10) / 2 = 0.988pt, above
+    // that, and its 2.97pt after below.
+    expect(css).toMatch(/\.aw-p-table-note \{[^}]*padding-top: 0\.988pt; padding-bottom: 2\.97pt;/);
   });
 
   it("moves each line's extra space above it, as Word does, by cancelling CSS's split (STY-051)", () => {
     // CSS puts half of a line's extra space above and half below. Word puts all of it above.
-    // Half-leading = (line spacing - (ascent + descent) x size) / 2: 0.909pt for body at 11pt on
-    // 14pt. Adding it above and taking it back below as a margin - which can go negative where
+    // Half-leading = (line spacing - (ascent + descent) x size) / 2: 1.084pt for body at 11pt on
+    // 14.35pt. Adding it above and taking it back below as a margin - which can go negative where
     // padding cannot - leaves it all above.
-    expect(css).toMatch(/\.aw-p-body \{ margin: 0 0 -0\.909pt 0;[^}]*padding-top: 0\.909pt;/);
+    expect(css).toMatch(/\.aw-p-body \{ margin: 0 0 -1\.084pt 0;[^}]*padding-top: 1\.084pt;/);
   });
 
   it('writes nothing that depends on pagination - preview shows those (STY-037)', () => {

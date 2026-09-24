@@ -38,9 +38,9 @@ function attrs(id: string, name: string, from = xml): Readonly<Record<string, st
 describe('projectStylesXml', () => {
   it('states spacing and line spacing in twentieths of a point, line spacing as a minimum (STY-050, STY-051)', () => {
     expect(attrs('heading-1', 'w:spacing')).toEqual({
-      'w:before': '448',
-      'w:after': '256',
-      'w:line': '410',
+      'w:before': '207',
+      'w:after': '91',
+      'w:line': '418',
       'w:lineRule': 'atLeast',
     });
   });
@@ -57,7 +57,7 @@ describe('projectStylesXml', () => {
     expect(attrs('heading-2', 'w:basedOn')).toEqual({ 'w:val': 'heading-1' });
     expect(attrs('heading-2', 'w:sz')).toEqual({ 'w:val': '26' });
     expect(attrs('heading-2', 'w:b')).toEqual({ 'w:val': '1' });
-    expect(attrs('heading-2', 'w:spacing')).toMatchObject({ 'w:before': '364', 'w:line': '330' });
+    expect(attrs('heading-2', 'w:spacing')).toMatchObject({ 'w:before': '149', 'w:line': '339' });
     expect(attrs('preformatted', 'w:rFonts')).toMatchObject({ 'w:ascii': 'Liberation Mono' });
   });
 

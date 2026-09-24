@@ -60,10 +60,11 @@ describe('the publication template', () => {
     // 10 is template 9 with a cross-reference and the labels its targets carry, and reads
     // `publishing/10`. Template 11 is template 10 with an equation - in a run, as a block, numbered
     // beside it and listed - and a node's title set as runs, and reads `publishing/11`. Template 12
-    // reads `publishing/12`, the document set from its theme; until themes 1's task 4 rewrites it to
-    // set everything from the theme it is template 11 with nothing changed but the schema it asserts,
-    // and it is re-pinned freely until the pull request that makes it merges. Templates 1 to 11 are
-    // published versions and their rows never move again.
+    // reads `publishing/12`, the document set from its theme: every face, size, colour, space and
+    // line read from the theme, by ADR-0014's rules. It moved once (7979229d...), from template 11
+    // asserting the new schema to the template that sets the theme, and is re-pinned freely until the
+    // pull request that makes it merges. Templates 1 to 11 are published versions and their rows never
+    // move again.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',
       2: '01bb7d4058901cdf904e05696bb1ccdf4a202a7802d3f7e420f8230d67290e54',
@@ -76,7 +77,7 @@ describe('the publication template', () => {
       9: 'f837e57769f34465377f5e808e759a68eba921bb3b45adaff7c0a1a581e4ced6',
       10: '07589c1d2487e149643bf82ccd183aaf7c7951ed24792decb508db02a7626339',
       11: '00f58bb2f2dc897356b24fdb09e0fa190a292c9b737d5444e7a8b48070a22a77',
-      12: '7979229d2e240477b23d64383966f17e8b640862a437aeacee37f88628a303b2',
+      12: 'f64aa5ff6ae5abc5dc437cec5314c17b6a14b92fa067bda3eaebd5321939c561',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
@@ -112,6 +113,60 @@ describe('the publication template', () => {
     for (const version of [5, 6, 7, 8, 9, 10, 11, 12] as const) {
       const source = await readFile(PUBLICATION_TEMPLATE[version].file, 'utf8');
       expect(source, `template ${version}`).not.toContain('attribution:');
+    }
+  });
+
+  it("holds no typographic literal from version 12: every face, size, weight, colour and length is the theme's", async () => {
+    // Themes 1, ruling R7: template 12 sets everything from the document's `theme` and from nothing
+    // else, so that the theme is the whole of how a publication looks and a second theme looks
+    // different. Read with its comments taken out, which name faces and sizes freely; what is left
+    // may hold a face's name, a colour, or a size, weight or length written as a literal only where
+    // an entry below allows it and says why. Every entry must still be needed, so the list cannot
+    // outlive what it excuses.
+    const allowed: readonly { readonly literal: RegExp; readonly why: string }[] = [
+      { literal: /\bn \* 1pt\b/g, why: 'points: the unit a number from the data is multiplied by' },
+      { literal: /\bn \* 1em\b/g, why: 'ems: the unit a number from the data is multiplied by' },
+      {
+        literal: /\brgb\(hex\)/g,
+        why: "the one place a colour from the theme becomes the engine's",
+      },
+      {
+        literal: /if on \{ 100% \} else \{ 0% \}/g,
+        why: 'widow and orphan control, a boolean in the theme, as the two costs the engine takes',
+      },
+      { literal: /(?<![\d.])0pt\b/g, why: 'zero: no space, no inset' },
+      {
+        literal: /\bwidth: 100%/g,
+        why: 'a block as wide as the place it stands in, which is layout and no typographic value',
+      },
+      {
+        literal: /\b1em\.to-absolute\(\)/g,
+        why: "maths layout: the gap beside an equation's number, as LaTeX keeps it (equations 2)",
+      },
+      { literal: /\bcolumn-gap: 1em\b/g, why: "maths layout: the gap between cases' columns" },
+    ];
+    const forbidden: readonly { readonly literal: RegExp; readonly what: string }[] = [
+      { literal: /Liberation|STIX|DejaVu|Computer Modern|\bfont: "/g, what: "a face's name" },
+      {
+        literal: /\b(rgb|luma|cmyk|oklab|oklch|color\.[a-z]+)\(|"#[0-9a-fA-F]{3,8}"/g,
+        what: 'a colour',
+      },
+      {
+        literal:
+          /\b(black|white|gray|silver|navy|blue|aqua|teal|eastern|purple|fuchsia|maroon|red|orange|yellow|olive|green|lime)\b/g,
+        what: 'a named colour',
+      },
+      { literal: /\d+(\.\d+)?(pt|em|mm|cm|in)\b|\d+(\.\d+)?%/g, what: 'a size or a length' },
+      { literal: /\bweight: "/g, what: 'a weight' },
+      { literal: /\bstyle: "/g, what: 'a posture' },
+    ];
+    const source = (await readFile(PUBLICATION_TEMPLATE[12].file, 'utf8')).replace(/\/\/.*$/gm, '');
+    const left = allowed.reduce((each, { literal }) => each.replace(literal, ''), source);
+    for (const { literal, what } of forbidden) {
+      expect(left.match(literal) ?? [], what).toEqual([]);
+    }
+    for (const { literal, why } of allowed) {
+      expect(source.match(literal), `an allowance no longer needed: ${why}`).not.toBeNull();
     }
   });
 
@@ -219,7 +274,9 @@ describe('the pipeline version', () => {
   // exactly why the row stays, and why '3' - what was made under a layout before a block could be
   // a list - stays beside it, as do '4', '5' and '6', before a quotation, a table and a figure,
   // '9', before a cross-reference, '10', before an equation and a title set as runs, and '11',
-  // before a document was set from its theme.
+  // before a document was set from its theme. '12' is re-pinned freely until the pull request that
+  // makes it merges, since nothing is published from a branch: it moved once (c69fead9...), when the
+  // default theme's line spacings and spaces were measured from template 11 (themes 1, task 4).
   const madeByPipeline: Record<string, string> = {
     '1': '3b844cb4ceedbe2b52040c79014ea18959295a1602754eb9861631891beb6fa1',
     '2': '699d5c34b7e4049fc32f5846a5525f5d3a35785c2858a78755161c58427ad1d5',
@@ -232,7 +289,7 @@ describe('the pipeline version', () => {
     '9': '4beeacf97465f356d654aa43dee3686e43cd3ca632d61680252d34e37d568ac5',
     '10': '3b9772e627b7af48e407673a67b94837f9a6f033e63b222dbedf97852b67a82d',
     '11': 'f011fd46928c1b68de5c47de2ea4db75a2b52391b94026c8faddddc01f5191bf',
-    '12': 'c69fead9b7fdd2f600b0acb724554240a544b18d51d166bb5b4de9032b452a67',
+    '12': '4574864373df9787956dd3bfecb2ace2aa4ee70267fe571c98d1d6f58e3e6c71',
   };
   const digest = (made: { document: unknown; numbering: unknown }) =>
     createHash('sha256')

@@ -16,12 +16,28 @@ import type {
  * six `catalogue/1` versions - which the store seeds as literals and a test recomputes from here.
  *
  * **Its numbers are template 11's wherever template 11 wrote one** - the body at 11pt, headings at 16
- * and 13pt bold, preformatted text at 8.8pt on `luma(240)`, which is `#f0f0f0`, its label at 8pt, a
- * table's note at 10pt a 0.6em above it, the notice and the running slots at 9pt, a heading 1.4em above
- * and 0.8em below at its own size - so a publication's look moves only by what the line rules change.
- * **Where template 11 left a value to the engine** - line spacing, space between blocks, a footnote's
- * size, a quotation's inset, a third heading's size - the value here is a reasonable one, marked
- * `measured in task 4`: the worker's test measures a template 11 PDF and corrects each to what it set.
+ * and 13pt bold, preformatted text at 8.8pt on `luma(240)`, which is `#f0f0f0`, in a 6pt panel, its
+ * label at 8pt, a table's note at 10pt, the notice and the running slots at 9pt - so a publication's
+ * look moves only by what the line rules change. **Where template 11 left a value to the engine, or
+ * wrote one the line rules mean differently** - every line spacing and every space before and after, a
+ * footnote's size, a quotation's inset, a third heading's size - the value is **measured from a
+ * template 11 PDF** (themes 1, task 4): baselines read with the worker's PDF reader, and each value
+ * the one that, by ADR-0014's rule, puts the next baseline where template 11 put it.
+ *
+ * - **Line spacing** is template 11's baseline-to-baseline distance within a paragraph of that style:
+ *   its 0.65em leading and the face's cap height, 1.3048 of the size - 14.35 at 11pt, 20.88 at 16pt,
+ *   16.96 at 13pt, 13.05 at 10pt, 11.74 at 9pt, 10.44 at 8pt; preformatted text 11.52 by Liberation
+ *   Mono's own cap height, and a footnote 10.8 at the engine's 0.85 of 11pt, 9.35, and its half-em
+ *   leading.
+ * - **Spaces** are what, added as STY-050 adds them, reproduce template 11's distances from one
+ *   baseline to the next: 17.10 between two paragraphs (a body's 2.75 after), 20.00 from a first
+ *   heading into text and 32.88 from text into one (4.57 after it and 10.33 before), 17.60 and 26.71
+ *   at the second level (2.82 and 7.43), 16.00 and 22.60 at the third (1.65 and 5.50), 11.62 between
+ *   two footnotes, 17.10 below a table's note (2.97), and a preformatted panel's 21.70 below the
+ *   text before it and 23.10 above the text after it. A contents entry has no space after, as template
+ *   11's entries stood a line apart. Where two of template 11's distances cannot both be kept - a heading
+ *   straight into a heading, the space around a quotation, a table's note and its table - the text's
+ *   are kept, and themes 1's plan records by how much the others moved.
  *
  * Colours are black on white, as template 11's were: the engine's default ink, which no template
  * stated, on its default paper.
@@ -151,8 +167,8 @@ const paragraph: ParagraphCatalogue = {
     startIndent: 0,
     endIndent: 0,
     spaceBefore: 0,
-    spaceAfter: 6, // measured in task 4
-    lineSpacing: 14, // measured in task 4
+    spaceAfter: 2.75,
+    lineSpacing: 14.35,
     keepWithNext: false,
     keepTogether: false,
     widowControl: true,
@@ -166,8 +182,8 @@ const paragraph: ParagraphCatalogue = {
       basedOn: 'body',
       appliesTo: ['quotation'],
       properties: {
-        startIndent: 11, // measured in task 4
-        endIndent: 11, // measured in task 4
+        startIndent: 11,
+        endIndent: 11,
       },
     },
     {
@@ -176,8 +192,9 @@ const paragraph: ParagraphCatalogue = {
       basedOn: 'body',
       appliesTo: ['footnote'],
       properties: {
-        size: 9, // measured in task 4
-        lineSpacing: 11, // measured in task 4
+        size: 9.35,
+        spaceAfter: 0.82,
+        lineSpacing: 10.8,
       },
     },
     {
@@ -188,9 +205,9 @@ const paragraph: ParagraphCatalogue = {
       properties: {
         size: 16,
         bold: true,
-        spaceBefore: 22.4, // 1.4em at 16pt; measured in task 4
-        spaceAfter: 12.8, // 0.8em at 16pt; measured in task 4
-        lineSpacing: 20.5, // measured in task 4
+        spaceBefore: 10.33,
+        spaceAfter: 4.57,
+        lineSpacing: 20.88,
         keepWithNext: true,
       },
     },
@@ -201,9 +218,9 @@ const paragraph: ParagraphCatalogue = {
       appliesTo: ['heading2'],
       properties: {
         size: 13,
-        spaceBefore: 18.2, // 1.4em at 13pt; measured in task 4
-        spaceAfter: 10.4, // 0.8em at 13pt; measured in task 4
-        lineSpacing: 16.5, // measured in task 4
+        spaceBefore: 7.43,
+        spaceAfter: 2.82,
+        lineSpacing: 16.96,
       },
     },
     {
@@ -212,10 +229,10 @@ const paragraph: ParagraphCatalogue = {
       basedOn: 'heading-1',
       appliesTo: ['heading3'],
       properties: {
-        size: 11, // measured in task 4
-        spaceBefore: 15.4, // 1.4em at 11pt; measured in task 4
-        spaceAfter: 8.8, // 0.8em at 11pt; measured in task 4
-        lineSpacing: 14, // measured in task 4
+        size: 11,
+        spaceBefore: 5.5,
+        spaceAfter: 1.65,
+        lineSpacing: 14.35,
       },
     },
     {
@@ -253,7 +270,7 @@ const paragraph: ParagraphCatalogue = {
       name: 'Contents entry',
       basedOn: 'body',
       appliesTo: ['contentsEntry', 'listEntry'],
-      properties: {},
+      properties: { spaceAfter: 0 },
     },
     {
       id: 'notice-sentence',
@@ -270,7 +287,8 @@ const paragraph: ParagraphCatalogue = {
       properties: {
         size: 9,
         alignment: 'end',
-        lineSpacing: 11, // measured in task 4
+        spaceAfter: 2.25,
+        lineSpacing: 11.74,
       },
     },
     {
@@ -280,10 +298,17 @@ const paragraph: ParagraphCatalogue = {
       appliesTo: ['running'],
       properties: {
         size: 9,
-        lineSpacing: 11, // measured in task 4
+        lineSpacing: 11.74,
       },
     },
-    { id: 'caption', name: 'Caption', basedOn: 'body', appliesTo: ['caption'], properties: {} },
+    // Centred, as template 11's captions were: a figure centres what it holds.
+    {
+      id: 'caption',
+      name: 'Caption',
+      basedOn: 'body',
+      appliesTo: ['caption'],
+      properties: { alignment: 'centre' },
+    },
     {
       id: 'table-note',
       name: 'Table note',
@@ -291,8 +316,8 @@ const paragraph: ParagraphCatalogue = {
       appliesTo: ['tableNote'],
       properties: {
         size: 10,
-        spaceBefore: 6, // 0.6em at 10pt; measured in task 4
-        lineSpacing: 12.5, // measured in task 4
+        spaceAfter: 2.97,
+        lineSpacing: 13.05,
       },
     },
     {
@@ -312,7 +337,9 @@ const paragraph: ParagraphCatalogue = {
         size: 8.8,
         background: '#f0f0f0',
         padding: 6, // template 11's panel, `inset: 6pt`
-        lineSpacing: 11, // measured in task 4
+        spaceBefore: 1.69,
+        spaceAfter: 2.49,
+        lineSpacing: 11.52,
       },
     },
     {
@@ -322,7 +349,9 @@ const paragraph: ParagraphCatalogue = {
       appliesTo: ['preformattedLabel'],
       properties: {
         size: 8,
-        lineSpacing: 10, // measured in task 4
+        spaceBefore: 1.3,
+        spaceAfter: 3.4,
+        lineSpacing: 10.44,
       },
     },
   ],

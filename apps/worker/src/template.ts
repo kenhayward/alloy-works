@@ -61,9 +61,7 @@ export const PUBLICATION_TEMPLATE = {
   10: { name: 'publication', version: 10, file: at(10) },
   11: { name: 'publication', version: 11, file: at(11) },
   // Themes 1 repointed `PUBLISHING_SCHEMA` at `publishing/12`, and the guard above asked for this row:
-  // template 12, which that plan's task 4 writes to set everything from the theme. Until it does, the
-  // file is template 11 asserting `publishing/12`, which it reads as template 11 would, since the new
-  // schema only adds to what template 11 reads.
+  // template 12, which sets every face, size, colour, space and line from the document's theme.
   12: { name: 'publication', version: 12, file: at(12) },
 } as const;
 

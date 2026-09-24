@@ -283,6 +283,27 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Publish again');
   });
 
+  it('says a typeface the theme names is not one the publisher holds, blaming the theme', async () => {
+    const fake = failing([
+      {
+        stage: 'compose',
+        code: 'typeface_unavailable',
+        node: null,
+        block: null,
+        detail: 'Alloy Sans',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    // Nothing in the document names a typeface, and another attempt finds the same faces: the theme's
+    // to change, never the author's to try again.
+    expect(why).toHaveTextContent(
+      "The typeface Alloy Sans is not one this publication can be set in: the publishing service does not hold it. The publication's theme has to change before this document can be published.",
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
   it('says what a table needs before it can be published, in words an author can act on', async () => {
     const fake = failing([
       { stage: 'compose', code: 'table_without_caption', node: null, block: 't1', detail: null },

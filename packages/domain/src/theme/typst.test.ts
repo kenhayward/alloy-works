@@ -24,16 +24,16 @@ describe('projectTypst', () => {
       firstLineIndent: 0,
       startIndent: 0,
       endIndent: 0,
-      spaceBefore: 22.4,
-      spaceAfter: 12.8,
-      lineSpacing: 20.5,
+      spaceBefore: 10.33,
+      spaceAfter: 4.57,
+      lineSpacing: 20.88,
       keepWithNext: true,
       keepTogether: false,
       widowControl: true,
       hyphenate: false,
       padding: 0,
       descent: 443 / 2048,
-      leading: 4.5,
+      leading: 4.88,
     });
   });
 
@@ -41,8 +41,8 @@ describe('projectTypst', () => {
     expect(typst.styles['heading-4']).toMatchObject({
       size: 11,
       weight: 'bold',
-      lineSpacing: 14,
-      leading: 3,
+      lineSpacing: 14.35,
+      leading: 3.35,
       keepWithNext: true,
     });
   });
@@ -54,7 +54,7 @@ describe('projectTypst', () => {
       background: '#f0f0f0',
       padding: 6,
       descent: 615 / 2048,
-      leading: 2.2,
+      leading: 2.72,
     });
     expect(typst.styles['attribution']).toMatchObject({ align: 'end', justify: false });
 

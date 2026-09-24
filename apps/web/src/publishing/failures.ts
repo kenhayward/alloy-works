@@ -130,6 +130,11 @@ export function failureWords(failure: Failure): string {
     // blames the theme, as `layout_glyph_missing` blames the layout, and never says to publish again.
     case 'typeface_not_embeddable':
       return `The typeface ${failure.detail ?? ''} cannot be embedded in a PDF: its licence does not permit it. The publication's theme has to change before this document can be published.`;
+    // Themes 1 (ruling R5): the theme names a typeface by its files' hashes, and the worker holds only
+    // the faces pinned in its image, so a face it does not hold cannot set a word. As the licence's
+    // refusal, it is the theme's to change, and another attempt finds the same faces.
+    case 'typeface_unavailable':
+      return `The typeface ${failure.detail ?? ''} is not one this publication can be set in: the publishing service does not hold it. The publication's theme has to change before this document can be published.`;
     // Decision K, as Ken reversed it: a tag the engine cannot carry is refused, never shortened, and
     // the author is told what a publication takes (pre-flight finding 9).
     case 'language_not_publishable':

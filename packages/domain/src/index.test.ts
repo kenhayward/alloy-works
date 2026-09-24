@@ -189,6 +189,9 @@ describe('the domain package', () => {
         // The maths tree the template and the Word writer both read, from one converter, promoted by
         // equations 2 so that nothing outside the domain builds a tree by hand (ruling R2).
         'mathsTree',
+        // The characters the tree sets on its own account, promoted by themes 1 so the worker's test
+        // holds the maths face to them rather than to a copy (STY-074).
+        'MATHS_CHARACTERS',
         // Promoted by the editor's marks slice, so the editor can warn about a tag a publication
         // could not carry without keeping a second copy of the rule (CNT-152).
         'publishedLanguage',

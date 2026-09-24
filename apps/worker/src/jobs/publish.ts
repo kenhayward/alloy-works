@@ -8,7 +8,7 @@ import {
 } from '@alloy-works/db';
 import { assemble, PUBLISHING_SCHEMA_1, type PublishFailure } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
-import { PINNED_FONT_FILES, type PinnedFonts } from '../fonts.js';
+import { PINNED_FONT_FILES, typefacesNotHeld, type PinnedFonts } from '../fonts.js';
 import { JobRefused } from '../refusal.js';
 import {
   PUBLICATION_TEMPLATE,
@@ -122,6 +122,23 @@ export function publishJob(deps: {
       if (!read.inputs) return;
       const { request, outline, occurrences, refused, layout, theme, revision, assets } =
         read.inputs;
+
+      // The theme's faces held to the pinned files before anything is composed (themes 1, ruling R5):
+      // a typeface the worker does not hold could set nothing, and `assemble` would refuse each of its
+      // characters in turn without once naming it. Refused as the document's own failures are, by the
+      // same list and the same record, naming each family.
+      const unheld = theme === null ? [] : typefacesNotHeld(theme.theme);
+      if (unheld.length > 0) {
+        throw new PublishRefused(
+          unheld.map((family) => ({
+            stage: 'compose',
+            code: 'typeface_unavailable',
+            node: null,
+            block: null,
+            detail: family,
+          })),
+        );
+      }
 
       const assembled = assemble({
         outline,

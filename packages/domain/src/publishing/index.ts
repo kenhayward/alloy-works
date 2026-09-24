@@ -11,6 +11,8 @@ export { setWithoutAGlyph } from './glyphs.js';
 // The maths tree, from an equation's stored MathML: what the template and the Word writer read of an
 // equation, and why one cannot be set (equations 2, ruling R2).
 export { mathsTree } from './maths.js';
+// And the characters it sets on its own account, which the worker holds the maths face to (themes 1).
+export { MATHS_CHARACTERS } from './maths.js';
 export type {
   MathsAlignment,
   MathsAttachMode,

@@ -1,5 +1,5 @@
 import { inflateSync } from 'node:zlib';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 /** One bookmark and those beneath it. */
 export interface Bookmark {
@@ -617,4 +617,189 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
     // The loading task, not the document: in pdf.js 6 it is the task that owns the worker.
     await task.destroy();
   }
+}
+
+/**
+ * A run of text as it is painted: its page (counted from 1, as pdf.js counts), its text, the face it
+ * is drawn in by the name the file embeds it under with the subset's prefix taken off
+ * (`LiberationSerif-Bold`), its size in points, the colour it is filled in as `#rrggbb`, where its
+ * baseline starts in points from the page's bottom left, how far its ink runs - its advance to the end
+ * of its last glyph that is not a space, so that where a line of text ends is where its last word
+ * does - and whether it is an artifact, which assistive technology skips: a running head, the notice.
+ */
+export interface PaintedText {
+  readonly page: number;
+  readonly text: string;
+  readonly face: string;
+  readonly size: number;
+  readonly fill: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly artifact: boolean;
+}
+
+/** A filled shape: its page, its colour, and its box, `[left, bottom, right, top]`. */
+export interface PaintedFill {
+  readonly page: number;
+  readonly fill: string;
+  readonly box: Box;
+}
+
+/** A stroked shape - an underline, a table's rule - as a filled one. */
+export interface PaintedStroke {
+  readonly page: number;
+  readonly stroke: string;
+  readonly box: Box;
+}
+
+/**
+ * What a reader's eye meets rather than what a screen reader is told (themes 1, R8): every run of
+ * text with its face, size and colour, every filled shape - the paper, a panel - and every stroked
+ * one - an underline, a table's rules - each in its colour, and every face the file embeds.
+ */
+export interface Paint {
+  readonly texts: readonly PaintedText[];
+  readonly fills: readonly PaintedFill[];
+  readonly strokes: readonly PaintedStroke[];
+  /** The name of every face whose program the file carries, sorted, each once. */
+  readonly embedded: readonly string[];
+}
+
+/** An affine matrix `[a, b, c, d, e, f]`, as a content stream's `cm` writes one. */
+type Matrix = readonly [number, number, number, number, number, number];
+const IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
+const times = (m: Matrix, n: Matrix): Matrix => [
+  m[0] * n[0] + m[1] * n[2],
+  m[0] * n[1] + m[1] * n[3],
+  m[2] * n[0] + m[3] * n[2],
+  m[2] * n[1] + m[3] * n[3],
+  m[4] * n[0] + m[5] * n[2] + n[4],
+  m[4] * n[1] + m[5] * n[3] + n[5],
+];
+const apply = (m: Matrix, x: number, y: number) =>
+  [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]] as const;
+
+/** The operators a text object can be moved by that `readPaint` does not follow, by pdf.js's name. */
+const UNFOLLOWED = new Set([
+  'moveText',
+  'setLeadingMoveText',
+  'nextLine',
+  'nextLineShowText',
+  'nextLineSetSpacingShowText',
+]);
+
+/**
+ * The paint of every page, read from pdf.js's operator list - the content stream as pdf.js interprets
+ * it, every colour space already turned to `#rrggbb` - with the transformation followed through
+ * `cm`, `q` and `Q`, and each run of text placed by its text matrix. The pinned engine writes every run
+ * of text in a text object of its own, placed by one text matrix, and every shape as one path painted
+ * at once, which is what this reads; a text object moved any other way is thrown on rather than
+ * misread, since a run quietly placed wrong would pass an assertion about alignment it should fail.
+ * A glyph's advance is pdf.js's, in thousandths of the size, as it measures its own text extraction.
+ */
+export async function readPaint(bytes: Buffer): Promise<Paint> {
+  const task = getDocument({ data: new Uint8Array(bytes), useSystemFonts: false, verbosity: 0 });
+  const pdf = await task.promise;
+  try {
+    const names: Record<number, string> = Object.fromEntries(
+      Object.entries(OPS).map(([name, code]) => [code, name]),
+    );
+    const texts: PaintedText[] = [];
+    const fills: PaintedFill[] = [];
+    const strokes: PaintedStroke[] = [];
+    for (let number = 1; number <= pdf.numPages; number += 1) {
+      const page = await pdf.getPage(number);
+      const list = await page.getOperatorList();
+      let ctm = IDENTITY;
+      const saved: Matrix[] = [];
+      let matrix = IDENTITY;
+      let face = '';
+      let size = 0;
+      let fill = '#000000';
+      let stroke = '#000000';
+      // The marked-content sequences open around what is painted now, by their tags.
+      const marked: string[] = [];
+      list.fnArray.forEach((code, index) => {
+        const name = names[code] ?? '';
+        const args = list.argsArray[index] as unknown[];
+        if (UNFOLLOWED.has(name)) {
+          throw new Error(`The content stream moves text by ${name}, which is not followed here`);
+        } else if (name === 'beginMarkedContent' || name === 'beginMarkedContentProps') {
+          const tag = args[0] as string | { name?: string };
+          marked.push(typeof tag === 'string' ? tag : (tag.name ?? ''));
+        } else if (name === 'endMarkedContent') {
+          marked.pop();
+        } else if (name === 'save') {
+          saved.push(ctm);
+        } else if (name === 'restore') {
+          ctm = saved.pop() ?? IDENTITY;
+        } else if (name === 'transform') {
+          ctm = times(args as unknown as Matrix, ctm);
+        } else if (name === 'beginText') {
+          matrix = IDENTITY;
+        } else if (name === 'setTextMatrix') {
+          const m = args[0] as Record<number, number>;
+          matrix = [m[0]!, m[1]!, m[2]!, m[3]!, m[4]!, m[5]!];
+        } else if (name === 'setFont') {
+          const loaded = page.commonObjs.get(args[0] as string) as { name?: string };
+          face = (loaded.name ?? '').replace(/^[A-Z]{6}\+/, '');
+          size = args[1] as number;
+        } else if (name === 'setFillRGBColor') {
+          fill = args[0] as string;
+        } else if (name === 'setStrokeRGBColor') {
+          stroke = args[0] as string;
+        } else if (name === 'showText') {
+          let advance = 0;
+          let width = 0;
+          let text = '';
+          for (const glyph of args[0] as ({ unicode: string; width: number } | number)[]) {
+            if (typeof glyph === 'number') {
+              advance -= (glyph * size) / 1000;
+            } else {
+              advance += (glyph.width * size) / 1000;
+              text += glyph.unicode;
+              if (glyph.unicode.trim() !== '') width = advance;
+            }
+          }
+          const [x, y] = apply(times(matrix, ctm), 0, 0);
+          const artifact = marked.includes('Artifact');
+          texts.push({ page: number, text, face, size, fill, x, y, width, artifact });
+        } else if (name === 'constructPath') {
+          // `[painting operator, path, [minX, minY, maxX, maxY]]`: the path's extent in its own space.
+          const [painting, , extent] = args as [number, unknown, Record<number, number>];
+          const [x1, y1] = apply(ctm, extent[0]!, extent[1]!);
+          const [x2, y2] = apply(ctm, extent[2]!, extent[3]!);
+          const box: Box = [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
+          const how = names[painting] ?? '';
+          if (/^(eoFill|fill|fillStroke|eoFillStroke)$/.test(how)) {
+            fills.push({ page: number, fill, box });
+          }
+          if (/^(stroke|closeStroke|fillStroke|eoFillStroke)$/.test(how)) {
+            strokes.push({ page: number, stroke, box });
+          }
+        }
+      });
+    }
+    return { texts, fills, strokes, embedded: embeddedFaces(bytes.toString('latin1')) };
+  } finally {
+    await task.destroy();
+  }
+}
+
+/**
+ * Every face whose program the file carries: each font descriptor naming a `/FontFile`, `/FontFile2`
+ * or `/FontFile3`, by its `/FontName` without the subset's prefix. Read from the objects themselves,
+ * as `structureElements` reads them, since the pinned engine writes none inside an object stream.
+ */
+function embeddedFaces(text: string): string[] {
+  const faces = new Set<string>();
+  for (const body of objectsOf(text).values()) {
+    if (!/\/Type\s*\/FontDescriptor\b/.test(body)) continue;
+    const name = /\/FontName\s*\/([^\s/<>[\]()]+)/.exec(body)?.[1];
+    if (name !== undefined && /\/FontFile[23]?\s/.test(body)) {
+      faces.add(name.replace(/^[A-Z]{6}\+/, ''));
+    }
+  }
+  return [...faces].sort();
 }

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { ResolvedTheme } from '@alloy-works/domain';
 import { codePoints } from './cmap.js';
 
 /**
@@ -136,4 +137,24 @@ export async function loadPinnedFonts(directory: string = FONT_DIRECTORY): Promi
     directory,
     covers: (codePoint, family) => byFamily.get(family)?.has(codePoint) ?? false,
   };
+}
+
+/**
+ * The families of a theme's typefaces the worker does not hold (themes 1, ruling R5): a typeface is
+ * held only where every file it records - each by its hash - is one of the pinned files, and a pinned
+ * file of that family. The theme names its faces; the worker sets text in no face it was not given, so
+ * a typeface it does not hold would set nothing, and `assemble` would refuse every character in it
+ * without once naming the face. The job asks this first, and fails the publish `typeface_unavailable`
+ * for each family named here. In the theme's order, each once.
+ */
+export function typefacesNotHeld(theme: ResolvedTheme): string[] {
+  const held = (family: string, sha256: string) =>
+    PINNED_FONT_FILES.some((pinned) => pinned.family === family && pinned.sha256 === sha256);
+  return [
+    ...new Set(
+      [...theme.typefaces.values()]
+        .filter((typeface) => !typeface.files.every((file) => held(typeface.family, file.sha256)))
+        .map((typeface) => typeface.family),
+    ),
+  ];
 }

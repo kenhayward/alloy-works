@@ -121,9 +121,9 @@ describe('readTheme', () => {
       ...DEFAULT_CATALOGUES.paragraph.base,
       size: 13,
       bold: true,
-      spaceBefore: 18.2,
-      spaceAfter: 10.4,
-      lineSpacing: 16.5,
+      spaceBefore: 7.43,
+      spaceAfter: 2.82,
+      lineSpacing: 16.96,
       keepWithNext: true,
     });
     expect(second.basedOn).toBe('heading-1');

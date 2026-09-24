@@ -96,6 +96,11 @@ export const publishFailureCodes = [
   // the document can mend it.
   'style_not_applicable',
   'typeface_not_embeddable',
+  // Before `assemble`, from themes 1 (ruling R5): a typeface the theme names whose files - each by its
+  // hash - the worker does not hold among its pinned faces, naming its family. The worker sets text in
+  // no face it was not given, so every character would otherwise be `glyph_missing` and the face
+  // itself never named.
+  'typeface_unavailable',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',
