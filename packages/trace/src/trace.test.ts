@@ -428,8 +428,16 @@ describe('the citations in the committed model', () => {
   // 286, from 285: equations 3 cites CNT-046 in apps/web's DocumentPage.test.tsx, where an equation is
   // placed in running text, a table's cell, a caption and a footnote on a component's surface and in a
   // section's title through the outline's title field, and each is shown stored.
+  // 299, from 286 (2026-09-24): themes 1 cites STY-001, STY-003, STY-006 and STY-041 in
+  // packages/domain's theme/read.test.ts, where the reader resolves the default theme and refuses what
+  // it must, and moves STY-027 and STY-038 there from the prototype's resolve.test.ts, which is gone;
+  // STY-024 in packages/db's default-theme.test.ts, STY-005 and STY-069 in its themes.test.ts and
+  // STY-002 in its publishing.test.ts, where the theme is stored, refused and recorded; and STY-008,
+  // STY-009, STY-010, STY-074, STY-042 and PUB-019 in apps/worker's themes.test.ts, where two themes
+  // are read back from the PDF and a face that may not be embedded is refused. STY-009's prototype
+  // citation in theme/runs.test.ts is removed with its test.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(286);
+    expect(model.citations).toHaveLength(299);
   });
 
   it('cites no identifier the corpus does not hold', () => {

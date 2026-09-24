@@ -475,6 +475,55 @@ the editor's; STY-077 and STY-075, T2's and T6's; PUB-092, which names each engi
 STY-058 and STY-070, the editor's. **STY-009 is cited today by a prototype test over a character catalogue
 of two marks of the nine**; themes 1's character catalogue covers all nine and its test replaces that citation.
 
+### What was built
+
+**TH-A to TH-H are built**, by [themes 1](../plans/2026-09-24-themes-01-the-theme-in-the-pdf.md): the
+theme model exported from `packages/domain/src/theme/` - `catalogue/1` and `theme/1`, `readCatalogue`
+and `readTheme` returning every refusal at once, contrast, the default theme and its six catalogues as
+data, and the Typst projection - migration 0024 seeding them as `theme` and `catalogue` artifacts,
+declaring the theme by `theme_default` and recording its version on every request and publication,
+`publishing/12` and template 12, which sets every face, size, weight, posture, colour, space and line
+from the theme and holds no typographic literal a test does not allow, and the worker refusing a face
+it does not hold. Nothing chooses or edits a theme: every environment has the one its migration
+seeded. Building it changed these things here:
+
+- **The roles are nineteen**: the six headings, `title`, `notice`, **`noticeSentence`** - the draft
+  notice's sentence under the cover's title, which template 11 set in bold at the body's size -
+  `contents`, `contentsEntry`, `list`, `listEntry`, `caption`, `tableNote`, `attribution`,
+  `preformatted`, `preformattedLabel` and `running`. The places are the five above.
+- **Two properties joined TH-D's set.** A character style's **`scale`**, a fraction of the size of
+  the text the mark stands in, so inline code is set at 0.8 of it as template 11 set it; and a
+  paragraph style's **`padding`**, the room between its fill and its text on every side, drawn only
+  where it has a `background`, so preformatted text's panel is inset 6pt from the theme. The CSS and
+  Word projections do not yet project either.
+- **The default's numbers are template 11's, measured where the engine chose them**, by ADR-0014's rule
+  from template 11's own distances: the body 11pt with 2.75pt after and a 14.35pt line, headings
+  16pt, 13pt and 11pt bold, a footnote 9.35pt, text in black on white. Its table cells are set in a
+  style of their own, `table-cell`, centred as template 11 centred them, and its captions centred.
+  The plan records each number.
+- **`assemble` measures from the theme**, and `measure.ts`'s header states what template 12 keeps to:
+  a quotation is inset by exactly its style's start and end indents, the engine's own inset stopped; a
+  list's indent is in ems of its item's size; preformatted text's columns come from its role's size,
+  its face's advance, its indents and its padding; an image in a line of text is 1.2 ems of the style
+  it stands in; a caption's height is estimated in the caption's size.
+- **Only a paragraph carries its style** into the published document; a stored `body` becomes the
+  default of the place that holds it most nearly. A table's and an image's styles are checked, and
+  `style_missing` or `style_not_applicable` names them, but carry nothing until themes 2 gives them
+  properties.
+- **The faces are checked twice.** Before `assemble`, the worker holds every face the theme declares
+  to its pinned files, and a face it does not hold fails `typeface_unavailable`, naming the family;
+  `assemble` fails `typeface_not_embeddable` for a face the document sets text in whose licence
+  forbids embedding in a PDF. The glyph check asks the family that sets the text.
+- **A quotation is no longer set off.** The theme styles paragraphs, not a block's edges, so the space
+  around a quotation is its paragraphs' own: 16.5pt less above it and before its attribution than
+  template 11 set, and 9.9pt less after it. A spacing property for a block's edges, as Word's contextual
+  spacing is, would restore it, and is a later widening. The other visible moves are small and listed
+  in the plan: a heading straight into a heading, a list's space above, a table's rows and its caption
+  and note, a note's second paragraph and the page's frame, each by the line model.
+- **`spikes/theme-conformance/` no longer runs against the model**: it calls the prototype's
+  `resolveTheme`, `exampleTheme` and `resolveStyle`, which the model replaced. It stays the record of
+  what ADR-0014 measured, above; the conformance suite STY-053 asks for is still to be built.
+
 ## Safety
 
 STY-N03 is kept everywhere. Nothing a tenant supplies reaches a renderer as syntax: the CSS projection
