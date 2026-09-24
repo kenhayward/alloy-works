@@ -138,6 +138,13 @@ form the publish refuses; these were changed:
   title forms**: its contribution carries only `captionText`'s words, and the publish refuses those
   forms as it does a title's; that is equations 2's precedent, not this slice's to change.
 
+**Left as found**, both recorded rather than changed here: a figure's or a table's **caption** holding
+an equation still offers the Reference dialog's title forms, which the publish refuses as it does a
+section's - the caption's words reach the page from the service with nothing marking the equation, so
+matching the section's rule means widening that answer; and a retitle can still be lost without a word
+when the author leaves the field for a checkbox or a list and then picks another section while the save
+comes back unsent - the old text input had the same gap, and it is its own fix.
+
 ## Tasks
 
 1. **`packages/editor`**: R1, tested in `apps/web` where there is a DOM, as the surface is.
