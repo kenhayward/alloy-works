@@ -13,7 +13,6 @@ const BLOCKS: Readonly<Record<string, string>> = {
   figure: 'A figure',
   preformatted: 'Preformatted text',
   blockquote: 'A quotation',
-  equation: 'An equation',
 };
 
 /**
@@ -24,15 +23,35 @@ const BLOCKS: Readonly<Record<string, string>> = {
  * why one there fails); this sentence is what is left for a request made before layouts, which has no
  * layout to resolve one under at all. So it names no layout - the request has none - and says what
  * mends it: every publish asked for now is made under the document's layout (the final review of
- * cross-references 2).
+ * cross-references 2). An equation is published under a layout too, since equations 2
+ * (`equation_unrenderable`, `equation_unnumbered`, `alternative_missing` and `math_glyph_missing` say
+ * why one there fails); this sentence is worded the same way, for the same reason, in place of the
+ * words equations 1 left it with.
  */
 const INLINES: Readonly<Record<string, string>> = {
   image: 'An image in a line of text cannot be published yet.',
   footnote: 'A footnote cannot be published yet.',
   crossReference: 'A cross-reference cannot be published from this request. Publish again.',
-  // An equation in a line of text, named as one now an author can place it (equations 1, ruling R9),
-  // in the words a block equation's `block_not_publishable` says, until equations 2 publishes both.
-  equation: 'An equation cannot be published yet.',
+  equation: 'An equation cannot be published from this request. Publish again.',
+};
+
+/**
+ * What `equation_unrenderable` names of the construct an equation held that the converter refused
+ * (`REFUSAL_NAMES`, `assemble.ts`), in words - never the equation's text, its values or its elements,
+ * which `detail` never carries either (R5). `mathvariant`, `element` and `attribute` each name part of
+ * the equation's own markup that an author cannot act on by name, so all three read the same way.
+ */
+const EQUATION_PROBLEMS: Readonly<Record<string, string>> = {
+  unreadable: 'is MathML that cannot be read at all',
+  merror: 'holds an error mark',
+  rtl: 'is written with maths right to left',
+  multiscripts: 'holds more than one prescript or postscript on one side',
+  voffset: 'holds a raised or lowered box',
+  spanningCell: 'holds a cell spanning others',
+  mathvariant: 'holds something the typesetter cannot set',
+  element: 'holds something the typesetter cannot set',
+  attribute: 'holds something the typesetter cannot set',
+  text: 'holds something the typesetter cannot set',
 };
 
 /**
@@ -43,14 +62,17 @@ const INLINES: Readonly<Record<string, string>> = {
  * title again in a different place (R6); above and below need words the layout may not give (R2); and
  * a target standing in a table's header row cannot be pointed at for its page or as above or below,
  * since the header repeats it and a repeated label refuses the compile (cross-references 2, task 4).
+ * An equation has no title of its own (equations 2, ruling R7 - its number is its label, and what it
+ * says is maths, which a reference cannot print as words), and neither does a section or a caption
+ * whose title holds one, which `title` and `numberAndTitle` now cover as well.
  */
 const FORMS: Readonly<Record<string, string>> = {
   number:
     'A cross-reference asks for a number, and what it points at has none: a paragraph, a list, or a section with no number of its own.',
   title:
-    'A cross-reference asks for a title, and what it points at has none: a paragraph, a list, or a footnote.',
+    'A cross-reference asks for a title, and what it points at has none: a paragraph, a list, a footnote, or an equation. A section or a caption holding an equation has none either, since the equation cannot be printed as a title.',
   numberAndTitle:
-    'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, or a section with no number of its own.',
+    'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, an equation, or a section with no number of its own. A section or a caption holding an equation is missing one too, since the equation cannot be printed as a title.',
   page: "A cross-reference asks for a page. A section's title cannot hold one, since the running heads and the contents set the title again in a different place; nor can something standing in a table's header row, which the page repeats.",
   relative:
     "A cross-reference asks for above or below. Either this publication's layout has no words for them, or what it points at stands in a table's header row, which repeats.",
@@ -70,7 +92,12 @@ export function failureWords(failure: Failure): string {
     case 'title_not_publishable':
       return 'This title holds something that cannot be published yet.';
     case 'block_not_publishable':
-      return `${BLOCKS[failure.detail ?? ''] ?? 'This block'} cannot be published yet.`;
+      // A block equation reaches this code only from a request made before layouts (equations 2): it
+      // publishes under one now, so its sentence says what mends it, worded as the inline equation's
+      // and the cross-reference's are, rather than naming a feature that is not built.
+      return failure.detail === 'equation'
+        ? 'An equation cannot be published from this request. Publish again.'
+        : `${BLOCKS[failure.detail ?? ''] ?? 'This block'} cannot be published yet.`;
     // "This text", not "this paragraph": `assemble` raises this code for a definition list's **term**
     // as well as for a paragraph, and names the LIST in that case, because a term carries no
     // identifier of its own. A sentence that said paragraph while pointing at a list would send an
@@ -111,6 +138,15 @@ export function failureWords(failure: Failure): string {
     // typeface" would be untrue; it is the equation's maths typeface that cannot set it.
     case 'math_glyph_missing':
       return `The maths typeface that equations are set in cannot set the character ${failure.detail ?? ''} in this equation.`;
+    // CNT-049, ruling R5: what the equation held is never quoted, only the fixed construct
+    // `EQUATION_PROBLEMS` names; opening the equation is the one way to change what it holds.
+    case 'equation_unrenderable':
+      return `An equation ${EQUATION_PROBLEMS[failure.detail ?? ''] ?? 'holds something the typesetter cannot set'}, so it cannot be published. Open it and rewrite it, or delete it.`;
+    // As `footnote_unnumbered`: a layout whose scheme prefixes equations with their chapter gives none
+    // in a part with no numbered section before it, and an equation the author numbered is refused
+    // rather than published with the number it asked for missing (R5).
+    case 'equation_unnumbered':
+      return 'An equation here would print with no number: the layout numbers equations within sections, and no numbered section comes before it.';
     case 'line_too_wide':
       return `A line of this preformatted text is too wide for the page, so it would be cut off: ${failure.detail ?? ''}. Shorten the line or break it.`;
     // Tables 2's ruling R8: what a caption is for, so the author knows why it is asked for.
@@ -121,8 +157,12 @@ export function failureWords(failure: Failure): string {
     // Figures 3's ruling R10: what a caption and a description are for, and where each is given.
     case 'figure_without_caption':
       return 'A figure has no caption. Give it one: the caption names the figure in the PDF and to a screen reader.';
+    // Figures 3's ruling R10 (the comment above `figure_without_caption` covers this code too), and
+    // equations 2's R5 beside it: a figure's image with no description of its own and none on the
+    // figure either, or an equation with no alternative text, fail alike - never which, since the
+    // code is one whichever it is.
     case 'alternative_missing':
-      return "A figure's image has no description, and the figure is not given one. Describe it in the figure's panel, or mark it decorative.";
+      return "This has no way to be read aloud: an image with no description, and its figure not given one either, or an equation with no alternative text. Describe an image in its figure's panel, or mark it decorative; write an equation's alternative by opening it again.";
     // Named by where the figure is, never by the image, which the author may not read.
     case 'asset_unreadable':
       return 'A figure shows an image you may not see, so you cannot publish it.';

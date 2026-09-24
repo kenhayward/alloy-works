@@ -297,7 +297,7 @@ describe('publishing from the document page', () => {
       'A figure has no caption. Give it one: the caption names the figure in the PDF and to a screen reader.',
     );
     expect(why).toHaveTextContent(
-      "A figure's image has no description, and the figure is not given one. Describe it in the figure's panel, or mark it decorative.",
+      "This has no way to be read aloud: an image with no description, and its figure not given one either, or an equation with no alternative text. Describe an image in its figure's panel, or mark it decorative; write an equation's alternative by opening it again.",
     );
     expect(why).toHaveTextContent(
       'A figure shows an image you may not see, so you cannot publish it.',
@@ -347,7 +347,7 @@ describe('publishing from the document page', () => {
     );
   });
 
-  it('names an equation, in a line of text or a block of its own, as something that cannot be published yet (equations 1)', async () => {
+  it('names an equation, in a line of text or a block of its own, as something a request made before layouts cannot publish (equations 2)', async () => {
     const fake = failing([
       {
         stage: 'compose',
@@ -367,13 +367,116 @@ describe('publishing from the document page', () => {
     open(fake.fetch);
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
     const why = await screen.findByRole('list', { name: 'Why it could not be published' });
-    // Both by name, never as formatting or an inline item: an author placed an equation, and it is
-    // the equation the publish cannot carry until equations 2.
+    // Both by name, never as formatting or an inline item. An equation now publishes under a layout
+    // (equations 2), so this is reachable only from a request with none, worded as the cross-reference
+    // one is: the request has no layout at all, so neither names one.
     const said = within(why)
       .getAllByRole('listitem')
       .map((each) => each.textContent);
     expect(said).toHaveLength(2);
-    for (const each of said) expect(each).toContain('An equation cannot be published yet.');
+    for (const each of said) {
+      expect(each).toContain('An equation cannot be published from this request. Publish again.');
+    }
+  });
+
+  it('says why an equation cannot be published, naming the construct never its text, and that it would print with no number (equations 2)', async () => {
+    const fake = failing([
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: null,
+        block: 'e1',
+        detail: 'merror',
+      },
+      { stage: 'compose', code: 'equation_unrenderable', node: null, block: 'e2', detail: 'rtl' },
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: null,
+        block: 'e3',
+        detail: 'multiscripts',
+      },
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: null,
+        block: 'e4',
+        detail: 'voffset',
+      },
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: null,
+        block: 'e5',
+        detail: 'spanningCell',
+      },
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: null,
+        block: 'e6',
+        detail: 'mathvariant',
+      },
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: null,
+        block: 'e7',
+        detail: 'element',
+      },
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: null,
+        block: 'e8',
+        detail: 'attribute',
+      },
+      { stage: 'compose', code: 'equation_unrenderable', node: null, block: 'e9', detail: 'text' },
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: null,
+        block: 'e10',
+        detail: 'unreadable',
+      },
+      { stage: 'compose', code: 'equation_unnumbered', node: null, block: 'e11', detail: null },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'An equation holds an error mark, so it cannot be published. Open it and rewrite it, or delete it.',
+    );
+    expect(why).toHaveTextContent(
+      'An equation is written with maths right to left, so it cannot be published. Open it and rewrite it, or delete it.',
+    );
+    expect(why).toHaveTextContent(
+      'An equation holds more than one prescript or postscript on one side, so it cannot be published. Open it and rewrite it, or delete it.',
+    );
+    expect(why).toHaveTextContent(
+      'An equation holds a raised or lowered box, so it cannot be published. Open it and rewrite it, or delete it.',
+    );
+    expect(why).toHaveTextContent(
+      'An equation holds a cell spanning others, so it cannot be published. Open it and rewrite it, or delete it.',
+    );
+    // mathvariant, element, attribute and text never quote what the equation held, so all four read
+    // the same: one sentence said four times, once per failure.
+    const genericCount = within(why)
+      .getAllByRole('listitem')
+      .filter((each) =>
+        (each.textContent ?? '').includes(
+          'An equation holds something the typesetter cannot set, so it cannot be published. Open it and rewrite it, or delete it.',
+        ),
+      ).length;
+    expect(genericCount).toBe(4);
+    expect(why).toHaveTextContent(
+      'An equation is MathML that cannot be read at all, so it cannot be published. Open it and rewrite it, or delete it.',
+    );
+    expect(why).not.toHaveTextContent('merror');
+    expect(why).not.toHaveTextContent('mathvariant');
+    expect(why).toHaveTextContent(
+      'An equation here would print with no number: the layout numbers equations within sections, and no numbered section comes before it.',
+    );
   });
 
   it('names a cross-reference as something a request made before layouts cannot publish (cross-references 2)', async () => {
@@ -468,10 +571,10 @@ describe('publishing from the document page', () => {
       'A cross-reference asks for a number, and what it points at has none: a paragraph, a list, or a section with no number of its own.',
     );
     expect(why).toHaveTextContent(
-      'A cross-reference asks for a title, and what it points at has none: a paragraph, a list, or a footnote.',
+      'A cross-reference asks for a title, and what it points at has none: a paragraph, a list, a footnote, or an equation. A section or a caption holding an equation has none either, since the equation cannot be printed as a title.',
     );
     expect(why).toHaveTextContent(
-      'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, or a section with no number of its own.',
+      'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, an equation, or a section with no number of its own. A section or a caption holding an equation is missing one too, since the equation cannot be printed as a title.',
     );
     expect(why).toHaveTextContent(
       "A cross-reference asks for a page. A section's title cannot hold one, since the running heads and the contents set the title again in a different place; nor can something standing in a table's header row, which the page repeats.",
