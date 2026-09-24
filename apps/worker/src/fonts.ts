@@ -116,7 +116,9 @@ export async function loadPinnedFonts(directory: string = FONT_DIRECTORY): Promi
       .map((each) => codePoints(each.bytes));
     return new Set([...first].filter((codePoint) => rest.every((set) => set.has(codePoint))));
   };
-  const everywhere = { body: family('body'), code: family('code') };
+  // The maths family is empty until its face is pinned (equations 2, task 3), so until then no
+  // character is covered in it and nothing can be set as maths.
+  const everywhere = { body: family('body'), code: family('code'), math: family('math') };
   return {
     directory,
     covers: (codePoint, face) => everywhere[face].has(codePoint),

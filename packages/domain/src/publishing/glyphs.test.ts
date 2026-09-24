@@ -20,4 +20,14 @@ describe('characterProblems', () => {
     ]);
     expect(characterProblems('ab\u{200B}cd', covers, 'body')).toEqual([]);
   });
+
+  it('asks the maths face of what an equation sets, which covers what the body face does not', () => {
+    // An integral sign in the maths face and not the body's, as STIX Two Math and Liberation Serif.
+    const withMaths: Covers = (codePoint, face) =>
+      codePoint < 0x250 || (face === 'math' && codePoint === 0x222b);
+    expect(characterProblems('x\u{222B}', withMaths, 'math')).toEqual([]);
+    expect(characterProblems('x\u{222B}', withMaths, 'body')).toEqual([
+      { problem: 'glyph_missing', codePoint: 0x222b },
+    ]);
+  });
 });

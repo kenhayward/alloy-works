@@ -50,11 +50,13 @@ export const disallowed = (codePoint: number) => DISALLOWED.has(codePoint);
 export type CharacterProblem = 'glyph_missing' | 'character_disallowed';
 
 /**
- * Which pinned family a character is set in: the body text's serif, or the monospace that
- * preformatted text and inline code are set in. The two cover different characters, so the question
- * is always asked of one of them - a union would pass a character one of them cannot set.
+ * Which pinned family a character is set in: the body text's serif, the monospace that preformatted
+ * text and inline code are set in, or the maths face an equation is set in (equations 2, ruling R1:
+ * the engine's fallback is off for maths, so a character the maths face lacks is never borrowed from
+ * the serif). Each covers different characters, so the question is always asked of one of them - a
+ * union would pass a character one of them cannot set.
  */
-export type Face = 'body' | 'code';
+export type Face = 'body' | 'code' | 'math';
 
 /** Whether every face of one family can set this character. */
 export type Covers = (codePoint: number, face: Face) => boolean;

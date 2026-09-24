@@ -11,6 +11,7 @@ import {
 
 import { assemble, type Assembled, type AssembleInput, type PublishingAsset } from './assemble.js';
 import type { PublishFailure } from './failures.js';
+import type { Covers } from './glyphs.js';
 import { publishedLanguage } from './language.js';
 import {
   defaultLayout,
@@ -1468,7 +1469,7 @@ describe('assemble for a request made before layouts', () => {
 
 describe('a quotation and preformatted text, published (editor 5)', () => {
   /** Latin, and U+2016 in the body face but not the code face, as the pinned faces are. */
-  const faces = (codePoint: number, face: 'body' | 'code') =>
+  const faces: Covers = (codePoint, face) =>
     codePoint < 0x250 || (face === 'body' && codePoint === 0x2016);
   const underFaces = (...blocks: unknown[]) => ({ ...oneComponent(...blocks), covers: faces });
   const pre = (name: string, value: string, language?: string) => ({
