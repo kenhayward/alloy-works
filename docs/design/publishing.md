@@ -846,8 +846,8 @@ the one control EQ-G counted on.
 [equations 2](../plans/2026-09-24-equations-02-publishing-equations.md): STIX Two Math 2.13 b171
 pinned as the `math` face, the maths tree in `packages/domain/src/publishing/maths.ts`, `publishing/11`
 and template 11, the list of equations wherever a layout declares one - the default layout does not -
-and the Reference dialog offering a numbered equation. An equation made in a section's title is
-still equations 3's; one stored there is published. Building it changed these things here:
+and the Reference dialog offering a numbered equation. An equation made in a section's title was
+equations 3's; one stored there was published already. Building it changed these things here:
 
 - **A section's title is runs in the published document**, text and equations, so the heading, the
   contents, the running heads and the bookmarks all carry an equation stored there, the bookmark as
@@ -904,6 +904,16 @@ still equations 3's; one stored there is published. Building it changed these th
   `measure(it.body).width` against the line, reported back by name (a `metadata` marker read with
   `typst query`, which the worker maps to a failure); until then, scaling an overflowing block down
   to the line would keep its text on the page.
+
+**EQ-G is built whole**, by
+[equations 3](../plans/2026-09-24-equations-03-equations-in-a-sections-title.md): the outline panel's
+title field is a one-line editor of words and inline equations, with **Equation** beside it opening
+the same dialog, so an equation is now made in every context CNT-046 names as well as set in each, and
+component-editor.md claims CNT-046 on that ground. Nothing here changed: the title an author makes is
+the runs `publishing/11` already set - in its heading, the contents and the running heads, and in the
+bookmark as its glyphs - and a `title` reference to such a section still fails
+`cross_reference_form_unavailable`. A title of an equation alone is refused by the store, as before
+(`hasText`), and the field says so.
 
 ## The layout
 

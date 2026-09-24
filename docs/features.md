@@ -300,8 +300,19 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   formatting of its own. The words for a description are loaded the first time they are asked for,
   from the product itself, never from anywhere else. A component holding an equation opens for
   editing, one copied within the product pastes as one, and the document's text on its page shows it
-  as the editor does. A published document prints it (see Publishing). An equation cannot yet be
-  written in a section's title.
+  as the editor does. A published document prints it (see Publishing).
+
+  **A section's title can hold an equation too.** In a document's outline, the **Title** field beside
+  the tree takes words and equations on one line: **Equation** beside it, or `Ctrl+Shift+E` in it,
+  opens the same dialog, inline only, with the description written in the document's language, and
+  placing the equation saves the new title. Select an equation in the title and press `Enter` to
+  change it. `Enter` otherwise saves the title, as leaving the field does, a paste arrives as one line
+  of text, and `Ctrl+Z` in the field undoes your typing there. The equation is drawn in the field and
+  in the section's heading on the document's page; in the outline's tree and in what the page says
+  about a section, it is read as its description. A title has to have words: one that is only an
+  equation is not saved, the page says _A section's title needs words as well as an equation._, and
+  the equation stays in the field for you to add them. The **Reference** dialog names such a section
+  by its words without the equation, since a reference cannot print an equation as words.
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
@@ -347,8 +358,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
   **This is structure, not the document.** There is no document view:
   the outline is a tree you build, and you still open a component on its own to edit it. A section's
-  title is plain text for now, and a document's own title, language and direction cannot be changed
-  once it is made.
+  title takes words and equations but no formatting or cross-reference - a title that already holds
+  one is shown and not changed, with a sentence saying why - and a document's own title, language and
+  direction cannot be changed once it is made.
 
 - **Publishing a document as a PDF.** Somebody who may publish a document - the Publisher role, which
   Ada and Grace hold on General in development - has **Publish as PDF** beneath its outline, and a
@@ -489,8 +501,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
   **An equation prints** as mathematics, in STIX Two Math, a typeface made for mathematics, wherever
   you can write one: running text, a list, a quotation, a table's cell, a table's header rows (printed
-  again on every page, and read once), a footnote and a caption. One already stored in a section's
-  heading prints there and in the contents, the running heads and the bookmarks, where a bookmark
+  again on every page, and read once), a footnote, a caption and a section's title. One in a
+  section's title prints in its heading and in the contents, the running heads and the bookmarks, where a bookmark
   shows its symbols rather than its description. A screen reader is told each is a formula and reads
   its description, in the language of the text around it. **A numbered equation carries its number**,
   _Equation 1_ under the default layout, at the right of its line, read after the equation; where an
@@ -538,7 +550,7 @@ Named explicitly so nobody has to read the source to find out:
 - No way to author anything but formatted paragraphs, lists, quotations, preformatted text,
   tables, figures, images in a line of text, footnotes and tables' notes, cross-references and
   equations: a component holding a footnote or an image anywhere but a paragraph still opens for
-  reading only, an equation cannot stand in a section's title, and
+  reading only, a section's title takes no formatting or cross-reference, and
   there is no control for a defined term or a
   citation. A paste from outside the product keeps no footnote, image or equation, reads Markdown only when **Paste as
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a

@@ -146,7 +146,7 @@ say this design holds ground it does not.
 | CNT-122                   | Resolving an image style to real dimensions is **STY**'s, and the editor resolves it by those same rules                                            |
 | CNT-094                   | Already claimed by [themes.md](themes.md)                                                                                                           |
 | CNT-145                   | Claimed by [storage-and-versioning.md](storage-and-versioning.md), which records the component type on the version rather than in content           |
-| CNT-046                   | An equation in a heading needs a heading to be inline content, which is **STR**'s to design - see below                                             |
+| CNT-046                   | Claimed by [component-editor.md](component-editor.md), since every context is made in the editor; a heading being inline content is **STR**'s       |
 | AST-005, AST-006          | Asset ingest, and refusing an asset whose intrinsic properties cannot be read, belong to [assets.md](assets.md) rather than to a figure's reference |
 
 **A definition list reaches a reader as a list, and that is a named limit rather than a claim.** The
