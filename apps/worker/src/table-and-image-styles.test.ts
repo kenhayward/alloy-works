@@ -538,6 +538,69 @@ describe('a table set from its style (themes 2)', () => {
     // The header row is still one row to a reader however many pages repeat it (TAB-040).
     expect(heavy.read.elements).toMatchObject({ TH: 3 + 1 + rows + 1 + 6 });
   }, 240_000);
+
+  it('keeps a row whole only where it fits a page: one taller than a page breaks across pages, every line on one', async () => {
+    // The final whole-branch review of themes 2, I1, which is themes 1's I1 for a table's row: the
+    // engine moves an unbreakable row that cannot fit on an empty page to the next and lets it run off
+    // the page's foot, with nothing said - a row of forty lines kept whole painted twenty-two of them
+    // below the page itself. Kept whole is Word's `cantSplit`, which gives way where the row cannot
+    // fit, as keep-together does for a paragraph.
+    //
+    // Under the ruled style without its label: a row the engine splits beneath a continuation label is
+    // set as though the label took no room on the pages it continues onto, as it takes none on the
+    // table's first, so each continued page's last line stands below the text block by up to the label's
+    // height, kept whole or not. Found while this was fixed, and left for a ruling (the plan's closing
+    // section).
+    const LINES = Array.from({ length: 40 }, (_, line) => `Longline${line}`);
+    for (const style of [unlabelled]) {
+      const { pdf, paint } = await compile(small, [
+        {
+          name: 'long',
+          matter: 'body',
+          content: [
+            para('p0', 'Readings follow.'),
+            {
+              type: 'table',
+              id: 't1',
+              style: style.id,
+              caption: [text('Readings')],
+              headerRows: 1,
+              headerColumns: 1,
+              rows: [
+                { cells: [cell('h1', 'Site'), cell('h2', 'North'), cell('h3', 'South')] },
+                { cells: [cell('r0a', 'Row0'), cell('r0b', 'One'), cell('r0c', 'Two')] },
+                { cells: [cell('la', 'Longrow'), cell('lb', ...LINES), cell('lc', 'Three')] },
+                { cells: [cell('r1a', 'Row1'), cell('r1b', 'Four'), cell('r1c', 'Five')] },
+              ],
+            },
+            para('p1', 'Closing words.'),
+          ],
+        },
+      ]);
+      expect(await checkPdfUa1(pdf), style.id).toMatchObject({ compliant: true, failedRules: 0 });
+      // Every baseline of the document's own text inside the page's text block: the running heads and
+      // feet, and the repeated header and label at a page's head, are artifacts.
+      for (const each of paint.texts.filter((one) => one.text.trim() !== '' && !one.artifact)) {
+        expect(each.y, `${style.id}: ${each.text}`).toBeGreaterThanOrEqual(BOTTOM);
+        expect(each.y, `${style.id}: ${each.text}`).toBeLessThanOrEqual(TOP);
+      }
+      // Every line of the row set, once, across more than one page, beginning where the row stands:
+      // on the page the table begins on, beneath the row before it.
+      const pages = LINES.map((line) =>
+        paint.texts.filter((each) => each.text === line).map((each) => each.page),
+      );
+      for (const [index, found] of pages.entries()) expect(found, LINES[index]).toHaveLength(1);
+      expect(new Set(pages.flat()).size, style.id).toBeGreaterThan(1);
+      expect(pages[0], style.id).toEqual(pagesOf(paint, 'Row0'));
+      expect(pagesOf(paint, 'Closing')[0]).toBeGreaterThanOrEqual(pages.at(-1)![0]!);
+    }
+    // And a row that fits a page still moves whole to the next, where it would have split.
+    const kept = await table(ruled.id);
+    const [first] = pagesOf(kept.paint, TALL[0]!);
+    for (const word of TALL) expect(pagesOf(kept.paint, word), word).toEqual([first]);
+    expect(pagesOf((await table(splitting.id)).paint, TALL.at(-1)!)).toEqual([first]);
+    expect(pagesOf((await table(splitting.id)).paint, TALL[0]!)).toEqual([first! - 1]);
+  }, 240_000);
 });
 
 // ------------------------------------------------------------------------------------------------

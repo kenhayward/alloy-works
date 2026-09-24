@@ -896,9 +896,10 @@
     // A header's text is bold where its style says so, whatever its paragraph style and its marks set:
     // a rule on the text itself, which is nearer to it than the paragraph's own weight, measured - the
     // corner is the header row's where both are headers. A body row's cells are not breakable where
-    // the style keeps rows whole: measured (themes.md, "What the pinned Typst does with a theme's
-    // properties"), such a row moves whole to the next page rather than splitting across the two.
-    let cell-of(c, body-row) = {
+    // the style keeps rows whole and the row fits a page (`kept`, below): measured (themes.md, "What the
+    // pinned Typst does with a theme's properties"), such a row moves whole to the next page rather than
+    // splitting across the two.
+    let cell-of(c, kept) = {
       let body = block-of(c.blocks, "tableCell")
       let body = if body == none { [] } else { body }
       let weight = if c.scope == "column" {
@@ -914,12 +915,13 @@
         show text: set text(weight: weight)
         body
       }
-      let kept = if body-row and t.keepRowsWhole { (breakable: false) } else { (:) }
-      let spanned = table.cell(colspan: c.colspan, rowspan: c.rowspan, ..kept, body)
+      let whole = if kept { (breakable: false) } else { (:) }
+      let spanned = table.cell(colspan: c.colspan, rowspan: c.rowspan, ..whole, body)
       if c.scope == "row" or c.scope == "both" { pdf.header-cell(scope: c.scope, spanned) } else { spanned }
     }
     let heading = b.rows.slice(0, b.headerRows).map(row => row.cells.map(c => cell-of(c, false))).flatten()
-    let rest = b.rows.slice(b.headerRows).map(row => row.cells.map(c => cell-of(c, true))).flatten()
+    let body-rows = b.rows.slice(b.headerRows)
+    let cells-of(rows, kept) = rows.map(row => row.cells.map(c => cell-of(c, kept))).flatten()
     let caption = role("caption")
     let cell = place-style("tableCell")
     // The rules (STY-076), one line at a time. Each cell draws the line above it and the line before
@@ -977,17 +979,16 @@
     // properties"): what it costs is an empty header cell in the structure tree on the first page. The
     // table's first page is where the table the label stands in begins: the last table begun before it,
     // since a table holds no table.
-    let continued = {
+    let label-of = {
       let s = role("caption")
       let said = words(doc.words.continued)
       let said = if b.label == none { said } else [#b.label #said]
-      table.cell(colspan: b.columns, inset: 0pt, context {
-        let first = query(selector(table).before(here())).last().location().page()
-        if here().page() > first {
-          pdf.artifact(pad(pt(t.inset), setting(s, align(alignment(s.align), said))))
-        }
-      })
+      pad(pt(t.inset), setting(s, align(alignment(s.align), said)))
     }
+    let continued = table.cell(colspan: b.columns, inset: 0pt, context {
+      let first = query(selector(table).before(here())).last().location().page()
+      if here().page() > first { pdf.artifact(label-of) }
+    })
     // One header, or none, and still one header row to a reader however many pages repeat it: the
     // tree holds it once (TAB-040). Repeated where the style says so. Under a label, two: the label's
     // row, which always repeats, and the table's own header rows beneath it, which repeat where the
@@ -1005,7 +1006,7 @@
     // style says otherwise, so a table is never wider than its column. A reference's label, where
     // one names the table, is on its figure. The caption stands above its table as a block above a
     // block does: its space after, the cells' space before and their leading between them.
-    labelled(b.anchor, figure(
+    let set-table(rest) = labelled(b.anchor, figure(
       kind: table,
       numbering: none,
       gap: pt(between(caption, cell)),
@@ -1025,6 +1026,45 @@
         },
       ),
     ))
+    // A row kept whole is Word's `cantSplit`, which gives way where the row cannot fit a page, as
+    // keep-together does for a paragraph (the final whole-branch review of themes 2, I1, which is
+    // themes 1's I1 for a row): the engine moves an unbreakable row that cannot fit on an empty page to
+    // the next and lets it run off the page's foot, with nothing said - measured, a row of forty lines
+    // kept whole painted twenty-two of them below the page itself. So a row is unbreakable only where it
+    // fits the room a continued page leaves it: the text block's height, which `layout` gives as the
+    // whole region's, as it does for keep-together, less the header rows where they repeat and the
+    // label's row where there is one. A row is measured as the engine sets it - a table of the same
+    // columns and inset holding its cells alone, at the width the table stands in, rules taking no room.
+    // Rows a cell spans are one: measured together, and kept, or not, together, since one unbreakable
+    // cell keeps every row it spans on one page. Only a style that keeps rows whole pays for the
+    // measuring and for the one more realisation `layout` is.
+    if t.keepRowsWhole {
+      layout(size => {
+        let tall(cells) = measure(
+          table(columns: (1fr,) * b.columns, inset: pt(t.inset), stroke: none, ..cells),
+          width: size.width,
+        ).height
+        let above = if t.repeatHeader and heading.len() > 0 { tall(heading) } else { 0pt }
+        let above = if t.continuationLabel { above + measure(label-of, width: size.width).height } else { above }
+        let room = size.height - above
+        // The body's rows in runs a spanning cell joins: a run ends at the first row no cell above it
+        // spans past.
+        let runs = ()
+        let start = 0
+        let reach = 0
+        for (i, row) in body-rows.enumerate() {
+          for c in row.cells { reach = calc.max(reach, i + c.rowspan) }
+          if reach <= i + 1 {
+            runs.push(body-rows.slice(start, i + 1))
+            start = i + 1
+          }
+        }
+        if start < body-rows.len() { runs.push(body-rows.slice(start)) }
+        set-table(runs.map(rows => cells-of(rows, tall(cells-of(rows, false)) <= room)).flatten())
+      })
+    } else {
+      set-table(cells-of(body-rows, false))
+    }
     // The table's note (CNT-038, footnotes 2): a paragraph straight after the table's figure, in the
     // `tableNote` role's style, with no label of its own. NOT inside the figure, where FN-D put it:
     // measured, a figure whose body is more than its table is tagged a `Div` holding the `Caption`

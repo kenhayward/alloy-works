@@ -146,7 +146,9 @@ describe('the publication template', () => {
     // theme's fraction, and the header naming what is still the engine's. Template 13 reads
     // `publishing/13`: template 12 with a table's rules, fills, inset, header weight and breaks, a
     // figure's placement and alignment, and contextual spacing between paragraphs, each from the
-    // theme (themes 2, ruling R6). It is re-pinned freely until the pull request that makes it merges.
+    // theme (themes 2, ruling R6). It is re-pinned freely until the pull request that makes it merges:
+    // it moved (6a6aa252...) for the final whole-branch review, a row kept whole only where it fits a
+    // page (I1).
     // Templates 1 to 12 are published versions and their rows never move again.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',
@@ -161,7 +163,7 @@ describe('the publication template', () => {
       10: '07589c1d2487e149643bf82ccd183aaf7c7951ed24792decb508db02a7626339',
       11: '00f58bb2f2dc897356b24fdb09e0fa190a292c9b737d5444e7a8b48070a22a77',
       12: '13ce79ef435d13b85f7ec29dfe2c7a3fe53f4536384da555f93ea5a26f4b5e9e',
-      13: '6a6aa2522d98d3d4b6e6f11435528b7b58ba96510c026d64ea9e316460bb6361',
+      13: '06d7f004d5b07ed758074240c21a993dfbdcedcc9a31ebde79822df657123a07',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
