@@ -40,7 +40,8 @@ conformance suite.
 | **STY-009** | A character catalogue maps each mark in CNT-031 to a rendering                                                                                                                                                                                                                                                       |
 | **STY-010** | That map belongs to the theme, so `strong` resolves to bold in one theme and small capitals in another                                                                                                                                                                                                               |
 | **STY-011** | Alignment exists only as a paragraph style property; there is no field for it on a block                                                                                                                                                                                                                             |
-| **STY-012** | The table property set below                                                                                                                                                                                                                                                                                         |
+| **STY-076** | The table property set below, but for alignment by column type                                                                                                                                                                                                                                                       |
+| **STY-077** | Alignment by column type, a table style property a table may override, once columns have a type (STY-014)                                                                                                                                                                                                            |
 | **STY-013** | Table break behaviour is part of the table style: header repetition, continuation label, rows kept whole                                                                                                                                                                                                             |
 | **STY-014** | Default field formats by column type are table style properties, overridable by a table (**TAB**)                                                                                                                                                                                                                    |
 | **STY-015** | An image style fixes one dimension, as points or as a fraction of the measure                                                                                                                                                                                                                                        |
@@ -72,7 +73,7 @@ conformance suite.
 | **STY-045** | The product's own typefaces are shipped as typeface artifacts carrying their open licence                                                                                                                                                                                                                            |
 | **STY-046** | A tenant's uploaded face is a typeface artifact in that tenant's schema, so it cannot be served to anyone else                                                                                                                                                                                                       |
 | **STY-047** | A typeface artifact is the font files themselves, versioned; the baseline pins the files                                                                                                                                                                                                                             |
-| **STY-048** | The default theme is tested against the scripts LOC-004 admits and a mathematics face, by the coverage check below                                                                                                                                                                                                   |
+| **STY-074** | The default theme's faces are checked against Latin, Greek, Cyrillic and Hebrew and the mathematics, from their character maps, by the coverage check below                                                                                                                                                          |
 | **STY-069** | The domain's theme reader refuses a text colour below 4.5:1, or 3:1 for large text, against any background it can stand on, and the store refuses what the reader refuses, so a theme is checked when it is saved ([Themes in the PDF](#themes-in-the-pdf), TH-G)                                                    |
 | **STY-049** | Glyph coverage is checked at resolution, against the pinned files' character maps, before any renderer runs                                                                                                                                                                                                          |
 | **STY-050** | Vertical space between two blocks is the first block's space after plus the second block's space before, in every output                                                                                                                                                                                             |
@@ -90,6 +91,9 @@ conformance suite.
 | **PUB-017** | A table breaks across pages as its table style says - header repeated, rows kept whole, a continuation label - which the template sets from the style ([Themes in the PDF](#themes-in-the-pdf), TH-I)                                                                                                                |
 | **TAB-032** | The same, from the table's side                                                                                                                                                                                                                                                                                      |
 | **PUB-092** | Widow and orphan control, keep-with-next and keep-together are paragraph style properties, each passed to Typst as its own rule - the two costs, `sticky`, `breakable: false` - as measured, and to Word as `w:widowControl`, `w:keepNext` and `w:keepLines`; the publishing regression corpus gains a case for each |
+
+**STY-075 is not claimed**: the scripts the supported locales admit have no list until LOC-038
+declares one, and which faces answer it is decided then. STY-074, its T1 half, is claimed.
 
 Citation styles (STY-020 to STY-023) are bound by a theme but rendered by a citation processor, and
 belong to the design that covers citations and references. How numbering looks - heading numbers,
@@ -458,14 +462,90 @@ stay close to template 11's.
 | TH-J | **Images.** `figure` and `inline` become the image catalogue's two styles at today's numbers; placement is inline, block or floated, and **floated means the page's head or foot**, aligned start, centre or end within it                                                                                                                              | Yes: measured, there is no other float in the engine, and Word's "top and bottom" wrapping matches it                                                                                                                                                                                                       |
 | TH-K | **Two build slices after this one.** Themes 1: TH-A to TH-H - the store, the property set, paragraph and character styles, roles, the line and spacing rules, `publishing/12` and template 12. Themes 2: TH-I and TH-J - table and image styles, and layout schema 4. The Word projection comes with Word; the theme in the editor after that           | Yes. Themes 1 is the size of equations 2; themes 2 is smaller. Each lands something a publication shows                                                                                                                                                                                                     |
 
+**Ken agreed every recommendation on 2026-09-24.** TH-H and TH-I are made in the requirements:
+STY-048 is superseded by STY-074, its T1 half, with STY-075 in T6, and STY-012 by STY-076, with
+STY-077 in T2 beside STY-014.
+
 **What themes 1 and 2 claim and cite.** STY-001, STY-002, STY-003, STY-005, STY-006, STY-008,
-STY-009, STY-010, STY-024, STY-041, STY-042 and STY-069 by themes 1, with PUB-019 while the PDF is the
-only output; STY-012 (as split), STY-013, STY-015, STY-017, STY-018, STY-019, PUB-017 and TAB-032 by
+STY-009, STY-010, STY-024, STY-041, STY-042, STY-069 and STY-074 by themes 1, with PUB-019 while the PDF is the
+only output; STY-076, STY-013, STY-015, STY-017, STY-018, STY-019, PUB-017 and TAB-032 by
 themes 2. **Not cited by either**: STY-025, which needs a template to bind a theme (TPL), the
 environment's default standing in as it does for the layout; STY-039, whose browser and desktop half is
-the editor's; STY-048, as TH-H leaves it; PUB-092, which names each engine and so waits for Word; and
+the editor's; STY-077 and STY-075, T2's and T6's; PUB-092, which names each engine and so waits for Word; and
 STY-058 and STY-070, the editor's. **STY-009 is cited today by a prototype test over a character catalogue
 of two marks of the nine**; themes 1's character catalogue covers all nine and its test replaces that citation.
+
+### What was built
+
+**TH-A to TH-H are built**, by [themes 1](../plans/2026-09-24-themes-01-the-theme-in-the-pdf.md): the
+theme model exported from `packages/domain/src/theme/` - `catalogue/1` and `theme/1`, `readCatalogue`
+and `readTheme` returning every refusal at once, contrast, the default theme and its six catalogues as
+data, and the Typst projection - migration 0024 seeding them as `theme` and `catalogue` artifacts,
+declaring the theme by `theme_default` and recording its version on every request and publication,
+`publishing/12` and template 12, which sets the face, size, weight, posture and colour of all its
+text, a paragraph's fill, padding, alignment and indents, its line spacing, the space between blocks
+and the size of a script from the theme, and holds no typographic literal a test does not allow - not
+every value, since what it never sets is still the engine's, below - and the worker refusing a face
+it does not hold. Nothing chooses or edits a theme: every environment has the one its migration
+seeded. Building it changed these things here:
+
+- **The roles are nineteen**: the six headings, `title`, `notice`, **`noticeSentence`** - the draft
+  notice's sentence under the cover's title, which template 11 set in bold at the body's size -
+  `contents`, `contentsEntry`, `list`, `listEntry`, `caption`, `tableNote`, `attribution`,
+  `preformatted`, `preformattedLabel` and `running`. The places are the five above.
+- **Two properties joined TH-D's set.** A character style's **`scale`**, a fraction of the size of
+  the text the mark stands in, so inline code is set at 0.8 of it as template 11 set it; and a
+  paragraph style's **`padding`**, the room between its fill and its text on every side, drawn only
+  where it has a `background`, so preformatted text's panel is inset 6pt from the theme. The CSS and
+  Word projections do not yet project either.
+- **The default's numbers are template 11's, measured where the engine chose them**, by ADR-0014's rule
+  from template 11's own distances: the body 11pt with 2.75pt after and a 14.35pt line, headings
+  16pt, 13pt and 11pt bold, a footnote 9.35pt, text in black on white. Its table cells are set in a
+  style of their own, `table-cell`, centred as template 11 centred them, and its captions centred.
+  The plan records each number.
+- **`assemble` measures from the theme**, and `measure.ts`'s header states what template 12 keeps to:
+  a quotation is inset by exactly its style's start and end indents, the engine's own inset stopped; a
+  list's indent is in ems of its item's size; preformatted text's columns come from its role's size,
+  its face's advance, its indents and its padding; an image in a line of text is 1.2 ems of the style
+  it stands in; a caption's height is estimated in the caption's size.
+- **Only a paragraph carries its style** into the published document; a stored `body` becomes the
+  default of the place that holds it most nearly. A table's and an image's styles are checked, and
+  `style_missing` or `style_not_applicable` names them, but carry nothing until themes 2 gives them
+  properties.
+- **The faces are checked twice.** Before `assemble`, the worker holds every face the theme declares
+  to its pinned files **exactly** - every file of its family and no other, the ascent, descent and
+  advance it records the files' own, and the maths face a face with an OpenType `MATH` table - and a
+  face it does not hold fails `typeface_unavailable`, naming the family and why, `files`, `metrics` or
+  `maths`; `assemble` fails `typeface_not_embeddable` for a face the document sets text in whose
+  licence forbids embedding in a PDF. The glyph check asks the family that sets the text.
+- **The reader bounds what a page can hold, and what a line can.** A size is at most 144pt and a line
+  spacing 288pt, not Word's 1638; a style whose line spacing, as it resolves, is below its size is
+  refused, `line_spacing_below_size`, since a line is one em tall. Nothing yet holds a theme's sizes,
+  padding or spacing to the page a layout declares.
+- **Contrast is judged at the size text is set at**: a character style in each paragraph style at the
+  paragraph's size times its `scale` and, for a subscript or superscript, the script's size, 1331/2048
+  of its text, which the projection states as `script` and template 12 sets rather than leaving to the
+  engine; bold from the mark or the paragraph; and a mark with no colour of its own in its
+  paragraph's colour, where it asks more than its paragraph does. Marks nested in each other are not
+  judged together.
+- **Keep-together keeps a paragraph whole where it fits a page**, as Word's `keepLines` does, and
+  breaks one taller than the page's text block, which template 12 measures; the engine would have
+  painted it off the page.
+- **Not every value is the theme's.** What template 12 never sets is the engine's default, and no
+  theme moves it: the underline's offset and thickness, a list's and an enumeration's indents, a
+  definition list's hanging indent and separator, a table cell's 5pt inset and a table's rules, and
+  the contents' leader and indents stay the template's until themes 2's table and list properties;
+  and how far a script is lowered or raised, and a footnote's separator, clearance and indent, which
+  no property of themes 1 or 2 names. Template 12's header names each.
+- **A quotation is no longer set off.** The theme styles paragraphs, not a block's edges, so the space
+  around a quotation is its paragraphs' own: 16.5pt less above it and before its attribution than
+  template 11 set, and 9.9pt less after it. A spacing property for a block's edges, as Word's contextual
+  spacing is, would restore it, and is a later widening. The other visible moves are small and listed
+  in the plan: a heading straight into a heading, a list's space above, a table's rows and its caption
+  and note, a note's second paragraph and the page's frame, each by the line model.
+- **`spikes/theme-conformance/` no longer runs against the model**: it calls the prototype's
+  `resolveTheme`, `exampleTheme` and `resolveStyle`, which the model replaced. It stays the record of
+  what ADR-0014 measured, above; the conformance suite STY-053 asks for is still to be built.
 
 ## Safety
 

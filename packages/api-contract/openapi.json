@@ -7322,6 +7322,9 @@
                               "equation_unrenderable",
                               "equation_unnumbered",
                               "math_glyph_missing",
+                              "style_not_applicable",
+                              "typeface_not_embeddable",
+                              "typeface_unavailable",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10072,6 +10075,9 @@
                               "equation_unrenderable",
                               "equation_unnumbered",
                               "math_glyph_missing",
+                              "style_not_applicable",
+                              "typeface_not_embeddable",
+                              "typeface_unavailable",
                               "engine_failed",
                               "store_failed"
                             ]

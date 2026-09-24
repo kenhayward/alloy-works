@@ -18,6 +18,10 @@ import {
 } from './typst.js';
 
 const fonts = await loadPinnedFonts();
+/** The pinned families, by the names the default theme gives them and the files declare. */
+const SERIF = 'Liberation Serif';
+const MONO = 'Liberation Mono';
+const MATHS = 'STIX Two Math';
 const typst = createTypst({ binary: typstBinaryPath(), fonts });
 const data = JSON.stringify({
   environment: 'Development',
@@ -232,10 +236,10 @@ describe('the pinned fonts (issue #145)', () => {
 
   it('pins STIX Two Math 2.13 b171 as the one maths face', () => {
     // The hash the equations spike measured, of the file at the tag `v2.13b171` in stipub/stixfonts.
-    expect(PINNED_FONT_FILES.filter((each) => each.face === 'math')).toEqual([
+    expect(PINNED_FONT_FILES.filter((each) => each.family === 'STIX Two Math')).toEqual([
       {
         file: 'STIXTwoMath-Regular.otf',
-        face: 'math',
+        family: 'STIX Two Math',
         sha256: '3a5f3f26f40d5698b3c62dd085d48d6663696a3f80825aab8b553d5097518e8c',
       },
     ]);
@@ -343,42 +347,44 @@ describe('the pinned fonts (issue #145)', () => {
     }
   });
 
-  it('knows which characters every face can set', () => {
-    expect(fonts.covers('A'.codePointAt(0)!, 'body')).toBe(true);
-    expect(fonts.covers(0x05d0, 'body')).toBe(true); // Hebrew alef
-    expect(fonts.covers(0x0627, 'body')).toBe(false); // Arabic alef
+  it('knows which characters every face of a family can set, asked by the family the theme names', () => {
+    expect(fonts.covers('A'.codePointAt(0)!, SERIF)).toBe(true);
+    expect(fonts.covers(0x05d0, SERIF)).toBe(true); // Hebrew alef
+    expect(fonts.covers(0x0627, SERIF)).toBe(false); // Arabic alef
+    // A family the worker holds no file of covers nothing, so a theme naming one sets nothing in it.
+    expect(fonts.covers('A'.codePointAt(0)!, 'Liberation Sans')).toBe(false);
   });
 
   it('knows which characters the monospace faces can set, apart from the body faces', async () => {
     // Liberation Mono is a strict subset of Liberation Serif: sixteen code points fewer, among them
     // U+2016, which a paragraph can carry and preformatted text cannot.
-    expect(fonts.covers(0x2016, 'body')).toBe(true);
-    expect(fonts.covers(0x2016, 'code')).toBe(false);
-    expect(fonts.covers('A'.codePointAt(0)!, 'code')).toBe(true);
-    const counted = (face: 'body' | 'code') =>
+    expect(fonts.covers(0x2016, SERIF)).toBe(true);
+    expect(fonts.covers(0x2016, MONO)).toBe(false);
+    expect(fonts.covers('A'.codePointAt(0)!, MONO)).toBe(true);
+    const counted = (family: string) =>
       Array.from({ length: 0x10000 }, (_, codePoint) => codePoint).filter((codePoint) =>
-        fonts.covers(codePoint, face),
+        fonts.covers(codePoint, family),
       ).length;
-    expect(counted('body')).toBe(2321);
-    expect(counted('code')).toBe(2305);
+    expect(counted(SERIF)).toBe(2321);
+    expect(counted(MONO)).toBe(2305);
   });
 
   it('knows which characters the maths face can set, apart from the body faces', () => {
     // An identifier's italic is a character of its own, beyond U+FFFF, that the body face has not got;
     // the n-ary sum and the maths angle brackets are the maths face's too. Neither face sets Chinese.
-    expect(fonts.covers(0x1d465, 'math')).toBe(true); // mathematical italic x
-    expect(fonts.covers(0x1d465, 'body')).toBe(false);
-    expect(fonts.covers(0x2211, 'math')).toBe(true);
-    expect(fonts.covers(0x27e8, 'math')).toBe(true);
-    expect(fonts.covers(0x4e2d, 'math')).toBe(false);
+    expect(fonts.covers(0x1d465, MATHS)).toBe(true); // mathematical italic x
+    expect(fonts.covers(0x1d465, SERIF)).toBe(false);
+    expect(fonts.covers(0x2211, MATHS)).toBe(true);
+    expect(fonts.covers(0x27e8, MATHS)).toBe(true);
+    expect(fonts.covers(0x4e2d, MATHS)).toBe(false);
     // What the template draws itself, which no author supplies and so no check asks: the radical,
     // the braces over and under, the primes, and the brace and parentheses of cases and binomials.
     for (const drawn of [0x221a, 0x23de, 0x23df, 0x23b4, 0x23b5, 0x23dc, 0x23dd, 0x2032, 0x2033])
-      expect(fonts.covers(drawn, 'math'), drawn.toString(16)).toBe(true);
+      expect(fonts.covers(drawn, MATHS), drawn.toString(16)).toBe(true);
     for (const drawn of [0x2034, 0x2057, 0x7b, 0x7d, 0x28, 0x29])
-      expect(fonts.covers(drawn, 'math'), drawn.toString(16)).toBe(true);
+      expect(fonts.covers(drawn, MATHS), drawn.toString(16)).toBe(true);
     const counted = Array.from({ length: 0x110000 }, (_, codePoint) => codePoint).filter(
-      (codePoint) => fonts.covers(codePoint, 'math'),
+      (codePoint) => fonts.covers(codePoint, MATHS),
     ).length;
     expect(counted).toBe(4605);
   });

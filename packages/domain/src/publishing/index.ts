@@ -2,14 +2,17 @@ export { assemble, publishedImagePath } from './assemble.js';
 export type { Assembled, AssembleInput, PublishingAsset } from './assemble.js';
 export { publishFailureCodes } from './failures.js';
 export type { PublishFailure, PublishFailureCode, PublishStage } from './failures.js';
-// The question the worker's pinned fonts answer, asked of one family at a time (editor 5).
-export type { Covers, Face } from './glyphs.js';
+// The question the worker's pinned fonts answer, asked of one family at a time (editor 5), by the
+// family's name since themes 1; and how the text asked about is set.
+export type { Covers, Setting } from './glyphs.js';
 // Promoted by editor 5 so the worker's regression corpus probes the exemption with the predicate
 // `assemble` asks, rather than a copy of its ranges.
 export { setWithoutAGlyph } from './glyphs.js';
 // The maths tree, from an equation's stored MathML: what the template and the Word writer read of an
 // equation, and why one cannot be set (equations 2, ruling R2).
 export { mathsTree } from './maths.js';
+// And the characters it sets on its own account, which the worker holds the maths face to (themes 1).
+export { MATHS_CHARACTERS } from './maths.js';
 export type {
   MathsAlignment,
   MathsAttachMode,
@@ -80,6 +83,9 @@ export {
   // Frozen by equations 2, which made `publishing/11`: the schema template 10 reads, and the schema
   // of every publication made before a run or a block could be an equation.
   PUBLISHING_SCHEMA_10,
+  // Frozen by themes 1, which made `publishing/12`: the schema template 11 reads, and the schema of
+  // every publication made before a publication was set from a theme.
+  PUBLISHING_SCHEMA_11,
 } from './published.js';
 export type {
   PublishedBlock,

@@ -4,6 +4,7 @@ import {
   PUBLISHING_SCHEMA_1,
   PUBLISHING_SCHEMA_9,
   PUBLISHING_SCHEMA_10,
+  PUBLISHING_SCHEMA_11,
   type PublishedDocument,
   type PublishedDocument1,
 } from '@alloy-works/domain';
@@ -14,13 +15,13 @@ export type PublishedSchema = (PublishedDocument | PublishedDocument1)['schema']
 /**
  * `PUBLISHING_SCHEMA` frozen at the schema this worker's newest template was written for, and the one
  * key the maps below take for it. The annotation is the whole point: the day `PUBLISHING_SCHEMA` is
- * repointed at `publishing/11`, THIS LINE stops typechecking, where a key computed from the moving
- * constant would have moved with it and left `publishing/11` read by template 10 with the typecheck
+ * repointed at `publishing/13`, THIS LINE stops typechecking, where a key computed from the moving
+ * constant would have moved with it and left `publishing/13` read by template 12 with the typecheck
  * clean (the schema-keyed map trap, which cost three slices before it was pinned by literals in
- * `template.test.ts`). Freeze the domain's `PUBLISHING_SCHEMA_10` beside the new schema, key template
- * 10's rows by it, and re-point this at the new one.
+ * `template.test.ts`). Freeze the domain's `PUBLISHING_SCHEMA_12` beside the new schema, key template
+ * 12's rows by it, and re-point this at the new one - as themes 1 did for `publishing/11`.
  */
-export const PUBLISHING_SCHEMA_CURRENT: 'publishing/11' = PUBLISHING_SCHEMA;
+export const PUBLISHING_SCHEMA_CURRENT: 'publishing/12' = PUBLISHING_SCHEMA;
 
 const at = (version: number) =>
   fileURLToPath(new URL(`../templates/publication/${version}/main.typ`, import.meta.url));
@@ -38,13 +39,14 @@ const at = (version: number) =>
  * `publishing/8`, the same again with a run that may be an image, version 9 `publishing/9`, the same
  * again with a run that may be a footnote and a table that may carry a note, version 10
  * `publishing/10`, the same again with a run that may be a cross-reference and the labels its targets
- * carry, and version 11 `publishing/11`, the same again with a run and a block that may be an
- * equation, set in the pinned maths face, and a node's title that is runs. Versions 2 to 10 are kept
- * although `assemble` makes none of their schemas any more: they are what the publications made
- * before a run carried its marks, before a block could be a list, before one could be a quotation or
- * preformatted text, before one could be a table, before one could be a figure, before a run could
- * be an image, before one could be a footnote or a reference, and before one could be an equation,
- * were compiled with, and a published version is a record.
+ * carry, version 11 `publishing/11`, the same again with a run and a block that may be an
+ * equation, set in the pinned maths face, and a node's title that is runs, and version 12
+ * `publishing/12`, the same again set from its theme. Versions 2 to 11 are kept although `assemble`
+ * makes none of their schemas any more: they are what the publications made before a run carried
+ * its marks, before a block could be a list, before one could be a quotation or preformatted text,
+ * before one could be a table, before one could be a figure, before a run could be an image, before
+ * one could be a footnote or a reference, before one could be an equation, and before a publication
+ * was set from a theme, were compiled with, and a published version is a record.
  */
 export const PUBLICATION_TEMPLATE = {
   1: { name: 'publication', version: 1, file: at(1) },
@@ -58,15 +60,18 @@ export const PUBLICATION_TEMPLATE = {
   9: { name: 'publication', version: 9, file: at(9) },
   10: { name: 'publication', version: 10, file: at(10) },
   11: { name: 'publication', version: 11, file: at(11) },
+  // Themes 1 repointed `PUBLISHING_SCHEMA` at `publishing/12`, and the guard above asked for this row:
+  // template 12, which sets every face, size, colour, space and line from the document's theme.
+  12: { name: 'publication', version: 12, file: at(12) },
 } as const;
 
 /**
  * The template that reads a published document of each schema. `assemble` makes `publishing/1` only
  * for a request made before layouts, which publishes with template 1 as it would have then (Ken's
- * answer F); every request since is made under a layout, and publishes with template 11, the one
- * equations 2 writes. Templates 9 and 10 keep their rows for `publishing/9` and `publishing/10`, the
- * schemas they were written for, although nothing makes either now (cross-references 2, ruling R8;
- * equations 2); no row names templates 2 to 8.
+ * answer F); every request since is made under a layout and a theme, and publishes with template 12,
+ * the one themes 1 writes. Templates 9, 10 and 11 keep their rows for `publishing/9`, `publishing/10`
+ * and `publishing/11`, the schemas they were written for, although nothing makes any of them now
+ * (cross-references 2, ruling R8; equations 2; themes 1); no row names templates 2 to 8.
  *
  * **Every key is a frozen constant.** Until cross-references 2 the newest row was keyed by
  * `PUBLISHING_SCHEMA` itself, so repointing it moved the KEY while the value stayed where it was, and
@@ -81,8 +86,12 @@ export const TEMPLATE_READING = {
   [PUBLISHING_SCHEMA_1]: 1,
   [PUBLISHING_SCHEMA_9]: 9,
   [PUBLISHING_SCHEMA_10]: 10,
-  [PUBLISHING_SCHEMA_CURRENT]: 11,
+  [PUBLISHING_SCHEMA_11]: 11,
+  [PUBLISHING_SCHEMA_CURRENT]: 12,
 } as const satisfies Record<
-  PublishedSchema | typeof PUBLISHING_SCHEMA_9 | typeof PUBLISHING_SCHEMA_10,
+  | PublishedSchema
+  | typeof PUBLISHING_SCHEMA_9
+  | typeof PUBLISHING_SCHEMA_10
+  | typeof PUBLISHING_SCHEMA_11,
   keyof typeof PUBLICATION_TEMPLATE
 >;

@@ -17,6 +17,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createDocument } from './documents.js';
 import { DEFAULT_LAYOUT_ID, defaultLayout } from './layouts.js';
+import { defaultTheme } from './themes.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
 import {
@@ -211,6 +212,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0021_default_layout_figures',
       '0022_publication_assets',
       '0023_default_layout_relative_words',
+      '0024_themes',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -252,6 +254,11 @@ describe('migration 0018, which gives every environment its default layout', () 
       {
         relname: 'publication_request',
         tgname: 'publication_request_made_under_a_layout',
+        tgenabled: 'O',
+      },
+      {
+        relname: 'publication_request',
+        tgname: 'publication_request_made_under_a_theme',
         tgenabled: 'O',
       },
       {
@@ -401,9 +408,11 @@ describe('migration 0018, which gives every environment its default layout', () 
       tenant: { id: db.newTenantId(), name: 'Refusals' },
       hostnames: ['refusals.acme.alloy.test'],
     });
-    const { ada, version, declared } = await service.withTenant(tenant, async (trx) => ({
+    const { ada, version, declared, theme } = await service.withTenant(tenant, async (trx) => ({
       ...(await personAndDocument(trx)),
       declared: await defaultLayout(trx),
+      // Named on each request below, so that the layout is what each is refused for (0024).
+      theme: await defaultTheme(trx),
     }));
 
     await expect(
@@ -412,19 +421,20 @@ describe('migration 0018, which gives every environment its default layout', () 
     await expect(
       service.withTenant(tenant, (trx) =>
         sql`insert into publication_request
-              (document_id, document_version_id, formats, requested_by, layout_version_id)
-            values (${version.artifactId}, ${version.id}, array['pdf'], ${ada}, ${declared.versionId})`.execute(
-          trx,
-        ),
+              (document_id, document_version_id, formats, requested_by, layout_version_id, theme_id,
+               theme_version_id)
+            values (${version.artifactId}, ${version.id}, array['pdf'], ${ada}, ${declared.versionId},
+              ${theme.artifactId}, ${theme.versionId})`.execute(trx),
       ),
     ).rejects.toThrow(/publication_request_layout_both/);
 
     const request = await service.withTenant(tenant, (trx) =>
       sql<{ id: string }>`
         insert into publication_request
-          (document_id, document_version_id, formats, requested_by, layout_id, layout_version_id)
+          (document_id, document_version_id, formats, requested_by, layout_id, layout_version_id,
+           theme_id, theme_version_id)
         values (${version.artifactId}, ${version.id}, array['pdf'], ${ada}, ${declared.artifactId},
-          ${declared.versionId})
+          ${declared.versionId}, ${theme.artifactId}, ${theme.versionId})
         returning id`
         .execute(trx)
         .then((result) => result.rows[0]!.id),
@@ -520,6 +530,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0021_default_layout_figures',
       '0022_publication_assets',
       '0023_default_layout_relative_words',
+      '0024_themes',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -610,6 +621,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0021_default_layout_figures',
       '0022_publication_assets',
       '0023_default_layout_relative_words',
+      '0024_themes',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -683,6 +695,7 @@ describe('migration 0023, which gives the default layout words for a relative re
     // 0023 runs and leaves it: its 0.4 is the environment's own, so no words of the product's go on top.
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
       '0023_default_layout_relative_words',
+      '0024_themes',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -706,6 +719,7 @@ describe('migration 0023, which gives the default layout words for a relative re
     // 0023 runs and adds 0.4 on top of the product's own, untouched 0.3.
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
       '0023_default_layout_relative_words',
+      '0024_themes',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     const fourth = await service.withTenant({ ...tenant, id }, (trx) =>

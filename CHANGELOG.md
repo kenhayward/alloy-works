@@ -3,6 +3,47 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.68.0 - 2026-09-24 (PR #227)
+
+### Added
+
+- **Every publication is set from a theme.** Each typeface, size, weight, slant and colour in a PDF,
+  how its paragraphs are aligned and indented, the space above, below and between their lines, which
+  paragraphs keep with the next or are kept whole where they fit on a page, and that no paragraph
+  leaves a single line alone at the foot or head of a page, now come from the environment's theme rather than from settings
+  fixed in the product. Every environment starts with the default theme, set in Liberation Serif,
+  Liberation Mono and STIX Two Math as before, and each publication records the exact version of the
+  theme it was made under, beside the layout's, so it says how it looked. Nothing yet lets you choose
+  or change a theme, and the editor does not show it.
+- **Publishing says when the theme stands in the way**, naming what to change: a paragraph, a table or
+  a figure using a style the theme does not have, or using one where that style cannot be used; a
+  typeface whose licence does not allow it to be embedded in a PDF; and a typeface the publishing
+  service does not have, whose measurements the theme records wrongly, or which cannot set equations.
+  For the last two the theme has to change, and publishing again will not help.
+  The default theme refuses none of these.
+
+### Changed
+
+- **Publications look almost exactly as they did**, the default theme's sizes and spaces measured from
+  them, with these differences you can see:
+  - **A quotation is no longer set apart by extra space.** It stands as close to the text around it,
+    and its attribution as close to it, as one paragraph stands to the next: about 16.5 points closer
+    above it and before its attribution, and about 10 points closer after it.
+  - A heading straight under another heading, a list after a paragraph, and a table's caption, rows
+    and note stand between half a point and 4 points further apart; a footnote's second paragraph
+    stands about 3 points closer to its first; and a figure's caption about 2 points closer to its
+    image.
+  - The running head sits about 2 points higher, the foot about 1 point lower, and the first line of a
+    page 1 to 2 points lower.
+  - A table's cells are still centred and a figure's caption too.
+- **An image in a line of text is as tall as a line of the text around it**, 1.2 times its size, so it
+  follows that text's size, in a paragraph, a list, a table's cell or its note, or a footnote. At the default
+  sizes nothing moves.
+- **A preformatted block's label is checked before publishing**, and a character no typeface can set
+  in it is named, where before the publish failed without saying why.
+- **A style the publication cannot find is now said to be missing from the theme**, naming it, rather
+  than from the publication's template.
+
 ## 0.67.1 - 2026-09-24 (PR #226)
 
 ### Changed

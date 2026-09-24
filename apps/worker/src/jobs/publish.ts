@@ -8,7 +8,7 @@ import {
 } from '@alloy-works/db';
 import { assemble, PUBLISHING_SCHEMA_1, type PublishFailure } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
-import { PINNED_FONT_FILES, type PinnedFonts } from '../fonts.js';
+import { PINNED_FONT_FILES, typefacesNotHeld, type PinnedFonts } from '../fonts.js';
 import { JobRefused } from '../refusal.js';
 import {
   PUBLICATION_TEMPLATE,
@@ -31,7 +31,8 @@ import type { JobHandler } from '../worker.js';
  * publications it made. Version 6 was also the first whose compile runs with
  * `--features a11y-extras` (`typstArguments`), 7 the first to read images from the store, 8 the
  * first to set one in a run of text, 9 the first to set a footnote and a table's note, 10 the
- * first to resolve and print a cross-reference, and 11 the first to set an equation.
+ * first to resolve and print a cross-reference, 11 the first to set an equation, and 12 the first to
+ * be set from the theme the request was made under.
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -43,7 +44,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '11',
+  [PUBLISHING_SCHEMA_CURRENT]: '12',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -119,7 +120,28 @@ export function publishJob(deps: {
       }));
       // Nothing to do: finished by another attempt.
       if (!read.inputs) return;
-      const { request, outline, occurrences, refused, layout, revision, assets } = read.inputs;
+      const { request, outline, occurrences, refused, layout, theme, revision, assets } =
+        read.inputs;
+
+      // The theme's faces held to the pinned files before anything is composed (themes 1, ruling R5,
+      // and the final review's M1): a typeface the worker does not hold exactly - its files, their
+      // metrics, a maths face's MATH table - could set nothing, set it where the theme did not mean,
+      // or refuse the compile unnamed, and `assemble` would refuse each of its characters in turn
+      // without once naming it. Refused as the document's own failures are, by the same list and the
+      // same record, naming each family and why: `<family>: <files | metrics | maths>`, a family the
+      // theme wrote, whose name cannot hold a colon, and a word from a fixed list, never a value.
+      const unheld = theme === null ? [] : typefacesNotHeld(theme.theme, deps.fonts);
+      if (unheld.length > 0) {
+        throw new PublishRefused(
+          unheld.map(({ family, detail }) => ({
+            stage: 'compose',
+            code: 'typeface_unavailable',
+            node: null,
+            block: null,
+            detail: `${family}: ${detail}`,
+          })),
+        );
+      }
 
       const assembled = assemble({
         outline,
@@ -128,6 +150,9 @@ export function publishJob(deps: {
         // The layout version the request was made under, never the latest; none for a request made
         // before layouts, which `assemble` makes `publishing/1` of, as the first slice did.
         layout: layout?.layout ?? null,
+        // And the theme version, which a request made before layouts has none of, as it has no layout
+        // (migration 0024).
+        theme: theme?.theme ?? null,
         revision,
         covers: deps.fonts.covers,
         assets,

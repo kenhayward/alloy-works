@@ -1,9 +1,10 @@
-import { ThemeError, type ResolvedParagraphStyle, type ResolvedTheme } from './resolve.js';
-import type { MarkName } from './schema.js';
+import type { ResolvedParagraphStyle, ResolvedTheme } from './read.js';
+import type { StyledMark } from './schema.js';
 
 /**
  * How a run renders, canonically and in Word. See runs.test.ts for the two Word rules that make
- * the second half necessary.
+ * the second half necessary. Weight and posture only, as the prototype: the Word slice widens it to
+ * the rest of a mark's properties, where the same two rules reach them.
  */
 
 export interface RunFormat {
@@ -13,7 +14,7 @@ export interface RunFormat {
 
 export interface WordRun {
   /** The one character style Word lets a run name: the first mark's. */
-  readonly characterStyle?: MarkName;
+  readonly characterStyle?: StyledMark;
   /** Values set directly on the run, only where Word's reading of the styles would differ. */
   readonly pins: Partial<RunFormat>;
 }
@@ -22,19 +23,13 @@ export interface WordRun {
 export function runFormat(
   theme: ResolvedTheme,
   paragraph: ResolvedParagraphStyle,
-  marks: readonly MarkName[],
+  marks: readonly StyledMark[],
 ): RunFormat {
   let { bold, italic } = paragraph.properties;
   for (const mark of marks) {
-    const style = theme.characterStyles[mark];
-    if (style === undefined) {
-      throw new ThemeError(
-        'unknown-mark',
-        `Mark "${mark}" has no character style in theme "${theme.id}"`,
-      );
-    }
-    if (style.bold !== undefined) bold = style.bold;
-    if (style.italic !== undefined) italic = style.italic;
+    const { properties } = theme.characterStyles[mark];
+    if (properties.bold !== undefined) bold = properties.bold;
+    if (properties.italic !== undefined) italic = properties.italic;
   }
   return { bold, italic };
 }
@@ -49,11 +44,11 @@ export function runFormat(
 export function wordRun(
   theme: ResolvedTheme,
   paragraph: ResolvedParagraphStyle,
-  marks: readonly MarkName[],
+  marks: readonly StyledMark[],
 ): WordRun {
   const canonical = runFormat(theme, paragraph, marks);
   const first = marks[0];
-  const named = first === undefined ? undefined : theme.characterStyles[first];
+  const named = first === undefined ? undefined : theme.characterStyles[first].properties;
   const word = {
     bold: paragraph.properties.bold !== (named?.bold === true),
     italic: paragraph.properties.italic !== (named?.italic === true),

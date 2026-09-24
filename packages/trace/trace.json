@@ -10562,9 +10562,27 @@
       "area": "STY",
       "statement": "A table style must declare header row and column treatment, banding, rules and borders, cell padding, and alignment by column type",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by STY-076",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 96
+    },
+    {
+      "id": "STY-076",
+      "area": "STY",
+      "statement": "A table style must declare header row and column treatment, banding, rules and borders, and cell padding",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "STY-styles-and-presentation-themes.md",
+      "line": 97
+    },
+    {
+      "id": "STY-077",
+      "area": "STY",
+      "statement": "A table style must declare alignment by column type, which a specific table may override (**TAB**)",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "STY-styles-and-presentation-themes.md",
+      "line": 98
     },
     {
       "id": "STY-013",
@@ -10573,7 +10591,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 97
+      "line": 99
     },
     {
       "id": "STY-014",
@@ -10582,7 +10600,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 98
+      "line": 100
     },
     {
       "id": "STY-015",
@@ -10591,7 +10609,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 108
+      "line": 113
     },
     {
       "id": "STY-016",
@@ -10600,7 +10618,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 109
+      "line": 114
     },
     {
       "id": "STY-017",
@@ -10609,7 +10627,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 110
+      "line": 115
     },
     {
       "id": "STY-018",
@@ -10618,7 +10636,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 111
+      "line": 116
     },
     {
       "id": "STY-019",
@@ -10627,7 +10645,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 112
+      "line": 117
     },
     {
       "id": "STY-059",
@@ -10636,7 +10654,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 113
+      "line": 118
     },
     {
       "id": "STY-063",
@@ -10645,7 +10663,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 128
+      "line": 133
     },
     {
       "id": "STY-064",
@@ -10654,7 +10672,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 129
+      "line": 134
     },
     {
       "id": "STY-065",
@@ -10663,7 +10681,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 130
+      "line": 135
     },
     {
       "id": "STY-020",
@@ -10672,7 +10690,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 140
+      "line": 145
     },
     {
       "id": "STY-021",
@@ -10681,7 +10699,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 141
+      "line": 146
     },
     {
       "id": "STY-022",
@@ -10690,7 +10708,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 142
+      "line": 147
     },
     {
       "id": "STY-023",
@@ -10699,7 +10717,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 143
+      "line": 148
     },
     {
       "id": "STY-024",
@@ -10708,7 +10726,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 149
+      "line": 154
     },
     {
       "id": "STY-025",
@@ -10717,7 +10735,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 150
+      "line": 155
     },
     {
       "id": "STY-026",
@@ -10726,7 +10744,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 151
+      "line": 156
     },
     {
       "id": "STY-027",
@@ -10735,7 +10753,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 152
+      "line": 157
     },
     {
       "id": "STY-028",
@@ -10744,7 +10762,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 153
+      "line": 158
     },
     {
       "id": "STY-066",
@@ -10753,7 +10771,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 154
+      "line": 159
     },
     {
       "id": "STY-067",
@@ -10762,7 +10780,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 155
+      "line": 160
     },
     {
       "id": "STY-072",
@@ -10771,7 +10789,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 156
+      "line": 161
     },
     {
       "id": "STY-029",
@@ -10780,7 +10798,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 175
+      "line": 180
     },
     {
       "id": "STY-030",
@@ -10789,7 +10807,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 176
+      "line": 181
     },
     {
       "id": "STY-031",
@@ -10798,7 +10816,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 177
+      "line": 182
     },
     {
       "id": "STY-032",
@@ -10807,7 +10825,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 178
+      "line": 183
     },
     {
       "id": "STY-033",
@@ -10816,7 +10834,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 179
+      "line": 184
     },
     {
       "id": "STY-034",
@@ -10825,7 +10843,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 180
+      "line": 185
     },
     {
       "id": "STY-035",
@@ -10834,7 +10852,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 186
+      "line": 191
     },
     {
       "id": "STY-036",
@@ -10843,7 +10861,7 @@
       "tranche": "T1",
       "status": "Superseded by STY-058",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 187
+      "line": 192
     },
     {
       "id": "STY-037",
@@ -10852,7 +10870,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 188
+      "line": 193
     },
     {
       "id": "STY-038",
@@ -10861,7 +10879,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 189
+      "line": 194
     },
     {
       "id": "STY-053",
@@ -10870,7 +10888,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 190
+      "line": 195
     },
     {
       "id": "STY-058",
@@ -10879,7 +10897,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 191
+      "line": 196
     },
     {
       "id": "STY-060",
@@ -10888,7 +10906,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 192
+      "line": 197
     },
     {
       "id": "STY-070",
@@ -10897,7 +10915,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 193
+      "line": 198
     },
     {
       "id": "STY-039",
@@ -10906,7 +10924,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 210
+      "line": 215
     },
     {
       "id": "STY-040",
@@ -10915,7 +10933,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 211
+      "line": 216
     },
     {
       "id": "STY-041",
@@ -10924,7 +10942,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 212
+      "line": 217
     },
     {
       "id": "STY-042",
@@ -10933,7 +10951,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 213
+      "line": 218
     },
     {
       "id": "STY-045",
@@ -10942,7 +10960,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 214
+      "line": 219
     },
     {
       "id": "STY-046",
@@ -10951,7 +10969,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 215
+      "line": 220
     },
     {
       "id": "STY-047",
@@ -10960,16 +10978,34 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 216
+      "line": 221
     },
     {
       "id": "STY-048",
       "area": "STY",
       "statement": "The default theme must cover the scripts the supported locales admit (**LOC-038**), the bidirectional text CNT-059 admits, and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable",
       "tranche": "T1",
+      "status": "Superseded by STY-074",
+      "document": "STY-styles-and-presentation-themes.md",
+      "line": 222
+    },
+    {
+      "id": "STY-074",
+      "area": "STY",
+      "statement": "The default theme must cover the Latin, Greek, Cyrillic and Hebrew scripts, and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable",
+      "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 217
+      "line": 223
+    },
+    {
+      "id": "STY-075",
+      "area": "STY",
+      "statement": "The default theme must cover every script the supported locales admit (**LOC-038**) and the bidirectional text CNT-059 admits",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "STY-styles-and-presentation-themes.md",
+      "line": 224
     },
     {
       "id": "STY-049",
@@ -10978,7 +11014,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 218
+      "line": 225
     },
     {
       "id": "STY-052",
@@ -10987,7 +11023,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 219
+      "line": 226
     },
     {
       "id": "STY-062",
@@ -10996,7 +11032,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 220
+      "line": 227
     },
     {
       "id": "STY-043",
@@ -11005,7 +11041,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 248
+      "line": 261
     },
     {
       "id": "STY-044",
@@ -11014,7 +11050,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 249
+      "line": 262
     },
     {
       "id": "STY-071",
@@ -11023,7 +11059,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 250
+      "line": 263
     },
     {
       "id": "STY-073",
@@ -11032,7 +11068,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 251
+      "line": 264
     },
     {
       "id": "TAB-001",
@@ -13098,31 +13134,31 @@
       "id": "STY-N01",
       "statement": "**No per-document and no per-author overrides.** A document that needs a different look uses a different theme (CNT-N08)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 257
+      "line": 270
     },
     {
       "id": "STY-N02",
       "statement": "**No page geometry.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 258
+      "line": 271
     },
     {
       "id": "STY-N03",
       "statement": "**No stylesheet or code supplied by a tenant.** Extension is declarative, from a fixed set of properties. Arbitrary style code would be an injection surface and would make every output format a rendering engine",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 259
+      "line": 272
     },
     {
       "id": "STY-N04",
       "statement": "**Not a design tool.** A theme is configured, not drawn",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 260
+      "line": 273
     },
     {
       "id": "STY-N05",
       "statement": "**No inverting content in dark mode.** The application's chrome may go dark; the document canvas stays the theme's paper and ink, because a theme's colours were chosen for paper",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 261
+      "line": 274
     },
     {
       "id": "TAB-N01",
@@ -14022,35 +14058,35 @@
       "question": "**Are catalogues tenant-wide, or per space?** A consultancy working for two clients may need two house styles that authors must not confuse",
       "settledBy": "Whether early customers serve more than one end client from one tenant. Likely yes in this market",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 267
+      "line": 280
     },
     {
       "id": "STY-Q02",
       "question": "**Does STY-N03 survive a real house style?** Declarative properties cover most of typography and none of the last five per cent somebody's brand guideline insists on",
       "settledBy": "The first house style that cannot be expressed. The answer is probably to widen the declared property set rather than open an escape hatch",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 268
+      "line": 281
     },
     {
       "id": "STY-Q03",
       "question": "**Who supplies typefaces, and who holds the licence?**",
       "settledBy": "**Settled.** Product-supplied faces are open-licence only; a customer's brand face is supplied by the customer under the customer's own licence. See [ADR-0010](../../decisions/0010-open-licence-typefaces-only.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 269
+      "line": 282
     },
     {
       "id": "STY-Q04",
       "question": "**Does a theme need variants - screen against print, light against dark?**",
       "settledBy": "**Settled for the editor.** No: the canvas stays paper when the application goes dark (STY-N05). Whether the HTML reading format needs a screen palette is left to its design. See [themes.md](../../design/themes.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 270
+      "line": 283
     },
     {
       "id": "STY-Q05",
       "question": "**What contrast ratio binds a customer's own brand palette (STY-069)?** A house style whose colours fail 4.5:1 is a real thing, and refusing it outright refuses the customer",
       "settledBy": "Legal and commercial advice with the first brand that fails. The likely answer is that the product's own themes must pass while a tenant's are warned rather than refused, which is a different requirement from the one written today",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 271
+      "line": 284
     },
     {
       "id": "TAB-Q01",
@@ -15690,8 +15726,12 @@
           "howItIsMet": "Alignment exists only as a paragraph style property; there is no field for it on a block"
         },
         {
-          "id": "STY-012",
-          "howItIsMet": "The table property set below"
+          "id": "STY-076",
+          "howItIsMet": "The table property set below, but for alignment by column type"
+        },
+        {
+          "id": "STY-077",
+          "howItIsMet": "Alignment by column type, a table style property a table may override, once columns have a type (STY-014)"
         },
         {
           "id": "STY-013",
@@ -15818,8 +15858,8 @@
           "howItIsMet": "A typeface artifact is the font files themselves, versioned; the baseline pins the files"
         },
         {
-          "id": "STY-048",
-          "howItIsMet": "The default theme is tested against the scripts LOC-004 admits and a mathematics face, by the coverage check below"
+          "id": "STY-074",
+          "howItIsMet": "The default theme's faces are checked against Latin, Greek, Cyrillic and Hebrew and the mathematics, from their character maps, by the coverage check below"
         },
         {
           "id": "STY-069",
@@ -16229,103 +16269,103 @@
     {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2213,
+      "line": 2216,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3286,
+      "line": 3289,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 464,
+      "line": 467,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3490,
+      "line": 3493,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3326,
+      "line": 3329,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2922,
+      "line": 2925,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2968,
+      "line": 2971,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 844,
+      "line": 847,
       "kind": "title"
     },
     {
       "id": "CNT-080",
       "file": "apps/worker/src/equations.test.ts",
-      "line": 423,
+      "line": 425,
       "kind": "title"
     },
     {
       "id": "PUB-038",
       "file": "apps/worker/src/equations.test.ts",
-      "line": 535,
+      "line": 537,
       "kind": "title"
     },
     {
       "id": "AST-015",
       "file": "apps/worker/src/figures.test.ts",
-      "line": 152,
+      "line": 154,
       "kind": "title"
     },
     {
       "id": "AST-039",
       "file": "apps/worker/src/figures.test.ts",
-      "line": 152,
+      "line": 154,
       "kind": "title"
     },
     {
       "id": "CNT-086",
       "file": "apps/worker/src/figures.test.ts",
-      "line": 253,
+      "line": 255,
       "kind": "title"
     },
     {
       "id": "CNT-087",
       "file": "apps/worker/src/figures.test.ts",
-      "line": 253,
+      "line": 255,
       "kind": "title"
     },
     {
       "id": "CNT-036",
       "file": "apps/worker/src/footnotes.test.ts",
-      "line": 172,
+      "line": 174,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "apps/worker/src/footnotes.test.ts",
-      "line": 187,
+      "line": 189,
       "kind": "title"
     },
     {
       "id": "PUB-016",
       "file": "apps/worker/src/footnotes.test.ts",
-      "line": 159,
+      "line": 161,
       "kind": "title"
     },
     {
@@ -16349,31 +16389,31 @@
     {
       "id": "PUB-007",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 297,
+      "line": 299,
       "kind": "title"
     },
     {
       "id": "PUB-008",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 444,
+      "line": 446,
       "kind": "title"
     },
     {
       "id": "PUB-009",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 346,
+      "line": 348,
       "kind": "title"
     },
     {
       "id": "PUB-037",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 480,
+      "line": 482,
       "kind": "title"
     },
     {
       "id": "PUB-088",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 531,
+      "line": 533,
       "kind": "title"
     },
     {
@@ -16385,7 +16425,7 @@
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 551,
+      "line": 552,
       "kind": "title"
     },
     {
@@ -16409,7 +16449,7 @@
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 569,
+      "line": 570,
       "kind": "title"
     },
     {
@@ -16421,31 +16461,67 @@
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 496,
+      "line": 497,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "apps/worker/src/quotations.test.ts",
-      "line": 154,
+      "line": 156,
       "kind": "title"
     },
     {
       "id": "STR-027",
       "file": "apps/worker/src/references.test.ts",
-      "line": 338,
+      "line": 340,
       "kind": "title"
     },
     {
       "id": "PUB-032",
       "file": "apps/worker/src/tables.test.ts",
-      "line": 121,
+      "line": 123,
       "kind": "title"
     },
     {
       "id": "TAB-040",
       "file": "apps/worker/src/tables.test.ts",
-      "line": 121,
+      "line": 123,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-019",
+      "file": "apps/worker/src/themes.test.ts",
+      "line": 1314,
+      "kind": "title"
+    },
+    {
+      "id": "STY-008",
+      "file": "apps/worker/src/themes.test.ts",
+      "line": 481,
+      "kind": "title"
+    },
+    {
+      "id": "STY-009",
+      "file": "apps/worker/src/themes.test.ts",
+      "line": 764,
+      "kind": "title"
+    },
+    {
+      "id": "STY-010",
+      "file": "apps/worker/src/themes.test.ts",
+      "line": 852,
+      "kind": "title"
+    },
+    {
+      "id": "STY-042",
+      "file": "apps/worker/src/themes.test.ts",
+      "line": 1314,
+      "kind": "title"
+    },
+    {
+      "id": "STY-074",
+      "file": "apps/worker/src/themes.test.ts",
+      "line": 990,
       "kind": "title"
     },
     {
@@ -16482,6 +16558,12 @@
       "id": "AST-041",
       "file": "packages/db/src/assets.test.ts",
       "line": 90,
+      "kind": "title"
+    },
+    {
+      "id": "STY-024",
+      "file": "packages/db/src/default-theme.test.ts",
+      "line": 76,
       "kind": "title"
     },
     {
@@ -16529,19 +16611,25 @@
     {
       "id": "PUB-014",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 319,
+      "line": 321,
       "kind": "title"
     },
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 757,
+      "line": 860,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 365,
+      "line": 367,
+      "kind": "title"
+    },
+    {
+      "id": "STY-002",
+      "file": "packages/db/src/publishing.test.ts",
+      "line": 727,
       "kind": "title"
     },
     {
@@ -16554,6 +16642,18 @@
       "id": "IAM-021",
       "file": "packages/db/src/roles.test.ts",
       "line": 39,
+      "kind": "title"
+    },
+    {
+      "id": "STY-005",
+      "file": "packages/db/src/themes.test.ts",
+      "line": 91,
+      "kind": "title"
+    },
+    {
+      "id": "STY-069",
+      "file": "packages/db/src/themes.test.ts",
+      "line": 288,
       "kind": "title"
     },
     {
@@ -16979,7 +17079,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 220,
+      "line": 247,
       "kind": "title"
     },
     {
@@ -17207,91 +17307,91 @@
     {
       "id": "AST-014",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1909,
+      "line": 1938,
       "kind": "title"
     },
     {
       "id": "CNT-042",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2425,
+      "line": 2459,
       "kind": "title"
     },
     {
       "id": "CNT-049",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3520,
+      "line": 3556,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1134,
+      "line": 1149,
       "kind": "title"
     },
     {
       "id": "PUB-033",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1909,
+      "line": 1938,
       "kind": "title"
     },
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 650,
+      "line": 662,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 845,
+      "line": 857,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 729,
+      "line": 741,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 818,
+      "line": 830,
       "kind": "title"
     },
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3395,
+      "line": 3431,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3120,
+      "line": 3155,
       "kind": "title"
     },
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3419,
+      "line": 3455,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3014,
+      "line": 3049,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3043,
+      "line": 3078,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3066,
+      "line": 3101,
       "kind": "title"
     },
     {
@@ -17453,31 +17553,31 @@
     {
       "id": "STY-037",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 31,
+      "line": 32,
       "kind": "title"
     },
     {
       "id": "STY-050",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 19,
+      "line": 18,
       "kind": "title"
     },
     {
       "id": "STY-051",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 23,
+      "line": 24,
       "kind": "title"
     },
     {
       "id": "STY-050",
       "file": "packages/domain/src/theme/ooxml.test.ts",
-      "line": 40,
+      "line": 39,
       "kind": "title"
     },
     {
       "id": "STY-051",
       "file": "packages/domain/src/theme/ooxml.test.ts",
-      "line": 40,
+      "line": 39,
       "kind": "title"
     },
     {
@@ -17487,21 +17587,39 @@
       "kind": "title"
     },
     {
+      "id": "STY-001",
+      "file": "packages/domain/src/theme/read.test.ts",
+      "line": 15,
+      "kind": "title"
+    },
+    {
+      "id": "STY-003",
+      "file": "packages/domain/src/theme/read.test.ts",
+      "line": 41,
+      "kind": "title"
+    },
+    {
+      "id": "STY-006",
+      "file": "packages/domain/src/theme/read.test.ts",
+      "line": 170,
+      "kind": "title"
+    },
+    {
       "id": "STY-027",
-      "file": "packages/domain/src/theme/resolve.test.ts",
-      "line": 72,
+      "file": "packages/domain/src/theme/read.test.ts",
+      "line": 151,
       "kind": "title"
     },
     {
       "id": "STY-038",
-      "file": "packages/domain/src/theme/resolve.test.ts",
-      "line": 76,
+      "file": "packages/domain/src/theme/read.test.ts",
+      "line": 361,
       "kind": "title"
     },
     {
-      "id": "STY-009",
-      "file": "packages/domain/src/theme/runs.test.ts",
-      "line": 36,
+      "id": "STY-041",
+      "file": "packages/domain/src/theme/read.test.ts",
+      "line": 92,
       "kind": "title"
     },
     {

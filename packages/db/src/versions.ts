@@ -1,15 +1,19 @@
 import {
   componentTypeDefinitionSchema,
   componentTypeOf,
+  definitionKinds,
   fieldDefinitionSchema,
   metadataSchemaDefinitionSchema,
   parseContentDocument,
   parseAssetVersion,
   parseLayout,
   parseOutlineDocument,
+  type CatalogueSubstance,
   type DefinitionRef,
+  type DefinitionSubstance,
   type MetadataValues,
   type NotCarried,
+  type ThemeSubstance,
   type VersionSubstance,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
@@ -62,6 +66,19 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
+/**
+ * The kinds recorded only by a writer of their own, which reads a version whole before it is written:
+ * a theme's contrast is decided against the catalogues it names, and a catalogue's identifiers against
+ * every earlier version of it (themes 1, ruling R4). Neither is a question `prepare` can answer from the
+ * substance alone, so neither general writer takes them.
+ */
+const ownWriters = { theme: 'addThemeVersion', catalogue: 'addCatalogueVersion' } as const;
+
+/** A field, metadata schema or component type: the substances whose payload repeats their identity. */
+function isDefinition(substance: VersionSubstance): substance is DefinitionSubstance {
+  return (definitionKinds as readonly string[]).includes(substance.kind);
+}
+
 const definitionSchemas = {
   field: fieldDefinitionSchema,
   metadataSchema: metadataSchemaDefinitionSchema,
@@ -101,6 +118,10 @@ function prepare(substance: VersionSubstance): VersionSubstance {
   if (substance.kind === 'asset') {
     // Nor does an asset version: an asset is in a space, as content is (docs/design/assets.md).
     return { kind: 'asset', content: parseAssetVersion(substance.content) };
+  }
+  if (!isDefinition(substance)) {
+    // A theme or a catalogue, already read whole by its own writer, which is the only way here.
+    return substance;
   }
   const content = definitionSchemas[substance.kind].parse(substance.content);
   if (!UUID.test(content.id)) {
@@ -178,9 +199,10 @@ export async function createArtifact(
 ): Promise<StoredVersion> {
   checkAuthorship(input);
   const substance = prepare(input.substance);
-  // Every environment's layout is seeded by the migration that makes layouts an artifact kind (0018).
-  if (substance.kind === 'layout') {
-    throw new Error('A layout is created by its migration, not by createArtifact');
+  // Every environment's layout is seeded by the migration that makes layouts an artifact kind (0018),
+  // and its theme and catalogues by the one that makes themes one (0024).
+  if (substance.kind === 'layout' || substance.kind === 'theme' || substance.kind === 'catalogue') {
+    throw new Error(`A ${substance.kind} is created by its migration, not by createArtifact`);
   }
   const artifact = await trx
     .insertInto('artifact')
@@ -324,6 +346,38 @@ export async function recordVersion(
   trx: TenantTransaction,
   input: NextVersion,
 ): Promise<RecordAnswer> {
+  const { kind } = input.substance;
+  if (kind === 'theme' || kind === 'catalogue') {
+    throw new Error(
+      `A ${kind} version is recorded by ${ownWriters[kind]}, which reads it whole first`,
+    );
+  }
+  return record(trx, input);
+}
+
+/**
+ * The transaction-scoped lock two writers of one artifact take turns on. Taken again by the same
+ * transaction it is simply held twice, so a writer that reads under it before recording - a catalogue's
+ * earlier versions, in themes.ts - takes it first and `recordVersion`'s own taking of it costs nothing.
+ */
+export async function lockArtifact(trx: TenantTransaction, artifactId: string): Promise<void> {
+  await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:artifact:${artifactId}`}, 0))`.execute(
+    trx,
+  );
+}
+
+/**
+ * `recordVersion` for a theme or a catalogue version its own writer has read whole, in themes.ts, and
+ * nowhere else: the package does not export it, so those writers stay the only way one is recorded.
+ */
+export function recordReadVersion(
+  trx: TenantTransaction,
+  input: NextVersion & { readonly substance: ThemeSubstance | CatalogueSubstance },
+): Promise<RecordAnswer> {
+  return record(trx, input);
+}
+
+async function record(trx: TenantTransaction, input: NextVersion): Promise<RecordAnswer> {
   if (!UUID.test(input.artifactId)) return { answer: 'artifact.missing' };
   checkAuthorship(input);
   // Compared with the latest version's id as Postgres spells it, so any other spelling is a bug.
@@ -332,9 +386,7 @@ export async function recordVersion(
       `A version cannot be opened from ${input.openedFrom}, which is not a lower-case hyphenated UUID`,
     );
   }
-  await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:artifact:${input.artifactId}`}, 0))`.execute(
-    trx,
-  );
+  await lockArtifact(trx, input.artifactId);
   const current = await latestVersion(trx, input.artifactId);
   if (!current) return { answer: 'artifact.missing' };
   if (current.id !== input.openedFrom) return { answer: 'version.precondition', current };
@@ -346,14 +398,9 @@ export async function recordVersion(
 
   const substance = prepare(input.substance);
   // A definition's rule, not content's: a definition's payload repeats its identity, and a
-  // component's content, a document's outline, a layout and an asset version carry none.
-  if (
-    substance.kind !== 'component' &&
-    substance.kind !== 'document' &&
-    substance.kind !== 'layout' &&
-    substance.kind !== 'asset' &&
-    substance.content.id !== input.artifactId
-  ) {
+  // component's content, a document's outline, a layout, an asset version, a theme and a catalogue
+  // carry none.
+  if (isDefinition(substance) && substance.content.id !== input.artifactId) {
     throw new Error(
       `A version of ${input.artifactId} cannot carry the identity ${substance.content.id}`,
     );

@@ -304,6 +304,23 @@ const PRIMES: ReadonlyMap<string, number> = new Map([
   ['\u{2057}', 4],
 ]);
 
+/**
+ * Every character the maths tree sets on its own account, by what it is rather than because an
+ * equation wrote it: the fences it opens and closes, the accents it sets over a base, the lines over
+ * and under, the braces and the primes. The maths face must hold each of them (STY-074), which the
+ * worker's test reads from the pinned file's character map; a character an equation writes itself is
+ * asked of the face at publish, as `math_glyph_missing`.
+ */
+export const MATHS_CHARACTERS: ReadonlySet<string> = new Set([
+  ...OPENING,
+  ...CLOSING,
+  ...ACCENTS,
+  ...OVERLINES,
+  ...UNDERLINES,
+  ...BRACES.keys(),
+  ...PRIMES.keys(),
+]);
+
 /** The `mathvariant`s the engine has a style for. Any other is refused by name. */
 const VARIANTS: ReadonlyMap<string, MathsVariant> = new Map([
   ['normal', 'upright'],

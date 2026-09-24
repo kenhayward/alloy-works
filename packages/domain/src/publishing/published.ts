@@ -1,4 +1,5 @@
 import type { OutlineMatter } from '../structure/outline.js';
+import type { TypstTheme } from '../theme/typst.js';
 
 import type { SlotPart } from './layout.js';
 import type { MathsTree } from './maths.js';
@@ -6,14 +7,16 @@ import type { MathsTree } from './maths.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/11` is the document under a layout whose runs carry their marks and may be images,
- * footnotes, cross-references or equations, whose blocks may be lists, quotations, preformatted text,
- * tables with their notes, figures and equations, each carrying its anchor where a reference names it,
- * and whose nodes' titles are runs, with its generated lists after the contents, which
- * `apps/worker/templates/publication/11/` reads. It is never stored - only its digest is, on the
+ * `publishing/12` is the document under a layout **set from a theme** (themes 1, ruling R6): the
+ * theme's Typst projection beside the layout, and every paragraph carrying the style it is set in.
+ * Otherwise it is `publishing/11`: runs that carry their marks and may be images, footnotes,
+ * cross-references or equations, blocks that may be lists, quotations, preformatted text, tables with
+ * their notes, figures and equations, each carrying its anchor where a reference names it, and nodes'
+ * titles as runs, with its generated lists after the contents, which
+ * `apps/worker/templates/publication/12/` reads. It is never stored - only its digest is, on the
  * publication - so a later shape is a new schema string and a new template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/11';
+export const PUBLISHING_SCHEMA = 'publishing/12';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -88,6 +91,14 @@ export const PUBLISHING_SCHEMA_9 = 'publishing/9';
  * made with it are a record.
  */
 export const PUBLISHING_SCHEMA_10 = 'publishing/10';
+
+/**
+ * The document under a layout as it stood before it was set from a theme - every size, face and space
+ * the template's own - frozen by themes 1 for the reason `publishing/10` is:
+ * `apps/worker/templates/publication/11/` asserts it, and a template version and the publications made
+ * with it are a record.
+ */
+export const PUBLISHING_SCHEMA_11 = 'publishing/11';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -256,11 +267,17 @@ export type PublishedInline =
  * Every published block carries `anchor`: the label a template sets on it where a cross-reference in
  * the document names it (`b-<node>-<block>`), and **null where none does** - so the file labels what
  * a reference points at and nothing more (cross-references 2, ruling R4).
+ *
+ * A paragraph carries `style`, the identifier of the theme's paragraph style it is set in (themes 1,
+ * TH-E), which `theme.styles` holds: a stored `body` resolved to the default of the place it stands
+ * in - running text, a list's item, a quotation, a table's cell or a footnote, whichever holds it most
+ * nearly - and any other identifier itself. A template looks it up and decides nothing.
  */
 export interface PublishedParagraph {
   readonly type: 'paragraph';
   readonly id: string;
   readonly anchor: string | null;
+  readonly style: string;
   readonly runs: readonly PublishedInline[];
 }
 
@@ -460,7 +477,7 @@ export interface PublishedNode1 {
 }
 
 /**
- * A run of a node's title in `publishing/11` (equations 2): its words, carrying no mark - a title's
+ * A run of a node's title since `publishing/11` (equations 2): its words, carrying no mark - a title's
  * reference is among them as the number it prints, and a marked title is refused by name - or an
  * equation, as it is published anywhere. A title is runs rather than a string so that an equation
  * stored in one is published (CNT-046), set in the heading, and with it in the contents and the running
@@ -542,6 +559,13 @@ export interface PublishedPdfFormat {
  * `revision.version`, what a running foot's `revision` field prints. `front.contents` is null where the
  * layout declares none **and** where it would hold no entry: a contents of nothing is not published
  * (decision K).
+ *
+ * `theme` is the theme the request was made under, as `projectTypst` projects it (themes 1, ruling
+ * R6): the paper, **every** paragraph style of its catalogue by identifier - not only those the
+ * document uses, so the member is the theme's alone and says the same of every document set from it -
+ * each with every property concrete, its face's family and descent and the leading its line spacing
+ * leaves; the nine marks' renderings; the maths face's family; and the style each place and each role
+ * is set in. Every face, size, weight, colour and space a template sets comes from here.
  */
 export interface PublishedDocument {
   readonly schema: typeof PUBLISHING_SCHEMA;
@@ -557,6 +581,7 @@ export interface PublishedDocument {
     readonly noticeSentence: string;
   };
   readonly format: PublishedPdfFormat;
+  readonly theme: TypstTheme;
   readonly front: {
     readonly cover: boolean;
     readonly contents: { readonly depth: number } | null;

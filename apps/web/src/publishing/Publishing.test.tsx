@@ -252,6 +252,69 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('in no typeface');
   });
 
+  it("says a style is used where it does not apply, and that a typeface's licence forbids embedding it, blaming the theme for the second", async () => {
+    const fake = failing([
+      {
+        stage: 'compose',
+        code: 'style_not_applicable',
+        node: null,
+        block: 'b1',
+        detail: 'heading-1',
+      },
+      {
+        stage: 'compose',
+        code: 'typeface_not_embeddable',
+        node: null,
+        block: null,
+        detail: 'Alloy Sans',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'This paragraph, table or figure uses the style heading-1, which cannot be used where it stands.',
+    );
+    // Nothing in the document can mend a face the theme may not embed, so the sentence says it is the
+    // theme's to change and never asks for another attempt.
+    expect(why).toHaveTextContent(
+      "The typeface Alloy Sans cannot be embedded in a PDF: its licence does not permit it. The publication's theme has to change before this document can be published.",
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
+  it('says a typeface the theme names is not one the publisher holds, and why, blaming the theme', async () => {
+    // `detail` is the family and why, from a fixed list (the final review of themes 1, M1): the files
+    // the theme names for it, the measurements it records, or equations it cannot set.
+    const fake = failing(
+      ['Alloy Sans: files', 'Liberation Mono: metrics', 'Liberation Serif: maths'].map(
+        (detail) => ({
+          stage: 'compose' as const,
+          code: 'typeface_unavailable' as const,
+          node: null,
+          block: null,
+          detail,
+        }),
+      ),
+    );
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    // Nothing in the document names a typeface, and another attempt finds the same faces: the theme's
+    // to change, never the author's to try again.
+    const theme = "The publication's theme has to change before this document can be published.";
+    expect(why).toHaveTextContent(
+      `The typeface Alloy Sans is not one this publication can be set in: the publishing service does not hold the files the theme names for it. ${theme}`,
+    );
+    expect(why).toHaveTextContent(
+      `The typeface Liberation Mono is not one this publication can be set in: the measurements the theme records for it are not its files' own. ${theme}`,
+    );
+    expect(why).toHaveTextContent(
+      `The typeface Liberation Serif cannot set this publication's equations: it is not a typeface made for mathematics. ${theme}`,
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
   it('says what a table needs before it can be published, in words an author can act on', async () => {
     const fake = failing([
       { stage: 'compose', code: 'table_without_caption', node: null, block: 't1', detail: null },
@@ -269,9 +332,11 @@ describe('publishing from the document page', () => {
     );
     // A table has a style as a paragraph does, and a figure an image style, so the sentence names all
     // three rather than calling one of them a paragraph.
+    // The theme holds the styles since themes 1, so the sentence blames the theme and names the style.
     expect(why).toHaveTextContent(
-      'This paragraph, table or figure uses a style the publication template does not set.',
+      "This paragraph, table or figure uses the style wide, which the publication's theme does not have.",
     );
+    expect(why).not.toHaveTextContent('template');
   });
 
   it('says what a figure needs before it can be published, and names nothing of an image it may not read', async () => {

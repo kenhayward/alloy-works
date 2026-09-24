@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
   blockIdentifierFrom,
+  DEFAULT_CATALOGUE_VERSIONS,
   defaultNumberingScheme,
   type ContentDocument,
   type OutlineDocument,
@@ -14,6 +15,7 @@ import { createComponent } from './creation.js';
 import { createDocument } from './documents.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID, defaultLayout } from './layouts.js';
+import { addThemeVersion, DEFAULT_THEME_ID, defaultTheme } from './themes.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import {
@@ -435,6 +437,40 @@ describe('requesting and recording a publication', () => {
     ).rejects.toBe(rolledBack);
   });
 
+  it('records the theme version a request was made under, and hands it to the job resolved', async () => {
+    const rolledBack = new Error('rolled back');
+    await expect(
+      service.withTenant(production, async (trx) => {
+        const declared = await defaultTheme(trx);
+        const version = await documentIn(trx, 'en-GB');
+        const id = await requested(trx, version, ada);
+        const row = await trx
+          .selectFrom('publication_request')
+          .select(['theme_id', 'theme_version_id'])
+          .where('id', '=', id)
+          .executeTakeFirstOrThrow();
+        expect(row).toEqual({ theme_id: DEFAULT_THEME_ID, theme_version_id: declared.versionId });
+
+        // The theme moves on after the request: the job is still handed the version it was made
+        // under, never the latest, read with the catalogue versions that version names.
+        const next = await addThemeVersion(trx, {
+          artifactId: DEFAULT_THEME_ID,
+          openedFrom: declared.versionId,
+          author: ada,
+          theme: { ...declared.content, paper: '#fafafa' },
+        });
+        if (next.answer !== 'recorded') throw new Error(next.answer);
+        expect((await defaultTheme(trx)).number).toBe('0.2');
+
+        const inputs = await publicationInputs(trx, id);
+        expect(inputs!.theme).toEqual({ versionId: declared.versionId, theme: declared.theme });
+        expect(inputs!.theme!.theme.paper).toBe('#ffffff');
+        // Thrown to roll the theme's 0.2 back: the rest of the suite publishes under the default.
+        throw rolledBack;
+      }),
+    ).rejects.toBe(rolledBack);
+  });
+
   it('answers document.missing for an id that is no document, and records nothing', async () => {
     await service.withTenant(production, async (trx) => {
       const shared = await component(trx, general, ada, 'Method');
@@ -688,6 +724,73 @@ describe('requesting and recording a publication', () => {
     },
   });
 
+  it('STY-002 sets publications from two spaces by the one tenant-wide theme and its catalogue versions', async () => {
+    const { declared, requests, publications } = await service.withTenant(
+      production,
+      async (trx) => {
+        const declared = await defaultTheme(trx);
+        const inGeneral = await documentIn(trx, 'en-GB');
+        const inQuality = await createDocument(trx, {
+          spaceId: quality,
+          title: 'Calibration record',
+          language: 'en-GB',
+          direction: 'ltr',
+          author: grace,
+        });
+        if (inQuality.answer !== 'created') throw new Error(inQuality.answer);
+        const requests = [
+          await requested(trx, inGeneral, ada),
+          await requested(trx, inQuality.version, grace),
+        ];
+        const inputs = await Promise.all(requests.map((id) => publicationInputs(trx, id)));
+        expect(inputs.map((each) => each!.request.spaceId)).toEqual([general, quality]);
+        for (const each of inputs) {
+          expect(each!.theme!.versionId).toBe(declared.versionId);
+          expect(each!.theme!.theme.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
+        }
+        const publications = [];
+        for (const id of requests) publications.push(await recordPublication(trx, recording(id)));
+        return { declared, requests, publications };
+      },
+    );
+
+    // Two publications, one in each space, each recording the one theme version, which names the six
+    // catalogue versions: versions of catalogues that are the tenant's, in no space.
+    const rows = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication as p')
+        .innerJoin('artifact as a', 'a.id', 'p.id')
+        .select(['p.request_id', 'a.space_id', 'p.theme_id', 'p.theme_version_id'])
+        .where(
+          'p.id',
+          'in',
+          publications.map((each) => each!),
+        )
+        .execute(),
+    );
+    expect(
+      requests.map((id) => {
+        const { space_id, theme_id, theme_version_id } = rows.find((row) => row.request_id === id)!;
+        return { space_id, theme_id, theme_version_id };
+      }),
+    ).toEqual([
+      { space_id: general, theme_id: DEFAULT_THEME_ID, theme_version_id: declared.versionId },
+      { space_id: quality, theme_id: DEFAULT_THEME_ID, theme_version_id: declared.versionId },
+    ]);
+    expect(declared.content.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
+    const catalogues = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('artifact_version as v')
+        .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+        .select(['v.id', 'a.kind', 'a.space_id'])
+        .where('v.id', 'in', Object.values(DEFAULT_CATALOGUE_VERSIONS))
+        .execute(),
+    );
+    expect(catalogues).toHaveLength(6);
+    for (const each of catalogues)
+      expect(each).toMatchObject({ kind: 'catalogue', space_id: null });
+  });
+
   /** How many of each row a publication is made of the tenant holds - to say a record left none. */
   const publications = () =>
     service.withTenant(production, async (trx) => ({
@@ -881,6 +984,7 @@ describe('requesting and recording a publication', () => {
 
     await service.withTenant(production, async (trx) => {
       const layout = await defaultLayout(trx);
+      const theme = await defaultTheme(trx);
       const request = await trx
         .selectFrom('publication_request')
         .select(['state', 'failures', 'finished_at', 'requested_at'])
@@ -925,6 +1029,10 @@ describe('requesting and recording a publication', () => {
         layout_id: DEFAULT_LAYOUT_ID,
         layout_version_id: layout.versionId,
         layout_kind: 'layout',
+        // And its theme version, the same way (0024).
+        theme_id: DEFAULT_THEME_ID,
+        theme_version_id: theme.versionId,
+        theme_kind: 'theme',
       });
 
       const inputs = await trx
@@ -974,7 +1082,13 @@ describe('requesting and recording a publication', () => {
       service.withTenant(production, async (trx) => {
         const version = await trx
           .selectFrom('publication_request')
-          .select(['document_id', 'document_version_id', 'requested_at'])
+          .select([
+            'document_id',
+            'document_version_id',
+            'requested_at',
+            'theme_id',
+            'theme_version_id',
+          ])
           .where('id', '=', request)
           .executeTakeFirstOrThrow();
         const next = await recordVersion(trx, {
@@ -1017,6 +1131,8 @@ describe('requesting and recording a publication', () => {
             numbering: JSON.stringify(made.numbering),
             layout_id: DEFAULT_LAYOUT_ID,
             layout_version_id: next.version.id,
+            theme_id: version.theme_id,
+            theme_version_id: version.theme_version_id,
           })
           .execute();
         await trx
@@ -1467,6 +1583,8 @@ describe('requesting and recording a publication', () => {
             numbering: JSON.stringify(made.numbering),
             layout_id: request.layout_id,
             layout_version_id: request.layout_version_id,
+            theme_id: request.theme_id,
+            theme_version_id: request.theme_version_id,
           })
           .execute();
         const occurrences = await trx

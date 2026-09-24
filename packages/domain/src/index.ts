@@ -18,6 +18,8 @@ export type {
   DocumentSubstance,
   LayoutSubstance,
   AssetSubstance,
+  ThemeSubstance,
+  CatalogueSubstance,
   VersionSubstance,
 } from './version/substance.js';
 
@@ -45,6 +47,10 @@ export type { Component, ComponentDraft, ComponentType } from './component.js';
 // Publishing: the layout, the published document, its failures, and assemble
 // (docs/design/publishing.md).
 export * from './publishing/index.js';
+
+// Themes: the stored shapes, the reader, the default theme and its projections
+// (docs/design/themes.md; themes 1).
+export * from './theme/index.js';
 
 // Whether Postgres can store a value's every string, promoted so a route refuses what the store
 // would fail on as the caller's content rather than as its own failure (issue #127).

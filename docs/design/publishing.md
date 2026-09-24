@@ -19,7 +19,7 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 [themes.md](themes.md) (the theme's Typst projection and the typefaces) and
 [word-output.md](word-output.md) (the other writer that reads the same resolved document).
 
-> **Two slices are built, and most of a third: a document publishes to a tagged PDF of its outline,
+> **Two slices are built, most of a third and half of a fourth: a document publishes to a tagged PDF of its outline,
 > laid out by a layout, holding every block the content model has.** The first publishing plan built the
 > first slice in two pull requests: 1a,
 > the regression corpus checked by veraPDF in the worker's suite, the worker setting every PDF in
@@ -36,11 +36,14 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 > and the list of tables (`publishing/6`), figures and the list of figures (`publishing/7`), an image
 > in a line of text (`publishing/8`), footnotes and a table's note (`publishing/9`),
 > cross-references (`publishing/10`) and equations in the pinned maths face, with a list of
-> equations where a layout declares one (`publishing/11`). The defined term, condition, suggestion
-> and comment marks, a citation, a variable and a binding, the theme, veraPDF on every publication,
-> preview and Word are later slices' ([Build order](#build-order)); a block equation wider than its
+> equations where a layout declares one (`publishing/11`). The first of slice 4's two pull
+> requests built the theme: every publication is set from the environment's stored default theme and records it
+> (`publishing/12`, [themes 1](../plans/2026-09-24-themes-01-the-theme-in-the-pdf.md)). The defined
+> term, condition, suggestion and comment marks, a citation, a variable and a binding, table and
+> image styles, veraPDF on every publication, preview and Word are later slices'
+> ([Build order](#build-order)); a block equation wider than its
 > line is still set past the page's edge ([Equations](#equations), its open item); and nothing
-> chooses or edits a layout yet. [`../architecture.md`](../architecture.md) describes what is built, and
+> chooses or edits a layout or a theme yet. [`../architecture.md`](../architecture.md) describes what is built, and
 > [Changed while planning and building the first slice](#changed-while-planning-and-building-the-first-slice)
 > and
 > [Changed while planning and building the second slice](#changed-while-planning-and-building-the-second-slice)
@@ -287,16 +290,16 @@ not enough for a writer: a writer also needs the numbers, the bound references, 
 and the layout, and must decide none of them. So the intermediate is one type in `packages/domain`,
 **`PublishedDocument`**, and both writers read it:
 
-| Member   | Holds                                                                                                                                                                                                                                                                                                                                                                  |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `schema` | `publishing/11`, the version of this shape the template reads. `publishing/2` to `publishing/10` are the same document before a later slice widened it - marks, lists, quotations, tables, figures, inline images, footnotes, cross-references, equations - and none is made any longer; `publishing/1` is slice 1's, still made for a request recorded before layouts |
-| Identity | Title as plain text and as inline content, language, direction, `revision` (`0.7`), `publishedAt`, `status` (`draft`, `preview`, `approved`)                                                                                                                                                                                                                           |
-| `words`  | The layout's own words with the language they are set in - the contents' title and the draft notice - which need not be the document's                                                                                                                                                                                                                                 |
-| `format` | The layout's member for this format, in points, with its words                                                                                                                                                                                                                                                                                                         |
-| `theme`  | The theme's projection for this writer (themes.md): `TypstTheme` for the PDF                                                                                                                                                                                                                                                                                           |
-| `front`  | Generated front matter the layout declares - cover, contents, lists - each already computed                                                                                                                                                                                                                                                                            |
-| `nodes`  | The outline as a tree: each node's anchor, depth, matter, number or none, title, `pageBreak`, language and direction where they differ, blocks, and children                                                                                                                                                                                                           |
-| `back`   | Generated back matter                                                                                                                                                                                                                                                                                                                                                  |
+| Member   | Holds                                                                                                                                                                                                                                                                                                                                                                             |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schema` | `publishing/12`, the version of this shape the template reads. `publishing/2` to `publishing/11` are the same document before a later slice widened it - marks, lists, quotations, tables, figures, inline images, footnotes, cross-references, equations, the theme - and none is made any longer; `publishing/1` is slice 1's, still made for a request recorded before layouts |
+| Identity | Title as plain text and as inline content, language, direction, `revision` (`0.7`), `publishedAt`, `status` (`draft`, `preview`, `approved`)                                                                                                                                                                                                                                      |
+| `words`  | The layout's own words with the language they are set in - the contents' title and the draft notice - which need not be the document's                                                                                                                                                                                                                                            |
+| `format` | The layout's member for this format, in points, with its words                                                                                                                                                                                                                                                                                                                    |
+| `theme`  | The theme's projection for this writer (themes.md): `TypstTheme` for the PDF                                                                                                                                                                                                                                                                                                      |
+| `front`  | Generated front matter the layout declares - cover, contents, lists - each already computed                                                                                                                                                                                                                                                                                       |
+| `nodes`  | The outline as a tree: each node's anchor, depth, matter, number or none, title, `pageBreak`, language and direction where they differ, blocks, and children                                                                                                                                                                                                                      |
+| `back`   | Generated back matter                                                                                                                                                                                                                                                                                                                                                             |
 
 **A language tag the engine cannot carry is refused, naming it, never shortened - decision K,
 reversed.** Typst's `text(lang:)` takes two or three letters and `text(region:)` exactly two, so a
@@ -347,6 +350,21 @@ a string, so an equation stored in a section's title is set in its heading and, 
 contents, the running heads and the bookmarks. The failures join the list: `equation_unrenderable`,
 naming the block and the construct from a fixed list, `equation_unnumbered` and `math_glyph_missing`,
 beside `alternative_missing` - see [Equations](#equations).
+
+**The theme is published** (themes 1, `publishing/12`, template 12). `theme` is the Typst projection
+of the theme the request recorded: the paper, the maths face's family, every paragraph style the theme
+holds by its identifier with every property concrete - its face's family, its descent and the leading
+its line spacing leaves - the nine marks' renderings, and the style of each place and each role. A
+paragraph carries the `style` it is set in, wherever one is published: a stored `body` becomes the
+default of the place that holds it most nearly, and any other identifier is itself. **`style_missing`
+now means the theme's catalogue of that kind lacks the identifier** - a paragraph's, a table's or an
+image's - where it meant, before themes, anything but the one name each kind was allowed. The failures
+join the list: `style_not_applicable`, a style used where its `appliesTo` does not reach, naming it;
+`typeface_not_embeddable`, a face the document sets text in whose licence forbids embedding it in a
+PDF, naming the family; and, from the worker before `assemble`, `typeface_unavailable`, a face the theme
+declares that the worker does not hold exactly - its family's files, their metrics, a maths face's
+`MATH` table - naming the family and which, `files`, `metrics` or `maths` - see themes.md's
+[What was built](themes.md#what-was-built).
 
 **No content reaches Typst as anything but a value** (PUB-062). The template walks `nodes` and sets
 strings as text; nothing is evaluated. The spike showed an escaping slip becoming a file read; with
@@ -551,7 +569,10 @@ reaches the template, so the template never decides.
 
 **Until themes are built, one image style for each placement**, in the manner of the table's (ruling
 R4 of tables 2): `figure` for a figure and `inline` for an inline image. Any other name is
-`style_missing`.
+`style_missing`. Since themes 1 the two are the default theme's image catalogue's, and
+`style_missing` names a style that catalogue lacks; the sizes below are still `assemble`'s own
+until themes 2 gives an image style properties, an inline image's 1.2 ems now of the style it stands
+in.
 
 | Style    | Printed size, worked out by `assemble`                                                                                                                                                                                  |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1054,9 +1075,15 @@ directory: with no fonts at all Typst 0.15.1 compiles, exits 0 and warns about n
 below). Typst's embedded fonts were rejected because they change with the engine rather than with the
 theme, and ADR-0013 excluded them; waiting for typeface artifacts was rejected because the first slice
 would then wait for the theme store. When themes.md's typeface artifacts exist, they replace the image's
-files and are pinned as inputs. **Three families are pinned today**: Liberation Serif 2.1.5 for the
-body, Liberation Mono 2.1.5 for preformatted text and inline code (editor 5), and STIX Two Math 2.13
-b171 for equations (equations 2), each under the SIL Open Font Licence with its text beside it.
+files and are pinned as inputs. **Three families are pinned today**: Liberation Serif 2.1.5, Liberation
+Mono 2.1.5 and STIX Two Math 2.13 b171, each under the SIL Open Font Licence with its text beside it.
+**Since themes 1 the theme says which face sets what**: the default theme records the three by family
+and by each file's hash, with its licence, its embedding permissions and its metrics - the serif for
+the body, the mono for preformatted text and inline code, the maths face for equations - and template
+12 names every face from `publishing/12`'s `theme`, never a literal. Before `assemble`, the worker
+holds each face the theme declares to its pinned files - exactly its family's files, their own
+metrics, and for the maths face a `MATH` table - and fails the publish `typeface_unavailable`, naming
+the family and why, for one it does not hold; the per-compile check above is unchanged.
 
 **The creation time is the request's**, truncated to the second, so a retry, a second worker racing an
 expired lease and a reproduction months later all compile the same bytes, and the object's key - its
@@ -1702,10 +1729,14 @@ Each slice is a plan, lands into something that runs, and cites only what its te
    paragraphs would be empty (decision A). Cites PUB-003, PUB-016, PUB-033, PUB-038, CNT-042,
    CNT-049, CNT-054, STR-024, STR-027 and STR-029.
 4. **Themes and typefaces.** Designed in themes.md's [Themes in the PDF](themes.md#themes-in-the-pdf),
-   measured against the pinned engine: the theme and its catalogues stored and recorded, the default
-   theme's Typst projection in `publishing/12` and template 12, and table and image styles, in two
-   slices (TH-K). The faces stay in the image, the theme recording them by hash (TH-B), and the
-   coverage check asks each style's face. Its claims are themes.md's.
+   measured against the pinned engine, in two slices (TH-K). **Themes 1 is built**
+   ([themes 1](../plans/2026-09-24-themes-01-the-theme-in-the-pdf.md)): the theme and its catalogues
+   stored by migration 0024 and recorded on every request and publication, the default theme's Typst
+   projection in `publishing/12` and template 12 setting every face, size, colour, space and line
+   from it, the faces staying in the image with the theme recording them by hash (TH-B), and the
+   coverage check asking the family that sets the text. **Themes 2 remains**: table and image styles
+   with their properties, and the continuation label's words in layout schema 4. Its claims are
+   themes.md's.
 5. **Accessible output, checked.** veraPDF per publication and its report kept; reading order of floats
    verified; the budget measured. Cites PUB-091; claims and cites PUB-085 once a warm checker or a
    changed requirement settles it against PUB-091 (Ken's deferral); claims PUB-031 once verified.

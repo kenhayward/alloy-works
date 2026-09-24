@@ -3,6 +3,10 @@ import { describe, expect, it } from 'vitest';
 import type { BlockNode } from '../content/model/blocks.js';
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
 import { markTypes } from '../content/model/marks.js';
+import type { ResolvedTheme } from '../theme/read.js';
+import type { ParagraphProperties, StyleTarget, Typeface } from '../theme/schema.js';
+import { defaultInputs, resolved, type ThemeInputs } from '../theme/theme.fixture.js';
+import { projectTypst } from '../theme/typst.js';
 import {
   OUTLINE_SCHEMA_VERSION,
   parseOutlineDocument,
@@ -32,12 +36,14 @@ import {
   PUBLISHING_SCHEMA_8,
   PUBLISHING_SCHEMA_9,
   PUBLISHING_SCHEMA_10,
+  PUBLISHING_SCHEMA_11,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
   type PublishedItem,
   type PublishedList,
   type PublishedNode,
+  type PublishedParagraph,
   type PublishedReferenceRun,
   type PublishedRun,
 } from './published.js';
@@ -103,12 +109,16 @@ const latin = (codePoint: number) => codePoint < 0x250;
 
 type UnderALayout = AssembleInput & { readonly layout: Layout };
 
+/** The default theme, read as the store reads it: what every publish under a layout is set from. */
+const DEFAULT_THEME = resolved();
+
 /** A publish under a layout, the default unless `over` names another. */
 const input = (over: Partial<UnderALayout>): UnderALayout => ({
   outline: outline([]),
   occurrences: new Map(),
   refused: [],
   layout: defaultLayout,
+  theme: DEFAULT_THEME,
   revision: '0.1',
   covers: latin,
   assets: new Map(),
@@ -256,6 +266,7 @@ describe('assemble', () => {
                 type: 'paragraph',
                 id: 'p1',
                 anchor: null,
+                style: 'body',
                 runs: [{ text: 'Set the tray.', marks: [] }],
               },
             ],
@@ -448,6 +459,7 @@ describe('assemble', () => {
           display: 'number',
         }),
         layout: null,
+        theme: null,
       });
       expect(failuresOf(result)).toEqual([
         {
@@ -1014,8 +1026,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/11, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/11');
+  it('assembles under a layout as publishing/12, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/12');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1056,6 +1068,7 @@ describe('assemble', () => {
                 type: 'paragraph',
                 id: 'b1',
                 anchor: null,
+                style: 'body',
                 runs: [{ text: 'Check the readings', marks: [] }],
               },
             ],
@@ -1067,6 +1080,7 @@ describe('assemble', () => {
                 type: 'paragraph',
                 id: 'b2',
                 anchor: null,
+                style: 'body',
                 runs: [{ text: 'Note the serial', marks: [] }],
               },
             ],
@@ -1124,6 +1138,7 @@ describe('assemble', () => {
             type: 'paragraph',
             id: 'b1',
             anchor: null,
+            style: 'body',
             runs: [{ text: 'The stress a sample takes before it parts.', marks: [] }],
           },
         ],
@@ -1165,6 +1180,7 @@ describe('assemble', () => {
       type: 'paragraph',
       id: 'b1',
       anchor: null,
+      style: 'body',
       runs: [{ text: 'The innermost step', marks: [] }],
     });
   });
@@ -1358,6 +1374,7 @@ describe('assemble', () => {
             type: 'paragraph',
             id: 'b2',
             anchor: null,
+            style: 'body',
             runs: [{ text: 'Note the serial', marks: [] }],
           },
         ],
@@ -1402,6 +1419,7 @@ describe('assemble for a request made before layouts', () => {
       ...over,
     }),
     layout: null,
+    theme: null,
   });
 
   it("makes slice 1's publishing/1 byte for byte, whatever revision it is handed", () => {
@@ -1421,6 +1439,7 @@ describe('assemble for a request made before layouts', () => {
     const assembled = assemble({
       ...oneParagraph(marked('the report', { type: 'emphasis', id: 'm1' })),
       layout: null,
+      theme: null,
     });
     expect(failuresOf(assembled)).toEqual([
       {
@@ -1442,6 +1461,7 @@ describe('assemble for a request made before layouts', () => {
         storedList('L1', 'unordered', [{ content: [paragraph('b1', text('Check the readings'))] }]),
       ),
       layout: null,
+      theme: null,
     });
 
     expect(failuresOf(withoutLayout)).toEqual([
@@ -1456,7 +1476,7 @@ describe('assemble for a request made before layouts', () => {
   });
 
   it('publishes an empty document as slice 1 did, never refusing it as nothing to publish', () => {
-    const assembled = assemble({ ...input({ outline: outline([]) }), layout: null });
+    const assembled = assemble({ ...input({ outline: outline([]) }), layout: null, theme: null });
     expect(assembled.ok && assembled.document).toEqual({
       schema: 'publishing/1',
       title: 'The dosing report',
@@ -1471,8 +1491,8 @@ describe('assemble for a request made before layouts', () => {
 
 describe('a quotation and preformatted text, published (editor 5)', () => {
   /** Latin, and U+2016 in the body face but not the code face, as the pinned faces are. */
-  const faces: Covers = (codePoint, face) =>
-    codePoint < 0x250 || (face === 'body' && codePoint === 0x2016);
+  const faces: Covers = (codePoint, family) =>
+    codePoint < 0x250 || (family === 'Liberation Serif' && codePoint === 0x2016);
   const underFaces = (...blocks: unknown[]) => ({ ...oneComponent(...blocks), covers: faces });
   const pre = (name: string, value: string, language?: string) => ({
     type: 'preformatted',
@@ -1546,7 +1566,13 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
         id: 'q1',
         anchor: null,
         blocks: [
-          { type: 'paragraph', id: 'b1', anchor: null, runs: [{ text: 'Quoted.', marks: [] }] },
+          {
+            type: 'paragraph',
+            id: 'b1',
+            anchor: null,
+            style: 'quotation',
+            runs: [{ text: 'Quoted.', marks: [] }],
+          },
           expect.objectContaining({ type: 'list', id: 'L1' }),
         ],
         attribution: [{ text: 'Ada', marks: [] }],
@@ -1561,15 +1587,15 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     const before = {
       ...oneComponent(pre('p1', 'x'), quotation('q1', [paragraph('b1', text('y'))])),
     };
-    const result = assemble({ ...before, layout: null });
+    const result = assemble({ ...before, layout: null, theme: null });
     expect(failuresOf(result)).toEqual([
       failed('block_not_publishable', 'p1', 'preformatted'),
       failed('block_not_publishable', 'q1', 'blockquote'),
     ]);
   });
 
-  it('makes publishing/11, and publishing/4 to publishing/10 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/11');
+  it('makes publishing/12, and publishing/4 to publishing/11 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/12');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1577,6 +1603,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_8).toBe('publishing/8');
     expect(PUBLISHING_SCHEMA_9).toBe('publishing/9');
     expect(PUBLISHING_SCHEMA_10).toBe('publishing/10');
+    expect(PUBLISHING_SCHEMA_11).toBe('publishing/11');
   });
 });
 
@@ -1611,10 +1638,12 @@ describe('a table, published (tables 2)', () => {
     block: 't1',
     detail,
   });
+  // A stored `body` in a cell is the `tableCell` place's default: the default theme's `table-cell`.
   const published = (runs: string) => ({
     type: 'paragraph',
     id: runs,
     anchor: null,
+    style: 'table-cell',
     runs: [
       {
         text: { c1: 'Site', c2: 'Values', c3: 'York', c4: '1', c5: '2', c6: '3', c7: '4' }[runs],
@@ -1708,7 +1737,7 @@ describe('a table, published (tables 2)', () => {
   });
 
   it('refuses a table where there is no layout, since the frozen first shape holds paragraphs alone', () => {
-    expect(failuresOf(assemble({ ...oneComponent(stored()), layout: null }))).toEqual([
+    expect(failuresOf(assemble({ ...oneComponent(stored()), layout: null, theme: null }))).toEqual([
       failed('block_not_publishable', 'table'),
     ]);
   });
@@ -1952,7 +1981,9 @@ describe('a figure, published (figures 3)', () => {
 
   it('refuses a figure where there is no layout, since the frozen first shape holds paragraphs alone', () => {
     expect(
-      failuresOf(assemble({ ...withAssets({ [RED]: asset() }, stored()), layout: null })),
+      failuresOf(
+        assemble({ ...withAssets({ [RED]: asset() }, stored()), layout: null, theme: null }),
+      ),
     ).toEqual([failed('block_not_publishable', 'figure')]);
   });
 
@@ -2029,6 +2060,7 @@ describe('an inline image, published (figures 5)', () => {
         type: 'paragraph',
         id: 'p1',
         anchor: null,
+        style: 'body',
         runs: [
           { text: 'Press ', marks: [] },
           {
@@ -2296,6 +2328,7 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
               type: 'paragraph',
               id: 'fp1',
               anchor: null,
+              style: 'footnote',
               runs: [
                 { text: 'Once in ', marks: [] },
                 { text: 'spring', marks: [{ kind: 'emphasis' }] },
@@ -2305,6 +2338,7 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
               type: 'paragraph',
               id: 'fp2',
               anchor: null,
+              style: 'footnote',
               runs: [{ text: 'Once in autumn.', marks: [] }],
             },
           ],
@@ -2567,7 +2601,7 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
       title: [text('Intro'), footnote('f1', [paragraph('fp1', text('Once.'))])],
     };
     expect(
-      failuresOf(assemble({ ...input({ outline: outline([titled]) }), layout: null })),
+      failuresOf(assemble({ ...input({ outline: outline([titled]) }), layout: null, theme: null })),
     ).toEqual([
       {
         stage: 'compose',
@@ -2968,6 +3002,7 @@ describe('cross-references, published (cross-references 2)', () => {
       type: 'paragraph',
       id: 'p2',
       anchor: null,
+      style: 'body',
       runs: [{ text: 'Unnamed', marks: [] }],
     });
   });
@@ -3379,6 +3414,7 @@ describe('cross-references, published (cross-references 2)', () => {
         assemble({
           ...input({ outline: outline([section('methods', 'Methods'), titled]) }),
           layout: null,
+          theme: null,
         }),
       ),
     ).toEqual([
@@ -3600,8 +3636,8 @@ describe('equations, published (equations 2)', () => {
   it('asks the maths face of every character an equation sets, and the body face of the text beside it', () => {
     // The maths face has ASCII, the angle brackets and the bar; the body face has all of Latin. So a
     // character one of them lacks fails only where it is set in that face.
-    const faces: Covers = (codePoint, face) =>
-      face === 'math'
+    const faces: Covers = (codePoint, family) =>
+      family === 'STIX Two Math'
         ? codePoint < 0x80 || [0x27e8, 0x27e9, 0x2223].includes(codePoint)
         : codePoint < 0x250;
     const assembled = assemble({
@@ -3788,7 +3824,7 @@ describe('equations, published (equations 2)', () => {
   it("keeps a request made before layouts refusing a title's equation, as a title that is words alone", () => {
     const titled = { ...section('growth', 'Growth'), title: [text('Growth as '), inline()] };
     expect(
-      failuresOf(assemble({ ...input({ outline: outline([titled]) }), layout: null })),
+      failuresOf(assemble({ ...input({ outline: outline([titled]) }), layout: null, theme: null })),
     ).toEqual([{ ...failed('title_not_publishable', null, 'equation'), node: id('growth') }]);
   });
 
@@ -3929,10 +3965,529 @@ describe('equations, published (equations 2)', () => {
     const assembled = assemble({
       ...oneComponent(block('e1', true), paragraph('b1', text('Let '), inline())),
       layout: null,
+      theme: null,
     });
     expect(failuresOf(assembled)).toEqual([
       failed('block_not_publishable', 'e1', 'equation'),
       failed('inline_not_publishable', 'b1', 'equation'),
     ]);
+  });
+});
+
+describe('the theme a publication is set from (themes 1)', () => {
+  const SANS = 'Alloy Sans';
+  /** Pi, which only the invented sans family below sets: no pinned face is asked for it here. */
+  const PI = '\u{3c0}';
+  /** Latin in every family, and pi in the sans alone. */
+  const covers: Covers = (codePoint, family) =>
+    codePoint < 0x250 || (family === SANS && codePoint === 0x3c0);
+  /** An invented family, monospaced so that a theme may set preformatted text in it. */
+  const sans = (embeddable = true): Typeface => ({
+    id: 'sans',
+    family: SANS,
+    files: [{ sha256: 'a'.repeat(64), weight: 'regular', posture: 'normal' }],
+    licence: 'OFL-1.1',
+    embedding: { pdf: embeddable, word: true },
+    ascent: 0.9,
+    descent: 0.2,
+    advance: 0.6,
+  });
+  /** The default theme with the sans family declared, changed by `change`, read as `assemble` reads it. */
+  const themed = (change: (inputs: ThemeInputs) => void = () => {}) => {
+    const inputs = defaultInputs();
+    inputs.theme.typefaces.push(sans());
+    change(inputs);
+    return resolved(inputs);
+  };
+  /** A paragraph style of the default catalogue, its properties changed. */
+  const restyle = (inputs: ThemeInputs, style: string, properties: ParagraphProperties) => {
+    const found = inputs.catalogues.paragraph.styles.find((each) => each.id === style)!;
+    found.properties = { ...found.properties, ...properties };
+  };
+  /** A style added to the paragraph catalogue, based on the body's. */
+  const addStyle = (
+    inputs: ThemeInputs,
+    style: string,
+    appliesTo: StyleTarget[],
+    typeface?: string,
+  ) =>
+    inputs.catalogues.paragraph.styles.push({
+      id: style,
+      name: style,
+      basedOn: 'body',
+      appliesTo,
+      properties: typeface === undefined ? {} : { typeface },
+    });
+  const cellOf = (...blocks: unknown[]) => ({ content: blocks, colspan: 1, rowspan: 1 });
+  const table = (name: string, over: object = {}, ...blocks: unknown[]) => ({
+    type: 'table',
+    id: name,
+    style: 'table',
+    caption: [text('Readings')],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [
+      { cells: [cellOf(...(blocks.length > 0 ? blocks : [paragraph(`${name}c`, text('1'))]))] },
+    ],
+    ...over,
+  });
+  const footnote = (name: string, ...paragraphs: unknown[]) => ({
+    type: 'footnote',
+    id: name,
+    anchor: { kind: 'span' },
+    content: paragraphs,
+  });
+  const quotation = (name: string, content: unknown[], attribution?: unknown[]) => ({
+    type: 'blockquote',
+    id: name,
+    content,
+    ...(attribution === undefined ? {} : { attribution }),
+  });
+  const RED = '00000000-0000-4000-8000-00000000a551';
+  const asset: PublishingAsset = {
+    object: `t_acme/sha256/${'ab'.repeat(32)}`,
+    format: 'png',
+    width: 800,
+    height: 600,
+    alternative: { text: 'Two red squares', language: 'en-GB' },
+  };
+  const figure = (name: string, imageStyle = 'figure') => ({
+    type: 'figure',
+    id: name,
+    asset: RED,
+    imageStyle,
+    caption: [text('Shapes')],
+    alternative: { kind: 'inherited' },
+  });
+  const image = (imageStyle = 'inline') => ({
+    type: 'image',
+    asset: RED,
+    imageStyle,
+    alternative: { kind: 'inherited' },
+  });
+  /** One component holding these blocks, under the theme given, with the one image resolved. */
+  const under = (theme: ResolvedTheme, ...blocks: unknown[]) => ({
+    ...oneComponent(...blocks),
+    theme,
+    covers,
+    assets: new Map([[RED, asset]]),
+  });
+  const failed = (code: string, block: string | null, detail: string | null) => ({
+    stage: 'compose',
+    code,
+    node: id('calib'),
+    block,
+    detail,
+  });
+  /** Every published paragraph's style, by its identifier, a footnote's paragraphs included. */
+  const stylesOf = (assembled: Assembled<PublishedDocument>) => {
+    const styles: Record<string, string> = {};
+    const paragraphOf = (block: PublishedParagraph) => {
+      styles[block.id] = block.style;
+      for (const run of block.runs) {
+        if ('footnote' in run) for (const each of run.footnote.paragraphs) paragraphOf(each);
+      }
+    };
+    const walk = (blocks: readonly PublishedBlock[]) => {
+      for (const block of blocks) {
+        if (block.type === 'paragraph') paragraphOf(block);
+        if (block.type === 'list') for (const item of block.items) walk(item.blocks);
+        if (block.type === 'blockquote') walk(block.blocks);
+        if (block.type === 'table') {
+          for (const row of block.rows) for (const cell of row.cells) walk(cell.blocks);
+        }
+      }
+    };
+    walk(blocksOf(assembled));
+    return styles;
+  };
+
+  it('makes publishing/12, carrying the Typst projection of every paragraph style the theme holds, used or not', () => {
+    const theme = resolved();
+    const assembled = assemble(oneParagraph(text('Set the tray.')));
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    expect(assembled.document.schema).toBe('publishing/12');
+    expect(assembled.document.theme).toEqual(projectTypst(theme));
+    // A document of one paragraph uses one style; the theme carries all of them, in catalogue order.
+    expect(Object.keys(assembled.document.theme.styles)).toEqual([...theme.paragraphStyles.keys()]);
+    expect(assembled.document.theme.maths).toBe('STIX Two Math');
+  });
+
+  it('sets a stored body in the default style of the place it stands, and any other style as itself', () => {
+    const theme = themed((inputs) => {
+      addStyle(inputs, 'item', ['listItem']);
+      addStyle(inputs, 'cell', ['tableCell']);
+      addStyle(inputs, 'lead', ['text', 'quotation']);
+      inputs.theme.places.listItem = 'item';
+      inputs.theme.places.tableCell = 'cell';
+    });
+    const assembled = assemble(
+      under(
+        theme,
+        paragraph('p1', text('Plain.')),
+        styled('p2', 'lead', text('Led.')),
+        storedList('L1', 'unordered', [
+          {
+            content: [
+              paragraph('i1', text('An item.')),
+              quotation('q2', [paragraph('i2', text('Quoted in an item.'))]),
+            ],
+          },
+        ]),
+        quotation('q1', [paragraph('q1p', text('Quoted.')), styled('q1l', 'lead', text('Led.'))]),
+        table('t1', {}, paragraph('c1', text('12'))),
+        paragraph('p3', text('Noted'), footnote('n1', paragraph('n1p', text('A note.')))),
+      ),
+    );
+    expect(stylesOf(assembled)).toEqual({
+      p1: 'body',
+      p2: 'lead',
+      i1: 'item',
+      // The place is where the paragraph stands, however deep: a quotation in a list item.
+      i2: 'quotation',
+      q1p: 'quotation',
+      q1l: 'lead',
+      c1: 'cell',
+      p3: 'body',
+      n1p: 'footnote',
+    });
+  });
+
+  it('fails style_missing for a paragraph, table or image style the theme lacks, every one at once', () => {
+    const assembled = assemble(
+      under(
+        resolved(),
+        styled('p1', 'lead', text('Led.')),
+        table('t1', { style: 'wide' }),
+        figure('f1', 'wide'),
+        paragraph('p2', text('A logo '), image('small')),
+        paragraph('p3', text('Noted'), footnote('n1', styled('n1p', 'aside', text('A note.')))),
+      ),
+    );
+    expect(failuresOf(assembled)).toEqual([
+      failed('style_missing', 'p1', 'lead'),
+      failed('style_missing', 't1', 'wide'),
+      failed('style_missing', 'f1', 'wide'),
+      failed('style_missing', 'p2', 'small'),
+      failed('style_missing', 'n1', 'aside'),
+    ]);
+
+    // The theme's catalogues say what exists, not a list of four the template knew: a theme whose
+    // table catalogue holds `grid` alone has no `table`, and one whose image catalogue holds `plate`
+    // alone has no `figure` and no `inline`.
+    const other = themed((inputs) => {
+      inputs.catalogues.table.styles = [{ id: 'grid', name: 'Grid', appliesTo: ['table'] }];
+      inputs.catalogues.image.styles = [
+        { id: 'plate', name: 'Plate', appliesTo: ['figure', 'inlineImage'] },
+      ];
+    });
+    expect(
+      failuresOf(
+        assemble(
+          under(
+            other,
+            table('t1'),
+            table('t2', { style: 'grid' }),
+            figure('f1'),
+            figure('f2', 'plate'),
+            paragraph('p2', text('A logo '), image()),
+            paragraph('p3', text('A logo '), image('plate')),
+          ),
+        ),
+      ),
+    ).toEqual([
+      failed('style_missing', 't1', 'table'),
+      failed('style_missing', 'f1', 'figure'),
+      failed('style_missing', 'p2', 'inline'),
+    ]);
+  });
+
+  it('fails style_not_applicable for a style used where it does not apply, naming the block and the style', () => {
+    const assembled = assemble(
+      under(
+        resolved(),
+        // A heading's style in running text, a footnote's in a list item, and a quotation's in a
+        // footnote: each exists, and none applies where it stands.
+        styled('p1', 'heading-1', text('Loud.')),
+        storedList('L1', 'unordered', [{ content: [styled('i1', 'footnote', text('Small.'))] }]),
+        paragraph('p2', text('Noted'), footnote('n1', styled('n1p', 'quotation', text('A note.')))),
+        // And an image style for a figure in a line of text, and the other way about.
+        figure('f1', 'inline'),
+        paragraph('p3', text('A logo '), image('figure')),
+      ),
+    );
+    expect(failuresOf(assembled)).toEqual([
+      failed('style_not_applicable', 'p1', 'heading-1'),
+      failed('style_not_applicable', 'i1', 'footnote'),
+      failed('style_not_applicable', 'n1', 'quotation'),
+      failed('style_not_applicable', 'f1', 'inline'),
+      failed('style_not_applicable', 'p3', 'figure'),
+    ]);
+  });
+
+  it('fails typeface_not_embeddable for a face that sets text and may not be embedded, naming its family once', () => {
+    const notEmbeddable = (face: string) => (inputs: ThemeInputs) => {
+      inputs.theme.typefaces.find((each) => each.id === face)!.embedding.pdf = false;
+    };
+    const refusal = (family: string) => ({
+      stage: 'compose',
+      code: 'typeface_not_embeddable',
+      node: null,
+      block: null,
+      detail: family,
+    });
+    const equation = {
+      type: 'equation',
+      id: 'e1',
+      mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"><mi>x</mi></math>',
+      numbered: false,
+    };
+
+    // The body face sets every document, and is named once however much it sets.
+    const serif = themed(notEmbeddable('serif'));
+    expect(
+      failuresOf(
+        assemble(under(serif, paragraph('p1', text('One.')), paragraph('p2', text('Two.')))),
+      ),
+    ).toEqual([refusal('Liberation Serif')]);
+
+    // The monospace and maths faces only where the document holds code or an equation.
+    const mono = themed(notEmbeddable('mono'));
+    expect(failuresOf(assemble(under(mono, paragraph('p1', text('Plain.')))))).toEqual([]);
+    expect(
+      failuresOf(
+        assemble(under(mono, paragraph('p1', marked('x', { type: 'inlineCode', id: 'm1' })))),
+      ),
+    ).toEqual([refusal('Liberation Mono')]);
+    const maths = themed(notEmbeddable('maths'));
+    expect(failuresOf(assemble(under(maths, paragraph('p1', text('Plain.')))))).toEqual([]);
+    expect(failuresOf(assemble(under(maths, equation)))).toEqual([refusal('STIX Two Math')]);
+
+    // A face of the theme's own that a paragraph style sets its text in.
+    const lead = themed((inputs) => {
+      inputs.theme.typefaces = inputs.theme.typefaces.map((each) =>
+        each.id === 'sans' ? sans(false) : each,
+      );
+      addStyle(inputs, 'lead', ['text'], 'sans');
+    });
+    expect(failuresOf(assemble(under(lead, paragraph('p1', text('Plain.')))))).toEqual([]);
+    expect(
+      failuresOf(
+        assemble(
+          under(lead, styled('p1', 'lead', text('One.')), styled('p2', 'lead', text('Two.'))),
+        ),
+      ),
+    ).toEqual([refusal(SANS)]);
+  });
+
+  it("asks the glyph check of the family that sets each run: its innermost mark's face, else its paragraph style's", () => {
+    const theme = themed((inputs) => {
+      addStyle(inputs, 'lead', ['text'], 'sans');
+      const emphasis = inputs.catalogues.character.styles.find((each) => each.mark === 'emphasis')!;
+      emphasis.properties = { ...emphasis.properties, typeface: 'sans' };
+    });
+    const emphasis = (id: string) => ({ type: 'emphasis', id });
+    const code = (id: string) => ({ type: 'inlineCode', id });
+    const assembled = assemble(
+      under(
+        theme,
+        paragraph('p1', text(`In the body ${PI}`)),
+        styled('p2', 'lead', text(`In the lead ${PI}`)),
+        paragraph('p3', marked(`Emphasised ${PI}`, emphasis('m1'))),
+        styled('p4', 'lead', marked(`Code ${PI}`, code('m2'))),
+        // Code is the innermost mark, so it is set in the monospace face, whatever is outside it.
+        styled('p5', 'lead', marked(`Both ${PI}`, emphasis('m3'), code('m4'))),
+      ),
+    );
+    expect(failuresOf(assembled)).toEqual([
+      failed('glyph_missing', 'p1', 'U+03C0'),
+      failed('code_glyph_missing', 'p4', 'U+03C0'),
+      failed('code_glyph_missing', 'p5', 'U+03C0'),
+    ]);
+  });
+
+  it("asks a section's title of its heading's face, and of the contents' and the running heads' where the layout sets titles there", () => {
+    // Every heading's style is based on the first's, so all six are set in the sans family.
+    const theme = themed((inputs) => restyle(inputs, 'heading-1', { typeface: 'sans' }));
+    const withLayout = (contents: number | null, section: boolean) =>
+      layoutWith((layout) => {
+        layout.matter.contents = contents === null ? null : { depth: contents };
+        layout.formats.pdf.head = [[], [], section ? [{ kind: 'field', field: 'section' }] : []];
+      });
+    const titled = (layout: Layout, nodes: unknown[]) =>
+      failuresOf(assemble(input({ outline: outline(nodes), theme, covers, layout })));
+    const top = [section('intro', `Intro ${PI}`)];
+    const missing = (node: string) => ({
+      stage: 'compose',
+      code: 'glyph_missing',
+      node: id(node),
+      block: null,
+      detail: 'U+03C0',
+    });
+    // Set in its heading alone: the sans face has pi.
+    expect(titled(withLayout(null, false), top)).toEqual([]);
+    // Set again in the contents, or in a running head, in the serif: said once, whichever asks.
+    expect(titled(withLayout(3, false), top)).toEqual([missing('intro')]);
+    expect(titled(withLayout(null, true), top)).toEqual([missing('intro')]);
+    expect(titled(withLayout(3, true), top)).toEqual([missing('intro')]);
+    // A second-level title is deeper than a contents one level deep, and a running head names the
+    // first level alone.
+    const nested = [section('intro', 'Intro', [section('aims', `Aims ${PI}`)])];
+    expect(titled(withLayout(1, true), nested)).toEqual([]);
+    expect(titled(withLayout(2, true), nested)).toEqual([missing('aims')]);
+  });
+
+  it("asks the document's title of the cover's face and a running head's, and each of the layout's words of its role's", () => {
+    const theme = themed((inputs) => {
+      restyle(inputs, 'heading-1', { typeface: 'sans' });
+      restyle(inputs, 'running', { typeface: 'sans' });
+    });
+    const withLayout = (change: (layout: Layout) => void) =>
+      layoutWith((layout) => {
+        layout.matter.contents = null;
+        change(layout);
+      });
+    const published = (layout: Layout, title = 'The dosing report') =>
+      failuresOf(
+        assemble(
+          input({
+            outline: { ...outline([section('intro', 'Intro')]), title },
+            theme,
+            covers,
+            layout,
+          }),
+        ),
+      );
+    // The cover's title is in the title role's style, based on the first heading's, and the running
+    // head that prints it in the running style: both the sans.
+    expect(
+      published(
+        withLayout(() => {}),
+        `Report ${PI}`,
+      ),
+    ).toEqual([]);
+    // The contents' title, the lists' titles and the running slots' words, each in a sans style.
+    expect(
+      published(
+        withLayout((layout) => {
+          layout.matter.contents = { depth: 3 };
+          layout.words.contents = `Contents ${PI}`;
+          layout.matter.lists = [{ sequence: 'table', title: `Tables ${PI}` }];
+          layout.formats.pdf.foot[1] = [{ kind: 'words', text: `Foot ${PI}` }];
+        }),
+      ),
+    ).toEqual([]);
+    // The notice is in a style of its own, in the serif.
+    expect(published(withLayout((layout) => (layout.words.notice = `Notice ${PI}`)))).toEqual([
+      { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+03C0' },
+    ]);
+  });
+
+  it("asks a caption, a table's note, an attribution and preformatted text of their roles' faces, and an equation of the maths face", () => {
+    const theme = themed((inputs) => {
+      for (const style of ['caption', 'table-note', 'attribution', 'preformatted']) {
+        restyle(inputs, style, { typeface: 'sans' });
+      }
+      inputs.theme.maths = 'sans';
+    });
+    const unlisted = layoutWith((layout) => (layout.matter.lists = []));
+    const blocks = [
+      table('t1', { caption: [text(`Readings ${PI}`)], note: [text(`Noted ${PI}`)] }),
+      quotation('q1', [paragraph('q1p', text('Quoted.'))], [text(`Ada ${PI}`)]),
+      { type: 'preformatted', id: 'x1', text: `SELECT ${PI}` },
+      {
+        type: 'equation',
+        id: 'e1',
+        mathml: `<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="pi"><mi>${PI}</mi></math>`,
+        numbered: false,
+      },
+    ];
+    expect(failuresOf(assemble({ ...under(theme, ...blocks), layout: unlisted }))).toEqual([]);
+    // A caption is set again in the list after the contents, in the list entry's face: the serif.
+    expect(failuresOf(assemble(under(theme, ...blocks)))).toEqual([
+      failed('glyph_missing', 't1', 'U+03C0'),
+    ]);
+    // And under the default theme each is refused in the face it is set in.
+    expect(failuresOf(assemble({ ...under(resolved(), ...blocks), layout: unlisted }))).toEqual([
+      // The caption, and the note.
+      failed('glyph_missing', 't1', 'U+03C0'),
+      failed('glyph_missing', 't1', 'U+03C0'),
+      failed('glyph_missing', 'q1', 'U+03C0'),
+      failed('code_glyph_missing', 'x1', 'U+03C0'),
+      failed('math_glyph_missing', 'e1', 'U+03C0'),
+    ]);
+  });
+
+  it("measures a preformatted line by the theme's preformatted role", () => {
+    const theme = themed((inputs) => restyle(inputs, 'preformatted', { size: 10 }));
+    const pre = (value: string) => ({ type: 'preformatted', id: 'x1', text: value });
+    expect(failuresOf(assemble(under(theme, pre('x'.repeat(73)))))).toEqual([]);
+    expect(failuresOf(assemble(under(theme, pre('x'.repeat(74)))))).toEqual([
+      failed('line_too_wide', 'x1', 'line 1, 74 of 73 columns'),
+    ]);
+  });
+
+  it("measures a quotation by its style's indents, a list by its item's size and a caption by the caption's size", () => {
+    const pre = (value: string) => ({ type: 'preformatted', id: 'x1', text: value });
+    const tooWide = (width: number, most: number) => [
+      failed('line_too_wide', 'x1', `line 1, ${width} of ${most} columns`),
+    ];
+    // A quotation insets its body by its style's start and end indents and nothing else: 40 points
+    // here, where the default's 22 leave 79 columns.
+    const inset = themed((inputs) =>
+      restyle(inputs, 'quotation', { startIndent: 30, endIndent: 10 }),
+    );
+    const quoted = (value: string) => quotation('q1', [pre(value)]);
+    expect(failuresOf(assemble(under(inset, quoted('x'.repeat(75)))))).toEqual([]);
+    expect(failuresOf(assemble(under(inset, quoted('x'.repeat(76)))))).toEqual(tooWide(76, 75));
+
+    // A bulleted list indents its item a marker and half an em, in ems of the item's style: 33 points
+    // at 22pt, where the default's 16.5 leave 80 columns.
+    const large = themed((inputs) => {
+      addStyle(inputs, 'item', ['listItem']);
+      restyle(inputs, 'item', { size: 22, lineSpacing: 26 });
+      inputs.theme.places.listItem = 'item';
+    });
+    const listed = (value: string) => storedList('L1', 'unordered', [{ content: [pre(value)] }]);
+    expect(failuresOf(assemble(under(resolved(), listed('x'.repeat(80)))))).toEqual([]);
+    expect(failuresOf(assemble(under(large, listed('x'.repeat(76)))))).toEqual([]);
+    expect(failuresOf(assemble(under(large, listed('x'.repeat(77)))))).toEqual(tooWide(77, 76));
+
+    // A caption of a thousand graphemes takes sixteen lines at 11pt, and leaves its image room; at
+    // 22pt it takes thirty-one, and none.
+    const long = { ...figure('f1'), caption: [text('x'.repeat(1000))] };
+    const loud = themed((inputs) => restyle(inputs, 'caption', { size: 22, lineSpacing: 26 }));
+    expect(failuresOf(assemble(under(resolved(), long)))).toEqual([]);
+    expect(failuresOf(assemble(under(loud, long)))).toEqual([
+      failed('caption_too_long', 'f1', null),
+    ]);
+  });
+
+  it('prints an image in a line 1.2 ems of the size of the style it stands in', () => {
+    // Template 11's rule, in the theme's sizes: 13.2 points high under the default's 11pt body, 12 at
+    // 10pt, and 24 in a 20pt style - each as wide as its 800 by 600 proportions make it.
+    const theme = themed((inputs) => {
+      restyle(inputs, 'body', { size: 10 });
+      addStyle(inputs, 'lead', ['text']);
+      restyle(inputs, 'lead', { size: 20, lineSpacing: 24 });
+    });
+    const imagesOf = (assembled: Assembled<PublishedDocument>) =>
+      blocksOf(assembled).flatMap((block) =>
+        paragraphRuns(block).flatMap((run) => ('image' in run ? [run.image] : [])),
+      );
+    const sized = (width: number, height: number) => expect.objectContaining({ width, height });
+    expect(imagesOf(assemble(under(resolved(), paragraph('p1', image()))))).toEqual([
+      sized(17.6, 13.2),
+    ]);
+    expect(
+      imagesOf(
+        assemble(under(theme, paragraph('p1', image()), styled('p2', 'lead', text('A '), image()))),
+      ),
+    ).toEqual([sized(16, 12), sized(32, 24)]);
+  });
+
+  it('is never asked for a document under a layout without a theme, or one made before layouts with one', () => {
+    expect(() => assemble({ ...oneParagraph(text('Set.')), theme: null })).toThrow(/theme/);
+    expect(() => assemble({ ...oneParagraph(text('Set.')), layout: null })).toThrow(/theme/);
   });
 });

@@ -29,18 +29,21 @@ import {
   type ReferenceResolution,
 } from '../structure/references.js';
 import { defaultNumberingScheme, type NumberFormat } from '../structure/scheme.js';
+import type { ResolvedParagraphStyle, ResolvedTheme } from '../theme/read.js';
+import type { Place, Role, Typeface } from '../theme/schema.js';
+import { projectTypst } from '../theme/typst.js';
 
 import type { PublishFailure } from './failures.js';
-import { characterProblems, codePointName, type Covers, type Face } from './glyphs.js';
+import { characterProblems, codePointName, type Covers, type Setting } from './glyphs.js';
 import {
   captionHeight,
   CELL_INSET,
   columnsAt,
   columnsOf,
   expandTabs,
-  INLINE_IMAGE_HEIGHT,
+  BODY_SIZE,
+  inlineImageHeight,
   listIndent,
-  QUOTATION_INDENT,
   textBlockHeight,
   textMeasure,
 } from './measure.js';
@@ -72,9 +75,9 @@ import {
 /**
  * What a publish is assembled from, all of it recorded before the job ran: the document version's
  * outline, the content of the version each occurrence took - **only the occurrences the publisher may
- * read**, keyed by node - the failures the request already found resolving them, the layout version
- * the request was made under, the document version's revision, and which characters the pinned faces
- * can set.
+ * read**, keyed by node - the failures the request already found resolving them, the layout and the
+ * theme versions the request was made under, the document version's revision, and which characters
+ * each family the worker holds can set.
  */
 export interface AssembleInput {
   readonly outline: OutlineDocument;
@@ -88,8 +91,17 @@ export interface AssembleInput {
    * would have then (Ken's answer F).
    */
   readonly layout: Layout | null;
+  /**
+   * The theme the request was made under, resolved by `readTheme` (themes 1, ruling R6): what every
+   * paragraph, mark, role and equation is set from, and what `publishing/12` carries as its `theme`.
+   * **Null exactly where `layout` is** - a request made before layouts, which migration 0024 gave no
+   * theme and template 1 sets in its one family - and `assemble` throws on one without the other,
+   * since no request is made under either alone.
+   */
+  readonly theme: ResolvedTheme | null;
   /** The document version as `revision.version` (VER-009). Ignored where `layout` is null. */
   readonly revision: string;
+  /** Which characters each family can set, asked by the family's name (themes 1, ruling R6). */
   readonly covers: Covers;
   /**
    * Every asset version the request resolved as its publisher, by identifier (figures 3, ruling R6):
@@ -111,11 +123,29 @@ export type Assembled<
   | { readonly ok: true; readonly document: Document; readonly numbering: NumberingTable }
   | { readonly ok: false; readonly failures: readonly PublishFailure[] };
 
-/** The paragraph style the template sets. Every other is `style_missing` until themes (slice 4). */
+/**
+ * What a stored paragraph's style says where the author chose none, as the editor has written on every
+ * paragraph since the content model was built: the default of the place it stands in (themes 1, TH-E),
+ * which the theme names. Without a theme it is the one style template 1 sets, and every other is
+ * `style_missing`.
+ */
 const BODY = 'body';
 
-/** The one table style the template sets until themes.md gives styles (tables 2, ruling R4). */
-const TABLE_STYLE = 'table';
+/**
+ * The one family template 1 sets everything in, the pinned serif: what the glyph check asks of a
+ * request made before layouts, which has no theme to name a face. Frozen, as template 1 is.
+ */
+const SLICE_ONE_FAMILY = 'Liberation Serif';
+
+/** The heading roles, the first level's first: a node deeper than the sixth takes the sixth's. */
+const HEADINGS = [
+  'heading1',
+  'heading2',
+  'heading3',
+  'heading4',
+  'heading5',
+  'heading6',
+] as const satisfies readonly Role[];
 
 /**
  * Where an image stands in the compile root (figures 3, ruling R2): `assets/`, the hash its key ends
@@ -126,12 +156,6 @@ export function publishedImagePath(asset: Pick<PublishingAsset, 'object' | 'form
   const hash = asset.object.slice(asset.object.lastIndexOf('/') + 1);
   return `assets/${hash}.${ADMITTED_FORMATS[asset.format].extension}`;
 }
-
-/** The one image style the template sets for a figure until themes.md gives styles (decision F-K). */
-const FIGURE_STYLE = 'figure';
-
-/** And the one it sets for an image in a run of text (figures 5, ruling R3). */
-const INLINE_STYLE = 'inline';
 
 /**
  * The share of the text block's height a figure may stand (decision F-K): past it, the height is held
@@ -183,8 +207,15 @@ export function assemble(
 ): Assembled<PublishedDocument1>;
 export function assemble(input: AssembleInput): Assembled;
 export function assemble(input: AssembleInput): Assembled {
+  const { layout, theme } = input;
+  if ((layout === null) !== (theme === null)) {
+    // A caller's defect, never the document's: every request since layouts is made under a theme too
+    // (migration 0024), and none before them is.
+    throw new Error(
+      'A request made under a layout is set from a theme, and one made before layouts from none',
+    );
+  }
   const failures: PublishFailure[] = [...input.refused];
-  const { layout } = input;
 
   // resolve and conditions: what each readable occurrence contributes, then REU's stage (#148).
   const contributions = new Map<string, readonly Contribution[]>();
@@ -219,17 +250,114 @@ export function assemble(input: AssembleInput): Assembled {
       .filter((each) => each.code === 'asset_unreadable')
       .map((each) => `${each.node} ${each.block}`),
   );
-  // Asked of the family the text will be set in (decision A): preformatted text and an inline code
-  // run are set in the monospace face, everything else in the body face, and a character missing
-  // from the monospace alone is `code_glyph_missing`, so the author is not told no face has it.
-  const check = (text: string, node: string | null, block: string | null, face: Face = 'body') => {
-    for (const { problem, codePoint } of characterProblems(text, input.covers, face)) {
-      const code = problem === 'glyph_missing' && face === 'code' ? 'code_glyph_missing' : problem;
-      failures.push(failure('compose', code, node, block, codePointName(codePoint)));
+  /**
+   * **Every face a theme names that sets text here**, by the typeface's identifier (themes 1, ruling
+   * R6): a face that sets text is a face the PDF embeds, so the first time one is asked for, a theme
+   * that records its licence as not permitting embedding in a PDF fails the publish,
+   * `typeface_not_embeddable`, naming its family, once (STY-042). A face the document never sets text
+   * in is never embedded and never refused. Answers the family, which is what the glyph check asks.
+   */
+  const embedded = new Set<string>();
+  const setBy = (typeface: Typeface): string => {
+    if (!embedded.has(typeface.id)) {
+      embedded.add(typeface.id);
+      if (!typeface.embedding.pdf) {
+        failOnce(failure('compose', 'typeface_not_embeddable', null, null, typeface.family));
+      }
+    }
+    return typeface.family;
+  };
+  /** The style a role or a place is set in: the reader found each in the catalogue, applying there. */
+  const roleStyle = (role: Role): ResolvedParagraphStyle =>
+    theme!.paragraphStyles.get(theme!.roles[role])!;
+  const placeStyle = (place: Place): ResolvedParagraphStyle =>
+    theme!.paragraphStyles.get(theme!.places[place])!;
+  /** The families text in these roles is set in, each face set by; template 1's without a theme. */
+  const roles = (...names: readonly Role[]): string[] =>
+    theme === null ? [SLICE_ONE_FAMILY] : names.map((name) => setBy(roleStyle(name).typeface));
+  /** The family text in a place's default style is set in; template 1's without a theme. */
+  const inPlace = (place: Place): string[] =>
+    theme === null ? [SLICE_ONE_FAMILY] : [setBy(placeStyle(place).typeface)];
+
+  // What the layout sets in its running heads and feet, and which sequences it lists after the
+  // contents: where the document's title, a section's title and a caption are set again.
+  const slotParts =
+    layout === null ? [] : [...layout.formats.pdf.head, ...layout.formats.pdf.foot].flat();
+  const slotFields = new Set(
+    slotParts.flatMap((part) => (part.kind === 'field' ? [part.field] : [])),
+  );
+  const listed = (sequence: string) =>
+    layout?.matter.lists.some((list) => list.sequence === sequence) ?? false;
+  /**
+   * The families a node's title and number are set in: its heading's, by its depth - the sixth's for
+   * any deeper - and again the contents entry's where the layout's contents reaches that depth, and
+   * the running slots' for a first-level node where a slot prints the section, which names the first
+   * level alone (template 11's `section`).
+   */
+  const titleFamilies = (depth: number): string[] => {
+    if (layout === null) return roles();
+    const contents = layout.matter.contents;
+    return roles(
+      HEADINGS[Math.min(depth, HEADINGS.length) - 1]!,
+      ...(contents !== null && depth <= contents.depth ? (['contentsEntry'] as const) : []),
+      ...(depth === 1 && slotFields.has('section') ? (['running'] as const) : []),
+    );
+  };
+  /** A table's or a figure's caption and label: the caption's, and the list entry's where it is listed. */
+  const captionFamilies = (sequence: 'table' | 'figure'): string[] =>
+    roles('caption', ...(listed(sequence) ? (['listEntry'] as const) : []));
+
+  /**
+   * **The glyph check asks the face that sets the text** (themes 1, ruling R6; decision A before it):
+   * each of `families`, by name - a paragraph style's, a role's, a mark's - where `setting` says how the
+   * engine sets it, as body text, as code or in an equation. A character missing from a family setting
+   * code is `code_glyph_missing`, as it always was, so the author is not told no face has it. Each
+   * character is said once for the text, however many of its families lack it.
+   */
+  const check = (
+    text: string,
+    node: string | null,
+    block: string | null,
+    families: readonly string[],
+    setting: Setting = 'body',
+  ) => {
+    const said = new Set<string>();
+    for (const family of new Set(families)) {
+      for (const { problem, codePoint } of characterProblems(text, input.covers, family, setting)) {
+        const code =
+          problem === 'glyph_missing' && setting === 'code' ? 'code_glyph_missing' : problem;
+        if (said.has(`${code} ${codePoint}`)) continue;
+        said.add(`${code} ${codePoint}`);
+        failures.push(failure('compose', code, node, block, codePointName(codePoint)));
+      }
+    }
+  };
+  /** The layout's own words, asked of the families they are set in: a failure is the layout's. */
+  const checkWords = (
+    words: string,
+    families: readonly string[],
+    record: (next: PublishFailure) => void,
+  ) => {
+    const said = new Set<number>();
+    for (const family of new Set(families)) {
+      for (const { codePoint } of characterProblems(words, input.covers, family, 'body')) {
+        if (said.has(codePoint)) continue;
+        said.add(codePoint);
+        record(failure('compose', 'layout_glyph_missing', null, null, codePointName(codePoint)));
+      }
     }
   };
 
-  check(input.outline.title, null, null);
+  // The document's title: on the cover in the title role's style, and in a running slot that prints
+  // it. Checked whether or not the layout sets a cover, as it always was.
+  check(
+    input.outline.title,
+    null,
+    null,
+    layout === null
+      ? roles()
+      : roles('title', ...(slotFields.has('title') ? (['running'] as const) : [])),
+  );
   const language = publishedLanguage(input.outline.language);
   if (language === null) {
     failures.push(
@@ -241,7 +369,8 @@ export function assemble(input: AssembleInput): Assembled {
   // failure in one is the layout's, never the document's: it has codes of its own, names no place in
   // the document, and nothing the author does to the document puts it right. The layout's parse
   // refuses a language the engine cannot carry and a character it refuses whatever the face, so only
-  // a layout built past the parse reaches those two here.
+  // a layout built past the parse reaches those two here. Each is asked of the role that sets it
+  // (themes 1): the contents' title, the notice, its sentence, the running slots and the lists' titles.
   const wordsLanguage = layout === null ? null : publishedLanguage(layout.language);
   if (layout !== null) {
     if (wordsLanguage === null) {
@@ -249,22 +378,26 @@ export function assemble(input: AssembleInput): Assembled {
         failure('compose', 'layout_language_not_publishable', null, null, layout.language),
       );
     }
-    const { head, foot } = layout.formats.pdf;
-    const slotWords = [...head, ...foot]
-      .flat()
-      .flatMap((part) => (part.kind === 'words' ? [part.text] : []));
+    const slotWords = slotParts.flatMap((part) => (part.kind === 'words' ? [part.text] : []));
     const { contents: title, notice, noticeSentence, above, below } = layout.words;
     const listTitles = layout.matter.lists.map((list) => list.title);
     // A relative reference prints the layout's words for above and below (cross-references 2, R2),
-    // where it has them.
+    // where it has them: asked here of running text's family whether or not a reference prints one,
+    // and again of the family of the text a reference prints one in, where one does.
     const relative = [above, below].flatMap((words) => (words === undefined ? [] : [words]));
-    for (const words of [title, notice, noticeSentence, ...slotWords, ...listTitles, ...relative]) {
-      for (const { codePoint } of characterProblems(words, input.covers, 'body')) {
-        failures.push(
-          failure('compose', 'layout_glyph_missing', null, null, codePointName(codePoint)),
-        );
-      }
-    }
+    const push = (next: PublishFailure) => failures.push(next);
+    // Asked without being set by: running text's face may set nothing in this document.
+    const text = [placeStyle('text').typeface.family];
+    // The running slots' face sets the page's number and the revision where no word does.
+    const running = slotParts.length > 0 ? roles('running') : [];
+    // The contents' title is set only where the layout declares a contents, and asked where it is not
+    // as it always was, of running text's family, since nothing sets it.
+    checkWords(title, layout.matter.contents === null ? text : roles('contents'), push);
+    checkWords(notice, roles('notice'), push);
+    checkWords(noticeSentence, roles('noticeSentence'), push);
+    for (const words of slotWords) checkWords(words, running, push);
+    for (const words of listTitles) checkWords(words, roles('list'), push);
+    for (const words of relative) checkWords(words, text, push);
   }
 
   // Every cross-reference in the document, resolved before anything is projected (cross-references 2):
@@ -320,11 +453,17 @@ export function assemble(input: AssembleInput): Assembled {
    * its alternative, a table's header rows included - measured to set and tag there as in the body,
    * where a footnote and a link are refused - and a caption, whose list sets it again. Its failures
    * name `block`, as an image's do.
+   *
+   * `families` are the families the runs are set in where no mark names a face (themes 1): the
+   * paragraph style's, or the role's - and every place it is set again, as a caption is in its list.
+   * `size` is that style's size, which an image among the runs is printed 1.2 ems of.
    */
   const publishedRuns = (
     content: readonly InlineNode[],
     node: string,
     block: string,
+    families: readonly string[],
+    size: number,
     indent = 0,
     caption = false,
     inParagraph: { readonly table: TableNode | null; readonly heading: boolean } | null = null,
@@ -339,7 +478,7 @@ export function assemble(input: AssembleInput): Assembled {
           failOnce(failure('compose', 'footnote_not_publishable_here', node, block, null));
           continue;
         }
-        const published = publishedFootnote(inline, node, block, inParagraph.table);
+        const published = publishedFootnote(inline, node, block, inParagraph.table, families);
         if (published !== null) runs.push(published);
         continue;
       }
@@ -348,7 +487,10 @@ export function assemble(input: AssembleInput): Assembled {
         // A header row is set again on every page the table reaches, as an artifact, where the engine
         // refuses a link; a caption, a term, an attribution and a note are set again or read apart.
         const link = inParagraph !== null && !inParagraph.heading;
-        if (printed !== undefined) runs.push({ reference: { ...printed, link } });
+        if (printed === undefined) continue;
+        // The layout's word for above or below, set in the family of the text it stands in.
+        if (printed.relative && printed.text !== null) checkWords(printed.text, families, failOnce);
+        runs.push({ reference: { ...printed, link } });
         continue;
       }
       // A caption's height is estimated from its words, and the list after the contents sets it again,
@@ -358,7 +500,7 @@ export function assemble(input: AssembleInput): Assembled {
         continue;
       }
       if (inline.type === 'image' && layout !== null) {
-        const published = publishedImage(inline, node, block, indent);
+        const published = publishedImage(inline, node, block, indent, size);
         if (published !== null) runs.push(published);
         continue;
       }
@@ -383,10 +525,62 @@ export function assemble(input: AssembleInput): Assembled {
       // Only what will be set is checked against the faces, exactly as an unmarked run is: a run
       // already refused is not set, and a second complaint about it would say nothing new.
       const code = outcome.marks.some((mark) => mark.kind === 'inlineCode');
-      check(inline.value, node, block, code ? 'code' : 'body');
+      check(
+        inline.value,
+        node,
+        block,
+        runFamilies(outcome.marks, families),
+        code ? 'code' : 'body',
+      );
       runs.push({ text: inline.value, marks: outcome.marks });
     }
     return runs;
+  };
+
+  /**
+   * The families a run of text is set in (themes 1, ruling R6): the face of its innermost mark that
+   * names one - marks apply in `PUBLISHED_MARK_ORDER`, outermost first, so the last to name a face is
+   * the one the run is set in, inline code's under the default theme - and otherwise the families of
+   * what it stands in. Without a theme a run carries no mark.
+   */
+  const runFamilies = (
+    marks: readonly PublishedMark[],
+    families: readonly string[],
+  ): readonly string[] => {
+    if (theme === null) return families;
+    let face: Typeface | undefined;
+    for (const mark of marks) face = theme.characterStyles[mark.kind].typeface ?? face;
+    return face === undefined ? families : [setBy(face)];
+  };
+
+  /**
+   * The paragraph style a stored paragraph is set in (themes 1, TH-E), and the families its text is
+   * set in. A stored `body` means the default of `place`, where it stands; any other identifier is the
+   * style it names, which must be in the theme's paragraph catalogue - `style_missing` (STY-027) - and
+   * must apply there - `style_not_applicable` (STY-006) - each naming `block` and the style. A
+   * paragraph refused either way is still checked, in the place's default, so what else is wrong with
+   * it is said too. Without a theme `body` is the one style template 1 sets, as it always was.
+   */
+  const paragraphStyle = (
+    stored: string,
+    place: Place,
+    node: string,
+    block: string,
+  ): { readonly id: string; readonly families: readonly string[]; readonly size: number } => {
+    if (theme === null) {
+      if (stored !== BODY) failures.push(failure('compose', 'style_missing', node, block, stored));
+      return { id: BODY, families: [SLICE_ONE_FAMILY], size: BODY_SIZE };
+    }
+    const id = stored === BODY ? theme.places[place] : stored;
+    const style = theme.paragraphStyles.get(id);
+    const applies = style?.appliesTo.includes(place) ?? false;
+    if (style === undefined) {
+      failures.push(failure('compose', 'style_missing', node, block, stored));
+    } else if (!applies) {
+      failures.push(failure('compose', 'style_not_applicable', node, block, id));
+    }
+    const setIn = style !== undefined && applies ? style : placeStyle(place);
+    return { id, families: [setBy(setIn.typeface)], size: setIn.properties.size };
   };
 
   /**
@@ -399,14 +593,18 @@ export function assemble(input: AssembleInput): Assembled {
    * - **With no text at all** it is refused, naming it: a numbered mark over nothing would publish a
    *   note the author never wrote. Judged on what is stored, so a footnote whose only words are refused
    *   for a mark is told about the mark and not called empty as well.
-   * - **Its paragraphs are a paragraph's**, body style, marks, glyphs and languages, and their failures
-   *   name the footnote. An empty one is dropped, as a component's is.
+   * - **Its paragraphs are a paragraph's**, style, marks, glyphs and languages - a stored `body` the
+   *   `footnote` place's default - and their failures name the footnote. An empty one is dropped, as
+   *   a component's is.
+   * - **Its label** is set twice: as its mark, in the families of the text it stands in, and at the
+   *   foot of the page in the `footnote` place's default.
    */
   const publishedFootnote = (
     footnote: Extract<InlineNode, { type: 'footnote' }>,
     node: string,
     block: string,
     table: TableNode | null,
+    families: readonly string[],
   ): PublishedInline | null => {
     const { anchor } = footnote;
     // Every reason at once, never the first alone (PUB-052), so each is said before any returns.
@@ -438,24 +636,28 @@ export function assemble(input: AssembleInput): Assembled {
     }
     if (refused || label === null) return null;
     const paragraphs = content.flatMap((paragraph) => {
-      if (paragraph.style !== BODY) {
-        failures.push(failure('compose', 'style_missing', node, footnote.id, paragraph.style));
-      }
+      const style = paragraphStyle(paragraph.style, 'footnote', node, footnote.id);
       // A footnote's text is a paragraph's text, where a reference is a link (R5); a footnote holds no
       // footnote (CNT-129), so nothing here asks the table the flag carries.
-      const runs = publishedRuns(paragraph.content, node, footnote.id, 0, false, {
-        table,
-        heading: false,
-      });
+      const runs = publishedRuns(
+        paragraph.content,
+        node,
+        footnote.id,
+        style.families,
+        style.size,
+        0,
+        false,
+        { table, heading: false },
+      );
       // A footnote's own paragraph is a block a reference can name (CNT-125), and carries its anchor
       // where one does. An empty one is dropped unless it is named: then it stays, holding nothing,
       // and the template sets its label where it would have begun, as a marker stands for a block.
       const anchor = anchorOf(node, paragraph.id);
       return runs.length === 0 && anchor === null
         ? []
-        : [{ type: 'paragraph' as const, id: paragraph.id, anchor, runs }];
+        : [{ type: 'paragraph' as const, id: paragraph.id, anchor, style: style.id, runs }];
     });
-    check(label, node, footnote.id);
+    check(label, node, footnote.id, [...inPlace('footnote'), ...families]);
     return { footnote: { label, anchor: anchorOf(node, footnote.id), paragraphs } };
   };
 
@@ -469,28 +671,43 @@ export function assemble(input: AssembleInput): Assembled {
    *
    * **It descends.** A list item holds block content, so this calls itself, and the style check and
    * the glyph check reach a paragraph at any depth because both are asked in the paragraph branch
-   * the recursion arrives at.
+   * the recursion arrives at. `place` is where the block stands, whatever holds it most nearly -
+   * running text, a list's item, a quotation or a table's cell - which a stored `body` means the
+   * default style of (themes 1, TH-E).
    */
   const publishable = (
     block: BlockNode,
     node: string,
+    place: Place,
     indent = 0,
     table: TableNode | null = null,
     heading = false,
   ): PublishedBlock[] => {
     switch (block.type) {
       case 'paragraph': {
-        if (block.style !== BODY) {
-          failures.push(failure('compose', 'style_missing', node, block.id, block.style));
-        }
-        const runs = publishedRuns(block.content, node, block.id, indent, false, {
-          table,
-          heading,
-        });
+        const style = paragraphStyle(block.style, place, node, block.id);
+        const runs = publishedRuns(
+          block.content,
+          node,
+          block.id,
+          style.families,
+          style.size,
+          indent,
+          false,
+          { table, heading },
+        );
         // An empty paragraph is where a cursor stands and publishes nothing (CNT-124), unless a
         // reference names it: then its marker stands where it would have.
         if (runs.length === 0) return markerOf(node, block.id);
-        return [{ type: 'paragraph', id: block.id, anchor: anchorOf(node, block.id), runs }];
+        return [
+          {
+            type: 'paragraph',
+            id: block.id,
+            anchor: anchorOf(node, block.id),
+            style: style.id,
+            runs,
+          },
+        ];
       }
       case 'list': {
         // `publishing/1` and `publishing/2` hold paragraphs alone and their bytes are frozen
@@ -527,12 +744,29 @@ export function assemble(input: AssembleInput): Assembled {
           // publication that is confidently false, and the two are not the same call. `checkBlock`
           // refuses both on the way in, and every occurrence reaches here through
           // `parseContentDocument`, so neither is reachable today by any producer.
+          // A term is set in the list item's default style, as its item's first line is.
           const term =
-            item.term === undefined ? [] : publishedRuns(item.term, node, block.id, indent);
+            item.term === undefined
+              ? []
+              : publishedRuns(
+                  item.term,
+                  node,
+                  block.id,
+                  inPlace('listItem'),
+                  placeStyle('listItem').properties.size,
+                  indent,
+                );
           return {
             term: term.length === 0 ? null : term,
             blocks: item.content.flatMap((each) =>
-              publishable(each, node, indent + listIndent(block), table, heading),
+              publishable(
+                each,
+                node,
+                'listItem',
+                indent + listIndent(block, placeStyle('listItem').properties.size),
+                table,
+                heading,
+              ),
             ),
           };
         });
@@ -563,10 +797,17 @@ export function assemble(input: AssembleInput): Assembled {
         }
         // An empty block is where a cursor stands, as an empty paragraph is (decision P).
         if (block.text === '') return markerOf(node, block.id);
+        // Set in the `preformatted` role's style, as code, and measured by it (themes 1, ruling R6);
+        // its label above it in the `preformattedLabel` role's.
+        const preformatted = roleStyle('preformatted');
+        const family = setBy(preformatted.typeface);
+        if (block.language !== undefined) {
+          check(block.language, node, block.id, roles('preformattedLabel'));
+        }
         const lines = block.text.split('\n').map(expandTabs);
-        const most = columnsAt(publishedPdf(layout.formats.pdf), indent);
+        const most = columnsAt(publishedPdf(layout.formats.pdf), indent, preformatted);
         lines.forEach((line, index) => {
-          check(line, node, block.id, 'code');
+          check(line, node, block.id, [family], 'code');
           const width = columnsOf(line);
           if (width > most) {
             failures.push(
@@ -595,14 +836,22 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
-        const blocks = block.content.flatMap((each) =>
-          // Both sides: the engine pads a block quotation by an em left and right.
-          publishable(each, node, indent + 2 * QUOTATION_INDENT),
-        );
+        // Inset by exactly its style's start and end indents (themes 1), which template 12 sets in
+        // place of the engine's own inset of a quotation.
+        const quoted = placeStyle('quotation').properties;
+        const inset = indent + quoted.startIndent + quoted.endIndent;
+        const blocks = block.content.flatMap((each) => publishable(each, node, 'quotation', inset));
         const attribution =
           block.attribution === undefined
             ? []
-            : publishedRuns(block.attribution, node, block.id, indent + 2 * QUOTATION_INDENT);
+            : publishedRuns(
+                block.attribution,
+                node,
+                block.id,
+                roles('attribution'),
+                roleStyle('attribution').properties.size,
+                inset,
+              );
         // Nothing to show and nothing to attribute contributes nothing, rather than an empty
         // `BlockQuote` (decision P) - but the markers it and what it quotes leave, as a list does.
         if (blocks.every(isMarker) && attribution.length === 0) {
@@ -624,9 +873,13 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
-        // The table's own style is the one the template sets until themes.md gives styles (ruling R4).
-        if (block.style !== TABLE_STYLE) {
+        // The table's own style, from the theme's table catalogue (themes 1), which holds no property
+        // until themes 2: it must be there, and apply to a table.
+        const tableStyle = theme!.tableStyles.get(block.style);
+        if (tableStyle === undefined) {
           failures.push(failure('compose', 'style_missing', node, block.id, block.style));
+        } else if (!tableStyle.appliesTo.includes('table')) {
+          failures.push(failure('compose', 'style_not_applicable', node, block.id, block.style));
         }
         // A caption of no words names nothing (ruling R3), whatever else it holds.
         const words = block.caption.map((inline) => (inline.type === 'text' ? inline.value : ''));
@@ -640,15 +893,34 @@ export function assemble(input: AssembleInput): Assembled {
         if (spansBody) {
           failures.push(failure('compose', 'table_header_spans_body', node, block.id, null));
         }
-        const caption = publishedRuns(block.caption, node, block.id, indent, true);
+        const caption = publishedRuns(
+          block.caption,
+          node,
+          block.id,
+          captionFamilies('table'),
+          roleStyle('caption').properties.size,
+          indent,
+          true,
+        );
         // A note on the table as a whole (CNT-038, FN-C), set beneath it in its figure (footnotes 2,
-        // ruling R7). One that says nothing, which another route may store, is none.
-        const note = publishedRuns(block.note ?? [], node, block.id, indent);
+        // ruling R7), in the `tableNote` role's style. One that says nothing, which another route may
+        // store, is none.
+        const note =
+          block.note === undefined
+            ? []
+            : publishedRuns(
+                block.note,
+                node,
+                block.id,
+                roles('tableNote'),
+                roleStyle('tableNote').properties.size,
+                indent,
+              );
         const noteSays = note.some((run) => !('text' in run) || run.text.trim() !== '');
         const label =
           numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
             ?.label ?? null;
-        if (label !== null) check(label, node, block.id);
+        if (label !== null) check(label, node, block.id, captionFamilies('table'));
         const { columns, starts } = gridOf(block);
         const scopeAt = (row: number, column: number): PublishedCell['scope'] => {
           const heading = row < block.headerRows;
@@ -675,6 +947,7 @@ export function assemble(input: AssembleInput): Assembled {
                   publishable(
                     each,
                     node,
+                    'tableCell',
                     cellIndent(indent, columns, cell.colspan),
                     block,
                     rowIndex < block.headerRows,
@@ -695,19 +968,34 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
-        if (block.imageStyle !== FIGURE_STYLE) {
+        // The image style, from the theme's image catalogue (themes 1), which holds no property until
+        // themes 2: it must be there, and apply to a figure.
+        const imageStyle = theme!.imageStyles.get(block.imageStyle);
+        if (imageStyle === undefined) {
           failures.push(failure('compose', 'style_missing', node, block.id, block.imageStyle));
+        } else if (!imageStyle.appliesTo.includes('figure')) {
+          failures.push(
+            failure('compose', 'style_not_applicable', node, block.id, block.imageStyle),
+          );
         }
         // CNT-017's caption: a caption of no words names nothing (ruling R5), as a table's does not.
         const words = block.caption.map((inline) => (inline.type === 'text' ? inline.value : ''));
         if (words.join('').trim() === '') {
           failures.push(failure('compose', 'figure_without_caption', node, block.id, null));
         }
-        const caption = publishedRuns(block.caption, node, block.id, indent, true);
+        const caption = publishedRuns(
+          block.caption,
+          node,
+          block.id,
+          captionFamilies('figure'),
+          roleStyle('caption').properties.size,
+          indent,
+          true,
+        );
         const label =
           numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
             ?.label ?? null;
-        if (label !== null) check(label, node, block.id);
+        if (label !== null) check(label, node, block.id, captionFamilies('figure'));
 
         const asset = input.assets.get(block.asset);
         if (asset === undefined) {
@@ -736,7 +1024,9 @@ export function assemble(input: AssembleInput): Assembled {
               return '';
             })
             .join('');
-        const left = textBlockHeight(format) - captionHeight(columnsOf(said), across);
+        const left =
+          textBlockHeight(format) -
+          captionHeight(columnsOf(said), across, roleStyle('caption').properties.size);
         const tooLong = left < FIGURE_LEAST_HEIGHT;
         if (tooLong) failures.push(failure('compose', 'caption_too_long', node, block.id, null));
         // Asked whatever the caption came to, so both are said at once (PUB-052).
@@ -777,7 +1067,14 @@ export function assemble(input: AssembleInput): Assembled {
         if (unnumbered) {
           failures.push(failure('compose', 'equation_unnumbered', node, block.id, null));
         }
-        if (label !== null) check(label, node, block.id);
+        // Set beside the equation in the style of the place it stands in, and in the list of
+        // equations where the layout declares one.
+        if (label !== null) {
+          check(label, node, block.id, [
+            ...inPlace(place),
+            ...(listed('equation') ? roles('listEntry') : []),
+          ]);
+        }
         if (equation === null || unnumbered) return [];
         return [
           { type: 'equation', id: block.id, anchor: anchorOf(node, block.id), label, ...equation },
@@ -848,17 +1145,25 @@ export function assemble(input: AssembleInput): Assembled {
 
   /**
    * An image in a run of text as the template reads it (figures 5, rulings R2 to R4), or null with its
-   * failures recorded: the `inline` style, an image the request resolved, alternative text as a
-   * figure's, and one line high no wider than the room where it stands.
+   * failures recorded: an image style of the theme's that applies to an image in a line (themes 1),
+   * an image the request resolved, alternative text as a figure's, and one line high - 1.2 ems of
+   * `size`, the size of the style it stands in (`inlineImageHeight`) - no wider than the room where it
+   * stands.
    */
   const publishedImage = (
     image: Extract<InlineNode, { type: 'image' }>,
     node: string,
     block: string,
     indent: number,
+    size: number,
   ): PublishedInline | null => {
-    if (image.imageStyle !== INLINE_STYLE) {
+    const style = theme!.imageStyles.get(image.imageStyle);
+    if (style === undefined) {
       failOnce(failure('compose', 'style_missing', node, block, image.imageStyle));
+      return null;
+    }
+    if (!style.appliesTo.includes('inlineImage')) {
+      failOnce(failure('compose', 'style_not_applicable', node, block, image.imageStyle));
       return null;
     }
     const asset = input.assets.get(image.asset);
@@ -869,7 +1174,8 @@ export function assemble(input: AssembleInput): Assembled {
       return null;
     }
     const alternative = alternativeOf(image.alternative, asset, node, block);
-    const width = (INLINE_IMAGE_HEIGHT * asset.width) / asset.height;
+    const height = inlineImageHeight(size);
+    const width = (height * asset.width) / asset.height;
     const room = textMeasure(publishedPdf(layout!.formats.pdf)) - indent;
     if (width > room) {
       failOnce(failure('compose', 'image_too_wide', node, block, null));
@@ -880,7 +1186,7 @@ export function assemble(input: AssembleInput): Assembled {
       image: {
         path: publishedImagePath(asset),
         width: points(width),
-        height: points(INLINE_IMAGE_HEIGHT),
+        height: points(height),
         alternative,
       },
     };
@@ -904,9 +1210,9 @@ export function assemble(input: AssembleInput): Assembled {
    * - **its alternative**, the MathML's `alttext` as `equationAlternative` reads it - the rule the
    *   editor reads - or `alternative_missing`, as an image with none: the engine would otherwise refuse
    *   the whole document without saying which (EQ-D). Read whatever the tree came to, so both are said;
-   * - **its characters**, every one the tree sets asked of the maths face (R3) - the engine's fallback
-   *   is off for maths, so one the face lacks would be set as nothing - `math_glyph_missing` for each,
-   *   named apart from `glyph_missing` because the body face may have it.
+   * - **its characters**, every one the tree sets asked of the theme's maths face (R3; themes 1) - the
+   *   engine's fallback is off for maths, so one the face lacks would be set as nothing -
+   *   `math_glyph_missing` for each, named apart from `glyph_missing` because the body face may have it.
    *
    * Said once for its block however many of its equations share a reason, as an image's are.
    */
@@ -929,7 +1235,12 @@ export function assemble(input: AssembleInput): Assembled {
       failOnce(failure('compose', 'alternative_missing', node, block, null));
     }
     if (!converted.ok) return null;
-    const faceless = characterProblems(mathsText(converted.tree), input.covers, 'math');
+    const faceless = characterProblems(
+      mathsText(converted.tree),
+      input.covers,
+      setBy(theme!.maths),
+      'math',
+    );
     for (const { problem, codePoint } of faceless) {
       const code = problem === 'glyph_missing' ? 'math_glyph_missing' : problem;
       failOnce(failure('compose', code, node, block, codePointName(codePoint)));
@@ -943,7 +1254,7 @@ export function assemble(input: AssembleInput): Assembled {
   /** A node and every node beneath it, in the matter of the top-level node that holds them. */
   const project = (node: OutlineNode, depth: number, matter: OutlineMatter): PublishedNode => {
     const numberText = numbers.get(node.id) ?? null;
-    if (numberText !== null) check(numberText, node.id, null);
+    if (numberText !== null) check(numberText, node.id, null, titleFamilies(depth));
     const anchor = nodeAnchor(node.id);
     const shell = {
       id: node.id,
@@ -963,7 +1274,14 @@ export function assemble(input: AssembleInput): Assembled {
         node.title,
         layout === null
           ? null
-          : (reference) => resolved.printed.get(referenceKey(node.id, reference.id))?.text ?? '',
+          : (reference) => {
+              const printed = resolved.printed.get(referenceKey(node.id, reference.id));
+              // The layout's word for above or below, set in the title's families.
+              if (printed?.relative && printed.text !== null) {
+                checkWords(printed.text, titleFamilies(depth), failOnce);
+              }
+              return printed?.text ?? '';
+            },
         layout === null ? null : (equation) => publishedEquation(equation.mathml, node.id, null),
       );
       // A footnote in a title would be set twice, in the contents and where it stands (FN-B).
@@ -975,7 +1293,7 @@ export function assemble(input: AssembleInput): Assembled {
           failure('compose', 'title_not_publishable', node.id, null, title.unpublishable),
         );
       } else {
-        check(titleWords(title.runs), node.id, null);
+        check(titleWords(title.runs), node.id, null, titleFamilies(depth));
       }
       const children = node.children.map((child) => project(child, depth + 1, matter));
       return {
@@ -997,14 +1315,14 @@ export function assemble(input: AssembleInput): Assembled {
       const children = node.children.map((child) => project(child, depth + 1, matter));
       return { ...shell, title: [], language: null, direction: null, blocks: [], children };
     }
-    check(content.title, node.id, null);
+    check(content.title, node.id, null, titleFamilies(depth));
     // A component in the document's own language is not refused a second time.
     const own = content.language === input.outline.language ? null : content.language;
     const ownLanguage = own === null ? null : publishedLanguage(own);
     if (own !== null && ownLanguage === null) {
       failures.push(failure('compose', 'language_not_publishable', node.id, null, own));
     }
-    const blocks = content.content.flatMap((block) => publishable(block, node.id));
+    const blocks = content.content.flatMap((block) => publishable(block, node.id, 'text'));
     const children = node.children.map((child) => project(child, depth + 1, matter));
     return {
       ...shell,
@@ -1075,6 +1393,8 @@ export function assemble(input: AssembleInput): Assembled {
         noticeSentence: words.noticeSentence,
       },
       format: publishedPdf(layout.formats.pdf),
+      // Every paragraph style the theme holds, not only those used (themes 1, ruling R6).
+      theme: projectTypst(theme!),
       // Each list the layout declares that has an entry, in its order (ruling R7): a list of nothing
       // is not published, as a contents of nothing is not (decision K).
       front: {

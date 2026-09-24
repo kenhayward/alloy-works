@@ -116,8 +116,43 @@ export function failureWords(failure: Failure): string {
       );
     // A table has a style of its own as a paragraph does (tables 2), and a figure an image style
     // (figures 3); the failure names the block but not its kind, so the sentence names all three.
+    // Since themes 1 the styles are the theme's catalogues', so it is the theme that lacks one, and
+    // `detail` is the style's identifier as stored, never the author's text.
     case 'style_missing':
-      return 'This paragraph, table or figure uses a style the publication template does not set.';
+      return `This paragraph, table or figure uses the style ${failure.detail ?? ''}, which the publication's theme does not have.`;
+    // Themes 1: the style is the theme's, and declares where it applies (STY-006) - a heading's style
+    // on running text, a footnote's in a list. `detail` is the style's identifier, which the theme
+    // wrote, never the author's text; the block is named by where it is, as for `style_missing`.
+    case 'style_not_applicable':
+      return `This paragraph, table or figure uses the style ${failure.detail ?? ''}, which cannot be used where it stands.`;
+    // Themes 1 (STY-042): the theme records each typeface's licence, and this one's forbids embedding
+    // it in a PDF. Nothing in the document caused it and another attempt fails the same way, so it
+    // blames the theme, as `layout_glyph_missing` blames the layout, and never says to publish again.
+    case 'typeface_not_embeddable':
+      return `The typeface ${failure.detail ?? ''} cannot be embedded in a PDF: its licence does not permit it. The publication's theme has to change before this document can be published.`;
+    // Themes 1 (ruling R5): the theme names a typeface by its files' hashes, and the worker holds only
+    // the faces pinned in its image, so a face it does not hold cannot set a word. As the licence's
+    // refusal, it is the theme's to change, and another attempt finds the same faces. `detail` is the
+    // family and why, `<family>: <files | metrics | maths>` (the final review of themes 1, M1): a family
+    // the theme wrote, which cannot hold a colon, and a word from a fixed list, never a hash or a
+    // number. A reason this page does not know is said as the service not holding the face.
+    case 'typeface_unavailable': {
+      const theme = "The publication's theme has to change before this document can be published.";
+      const detail = failure.detail ?? '';
+      const at = detail.lastIndexOf(': ');
+      const family = at < 0 ? detail : detail.slice(0, at);
+      const reason = at < 0 ? '' : detail.slice(at + 2);
+      if (reason === 'maths') {
+        return `The typeface ${family} cannot set this publication's equations: it is not a typeface made for mathematics. ${theme}`;
+      }
+      const because =
+        reason === 'metrics'
+          ? "the measurements the theme records for it are not its files' own"
+          : reason === 'files'
+            ? 'the publishing service does not hold the files the theme names for it'
+            : 'the publishing service does not hold it';
+      return `The typeface ${family} is not one this publication can be set in: ${because}. ${theme}`;
+    }
     // Decision K, as Ken reversed it: a tag the engine cannot carry is refused, never shortened, and
     // the author is told what a publication takes (pre-flight finding 9).
     case 'language_not_publishable':

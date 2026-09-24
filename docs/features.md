@@ -10,7 +10,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > outlines restructured, their sections numbered and their paragraphs, lists, quotations,
 > preformatted text, tables and figures published as a laid-out PDF with a cover, a contents, lists
 > of figures and tables and numbered pages that carries all of that formatting.
-> Footnotes, a table's note, cross-references and equations are written and published.
+> Footnotes, a table's note, cross-references and equations are written and published, and every
+> publication is set from the environment's theme and records it.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -367,9 +368,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   Ada and Grace hold on General in development - has **Publish as PDF** beneath its outline, and a
   second or two later the page says it is published. The publication is a tagged PDF of the version on
   the page: its title, its sections numbered as the outline shows them and bookmarked, and each
-  component's paragraphs, lists, quotations and preformatted text beneath its heading, set in
-  Liberation Serif, with inline code and preformatted text in Liberation Mono and equations in STIX
-  Two Math, and everything you
+  component's paragraphs, lists, quotations and preformatted text beneath its heading, set from the
+  environment's **theme** - Liberation Serif, with inline code and preformatted text in Liberation
+  Mono and equations in STIX Two Math - and everything you
   formatted
   carried into it: strong, emphasis, underline, subscript, superscript, inline code, quoted phrases,
   links a reader can follow, and each run's own language. **Lists print as you made them** - bulleted
@@ -422,6 +423,25 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   A4 with an inch margin, English words, a contents three deep, each appendix on a new page - which
   every environment starts with one of and every document publishes under. Each publication records
   the exact version of the layout that made it, beside the document version and the fonts.
+
+  **Every publication is set from a theme.** How its text looks - each typeface, size, weight, slant
+  and colour, how paragraphs are aligned and indented, the space above and below each and between its
+  lines, which paragraphs keep with the next or are kept whole where they fit on a page, and that a
+  paragraph never leaves a single line alone at the foot or head of a page - comes from the environment's **theme**, not from
+  the product's fixed settings. Every environment starts with one, the default, and every publication
+  records the exact version it was made under, as it records the layout's. The default is set to look
+  as publications looked before, measured from them, with these differences you can see: a quotation
+  is no longer set apart from the text around it by extra space, and stands as close to it as one
+  paragraph stands to the next; a heading straight under another heading, a list after a paragraph,
+  and a table's rows, caption and note stand a few points further apart; a footnote's second
+  paragraph stands closer to its first; and the running head and foot and the first line of a page
+  each sit a point or two from where they did. A table's cells are still centred and a figure's
+  caption too, both now by the theme. A publication made before the theme is kept as it was.
+  **A theme can refuse a publish**, naming what to change: a paragraph, table or figure using a style
+  the theme does not have, or using one where that style cannot be used; and a typeface whose licence
+  forbids embedding it in a PDF, or one the publishing service does not have, whose measurements the
+  theme records wrongly, or which cannot set equations. The last two are the theme's to change, and
+  publishing again will not help. The default refuses none of these.
 
   **A document is published only under a layout written in its own language.** Where the two do not
   agree the page says so, naming both, before anything is queued; an English layout publishes an
@@ -538,8 +558,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   only that the publish failed. Quotations inside one another stop at fifteen in the editor, which is
   the most a publication can set.
   No publication has a list of equations yet, since the one layout lists only figures and tables;
-  there is no theme; nothing chooses, makes or
-  edits a layout, and there is only ever the one the environment started with; and there is no Word
+  nothing chooses, makes or edits a layout or a theme, and there is only ever the one of each the
+  environment started with, and no style to choose for a paragraph; and there is no Word
   file, no preview, and no way to approve a publication. The page asks how a publish is going for as
   long as it stays open, and a download link lasts five minutes from when the publication's page was
   opened. In the desktop app, downloading has not been checked.
@@ -566,11 +586,15 @@ Named explicitly so nobody has to read the source to find out:
   make a figure or a table unnumbered: every one takes a number.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
   quotations, preformatted text, tables and their notes, figures, images in a line of text,
-  footnotes, cross-references and equations: no definition-list structure of PDF's own, no list of equations under the one layout, no theme, no
+  footnotes, cross-references and equations: no definition-list structure of PDF's own, no list of equations under the one layout, no
   Word, no preview, and no way to approve a
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,
   and every document publishes under it.
+- No way to choose, make or edit a theme, or to give a paragraph, a table or a figure a style of your
+  own: every environment has the default theme, and every document publishes under it. The theme does
+  not reach the editor, which shows text in its own settings, and a table or a figure has no look of
+  its own to set yet.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
 - No search, no metadata anybody can fill in, no taxonomy, no workflow, and no revisions, baselines or

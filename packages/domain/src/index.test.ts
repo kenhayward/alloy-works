@@ -180,6 +180,8 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_9',
         // Frozen by equations 2, which made `publishing/11`: the schema template 10 reads.
         'PUBLISHING_SCHEMA_10',
+        // Frozen by themes 1, which made `publishing/12`: the schema template 11 reads.
+        'PUBLISHING_SCHEMA_11',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',
@@ -187,6 +189,9 @@ describe('the domain package', () => {
         // The maths tree the template and the Word writer both read, from one converter, promoted by
         // equations 2 so that nothing outside the domain builds a tree by hand (ruling R2).
         'mathsTree',
+        // The characters the tree sets on its own account, promoted by themes 1 so the worker's test
+        // holds the maths face to them rather than to a copy (STY-074).
+        'MATHS_CHARACTERS',
         // Promoted by the editor's marks slice, so the editor can warn about a tag a publication
         // could not carry without keeping a second copy of the rule (CNT-152).
         'publishedLanguage',
@@ -213,6 +218,28 @@ describe('the domain package', () => {
         'LISTED_SEQUENCES',
         'speaksFor',
         'unsupportedFormats',
+        // The theme, promoted by themes 1 (ruling R1), as ADR-0014 said publishing work would: its
+        // shapes' kinds, places, roles and marks, the reader and its codes, the default theme the
+        // store seeds, and the three projections with the run rules Word needs.
+        'CATALOGUE_KINDS',
+        'CATALOGUE_SCHEMA_VERSION',
+        'PLACES',
+        'ROLES',
+        'STYLED_MARKS',
+        'THEME_SCHEMA_VERSION',
+        'readCatalogue',
+        'readTheme',
+        'themeRefusalCodes',
+        'DEFAULT_CATALOGUES',
+        'DEFAULT_CATALOGUES_BY_VERSION',
+        'DEFAULT_CATALOGUE_VERSIONS',
+        'DEFAULT_THEME',
+        'projectTypst',
+        'projectCss',
+        'projectStylesXml',
+        'markStyleId',
+        'runFormat',
+        'wordRun',
       ].sort(),
     );
   });
