@@ -101,9 +101,10 @@ export type MathmlResult =
   | { readonly ok: false; readonly failure: string };
 
 /**
- * The tree this reader reads MathML into. Exported inside the package for one caller, the rewrite of
- * Temml's output (`temml.ts`), which must read that output exactly as this reader does and not with a
- * second parser of its own; the package's index does not export it.
+ * The tree this reader reads MathML into. Exported inside the package for two callers, the rewrite of
+ * Temml's output (`temml.ts`) and the maths tree a publish sets an equation from
+ * (`publishing/maths.ts`), which must each read MathML exactly as this reader does and not with a
+ * second parser of their own; the package's index does not export it.
  */
 export type MathElement = { name: string; attributes: [string, string][]; children: MathNode[] };
 export type MathNode = MathElement | string;
@@ -140,8 +141,9 @@ export function sanitiseMathml(source: string): MathmlResult {
 
 /**
  * Reads MathML into this reader's tree, refusing exactly what `sanitiseMathml` refuses as unreadable,
- * and keeping everything it read - nothing is cleaned. For the rewrite of Temml's output only, which
- * changes the tree and hands it back to `sanitiseMathml` through `writeMathmlTree`.
+ * and keeping everything it read - nothing is cleaned. For the rewrite of Temml's output, which
+ * changes the tree and hands it back to `sanitiseMathml` through `writeMathmlTree`, and for the maths
+ * tree, which reads a stored equation and refuses whatever in it has no mapping of its own.
  */
 export function readMathmlTree(
   source: string,

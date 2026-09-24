@@ -176,6 +176,9 @@ describe('the domain package', () => {
         'publishedImagePath',
         'publishFailureCodes',
         'setWithoutAGlyph',
+        // The maths tree the template and the Word writer both read, from one converter, promoted by
+        // equations 2 so that nothing outside the domain builds a tree by hand (ruling R2).
+        'mathsTree',
         // Promoted by the editor's marks slice, so the editor can warn about a tag a publication
         // could not carry without keeping a second copy of the rule (CNT-152).
         'publishedLanguage',
