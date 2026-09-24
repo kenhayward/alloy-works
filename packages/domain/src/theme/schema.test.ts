@@ -100,6 +100,38 @@ describe('catalogue/1', () => {
     }
   });
 
+  it("holds a padding only within an indent's bounds", () => {
+    const catalogue = paragraph();
+    const style = catalogue.styles[0]!;
+    for (const padding of [-1, 1585]) {
+      const odd = { ...style, properties: { padding } };
+      expect(
+        () => catalogueSchema.parse({ ...catalogue, styles: [odd] }),
+        String(padding),
+      ).toThrow();
+    }
+    const padded = { ...style, properties: { padding: 6, background: '#f0f0f0' } };
+    expect(() => catalogueSchema.parse({ ...catalogue, styles: [padded] })).not.toThrow();
+    const base: Record<string, unknown> = { ...catalogue.base };
+    delete base['padding'];
+    expect(() => catalogueSchema.parse({ ...catalogue, base })).toThrow();
+  });
+
+  it("scales a mark's text only by a fraction from a half to twice the size it stands in", () => {
+    const catalogue = clone(DEFAULT_CATALOGUES.character);
+    for (const scale of [0, 0.49, 2.01, -1]) {
+      const odd = { ...catalogue.styles[0]!, properties: { scale } };
+      expect(() => catalogueSchema.parse({ ...catalogue, styles: [odd] }), String(scale)).toThrow();
+    }
+    for (const scale of [0.5, 0.8, 2]) {
+      const fine = { ...catalogue.styles[0]!, properties: { scale } };
+      expect(
+        () => catalogueSchema.parse({ ...catalogue, styles: [fine] }),
+        String(scale),
+      ).not.toThrow();
+    }
+  });
+
   it('holds a character style of a mark a publication carries, stating only appearance', () => {
     const catalogue = clone(DEFAULT_CATALOGUES.character);
     expect(catalogue.styles.map((style) => style.mark).sort()).toEqual([...STYLED_MARKS].sort());

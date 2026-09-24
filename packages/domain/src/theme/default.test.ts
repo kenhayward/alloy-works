@@ -41,7 +41,14 @@ describe('the default theme', () => {
       typeface: 'mono',
       size: 8.8,
       background: '#f0f0f0',
+      // Template 11's panel, `inset: 6pt`.
+      padding: 6,
     });
+    expect(DEFAULT_CATALOGUES.paragraph.base).toMatchObject({ padding: 0 });
+    // Template 11 set inline code in the body's text at 0.8em.
+    expect(
+      DEFAULT_CATALOGUES.character.styles.find((style) => style.mark === 'inlineCode')?.properties,
+    ).toEqual({ typeface: 'mono', scale: 0.8 });
     expect(paragraph('preformatted-label').properties).toMatchObject({ size: 8 });
     expect(paragraph('table-note').properties).toMatchObject({ size: 10 });
     expect(paragraph('notice').properties).toMatchObject({ size: 9, alignment: 'end' });

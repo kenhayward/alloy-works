@@ -31,6 +31,7 @@ describe('projectTypst', () => {
       keepTogether: false,
       widowControl: true,
       hyphenate: false,
+      padding: 0,
       descent: 443 / 2048,
       leading: 4.5,
     });
@@ -51,6 +52,7 @@ describe('projectTypst', () => {
       font: 'Liberation Mono',
       size: 8.8,
       background: '#f0f0f0',
+      padding: 6,
       descent: 615 / 2048,
       leading: 2.2,
     });
@@ -83,7 +85,7 @@ describe('projectTypst', () => {
       underline: { underline: true },
       subscript: { position: 'subscript' },
       superscript: { position: 'superscript' },
-      inlineCode: { font: 'Liberation Mono' },
+      inlineCode: { font: 'Liberation Mono', scale: 0.8 },
     });
 
     const inputs = defaultInputs();

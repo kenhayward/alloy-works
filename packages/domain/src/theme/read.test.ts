@@ -66,7 +66,7 @@ describe('readTheme', () => {
     ]);
   });
 
-  it('STY-024 binds one catalogue of each kind by artifact version, reading each at the version it names', () => {
+  it('binds one catalogue of each kind by artifact version, reading each at the version it names', () => {
     const theme = resolved();
     expect(theme.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
 

@@ -136,6 +136,12 @@ const paragraphPropertyShape = {
   colour,
   /** A fill behind the paragraph, or none: its text then stands on whatever is behind it. */
   background: z.union([colour, z.literal('none')]),
+  /**
+   * Space between the fill's edge and the text, on every side - preformatted text's panel. Drawn only
+   * where there is a fill: with `background` none it sets nothing, since there is no edge to measure
+   * from.
+   */
+  padding: points,
   /** Start and end, never left and right: they follow the text's direction. */
   alignment: z.enum(['start', 'end', 'centre', 'justify']),
   firstLineIndent: points,
@@ -193,6 +199,11 @@ export const characterPropertiesSchema = z
     colour,
     typeface: typefaceIdSchema,
     position: z.enum(['subscript', 'superscript']),
+    /**
+     * A size relative to the text the mark stands in, as a fraction of it: inline code at 0.8 of a
+     * heading is larger than at 0.8 of a footnote, as template 11's `0.8em` was. From a half to twice.
+     */
+    scale: z.number().min(0.5).max(2),
   })
   .partial();
 

@@ -144,6 +144,7 @@ const paragraph: ParagraphCatalogue = {
     italic: false,
     colour: '#000000',
     background: 'none',
+    padding: 0,
     alignment: 'start',
     firstLineIndent: 0,
     startIndent: 0,
@@ -309,6 +310,7 @@ const paragraph: ParagraphCatalogue = {
         typeface: 'mono',
         size: 8.8,
         background: '#f0f0f0',
+        padding: 6, // template 11's panel, `inset: 6pt`
         lineSpacing: 11, // measured in task 4
       },
     },
@@ -328,8 +330,8 @@ const paragraph: ParagraphCatalogue = {
 /**
  * One style for each of the nine marks a publication carries, in `PUBLISHED_MARK_ORDER`, rendering
  * each as template 11 did. A language, a link and a quoted phrase state nothing: template 11 gave them
- * no appearance, only their meaning, which stays the template's. Inline code states only its face:
- * template 11 also set it at 0.8em, and a character style has no size.
+ * no appearance, only their meaning, which stays the template's. Inline code is set in the monospaced
+ * face at 0.8 of the text it stands in, template 11's `0.8em`.
  */
 const character: CharacterCatalogue = {
   schemaVersion: 1,
@@ -357,7 +359,7 @@ const character: CharacterCatalogue = {
       id: 'inline-code',
       name: 'Inline code',
       mark: 'inlineCode',
-      properties: { typeface: 'mono' },
+      properties: { typeface: 'mono', scale: 0.8 },
     },
   ],
 };

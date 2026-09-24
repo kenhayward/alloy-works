@@ -18,6 +18,8 @@ export interface TypstParagraphStyle {
   readonly fill: string;
   /** The paragraph's fill, or null where it has none. */
   readonly background: string | null;
+  /** Points between the fill's edge and the text; the template draws it only around a fill. */
+  readonly padding: number;
   /** Justified text is aligned to the start and justified, as the engine says it. */
   readonly align: 'start' | 'center' | 'end';
   readonly justify: boolean;
@@ -48,6 +50,8 @@ export interface TypstMark {
   readonly fill?: string;
   readonly font?: string;
   readonly position?: 'subscript' | 'superscript';
+  /** A fraction of the size of the text the mark stands in: the template's `em`, multiplied. */
+  readonly scale?: number;
 }
 
 export interface TypstTheme {
@@ -95,6 +99,7 @@ export function projectTypst(theme: ResolvedTheme, used?: Iterable<string>): Typ
         fill?: string;
         font?: string;
         position?: 'subscript' | 'superscript';
+        scale?: number;
       } = {};
       if (properties.bold !== undefined) out.weight = properties.bold ? 'bold' : 'regular';
       if (properties.italic !== undefined) out.style = properties.italic ? 'italic' : 'normal';
@@ -102,6 +107,7 @@ export function projectTypst(theme: ResolvedTheme, used?: Iterable<string>): Typ
       if (properties.colour !== undefined) out.fill = properties.colour;
       if (typeface !== undefined) out.font = typeface.family;
       if (properties.position !== undefined) out.position = properties.position;
+      if (properties.scale !== undefined) out.scale = properties.scale;
       return [mark, out];
     }),
   ) as Record<StyledMark, TypstMark>;
@@ -125,6 +131,7 @@ function paragraph(style: ResolvedParagraphStyle): TypstParagraphStyle {
     style: p.italic ? 'italic' : 'normal',
     fill: p.colour,
     background: p.background === 'none' ? null : p.background,
+    padding: p.padding,
     align: p.alignment === 'centre' ? 'center' : p.alignment === 'justify' ? 'start' : p.alignment,
     justify: p.alignment === 'justify',
     firstLineIndent: p.firstLineIndent,
