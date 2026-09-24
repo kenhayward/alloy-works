@@ -426,8 +426,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
   **Every publication is set from a theme.** How its text looks - each typeface, size, weight, slant
   and colour, how paragraphs are aligned and indented, the space above and below each and between its
-  lines, which paragraphs keep with the next or stay whole on a page, and that a paragraph never leaves
-  a single line alone at the foot or head of a page - comes from the environment's **theme**, not from
+  lines, which paragraphs keep with the next or are kept whole where they fit on a page, and that a
+  paragraph never leaves a single line alone at the foot or head of a page - comes from the environment's **theme**, not from
   the product's fixed settings. Every environment starts with one, the default, and every publication
   records the exact version it was made under, as it records the layout's. The default is set to look
   as publications looked before, measured from them, with these differences you can see: a quotation
@@ -439,8 +439,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   caption too, both now by the theme. A publication made before the theme is kept as it was.
   **A theme can refuse a publish**, naming what to change: a paragraph, table or figure using a style
   the theme does not have, or using one where that style cannot be used; and a typeface whose licence
-  forbids embedding it in a PDF, or one the publishing service does not have. The last two are the
-  theme's to change, and publishing again will not help. The default refuses none of these.
+  forbids embedding it in a PDF, or one the publishing service does not have, whose measurements the
+  theme records wrongly, or which cannot set equations. The last two are the theme's to change, and
+  publishing again will not help. The default refuses none of these.
 
   **A document is published only under a layout written in its own language.** Where the two do not
   agree the page says so, naming both, before anything is queued; an English layout publishes an

@@ -9,8 +9,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 - **Every publication is set from a theme.** Each typeface, size, weight, slant and colour in a PDF,
   how its paragraphs are aligned and indented, the space above, below and between their lines, which
-  paragraphs keep with the next or stay whole on a page, and that no paragraph leaves a single line
-  alone at the foot or head of a page, now come from the environment's theme rather than from settings
+  paragraphs keep with the next or are kept whole where they fit on a page, and that no paragraph
+  leaves a single line alone at the foot or head of a page, now come from the environment's theme rather than from settings
   fixed in the product. Every environment starts with the default theme, set in Liberation Serif,
   Liberation Mono and STIX Two Math as before, and each publication records the exact version of the
   theme it was made under, beside the layout's, so it says how it looked. Nothing yet lets you choose
@@ -18,7 +18,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **Publishing says when the theme stands in the way**, naming what to change: a paragraph, a table or
   a figure using a style the theme does not have, or using one where that style cannot be used; a
   typeface whose licence does not allow it to be embedded in a PDF; and a typeface the publishing
-  service does not have. For the last two the theme has to change, and publishing again will not help.
+  service does not have, whose measurements the theme records wrongly, or which cannot set equations.
+  For the last two the theme has to change, and publishing again will not help.
   The default theme refuses none of these.
 
 ### Changed

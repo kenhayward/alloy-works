@@ -327,6 +327,77 @@ choosing or editing a theme, and any route that writes one.
   `resolveTheme`, `exampleTheme` and `resolveStyle`, which are gone. It is the record of what ADR-0014
   measured, as the other spikes are, and is not brought onto the model here.
 
+The final whole-branch review found three ways a theme other than the default publishes a wrong PDF
+that veraPDF passes and nothing names - a kept paragraph painted off its page, lines set over each
+other, and small text judged as large - a faces check that held hashes and nothing else, a literal
+test narrower than its claim and a claim wider than the template, a coverage test of each script's
+bare alphabet, and docs that repeated the first. None is on the default theme's path. These were
+changed:
+
+- **I1, keep-together keeps a paragraph whole where it fits a page**, as Word's `keepLines` does.
+  Template 12's `styled` measures a block that keeps together, with `layout` and `measure`, at the
+  width it is set in, and makes it unbreakable only where its height is no more than the page's text
+  block - `layout`'s height is the whole region's, not what is left of it, measured - so a paragraph
+  taller than a page breaks across pages. The measured block stands inside the sticky one, and a kept
+  heading still goes over with a kept paragraph (the heading test now runs keeping together too). The
+  worker test compiles the reviewer's paragraphs of thirty and eighty long sentences under the default
+  with `keepTogether` on: every baseline inside the text block, the paragraph begun where it stands,
+  every word set, and veraPDF passing; the paragraph that fits still moves whole. **`theme/1`'s size
+  is held to 144pt and its line spacing to 288pt**, not Word's 1638, before any theme but the default
+  is stored; the default's seed is unchanged.
+- **I2, a line is never set closer than its size.** The reader refuses a resolved paragraph style
+  whose `lineSpacing` is below its `size`, a new code, `line_spacing_below_size`, naming the style and
+  both values: a line is one em tall, and line spacing a minimum distance between baselines. Stated or
+  inherited, each style that resolves below is named.
+- **I3, contrast is judged at the size text is set at.** The size a subscript or superscript is set
+  at is `SCRIPT_SCALE`, 1331/2048 of its text: Typst 0.15.1's own is `size: auto`, the face's OS/2
+  subscript size, which both pinned text faces record as 1331 of 2048 units, measured from a compiled
+  PDF as 7.149pt in 11pt text. `projectTypst` states it as `script`, template 12's `sub` and `super`
+  set it, and a worker test sets scripts at a projection's half to show it is read (template 12's hash
+  and pipeline 12's moved). Where a face has glyphs of its own for every character of a script the
+  engine still uses them at the text's size (`typographic`, left at its default), and how far a
+  script is lowered or raised is still the engine's. The reader judges each character style in each
+  paragraph style at the paragraph's size times its `scale` and, positioned, the script fraction,
+  bold from the mark or the paragraph; a mark with no colour of its own in its paragraph's colour,
+  refused only where it asks more than its paragraph does - so the edge the first cut left, a mark
+  turning bold off in 14pt bold text, is judged now. Each reviewer's case is a reader test. Marks
+  nested in each other are not judged together: the reader cannot know which an author combines.
+- **M1, the worker holds a theme's faces exactly.** `typefacesNotHeld(theme, fonts)` holds each
+  typeface to its family's pinned files - every one recorded, no other - its recorded ascent, descent
+  and advance to each file's own, read by `faceMetrics` as the metrics test reads them and compared
+  exactly, and the theme's maths face to faces with an OpenType `MATH` table, which `faceMetrics` now
+  reports as `mathematical`. `PinnedFonts` carries each file's metrics by hash. A failure stays
+  `typeface_unavailable`, one per family, with the first reason it fails for; its `detail` is
+  `<family>: <files | metrics | maths>`, the family - which cannot hold a colon - and a word from the
+  fixed list, never a hash or a number, since `PublishFailure` has one `detail` and it must name the
+  typeface too. The publishing page says each: the files the theme names, the measurements it
+  records, or that the face cannot set equations. Unit tests hold each case, the reviewer's three
+  included, and the job test fails the serif as the maths face by name. The weight and posture a
+  theme records for each file are still not held to the file.
+- **M3, the literal test is wider, and the claims narrower.** The allowed and forbidden patterns moved
+  to the head of `template.test.ts`, with a test that plants each literal the reviewer found passing:
+  a numeric weight, the engine's `strong` and `emph`, any `font:` not read from the theme (the four
+  readings template 12 has are allowed, each saying why), and a colour through `color`'s members or a
+  gradient. The named colours the test forbade were already every one the pinned 0.15.1 defines,
+  checked against the engine. What template 12 never sets is still the engine's default and no theme
+  moves it: **the underline's offset and thickness, a list's and an enumeration's indents, a definition
+  list's hanging indent and separator, a table cell's inset and a table's rules, and the contents'
+  leader and indents stay the template's until themes 2's table and list properties**; beside them,
+  how far a script is lowered or raised, and a footnote's separator, clearance and indent, which no
+  property of themes 1 or 2 names. Template 12's header and themes.md's "What was built" say so, and
+  no longer claim every size is the theme's.
+- **M4, STY-074's test checks each script as it is written**: modern Greek's twenty letters with
+  tonos and dialytika, every letter of Greek Extended, and Hebrew's points from U+05B0 to U+05C7, in
+  every file of both text faces. The faces cover them all, so the test was green at once; one code
+  point the faces lack, put in and taken out, turned it red.
+- **M5, the changelog and features say a paragraph is kept whole where it fits a page**, and name the
+  new reasons a typeface is refused.
+
+Left as found: **M2, nothing checks a theme's values against the layout's page.** A size, a padding
+or a space is bounded by the schema, not by the page a layout declares, so a large padding on the
+notice's style pushes its fill past the page's top edge, and a space of 1584pt puts every block on a
+page of its own. It needs a check at publish time, when the theme and the layout meet.
+
 ## Tasks
 
 1. **The model** (`packages/domain`): R1, R2 and R3's data - the shapes, the reader and its refusals,

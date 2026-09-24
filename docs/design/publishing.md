@@ -362,7 +362,8 @@ image's - where it meant, before themes, anything but the one name each kind was
 join the list: `style_not_applicable`, a style used where its `appliesTo` does not reach, naming it;
 `typeface_not_embeddable`, a face the document sets text in whose licence forbids embedding it in a
 PDF, naming the family; and, from the worker before `assemble`, `typeface_unavailable`, a face the theme
-declares whose files the worker does not hold, naming the family - see themes.md's
+declares that the worker does not hold exactly - its family's files, their metrics, a maths face's
+`MATH` table - naming the family and which, `files`, `metrics` or `maths` - see themes.md's
 [What was built](themes.md#what-was-built).
 
 **No content reaches Typst as anything but a value** (PUB-062). The template walks `nodes` and sets
@@ -1080,8 +1081,9 @@ Mono 2.1.5 and STIX Two Math 2.13 b171, each under the SIL Open Font Licence wit
 and by each file's hash, with its licence, its embedding permissions and its metrics - the serif for
 the body, the mono for preformatted text and inline code, the maths face for equations - and template
 12 names every face from `publishing/12`'s `theme`, never a literal. Before `assemble`, the worker
-holds each face the theme declares to its pinned files and fails the publish `typeface_unavailable`,
-naming the family, for one it does not hold; the per-compile check above is unchanged.
+holds each face the theme declares to its pinned files - exactly its family's files, their own
+metrics, and for the maths face a `MATH` table - and fails the publish `typeface_unavailable`, naming
+the family and why, for one it does not hold; the per-compile check above is unchanged.
 
 **The creation time is the request's**, truncated to the second, so a retry, a second worker racing an
 expired lease and a reproduction months later all compile the same bytes, and the object's key - its

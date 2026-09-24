@@ -482,8 +482,10 @@ theme model exported from `packages/domain/src/theme/` - `catalogue/1` and `them
 and `readTheme` returning every refusal at once, contrast, the default theme and its six catalogues as
 data, and the Typst projection - migration 0024 seeding them as `theme` and `catalogue` artifacts,
 declaring the theme by `theme_default` and recording its version on every request and publication,
-`publishing/12` and template 12, which sets every face, size, weight, posture, colour, space and line
-from the theme and holds no typographic literal a test does not allow, and the worker refusing a face
+`publishing/12` and template 12, which sets the face, size, weight, posture and colour of all its
+text, a paragraph's fill, padding, alignment and indents, its line spacing, the space between blocks
+and the size of a script from the theme, and holds no typographic literal a test does not allow - not
+every value, since what it never sets is still the engine's, below - and the worker refusing a face
 it does not hold. Nothing chooses or edits a theme: every environment has the one its migration
 seeded. Building it changed these things here:
 
@@ -511,9 +513,30 @@ seeded. Building it changed these things here:
   `style_missing` or `style_not_applicable` names them, but carry nothing until themes 2 gives them
   properties.
 - **The faces are checked twice.** Before `assemble`, the worker holds every face the theme declares
-  to its pinned files, and a face it does not hold fails `typeface_unavailable`, naming the family;
-  `assemble` fails `typeface_not_embeddable` for a face the document sets text in whose licence
-  forbids embedding in a PDF. The glyph check asks the family that sets the text.
+  to its pinned files **exactly** - every file of its family and no other, the ascent, descent and
+  advance it records the files' own, and the maths face a face with an OpenType `MATH` table - and a
+  face it does not hold fails `typeface_unavailable`, naming the family and why, `files`, `metrics` or
+  `maths`; `assemble` fails `typeface_not_embeddable` for a face the document sets text in whose
+  licence forbids embedding in a PDF. The glyph check asks the family that sets the text.
+- **The reader bounds what a page can hold, and what a line can.** A size is at most 144pt and a line
+  spacing 288pt, not Word's 1638; a style whose line spacing, as it resolves, is below its size is
+  refused, `line_spacing_below_size`, since a line is one em tall. Nothing yet holds a theme's sizes,
+  padding or spacing to the page a layout declares.
+- **Contrast is judged at the size text is set at**: a character style in each paragraph style at the
+  paragraph's size times its `scale` and, for a subscript or superscript, the script's size, 1331/2048
+  of its text, which the projection states as `script` and template 12 sets rather than leaving to the
+  engine; bold from the mark or the paragraph; and a mark with no colour of its own in its
+  paragraph's colour, where it asks more than its paragraph does. Marks nested in each other are not
+  judged together.
+- **Keep-together keeps a paragraph whole where it fits a page**, as Word's `keepLines` does, and
+  breaks one taller than the page's text block, which template 12 measures; the engine would have
+  painted it off the page.
+- **Not every value is the theme's.** What template 12 never sets is the engine's default, and no
+  theme moves it: the underline's offset and thickness, a list's and an enumeration's indents, a
+  definition list's hanging indent and separator, a table cell's 5pt inset and a table's rules, and
+  the contents' leader and indents stay the template's until themes 2's table and list properties;
+  and how far a script is lowered or raised, and a footnote's separator, clearance and indent, which
+  no property of themes 1 or 2 names. Template 12's header names each.
 - **A quotation is no longer set off.** The theme styles paragraphs, not a block's edges, so the space
   around a quotation is its paragraphs' own: 16.5pt less above it and before its attribution than
   template 11 set, and 9.9pt less after it. A spacing property for a block's edges, as Word's contextual
