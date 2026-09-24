@@ -283,23 +283,34 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Publish again');
   });
 
-  it('says a typeface the theme names is not one the publisher holds, blaming the theme', async () => {
-    const fake = failing([
-      {
-        stage: 'compose',
-        code: 'typeface_unavailable',
-        node: null,
-        block: null,
-        detail: 'Alloy Sans',
-      },
-    ]);
+  it('says a typeface the theme names is not one the publisher holds, and why, blaming the theme', async () => {
+    // `detail` is the family and why, from a fixed list (the final review of themes 1, M1): the files
+    // the theme names for it, the measurements it records, or equations it cannot set.
+    const fake = failing(
+      ['Alloy Sans: files', 'Liberation Mono: metrics', 'Liberation Serif: maths'].map(
+        (detail) => ({
+          stage: 'compose' as const,
+          code: 'typeface_unavailable' as const,
+          node: null,
+          block: null,
+          detail,
+        }),
+      ),
+    );
     open(fake.fetch);
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
     const why = await screen.findByRole('list', { name: 'Why it could not be published' });
     // Nothing in the document names a typeface, and another attempt finds the same faces: the theme's
     // to change, never the author's to try again.
+    const theme = "The publication's theme has to change before this document can be published.";
     expect(why).toHaveTextContent(
-      "The typeface Alloy Sans is not one this publication can be set in: the publishing service does not hold it. The publication's theme has to change before this document can be published.",
+      `The typeface Alloy Sans is not one this publication can be set in: the publishing service does not hold the files the theme names for it. ${theme}`,
+    );
+    expect(why).toHaveTextContent(
+      `The typeface Liberation Mono is not one this publication can be set in: the measurements the theme records for it are not its files' own. ${theme}`,
+    );
+    expect(why).toHaveTextContent(
+      `The typeface Liberation Serif cannot set this publication's equations: it is not a typeface made for mathematics. ${theme}`,
     );
     expect(why).not.toHaveTextContent('Publish again');
   });

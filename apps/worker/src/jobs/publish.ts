@@ -123,19 +123,22 @@ export function publishJob(deps: {
       const { request, outline, occurrences, refused, layout, theme, revision, assets } =
         read.inputs;
 
-      // The theme's faces held to the pinned files before anything is composed (themes 1, ruling R5):
-      // a typeface the worker does not hold could set nothing, and `assemble` would refuse each of its
-      // characters in turn without once naming it. Refused as the document's own failures are, by the
-      // same list and the same record, naming each family.
-      const unheld = theme === null ? [] : typefacesNotHeld(theme.theme);
+      // The theme's faces held to the pinned files before anything is composed (themes 1, ruling R5,
+      // and the final review's M1): a typeface the worker does not hold exactly - its files, their
+      // metrics, a maths face's MATH table - could set nothing, set it where the theme did not mean,
+      // or refuse the compile unnamed, and `assemble` would refuse each of its characters in turn
+      // without once naming it. Refused as the document's own failures are, by the same list and the
+      // same record, naming each family and why: `<family>: <files | metrics | maths>`, a family the
+      // theme wrote, whose name cannot hold a colon, and a word from a fixed list, never a value.
+      const unheld = theme === null ? [] : typefacesNotHeld(theme.theme, deps.fonts);
       if (unheld.length > 0) {
         throw new PublishRefused(
-          unheld.map((family) => ({
+          unheld.map(({ family, detail }) => ({
             stage: 'compose',
             code: 'typeface_unavailable',
             node: null,
             block: null,
-            detail: family,
+            detail: `${family}: ${detail}`,
           })),
         );
       }

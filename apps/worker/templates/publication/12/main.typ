@@ -1,13 +1,23 @@
 // The publication template, version 12 (docs/design/publishing.md). It reads the published
 // document set from its theme, `publishing/12`, from data.json as values and evaluates nothing: no
 // content reaches Typst as source (ADR-0013, PUB-062). A version is immutable - an edit is a new
-// directory, and a test holds each version's hash. It is version 11 with every face, size, weight,
-// posture, colour, space and line read from the document's `theme` (themes 1, ruling R7) and from
-// nothing else - `template.test.ts` reads this file and fails on a typographic literal outside the
-// short list it allows - set by the rules ADR-0014 measured: a line one em tall from its face's
-// descender, its leading the rest of its line spacing, and between two blocks the first's space after,
-// the second's space before and its leading, as weak space. Template 11 and the publications made
-// with it are a record, never migrated.
+// directory, and a test holds each version's hash. It is version 11 with the face, size, weight,
+// posture and colour of all its text, a paragraph's fill, padding, alignment and indents, its line
+// spacing and the space between blocks, and the size of a subscript or a superscript, read from the
+// document's `theme` (themes 1, ruling R7) and written as no literal here - `template.test.ts` reads
+// this file and fails on a typographic literal outside the short list it allows - set by the rules
+// ADR-0014 measured: a line one em tall from its face's descender, its leading the rest of its line
+// spacing, and between two blocks the first's space after, the second's space before and its leading,
+// as weak space. Template 11 and the publications made with it are a record, never migrated.
+//
+// NOT EVERY VALUE IS THE THEME'S. What this template never sets is still the engine's default, and no
+// theme can move it; no literal names it, so the test cannot see it (the final review of themes 1,
+// M3). The underline's offset and thickness; a list's and an enumeration's indent and body indent; a
+// definition list's hanging indent and its separator; a table cell's inset (5pt) and a table's rules;
+// and the contents' leader of dots and an entry's indent at each depth. They stay the template's
+// until themes 2's table and list properties give a theme a say in them. Beside them, how far a
+// subscript or a superscript is lowered or raised (the face's own OS/2 tables), and a footnote's
+// separator, clearance and indent at the foot of its page, which no property of themes 1 or 2 names.
 #let doc = json("data.json")
 #assert(doc.schema == "publishing/12", message: "data.json is not publishing/12")
 
@@ -71,7 +81,7 @@
 
 // A block set in a style: its text and lines, its alignment, its fill with the padding inside it, its
 // start and end indents, and whether it keeps with what follows (`sticky`) and keeps together
-// (`breakable: false`), both measured (TH-D). `within` is how far the place it stands in already
+// (`breakable: false` where it fits), both measured (TH-D). `within` is how far the place it stands in already
 // stands in at its start and its end - a quotation's indents, for what a quotation holds - so an indent
 // is never given twice: a paragraph stands where its style says, and never nearer the edge than the
 // place it stands in. The indents follow the text's direction: a start is the right in Hebrew. Its
@@ -100,7 +110,26 @@
       pad(left: pt(start), right: pt(end), body)
     }
   }
-  block(width: 100%, sticky: s.keepWithNext, breakable: not s.keepTogether, body)
+  // Keep-together is Word's `keepLines`: a paragraph kept whole where it fits a page, and broken where
+  // it does not. The engine does not break an unbreakable block that cannot fit on an empty page: it
+  // moves it to the next and lets it run off the page's foot, with nothing said - the final review of
+  // themes 1 (I1) measured a paragraph of eighty long sentences painting forty lines below its page.
+  // So the block is unbreakable only where its height, measured at the width it is set in, is no more
+  // than the page's text block: `layout` gives both, its height the whole region's, not what is left
+  // of it. Only a style that keeps together pays for the measuring and for the one more realisation
+  // `layout` is, so a list of the default's paragraphs nests as deep as it did (`lists.test.ts`). The
+  // measured block stands inside the sticky one, which is what the block after it sticks to: measured,
+  // a kept heading at a page's foot still goes over with the kept paragraph after it.
+  let body = if s.keepTogether {
+    layout(size => block(
+      width: 100%,
+      breakable: measure(body, width: size.width).height > size.height,
+      body,
+    ))
+  } else {
+    body
+  }
+  block(width: 100%, sticky: s.keepWithNext, body)
 }
 
 // The space between two blocks (STY-050, ADR-0014): the first's space after, the second's space before,
@@ -304,12 +333,19 @@
 // the text it stands in is set in, and never the engine's `strong` or `emph`, whose defaults are not
 // the theme's (`strong` is bolder by a delta, `emph` a toggle). Its position innermost, then its
 // underline - inside its colour, so the rule is drawn in it - and its face, size, weight, posture and
-// colour around them. A scale is of the text the mark stands in, whatever that is.
+// colour around them. A scale is of the text the mark stands in, whatever that is. A subscript or a
+// superscript is set at the theme's `script`, a fraction of its text, rather than at the engine's own
+// size, so that contrast judges a script at the size it is set at (the final review of themes 1, I3):
+// the same fraction today, the engine's for both pinned text faces. Where the face has a glyph of its
+// own for every character of a script, the engine sets that at the text's size, as it always has
+// (`typographic`, left at its default); how far a script is lowered or raised is still the engine's,
+// from the face's own tables.
 #let look(kind, body) = {
   let m = theme.marks.at(kind)
   let body = body
   if "position" in m {
-    body = if m.position == "subscript" { sub(body) } else { super(body) }
+    let size = em(theme.script)
+    body = if m.position == "subscript" { sub(size: size, body) } else { super(size: size, body) }
   }
   if "underline" in m and m.underline { body = underline(body) }
   if "font" in m { body = text(font: m.font, body) }

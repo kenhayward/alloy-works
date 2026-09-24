@@ -43,7 +43,15 @@ describe("a face's vertical metrics and advances", () => {
       descender: -200,
       // Glyph 1 advances nothing - a combining mark - and says nothing of the face's spacing.
       advances: new Set([500, 600]),
+      mathematical: false,
     });
+  });
+
+  it('tells a face with an OpenType MATH table, which can set an equation, from one without', async () => {
+    const read = async (file: string) => faceMetrics(await readFile(join(FONT_DIRECTORY, file)));
+    expect((await read('STIXTwoMath-Regular.otf')).mathematical).toBe(true);
+    expect((await read('LiberationSerif-Regular.ttf')).mathematical).toBe(false);
+    expect((await read('LiberationMono-Regular.ttf')).mathematical).toBe(false);
   });
 
   it("reads Liberation Serif's and Liberation Mono's own, a single advance for every glyph of the monospace", async () => {

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { ResolvedTheme } from '@alloy-works/domain';
 import { codePoints } from './cmap.js';
+import { faceMetrics, type FaceMetrics } from './metrics.js';
 
 /**
  * The faces every PDF is set in, pinned by hash as the Typst binary is (design decision I; issue #145):
@@ -75,6 +76,12 @@ export interface PinnedFonts {
    * worker holds no file of covers nothing.
    */
   covers(codePoint: number, family: string): boolean;
+  /**
+   * Each pinned file's own metrics, by its hash, read from its tables as the worker's test reads them:
+   * what a theme's recorded ascent, descent and advance, and its maths face, are held to
+   * (`typefacesNotHeld`).
+   */
+  readonly metrics: ReadonlyMap<string, FaceMetrics>;
 }
 
 /** One pinned face's bytes, checked against its hash. */
@@ -136,25 +143,69 @@ export async function loadPinnedFonts(directory: string = FONT_DIRECTORY): Promi
   return {
     directory,
     covers: (codePoint, family) => byFamily.get(family)?.has(codePoint) ?? false,
+    metrics: new Map(
+      faces.map((face, index) => [PINNED_FONT_FILES[index]!.sha256, faceMetrics(face.bytes)]),
+    ),
   };
 }
 
 /**
- * The families of a theme's typefaces the worker does not hold (themes 1, ruling R5): a typeface is
- * held only where every file it records - each by its hash - is one of the pinned files, and a pinned
- * file of that family. The theme names its faces; the worker sets text in no face it was not given, so
- * a typeface it does not hold would set nothing, and `assemble` would refuse every character in it
- * without once naming the face. The job asks this first, and fails the publish `typeface_unavailable`
- * for each family named here. In the theme's order, each once.
+ * Why the worker does not hold a typeface, from a fixed list, never a value - no hash and no number
+ * reaches a failure (the final review of themes 1, M1):
+ *
+ * - `files`: the files it records are not exactly its family's pinned files - one not pinned, one
+ *   pinned under another family, or one of the family's left out, which the engine would be handed
+ *   anyway and the publication's record would never name (TH-B binds a face by its files' hashes).
+ * - `metrics`: an ascent, a descent or an advance it records is not its files' own. The template puts
+ *   a baseline by them and `assemble` counts a line's columns by the advance, so a wrong one set lines
+ *   where the theme did not mean and passed a line the page could not hold.
+ * - `maths`: it is the theme's maths face and has no OpenType `MATH` table, so the engine could set no
+ *   equation in it.
  */
-export function typefacesNotHeld(theme: ResolvedTheme): string[] {
-  const held = (family: string, sha256: string) =>
-    PINNED_FONT_FILES.some((pinned) => pinned.family === family && pinned.sha256 === sha256);
-  return [
-    ...new Set(
-      [...theme.typefaces.values()]
-        .filter((typeface) => !typeface.files.every((file) => held(typeface.family, file.sha256)))
-        .map((typeface) => typeface.family),
-    ),
-  ];
+export type TypefaceNotHeld = 'files' | 'metrics' | 'maths';
+
+/**
+ * The typefaces of a theme the worker does not hold, and why (themes 1, ruling R5, and the final
+ * review's M1): a typeface is held only where it records **exactly** its family's pinned files - every
+ * one, each by its hash, and no other - where the ascent, descent and advance it records are each of
+ * those files' own, read as `faceMetrics` reads them and compared exactly, since the theme writes them
+ * as the fractions of the files' units they are, and, for the theme's maths face, where every file
+ * carries a `MATH` table. The theme names its faces; the worker sets text in no face it was not given,
+ * so a typeface it does not hold would set nothing, set it somewhere the theme did not mean, or refuse
+ * the compile unnamed. The job asks this first, and fails the publish `typeface_unavailable` for each
+ * one named here. In the theme's order, each family once, with the first reason it fails for.
+ */
+export function typefacesNotHeld(
+  theme: ResolvedTheme,
+  fonts: Pick<PinnedFonts, 'metrics'>,
+): { family: string; detail: TypefaceNotHeld }[] {
+  const why = (typeface: ResolvedTheme['maths']): TypefaceNotHeld | null => {
+    const pinned = PINNED_FONT_FILES.filter((each) => each.family === typeface.family).map(
+      (each) => each.sha256,
+    );
+    const recorded = typeface.files.map((file) => file.sha256);
+    const exactly =
+      pinned.length > 0 &&
+      recorded.length === pinned.length &&
+      pinned.every((sha256) => recorded.includes(sha256));
+    if (!exactly) return 'files';
+    const own = pinned.map((sha256) => fonts.metrics.get(sha256)!);
+    const metricsHeld = own.every(
+      (metrics) =>
+        typeface.ascent === metrics.ascender / metrics.unitsPerEm &&
+        typeface.descent === -metrics.descender / metrics.unitsPerEm &&
+        (typeface.advance === undefined ||
+          (metrics.advances.size === 1 &&
+            typeface.advance === [...metrics.advances][0]! / metrics.unitsPerEm)),
+    );
+    if (!metricsHeld) return 'metrics';
+    if (typeface === theme.maths && !own.every((metrics) => metrics.mathematical)) return 'maths';
+    return null;
+  };
+  const notHeld = new Map<string, TypefaceNotHeld>();
+  for (const typeface of theme.typefaces.values()) {
+    const detail = why(typeface);
+    if (detail !== null && !notHeld.has(typeface.family)) notHeld.set(typeface.family, detail);
+  }
+  return [...notHeld].map(([family, detail]) => ({ family, detail }));
 }

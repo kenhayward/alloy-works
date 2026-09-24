@@ -34,6 +34,81 @@ import { createTypst, typstBinaryPath } from './typst.js';
 const positional = { numbered: true, matter: 'body', pageBreak: 'none', values: {} } as const;
 const fonts = await loadPinnedFonts();
 
+/**
+ * What template 12 may write as a literal, and why (themes 1, ruling R7): each is where a number or a
+ * name from the theme becomes one of the engine's, or a value that is layout or maths rather than
+ * typography.
+ */
+const ALLOWED: readonly { readonly literal: RegExp; readonly why: string }[] = [
+  { literal: /\bn \* 1pt\b/g, why: 'points: the unit a number from the data is multiplied by' },
+  { literal: /\bn \* 1em\b/g, why: 'ems: the unit a number from the data is multiplied by' },
+  {
+    literal: /\brgb\(hex\)/g,
+    why: "the one place a colour from the theme becomes the engine's",
+  },
+  {
+    literal: /if on \{ 100% \} else \{ 0% \}/g,
+    why: 'widow and orphan control, a boolean in the theme, as the two costs the engine takes',
+  },
+  { literal: /(?<![\d.])0pt\b/g, why: 'zero: no space, no inset' },
+  {
+    literal: /\bwidth: 100%/g,
+    why: 'a block as wide as the place it stands in, which is layout and no typographic value',
+  },
+  {
+    literal: /\b1em\.to-absolute\(\)/g,
+    why: "maths layout: the gap beside an equation's number, as LaTeX keeps it (equations 2)",
+  },
+  { literal: /\bcolumn-gap: 1em\b/g, why: "maths layout: the gap between cases' columns" },
+  { literal: /\bfont: s\.font\b/g, why: "a paragraph style's face, from the theme" },
+  { literal: /\bfont: m\.font\b/g, why: "a mark's face, from the theme" },
+  { literal: /\bfont: theme\.maths\b/g, why: "the theme's maths face, every equation's" },
+  {
+    literal: /\bfont: text\.font\b/g,
+    why: 'code in the face of what surrounds it, which a style or a mark of the theme set',
+  },
+];
+
+/**
+ * What template 12 may never write (the final review of themes 1, M3, widened them): a face's name,
+ * or any face not read from the theme; a colour, by any of the engine's constructors, its named
+ * colours - every one the pinned 0.15.1 defines, `color`'s own members and its gradients - or a hex
+ * string; a size or a length; a weight, as a name or a number; a posture; and the engine's `strong`
+ * and `emph`, whose defaults are not the theme's.
+ */
+const FORBIDDEN: readonly { readonly literal: RegExp; readonly what: string }[] = [
+  { literal: /Liberation|STIX|DejaVu|Computer Modern|\bfont: "/g, what: "a face's name" },
+  { literal: /\bfont:/g, what: 'a face not read from the theme' },
+  {
+    literal: /\b(rgb|luma|cmyk|oklab|oklch)\(|\bcolor\.[a-z]|\bgradient\.|"#[0-9a-fA-F]{3,8}"/g,
+    what: 'a colour',
+  },
+  {
+    literal:
+      /\b(black|white|gray|silver|navy|blue|aqua|teal|eastern|purple|fuchsia|maroon|red|orange|yellow|olive|green|lime)\b/g,
+    what: 'a named colour',
+  },
+  { literal: /\d+(\.\d+)?(pt|em|mm|cm|in)\b|\d+(\.\d+)?%/g, what: 'a size or a length' },
+  { literal: /\bweight: "/g, what: 'a weight' },
+  { literal: /\bweight:\s*\d/g, what: 'a numeric weight' },
+  { literal: /\bstyle: "/g, what: 'a posture' },
+  { literal: /\b(strong|emph)\s*[([]/g, what: "the engine's strong or emph" },
+];
+
+/** A template's source with its comments taken out: they name faces and sizes freely. */
+const withoutComments = (source: string) => source.replace(/\/\/.*$/gm, '');
+
+/** Every forbidden literal left in this source once its comments and its allowances are out. */
+const typographicLiterals = (source: string): string[] => {
+  const left = ALLOWED.reduce(
+    (each, { literal }) => each.replace(literal, ''),
+    withoutComments(source),
+  );
+  return FORBIDDEN.flatMap(({ literal, what }) =>
+    (left.match(literal) ?? []).map((found) => `${what}: ${found}`),
+  );
+};
+
 describe('the publication template', () => {
   it('is the version its number says: an edit is a new version, never a change to this one', async () => {
     // Of each file with LF endings (.gitattributes normalises them). Were a row to fail, that template
@@ -62,9 +137,11 @@ describe('the publication template', () => {
     // beside it and listed - and a node's title set as runs, and reads `publishing/11`. Template 12
     // reads `publishing/12`, the document set from its theme: every face, size, colour, space and
     // line read from the theme, by ADR-0014's rules. It moved (7979229d...) from template 11
-    // asserting the new schema to the template that sets the theme, and again (f64aa5ff...) when a
-    // comment said what a quotation's space is and why, and is re-pinned freely until the
-    // pull request that makes it merges. Templates 1 to 11 are published versions and their rows never
+    // asserting the new schema to the template that sets the theme, again (f64aa5ff...) when a
+    // comment said what a quotation's space is and why, and again (6b88017f...) for the final
+    // whole-branch review: a block kept together only where it fits a page, a script set at the
+    // theme's fraction, and the header naming what is still the engine's. It is re-pinned freely
+    // until the pull request that makes it merges. Templates 1 to 11 are published versions and their rows never
     // move again.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',
@@ -78,7 +155,7 @@ describe('the publication template', () => {
       9: 'f837e57769f34465377f5e808e759a68eba921bb3b45adaff7c0a1a581e4ced6',
       10: '07589c1d2487e149643bf82ccd183aaf7c7951ed24792decb508db02a7626339',
       11: '00f58bb2f2dc897356b24fdb09e0fa190a292c9b737d5444e7a8b48070a22a77',
-      12: '6b88017fe9334c336c41f314c19b688d66dfe1324c0a5d7bf5a93008fd25b88c',
+      12: '13ce79ef435d13b85f7ec29dfe2c7a3fe53f4536384da555f93ea5a26f4b5e9e',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
@@ -122,52 +199,49 @@ describe('the publication template', () => {
     // else, so that the theme is the whole of how a publication looks and a second theme looks
     // different. Read with its comments taken out, which name faces and sizes freely; what is left
     // may hold a face's name, a colour, or a size, weight or length written as a literal only where
-    // an entry below allows it and says why. Every entry must still be needed, so the list cannot
-    // outlive what it excuses.
-    const allowed: readonly { readonly literal: RegExp; readonly why: string }[] = [
-      { literal: /\bn \* 1pt\b/g, why: 'points: the unit a number from the data is multiplied by' },
-      { literal: /\bn \* 1em\b/g, why: 'ems: the unit a number from the data is multiplied by' },
-      {
-        literal: /\brgb\(hex\)/g,
-        why: "the one place a colour from the theme becomes the engine's",
-      },
-      {
-        literal: /if on \{ 100% \} else \{ 0% \}/g,
-        why: 'widow and orphan control, a boolean in the theme, as the two costs the engine takes',
-      },
-      { literal: /(?<![\d.])0pt\b/g, why: 'zero: no space, no inset' },
-      {
-        literal: /\bwidth: 100%/g,
-        why: 'a block as wide as the place it stands in, which is layout and no typographic value',
-      },
-      {
-        literal: /\b1em\.to-absolute\(\)/g,
-        why: "maths layout: the gap beside an equation's number, as LaTeX keeps it (equations 2)",
-      },
-      { literal: /\bcolumn-gap: 1em\b/g, why: "maths layout: the gap between cases' columns" },
-    ];
-    const forbidden: readonly { readonly literal: RegExp; readonly what: string }[] = [
-      { literal: /Liberation|STIX|DejaVu|Computer Modern|\bfont: "/g, what: "a face's name" },
-      {
-        literal: /\b(rgb|luma|cmyk|oklab|oklch|color\.[a-z]+)\(|"#[0-9a-fA-F]{3,8}"/g,
-        what: 'a colour',
-      },
-      {
-        literal:
-          /\b(black|white|gray|silver|navy|blue|aqua|teal|eastern|purple|fuchsia|maroon|red|orange|yellow|olive|green|lime)\b/g,
-        what: 'a named colour',
-      },
-      { literal: /\d+(\.\d+)?(pt|em|mm|cm|in)\b|\d+(\.\d+)?%/g, what: 'a size or a length' },
-      { literal: /\bweight: "/g, what: 'a weight' },
-      { literal: /\bstyle: "/g, what: 'a posture' },
-    ];
-    const source = (await readFile(PUBLICATION_TEMPLATE[12].file, 'utf8')).replace(/\/\/.*$/gm, '');
-    const left = allowed.reduce((each, { literal }) => each.replace(literal, ''), source);
-    for (const { literal, what } of forbidden) {
-      expect(left.match(literal) ?? [], what).toEqual([]);
+    // an entry in `ALLOWED` allows it and says why. Every entry must still be needed, so the list
+    // cannot outlive what it excuses. What the engine still decides because the template never sets
+    // it - an underline's offset, a list's indent, a cell's inset - no pattern can see: template 12's
+    // header names each.
+    const source = await readFile(PUBLICATION_TEMPLATE[12].file, 'utf8');
+    expect(typographicLiterals(source)).toEqual([]);
+    const code = withoutComments(source);
+    for (const { literal, why } of ALLOWED) {
+      expect(code.match(literal), `an allowance no longer needed: ${why}`).not.toBeNull();
     }
-    for (const { literal, why } of allowed) {
-      expect(source.match(literal), `an allowance no longer needed: ${why}`).not.toBeNull();
+  });
+
+  it('finds each kind of typographic literal the final review found the test let through', () => {
+    // The final review of themes 1, M3: a numeric weight, the engine's own `strong` and `emph`, a
+    // face named outside the theme, and a colour from any of the engine's names for one. Each line
+    // here is a literal template 12 must never hold, and each is found; the ones before the review
+    // widened the patterns were not.
+    const planted = [
+      'text(weight: 700, body)',
+      'text(weight: "semibold", body)',
+      'strong[Heavy]',
+      'strong(body)',
+      'emph[Slanted]',
+      '#emph(body)',
+      'text(font: ("Some Face",), body)',
+      'text(font: "Some Face", body)',
+      'set text(font: fallback-face)',
+      'text(fill: navy, body)',
+      'text(fill: color.black, body)',
+      'block(fill: gradient.linear(white, black))',
+      'text(fill: color.map.viridis.at(0), body)',
+      'text(fill: rgb("#102030"), body)',
+      'text(size: 9pt, body)',
+    ];
+    for (const line of planted) expect(typographicLiterals(line), line).not.toEqual([]);
+    // And what template 12 reads from the theme is not a literal.
+    for (const line of [
+      'text(font: s.font, weight: s.weight, style: s.style)',
+      'text(font: m.font, body)',
+      'set text(font: theme.maths)',
+      'let appearance = ("emphasis", "strong")',
+    ]) {
+      expect(typographicLiterals(line), line).toEqual([]);
     }
   });
 
@@ -277,8 +351,10 @@ describe('the pipeline version', () => {
   // '9', before a cross-reference, '10', before an equation and a title set as runs, and '11',
   // before a document was set from its theme. '12' is re-pinned freely until the pull request that
   // makes it merges, since nothing is published from a branch: it moved (c69fead9...) when the
-  // default theme's line spacings and spaces were measured from template 11 (themes 1, task 4), and
-  // again (45748643...) when the default theme gave a table's cells a style of their own.
+  // default theme's line spacings and spaces were measured from template 11 (themes 1, task 4), again
+  // (45748643...) when the default theme gave a table's cells a style of their own, and again
+  // (f38feb9a...) when the theme's projection came to state the size a script is set at (the final
+  // whole-branch review, I3).
   const madeByPipeline: Record<string, string> = {
     '1': '3b844cb4ceedbe2b52040c79014ea18959295a1602754eb9861631891beb6fa1',
     '2': '699d5c34b7e4049fc32f5846a5525f5d3a35785c2858a78755161c58427ad1d5',
@@ -291,7 +367,7 @@ describe('the pipeline version', () => {
     '9': '4beeacf97465f356d654aa43dee3686e43cd3ca632d61680252d34e37d568ac5',
     '10': '3b9772e627b7af48e407673a67b94837f9a6f033e63b222dbedf97852b67a82d',
     '11': 'f011fd46928c1b68de5c47de2ea4db75a2b52391b94026c8faddddc01f5191bf',
-    '12': 'f38feb9ac3df3c70b4b856207eee06a204b27914b884fe97ef9b3823a468fa6e',
+    '12': 'c12118a97e6ec79f90ef4cf64107d7ecf3f84112e8014cab92ce2e067ae1c629',
   };
   const digest = (made: { document: unknown; numbering: unknown }) =>
     createHash('sha256')

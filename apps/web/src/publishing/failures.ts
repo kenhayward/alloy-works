@@ -132,9 +132,27 @@ export function failureWords(failure: Failure): string {
       return `The typeface ${failure.detail ?? ''} cannot be embedded in a PDF: its licence does not permit it. The publication's theme has to change before this document can be published.`;
     // Themes 1 (ruling R5): the theme names a typeface by its files' hashes, and the worker holds only
     // the faces pinned in its image, so a face it does not hold cannot set a word. As the licence's
-    // refusal, it is the theme's to change, and another attempt finds the same faces.
-    case 'typeface_unavailable':
-      return `The typeface ${failure.detail ?? ''} is not one this publication can be set in: the publishing service does not hold it. The publication's theme has to change before this document can be published.`;
+    // refusal, it is the theme's to change, and another attempt finds the same faces. `detail` is the
+    // family and why, `<family>: <files | metrics | maths>` (the final review of themes 1, M1): a family
+    // the theme wrote, which cannot hold a colon, and a word from a fixed list, never a hash or a
+    // number. A reason this page does not know is said as the service not holding the face.
+    case 'typeface_unavailable': {
+      const theme = "The publication's theme has to change before this document can be published.";
+      const detail = failure.detail ?? '';
+      const at = detail.lastIndexOf(': ');
+      const family = at < 0 ? detail : detail.slice(0, at);
+      const reason = at < 0 ? '' : detail.slice(at + 2);
+      if (reason === 'maths') {
+        return `The typeface ${family} cannot set this publication's equations: it is not a typeface made for mathematics. ${theme}`;
+      }
+      const because =
+        reason === 'metrics'
+          ? "the measurements the theme records for it are not its files' own"
+          : reason === 'files'
+            ? 'the publishing service does not hold the files the theme names for it'
+            : 'the publishing service does not hold it';
+      return `The typeface ${family} is not one this publication can be set in: ${because}. ${theme}`;
+    }
     // Decision K, as Ken reversed it: a tag the engine cannot carry is refused, never shortened, and
     // the author is told what a publication takes (pre-flight finding 9).
     case 'language_not_publishable':

@@ -640,14 +640,18 @@ describe('two themes in the PDF (themes 1)', () => {
       // A heading on the last line of a page, then a paragraph: kept with the next, the heading goes
       // over with it; not kept, it is left alone at the foot. Measured as the design measured it
       // (themes.md, "What the pinned Typst does with a theme's properties").
-      for (const keep of [true, false]) {
-        const theme = paginated({ keepWithNext: keep, widowControl: true, keepTogether: false });
-        // The paragraph's first line on the page's last, less one: the heading's.
-        const fillers = (await fillersToTheFoot(theme, (n) => headedAfter(n))) + 1;
-        const { read } = await compile(theme, small, headedAfter(fillers));
-        const heading = pageOf(read, 'Second');
-        const first = pageOf(read, WORDS[0]!);
-        expect(first).toBe(heading + (keep ? 0 : 1));
+      // And the same where every style keeps together as well, since a block that keeps together is
+      // measured inside the one that keeps with the next (the final review of themes 1, I1).
+      for (const keepTogether of [false, true]) {
+        for (const keep of [true, false]) {
+          const theme = paginated({ keepWithNext: keep, widowControl: true, keepTogether });
+          // The paragraph's first line on the page's last, less one: the heading's.
+          const fillers = (await fillersToTheFoot(theme, (n) => headedAfter(n))) + 1;
+          const { read } = await compile(theme, small, headedAfter(fillers));
+          const heading = pageOf(read, 'Second');
+          const first = pageOf(read, WORDS[0]!);
+          expect(first, `${keepTogether} ${keep}`).toBe(heading + (keep ? 0 : 1));
+        }
       }
     }, 120_000);
 
@@ -675,6 +679,56 @@ describe('two themes in the PDF (themes 1)', () => {
     // On, the orphan moves over with the rest, and a line goes over to keep the widow company.
     expect(await split(true, 1)).toEqual([0, 9]);
     expect(await split(true, 8)).toEqual([7, 2]);
+  }, 120_000);
+
+  it('keeps a paragraph together only where it fits a page: one taller than a page breaks across pages, every line on one', async () => {
+    // The final review of themes 1, I1: the engine moves an unbreakable block that cannot fit on an
+    // empty page to the next and lets it run off the page's foot, with nothing said, so a paragraph of
+    // thirty of these kept together painted its last line over the running foot, and one of eighty
+    // painted forty lines below the page. Keep-together is Word's `keepLines`, which keeps a
+    // paragraph whole where it fits and breaks it where it does not.
+    const KEPT = '5f0c3a3e-0d8a-4c1e-9d0b-6a51e2f9b003';
+    const kept = read(
+      { ...DEFAULT_THEME, catalogues: { ...DEFAULT_THEME.catalogues, paragraph: KEPT } },
+      new Map([
+        ...DEFAULT_CATALOGUES_BY_VERSION,
+        [
+          KEPT,
+          {
+            ...DEFAULT_CATALOGUES.paragraph,
+            base: { ...DEFAULT_CATALOGUES.paragraph.base, keepTogether: true },
+          },
+        ],
+      ]),
+    );
+    const { page, margins } = bare.formats.pdf;
+    for (const count of [30, 80]) {
+      const long = Array.from({ length: count }, () => LONG).join(' ');
+      const { paint, pdf } = await compile(kept, bare, [
+        {
+          name: 'kept',
+          title: 'Kept',
+          content: [
+            para('p1', text('Short first.')),
+            para('p2', text(`Long ${long} Lastword.`)),
+            para('p3', text('After.')),
+          ],
+        },
+      ]);
+      expect(await checkPdfUa1(pdf), String(count)).toMatchObject({ compliant: true });
+      const body = paint.texts.filter((each) => !each.artifact && each.text.trim() !== '');
+      for (const each of body) {
+        // Every baseline inside the page's text block, above its bottom margin and below its top.
+        expect(each.y, `${count}: ${each.text}`).toBeGreaterThanOrEqual(margins.bottom);
+        expect(each.y, `${count}: ${each.text}`).toBeLessThanOrEqual(page.height - margins.top);
+      }
+      // Broken where it stands, beneath the paragraph before it, not moved whole to a page it
+      // cannot fit either; and every word of it set, the last before what follows it.
+      expect(painted(paint, 'Long').page, String(count)).toBe(painted(paint, 'Short').page);
+      const last = body.find((each) => each.text.includes('Lastword'))!;
+      const after = painted(paint, 'After');
+      expect(after.page > last.page || (after.page === last.page && after.y < last.y)).toBe(true);
+    }
   }, 120_000);
 
   describe('the marks', () => {
@@ -733,13 +787,66 @@ describe('two themes in the PDF (themes 1)', () => {
             expect(run.size, at).toBeCloseTo(body.size * (properties.scale ?? 1), 2);
             expect(run.y, at).toBeCloseTo(baseline, 2);
           } else {
-            // Set smaller, below the line for a subscript and above it for a superscript.
-            expect(run.size, at).toBeLessThan(body.size);
+            // Set at the script's fraction of its text, below the line for a subscript and above it
+            // for a superscript.
+            expect(run.size, at).toBeCloseTo(
+              body.size * (properties.scale ?? 1) * (1331 / 2048),
+              2,
+            );
             if (properties.position === 'subscript') expect(run.y, at).toBeLessThan(baseline);
             else expect(run.y, at).toBeGreaterThan(baseline);
           }
         }
       }
+    }, 60_000);
+
+    it("sets a subscript and a superscript at the fraction of their text the theme's projection states, not the engine's own", async () => {
+      // The final review of themes 1, I3: the size a script is set at is the projection's `script`,
+      // which contrast judges a script at, so the template reads it rather than leaving it to the
+      // engine. A document whose projection says a half sets every script at half its text.
+      const assembled = assemble({
+        outline: parseOutlineDocument({
+          schemaVersion: OUTLINE_SCHEMA_VERSION,
+          title: 'The specimen',
+          language: 'en-GB',
+          direction: 'ltr',
+          nodes: [reference('scripts')],
+        }),
+        occurrences: new Map([
+          [
+            id('scripts'),
+            parseContentDocument({
+              schemaVersion: 1,
+              title: 'Scripts',
+              language: 'en-GB',
+              direction: 'ltr',
+              content: [
+                para(
+                  's1',
+                  text('Before '),
+                  text('Subword', markOf('subscript', 1)),
+                  text(' after.'),
+                ),
+                para('s2', text('Before '), text('Superword', markOf('superscript', 2))),
+              ],
+            }) as ContentDocument,
+          ],
+        ]),
+        refused: [],
+        layout: bare,
+        theme: defaultTheme,
+        revision: '0.1',
+        covers: fonts.covers,
+        assets: new Map(),
+      });
+      if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+      const halved = { ...assembled.document, theme: { ...assembled.document.theme, script: 0.5 } };
+      const paint = await readPaint(
+        await typst.compile(PUBLICATION_TEMPLATE[12].file, JSON.stringify(halved), at),
+      );
+      const size = placeOf(defaultTheme, 'text').size;
+      expect(paint.texts.find((each) => each.text === 'Subword')!.size).toBeCloseTo(size / 2, 3);
+      expect(paint.texts.find((each) => each.text === 'Superword')!.size).toBeCloseTo(size / 2, 3);
     }, 60_000);
 
     it("STY-010 sets strong in bold under the default theme, and in a colour and underlined, not bold, under the ledger's", async () => {
@@ -896,10 +1003,32 @@ describe("the pinned faces' own files (themes 1)", () => {
       Cyrillic: range(0x400, 0x45f),
       Hebrew: range(0x5d0, 0x5ea),
     };
+    // And each script as it is written, not only its bare alphabet (the final review of themes 1,
+    // M4): modern Greek's letters with tonos and dialytika, polytonic Greek's - every letter of Greek
+    // Extended, the code points Unicode leaves unassigned there being no letter - and Hebrew's points,
+    // its vowels and its cantillation's dots, from sheva to qamats qatan.
+    const written: Record<string, number[]> = {
+      'Greek with tonos and dialytika': [
+        0x386,
+        0x388,
+        0x389,
+        0x38a,
+        0x38c,
+        0x38e,
+        0x38f,
+        0x390,
+        ...range(0x3aa, 0x3b0),
+        ...range(0x3ca, 0x3ce),
+      ],
+      'polytonic Greek': range(0x1f00, 0x1ffe).filter((each) =>
+        /\p{L}/u.test(String.fromCodePoint(each)),
+      ),
+      'Hebrew points': range(0x5b0, 0x5c7),
+    };
     for (const typeface of DEFAULT_THEME.typefaces.filter((each) => each.id !== 'maths')) {
       for (const file of typeface.files) {
         const covered = codePoints(await pinned(file.sha256));
-        for (const [script, letters] of Object.entries(scripts)) {
+        for (const [script, letters] of Object.entries({ ...scripts, ...written })) {
           const missing = letters.filter((each) => !covered.has(each));
           expect(missing, `${typeface.family} ${file.weight} ${file.posture}: ${script}`).toEqual(
             [],
@@ -936,43 +1065,67 @@ describe("the pinned faces' own files (themes 1)", () => {
     expect(MATHS_CHARACTERS.size).toBeGreaterThan(40);
   });
 
-  it("holds a theme's typefaces to the pinned files: a family the worker holds no file of, or not every file of, is not held", () => {
-    expect(typefacesNotHeld(defaultTheme)).toEqual([]);
+  it("holds a theme's typefaces to the pinned files exactly: every file of the family and no other, the files' own metrics, and a maths face for equations", () => {
+    expect(typefacesNotHeld(defaultTheme, fonts)).toEqual([]);
     const [serif, mono, maths] = DEFAULT_THEME.typefaces;
-    const holding = (typefaces: Theme['typefaces']) =>
-      read({ ...DEFAULT_THEME, typefaces }, DEFAULT_CATALOGUES_BY_VERSION);
+    const holding = (typefaces: Theme['typefaces'], mathsFace = DEFAULT_THEME.maths) =>
+      read({ ...DEFAULT_THEME, typefaces, maths: mathsFace }, DEFAULT_CATALOGUES_BY_VERSION);
+    const notHeld = (typefaces: Theme['typefaces'], mathsFace?: string) =>
+      typefacesNotHeld(holding(typefaces, mathsFace), fonts);
     // A face of its own, in no file the worker holds.
     expect(
-      typefacesNotHeld(
-        holding([
-          serif!,
-          mono!,
-          maths!,
-          {
-            ...serif!,
-            id: 'sans',
-            family: 'Alloy Sans',
-            files: [{ ...serif!.files[0]!, sha256: 'a'.repeat(64) }],
-          },
-        ]),
-      ),
-    ).toEqual(['Alloy Sans']);
+      notHeld([
+        serif!,
+        mono!,
+        maths!,
+        {
+          ...serif!,
+          id: 'sans',
+          family: 'Alloy Sans',
+          files: [{ ...serif!.files[0]!, sha256: 'a'.repeat(64) }],
+        },
+      ]),
+    ).toEqual([{ family: 'Alloy Sans', detail: 'files' }]);
     // A pinned family, one of whose files the worker does not hold.
     expect(
-      typefacesNotHeld(
-        holding([
-          {
-            ...serif!,
-            files: [...serif!.files.slice(1), { ...serif!.files[0]!, sha256: 'b'.repeat(64) }],
-          },
-          mono!,
-          maths!,
-        ]),
-      ),
-    ).toEqual(['Liberation Serif']);
+      notHeld([
+        {
+          ...serif!,
+          files: [...serif!.files.slice(1), { ...serif!.files[0]!, sha256: 'b'.repeat(64) }],
+        },
+        mono!,
+        maths!,
+      ]),
+    ).toEqual([{ family: 'Liberation Serif', detail: 'files' }]);
     // The monospace's files claimed for the serif: held, but not as that family.
-    expect(typefacesNotHeld(holding([{ ...serif!, files: mono!.files }, mono!, maths!]))).toEqual([
-      'Liberation Serif',
+    expect(notHeld([{ ...serif!, files: mono!.files }, mono!, maths!])).toEqual([
+      { family: 'Liberation Serif', detail: 'files' },
+    ]);
+    // The final review of themes 1, M1. The serif recorded with its regular file alone: every file
+    // named is pinned, but the engine is handed the family's bold too, which the theme - and so the
+    // publication's record - never names.
+    const regular = serif!.files.filter(
+      (file) => file.weight === 'regular' && file.posture === 'normal',
+    );
+    expect(regular).toHaveLength(1);
+    expect(notHeld([{ ...serif!, files: regular }, mono!, maths!])).toEqual([
+      { family: 'Liberation Serif', detail: 'files' },
+    ]);
+    // Recorded metrics that are not the file's own: a monospace a third of an em wide, whose columns
+    // `assemble` would count wrongly, and a serif whose baseline would stand elsewhere.
+    expect(notHeld([serif!, { ...mono!, advance: 0.3 }, maths!])).toEqual([
+      { family: 'Liberation Mono', detail: 'metrics' },
+    ]);
+    expect(notHeld([{ ...serif!, ascent: 0.9 }, mono!, maths!])).toEqual([
+      { family: 'Liberation Serif', detail: 'metrics' },
+    ]);
+    expect(notHeld([serif!, { ...mono!, descent: 0.25 }, maths!])).toEqual([
+      { family: 'Liberation Mono', detail: 'metrics' },
+    ]);
+    // The serif as the maths face: its files and its metrics its own, and no MATH table to set an
+    // equation with, which the engine refused unnamed.
+    expect(notHeld([serif!, mono!, maths!], serif!.id)).toEqual([
+      { family: 'Liberation Serif', detail: 'maths' },
     ]);
   });
 });
@@ -1227,10 +1380,30 @@ describe('publishing under a theme it must refuse, from the request to the recor
           code: 'typeface_unavailable',
           node: null,
           block: null,
-          detail: 'Alloy Sans',
+          detail: 'Alloy Sans: files',
         },
       ],
     });
     expect(outcome.publication).toBeUndefined();
+
+    // The serif as the maths face (the final review of themes 1, M1): its files are held, and the
+    // engine refused the equation unnamed. Now it is named, before anything is set.
+    await declare({ ...DEFAULT_THEME, maths: serif!.id });
+    const unmathematical = await requested();
+    expect(await work()).toBe('failed');
+    const named = await outcomeOf(unmathematical);
+    expect(named.request).toMatchObject({
+      state: 'failed',
+      failures: [
+        {
+          stage: 'compose',
+          code: 'typeface_unavailable',
+          node: null,
+          block: null,
+          detail: 'Liberation Serif: maths',
+        },
+      ],
+    });
+    expect(named.publication).toBeUndefined();
   }, 120_000);
 });

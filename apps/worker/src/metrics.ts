@@ -14,6 +14,12 @@ export interface FaceMetrics {
   readonly descender: number;
   /** Every distinct advance a glyph has, in font units, leaving out a glyph that advances nothing. */
   readonly advances: ReadonlySet<number>;
+  /**
+   * Whether the face carries an OpenType `MATH` table: the constants and variants an engine sets an
+   * equation by. A face without one cannot be a theme's maths face (the final review of themes 1, M1):
+   * the engine refused an equation set in Liberation Serif, and said nothing a person could act on.
+   */
+  readonly mathematical: boolean;
 }
 
 export function faceMetrics(font: Buffer): FaceMetrics {
@@ -43,5 +49,6 @@ export function faceMetrics(font: Buffer): FaceMetrics {
     ascender: view.getInt16(hhea + 4),
     descender: view.getInt16(hhea + 6),
     advances,
+    mathematical: tables.has('MATH'),
   };
 }
