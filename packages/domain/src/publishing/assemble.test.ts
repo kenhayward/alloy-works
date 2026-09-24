@@ -4426,6 +4426,42 @@ describe('the theme a publication is set from (themes 1)', () => {
     ]);
   });
 
+  it("measures a quotation by its style's indents, a list by its item's size and a caption by the caption's size", () => {
+    const pre = (value: string) => ({ type: 'preformatted', id: 'x1', text: value });
+    const tooWide = (width: number, most: number) => [
+      failed('line_too_wide', 'x1', `line 1, ${width} of ${most} columns`),
+    ];
+    // A quotation insets its body by its style's start and end indents and nothing else: 40 points
+    // here, where the default's 22 leave 79 columns.
+    const inset = themed((inputs) =>
+      restyle(inputs, 'quotation', { startIndent: 30, endIndent: 10 }),
+    );
+    const quoted = (value: string) => quotation('q1', [pre(value)]);
+    expect(failuresOf(assemble(under(inset, quoted('x'.repeat(75)))))).toEqual([]);
+    expect(failuresOf(assemble(under(inset, quoted('x'.repeat(76)))))).toEqual(tooWide(76, 75));
+
+    // A bulleted list indents its item a marker and half an em, in ems of the item's style: 33 points
+    // at 22pt, where the default's 16.5 leave 80 columns.
+    const large = themed((inputs) => {
+      addStyle(inputs, 'item', ['listItem']);
+      restyle(inputs, 'item', { size: 22, lineSpacing: 26 });
+      inputs.theme.places.listItem = 'item';
+    });
+    const listed = (value: string) => storedList('L1', 'unordered', [{ content: [pre(value)] }]);
+    expect(failuresOf(assemble(under(resolved(), listed('x'.repeat(80)))))).toEqual([]);
+    expect(failuresOf(assemble(under(large, listed('x'.repeat(76)))))).toEqual([]);
+    expect(failuresOf(assemble(under(large, listed('x'.repeat(77)))))).toEqual(tooWide(77, 76));
+
+    // A caption of a thousand graphemes takes sixteen lines at 11pt, and leaves its image room; at
+    // 22pt it takes thirty-one, and none.
+    const long = { ...figure('f1'), caption: [text('x'.repeat(1000))] };
+    const loud = themed((inputs) => restyle(inputs, 'caption', { size: 22, lineSpacing: 26 }));
+    expect(failuresOf(assemble(under(resolved(), long)))).toEqual([]);
+    expect(failuresOf(assemble(under(loud, long)))).toEqual([
+      failed('caption_too_long', 'f1', null),
+    ]);
+  });
+
   it('is never asked for a document under a layout without a theme, or one made before layouts with one', () => {
     expect(() => assemble({ ...oneParagraph(text('Set.')), theme: null })).toThrow(/theme/);
     expect(() => assemble({ ...oneParagraph(text('Set.')), layout: null })).toThrow(/theme/);

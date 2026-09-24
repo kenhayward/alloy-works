@@ -4,12 +4,16 @@ import type { ListNode } from '../content/model/blocks.js';
 import { defaultInputs, resolved } from '../theme/theme.fixture.js';
 
 import { defaultLayout } from './layout.js';
-import { columnsAt, columnsOf, expandTabs, listIndent, QUOTATION_INDENT } from './measure.js';
+import { captionHeight, columnsAt, columnsOf, expandTabs, listIndent } from './measure.js';
 import { publishedPdf } from './assemble.js';
 
 const pdf = publishedPdf(defaultLayout.formats.pdf);
 const theme = resolved();
 const preformatted = theme.paragraphStyles.get(theme.roles.preformatted)!;
+/** What a quotation insets its body by: its style's start and end indents, 11pt each by default. */
+const quoted = theme.paragraphStyles.get(theme.places.quotation)!.properties;
+/** A list item's size, the default's body at 11pt, which a list's indent is counted in ems of. */
+const itemSize = theme.paragraphStyles.get(theme.places.listItem)!.properties.size;
 
 const list = (over: Partial<ListNode>, items = 1): ListNode => ({
   type: 'list',
@@ -35,7 +39,7 @@ describe('the measure a preformatted line is held to', () => {
     // glyph advances 1229/2048 of an em, in a panel padded 6pt each side - so the answer is the one
     // `CODE_SIZE` and `CODE_ADVANCE` gave before themes 1.
     expect(columnsAt(pdf, 0, preformatted)).toBe(83);
-    expect(columnsAt(pdf, 2 * QUOTATION_INDENT, preformatted)).toBe(79);
+    expect(columnsAt(pdf, quoted.startIndent + quoted.endIndent, preformatted)).toBe(79);
   });
 
   it("measures by the preformatted role's size, its face's advance, its indents and its padding (themes 1, ruling R6)", () => {
@@ -57,14 +61,28 @@ describe('the measure a preformatted line is held to', () => {
   });
 
   it('indents a list by its widest marker, at or above what the engine was measured to take', () => {
-    expect(listIndent(list({ start: 888, format: 'roman' }))).toBe(11 * 13 + 5.5);
-    expect(listIndent(list({ kind: 'unordered' }))).toBe(16.5);
-    expect(listIndent(list({ kind: 'definition' }))).toBe(22);
+    expect(listIndent(list({ start: 888, format: 'roman' }), itemSize)).toBe(11 * 13 + 5.5);
+    expect(listIndent(list({ kind: 'unordered' }), itemSize)).toBe(16.5);
+    expect(listIndent(list({ kind: 'definition' }), itemSize)).toBe(22);
     // Spike 2's measured indents: `xxxviii.` 39.4, `zz.` 18.0, `99999.` 35.8.
-    expect(listIndent(list({ start: 38, format: 'roman' }))).toBeGreaterThanOrEqual(39.4);
-    expect(listIndent(list({ start: 702, format: 'alphabetic' }))).toBeGreaterThanOrEqual(18);
-    expect(listIndent(list({ start: 99999 }))).toBeGreaterThanOrEqual(35.8);
+    expect(listIndent(list({ start: 38, format: 'roman' }), itemSize)).toBeGreaterThanOrEqual(39.4);
+    expect(listIndent(list({ start: 702, format: 'alphabetic' }), itemSize)).toBeGreaterThanOrEqual(
+      18,
+    );
+    expect(listIndent(list({ start: 99999 }), itemSize)).toBeGreaterThanOrEqual(35.8);
     // The widest marker the list prints, not its first: nine items from 1 end at `10.`.
-    expect(listIndent(list({}, 10))).toBe(11 * 3 + 5.5);
+    expect(listIndent(list({}, 10), itemSize)).toBe(11 * 3 + 5.5);
+  });
+
+  it("counts a list's indent in ems of its item's size, and a caption's height in its own size (themes 1)", () => {
+    // Template 11's ems - two for a definition, the widest marker and half an em after it - at 10pt.
+    expect(listIndent(list({ kind: 'definition' }), 10)).toBe(20);
+    expect(listIndent(list({ kind: 'unordered' }), 10)).toBe(15);
+    expect(listIndent(list({}, 10), 10)).toBe(35);
+    // Ten graphemes in a 100pt measure: one line of words and one more, each 1.5 em, and an em above.
+    expect(captionHeight(10, 100, 11)).toBe(2 * 16.5 + 11);
+    expect(captionHeight(10, 100, 10)).toBe(2 * 15 + 10);
+    // Twenty graphemes at 0.6 em of 10pt are 120pt: two lines of words, and one more.
+    expect(captionHeight(20, 100, 10)).toBe(3 * 15 + 10);
   });
 });

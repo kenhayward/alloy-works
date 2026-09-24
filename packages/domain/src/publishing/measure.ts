@@ -13,20 +13,37 @@ import type { PublishedPdfFormat } from './published.js';
  *
  * Every number here is **measured against the pinned engine and faces**, not chosen, and the template
  * asserts the same bound per line as a backstop that must never fire (task 8).
+ *
+ * **What `assemble` measures from the theme, which template 12 keeps** (themes 1, ruling R6). Every
+ * room `assemble` works out before the engine runs is read from the theme the document is set from, so
+ * the template must lay the page out by the same numbers, or a line `assemble` passed runs off it:
+ *
+ * - **Preformatted text** is set in the `preformatted` role's style: one column is its size times its
+ *   face's advance, and its measure loses the style's start and end indents and, where it has a fill,
+ *   its padding on each side (`columnsAt`).
+ * - **A block quotation** is inset by exactly the `quotation` place's style's start and end indents,
+ *   and nothing else: the template stops the engine's own inset of a quotation.
+ * - **A list** indents its content, at each level, by template 11's number of ems - two for a
+ *   definition list, and otherwise the widest marker it prints at an em a character and half an em
+ *   after it - in ems of the `listItem` place's style's size (`listIndent`).
+ * - **A figure's caption** is estimated in ems of the `caption` role's style's size (`captionHeight`).
+ * - **An image in a run of text** is printed `INLINE_IMAGE_HEIGHT` high, 1.2 em of the body's 11pt,
+ *   as before themes 1. Its measure by the theme - the line spacing of the style it stands in - waits
+ *   on a ruling: the default theme's body is spaced 14pt, not 13.2, so it would change what every
+ *   inline image publishes as.
+ *
+ * Under the default theme each gives the answer the fixed numbers gave before themes 1.
  */
 
 /** Tab stops every eight columns: the stop POSIX `expand`, a terminal and `cat` use (decision E). */
 export const TAB_STOP = 8;
-/** The body text's size, in points: what a list marker is set at. */
-export const BODY_SIZE = 11;
 /**
- * A quotation indents its body by one em of the body text **on each side**: the engine pads a block
- * quotation horizontally, so it costs twice this of the width a line inside it has. Measured by task
- * 9's PDF test, where an attribution aligned to a quotation's end stood one em short of the page's.
+ * The body text's size before themes 1, in points: what an image in a run of text is measured by, and
+ * what the maths tree turns a length in points into ems of.
  */
-export const QUOTATION_INDENT = 11;
-/** A definition hangs two ems beneath its term. */
-export const DEFINITION_INDENT = 22;
+export const BODY_SIZE = 11;
+/** A definition hangs two ems of its item's size beneath its term. */
+export const DEFINITION_EMS = 2;
 
 const graphemes = new Intl.Segmenter('en', { granularity: 'grapheme' });
 
@@ -80,14 +97,15 @@ export function textBlockHeight(format: PublishedPdfFormat): number {
  * How tall a figure's caption may stand below its image, in points, estimated **generously** - more
  * than it takes, never less - since `assemble` has no font metrics and a figure does not break, so
  * a caption longer than the room below its image would run off its page (figures 3, final review).
- * Each grapheme is taken as 0.6 em of the body text, wider than an ordinary letter of Liberation Serif;
- * one line more than that fills is added for words that wrap early; each line is 1.5 em, above the
- * template's measured pitch; and an em stands between the image and its caption, above the engine's
- * gap. A caption of capitals throughout may still be under-estimated, which is the known limit.
+ * In ems of `size`, the `caption` role's style's (themes 1): each grapheme is taken as 0.6 em, wider
+ * than an ordinary letter of Liberation Serif; one line more than that fills is added for words that
+ * wrap early; each line is 1.5 em, above the template's measured pitch; and an em stands between the
+ * image and its caption, above the engine's gap. A caption of capitals throughout may still be
+ * under-estimated, which is the known limit.
  */
-export function captionHeight(graphemes: number, width: number): number {
-  const lines = Math.ceil((graphemes * CAPTION_ADVANCE) / width) + 1;
-  return lines * CAPTION_LINE + CAPTION_GAP;
+export function captionHeight(graphemes: number, width: number, size: number): number {
+  const lines = Math.ceil((graphemes * CAPTION_ADVANCE * size) / width) + 1;
+  return lines * CAPTION_LINE * size + CAPTION_GAP * size;
 }
 
 /** How high an image in a run of text is printed (decision F-K's `inline` style): 1.2 em of the body. */
@@ -95,22 +113,23 @@ export const INLINE_IMAGE_HEIGHT = 1.2 * BODY_SIZE;
 /** What a table's cell insets its content by on each side: the engine's default, 5 points. */
 export const CELL_INSET = 5;
 
-/** A caption's grapheme taken as this many points across: 0.6 em of the body text. */
-export const CAPTION_ADVANCE = 0.6 * BODY_SIZE;
-/** A caption's line taken as this many points down: 1.5 em of the body text. */
-export const CAPTION_LINE = 1.5 * BODY_SIZE;
-/** Between an image and its caption, taken as an em of the body text. */
-export const CAPTION_GAP = BODY_SIZE;
+/** A caption's grapheme taken as this many ems across. */
+export const CAPTION_ADVANCE = 0.6;
+/** A caption's line taken as this many ems down. */
+export const CAPTION_LINE = 1.5;
+/** Between an image and its caption, taken as an em. */
+export const CAPTION_GAP = 1;
 
 /**
  * How far a list's content stands in from its own edge, in points: two ems for a definition list,
  * and otherwise the widest marker the list prints, at a full em a character, and half an em after
- * it. **Deliberately conservative** (#164): `assemble` has no font metrics, and an em a character is
- * wider than every marker the engine was measured setting, so a line inside a numbered list may be
- * refused that would have fitted - never the reverse.
+ * it - ems of `size`, the `listItem` place's style's (themes 1). **Deliberately conservative**
+ * (#164): `assemble` has no font metrics, and an em a character is wider than every marker the
+ * engine was measured setting, so a line inside a numbered list may be refused that would have
+ * fitted - never the reverse.
  */
-export function listIndent(list: ListNode): number {
-  if (list.kind === 'definition') return DEFINITION_INDENT;
+export function listIndent(list: ListNode, size: number): number {
+  if (list.kind === 'definition') return DEFINITION_EMS * size;
   let widest = 1;
   if (list.kind === 'ordered') {
     const format =
@@ -124,7 +143,7 @@ export function listIndent(list: ListNode): number {
       widest = Math.max(widest, [...formatCounter(number, format)].length + 1);
     }
   }
-  return BODY_SIZE * widest + BODY_SIZE / 2;
+  return size * widest + size / 2;
 }
 
 /**

@@ -43,7 +43,6 @@ import {
   expandTabs,
   INLINE_IMAGE_HEIGHT,
   listIndent,
-  QUOTATION_INDENT,
   textBlockHeight,
   textMeasure,
 } from './measure.js';
@@ -738,7 +737,14 @@ export function assemble(input: AssembleInput): Assembled {
           return {
             term: term.length === 0 ? null : term,
             blocks: item.content.flatMap((each) =>
-              publishable(each, node, 'listItem', indent + listIndent(block), table, heading),
+              publishable(
+                each,
+                node,
+                'listItem',
+                indent + listIndent(block, placeStyle('listItem').properties.size),
+                table,
+                heading,
+              ),
             ),
           };
         });
@@ -808,20 +814,15 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
-        const blocks = block.content.flatMap((each) =>
-          // Both sides: the engine pads a block quotation by an em left and right.
-          publishable(each, node, 'quotation', indent + 2 * QUOTATION_INDENT),
-        );
+        // Inset by exactly its style's start and end indents (themes 1), which template 12 sets in
+        // place of the engine's own inset of a quotation.
+        const quoted = placeStyle('quotation').properties;
+        const inset = indent + quoted.startIndent + quoted.endIndent;
+        const blocks = block.content.flatMap((each) => publishable(each, node, 'quotation', inset));
         const attribution =
           block.attribution === undefined
             ? []
-            : publishedRuns(
-                block.attribution,
-                node,
-                block.id,
-                roles('attribution'),
-                indent + 2 * QUOTATION_INDENT,
-              );
+            : publishedRuns(block.attribution, node, block.id, roles('attribution'), inset);
         // Nothing to show and nothing to attribute contributes nothing, rather than an empty
         // `BlockQuote` (decision P) - but the markers it and what it quotes leave, as a list does.
         if (blocks.every(isMarker) && attribution.length === 0) {
@@ -985,7 +986,9 @@ export function assemble(input: AssembleInput): Assembled {
               return '';
             })
             .join('');
-        const left = textBlockHeight(format) - captionHeight(columnsOf(said), across);
+        const left =
+          textBlockHeight(format) -
+          captionHeight(columnsOf(said), across, roleStyle('caption').properties.size);
         const tooLong = left < FIGURE_LEAST_HEIGHT;
         if (tooLong) failures.push(failure('compose', 'caption_too_long', node, block.id, null));
         // Asked whatever the caption came to, so both are said at once (PUB-052).

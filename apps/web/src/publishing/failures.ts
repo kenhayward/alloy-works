@@ -116,13 +116,15 @@ export function failureWords(failure: Failure): string {
       );
     // A table has a style of its own as a paragraph does (tables 2), and a figure an image style
     // (figures 3); the failure names the block but not its kind, so the sentence names all three.
+    // Since themes 1 the styles are the theme's catalogues', so it is the theme that lacks one, and
+    // `detail` is the style's identifier as stored, never the author's text.
     case 'style_missing':
-      return 'This paragraph, table or figure uses a style the publication template does not set.';
+      return `This paragraph, table or figure uses the style ${failure.detail ?? ''}, which the publication's theme does not have.`;
     // Themes 1: the style is the theme's, and declares where it applies (STY-006) - a heading's style
     // on running text, a footnote's in a list. `detail` is the style's identifier, which the theme
     // wrote, never the author's text; the block is named by where it is, as for `style_missing`.
     case 'style_not_applicable':
-      return `This paragraph, table or figure uses the style ${failure.detail ?? ''}, which cannot be used where it stands. Choose another style for it.`;
+      return `This paragraph, table or figure uses the style ${failure.detail ?? ''}, which cannot be used where it stands.`;
     // Themes 1 (STY-042): the theme records each typeface's licence, and this one's forbids embedding
     // it in a PDF. Nothing in the document caused it and another attempt fails the same way, so it
     // blames the theme, as `layout_glyph_missing` blames the layout, and never says to publish again.

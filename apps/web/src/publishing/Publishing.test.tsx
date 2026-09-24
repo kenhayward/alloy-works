@@ -273,7 +273,7 @@ describe('publishing from the document page', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
     const why = await screen.findByRole('list', { name: 'Why it could not be published' });
     expect(why).toHaveTextContent(
-      'This paragraph, table or figure uses the style heading-1, which cannot be used where it stands. Choose another style for it.',
+      'This paragraph, table or figure uses the style heading-1, which cannot be used where it stands.',
     );
     // Nothing in the document can mend a face the theme may not embed, so the sentence says it is the
     // theme's to change and never asks for another attempt.
@@ -300,9 +300,11 @@ describe('publishing from the document page', () => {
     );
     // A table has a style as a paragraph does, and a figure an image style, so the sentence names all
     // three rather than calling one of them a paragraph.
+    // The theme holds the styles since themes 1, so the sentence blames the theme and names the style.
     expect(why).toHaveTextContent(
-      'This paragraph, table or figure uses a style the publication template does not set.',
+      "This paragraph, table or figure uses the style wide, which the publication's theme does not have.",
     );
+    expect(why).not.toHaveTextContent('template');
   });
 
   it('says what a figure needs before it can be published, and names nothing of an image it may not read', async () => {
