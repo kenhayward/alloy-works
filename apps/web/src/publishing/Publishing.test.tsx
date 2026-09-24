@@ -239,6 +239,19 @@ describe('publishing from the document page', () => {
     );
   });
 
+  it('says a character an equation holds is not in the maths typeface, not that no typeface has it', async () => {
+    const fake = failing([
+      { stage: 'compose', code: 'math_glyph_missing', node: null, block: 'e1', detail: 'U+0663' },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'The maths typeface that equations are set in cannot set the character U+0663 in this equation.',
+    );
+    expect(why).not.toHaveTextContent('in no typeface');
+  });
+
   it('says what a table needs before it can be published, in words an author can act on', async () => {
     const fake = failing([
       { stage: 'compose', code: 'table_without_caption', node: null, block: 't1', detail: null },

@@ -83,6 +83,11 @@ export const publishFailureCodes = [
   // it would be set with nothing beside it, and a reference to it could print nothing.
   'equation_unrenderable',
   'equation_unnumbered',
+  // compose, from equations 2: a character the maths face cannot set, in an equation's tree - named
+  // apart from `glyph_missing` as `code_glyph_missing` is, because the body face may well have it, and
+  // the author needs to know it is the equation that cannot carry it. The engine's fallback is off
+  // for maths, so it would otherwise be set as nothing.
+  'math_glyph_missing',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

@@ -7321,6 +7321,7 @@
                               "cross_reference_form_unavailable",
                               "equation_unrenderable",
                               "equation_unnumbered",
+                              "math_glyph_missing",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10070,6 +10071,7 @@
                               "cross_reference_form_unavailable",
                               "equation_unrenderable",
                               "equation_unnumbered",
+                              "math_glyph_missing",
                               "engine_failed",
                               "store_failed"
                             ]

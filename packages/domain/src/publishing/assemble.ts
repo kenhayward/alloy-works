@@ -905,7 +905,8 @@ export function assemble(input: AssembleInput): Assembled {
    *   editor reads - or `alternative_missing`, as an image with none: the engine would otherwise refuse
    *   the whole document without saying which (EQ-D). Read whatever the tree came to, so both are said;
    * - **its characters**, every one the tree sets asked of the maths face (R3) - the engine's fallback
-   *   is off for maths, so one the face lacks would be set as nothing - `glyph_missing` for each.
+   *   is off for maths, so one the face lacks would be set as nothing - `math_glyph_missing` for each,
+   *   named apart from `glyph_missing` because the body face may have it.
    *
    * Said once for its block however many of its equations share a reason, as an image's are.
    */
@@ -930,7 +931,8 @@ export function assemble(input: AssembleInput): Assembled {
     if (!converted.ok) return null;
     const faceless = characterProblems(mathsText(converted.tree), input.covers, 'math');
     for (const { problem, codePoint } of faceless) {
-      failOnce(failure('compose', problem, node, block, codePointName(codePoint)));
+      const code = problem === 'glyph_missing' ? 'math_glyph_missing' : problem;
+      failOnce(failure('compose', code, node, block, codePointName(codePoint)));
     }
     // The language is refused where it is declared - the component, or the document - not again here.
     const language = spokenIn(node);

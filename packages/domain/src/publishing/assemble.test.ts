@@ -3612,14 +3612,15 @@ describe('equations, published (equations 2)', () => {
       covers: faces,
     });
     expect(failuresOf(assembled)).toEqual([
-      // Each character once for its equation, in the order the equation sets them.
-      failed('glyph_missing', 'e1', 'U+00E9'),
-      failed('glyph_missing', 'e1', 'U+02C7'),
-      failed('glyph_missing', 'e1', 'U+0663'),
-      failed('glyph_missing', 'e1', 'U+00FC'),
+      // Each character once for its equation, in the order the equation sets them - named apart from
+      // `glyph_missing`, as the monospace face's are, because the body face may well have it.
+      failed('math_glyph_missing', 'e1', 'U+00E9'),
+      failed('math_glyph_missing', 'e1', 'U+02C7'),
+      failed('math_glyph_missing', 'e1', 'U+0663'),
+      failed('math_glyph_missing', 'e1', 'U+00FC'),
       // In running text, the paragraph: its own text in the body face, its equation in the maths.
       failed('glyph_missing', 'b1', 'U+27E8'),
-      failed('glyph_missing', 'b1', 'U+00E9'),
+      failed('math_glyph_missing', 'b1', 'U+00E9'),
     ]);
   });
 
@@ -3667,7 +3668,7 @@ describe('equations, published (equations 2)', () => {
       failed('alternative_missing', 'e1'),
       failed('equation_unnumbered', 'e1'),
       failed('alternative_missing', 'e2'),
-      failed('glyph_missing', 'e2', 'U+00E9'),
+      failed('math_glyph_missing', 'e2', 'U+00E9'),
     ]);
   });
 

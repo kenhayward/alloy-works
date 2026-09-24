@@ -107,6 +107,10 @@ export function failureWords(failure: Failure): string {
     // be untrue, and the author needs to know it is the code that cannot carry it.
     case 'code_glyph_missing':
       return `The character ${failure.detail ?? ''} is not in the monospace typeface that preformatted text and inline code are set in.`;
+    // Equations 2, as `code_glyph_missing`: the body face may have this character, so "in no
+    // typeface" would be untrue; it is the equation's maths typeface that cannot set it.
+    case 'math_glyph_missing':
+      return `The maths typeface that equations are set in cannot set the character ${failure.detail ?? ''} in this equation.`;
     case 'line_too_wide':
       return `A line of this preformatted text is too wide for the page, so it would be cut off: ${failure.detail ?? ''}. Shorten the line or break it.`;
     // Tables 2's ruling R8: what a caption is for, so the author knows why it is asked for.
