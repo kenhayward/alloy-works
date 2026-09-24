@@ -95,6 +95,170 @@ offset, which stay the engine's; the Word projection (with Word); the theme in t
   each continued page and not the first; and every image placement and alignment, a fixed width and a
   fixed height each constrained by its maximum, and proportion kept; each compile passing veraPDF.
 
+## What the build changed
+
+**The model.**
+
+- **The default theme states two chains, and the plain names are the newer.** As the layout's are,
+  `DEFAULT_THEME`, `DEFAULT_CATALOGUES`, `DEFAULT_CATALOGUE_VERSIONS` and `DEFAULT_CATALOGUES_BY_VERSION`
+  are the current version, 0.2, and 0.1 is frozen under `FIRST_*`, byte for byte what 0024 seeded, with
+  a header comment in `default.ts` stating both. 0.2 gives the paragraph, table and image catalogues a
+  second version each at `catalogue/2`, under fixed identifiers, and the theme's own 0.2, whose
+  identifier is fixed too (`DEFAULT_THEME_VERSION`), names them; the character, admonition and citation
+  catalogues keep 0.1's rows, still at `catalogue/1`. Tests pinning 0024's rows and template 12's
+  measures use `FIRST_*`.
+- **`catalogue/2` is one version for every kind**, and `catalogue/1` is kept as `catalogueSchema1`,
+  frozen. The reader holds a version 1 catalogue to it first and upgrades it in memory with
+  `upgradeCatalogue1`, the chain's one step, filling what version 2 adds with template 12's look. A
+  table style and an image style are **whole**: every property required, nothing inherited, no
+  `basedOn`. Bounds: a fraction of the measure or of the text block's height in (0, 1], ems in (0, 10],
+  points in (0, 1584], the theme's own point bound, a rule's width 0.25 to 12 and padding 0 to 36. A
+  shape error is `catalogue_malformed`; three new codes name the rest - `image_unit_wrong_dimension` (a
+  fraction of the measure for a height, of the text block's height for a width), `image_unit_not_applicable`
+  (ems on a style for a figure) and `image_placement_not_applicable`. A style applying to both `figure`
+  and `inlineImage` can never hold, since no placement serves both, and is refused; none is stored.
+- **An inline image style states no alignment** (accepted). The image style is a union on `placement`:
+  `inline` refuses `alignment`, and `block` and `float` require it, by TH-D's rule that a property which
+  does nothing silently is worse than one that is absent. R1 said the alignment would be ignored.
+- **The quotation's spacing is split with its attribution** (accepted). One `spaceAfter` on the quotation
+  cannot give both template 11's 33.6 into its attribution and its 27.0 into the text after it, and R3's
+  "space before and after" would have put a bare quotation 6.6pt further from what follows than template
+  11 did, measured. So the quotation takes **16.5** before and **12.65** after, and the attribution
+  **6.6** before and **12.65** after; its alignment stays `end` and the quotation's indents 11 and 11. Template
+  11's distances were measured from a copy of its quotation settings compiled by the pinned Typst and read
+  with `typst query`, which reproduced themes 1's four and gave the one it had not measured, a bare
+  quotation into text. Template 13's are its baseline-to-baseline rule, the first's space after, the
+  second's space before and the second's line spacing, 14.35 for every 11pt style here, and were then
+  read from compiled PDFs of both templates:
+
+  | Distance, baseline to baseline        | Template 11 | Template 12 | Template 13                         |
+  | ------------------------------------- | ----------- | ----------- | ----------------------------------- |
+  | Text into a quotation                 | 33.60       | 17.10       | 33.60 (2.75 + 16.5 + 14.35)         |
+  | One quotation paragraph into the next | 17.10       | 17.10       | **14.35** (contextual: the leading) |
+  | Quotation into its attribution        | 33.60       | 17.10       | 33.60 (12.65 + 6.6 + 14.35)         |
+  | Attribution into text                 | 27.00       | 17.10       | 27.00 (12.65 + 0 + 14.35)           |
+  | Text into a bare quotation            | 33.60       | 17.10       | 33.60                               |
+  | Bare quotation into text              | 27.00       | 17.10       | 27.00 (12.65 + 0 + 14.35)           |
+
+  Every template 11 distance is back but one, a quotation's own paragraphs, 2.75pt closer than template
+  11 set them, which is R3's recorded move. Everything after a quotation moves down by the sum and
+  paginates differently. Nothing else moves: the same document without quotations, compiled by
+  template 12 under 0.1 and by template 13 under 0.2, paints every run, stroke and fill identically to
+  within 0.005pt.
+
+- **Contrast is judged on a table's fills for a list in a cell too** (the coordinator's ruling). The
+  reader judges the `tableCell` place's style, and the `listItem` place's where that is another style,
+  on every header row, header column and band fill that is not `none` - bold where the header is, else
+  the style's own - unless the style has a background of its own; a mark by themes 1's rule, once per
+  mark, colour, fill and ratio across both styles.
+- **Layout schema 4 is as R2 said.** `words.continued` is required of a layout written at version 4 and
+  absent from one read at versions 1 to 3; the step from 3 is the identity. The default layout's 0.4 is
+  frozen as `FOURTH_DEFAULT_LAYOUT`, and `defaultLayout` is 0.5.
+
+**The store.**
+
+- **A `catalogue/1` saved again unchanged answers unchanged** (the coordinator's ruling). The reader
+  returns a version 1 catalogue upgraded, and the store writes what it returns, so its digest differs
+  from the stored row's and a save of the same catalogue would have recorded a version. So
+  `addCatalogueVersion` passes the latest version as the reader read it - its id and its digest as
+  upgraded - to `recordReadVersion` as `latestAsRead`, and the chain compares against it only while that
+  id is still the latest, keeping its own order: artifact missing, stale, kind, then unchanged.
+- **Migration 0025 guards each chain on its own.** The paragraph, table and image catalogues' 0.2 each
+  go in only where that catalogue is still 0024's own 0.1 - unauthored, its content hash 0024's literal,
+  nothing after it; the theme's 0.2 only where the theme is still 0024's 0.1 by the same test **and** all
+  three catalogue 0.2s exist, which only 0025 writes; the layout's 0.5 only where it is 0023's 0.4, as
+  0023 guarded 0.3. The literals were computed from the domain's data by a script whose hashes for 0.1
+  and 0.4 matched 0024's and 0023's. Two consequences, accepted:
+  - **Where an environment has its own theme version, the catalogue 0.2s it gets are unused**: nothing
+    names them, and its catalogues' latest versions are ones its theme does not bind.
+  - **An environment that recorded its own version of any of the four keeps the old look** for good:
+    its theme stays 0.1, its tables and images set as template 12 set them through the reader's upgrade,
+    until its own theme is changed.
+- **The saved-0.1 half of the guard is not tested** for the catalogues and the theme. No environment can
+  hold another 0.1 under the default's identifiers - 0024 inserts only where none exists - and faking one
+  is 0018's heavy rigging. The own-version cases test the "nothing after 0.1" half; the hash half is
+  written as 0023's is, and neither 0023's tests nor 0021's rig one.
+- A request made at 0024 and still waiting keeps 0.1, and is handed it resolved; one made after 0025
+  records 0.2.
+
+**`assemble` and `publishing/13`.**
+
+- **`publishing/13`'s shape.** `theme` is `projectTypst`'s `TypstTheme`: every paragraph style **with its
+  `id`**, so the template can tell one style from two with equal values for contextual spacing, and
+  `contextualSpacing` on each; `tables` and `images`, by id. `projectTypst12` and its types are
+  `publishing/12`'s, frozen, and `PUBLISHING_SCHEMA_12` beside them. `words.continued` is a string or
+  null, null for a layout read at schema 3. A `PublishedTable` carries `style`, its table style's id,
+  which the template looks up; a `PublishedFigure` `placement`, `block` or `float`, and `alignment`, in
+  the engine's spelling; an image in a line `placement: 'inline'` and no alignment.
+- **`continuation_words_missing`** is a new failure: a table whose style applies and asks for a label,
+  under a layout with no `continued`, naming the table and, in `detail`, the style. The publishing page
+  says the layout or the theme has to change. The continued words are glyph-checked as a layout word,
+  `layout_glyph_missing`, against the caption role's family, whether or not a table asks for them, as
+  the contents' title is.
+- **Sizes are the style's.** The fixed dimension from its unit - points; a fraction of the layout's
+  measure; a fraction of the text block's height; ems of the style or role the image stands in - the other
+  from the pixels, and both re-derived from the maximum where the other exceeds it (`imageLength`,
+  `styledSize` in `measure.ts`). A figure is then held to the room where it stands and to what its
+  caption leaves, as before; `FIGURE_HEIGHT_SHARE`, `CELL_INSET`, `INLINE_IMAGE_EMS` and
+  `inlineImageHeight` are gone, and a cell's room is its share less twice the table style's padding.
+- **"Measure" is the layout's measure**, the text block's width, which is the editor's column as the
+  design says, not the room where the image stands; the room caps after. So every existing figure's
+  size is kept, the 429.28pt figure in a quotation among them.
+- **A very wide image in a line at the top level is shrunk to the measure, not refused.** The default
+  inline style's maximum of 1 measure and R5's re-derivation make a 6000 by 100 image 451.28 by 7.52
+  where it was `image_too_wide`. That is STY-017's rule, but it changes a refusal, so two domain tests
+  were rewritten openly rather than loosened: each now stands its image in a quotation, whose 429.28 is
+  narrower than the maximum. An image in a line still wider than its room - a quotation's, a cell's - is
+  refused as it was.
+- A figure whose image style says `inline` is refused by the reader, so `assemble` throws on one as a
+  caller's defect.
+
+**The template.**
+
+- **Header rows repeat by `repeatHeader`; the label by a two-level header.** Without a label a table's
+  header is `table.header(repeat: repeatHeader, ..)`, template 12's structure. With one, a label header
+  at level 1 always repeats, and the header rows at level 2 repeat by the style - measured: the label
+  goes on while the header rows do not. The label is `pdf.artifact`, set in the caption role's style and
+  alignment, padded by the table's inset, reading "Table 3 (continued)", or the words alone for a table
+  with no number, in the layout's language; the page test compares the page with the table's own by
+  `query(selector(table).before(here()))`, which relies on no table standing in a table, as the model
+  holds.
+- **The label leaves an empty header cell on page 1**, as the design measured: its row takes no height
+  there - the header's baseline is where an unlabelled table's is - but the structure tree holds an
+  empty `TH`, which the worker's test counts. This is why the default asks for no label.
+- **A table broken across pages is framed on each page.** The engine draws the first and last lines of
+  each page's part in the outer rule, measured and kept. Each rule is decided once, by the cell after it;
+  the header row's rule is a `table.hline` inside the header, so it repeats with it; the foot and the
+  far side are drawn in the outer rule. A table's rules take no room: text starts at exactly the
+  padding, 3pt rules and all.
+- **Header bold is applied to the text**, `show text: set text(weight: ..)`, so it wins over the cell
+  style's weight and a mark's, measured; the corner takes the row's weight, else the column's. Fills: the
+  header row's, the corner included, then the header column's, then the band, which starts on the first
+  body row. A header that is not bold leaves the cell style's weight alone.
+- **Contextual spacing is applied wherever template 12 summed spaces**: between blocks, between a
+  footnote's paragraphs and two footnotes, between contents and list entries, and between a table's
+  caption and its cells. Nothing but the quotation asks for it under the default.
+- **Every figure is wrapped in a full-width block** aligned by its style, centre included, measured to
+  move nothing under the default; under another theme a caption not centred now aligns to the measure,
+  not to the figure's box. A float is `figure(placement: auto)`: the engine chooses head or foot, and an
+  author cannot.
+- **The literal test's allowlist is unchanged.** It now reads templates 12 and 13, and 13 still needs
+  every entry; its new lines use only `pt()`, `colour()`, `0pt` and `width: 100%`. Template 13's header
+  names what is still the engine's: a list's and an enumeration's indents, the definition list's hanging
+  indent and separator, the contents' leader and indents, the underline's offset and thickness, a
+  script's raise, and a footnote's separator, clearance and indent.
+- The worker's PDF reader reports a stroke's `width`, the line width times the matrix's scale, which the
+  table test reads rules by.
+
+**The record.**
+
+- **Citations.** STY-015 with STY-016, and STY-017, in the domain's `assemble.test.ts`; STY-076, STY-013
+  with PUB-017 and TAB-032, and STY-018 in the worker's `table-and-image-styles.test.ts`, each compile
+  passing veraPDF. `default-theme.test.ts`'s STY-024 title now says 0.2.
+- **STY-019 stays claimed and is not cited.** It asks a publish to fail, naming the asset, where no
+  dimensions are recorded; an asset version cannot be stored without its dimensions, which ingest
+  records, so the failure cannot arise and a test could only pretend to reach it. themes.md says so.
+
 ## Tasks
 
 1. **The model** (`packages/domain`): R1 - `catalogue/2`, the upgrade from 1, the reader's checks and

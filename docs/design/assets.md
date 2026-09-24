@@ -65,14 +65,14 @@ is AST-007's declared policy, which is T2's; until then the design claims no mor
 
 ## What this document does not own
 
-| What                                                                                     | Whose                                                                                                                                 |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Alternative text in three states, inherited, own or decorative                           | content-model.md (AST-012, AST-013, AST-015, AST-039). This design stores the default a figure inherits                               |
-| How big a figure prints                                                                  | themes.md's image styles (STY-015 to STY-019). Until themes are built, the one default rule in [publishing.md](publishing.md#figures) |
-| Refusing a figure with no alternative text at publish                                    | publishing.md (PUB-033, AST-014)                                                                                                      |
-| Size limits a tenant can lower (AST-004), derivatives, licences, replacement             | T2 and T3. T1's limits are the product's, declared as constants                                                                       |
-| An asset library, search over assets, where an asset is used (AST-018, AST-027, AST-028) | T2. In T1 an asset is reached only through the figure that places it                                                                  |
-| Pasting or dropping an image into a component                                            | A later editor slice. Paste keeps no image today, and still will after these slices                                                   |
+| What                                                                                     | Whose                                                                                                                               |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Alternative text in three states, inherited, own or decorative                           | content-model.md (AST-012, AST-013, AST-015, AST-039). This design stores the default a figure inherits                             |
+| How big a figure prints                                                                  | themes.md's image styles (STY-015 to STY-019), built by themes 2; the default theme's two in [publishing.md](publishing.md#figures) |
+| Refusing a figure with no alternative text at publish                                    | publishing.md (PUB-033, AST-014)                                                                                                    |
+| Size limits a tenant can lower (AST-004), derivatives, licences, replacement             | T2 and T3. T1's limits are the product's, declared as constants                                                                     |
+| An asset library, search over assets, where an asset is used (AST-018, AST-027, AST-028) | T2. In T1 an asset is reached only through the figure that places it                                                                |
+| Pasting or dropping an image into a component                                            | A later editor slice. Paste keeps no image today, and still will after these slices                                                 |
 
 ## Formats, measured
 

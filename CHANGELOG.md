@@ -3,6 +3,34 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.69.0 - 2026-09-24 (PR #PRNUM)
+
+### Added
+
+- **A table's look comes from its table style in the theme**: which rules it draws, their thickness
+  and colour, how far its cells are padded, whether its header row and header column are filled or
+  bold, whether its body rows are banded, whether its header rows repeat on each page, whether a row
+  may split across a page break or moves whole to the next page, and whether each page it continues
+  onto is labelled, such as **Table 3 (continued)**, in the layout's words. The default theme's table
+  style looks as tables did: every rule a thin black line, cells padded as before, the header neither
+  filled nor bold and repeated on each page, rows allowed to split, and no label.
+- **A figure's and an image's size and place come from their image style**: the width or the height
+  it fixes, the most the other may be, its shape always kept, and whether a figure stands in the text or
+  floats to the head or foot of a page, at the start, the centre or the end. The default's figures and
+  images print at the sizes they did.
+- **Publishing refuses a table whose style labels each page it continues onto when the layout has no
+  words for the label**, naming the table and its style. The layout or the theme has to change. The
+  default layout says "(continued)", and the default theme asks for no label, so it refuses nothing.
+
+### Changed
+
+- **A quotation is set apart from the text around it again**, as it was before themes: the space above
+  it, before its attribution and after it is back. Its own paragraphs stand a line apart, about 3
+  points closer than they once did. Everything after a quotation moves down the page to match.
+- **An image in a line of text wider than the text is made smaller to fit it**, its shape kept, where
+  before the publish was refused. One still wider than the room it stands in, in a quotation or a
+  table's cell, is refused as before.
+
 ## 0.68.0 - 2026-09-24 (PR #227)
 
 ### Added

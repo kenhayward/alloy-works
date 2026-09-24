@@ -64,15 +64,18 @@ a web application and a desktop application**.
 > publisher and held to its hash, and lists of figures, tables and, where a layout declares one,
 > equations after the contents - marked
 > **Not approved** on every page, through the `publish` job in `apps/worker` and the routes in
-> `apps/service/src/publishing.ts` - every face, size, colour, space and line of it set by template 12
-> from the environment's stored default theme, `packages/domain/src/theme/`, seeded by migration 0024
-> and recorded on every request and publication, a style the theme lacks or cannot use there, and a
-> face it may not embed or the worker does not hold, failing the publish by name - and nothing else authors or
+> `apps/service/src/publishing.ts` - every face, size, colour, space and line of it set by template 13
+> from the environment's stored default theme, `packages/domain/src/theme/`, seeded by migrations 0024
+> and 0025 and recorded on every request and publication; a table's rules, fills, padding, header and
+> page breaks set from its table style, an image's size, placement and alignment from its image style,
+> and a quotation set off by contextual spacing; and a style the theme lacks or cannot use there, a
+> label for a continued table under a layout with no words for it, and a face it may not embed or the
+> worker does not hold failing the publish by name - and nothing else authors or
 > publishes content: no image or equation pasted from outside the product, no metadata panel,
 > no making a component type, no defined term written or resolved, no
 > document view, no list of equations in the default layout, no
 > choosing or editing a layout or a theme, no theme in the editor, no style to choose for a paragraph,
-> no table or image style with properties of its own, and no preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and
+> a table or an image, and no preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and
 > nothing renders it any more. [`docs/features.md`](docs/features.md) lists what does and does not
 > exist.
 

@@ -28,7 +28,9 @@ export const DEFAULT_THEME_ID = '4ae73bd5-48cb-422a-a4f8-2183f0f72866';
 /**
  * The artifacts the default theme's six catalogues are versions of, one of each kind (STY-003), each in
  * no space. Their first versions' identifiers are the domain's `FIRST_DEFAULT_CATALOGUE_VERSIONS`, which the
- * theme's content names; these are the artifacts behind them, which nothing names but the store.
+ * theme's 0.1 names, and 0025 gave the paragraph, table and image catalogues a second at `catalogue/2`,
+ * `DEFAULT_CATALOGUE_VERSIONS`, which the theme's 0.2 names (themes 2); these are the artifacts behind
+ * them all, which nothing names but the store.
  */
 export const DEFAULT_CATALOGUE_IDS: Readonly<Record<CatalogueKind, string>> = {
   paragraph: 'd743fbe7-68f8-4530-8e93-46494d0fcdc2',
