@@ -30,8 +30,15 @@ import { DRAFT_NOTICE } from './published.js';
  * `relative` reference prints, in the layout's own language, both or neither. A layout stored at
  * version 2 reads as one with neither - a migration cannot know another language's words - and a
  * relative reference under it fails by name rather than printing English into a French document.
+ *
+ * **Version 4 added `words.continued`** (themes 2, ruling R2): what a continued table's label adds after
+ * the table's own label - `Table 3 (continued)` - in the layout's language, since a theme has none
+ * (TH-I). **Required of a layout written at version 4**, and absent from one stored earlier, which reads
+ * as having none for version 3's reason: a migration cannot know another language's words. A table
+ * style asking for a label under a layout with none fails the publish by name rather than printing
+ * English.
  */
-export const LAYOUT_SCHEMA_VERSION = 3;
+export const LAYOUT_SCHEMA_VERSION = 4;
 
 /** The sequences a generated list can list: those a caption-bearing block takes (CNT-081, STR-041). */
 export const LISTED_SEQUENCES = ['figure', 'table', 'equation'] as const;
@@ -72,9 +79,10 @@ export interface Layout {
   /** The one language its words are in: a BCP 47 tag the engine can carry (`publishedLanguage`). */
   language: string;
   /**
-   * The words the product sets itself: the contents' title, the draft notice and its sentence, and
-   * what a relative reference prints either side of its target - both, or neither where the layout
-   * has no words for them.
+   * The words the product sets itself: the contents' title, the draft notice and its sentence, what
+   * a relative reference prints either side of its target - both, or neither where the layout has no
+   * words for them - and what a continued table's label adds, which only a layout stored before
+   * schema version 4 lacks.
    */
   words: {
     contents: string;
@@ -82,6 +90,7 @@ export interface Layout {
     noticeSentence: string;
     above?: string | undefined;
     below?: string | undefined;
+    continued?: string | undefined;
   };
   /** The numbering scheme, in structure.md's shape, labels included (PUB-011, STR-013, STR-024). */
   scheme: NumberingScheme;
@@ -118,10 +127,10 @@ const visible = (text: string) =>
 const settable = (text: string) => !codePoints(text).some(disallowed);
 
 /**
- * Words the product sets as the layout's: the contents' title, the draft notice, and a relative
- * reference's _above_ and _below_. Each must show something - a blank notice, or one of only
- * zero-width characters, would remove the draft's mark from every page, which no layout may do, and a
- * blank _above_ would print a reference as nothing.
+ * Words the product sets as the layout's: the contents' title, the draft notice, a relative
+ * reference's _above_ and _below_, and a continued table's _continued_. Each must show something - a
+ * blank notice, or one of only zero-width characters, would remove the draft's mark from every page,
+ * which no layout may do, and a blank _above_ would print a reference as nothing.
  */
 const words = z
   .string()
@@ -188,6 +197,8 @@ const pdfFormatSchema = z
  * refuse it the other. Exported apart from `layoutSchema` for a caller shown only this much of a
  * layout - the document page reads a reference's _above_ and _below_ from it (cross-references 2,
  * ruling R9) without reading the rest, exactly as it already reads the numbering scheme apart.
+ * `continued` is optional here, as a layout stored before schema version 4 reads without it; that a
+ * layout written at 4 states it is `layoutSchema`'s to say.
  */
 export const layoutWordsSchema = z
   .strictObject({
@@ -196,6 +207,7 @@ export const layoutWordsSchema = z
     noticeSentence: words,
     above: words.optional(),
     below: words.optional(),
+    continued: words.optional(),
   })
   .refine(
     ({ above, below }) => (above === undefined) === (below === undefined),
@@ -203,12 +215,13 @@ export const layoutWordsSchema = z
   );
 
 /**
- * Every layout version, as it is stored. The language is held to the rule `assemble` holds a document's
- * to (`publishedLanguage`, `language_not_publishable`): a tag the engine cannot carry is refused, never
- * shortened to one it can. And every string in it, member names and scheme labels among them, is one
- * Postgres can store.
+ * Every layout version, as it reads at the current schema version. The language is held to the rule
+ * `assemble` holds a document's to (`publishedLanguage`, `language_not_publishable`): a tag the engine
+ * cannot carry is refused, never shortened to one it can. And every string in it, member names and
+ * scheme labels among them, is one Postgres can store. This one admits a layout with no words for a
+ * continued table, as one stored before schema version 4 reads; `layoutSchema` is it with them.
  */
-export const layoutSchema: z.ZodType<Layout> = z
+const upgradedLayoutSchema: z.ZodType<Layout> = z
   .strictObject({
     schemaVersion: z.literal(LAYOUT_SCHEMA_VERSION),
     language: z.string().superRefine((tag, context) => {
@@ -238,9 +251,35 @@ export const layoutSchema: z.ZodType<Layout> = z
   })
   .refine(storableEverywhere, CANNOT_BE_STORED);
 
-/** The one entry point for a layout at the current schema version. */
+/**
+ * **A layout as it is written at the current schema version**: from version 4 on, with the words a
+ * continued table's label adds (themes 2, ruling R2), since a writer knows its own language's.
+ */
+export const layoutSchema: z.ZodType<Layout> = upgradedLayoutSchema.refine(
+  (layout) => layout.words.continued !== undefined,
+  {
+    message: "A layout at schema version 4 gives the words a continued table's label adds",
+    path: ['words', 'continued'],
+  },
+);
+
+/** The one entry point for a layout at the current schema version, as it is written. */
 export function parseLayout(value: unknown): Layout {
   return layoutSchema.parse(value);
+}
+
+/**
+ * A stored layout, migrated and parsed: held to `layoutSchema` where it was written at the current
+ * version, and to what an older version reads as where it was written before, so a layout stored at
+ * version 3 reads with no words for a continued table while one stored at 4 without them is refused.
+ * Throws, as `parseLayout` does.
+ */
+function parseStoredLayout(value: unknown): Layout {
+  const migrated = migrateStored(value, layoutMigrationChain);
+  const written = (value as { schemaVersion: unknown }).schemaVersion;
+  return written === LAYOUT_SCHEMA_VERSION
+    ? parseLayout(migrated)
+    : upgradedLayoutSchema.parse(migrated);
 }
 
 // A read-time projection, as every chain's is: the stored bytes never change.
@@ -256,6 +295,8 @@ export const layoutMigrationChain: MigrationChain = {
     // Version 2 had no words for above and below, and reads as having neither: which words a layout
     // in another language would give is not a migration's to guess.
     2: (layout) => layout,
+    // Version 3 had no words for a continued table, and reads as having none, for version 2's reason.
+    3: (layout) => layout,
   },
 };
 
@@ -271,7 +312,7 @@ export function readLayout(
   context: { artifact: string; version: string },
 ): LayoutReadOutcome {
   try {
-    return { ok: true, layout: parseLayout(migrateStored(value, layoutMigrationChain)) };
+    return { ok: true, layout: parseStoredLayout(value) };
   } catch (error) {
     return {
       ok: false,
@@ -347,7 +388,7 @@ export type Layout2 = Omit<Layout, 'schemaVersion' | 'words'> & {
  * publish - and returned unchanged, never as it reads.
  */
 function frozenAt2(layout: Layout2): Layout2 {
-  parseLayout(migrateStored(layout, layoutMigrationChain));
+  parseStoredLayout(layout);
   return layout;
 }
 
@@ -383,13 +424,43 @@ export const THIRD_DEFAULT_LAYOUT: Layout2 = frozenAt2({
 });
 
 /**
- * The default layout as it stands, **version 0.4**: 0.3 with the words a relative reference prints,
- * _above_ and _below_ (cross-references 2, ruling R2), at schema version 3.
+ * A layout as schema version 3 stored it: words for above and below, and none for a continued table.
+ * The shape of the default layout's 0.4 row, which is frozen at it.
+ */
+export type Layout3 = Omit<Layout, 'schemaVersion' | 'words'> & {
+  schemaVersion: 3;
+  words: {
+    contents: string;
+    notice: string;
+    noticeSentence: string;
+    above?: string | undefined;
+    below?: string | undefined;
+  };
+};
+
+/**
+ * **The default layout's version 0.4, as migration 0023 stored it**: 0.3 with the words a relative
+ * reference prints, _above_ and _below_ (cross-references 2, ruling R2). Frozen, at schema 3, for 0.2's
+ * reason, and checked as 0.2 is to read through today's chain.
+ */
+export const FOURTH_DEFAULT_LAYOUT: Layout3 = (() => {
+  const layout: Layout3 = {
+    ...THIRD_DEFAULT_LAYOUT,
+    schemaVersion: 3,
+    words: { ...THIRD_DEFAULT_LAYOUT.words, above: 'above', below: 'below' },
+  };
+  parseStoredLayout(layout);
+  return layout;
+})();
+
+/**
+ * The default layout as it stands, **version 0.5**: 0.4 with the words a continued table's label adds,
+ * _(continued)_, in its language, English (themes 2, ruling R2), at schema version 4.
  */
 export const defaultLayout: Layout = parseLayout({
-  ...THIRD_DEFAULT_LAYOUT,
+  ...FOURTH_DEFAULT_LAYOUT,
   schemaVersion: LAYOUT_SCHEMA_VERSION,
-  words: { ...THIRD_DEFAULT_LAYOUT.words, above: 'above', below: 'below' },
+  words: { ...FOURTH_DEFAULT_LAYOUT.words, continued: '(continued)' },
 });
 
 /**

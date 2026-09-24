@@ -8,6 +8,7 @@ import { canonicaliseVersionContent } from '../version/substance.js';
 import {
   defaultLayout,
   FIRST_DEFAULT_LAYOUT,
+  FOURTH_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
   layoutWordsSchema,
   parseLayout,
@@ -44,7 +45,7 @@ describe('a layout', () => {
 
   it('holds the default layout to its own schema', () => {
     const expected: Layout = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       language: 'en',
       words: {
         contents: 'Contents',
@@ -53,6 +54,8 @@ describe('a layout', () => {
         // Version 0.4's: what a relative reference prints (cross-references 2, ruling R2).
         above: 'above',
         below: 'below',
+        // Version 0.5's: what a continued table's label adds after its label (themes 2, ruling R2).
+        continued: '(continued)',
       },
       scheme: defaultNumberingScheme,
       matter: {
@@ -91,7 +94,7 @@ describe('a layout', () => {
         },
       },
     };
-    expect(LAYOUT_SCHEMA_VERSION).toBe(3);
+    expect(LAYOUT_SCHEMA_VERSION).toBe(4);
     expect(defaultLayout).toEqual(expected);
     expect(parseLayout(defaultLayout)).toEqual(expected);
 
@@ -125,11 +128,60 @@ describe('a layout', () => {
       { sequence: 'figure', title: 'Figures' },
       { sequence: 'table', title: 'Tables' },
     ]);
-    expect(defaultLayout).toEqual({
+    expect(FOURTH_DEFAULT_LAYOUT).toEqual({
       ...THIRD_DEFAULT_LAYOUT,
       schemaVersion: 3,
       words: { ...THIRD_DEFAULT_LAYOUT.words, above: 'above', below: 'below' },
     });
+  });
+
+  it("keeps the default layout's 0.4, as migration 0023 stored it at schema 3, and 0.5 is 0.4 with the words a continued table's label adds", () => {
+    expect(FOURTH_DEFAULT_LAYOUT.schemaVersion).toBe(3);
+    expect(FOURTH_DEFAULT_LAYOUT.words).not.toHaveProperty('continued');
+    expect(defaultLayout).toEqual({
+      ...FOURTH_DEFAULT_LAYOUT,
+      schemaVersion: 4,
+      words: { ...FOURTH_DEFAULT_LAYOUT.words, continued: '(continued)' },
+    });
+  });
+
+  it('reads a layout stored at schema version 3 as one with no words for a continued table', () => {
+    // As a migration could not know another language's above and below, it cannot know its
+    // continued (themes 2, ruling R2): a table style asking for a label fails under it by name.
+    const read = readLayout(JSON.parse(JSON.stringify(FOURTH_DEFAULT_LAYOUT)), {
+      artifact: 'layout-artifact',
+      version: 'layout-version',
+    });
+    if (!read.ok) throw new Error(read.failure);
+    expect(read.layout).toEqual({ ...FOURTH_DEFAULT_LAYOUT, schemaVersion: 4 });
+    expect(read.layout.words).not.toHaveProperty('continued');
+  });
+
+  it('requires a layout written at schema version 4 to give the words a continued table adds, words that say something', () => {
+    const without = copy();
+    delete without.words.continued;
+    expect(() => parseLayout(without)).toThrow(/continued table/);
+    // Stored at 4 without them is refused on reading too: only an older version reads as having none.
+    const stored = readLayout(JSON.parse(JSON.stringify(without)), {
+      artifact: 'layout-artifact',
+      version: 'layout-version',
+    });
+    expect(stored).toMatchObject({ ok: false, artifact: 'layout-artifact' });
+    expect(stored.ok === false && stored.failure).toMatch(/continued table/);
+
+    const french = copy();
+    french.words.continued = '(suite)';
+    expect(parseLayout(french).words.continued).toBe('(suite)');
+
+    const blank = copy();
+    blank.words.continued = '   ';
+    expect(() => parseLayout(blank)).toThrow(/say something/);
+    const nul = copy();
+    nul.words.continued = `(contin${String.fromCharCode(0)}ued)`;
+    expect(() => parseLayout(nul)).toThrow(/cannot be stored/);
+    const long = copy();
+    long.words.continued = 'x'.repeat(201);
+    expect(() => parseLayout(long)).toThrow();
   });
 
   it('reads a layout stored at schema version 2 as one with no words for above and below', () => {
@@ -140,9 +192,10 @@ describe('a layout', () => {
         version: 'layout-version',
       });
       if (!read.ok) throw new Error(read.failure);
-      expect(read.layout).toEqual({ ...stored, schemaVersion: 3 });
+      expect(read.layout).toEqual({ ...stored, schemaVersion: 4 });
       expect(read.layout.words).not.toHaveProperty('above');
       expect(read.layout.words).not.toHaveProperty('below');
+      expect(read.layout.words).not.toHaveProperty('continued');
     }
   });
 
@@ -158,6 +211,7 @@ describe('a layout', () => {
       contents: 'Contents',
       notice: DRAFT_NOTICE.page,
       noticeSentence: DRAFT_NOTICE.text,
+      continued: '(continued)',
     });
 
     for (const alone of ['above', 'below'] as const) {
@@ -189,6 +243,10 @@ describe('a layout', () => {
     expect(() => layoutWordsSchema.parse({ ...neither, above: 'above' })).toThrow(
       /above and below together/,
     );
+    // No words for a continued table, as a layout stored before schema 4 reads.
+    const older = { ...defaultLayout.words };
+    delete older.continued;
+    expect(layoutWordsSchema.parse(older)).toEqual(older);
   });
 
   it('reports a stored layout it cannot read with its artifact and version, and yields nothing', () => {

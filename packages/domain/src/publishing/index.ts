@@ -32,6 +32,7 @@ export {
   FIRST_DEFAULT_LAYOUT,
   SECOND_DEFAULT_LAYOUT,
   THIRD_DEFAULT_LAYOUT,
+  FOURTH_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
   LISTED_SEQUENCES,
   layoutMigrationChain,
@@ -46,6 +47,7 @@ export {
 export type {
   Layout,
   Layout2,
+  Layout3,
   LayoutField,
   LayoutList,
   LayoutReadOutcome,

@@ -215,6 +215,9 @@ describe('the domain package', () => {
         // Its third, as 0021 stored it at schema 2, promoted by cross-references 2 when 0.4 took the
         // default's name.
         'THIRD_DEFAULT_LAYOUT',
+        // Its fourth, as 0023 stored it at schema 3, promoted by themes 2 when 0.5 took the
+        // default's name.
+        'FOURTH_DEFAULT_LAYOUT',
         'LISTED_SEQUENCES',
         'speaksFor',
         'unsupportedFormats',
