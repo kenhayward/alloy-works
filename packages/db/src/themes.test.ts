@@ -1,7 +1,8 @@
 import {
   DEFAULT_CATALOGUES,
-  FIRST_DEFAULT_CATALOGUE_VERSIONS,
-  FIRST_DEFAULT_THEME,
+  DEFAULT_CATALOGUE_VERSIONS,
+  DEFAULT_THEME,
+  upgradeCatalogue1,
   type ParagraphCatalogue,
   type Theme,
 } from '@alloy-works/domain';
@@ -111,7 +112,7 @@ describe("the theme's store", () => {
       const two = recorded(
         await addCatalogueVersion(trx, {
           artifactId: PARAGRAPHS,
-          openedFrom: FIRST_DEFAULT_CATALOGUE_VERSIONS.paragraph,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.paragraph,
           author,
           catalogue: second,
         }),
@@ -138,7 +139,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, PARAGRAPHS)).toBe(2);
+      expect(await versionsOf(trx, PARAGRAPHS)).toBe(3);
 
       // Every identifier the latest version holds keeps meaning what it meant, and a new one is
       // allocated beside them: 0.3 records.
@@ -162,7 +163,7 @@ describe("the theme's store", () => {
           },
         }),
       );
-      expect(three).toMatchObject({ kind: 'catalogue', revision: 0, version: 3 });
+      expect(three).toMatchObject({ kind: 'catalogue', revision: 0, version: 4 });
     });
   });
 
@@ -173,7 +174,7 @@ describe("the theme's store", () => {
       const body = DEFAULT_CATALOGUES.paragraph.styles[0]!;
       const twice = await addCatalogueVersion(trx, {
         artifactId: PARAGRAPHS,
-        openedFrom: FIRST_DEFAULT_CATALOGUE_VERSIONS.paragraph,
+        openedFrom: DEFAULT_CATALOGUE_VERSIONS.paragraph,
         author,
         catalogue: {
           ...DEFAULT_CATALOGUES.paragraph,
@@ -184,7 +185,7 @@ describe("the theme's store", () => {
 
       const character = await addCatalogueVersion(trx, {
         artifactId: PARAGRAPHS,
-        openedFrom: FIRST_DEFAULT_CATALOGUE_VERSIONS.paragraph,
+        openedFrom: DEFAULT_CATALOGUE_VERSIONS.paragraph,
         author,
         catalogue: DEFAULT_CATALOGUES.character,
       });
@@ -197,7 +198,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, PARAGRAPHS)).toBe(1);
+      expect(await versionsOf(trx, PARAGRAPHS)).toBe(2);
     });
   });
 
@@ -205,29 +206,21 @@ describe("the theme's store", () => {
     const tenant = await environment();
     await service.withTenant(tenant, async (trx) => {
       const author = await ada(trx);
-      // The seeded 0.1 is held at catalogue/1, and a version is written as the reader reads it, at
-      // catalogue/2 (themes 2, ruling R1): the default's paragraph catalogue as 0.2 states it is a
-      // change from the row, and saved again from its own version it is unchanged.
-      const current = recorded(
-        await addCatalogueVersion(trx, {
-          artifactId: PARAGRAPHS,
-          openedFrom: FIRST_DEFAULT_CATALOGUE_VERSIONS.paragraph,
-          author,
-          catalogue: DEFAULT_CATALOGUES.paragraph,
-        }),
-      );
       const same = await addCatalogueVersion(trx, {
         artifactId: PARAGRAPHS,
-        openedFrom: current.id,
+        openedFrom: DEFAULT_CATALOGUE_VERSIONS.paragraph,
         author,
         catalogue: DEFAULT_CATALOGUES.paragraph,
       });
-      expect(same).toMatchObject({ answer: 'version.unchanged', current: { id: current.id } });
+      expect(same).toMatchObject({
+        answer: 'version.unchanged',
+        current: { id: DEFAULT_CATALOGUE_VERSIONS.paragraph },
+      });
       const next = withStyle(DEFAULT_CATALOGUES.paragraph, 'caption', { italic: true });
       recorded(
         await addCatalogueVersion(trx, {
           artifactId: PARAGRAPHS,
-          openedFrom: current.id,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.paragraph,
           author,
           catalogue: next,
         }),
@@ -235,7 +228,7 @@ describe("the theme's store", () => {
       expect(
         await addCatalogueVersion(trx, {
           artifactId: PARAGRAPHS,
-          openedFrom: current.id,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.paragraph,
           author,
           catalogue: withStyle(next, 'caption', { bold: true }),
         }),
@@ -243,11 +236,69 @@ describe("the theme's store", () => {
       expect(
         await addCatalogueVersion(trx, {
           artifactId: '00000000-0000-4000-8000-000000000000',
-          openedFrom: current.id,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.paragraph,
           author,
           catalogue: next,
         }),
       ).toEqual({ answer: 'artifact.missing' });
+    });
+  });
+
+  it('answers unchanged for a catalogue held at catalogue/1 saved again as it reads, at either version of the shape', async () => {
+    const tenant = await environment();
+    await service.withTenant(tenant, async (trx) => {
+      const author = await ada(trx);
+      // The character catalogue's 0.1 is still the row 0024 seeded, at catalogue/1. Saved as it is
+      // held, or as the reader upgrades it, it is the same catalogue: the two are compared as both
+      // read, never by the shape either is written in, so neither records a version.
+      const characters = DEFAULT_CATALOGUE_IDS.character;
+      for (const catalogue of [
+        DEFAULT_CATALOGUES.character,
+        upgradeCatalogue1(DEFAULT_CATALOGUES.character),
+      ]) {
+        expect(
+          await addCatalogueVersion(trx, {
+            artifactId: characters,
+            openedFrom: DEFAULT_CATALOGUE_VERSIONS.character,
+            author,
+            catalogue,
+          }),
+          `catalogue/${catalogue.schemaVersion}`,
+        ).toMatchObject({
+          answer: 'version.unchanged',
+          current: { id: DEFAULT_CATALOGUE_VERSIONS.character, schemaVersion: 1 },
+        });
+      }
+      expect(await versionsOf(trx, characters)).toBe(1);
+
+      // Opened from anything but its latest, it is stale before it is compared, as the chain answers.
+      expect(
+        await addCatalogueVersion(trx, {
+          artifactId: characters,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.paragraph,
+          author,
+          catalogue: DEFAULT_CATALOGUES.character,
+        }),
+      ).toMatchObject({
+        answer: 'version.precondition',
+        current: { id: DEFAULT_CATALOGUE_VERSIONS.character },
+      });
+
+      // A change is still a change, and is written as it reads, at catalogue/2.
+      const renamed = recorded(
+        await addCatalogueVersion(trx, {
+          artifactId: characters,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.character,
+          author,
+          catalogue: {
+            ...DEFAULT_CATALOGUES.character,
+            styles: DEFAULT_CATALOGUES.character.styles.map((style) =>
+              style.id === 'strong' ? { ...style, name: 'Bold' } : style,
+            ),
+          },
+        }),
+      );
+      expect(renamed).toMatchObject({ version: 2, schemaVersion: 2 });
     });
   });
 
@@ -259,7 +310,7 @@ describe("the theme's store", () => {
       const captions = recorded(
         await addCatalogueVersion(trx, {
           artifactId: PARAGRAPHS,
-          openedFrom: FIRST_DEFAULT_CATALOGUE_VERSIONS.paragraph,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.paragraph,
           author,
           catalogue: withStyle(DEFAULT_CATALOGUES.paragraph, 'caption', { italic: true }),
         }),
@@ -281,12 +332,12 @@ describe("the theme's store", () => {
       expect(version).toMatchObject({
         kind: 'theme',
         revision: 0,
-        version: 2,
+        version: 3,
         author,
         content: next,
       });
       const now = await defaultTheme(trx);
-      expect(now).toMatchObject({ versionId: version.id, number: '0.2', content: next });
+      expect(now).toMatchObject({ versionId: version.id, number: '0.3', content: next });
       expect(now.theme.name).toBe('Italic captions');
       expect(now.theme.catalogues.paragraph).toBe(captions.id);
       expect(now.theme.paragraphStyles.get('caption')!.properties.italic).toBe(true);
@@ -307,7 +358,7 @@ describe("the theme's store", () => {
         });
 
       // Black body text on a dark grey paper.
-      const onDarkPaper = await save({ ...FIRST_DEFAULT_THEME, paper: '#333333' });
+      const onDarkPaper = await save({ ...DEFAULT_THEME, paper: '#333333' });
       expect(onDarkPaper.answer).toBe('refused');
       const paper = onDarkPaper.answer === 'refused' ? onDarkPaper.refusals : [];
       expect(paper.every((each) => each.code === 'contrast_too_low')).toBe(true);
@@ -320,7 +371,7 @@ describe("the theme's store", () => {
       const filled = recorded(
         await addCatalogueVersion(trx, {
           artifactId: PARAGRAPHS,
-          openedFrom: FIRST_DEFAULT_CATALOGUE_VERSIONS.paragraph,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.paragraph,
           author,
           catalogue: withStyle(DEFAULT_CATALOGUES.paragraph, 'preformatted', {
             background: '#1a1a1a',
@@ -328,8 +379,8 @@ describe("the theme's store", () => {
         }),
       );
       const onDarkFill = await save({
-        ...FIRST_DEFAULT_THEME,
-        catalogues: { ...FIRST_DEFAULT_THEME.catalogues, paragraph: filled.id },
+        ...DEFAULT_THEME,
+        catalogues: { ...DEFAULT_THEME.catalogues, paragraph: filled.id },
       });
       expect(onDarkFill).toEqual({
         answer: 'refused',
@@ -343,7 +394,7 @@ describe("the theme's store", () => {
       });
 
       // Neither was saved: the environment is set from the theme it was.
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(1);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(2);
       expect((await latestVersion(trx, DEFAULT_THEME_ID))!.id).toBe(declared.versionId);
     });
   });
@@ -359,8 +410,8 @@ describe("the theme's store", () => {
         openedFrom: declared.versionId,
         author,
         theme: {
-          ...FIRST_DEFAULT_THEME,
-          catalogues: { ...FIRST_DEFAULT_THEME.catalogues, image: layout!.id },
+          ...DEFAULT_THEME,
+          catalogues: { ...DEFAULT_THEME.catalogues, image: layout!.id },
         },
       });
       expect(answer).toEqual({
@@ -372,7 +423,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(1);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(2);
     });
   });
 });

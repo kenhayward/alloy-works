@@ -372,12 +372,26 @@ export async function lockArtifact(trx: TenantTransaction, artifactId: string): 
  */
 export function recordReadVersion(
   trx: TenantTransaction,
-  input: NextVersion & { readonly substance: ThemeSubstance | CatalogueSubstance },
+  input: NextVersion & {
+    readonly substance: ThemeSubstance | CatalogueSubstance;
+    /**
+     * The latest version's digest as its writer read it, where that differs from the digest its row
+     * carries: a `catalogue/1` row is read upgraded to `catalogue/2`, and a version is written as it
+     * reads, so the same catalogue saved again would otherwise differ from its row by its shape alone
+     * (themes 2). Consulted only when `versionId` is still the latest; the unchanged answer then
+     * compares against this rather than the row's own digest.
+     */
+    readonly latestAsRead?: { readonly versionId: string; readonly versionDigest: string };
+  },
 ): Promise<RecordAnswer> {
-  return record(trx, input);
+  return record(trx, input, input.latestAsRead);
 }
 
-async function record(trx: TenantTransaction, input: NextVersion): Promise<RecordAnswer> {
+async function record(
+  trx: TenantTransaction,
+  input: NextVersion,
+  latestAsRead?: { readonly versionId: string; readonly versionDigest: string },
+): Promise<RecordAnswer> {
   if (!UUID.test(input.artifactId)) return { answer: 'artifact.missing' };
   checkAuthorship(input);
   // Compared with the latest version's id as Postgres spells it, so any other spelling is a bug.
@@ -406,7 +420,9 @@ async function record(trx: TenantTransaction, input: NextVersion): Promise<Recor
     );
   }
   const digests = versionDigests(substance);
-  if (digests.versionDigest === current.versionDigest) {
+  const latest =
+    latestAsRead?.versionId === current.id ? latestAsRead.versionDigest : current.versionDigest;
+  if (digests.versionDigest === latest) {
     return { answer: 'version.unchanged', current };
   }
   const version = await insertVersion(

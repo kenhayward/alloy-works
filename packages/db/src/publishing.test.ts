@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
   blockIdentifierFrom,
-  FIRST_DEFAULT_CATALOGUE_VERSIONS,
+  DEFAULT_CATALOGUE_VERSIONS,
   defaultNumberingScheme,
   type ContentDocument,
   type OutlineDocument,
@@ -424,14 +424,14 @@ describe('requesting and recording a publication', () => {
           },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.4 since 0023, so the version recorded after it is 0.5.
-        expect((await defaultLayout(trx)).number).toBe('0.5');
+        // The default is at 0.5 since 0025, so the version recorded after it is 0.6.
+        expect((await defaultLayout(trx)).number).toBe('0.6');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.layout).toEqual({ versionId: declared.versionId, layout: declared.layout });
         // The document's version as `revision.version` (VER-009): a first version is 0.1.
         expect(inputs!.revision).toBe('0.1');
-        // Thrown to roll the layout's 0.4 back: the rest of the suite publishes under the default.
+        // Thrown to roll the layout's 0.6 back: the rest of the suite publishes under the default.
         throw rolledBack;
       }),
     ).rejects.toBe(rolledBack);
@@ -460,12 +460,13 @@ describe('requesting and recording a publication', () => {
           theme: { ...declared.content, paper: '#fafafa' },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        expect((await defaultTheme(trx)).number).toBe('0.2');
+        // The default is at 0.2 since 0025, so the version recorded after it is 0.3.
+        expect((await defaultTheme(trx)).number).toBe('0.3');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.theme).toEqual({ versionId: declared.versionId, theme: declared.theme });
         expect(inputs!.theme!.theme.paper).toBe('#ffffff');
-        // Thrown to roll the theme's 0.2 back: the rest of the suite publishes under the default.
+        // Thrown to roll the theme's 0.3 back: the rest of the suite publishes under the default.
         throw rolledBack;
       }),
     ).rejects.toBe(rolledBack);
@@ -746,7 +747,7 @@ describe('requesting and recording a publication', () => {
         expect(inputs.map((each) => each!.request.spaceId)).toEqual([general, quality]);
         for (const each of inputs) {
           expect(each!.theme!.versionId).toBe(declared.versionId);
-          expect(each!.theme!.theme.catalogues).toEqual(FIRST_DEFAULT_CATALOGUE_VERSIONS);
+          expect(each!.theme!.theme.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
         }
         const publications = [];
         for (const id of requests) publications.push(await recordPublication(trx, recording(id)));
@@ -777,13 +778,13 @@ describe('requesting and recording a publication', () => {
       { space_id: general, theme_id: DEFAULT_THEME_ID, theme_version_id: declared.versionId },
       { space_id: quality, theme_id: DEFAULT_THEME_ID, theme_version_id: declared.versionId },
     ]);
-    expect(declared.content.catalogues).toEqual(FIRST_DEFAULT_CATALOGUE_VERSIONS);
+    expect(declared.content.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
     const catalogues = await service.withTenant(production, (trx) =>
       trx
         .selectFrom('artifact_version as v')
         .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
         .select(['v.id', 'a.kind', 'a.space_id'])
-        .where('v.id', 'in', Object.values(FIRST_DEFAULT_CATALOGUE_VERSIONS))
+        .where('v.id', 'in', Object.values(DEFAULT_CATALOGUE_VERSIONS))
         .execute(),
     );
     expect(catalogues).toHaveLength(6);

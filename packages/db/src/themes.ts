@@ -10,6 +10,7 @@ import {
   type ThemeRefusalCode,
 } from '@alloy-works/domain';
 import type { TenantTransaction } from './tables.js';
+import { versionDigests } from './version-digest.js';
 import {
   latestVersion,
   lockArtifact,
@@ -179,7 +180,8 @@ export interface NextCatalogueVersion extends Authorship {
  * catalogue's; and a style identifier an earlier version of this catalogue dropped (STY-005), because an
  * identifier is allocated once - a document naming it meant the style that was dropped, and reading it as
  * a new one would set that document in a style nobody chose for it. Otherwise answers as
- * `recordVersion` does.
+ * `recordVersion` does, except that whether the version is unchanged is decided between it and the
+ * latest version as both read, never by the shape either is written in.
  *
  * The catalogue's earlier versions are read under the artifact's lock, so a version recorded at the same
  * moment is among them or has already made this one's `openedFrom` stale.
@@ -210,13 +212,16 @@ export async function addCatalogueVersion(
   const seen = new Set<string>();
   const dropped = new Set<string>();
   let kind: CatalogueKind | undefined;
+  let latest: { readonly versionId: string; readonly catalogue: Catalogue } | undefined;
   for (const version of history) {
     const earlier = readCatalogue(version.content);
-    // Written by this function or seeded by 0024, so it reads: one that does not is a broken store.
+    // Written by this function or seeded by 0024 or 0025, so it reads: one that does not is a broken
+    // store.
     if (!earlier.ok) {
       throw new Error(`The catalogue ${input.artifactId} at ${version.id} does not read`);
     }
     kind = earlier.catalogue.kind;
+    latest = { versionId: version.id, catalogue: earlier.catalogue };
     const held = new Set(earlier.catalogue.styles.map((style) => style.id));
     for (const id of seen) if (!held.has(id)) dropped.add(id);
     for (const id of held) seen.add(id);
@@ -239,12 +244,19 @@ export async function addCatalogueVersion(
   }
   if (refusals.length > 0) return { answer: 'refused', refusals };
 
+  // Whether it changed is decided between the two as both read: a `catalogue/1` row saved again,
+  // given at either version of the shape, is the same catalogue, and records nothing (themes 2).
   return recordReadVersion(trx, {
     artifactId: input.artifactId,
     openedFrom: input.openedFrom,
     author: input.author,
     ...(input.note === undefined ? {} : { note: input.note }),
     substance: { kind: 'catalogue', content: read.catalogue },
+    latestAsRead: {
+      versionId: latest!.versionId,
+      versionDigest: versionDigests({ kind: 'catalogue', content: latest!.catalogue })
+        .versionDigest,
+    },
   });
 }
 
