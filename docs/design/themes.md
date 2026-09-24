@@ -589,7 +589,11 @@ things here:
   at level 2 repeating or not by the style, set as an artifact in the caption role's style on every page
   after the table's first - "Table 3 (continued)", the layout's words in the layout's language. A table
   style asking for one under a layout with no `continued` fails the publish,
-  `continuation_words_missing`, naming the table and the style. A table broken across pages is framed in
+  `continuation_words_missing`, naming the table and the style. On the table's first page the label is
+  hidden and its row keeps its room, 27pt under the worker test's ruled style, so the header stands that
+  much lower than without a label: the engine sizes a split row's later parts from the page the row
+  begins on, and with no room there the row's last line on each continued page stood below the text
+  block (found in the final whole-branch review). A table broken across pages is framed in
   the outer rule on each page, as the engine draws it; header bold is applied to the text, so it wins
   over the cell style and marks.
 - **Contrast is judged on a table's fills** for every paragraph style that applies to `tableCell` or to

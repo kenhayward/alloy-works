@@ -272,8 +272,9 @@ one, which the docs did not record. These were changed:
   unbreakable only where that height is no more than the text block's, less the header rows where they
   repeat and the label's row where there is one. One unbreakable cell keeps every row it spans on one
   page, so a run is kept, or not, together. The worker test compiles a row of forty lines under a kept
-  style: every baseline inside the text block, every line set once, the row begun on the table's page
-  beneath the row before it, and veraPDF passing; the eight-line row that fits still moves whole.
+  style with a label, the same without one, and a labelled style that lets rows split: every baseline
+  inside the text block, every line set once, the row begun on the table's page beneath the row before
+  it, and veraPDF passing; the eight-line row that fits still moves whole.
   Template 13's hash moved.
 - **I2, an image in a line is held to the text block's height.** `assemble` makes one its style would
   set taller the text block's height, its width re-derived, the proportion kept, before the width is
@@ -329,14 +330,17 @@ Left as found:
   header's fill is judged against the cell styles' colours, which must also pass on the paper. It waits
   for a widening, with the Word projection's header text colour.
 
-Found while I1 was fixed, and left for a ruling: **a row the engine splits beneath a continuation label
-is set as though the label took no room on the pages it continues onto.** The label's row takes no
-height on the table's first page, by design, and the engine sizes a split row's later parts from that
-page, so each continued page's last line of the row stands below the text block by up to the label's
-height - measured, one line of forty at 47.0 where the text block ends at 54, on each continued page,
-kept whole or not. Whole rows are unaffected: the label's height is kept on each page they start on.
-The default asks for no label, and veraPDF passes. The I1 test uses the ruled style without its label
-for that reason.
+Found while I1 was fixed, and fixed on the coordinator's ruling: **a row the engine split beneath a
+continuation label was set as though the label took no room on the pages it continued onto.** The
+label's row took no height on the table's first page, as designed above, and the engine sizes a split
+row's later parts from the page the row begins on, so each continued page's last line of the row stood
+below the text block by up to the label's height - measured, one line of forty at 47.0 where the text
+block ends at 54, on each continued page, kept whole or not; whole rows were unaffected. **The first
+page now carries the label's room**: template 13 sets the label there hidden, `hide` inside the same
+`pdf.artifact`, so the row is as tall on every page and the structure tree is as it was - one empty
+`TH` on the first page, veraPDF passing. The header row on the first page stands exactly the label's
+row lower than without a label, **27pt** under the worker test's ruled style, as on a continued page; the STY-013 test measures both and holds them equal, and
+the I1 test runs under the labelled styles, kept and splitting. Template 13's hash moved again.
 
 ## Tasks
 

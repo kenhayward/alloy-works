@@ -993,14 +993,22 @@
       ()
     }
     // The label (STY-013, TH-I): the table's own label and the layout's words after it - "Table 3
-    // (continued)" - on each page after the table's first, and on the first nothing at all. It is set in
-    // a first header row of its own that repeats on every page whatever the rest of the header does,
-    // with no inset of its own, the label padded by the cells' inset instead, so that on the first page
-    // the row takes no height and the header stands where it would without it; and it is an artifact, as
-    // a repeated header is. All measured (themes.md, "What the pinned Typst does with a theme's
+    // (continued)" - on each page after the table's first, and on the first hidden. It is set in a first
+    // header row of its own that repeats on every page whatever the rest of the header does, with no
+    // inset of its own, the label padded by the cells' inset instead; and it is an artifact, as a
+    // repeated header is. All measured (themes.md, "What the pinned Typst does with a theme's
     // properties"): what it costs is an empty header cell in the structure tree on the first page. The
     // table's first page is where the table the label stands in begins: the last table begun before it,
     // since a table holds no table.
+    //
+    // HIDDEN, NOT ABSENT, on the first page, so the row takes the same room there as on every page after
+    // it (the final whole-branch review of themes 2, found while I1 was fixed). The engine sizes a split
+    // row's later parts from the page the row begins on, header and all: with the label's row taking no
+    // height on the table's first page, a row split there was set on each continued page as though the
+    // label took no room, and its last line stood below the text block by up to the label's height,
+    // measured. So the header stands the label's row lower on the first page than without a label - a
+    // band as tall as the label, empty - and the hidden label is an artifact too, which leaves the tree
+    // as it was.
     let label-of = {
       let s = role("caption")
       let said = words(doc.words.continued)
@@ -1009,7 +1017,7 @@
     }
     let continued = table.cell(colspan: b.columns, inset: 0pt, context {
       let first = query(selector(table).before(here())).last().location().page()
-      if here().page() > first { pdf.artifact(label-of) }
+      pdf.artifact(if here().page() > first { label-of } else { hide(label-of) })
     })
     // One header, or none, and still one header row to a reader however many pages repeat it: the
     // tree holds it once (TAB-040). Repeated where the style says so. Under a label, two: the label's

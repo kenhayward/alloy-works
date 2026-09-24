@@ -1403,9 +1403,11 @@ Serif`, `Liberation Mono` or `STIX Two Math`) since themes 1, which set the glyp
   header's bold on the text, over the cell style and marks; makes a body cell unbreakable where rows
   are kept whole and its row fits a page - each run of rows a spanning cell joins measured, inside
   `layout`, as a table of the same columns and inset, against the text block's height less the header
-  and label that repeat above it - so a row taller than a page splits; and, where the style asks for a label, puts a level 1 header before the header rows
-  at level 2, holding in `context` a `pdf.artifact` label - "Table 3 (continued)", in the caption
-  role's style - on every page after the table's first and nothing on its first, where it leaves an
+  and label that repeat above it - so a row taller than a page splits; and, where the style asks for
+  a label, puts a level 1 header before the header rows at level 2, holding in `context` a
+  `pdf.artifact` label - "Table 3 (continued)", in the caption role's style - on every page after the
+  table's first and the same label hidden on its first, so the row takes the same room on every page
+  and a row split on the first page is set within the text block on the next; there it leaves an
   empty `TH` in the structure tree. A figure is `figure(placement: auto)` where it floats, wrapped in
   a full-width block aligned by its style. Between two blocks of one style that both ask for
   contextual spacing, only the leading - within one container: two blocks of one flow neither of which

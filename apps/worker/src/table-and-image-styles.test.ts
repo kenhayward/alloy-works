@@ -419,16 +419,24 @@ describe('a table set from its style (themes 2)', () => {
     }
     expect(behind(heavy.paint, '#eef2e6', 'Row0')).toBe(true);
     expect(behind(heavy.paint, '#eef2e6', 'Row1')).toBe(true);
-    // Banded from the first body row: Row0's, Row2's; not Row1's.
-    const bandAt = (row: number) => {
-      const { y } = run(heavy.paint, `Row${row}`, 1);
-      return fillsOf(heavy.paint, '#f4f4f4').filter(
-        ({ box }) => box[1] <= y && y <= box[3] && box[0] >= LEFT + COLUMN - 0.5,
+    // Banded from the first body row, every other one: Row0's, not Row1's, and on across the tall row
+    // to the rows after it, wherever each is painted - body row `rows + 1` is After0.
+    const bandAt = (words: string) => {
+      const { y, page } = run(heavy.paint, words);
+      return heavy.paint.fills.filter(
+        ({ box, fill, page: on }) =>
+          on === page &&
+          fill === '#f4f4f4' &&
+          box[1] <= y &&
+          y <= box[3] &&
+          box[0] >= LEFT + COLUMN - 0.5,
       ).length;
     };
-    expect(bandAt(0)).toBe(2);
-    expect(bandAt(1)).toBe(0);
-    expect(bandAt(2)).toBe(2);
+    expect(bandAt('Row0')).toBe(2);
+    expect(bandAt('Row1')).toBe(0);
+    for (const after of [0, 1]) {
+      expect(bandAt(`After${after}`), `After${after}`).toBe((rows + 1 + after) % 2 === 0 ? 2 : 0);
+    }
     const paper = theme.paper;
     expect(light.paint.fills.filter((each) => each.fill !== paper)).toEqual([]);
 
@@ -520,8 +528,10 @@ describe('a table set from its style (themes 2)', () => {
     expect(await splitAt(plain.id)).toBeGreaterThan(0);
 
     // The label: on each page after the table's first, above the repeated header, as an artifact; on
-    // the first page nowhere, and taking no height there - the header row stands exactly where it does
-    // under the same style with no label.
+    // the first page not painted, and taking the room it takes on every other page - the header row
+    // stands exactly the label's row lower than under the same style with no label, as it does on a
+    // continued page, since the engine sizes a split row's later parts from the table's first page
+    // (the fix of the final whole-branch review's I1). Under this style that room is 27 points.
     expect(artifactLines(heavy.paint, label)).toEqual(
       Array.from({ length: last - 1 }, (_, page) => page + 2),
     );
@@ -532,7 +542,10 @@ describe('a table set from its style (themes 2)', () => {
         run(heavy.paint, 'North', page).y,
       );
     }
-    expect(run(heavy.paint, 'Site', 1).y).toBeCloseTo(run(bare.paint, 'Site', 1).y, 2);
+    const room = run(bare.paint, 'North', 2).y - run(heavy.paint, 'North', 2).y;
+    expect(room).toBeGreaterThan(0);
+    expect(run(bare.paint, 'Site', 1).y - run(heavy.paint, 'Site', 1).y).toBeCloseTo(room, 2);
+    expect(room).toBeCloseTo(27, 2);
     expect(pagesOf(bare.paint, '(continued)', null)).toEqual([]);
     expect(pagesOf(light.paint, '(continued)', null)).toEqual([]);
     // The header row is still one row to a reader however many pages repeat it (TAB-040).
@@ -546,13 +559,12 @@ describe('a table set from its style (themes 2)', () => {
     // below the page itself. Kept whole is Word's `cantSplit`, which gives way where the row cannot
     // fit, as keep-together does for a paragraph.
     //
-    // Under the ruled style without its label: a row the engine splits beneath a continuation label is
-    // set as though the label took no room on the pages it continues onto, as it takes none on the
-    // table's first, so each continued page's last line stands below the text block by up to the label's
-    // height, kept whole or not. Found while this was fixed, and left for a ruling (the plan's closing
-    // section).
+    // Under a label too, kept whole or not: a row the engine splits beneath a continuation label was
+    // set as though the label took no room on the pages it continues onto, as it took none on the
+    // table's first, so each continued page's last line stood below the text block by up to the
+    // label's height. The label's row now takes its room on the first page as well.
     const LINES = Array.from({ length: 40 }, (_, line) => `Longline${line}`);
-    for (const style of [unlabelled]) {
+    for (const style of [ruled, splitting, unlabelled]) {
       const { pdf, paint } = await compile(small, [
         {
           name: 'long',

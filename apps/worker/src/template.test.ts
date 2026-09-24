@@ -148,7 +148,8 @@ describe('the publication template', () => {
     // figure's placement and alignment, and contextual spacing between paragraphs, each from the
     // theme (themes 2, ruling R6). It is re-pinned freely until the pull request that makes it merges:
     // it moved (6a6aa252...) for the final whole-branch review, a row kept whole only where it fits a
-    // page (I1), and again (06d7f004...) for contextual spacing only within one container (I5).
+    // page (I1), again (06d7f004...) for contextual spacing only within one container (I5), and again
+    // (849b8037...) for a continuation label's row keeping its room on the table's first page.
     // Templates 1 to 12 are published versions and their rows never move again.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',
@@ -163,7 +164,7 @@ describe('the publication template', () => {
       10: '07589c1d2487e149643bf82ccd183aaf7c7951ed24792decb508db02a7626339',
       11: '00f58bb2f2dc897356b24fdb09e0fa190a292c9b737d5444e7a8b48070a22a77',
       12: '13ce79ef435d13b85f7ec29dfe2c7a3fe53f4536384da555f93ea5a26f4b5e9e',
-      13: '849b8037c91a39ee94d3249f6d2d118385e021970b2a94bea992051cd860a142',
+      13: '147989166ee59018cb518a406e60346356b6eafea9c201a3b6831e0082083d6f',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {

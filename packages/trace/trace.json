@@ -16479,19 +16479,19 @@
     {
       "id": "PUB-017",
       "file": "apps/worker/src/table-and-image-styles.test.ts",
-      "line": 493,
+      "line": 501,
       "kind": "title"
     },
     {
       "id": "STY-013",
       "file": "apps/worker/src/table-and-image-styles.test.ts",
-      "line": 493,
+      "line": 501,
       "kind": "title"
     },
     {
       "id": "STY-018",
       "file": "apps/worker/src/table-and-image-styles.test.ts",
-      "line": 744,
+      "line": 756,
       "kind": "title"
     },
     {
@@ -16503,7 +16503,7 @@
     {
       "id": "TAB-032",
       "file": "apps/worker/src/table-and-image-styles.test.ts",
-      "line": 493,
+      "line": 501,
       "kind": "title"
     },
     {
