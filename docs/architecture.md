@@ -75,8 +75,10 @@ and image styles and a paragraph's `contextualSpacing`, with `catalogue/1` froze
 reader, `readCatalogue` and `readTheme`, which walks every `basedOn` chain, finds every typeface,
 place and role, checks each place's and role's style applies there, each style's line spacing is no
 less than its size, and each colour's contrast - a mark's at the size and weight it sets its text,
-its `scale` and a script's `SCRIPT_SCALE` applied, and on a table style's fills too - checks an image
-style's units against its dimension and its placement against what it applies to, and returns every
+its `scale` and a script's `SCRIPT_SCALE` applied, and on a table style's fills too, for every
+paragraph style that applies to a cell or a list item - checks an image style's units against its
+dimension and its placement against what it applies to, and a table style's rules against its
+padding, none wider than twice it (`table_rule_over_text`), and returns every
 refusal at once; the default theme, `DEFAULT_THEME`, and its catalogues under fixed
 version identifiers - 0.2, with 0.1 frozen as `FIRST_DEFAULT_THEME` and `FIRST_DEFAULT_CATALOGUES`;
 and three projections - `projectTypst`, the data template 13 reads, which `assemble` uses, beside
@@ -1388,8 +1390,9 @@ Serif`, `Liberation Mono` or `STIX Two Math`) since themes 1, which set the glyp
   `measure.ts`): the fixed dimension in points, a fraction of the layout's measure, a fraction of the
   text block's height or ems of the style it stands in, the other from its pixels, both re-derived
   from the maximum where the other would pass it; a figure then held to its room and its caption's
-  estimate as before, and an image in a line refused past its room as before - so under the default an
-  image in a line at the top level, whose maximum is the measure, is made smaller rather than refused.
+  estimate as before, and an image in a line held to the text block's height, its proportion kept, and
+  refused past its room as before - so under the default an image in a line at the top level, whose
+  maximum is the measure, is made smaller rather than refused.
   A cell's room is its share less twice its table style's padding. `FIGURE_HEIGHT_SHARE`, `CELL_INSET`,
   `INLINE_IMAGE_EMS` and `inlineImageHeight` are gone. The failures join the list:
   `continuation_words_missing`, a table whose style asks for a continuation label under a layout with
@@ -1398,12 +1401,16 @@ Serif`, `Liberation Mono` or `STIX Two Math`) since themes 1, which set the glyp
   once, by the cell after it, the header row's rule a `table.hline` inside the header so it repeats
   with it; fills the header row, then the header column, then the band from the first body row; sets a
   header's bold on the text, over the cell style and marks; makes a body cell unbreakable where rows
-  are kept whole; and, where the style asks for a label, puts a level 1 header before the header rows
+  are kept whole and its row fits a page - each run of rows a spanning cell joins measured, inside
+  `layout`, as a table of the same columns and inset, against the text block's height less the header
+  and label that repeat above it - so a row taller than a page splits; and, where the style asks for a label, puts a level 1 header before the header rows
   at level 2, holding in `context` a `pdf.artifact` label - "Table 3 (continued)", in the caption
   role's style - on every page after the table's first and nothing on its first, where it leaves an
   empty `TH` in the structure tree. A figure is `figure(placement: auto)` where it floats, wrapped in
   a full-width block aligned by its style. Between two blocks of one style that both ask for
-  contextual spacing, only the leading. `template.test.ts`'s literal allowlist is unchanged and reads
+  contextual spacing, only the leading - within one container: two blocks of one flow neither of which
+  is a list, a quotation, a table or a figure; across a container's edge, and between two notes or a
+  table's caption and its cells, both spaces. `template.test.ts`'s literal allowlist is unchanged and reads
   templates 12 and 13; `PIPELINE_VERSION` is `'13'`. `apps/worker/src/table-and-image-styles.test.ts`
   is the regression case: four table styles over a table crossing pages - fills, strokes and weights
   from the content stream (`readPaint` now reports a stroke's `width`), padding from positions, the

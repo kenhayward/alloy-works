@@ -940,6 +940,67 @@ describe('a quotation set off by its style, its own paragraphs a line apart (the
       2,
     );
   }, 60_000);
+
+  it('applies contextual spacing only within one container: two quotations in a row stand apart by their spaces, and two paragraphs at the top level whose style asks for it still stand a line apart', async () => {
+    // The final whole-branch review of themes 2, I5: two bare quotations in a row were set as one,
+    // 14.35 apart, since each begins and ends in the one style that asks for contextual spacing. It
+    // applies between paragraphs of one style in ONE container - one quotation, one list item, one
+    // cell - so two quotations, two containers, keep the first's space after and the second's space
+    // before; and two consecutive paragraphs of one style at the top level, siblings in the one flow,
+    // still stand only their leading apart, as Word sets them. A theme whose running text asks for it
+    // too shows the second.
+    const CONTEXTUAL = '5f0c3a3e-0d8a-4c1e-9d0b-6a51e2f9b0c5';
+    const contextual = read(
+      { ...DEFAULT_THEME, catalogues: { ...DEFAULT_THEME.catalogues, paragraph: CONTEXTUAL } },
+      new Map([
+        ...DEFAULT_CATALOGUES_BY_VERSION,
+        [
+          CONTEXTUAL,
+          {
+            ...DEFAULT_CATALOGUES.paragraph,
+            styles: DEFAULT_CATALOGUES.paragraph.styles.map((style) =>
+              style.id === 'body'
+                ? { ...style, properties: { ...style.properties, contextualSpacing: true } }
+                : style,
+            ),
+          },
+        ],
+      ]),
+    );
+    const content = [
+      para('p1', text('Beforeword.')),
+      { type: 'blockquote', id: 'q1', content: [para('q1a', text('Firstquote.'))] },
+      { type: 'blockquote', id: 'q2', content: [para('q2a', text('Secondquote.'))] },
+      para('p2', text('Afterword.')),
+      para('p3', text('Closingword.')),
+    ];
+    for (const theme of [defaultTheme, contextual]) {
+      const { paint, pdf } = await compile(theme, bare, [
+        { name: 'quoted', title: 'Quoted', content },
+      ]);
+      expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+      const y = (words: string) => painted(paint, words).y;
+      const quotation = placeOf(theme, 'quotation');
+      const body = placeOf(theme, 'text');
+      expect(quotation.contextualSpacing).toBe(true);
+      // One quotation's foot into the next's head: its space after, the next's space before, and the
+      // next's line spacing - 12.65 + 16.5 + 14.35 under the default.
+      expect(y('Firstquote') - y('Secondquote')).toBeCloseTo(
+        quotation.spaceAfter + quotation.spaceBefore + quotation.lineSpacing,
+        2,
+      );
+      expect(y('Firstquote') - y('Secondquote')).toBeCloseTo(43.5, 2);
+      // Two paragraphs of running text, in one flow: their spaces where the style does not ask, and
+      // only the leading where it does.
+      expect(y('Afterword') - y('Closingword')).toBeCloseTo(
+        body.contextualSpacing
+          ? body.lineSpacing
+          : body.spaceAfter + body.spaceBefore + body.lineSpacing,
+        2,
+      );
+    }
+    expect(placeOf(contextual, 'text').contextualSpacing).toBe(true);
+  }, 120_000);
 });
 
 /**

@@ -259,6 +259,85 @@ offset, which stay the engine's; the Word projection (with Word); the theme in t
   dimensions are recorded; an asset version cannot be stored without its dimensions, which ingest
   records, so the failure cannot arise and a test could only pretend to reach it. themes.md says so.
 
+The final whole-branch review found three ways a theme other than the default publishes a wrong PDF
+that veraPDF passes and nothing names - a row kept whole painted off its page, an image in a line
+taller than its page, and a rule drawn over its cells' text - a contrast check that judged only the
+places' default styles on a table's fills, and, on the default theme, two quotations in a row set as
+one, which the docs did not record. These were changed:
+
+- **I1, a row is kept whole only where it fits a page**, as Word's `cantSplit` gives way and as
+  keep-together keeps a paragraph (themes 1's I1). Where a style keeps rows whole, template 13 wraps
+  the table in `layout`, measures each run of body rows a spanning cell joins - as a table of the same
+  columns and inset holding those cells alone, at the width the table stands in - and makes its cells
+  unbreakable only where that height is no more than the text block's, less the header rows where they
+  repeat and the label's row where there is one. One unbreakable cell keeps every row it spans on one
+  page, so a run is kept, or not, together. The worker test compiles a row of forty lines under a kept
+  style: every baseline inside the text block, every line set once, the row begun on the table's page
+  beneath the row before it, and veraPDF passing; the eight-line row that fits still moves whole.
+  Template 13's hash moved.
+- **I2, an image in a line is held to the text block's height.** `assemble` makes one its style would
+  set taller the text block's height, its width re-derived, the proportion kept, before the width is
+  held to its room as before; the reviewer's 1584pt style is the domain test's case. **An image style's
+  ems are held to 4**, not 10: nothing released holds an image style, so no migration is written, and
+  the default's 1.2 still reads.
+- **I3, a rule is never wider than twice the cells' padding.** A rule takes no room, so half of it
+  stands inside the cell each side of it; the reader refuses a table style any of whose rules - outer,
+  horizontal, vertical, or a header's - is wider than twice its padding, a new code,
+  `table_rule_over_text`, naming the style and its widest rule. An unpadded domain test's style is
+  now unruled too. The outer rule reaching half its width into the margin is recorded, not fixed.
+- **I4, contrast on a table's fills judges every style a cell's text can be set in**: each paragraph
+  style that applies to `tableCell` or to `listItem`, the places' own first, and every mark in each,
+  not only the two places' defaults; the reviewer's 3.01:1 is the reader test's case. The reader
+  tests that judge the cell's own style make `body` apply to running text alone, so they judge the one
+  style they change.
+- **I5, contextual spacing applies only within one container**: between two blocks of one flow - one
+  quotation's, one list item's, one cell's, one note's, the top level's - neither of which is a list,
+  a quotation, a table or a figure. Across a container's edge both spaces add, whatever the styles ask,
+  and so between two notes, and between a table's caption and its cells. Two consecutive paragraphs of
+  one style at the top level that both ask for it still stand only their leading apart, as Word sets
+  them. **Two quotations in a row now stand 43.50 apart, not template 11's 33.60**: the first's 12.65
+  after, the second's 16.5 before and its 14.35, which add where template 11's engine took the larger.
+  No pair of spaces gives template 11's three distances at once - 33.60 from text into a quotation
+  needs 16.5 before, 27.00 out of one into text 12.65 after, and those two together are 43.50 - so
+  the table above gains a seventh row, a second distance that moves, and themes.md, the changelog and
+  features say so. The worker test measures both quotations under the default and the top-level pair
+  under a theme whose running text asks for it. **Word will see two consecutive quotations as one run
+  of Quote paragraphs**, since its contextual spacing does not know where one quotation ends: the Word
+  projection must pin the space at that boundary directly, as `wordRun` pins a run.
+
+  | Distance, baseline to baseline   | Template 11 | Template 12 | Template 13                      |
+  | -------------------------------- | ----------- | ----------- | -------------------------------- |
+  | One bare quotation into the next | 33.60       | 17.10       | **43.50** (12.65 + 16.5 + 14.35) |
+
+Left as found:
+
+- **M1, padding is not held against narrow columns.** A padding of 36 on four columns of the small
+  page's 62.5 leaves each cell -9.5pt, and `assemble` measures the negative width without refusing, so
+  ordinary words overrun each other and the table's edge. Overlong words in narrow columns could
+  already do so at the default's 5pt; bounding a padding against a column needs the column, which only
+  a table has, and waits for a check at publish time where the theme and the layout meet, as themes 1's
+  M2 does.
+- **M2, a float inside a list item or a quotation stays in the flow.** The engine's float is relative
+  to its container, so a figure floated there is set as a block where it stands, and nothing puts it at
+  the page's head or foot. The default's figure style is a block, so the default path is unaffected;
+  STY-018, themes.md and features describe the float at the top level.
+- **M3, a `catalogue/1` image style applying to both figures and images in a line is now refused**,
+  `image_placement_not_applicable`, where themes 1's reader accepted it. No stored row can hold one:
+  only the migrations write catalogues, and the product's default names its two apart. `schema.ts`'s
+  rule that a later reader accepts whatever a parse accepted stands for every row that can exist.
+- **M4, a table style has no text colour**, so a dark header with light text cannot be expressed: a
+  header's fill is judged against the cell styles' colours, which must also pass on the paper. It waits
+  for a widening, with the Word projection's header text colour.
+
+Found while I1 was fixed, and left for a ruling: **a row the engine splits beneath a continuation label
+is set as though the label took no room on the pages it continues onto.** The label's row takes no
+height on the table's first page, by design, and the engine sizes a split row's later parts from that
+page, so each continued page's last line of the row stands below the text block by up to the label's
+height - measured, one line of forty at 47.0 where the text block ends at 54, on each continued page,
+kept whole or not. Whole rows are unaffected: the label's height is kept on each page they start on.
+The default asks for no label, and veraPDF passes. The I1 test uses the ruled style without its label
+for that reason.
+
 ## Tasks
 
 1. **The model** (`packages/domain`): R1 - `catalogue/2`, the upgrade from 1, the reader's checks and

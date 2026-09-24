@@ -144,16 +144,27 @@
 // ask for it, neither's space before or after is added, and only the leading stands between them, so
 // they stand a line apart. The default theme's quotation asks for it, so a quotation's own paragraphs
 // stand a line apart while the quotation is set off from the text around it by its style's spaces.
-// Every space this template puts between two blocks of a style goes through here: a flow's, a
-// footnote's paragraphs and two notes, contents entries, and a table's caption and its cells.
+//
+// ONLY WITHIN ONE CONTAINER (the final whole-branch review of themes 2, I5): between two blocks of one
+// flow - one quotation's, one list item's, one cell's, one note's, the top level's, the contents' -
+// where neither is itself a container. Two quotations in a row are two containers, each beginning and
+// ending in the quotation's style, and set by `between` they were one quotation, 14.35 apart where
+// template 11 set them apart by their spaces; so between blocks of two containers, or a container and
+// what stands beside it, `apart` adds both spaces whatever the styles ask. A table's caption and its
+// cells, and two footnotes, are two containers too. Two consecutive paragraphs of one style at the top
+// level are one flow's, and still stand only their leading apart, as Word sets them.
+#let apart(above, below) = above.spaceAfter + below.spaceBefore + below.leading
 #let between(above, below) = if (
   above.id == below.id and above.contextualSpacing and below.contextualSpacing
 ) {
   below.leading
 } else {
-  above.spaceAfter + below.spaceBefore + below.leading
+  apart(above, below)
 }
-#let gap(above, below) = v(pt(between(above, below)), weak: true)
+#let gap(above, below, within: true) = v(
+  pt(if within { between(above, below) } else { apart(above, below) }),
+  weak: true,
+)
 
 #set document(title: doc.title, author: (), keywords: ())
 // The engine's fallback is OFF for every face (template 11's rule): `assemble` asked the face that
@@ -225,11 +236,12 @@
 }
 // A footnote's note, at the foot of its page, is set in the `footnote` place's style (themes 1, ruling
 // R7), rather than at the engine's own size, 0.85 of the text's; two notes stand apart as two blocks
-// of that style do.
+// of that style do, two containers, whose spaces add whether or not the style asks for contextual
+// spacing (`apart`).
 #show footnote.entry: it => setting(place-style("footnote"), it)
 #set footnote.entry(gap: {
   let s = place-style("footnote")
-  pt(between(s, s))
+  pt(apart(s, s))
 })
 // A numbered block equation is a figure of its own kind (equations 2, EQ-E), whose caption is
 // `number`'s label and nothing else: the figure is what the list of equations lists and what a
@@ -735,14 +747,21 @@
 } else {
   none
 }
-// The style the last of these blocks that sets anything ends in, or `none` where none does.
-#let last-of(blocks, at) = {
+// Whether a block holds blocks of its own, or stands as its caption does, rather than being one of its
+// flow's paragraphs: contextual spacing never reaches across its edge (`gap`'s `within`).
+#let container(b) = b.type in ("list", "blockquote", "table", "figure")
+// The last of these blocks that sets anything, or `none` where none does.
+#let last-block(blocks, at) = {
   let last = none
   for b in blocks {
-    let e = ends(b, at)
-    if e != none { last = e.at(1) }
+    if ends(b, at) != none { last = b }
   }
   last
+}
+// The style the last of these blocks that sets anything ends in, or `none` where none does.
+#let last-of(blocks, at) = {
+  let last = last-block(blocks, at)
+  if last == none { none } else { ends(last, at).at(1) }
 }
 // The style a node ends in: its last child's, else its last block's, else its heading's.
 #let last-of-node(n) = if n.children.len() > 0 {
@@ -770,10 +789,12 @@
 #let block-of(b, at, before: none) = {
   if type(b) == array {
     let above = before
+    // Whether what stands above is a container: `before`, a heading, is a paragraph of the flow.
+    let held = false
     let shown = false
     for each in b {
       let e = ends(each, at)
-      if e != none and above != none { gap(above, e.at(0)) }
+      if e != none and above != none { gap(above, e.at(0), within: not held and not container(each)) }
       if each.type == "marker" and shown {
         // A marker after something this flow has set stays on that thing's page, in a block of no
         // height: alone, it is a tag, which the engine carries to the next page where a page ends
@@ -785,6 +806,7 @@
       }
       if e != none {
         above = e.at(1)
+        held = container(each)
         shown = true
       }
     }
@@ -869,8 +891,8 @@
       block-of(b.blocks, "quotation")
       if b.attribution != none {
         let a = role("attribution")
-        let last = last-of(b.blocks, "quotation")
-        if last != none { gap(last, a) }
+        let last = last-block(b.blocks, "quotation")
+        if last != none { gap(ends(last, "quotation").at(1), a, within: not container(last)) }
         styled(a, par(b.attribution.map(run).join()), within: within("quotation"))
       }
     }))
@@ -1005,11 +1027,12 @@
     // the first slice), and never Typst's counter. Columns share the measure equally until a table
     // style says otherwise, so a table is never wider than its column. A reference's label, where
     // one names the table, is on its figure. The caption stands above its table as a block above a
-    // block does: its space after, the cells' space before and their leading between them.
+    // block does: its space after, the cells' space before and their leading between them, whatever
+    // either asks of contextual spacing, since the cells are a container of their own (`apart`).
     let set-table(rest) = labelled(b.anchor, figure(
       kind: table,
       numbering: none,
-      gap: pt(between(caption, cell)),
+      gap: pt(apart(caption, cell)),
       caption: {
         if b.label != none { b.label + " " }
         b.caption.map(run).join()
@@ -1072,7 +1095,7 @@
     // first child and the table loses its programmatic caption (TAB-039).
     if b.note != none {
       let n = role("tableNote")
-      gap(cell, n)
+      gap(cell, n, within: false)
       styled(n, par(b.note.map(run).join()), within: within(at))
     }
   } else if b.type == "figure" {

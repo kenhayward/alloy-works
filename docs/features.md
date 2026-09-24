@@ -402,9 +402,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   table looks comes from its table style** in the theme: which rules it draws and how thick and in
   what colour, how far its cells are padded, whether its header row and header column are filled or
   bold, whether its body rows are banded, whether its header rows repeat on each page, whether a row
-  may split across a page break or moves whole to the next page, and whether each page it continues
-  onto is labelled **Table 1.1 (continued)**, in the layout's words. The default's looks as tables
-  did: every rule a thin black line, the header neither filled nor bold and repeated, rows allowed to
+  may split across a page break or moves whole to the next page where it fits on one, and whether
+  each page it continues onto is labelled **Table 1.1 (continued)**, in the layout's words. The
+  default's looks as tables did: every rule a thin black line, the header neither filled nor bold and repeated, rows allowed to
   split, and no label. A table whose caption is empty is refused, naming it, because the caption is what names it to a reader; so
   is one whose header cell is merged down into rows that are not header rows, which would make the
   PDF read a row of data as more header.
@@ -441,8 +441,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the product's fixed settings. Every environment starts with one, the default, and every publication
   records the exact version it was made under, as it records the layout's. The default is set to look
   as publications looked before, measured from them, with these differences you can see: a
-  quotation's own paragraphs stand a line apart, a little closer than they did, while the space around
-  it and before its attribution is as it was; a heading straight under another heading, a list after a paragraph,
+  quotation's own paragraphs stand a line apart, a little closer than they did, and two quotations one
+  after the other about 10 points further apart, while the space between a quotation and the text
+  around it and before its attribution is as it was; a heading straight under another heading, a list after a paragraph,
   and a table's rows, caption and note stand a few points further apart; a footnote's second
   paragraph stands closer to its first; and the running head and foot and the first line of a page
   each sit a point or two from where they did. A table's cells are still centred and a figure's

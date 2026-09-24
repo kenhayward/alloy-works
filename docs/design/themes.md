@@ -555,7 +555,7 @@ catalogues and the theme naming them - and the default layout's 0.5, which says 
 `publishing/13` and template 13, which set a table's rules, fills, cells' inset, header weight, header
 repetition, rows kept whole and continuation label from its table style, a figure's and an image's
 size, placement and alignment from its image style, and contextual spacing between two paragraphs of
-one style that both ask for it. Still nothing chooses or edits a theme. Building it changed these
+one style, in one container, that both ask for it. Still nothing chooses or edits a theme. Building it changed these
 things here:
 
 - **The default's tables and images look as template 12 set them**: every rule 1pt black, inside and
@@ -568,8 +568,13 @@ things here:
 - **A quotation is set off again.** The quotation's style takes 16.5pt before and 12.65pt after and asks
   for contextual spacing, and the attribution's takes 6.6pt before and 12.65pt after - one space after
   on the quotation cannot give both template 11's distance into its attribution and its distance into
-  the text after it. Every distance template 11 set around a quotation is back; its own paragraphs
-  stand a line apart, 2.75pt closer than template 11 set them. The plan has the measured table.
+  the text after it. Every distance template 11 set around a quotation is back but two: its own
+  paragraphs stand a line apart, 2.75pt closer than template 11 set them, and two quotations in a row
+  stand 43.5pt apart, 9.9pt further than template 11's 33.6 - the first's space after and the second's
+  space before, which add, where template 11's engine took the larger. Contextual spacing reaches only
+  within one container - one quotation, one list item, one cell, one note, the top level - and never
+  across a list's, a quotation's, a table's or a figure's edge, nor between two notes or a table's
+  caption and its cells, so two quotations are never set as one. The plan has the measured table.
 - **An image style fixes one dimension** in points, a fraction of the layout's measure (a width), a
   fraction of the text block's height (a height) or ems of the text it stands in (an image in a line);
   the other comes from the pixels, and both are re-derived where the other would pass the maximum. "The
@@ -587,8 +592,19 @@ things here:
   `continuation_words_missing`, naming the table and the style. A table broken across pages is framed in
   the outer rule on each page, as the engine draws it; header bold is applied to the text, so it wins
   over the cell style and marks.
-- **Contrast is judged on a table's fills** for the `tableCell` place's style and, where it is another
-  style, the `listItem` place's, bold where the header is.
+- **Contrast is judged on a table's fills** for every paragraph style that applies to `tableCell` or to
+  `listItem` - a paragraph stored in any of them is set in it in a cell - with every mark in each, bold
+  where the header is.
+- **A table style's rules are held to its padding**: a rule takes no room, so half of it stands inside
+  each cell, and one wider than twice the padding would be drawn over the cell's text. The reader
+  refuses it, `table_rule_over_text`, naming the style and the rule. A wide outer rule still reaches
+  half its width into the margin.
+- **A row kept whole is kept only where it fits a page**, as keep-together keeps a paragraph: template 13
+  measures each run of rows a spanning cell joins against the text block less the header and label that
+  repeat above it, and a row taller than that splits, where the engine would have painted it off the
+  page.
+- **An image in a line is held to the text block's height**, its width re-derived, whatever its style
+  allows, and an image style's ems are held to 4.
 - **An environment that recorded its own version of the theme or of the paragraph, table or image
   catalogue keeps the old look**: 0025 moves only the product's own unchanged chain, each on its own,
   and its theme stays 0.1, set by the reader's upgrade as template 12 set it. A `catalogue/1` saved again
