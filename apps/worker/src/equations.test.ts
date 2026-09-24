@@ -22,7 +22,7 @@ import { rootImages } from './jobs/publish.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPdf, type InternalLink, type ReadPdf, type TaggedFormula } from './testing/pdf.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
-import { createTypst, typstBinaryPath } from './typst.js';
+import { createTypst, typstBinaryPath, TypstRefused } from './typst.js';
 
 const fonts = await loadPinnedFonts();
 const typst = createTypst({ binary: typstBinaryPath(), fonts });
@@ -68,8 +68,10 @@ const fromTemml = (name: string, form: 'inline' | 'block', alternative: string) 
 };
 
 /**
- * The spike's constructs (`temml.fixture.ts`'s first sixteen), each a numbered block equation, and
- * `array lr`, whose columns are aligned left and right: every kind of node the maths tree has.
+ * The spike's constructs (`temml.fixture.ts`'s first sixteen), each a numbered block equation,
+ * `array lr`, whose columns are aligned left and right, and what MathML sets a script level smaller -
+ * a substack, a small matrix, a subarray and the two script styles (the final review of equations 2,
+ * I2): every kind of node the maths tree has.
  */
 const CONSTRUCTS = [
   'fraction',
@@ -89,6 +91,11 @@ const CONSTRUCTS = [
   'aligned',
   'subsup',
   'array lr',
+  'substack',
+  'smallmatrix',
+  'subarray',
+  'scriptstyle',
+  'scriptscriptstyle',
 ] as const;
 
 /**
@@ -416,7 +423,10 @@ describe('equations in the PDF (equations 2)', () => {
   it('CNT-080 tags every equation a Formula carrying its alternative, spoken in the language of the text it stands in', () => {
     // Every equation the document holds, once where it stands - an equation in a caption or a title
     // a second time, in its list or the contents, which set it again - and nothing else a formula.
-    // A header row set again on the next page is an artifact there, and tagged once.
+    // A header row set again on the next page is an artifact there, and tagged once. "Every" holds
+    // because an equation that draws nothing - which the engine tags no `Formula` for, so its words
+    // would be lost - never reaches it: the dialog refuses one, and a publish refuses one already
+    // stored as `equation_unrenderable`, `empty` (the final review of equations 2, M1).
     const counted = new Map<string, number>();
     for (const formula of read.formulas) {
       expect(formula.alt, `a formula on page ${formula.page}`).not.toBeNull();
@@ -509,6 +519,19 @@ describe('equations in the PDF (equations 2)', () => {
     }
   });
 
+  it('sets what MathML sets a script level smaller as the characters it holds', () => {
+    // Each extracted whole: the rows of a substack and a subarray under their sum, the small matrix's
+    // four letters, and the sum set a size and two smaller beside the one set at the text's.
+    const drawn = (name: string) => setAt(read, blockSaid(name)).text.replace(/\s+/g, '');
+    for (const name of ['substack', 'subarray']) {
+      expect(drawn(name), name).toMatch(/^\u{2211}.*<.*>0/u);
+    }
+    expect(drawn('smallmatrix').match(/\p{L}/gu), 'smallmatrix').toHaveLength(4);
+    for (const name of ['scriptstyle', 'scriptscriptstyle']) {
+      expect(drawn(name).match(/\+/g), name).toHaveLength(2);
+    }
+  });
+
   it('PUB-038 generates the lists of figures, tables and equations after the contents, each entry linking to its page', () => {
     const figures = listPage(read, 'Figures');
     const tables = listPage(read, 'Tables');
@@ -580,4 +603,82 @@ describe('equations in the PDF (equations 2)', () => {
     expect(verdict.failures).toEqual([]);
     expect(verdict).toMatchObject({ compliant: true, failedRules: 0 });
   });
+});
+
+describe('what the converter refuses never reaches the engine (the final review of equations 2, I1)', () => {
+  const WIDE = `<math xmlns="${NAMESPACE}"><mrow><mi>a</mi><mspace width="${'9'.repeat(400)}em"/><mi>b</mi></mrow></math>`;
+  const ACCENTED = `<math xmlns="${NAMESPACE}"><mover accent="true"><mi>y</mi><mo>x&#x302;</mo></mover></math>`;
+  const document = (...equations: string[]) =>
+    assemble({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'Two refusals',
+        language: 'en-GB',
+        direction: 'ltr',
+        nodes: [occurrence('measuring', MEASURING, 'body', false)],
+      }),
+      occurrences: new Map([
+        [
+          id('measuring'),
+          component(
+            'Measuring',
+            equations.map((mathml, n) => block(`e${n}`, mathml, false)),
+          ),
+        ],
+      ]),
+      refused: [],
+      layout: listing,
+      revision: '0.1',
+      covers: fonts.covers,
+      assets: new Map(),
+    });
+  const compiled = (document: unknown) =>
+    typst.compile(
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+      JSON.stringify(document),
+      at,
+    );
+
+  it('refuses a space too wide to be a number and an accent of two characters by name, so the job never compiles them', () => {
+    const refused = document(stored(WIDE, 'A wide space'), stored(ACCENTED, 'An accent of two'));
+    // The publish job throws the document's failures before it hands the engine anything.
+    expect(refused.ok).toBe(false);
+    expect(!refused.ok && refused.failures).toEqual([
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: id('measuring'),
+        block: 'e0',
+        detail: 'space',
+      },
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: id('measuring'),
+        block: 'e1',
+        detail: 'accent',
+      },
+    ]);
+  });
+
+  it('would have stopped the compile with nothing to say which equation, had either reached the engine', async () => {
+    // What the converter made of each before it refused them, put into a document by hand: a space
+    // of no number, which JSON writes as null, and an accent of two characters.
+    const forced = (tree: object) => {
+      const made = document(stored(X, 'Forced'));
+      if (!made.ok) throw new Error(JSON.stringify(made.failures));
+      const text = JSON.stringify(made.document).replace(
+        '{"k":"i","t":"x","v":"italic"}',
+        JSON.stringify(tree),
+      );
+      return JSON.parse(text) as unknown;
+    };
+    const y = { k: 'i', t: 'y', v: 'italic' };
+    await expect(
+      compiled(forced({ k: 'row', c: [y, { k: 'space', em: Number.POSITIVE_INFINITY }, y] })),
+    ).rejects.toBeInstanceOf(TypstRefused);
+    await expect(
+      compiled(forced({ k: 'accent', body: y, a: `x${String.fromCodePoint(0x302)}` })),
+    ).rejects.toBeInstanceOf(TypstRefused);
+  }, 60_000);
 });

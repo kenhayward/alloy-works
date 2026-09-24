@@ -4936,6 +4936,26 @@ describe('equations in the editor (equations 1)', () => {
     expect(equationsIn(view)).toEqual([]);
   });
 
+  it('says an equation that draws nothing is not placed, and places nothing', async () => {
+    // The final review of equations 2, M1: a publication would tag nothing for it, and its words
+    // would be lost.
+    const { surface } = openWith(blocksOf(para('b1', 'Where it grows.')));
+    const view = await surface();
+    caretIn(view, 'b1');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    const dialog = await opens();
+    await write(dialog, '\\,');
+    expect(latexOf(dialog)).toHaveAttribute('aria-invalid', 'true');
+    expect(latexOf(dialog)).toHaveAccessibleDescription(
+      expect.stringContaining(
+        'An equation has to show something: this one draws nothing. Write what it is to show.',
+      ),
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    expect(latexOf(dialog)).toHaveFocus();
+    expect(equationsIn(view)).toEqual([]);
+  });
+
   it('places nothing on Escape or Cancel, keeps the keyboard inside, and puts the focus back on what opened it', async () => {
     const { surface } = openWith(blocksOf(para('b1', 'Where it grows.')));
     const view = await surface();

@@ -182,6 +182,42 @@ export function equationAlternative(mathml: string): string | null {
 }
 
 /**
+ * A character that shows nothing where it stands: a space of any width, and what Unicode says to
+ * ignore when drawing - the invisible operators, the joiners, the marks that say where a line may
+ * break, the variation selectors - so text of nothing else draws nothing.
+ */
+const SHOWS_NOTHING = /[\p{White_Space}\p{Default_Ignorable_Code_Point}]/gu;
+
+/** The elements whose text is drawn: MathML's tokens. */
+const TOKENS = new Set(['mi', 'mn', 'mo', 'mtext', 'ms']);
+
+/**
+ * Whether an equation draws nothing at all: no token anywhere in it that shows - an identifier, a
+ * number, an operator or text holding a character that is not a space or invisible - outside a
+ * phantom, which takes its content's room and draws none of it, and outside an annotation, which is
+ * not drawn. A string literal always shows, as the quotation marks MathML Core draws around it. What
+ * only a layout element draws - a fraction's bar, a radical, a table's room - is not counted: without
+ * a token beside it, it says nothing to set (the final review of equations 2, M1).
+ *
+ * The one rule for both places that ask it, so they cannot disagree: the editor's dialog refuses such
+ * an equation before it is stored (`admitTemmlMathml`), and a publish refuses one already stored
+ * (`mathsTree`), since the engine tags nothing for it, and the words it is spoken by would be lost.
+ */
+export function drawsNothing(root: MathElement): boolean {
+  const shows = (element: MathElement): boolean => {
+    if (element.name === 'mphantom' || element.name === 'annotation') return false;
+    if (element.name === 'ms') return true;
+    if (TOKENS.has(element.name)) {
+      return element.children.some(
+        (child) => typeof child === 'string' && child.replace(SHOWS_NOTHING, '') !== '',
+      );
+    }
+    return element.children.some((child) => typeof child !== 'string' && shows(child));
+  };
+  return !shows(root);
+}
+
+/**
  * The equation with `words` as its alternative - the `alttext` on its `math` element, replacing any
  * there - or with none where `words` is null or says nothing, since the model has one spelling of
  * none (equations 1, ruling R7). The writing half of `equationAlternative`, and written as it reads:

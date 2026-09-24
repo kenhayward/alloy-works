@@ -439,6 +439,29 @@ describe('publishing from the document page', () => {
         block: 'e10',
         detail: 'unreadable',
       },
+      // The final review of equations 2: a space no line holds, an accent of two characters, and an
+      // equation that draws nothing.
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: null,
+        block: 'e12',
+        detail: 'space',
+      },
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: null,
+        block: 'e13',
+        detail: 'accent',
+      },
+      {
+        stage: 'compose',
+        code: 'equation_unrenderable',
+        node: null,
+        block: 'e14',
+        detail: 'empty',
+      },
       { stage: 'compose', code: 'equation_unnumbered', node: null, block: 'e11', detail: null },
     ]);
     open(fake.fetch);
@@ -471,6 +494,15 @@ describe('publishing from the document page', () => {
     expect(genericCount).toBe(4);
     expect(why).toHaveTextContent(
       'An equation is MathML that cannot be read at all, so it cannot be published. Open it and rewrite it, or delete it.',
+    );
+    expect(why).toHaveTextContent(
+      'An equation holds a space too wide to be set, so it cannot be published. Open it and rewrite it, or delete it.',
+    );
+    expect(why).toHaveTextContent(
+      'An equation holds an accent made of more than one character, so it cannot be published. Open it and rewrite it, or delete it.',
+    );
+    expect(why).toHaveTextContent(
+      'An equation draws nothing, so it cannot be published. Open it and rewrite it, or delete it.',
     );
     expect(why).not.toHaveTextContent('merror');
     expect(why).not.toHaveTextContent('mathvariant');

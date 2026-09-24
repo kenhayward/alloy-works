@@ -19,8 +19,8 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 [themes.md](themes.md) (the theme's Typst projection and the typefaces) and
 [word-output.md](word-output.md) (the other writer that reads the same resolved document).
 
-> **Two slices are built, and part of a third: a document publishes to a tagged PDF of its outline and
-> its paragraphs, laid out by a layout, with a run's marks set.** The first publishing plan built the
+> **Two slices are built, and most of a third: a document publishes to a tagged PDF of its outline,
+> laid out by a layout, holding every block the content model has.** The first publishing plan built the
 > first slice in two pull requests: 1a,
 > the regression corpus checked by veraPDF in the worker's suite, the worker setting every PDF in
 > pinned Liberation Serif (#145), a job Typst refuses finished at once (#146), and `assemble`; 1b, the
@@ -30,15 +30,17 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 > environment starts with, outline `front` matter, a request made under a layout and refused outside
 > its language or for a format it does not make, template `publication/2` with the page, the cover,
 > running heads and feet, page numbering per matter and a contents tagged as one, and the layout's
-> scheme reaching the routes, the outline panel and its lists. The marks plan then took slice 3's
-> first piece: `publishing/3` carrying a run's marks, and template `publication/3` setting them, so
-> what the editor now writes is what the PDF carries. The lists plan then took the next piece:
-> `publishing/4` carrying a list of any of the three kinds, nested, and template `publication/4`
-> setting it. Every block
-> but a paragraph and a list, the defined term, condition, suggestion and comment marks, the lists of figures and
-> tables, the theme, veraPDF on every
-> publication, preview and Word are later slices' ([Build order](#build-order)), and nothing chooses
-> or edits a layout yet. [`../architecture.md`](../architecture.md) describes what is built, and
+> scheme reaching the routes, the outline panel and its lists. The plans since took slice 3 a piece
+> at a time, each a published schema and a template of the same number: a run's marks
+> (`publishing/3`), lists (`publishing/4`), quotations and preformatted text (`publishing/5`), tables
+> and the list of tables (`publishing/6`), figures and the list of figures (`publishing/7`), an image
+> in a line of text (`publishing/8`), footnotes and a table's note (`publishing/9`),
+> cross-references (`publishing/10`) and equations in the pinned maths face, with a list of
+> equations where a layout declares one (`publishing/11`). The defined term, condition, suggestion
+> and comment marks, a citation, a variable and a binding, the theme, veraPDF on every publication,
+> preview and Word are later slices' ([Build order](#build-order)); a block equation wider than its
+> line is still set past the page's edge ([Equations](#equations), its open item); and nothing
+> chooses or edits a layout yet. [`../architecture.md`](../architecture.md) describes what is built, and
 > [Changed while planning and building the first slice](#changed-while-planning-and-building-the-first-slice)
 > and
 > [Changed while planning and building the second slice](#changed-while-planning-and-building-the-second-slice)
@@ -857,12 +859,21 @@ still equations 3's; one stored there is published. Building it changed these th
 - **The failures are `equation_unrenderable`, `equation_unnumbered` and `math_glyph_missing`**, beside
   `alternative_missing`. `equation_unrenderable`'s `detail` names the construct from a fixed list -
   `unreadable`, `merror`, `rtl`, `multiscripts`, `voffset`, `spanningCell`, `mathvariant`, `element`,
-  `attribute` or `text` - never an element's name or an attribute's value, which an author can reach
+  `attribute`, `text`, and since the final whole-branch review `space`, `accent` and `empty` - never
+  an element's name or an attribute's value, which an author can reach
   through a paste. `equation_unnumbered` is a numbered equation the scheme gives no number, named
   apart from `footnote_unnumbered`, whose words are a footnote's. A character the maths face lacks is
   `math_glyph_missing`, the characters checked being the strings the tree sets. Every reason is said.
-  The converter also refuses `\scriptstyle` and `\scriptscriptstyle`, which the tree has no kind for,
-  and a column aligned two ways; it accepts and does not set an operator's `minsize` and `maxsize`
+  The converter also refuses a column aligned two ways, a space of more than twenty ems either way
+  or too wide for a number (`space`), an accent that is more than one character once composed
+  (`accent`) - the last two reached the engine and stopped its compile with nothing to say which
+  equation - and an equation with no token anywhere that shows (`empty`), which the engine tags no
+  `Formula` for; the editor's dialog refuses that one too, by the same rule. It sets a script level
+  of one or two (`\substack`, `smallmatrix`, `subarray`, `\scriptstyle`, `\scriptscriptstyle`) in
+  the engine's `script` and `sscript` sizes, and drops from every token the four characters that only
+  say where a line may break, U+00AD, U+200B, U+2060 and U+FEFF, each of which took the letter before
+  it out of the PDF's text; any other character set without a glyph is refused in an equation as
+  `math_glyph_missing`, as it is in code, but a space. It accepts and does not set an operator's `minsize` and `maxsize`
   (so `\big(` prints at its normal size), `mpadded`'s sizes, `mspace`'s height and depth, and
   `intent`.
 - **A column is aligned by an alignment point in each of its cells**, since the engine's
@@ -881,10 +892,18 @@ still equations 3's; one stored there is published. Building it changed these th
   but `assemble` gives an alternative the language of the text it stands in, so the engine declares
   it on the paragraph or the figure rather than the `Formula`; a `Formula` of its own language waits
   for an alternative that can differ from its text's.
-- **Open: an equation wider than its line.** A block equation wider than its line runs past the
-  margins, numbered or not, and an inline one past its line; nothing measures a tree's width and
-  nothing refuses either, where preformatted text has `line_too_wide`. A width check, in `assemble`
-  or the template, is the answer this leaves to a later slice.
+- **Open: an equation wider than its line.** A block equation wider than its line is centred on it
+  and runs past **both** margins, and can be cut off at the page's edge, numbered or not; an inline
+  one runs past the right margin. The final whole-branch review measured it: on A4's 451pt line one
+  display term such as a subscripted coefficient times a power is about 40pt, so **about eleven such
+  terms overflow**, and a long aligned line, an expanded polynomial or a long text crosses both
+  margins; veraPDF passes every one, so no gate notices. Nothing measures a tree's width and nothing
+  refuses either, where preformatted text has `line_too_wide`. **Recommended: refuse it in a later
+  slice, measured in the template** - the domain has no maths metrics, so an estimate there would
+  refuse good equations or miss bad ones, and the reliable measure is the template's own
+  `measure(it.body).width` against the line, reported back by name (a `metadata` marker read with
+  `typst query`, which the worker maps to a failure); until then, scaling an overflowing block down
+  to the line would keep its text on the page.
 
 ## The layout
 

@@ -9,9 +9,9 @@ application and a desktop application**.
 > paragraphs edited, formatted, linked, arranged into bulleted, numbered and definition lists,
 > quoted and set as preformatted text, and versioned, and a document can be made and its outline of
 > sections and components restructured, a version at a time, its sections numbered, and its
-> paragraphs, lists, quotations, preformatted text and tables published as a laid-out PDF with a cover, a contents, a list of tables and numbered pages that
-> carries
-> that formatting, and footnotes, a table's note, cross-references and equations are written and
+> paragraphs, lists, quotations, preformatted text, tables and figures published as a laid-out PDF
+> with a cover, a contents, lists of figures and tables and numbered pages that carries that
+> formatting, and footnotes, a table's note, cross-references and equations are written and
 > published.
 > [`docs/features.md`](docs/features.md) is explicit about what does and does not exist.
 

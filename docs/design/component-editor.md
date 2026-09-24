@@ -437,8 +437,11 @@ title is equations 3's.
   table's alignment classes become `columnalign`, and what the reader would lose is refused by name -
   `\cancel` and every other enclosure, `\boxed`, `\cancelto`, a filled `\rule`, a box raised or
   lowered (`\raisebox`, `\raise`, `\lower`), an equation number written in the LaTeX (the block's
-  **Numbered** is the product's), and a line broken with `\\` outside an environment's rows, which is
-  found in the LaTeX itself, since a display equation's output cannot show it. An array's column rules
+  **Numbered** is the product's), a line broken with `\\` outside an environment's rows, which is
+  found in the LaTeX itself, since a display equation's output cannot show it, and an equation that
+  draws nothing - an empty group, a space alone, empty text, a fraction of nothing - which a
+  publication would tag nothing for, so its words would be lost (`drawsNothing`, the rule a publish
+  refuses one already stored by; the final review of equations 2). An array's column rules
   are dropped, not refused, and so is negative space (`\!`), which Temml writes as a style. What an
   equation draws is clipped to its own box, in case MathML reaches the surface by another route.
 - **It is drawn as native MathML** by one function, `drawEquation`, on the surface, in a footnote's

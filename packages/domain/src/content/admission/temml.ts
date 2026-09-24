@@ -1,4 +1,5 @@
 import {
+  drawsNothing,
   type MathElement,
   type MathNode,
   readMathmlTree,
@@ -33,7 +34,10 @@ import {
  * published), never text inside the maths. And a **line break outside an environment**: Temml writes
  * one as a table of lines inside a line of text, and draws it in a display equation as an empty
  * operator, dropping the break without a word - for several lines, an environment such as `aligned`
- * says where each begins, and keeps them.
+ * says where each begins, and keeps them. And an equation that **draws nothing** - an empty group,
+ * a thin space, empty text, a fraction or a matrix of nothing - which a publication would tag nothing
+ * for, so the words it is spoken by would be lost: refused by the rule a publish refuses one already
+ * stored by (`drawsNothing`; the final review of equations 2, M1).
  *
  * The result is the reader's own: the tree is read by the reader's parser, changed, written back and
  * read again by `sanitiseMathml`, so nothing here can store a form the reader would not write, and
@@ -48,13 +52,15 @@ export type TemmlAdmission = { readonly ok: true; readonly mathml: string } | Te
  * Why an equation is refused. `construct` names the LaTeX command where Temml's output says which,
  * and otherwise the MathML it could not keep (`<menclose notation="radical">`); `number` is an equation
  * number drawn inside the maths; `lineBreak` a line broken outside an environment; `unkept` is
- * what the reader would refuse or remove with its content, naming it as the reader does.
+ * what the reader would refuse or remove with its content, naming it as the reader does; `empty` an
+ * equation that draws nothing.
  */
 export type TemmlRefusal =
   | { readonly ok: false; readonly reason: 'construct'; readonly construct: string }
   | { readonly ok: false; readonly reason: 'number' }
   | { readonly ok: false; readonly reason: 'lineBreak' }
-  | { readonly ok: false; readonly reason: 'unkept'; readonly detail: string };
+  | { readonly ok: false; readonly reason: 'unkept'; readonly detail: string }
+  | { readonly ok: false; readonly reason: 'empty' };
 
 /**
  * U+203E OVERLINE, stretched across the content. MathML Core's operator dictionary gives it the
@@ -123,6 +129,9 @@ export function admitTemmlMathml(output: string): TemmlAdmission {
     ({ subject }) => subject === 'mathElement' || subject === 'script' || subject === 'mathText',
   );
   if (lost !== undefined) return { ok: false, reason: 'unkept', detail: lost.detail };
+  // Asked of what would be stored, and last, so that what the equation holds is named first.
+  const kept = readMathmlTree(result.mathml);
+  if (kept.ok && drawsNothing(kept.root)) return { ok: false, reason: 'empty' };
   return { ok: true, mathml: result.mathml };
 }
 

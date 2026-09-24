@@ -11,7 +11,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   running text, a list, a quotation, a table's cell and its header rows, a footnote and a caption -
   set in **STIX Two Math**, a typeface made for mathematics that now ships with the product beside
   Liberation Serif and Liberation Mono, under the same open licence. A screen reader is told each is
-  a formula and reads the words written for it, in the language of the text around it.
+  a formula and reads the words written for it, in the language of the text around it. Rows
+  stacked under a sum, a small matrix and maths set a size or two smaller print as written.
 - **A numbered equation prints its number** at the right of its line, as the document numbers it,
   and a screen reader hears the number after the equation. An equation too wide to leave its number
   room has the number on a line of its own beneath it.
@@ -25,16 +26,24 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 - **Publishing says why an equation cannot be published**, rather than refusing every one: one
   holding something the typesetter cannot set, such as an error mark, maths written right to left or
-  a box raised or lowered, each in its own words; one with no description; one using a character the
-  maths typeface lacks; and a numbered one the layout gives no number. Each is named at its place in
-  the outline, and its text is never quoted.
+  a box raised or lowered, a space of more than twenty ems or an accent made of more than one
+  character, each in its own words; one that draws nothing at all; one with no description; one using
+  a character the maths typeface lacks, an invisible one such as a joiner among them; and a numbered
+  one the layout gives no number. Each is named at its place in the outline, and its text is never
+  quoted.
+- **The Equation dialog refuses an equation that draws nothing**, such as an empty group or a space
+  on its own, saying so beneath the LaTeX, since a publication would have nothing to carry its
+  description.
 - **A reference asking for the title of a section or a caption that holds an equation is refused**,
   since the equation cannot be printed as words; asking for its number still works.
 - An equation already stored in a section's heading is published there, and in the contents, the
   running heads and the bookmarks. Writing one there comes in a later release.
 - Some LaTeX prints as less than it asks rather than being refused: `\big(` and its kin print at
-  their normal size, and `\smash` and `\mathrlap` take the room of what they hold. An equation wider
-  than its line runs past the margin, and nothing refuses it yet.
+  their normal size, and `\smash` and `\mathrlap` take the room of what they hold. A block equation
+  wider than its line runs past both margins and can be cut off at the page's edge, and nothing
+  refuses it yet. A letter written with a separate accent character that has no combined form prints
+  as it should but is missing from the PDF's copyable text, as is the same letter in the document's
+  other equations.
 
 ## 0.65.0 - 2026-09-23 (PR #222)
 

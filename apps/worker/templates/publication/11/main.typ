@@ -376,6 +376,15 @@
     )
   } else if k == "phantom" {
     hide(maths(n.body))
+  } else if k == "script" or k == "sscript" {
+    // A script level smaller and two, as MathML's `scriptlevel` sets them (`\substack`, `smallmatrix`,
+    // `subarray`, `\scriptstyle`; the final review of equations 2, I2): an absolute size, so a
+    // substack in a limit, already at the script size, stays there. Not cramped, as TeX's
+    // `\scriptstyle` is not; MathML would keep whatever the content around it had, so a superscript
+    // inside a substack sits a little higher than a browser draws it. Measured with the pinned engine
+    // and veraPDF before it was written here.
+    let size = if k == "script" { math.script } else { math.sscript }
+    size(maths(n.body), cramped: false)
   } else if k == "display" {
     math.display(maths(n.body))
   } else if k == "inline" {

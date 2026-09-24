@@ -51,8 +51,9 @@ describe('the maths tree, from what the editor stores', () => {
       }
     }
     expect(refused).toEqual([]);
-    // Every fixture the editor admits: the count moves only when somebody adds one.
-    expect(converted).toBe(58);
+    // Every fixture the editor admits: the count moves only when somebody adds one. A strut alone is
+    // not among them, since it draws nothing (the final review of equations 2, M1).
+    expect(converted).toBe(66);
   });
 
   it('sets a fraction over its numerator and denominator', () => {
@@ -385,6 +386,20 @@ describe('the maths tree, identifiers', () => {
     }
   });
 
+  it('drops the characters that only say where a line may break, inside any token', () => {
+    // U+200B ZERO WIDTH SPACE, U+00AD SOFT HYPHEN, U+2060 WORD JOINER and U+FEFF, its older spelling:
+    // the engine never breaks a line inside a token, and set there each takes the letter before it
+    // out of the PDF's text (the final review of equations 2, M2). Written as references, since
+    // none of them would survive being typed.
+    expect(treeOf(math('<mi>ab&#x200B;cd</mi>'))).toEqual(i('abcd', 'upright'));
+    expect(treeOf(math('<mtext>pq&#xAD;rs</mtext>'))).toEqual(text('pqrs'));
+    expect(treeOf(math('<mrow><mi>a</mi><mo>&#x2060;</mo><mn>1&#xFEFF;2</mn></mrow>'))).toEqual(
+      row(i('a'), n('12')),
+    );
+    // What is left is counted as MathML Core counts it: one letter is italic.
+    expect(treeOf(math('<mi>x&#x200B;</mi>'))).toEqual(i('x'));
+  });
+
   it('drops an empty identifier and an invisible operator, and sets a large operator large', () => {
     expect(treeOf(math(`<mrow><mi></mi><mi>a</mi><mo>\u{2062}</mo><mi>b</mi></mrow>`))).toEqual(
       row(i('a'), i('b')),
@@ -423,6 +438,60 @@ describe('the maths tree, the rest of what it maps', () => {
     ).toEqual({ k: 'lr', open: '(', close: ')', body: row(i('a'), { k: 'mid', t: '/' }, i('b')) });
   });
 
+  it("sets what MathML sets a script level smaller in the engine's script sizes, as the editor stores it", () => {
+    const script = (body: MathsNode): MathsNode => ({ k: 'script', body });
+    const bounds = (first: MathsNode, second: MathsNode): MathsNode => ({
+      k: 'mat',
+      open: '',
+      close: '',
+      rows: [[first], [second]],
+      columns: ['center'],
+      display: false,
+    });
+    // A substack under a sum: its rows at the script level, which a limit is set at anyway.
+    expect(treeOf(stored('substack', 'block'))).toEqual(
+      row(
+        {
+          k: 'attach',
+          mode: 'limits',
+          base: o(String.fromCodePoint(0x2211)),
+          b: script(bounds(row(i('i'), o('<'), i('n')), row(i('i'), o('>'), n('0')))),
+        },
+        { k: 'attach', mode: 'scripts', base: i('a'), b: i('i') },
+      ),
+    );
+    // A subarray the same, its column aligned as it declared.
+    expect(treeOf(stored('subarray', 'inline'))).toMatchObject({
+      c: [
+        { k: 'attach', mode: 'scripts', b: { k: 'script', body: { k: 'mat', columns: ['left'] } } },
+        {},
+      ],
+    });
+    // A smallmatrix, a matrix set in running text's size between fences that stretch to it.
+    expect(treeOf(stored('smallmatrix', 'inline'))).toEqual({
+      k: 'lr',
+      open: '(',
+      close: ')',
+      body: script({
+        k: 'mat',
+        open: '',
+        close: '',
+        rows: [
+          [i('a'), i('b')],
+          [i('c'), i('d')],
+        ],
+        columns: ['center', 'center'],
+        display: false,
+      }),
+    });
+    // And the two styles that name a level, one smaller and two.
+    const sum = row(i('y'), o('+'), i('z'));
+    expect(treeOf(stored('scriptstyle', 'inline'))).toEqual(row(i('x'), o('+'), script(sum)));
+    expect(treeOf(stored('scriptscriptstyle', 'block'))).toEqual(
+      row(i('x'), o('+'), { k: 'sscript', body: sum }),
+    );
+  });
+
   it("aligns a column by its table's list, its last entry repeated, where its cells say nothing", () => {
     expect(
       treeOf(
@@ -451,12 +520,20 @@ describe('the maths tree, the rest of what it maps', () => {
       k: 'inline',
       body: i('x'),
     });
-    expect(treeOf(math('<mphantom><mi>x</mi></mphantom>'))).toEqual({ k: 'phantom', body: i('x') });
+    // A phantom and a space beside something that shows: alone, each is an equation that draws
+    // nothing, which is refused.
+    expect(treeOf(math('<mrow><mphantom><mi>x</mi></mphantom><mi>y</mi></mrow>'))).toEqual(
+      row({ k: 'phantom', body: i('x') }, i('y')),
+    );
     expect(treeOf(math('<ms>a b</ms>'))).toEqual(text('"a b"'));
     const widths = ['1em', '2ex', '11pt', '22px', '18mu', '-0.5em'].map((width) =>
-      treeOf(math(`<mspace width="${width}"/>`)),
+      treeOf(math(`<mrow><mspace width="${width}"/><mi>y</mi></mrow>`)),
     );
-    expect(widths).toEqual([space(1), space(0.9), space(1), space(1.5), space(1), space(-0.5)]);
+    expect(widths).toEqual(
+      [space(1), space(0.9), space(1), space(1.5), space(1), space(-0.5)].map((each) =>
+        row(each, i('y')),
+      ),
+    );
   });
 
   it('keeps what a padded box holds and the first presentation of an annotated one', () => {
@@ -610,10 +687,20 @@ describe('the maths tree, what it refuses', () => {
       element: 'mi',
       attribute: 'class',
     });
-    // A value it has no mapping for is refused as the attribute is.
-    expect(
-      refusal(math('<mstyle scriptlevel="1" displaystyle="false"><mi>a</mi></mstyle>')),
-    ).toEqual({ ok: false, reason: 'attribute', element: 'mstyle', attribute: 'scriptlevel' });
+    // A value it has no mapping for is refused as the attribute is: a level counted from the one
+    // around it, a third level the engine has no size for, and a smaller level in display style.
+    for (const style of [
+      'scriptlevel="+1"',
+      'scriptlevel="3"',
+      'scriptlevel="1" displaystyle="true"',
+    ]) {
+      expect(refusal(math(`<mstyle ${style}><mi>a</mi></mstyle>`)), style).toEqual({
+        ok: false,
+        reason: 'attribute',
+        element: 'mstyle',
+        attribute: 'scriptlevel',
+      });
+    }
     expect(refusal(math('<mspace width="1fill"/>'))).toEqual({
       ok: false,
       reason: 'attribute',
@@ -627,6 +714,67 @@ describe('the maths tree, what it refuses', () => {
         ),
       ),
     ).toEqual({ ok: false, reason: 'attribute', element: 'mtd', attribute: 'columnalign' });
+  });
+
+  it('refuses a space too wide to be set on any line, and one too wide to be a number', () => {
+    // Twenty ems either way: ten times a qquad, the widest space LaTeX names, and about half the line
+    // the default layout gives - a space wider takes the equation off the line. Four hundred nines is
+    // a length no number holds, which JSON would write as nothing at all (the final review of
+    // equations 2, I1).
+    const spaced = (width: string) =>
+      math(`<mrow><mi>a</mi><mspace width="${width}"/><mi>b</mi></mrow>`);
+    for (const width of ['20.01em', '-21em', '221pt', `${'9'.repeat(400)}em`, '1000']) {
+      expect(refusal(spaced(width)), width).toEqual({ ok: false, reason: 'space' });
+    }
+    for (const width of ['20em', '-20em', '220pt']) {
+      expect(mathsTree(spaced(width)).ok, width).toBe(true);
+    }
+  });
+
+  it('refuses an accent that is more than one character, and sets one that composes to one', () => {
+    // x and U+0302, which no single character composes: one grapheme, and so an accent by its looks,
+    // but two characters, and the engine's accent takes exactly one (the final review, I1).
+    expect(refusal(math('<mover accent="true"><mi>y</mi><mo>x&#x302;</mo></mover>'))).toEqual({
+      ok: false,
+      reason: 'accent',
+    });
+    // a and U+0302 compose to U+00E2, one character, which is set.
+    expect(treeOf(math('<mover accent="true"><mi>y</mi><mo>a&#x302;</mo></mover>'))).toEqual({
+      k: 'accent',
+      body: i('y'),
+      a: String.fromCodePoint(0xe2),
+    });
+  });
+
+  it('refuses an equation that draws nothing, since nothing would be tagged to carry its words', () => {
+    // No token that shows anywhere in it: nothing, spaces, empty text, a fraction or a root of
+    // nothing, a table of nothing, scripts on nothing, a phantom, an invisible operator (the final
+    // review of equations 2, M1).
+    for (const inner of [
+      '<mrow></mrow>',
+      '<mspace width="0.1667em"/>',
+      '<mtext> </mtext>',
+      '<mtext>&#xA0;&#x2003;</mtext>',
+      '<mfrac><mrow></mrow><mrow></mrow></mfrac>',
+      '<msqrt><mrow></mrow></msqrt>',
+      '<mtable></mtable>',
+      '<mtable><mtr><mtd></mtd></mtr></mtable>',
+      '<msup><mrow></mrow><mrow></mrow></msup>',
+      '<mphantom><mi>x</mi></mphantom>',
+      '<mo>&#x2062;</mo>',
+      '<mi>&#x200B;</mi>',
+      '<semantics><mrow></mrow><annotation encoding="application/x-tex">x</annotation></semantics>',
+    ]) {
+      expect(refusal(math(inner)), inner).toEqual({ ok: false, reason: 'empty' });
+    }
+    // One thing that shows is enough: a fence, a string's quotation marks, a prime.
+    for (const inner of [
+      '<mrow><mo fence="true" stretchy="true">(</mo><mo fence="true" stretchy="true">)</mo></mrow>',
+      '<ms></ms>',
+      '<msup><mrow></mrow><mo>&#x2032;</mo></msup>',
+    ]) {
+      expect(mathsTree(math(inner)).ok, inner).toBe(true);
+    }
   });
 
   it('refuses text standing outside a token, and MathML the reader cannot read', () => {

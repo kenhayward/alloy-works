@@ -1173,6 +1173,11 @@ const REFUSAL_NAMES: Readonly<Record<MathsRefusal['reason'], string>> = {
   element: 'element',
   attribute: 'attribute',
   text: 'text',
+  // The final review of equations 2: a space no line holds or no number can, an accent of more than
+  // one character (I1), and an equation that draws nothing (M1).
+  space: 'space',
+  accent: 'accent',
+  empty: 'empty',
 };
 
 /** A cross-reference as the content model stores it. */

@@ -678,7 +678,7 @@ describe('assemble', () => {
               {
                 type: 'equation',
                 id: 'eq1',
-                mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
+                mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math>',
                 numbered: false,
               },
               paragraph('p2', text('Arabic \u{627} and \u{4e2d} here')),
@@ -1278,7 +1278,7 @@ describe('assemble', () => {
               {
                 type: 'equation',
                 id: 'eq1',
-                mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
+                mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math>',
                 numbered: false,
               },
               storedList('L2', 'unordered', [
@@ -3527,6 +3527,12 @@ describe('equations, published (equations 2)', () => {
       mathvariant: '<mi mathvariant="bold-fraktur">x</mi>',
       element: '<mfrac><mi>a</mi></mfrac>',
       attribute: '<mfrac displaystyle="true"><mi>a</mi><mi>b</mi></mfrac>',
+      // Three the final review named: a space no line holds, an accent of two characters - both of
+      // which reached the engine and stopped the compile without a word - and an equation that draws
+      // nothing, which the engine tags nothing for.
+      space: '<mrow><mi>a</mi><mspace width="1000em"/><mi>b</mi></mrow>',
+      accent: '<mover accent="true"><mi>y</mi><mo>x&#x302;</mo></mover>',
+      empty: '<mrow/>',
     };
     const stored = component([
       ...Object.entries(refused).map(([name, inner]) => block(name, false, inner)),
@@ -3562,6 +3568,9 @@ describe('equations, published (equations 2)', () => {
       failed('equation_unrenderable', 'mathvariant', 'mathvariant'),
       failed('equation_unrenderable', 'element', 'element'),
       failed('equation_unrenderable', 'attribute', 'attribute'),
+      failed('equation_unrenderable', 'space', 'space'),
+      failed('equation_unrenderable', 'accent', 'accent'),
+      failed('equation_unrenderable', 'empty', 'empty'),
       failed('equation_unrenderable', 'rtl', 'rtl'),
       failed('equation_unrenderable', 'b1', 'merror'),
       failed('equation_unrenderable', 'unreadable', 'unreadable'),
@@ -3622,6 +3631,23 @@ describe('equations, published (equations 2)', () => {
       failed('glyph_missing', 'b1', 'U+27E8'),
       failed('math_glyph_missing', 'b1', 'U+00E9'),
     ]);
+  });
+
+  it('sets no invisible character in an equation that would take a letter out of its text', () => {
+    // A mark that only says where a line may break is dropped, and the equation set without it; any
+    // other character the engine sets without a glyph is refused as one the maths face cannot set,
+    // except a space, which is laid out as one and copied as one (the final review of equations 2, M2).
+    const [space, joiner, wide] = [0x200b, 0x200d, 0x3000].map((each) =>
+      String.fromCodePoint(each),
+    );
+    const assembled = assemble(
+      oneComponent(
+        block('e1', false, `<mi>ab${space}cd</mi>`),
+        block('e2', false, `<mi>a${joiner}b</mi>`),
+        block('e3', false, `<mtext>a${wide}b</mtext>`),
+      ),
+    );
+    expect(failuresOf(assembled)).toEqual([failed('math_glyph_missing', 'e2', 'U+200D')]);
   });
 
   it('refuses a numbered equation the scheme gives no number, rather than setting it with none', () => {

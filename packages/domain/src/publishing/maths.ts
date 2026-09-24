@@ -1,4 +1,5 @@
 import {
+  drawsNothing,
   equationAlternative,
   MATHML_NAMESPACE,
   readMathmlTree,
@@ -24,8 +25,9 @@ import { BODY_SIZE } from './measure.js';
  * a mapping for it is written here. What it refuses on purpose, because the engine has no way to set
  * it: an error the converter that wrote the MathML reported (`merror`), maths set right to left,
  * more than one pair of scripts on a side of `mmultiscripts`, a box moved up or down (`mpadded`'s
- * `voffset` - the engine cannot move maths and keep it maths), a table cell spanning others, and a
- * `mathvariant` MathML names that the engine has no style for.
+ * `voffset` - the engine cannot move maths and keep it maths), a table cell spanning others, a
+ * `mathvariant` MathML names that the engine has no style for, a space too wide for any line or for a
+ * number, an accent of more than one character, and an equation that draws nothing at all.
  *
  * **Two things the engine will not do that this does** (the spike's traps): an identifier is given
  * its style explicitly - text built from data is set upright inside an equation - by MathML Core's
@@ -77,7 +79,9 @@ export type MathsAlignment = 'left' | 'center' | 'right';
  * - `lr` content between fences that stretch to it, either fence empty where MathML draws none.
  * - `mat` a table: in fences, or bare (`open` and `close` empty); `display` where MathML sets it in
  *   display style, as `aligned` and `gathered` are. `cases` a table after a stretched left brace.
- * - `phantom` its content's space, drawn as nothing; `display` and `inline` its content in that style.
+ * - `phantom` its content's space, drawn as nothing; `display` and `inline` its content in that style;
+ *   `script` and `sscript` its content a script level smaller and two, as MathML's `scriptlevel` sets
+ *   it (`\substack`, `smallmatrix`, `subarray`, `\scriptstyle`, `\scriptscriptstyle`).
  */
 export type MathsNode =
   | { readonly k: 'row'; readonly c: readonly MathsNode[] }
@@ -125,7 +129,10 @@ export type MathsNode =
       readonly rows: readonly (readonly MathsNode[])[];
       readonly columns: readonly MathsAlignment[];
     }
-  | { readonly k: 'phantom' | 'display' | 'inline'; readonly body: MathsNode };
+  | {
+      readonly k: 'phantom' | 'display' | 'inline' | 'script' | 'sscript';
+      readonly body: MathsNode;
+    };
 
 /** A whole equation's tree: its root node. */
 export type MathsTree = MathsNode;
@@ -136,7 +143,12 @@ export type MathsTree = MathsNode;
  * `variant` are the constructs refused on purpose; `element` is an element this does not map, or one
  * standing where it cannot (a cell outside a table, a fraction without two parts); `attribute` an
  * attribute this does not map on that element, or a value it has no mapping for; `text` text standing
- * outside a token element.
+ * outside a token element. Three more the final review of equations 2 named, the first two of which
+ * reached the engine and stopped the compile with nothing to say which equation (I1), and the third
+ * set nothing for the equation's words to be carried by (M1): `space` a space wider than
+ * `WIDEST_SPACE` either way, or wider than a number holds; `accent` an accent of more than one
+ * character, which the engine's accent refuses; and `empty` an equation that draws nothing
+ * (`drawsNothing`).
  */
 export type MathsRefusal =
   | { readonly ok: false; readonly reason: 'unreadable' }
@@ -153,7 +165,10 @@ export type MathsRefusal =
       readonly element: string;
       readonly attribute: string;
     }
-  | { readonly ok: false; readonly reason: 'text'; readonly element: string };
+  | { readonly ok: false; readonly reason: 'text'; readonly element: string }
+  | { readonly ok: false; readonly reason: 'space' }
+  | { readonly ok: false; readonly reason: 'accent' }
+  | { readonly ok: false; readonly reason: 'empty' };
 
 /**
  * The tree, and the words the equation is spoken by - its `alttext`, read as the editor reads it
@@ -171,6 +186,19 @@ class Refused extends Error {
 
 /** U+2061 FUNCTION APPLICATION: after an identifier, it makes that identifier an operator's name. */
 const FUNCTION_APPLICATION = '\u{2061}';
+
+/**
+ * The characters that only say where a line may or may not break - U+00AD SOFT HYPHEN, U+200B ZERO
+ * WIDTH SPACE, U+2060 WORD JOINER, and U+FEFF, the joiner's older spelling - dropped from every token
+ * before the tree is built (the final review of equations 2, M2). The engine never breaks a line
+ * inside a token, so each says nothing there; they are what a paste from a web page or a word
+ * processor carries in; and set, each takes the letter before it out of the PDF's text, so "ab",
+ * U+200B, "cd" is drawn abcd and copied as acd. Only these: every other character that draws nothing
+ * means something - a joiner or a non-joiner changes the shape of the letters around it, a variation
+ * selector chooses a glyph, an isolate a direction - and dropping one would set something other than
+ * what was written, so the glyph check refuses those instead (`characterProblems`, the maths face).
+ */
+const BREAK_HINTS = /[\u{AD}\u{200B}\u{2060}\u{FEFF}]/gu;
 
 /** The invisible operators - function application, times, separator, plus - which set nothing. */
 const INVISIBLE = new Set(['\u{2061}', '\u{2062}', '\u{2063}', '\u{2064}']);
@@ -292,6 +320,22 @@ const VARIANTS: ReadonlyMap<string, MathsVariant> = new Map([
 const ALIGNMENTS: ReadonlySet<string> = new Set(['left', 'center', 'right']);
 
 /**
+ * The widest space, in ems either way, set as the space it is: ten times `\qquad`, the widest LaTeX
+ * names, and about half the line the default layout gives at the body's size (41 ems on A4). A space
+ * wider takes the equation off its line before anything else in it is set - a block equation is not
+ * kept to the line (features.md's width gap) - and one wider than a number can hold (four hundred
+ * nines) is written by JSON as nothing at all, which stops the compile (the final review of
+ * equations 2, I1). Refused by name, since nothing an author means by a space needs more.
+ */
+const WIDEST_SPACE = 20;
+
+/** The script levels MathML sets smaller, as the engine's sizes for them: one smaller, and two. */
+const SCRIPT_LEVELS: ReadonlyMap<string, 'script' | 'sscript'> = new Map([
+  ['1', 'script'],
+  ['2', 'sscript'],
+]);
+
+/**
  * Allowed on any element: its direction, where only left to right is set, and `intent` and `arg`,
  * which tell a speech engine how to read the maths and draw nothing - the alternative is what a
  * reader hears.
@@ -386,11 +430,10 @@ export function mathsTree(mathml: string): MathsConversion {
     const root = read.root;
     if (root.name !== 'math') refuseElement(root);
     attributesOf(root);
-    return {
-      ok: true,
-      tree: row(elementsOf(root)),
-      alternative: equationAlternative(mathml),
-    };
+    const tree = row(elementsOf(root));
+    // Asked once the whole equation is known to be one the tree maps, so what it holds is named first.
+    if (drawsNothing(root)) return { ok: false, reason: 'empty' };
+    return { ok: true, tree, alternative: equationAlternative(mathml) };
   } catch (error) {
     if (error instanceof Refused) return error.refusal;
     throw error;
@@ -451,9 +494,13 @@ function acceptable(
     case 'mathvariant':
       if (!VARIANTS.has(value)) throw new Refused({ ok: false, reason: 'variant', variant: value });
       return true;
-    // Only the level a style sets anyway: the engine's display and inline styles are both at the
-    // first level, and a smaller one (`\scriptstyle`) has no node of its own in the tree.
+    // The level a style sets anyway, where it names a style: the engine's display and inline styles
+    // are both at the first level. Or a level smaller, one or two, in no style or the inline one, as
+    // `\substack`, `smallmatrix` and `subarray` write it, and `\scriptstyle` and `\scriptscriptstyle`
+    // (the final review of equations 2, I2). A level counted from the one around it (`+1`) is not
+    // mapped: an absolute level is all Temml writes. Nor is a third, which the engine has no size for.
     case 'scriptlevel':
+      if (SCRIPT_LEVELS.has(value)) return values.get('displaystyle') !== 'true';
       return value === '0' && values.has('displaystyle');
     case 'columnalign': {
       const alignments = value.split(/[ \t\n\r]+/).filter((each) => each !== '');
@@ -471,8 +518,13 @@ function acceptable(
     case 'voffset':
       if (ems(value) !== 0) throw new Refused({ ok: false, reason: 'offset' });
       return true;
-    case 'width':
-      return element.name !== 'mspace' || ems(value) !== undefined;
+    case 'width': {
+      if (element.name !== 'mspace') return true;
+      const width = ems(value);
+      if (width === undefined) return false;
+      if (!(Math.abs(width) <= WIDEST_SPACE)) throw new Refused({ ok: false, reason: 'space' });
+      return true;
+    }
     default:
       return true;
   }
@@ -525,14 +577,17 @@ function partsOf(element: MathElement, count: number): MathElement[] {
   return parts;
 }
 
-/** A token element's text. The reader keeps no element inside a token. */
+/**
+ * A token element's text, without the marks that only say where a line may break (`BREAK_HINTS`).
+ * The reader keeps no element inside a token.
+ */
 function tokenText(element: MathElement): string {
   let text = '';
   for (const child of element.children) {
     if (typeof child !== 'string') refuseElement(child);
     text += child;
   }
-  return text;
+  return text.replace(BREAK_HINTS, '');
 }
 
 const EMPTY: MathsNode = { k: 'row', c: [] };
@@ -563,6 +618,9 @@ function node(element: MathElement, applied = false, middle = false): MathsNode 
       return mrow(element);
     case 'mstyle': {
       const body = row(elementsOf(element));
+      // A level smaller is the engine's script size, whose style is the inline one already.
+      const level = SCRIPT_LEVELS.get(attributes.get('scriptlevel') ?? '');
+      if (level !== undefined) return { k: level, body };
       const style = attributes.get('displaystyle');
       if (style === 'true') return { k: 'display', body };
       if (style === 'false') return { k: 'inline', body };
@@ -739,6 +797,11 @@ function primesOf(script: MathElement): MathsNode | null {
  * equations 1 stores `\overline` and `\underline` - a line that does not stretch is a bar, an accent;
  * and an accent, one character over its base, known by its character unless MathML says it is not
  * one (`accent="false"`).
+ *
+ * An accent is known by what a reader sees - one grapheme - but the engine's accent takes exactly one
+ * character, and stops the compile for more. So one that is still more than one once composed (NFC) -
+ * x and U+0302, which no single character composes - is refused by name, and one that composes is set
+ * as the one character it composes to (the final review of equations 2, I1).
  */
 function underOver(
   element: MathElement,
@@ -776,7 +839,9 @@ function underOver(
         graphemeCount(t) === 1
       ) {
         attributesOf(first);
-        return { k: 'accent', body: required(base), a: t };
+        const composed = t.normalize('NFC');
+        if ([...composed].length !== 1) throw new Refused({ ok: false, reason: 'accent' });
+        return { k: 'accent', body: required(base), a: composed };
       }
     }
   }
@@ -874,10 +939,11 @@ function table(element: MathElement): {
 /**
  * **Every string a tree sets**, in the order a writer sets them (equations 2, ruling R3): what the
  * glyph check asks the maths face of, as a paragraph's text is asked of the body face. An identifier's,
- * a number's, an operator's, a named operator's and a text's characters, an accent's, a stretched bar's,
- * and the fences of a pair and of a matrix. What a writer draws rather than sets from a character the
- * content holds - a fraction's bar, a radical, a brace, a prime, the brace of cases - is not here: it is
- * the template's own, drawn from the pinned face, and the same whatever the author wrote.
+ * a number's, an operator's, a named operator's and a text's characters, an accent's, and the fences of
+ * a pair and of a matrix. What a writer draws rather than sets from a character the content holds - a
+ * fraction's bar, a radical, a brace, a prime, the brace of cases, and an overline's or an underline's
+ * line, whose node keeps no character (the template draws it with the engine's own) - is not here: it
+ * is the template's own, drawn from the pinned face, and the same whatever the author wrote.
  *
  * **A branch per kind, and a `default:` that refuses what it cannot name**, so a kind added to
  * `MathsNode` fails to compile here rather than its characters going unchecked.
@@ -904,6 +970,8 @@ export function mathsText(node: MathsNode): string {
     case 'phantom':
     case 'display':
     case 'inline':
+    case 'script':
+    case 'sscript':
     case 'line':
       return mathsText(node.body);
     case 'root':

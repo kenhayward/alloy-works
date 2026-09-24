@@ -7,10 +7,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > **Status: the first pieces of the first tranche, on scaffolding.** Components can be made, edited and
 > versioned, their text formatted, linked, marked with a language and arranged into lists, and
 > documents made, their
-> outlines restructured, their sections numbered and their paragraphs, lists, tables and figures
-> published as a laid-out PDF with
-> a cover, a contents, lists of figures and tables and numbered pages that carries all of that
-> formatting.
+> outlines restructured, their sections numbered and their paragraphs, lists, quotations,
+> preformatted text, tables and figures published as a laid-out PDF with a cover, a contents, lists
+> of figures and tables and numbered pages that carries all of that formatting.
 > Footnotes, a table's note, cross-references and equations are written and published.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
@@ -500,17 +499,25 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   below, and a layout can ask for a **list of equations** after the contents, though the one every
   environment starts with lists figures and tables only. An equation is refused, naming where it is
   and never quoting it, where it holds something the typesetter cannot set, such as an error mark,
-  maths written right to left, a box raised or lowered, a cell spanning others or `\scriptstyle`;
-  where it has no description; where the maths typeface lacks one of its characters; and where it is
-  numbered and the layout gives it no number. A reference
+  maths written right to left, a box raised or lowered, a cell spanning others, a space of more than
+  twenty ems either way or an accent made of more than one character; where it draws nothing at all,
+  which the equation dialog refuses too; where it has no description; where the maths typeface lacks
+  one of its characters, an invisible one such as a joiner among them; and where it is numbered and
+  the layout gives it no number. Rows stacked under a sum, a small matrix and maths set a size or
+  two smaller print as they are written, and an invisible mark that only says where a line may break
+  is left out of an equation. A reference
   asking for the title of a section or a caption that holds an equation is refused too, since the
   equation cannot be printed as words. Some LaTeX prints as less than it asks rather than being
   refused: `\big(` and its kin print at their normal size, and `\smash` and `\mathrlap` take the
-  room of what they hold.
+  room of what they hold. A letter written with a separate accent character that has no combined
+  form - an x and a circumflex as two characters - prints as it should but is missing from the text a
+  reader copies or searches, and so is the same letter in the same style in every other equation in
+  the document; a screen reader reads each equation's description, which is whole.
 
   **This is a PDF of paragraphs, lists, quotations, preformatted text, tables and their notes,
-  figures, images in a line of text, footnotes, cross-references and equations, not publishing.** An
-  equation wider than its line runs past the margin, and nothing refuses it yet. A table too wide
+  figures, images in a line of text, footnotes, cross-references and equations, not publishing.** A
+  block equation wider than its line runs past both margins and can be cut off at the page's edge,
+  and one in a line of text runs past the right margin; nothing refuses either yet. A table too wide
   for the page is not turned, shrunk or split, and how it breaks across pages is not yet chosen by a
   style: every table repeats its header rows. A citation
   in a quotation's attribution cannot be written or published yet. A list nested
@@ -518,7 +525,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   only that the publish failed. Quotations inside one another stop at fifteen in the editor, which is
   the most a publication can set.
   No publication has a list of equations yet, since the one layout lists only figures and tables;
-  there are no caption labels and no theme; nothing chooses, makes or
+  there is no theme; nothing chooses, makes or
   edits a layout, and there is only ever the one the environment started with; and there is no Word
   file, no preview, and no way to approve a publication. The page asks how a publish is going for as
   long as it stays open, and a download link lasts five minutes from when the publication's page was
@@ -535,7 +542,8 @@ Named explicitly so nobody has to read the source to find out:
   there is no control for a defined term or a
   citation. A paste from outside the product keeps no footnote, image or equation, reads Markdown only when **Paste as
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
-  published PDF of a document's paragraphs, lists, quotations, preformatted text and tables. The one sample document is a fixed template with
+  published PDF of a document's paragraphs, lists, quotations, preformatted text, tables, figures,
+  images in a line of text, footnotes, cross-references and equations. The one sample document is a fixed template with
   no content of yours in it.
 - No way to make, change or choose between component types: every environment has one, named Topic, and
   nothing yet lets an administrator add another or change which is the default.
@@ -545,8 +553,8 @@ Named explicitly so nobody has to read the source to find out:
   make a figure or a table unnumbered: every one takes a number.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
   quotations, preformatted text, tables and their notes, figures, images in a line of text,
-  footnotes, cross-references and equations: no definition-list structure of PDF's own, no list of equations under the one layout, no caption
-  labels, no theme, no monospace face for inline code, no Word, no preview, and no way to approve a
+  footnotes, cross-references and equations: no definition-list structure of PDF's own, no list of equations under the one layout, no theme, no
+  Word, no preview, and no way to approve a
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,
   and every document publishes under it.

@@ -40,6 +40,8 @@ const INLINES: Readonly<Record<string, string>> = {
  * (`REFUSAL_NAMES`, `assemble.ts`), in words - never the equation's text, its values or its elements,
  * which `detail` never carries either (R5). `mathvariant`, `element` and `attribute` each name part of
  * the equation's own markup that an author cannot act on by name, so all three read the same way.
+ * `space`, `accent` and `empty` are the final review of equations 2's: a space wider than the converter
+ * sets, an accent of more than one character, and an equation that draws nothing at all.
  */
 const EQUATION_PROBLEMS: Readonly<Record<string, string>> = {
   unreadable: 'is MathML that cannot be read at all',
@@ -52,6 +54,9 @@ const EQUATION_PROBLEMS: Readonly<Record<string, string>> = {
   element: 'holds something the typesetter cannot set',
   attribute: 'holds something the typesetter cannot set',
   text: 'holds something the typesetter cannot set',
+  space: 'holds a space too wide to be set',
+  accent: 'holds an accent made of more than one character',
+  empty: 'draws nothing',
 };
 
 /**

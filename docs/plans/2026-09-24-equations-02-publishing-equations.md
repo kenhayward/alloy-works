@@ -192,6 +192,87 @@ a list of equations (it lists figures and tables; a layout that declares one get
   back and linked. PUB-038 was claimed by publishing.md and uncited until now, since no list of equations
   could be published. The citations pin moves from 282 to 285.
 
+The final whole-branch review found two storable equations that got past `assemble` and stopped the
+compile as `typst_refused`, with nothing to say which equation; three constructs the editor stores and
+every publish refused; an equation that sets nothing and so has no `Formula`; characters the PDF's
+text loses; a comment that claimed too much; and a width gap nobody had measured. These were changed:
+
+- **I1, a space and an accent that stopped the compile, are refused by name.** An `mspace` whose
+  width is not finite, or more than 20 ems either way (`WIDEST_SPACE`), fails `equation_unrenderable`
+  with the new detail `space`: twenty ems is ten `\qquad`s, the widest space LaTeX names, and about
+  half the default A4 line at 11pt (41 ems), so nothing an author means by one space needs more, and
+  four hundred nines - which JSON wrote as `null`, and the template multiplied - is caught by the same
+  test. An accent that is one grapheme but still more than one character once composed (NFC) - x and
+  U+0302 - fails with `accent`; one that composes is set as the composed character. An `mpadded`'s
+  lengths are read and not set, so they need no bound. Both are in CNT-049's test, and a worker test
+  shows each refused by name with the worker's own faces, so the job throws before it compiles, and
+  that the trees the converter used to make stop the pinned engine with `TypstRefused`. Found beside
+  it and left: `ems` reads no `cm`, `mm` or `in`, so `\hspace{1cm}`, which Temml writes as `1cm`, is
+  refused as `attribute`, _something the typesetter cannot set_, and the dialog does not refuse
+  `\hspace{30em}`, which only a publish names.
+- **I2, the script sizes are set.** Measured first with a throwaway compile of template 11 and
+  veraPDF: `math.script` and `math.sscript` set a substack under a sum, a small matrix between fences,
+  a subarray, and a sum a size and two smaller, all extracted whole and PDF/UA-1. So the tree gained
+  `script` and `sscript`, `scriptlevel` 1 and 2 map to them where the style is absent or inline
+  (`+1`, a third level and a smaller level in display style stay refused as `attribute`), template 11
+  sets them `cramped: false`, as TeX's `\scriptstyle` is - MathML would keep the surrounding shift,
+  so a superscript inside a substack sits a little higher than a browser draws it - and template 11's
+  hash moved to `00f58bb2...a22a77`, read from the test's own output. The five constructs are Temml
+  fixtures now, generated from the pinned Temml, and constructs of the worker's regression, numbered
+  and listed with the others.
+- **M1, an equation that draws nothing is refused, in the dialog and in a publish.** The rule is
+  `drawsNothing` in `content/admission/mathml.ts`, one function both ask: no token anywhere - an
+  identifier, a number, an operator or text holding a character that is not a space or invisible
+  (`\p{White_Space}` or `\p{Default_Ignorable_Code_Point}`) - outside a phantom or an annotation; a
+  string literal always shows. So `{}`, `\,`, `\text{}`, `\frac{}{}`, an empty matrix, a root of
+  nothing, `\phantom{x}` and a strut alone are refused; a fraction's bar or a radical without a token
+  beside it says nothing to set. `admitTemmlMathml` refuses it as `empty`, and the dialog says _An
+  equation has to show something: this one draws nothing. Write what it is to show._; the converter
+  refuses one already stored as `equation_unrenderable`, `empty`, asked last so that what an equation
+  holds is named first. Equations 1 kept a strut alone as drawing nothing harmlessly; it is refused
+  now, and kept inside an equation. CNT-080's test title, _every equation_, holds again: every
+  equation that reaches the engine draws something, and the test says so.
+- **M2, the characters that only say where a line may break are dropped.** Measured in an equation's
+  identifiers and text with the pinned engine, every character `setWithoutAGlyph` lists but the spaces
+  and the non-breaking hyphen took the letter before it out of the PDF's text (dropped, or set as a
+  space), as in code. The converter drops U+00AD, U+200B, U+2060 and U+FEFF from every token before
+  the tree: they only mark where a line may or may not break, which never happens inside a token, and
+  they are what a paste from a web page or a word processor carries in. The others each mean
+  something - a joiner or a non-joiner shapes the letters around it, a variation selector picks a
+  glyph, an isolate a direction - so dropping one would set something else; the glyph check refuses
+  them in an equation as `math_glyph_missing`, as it does in code, exempting only a space
+  (`\p{White_Space}`) and U+2011, whose text the engine keeps. **Recorded, not fixed: a symbol of
+  two characters loses its text.** A token holding a letter and a combining mark that no single
+  character composes - x and U+0302, which the stored form keeps apart - is drawn correctly, but the
+  engine maps the letter's glyph to the pair, and the PDF's text then reads that glyph as nothing:
+  the symbol is missing from copy and search, and so is the same letter, in the same style, in every
+  other equation in the document (in the probe, the italic x vanished from every other equation that held one). In
+  body text, measured in the same probe, the pair makes every other plain x in the document extract
+  as x with a circumflex; that predates equations. A screen reader hears each equation's `/Alt`,
+  which is whole. An accent built from such a pair is refused (I1); an identifier or an operator
+  holding one is not.
+- **M3**: `mathsText`'s comment no longer says it reads a stretched bar's characters: a `line` keeps
+  none, and the template draws it with the engine's `overline` and `underline`.
+- **The width gap is recorded, not fixed**, as the open item in publishing.md's Equations and in
+  features.md: a block equation wider than its line is centred and runs past both margins, and can
+  be cut off at the page's edge; an inline one runs past the right. The reviewer's measure: one
+  display term such as a subscripted coefficient times a power is about 40pt on A4's 451pt line, so
+  about eleven overflow, and veraPDF passes every one. The recommendation is to refuse it in a later
+  slice, measured in the template: `measure(it.body).width` against the line, reported back by name
+  through a query pass, since the domain has no maths metrics to estimate it with.
+- **The docs**: README.md's status and features.md's in lockstep, each naming quotations,
+  preformatted text and figures among what publishes and the lists of figures and tables where the
+  README said _a list of tables_; features.md's refusals in plain words, with the script sizes
+  published, a space and an accent refused, an equation that draws nothing refused in the dialog too,
+  and the two-character symbol said; its stale _no caption labels_ (a caption prints its label, as
+  _Figure 1.1_) and _no monospace face for inline code_ (inline code is set in Liberation Mono since
+  editor 5) removed, and _nothing exports it but_ naming everything a PDF carries. publishing.md's
+  opening status note, which still said a paragraph and a list were all a publish held, now names
+  each schema's piece; architecture's sentence that every block but five was refused names what still
+  is - a defined term, a condition, a suggestion and a comment, and a citation, a variable and a
+  binding - and its converter and admission rows the new refusals, sizes and `drawsNothing`;
+  component-editor.md's admission bullet the dialog's new refusal.
+
 ## Tasks
 
 1. **`packages/domain`, the tree**: R2, with the domain's `Face` gaining `math`.
