@@ -88,6 +88,14 @@ export const publishFailureCodes = [
   // the author needs to know it is the equation that cannot carry it. The engine's fallback is off
   // for maths, so it would otherwise be set as nothing.
   'math_glyph_missing',
+  // compose, from themes 1: a style the theme's catalogue holds used where its `appliesTo` does not
+  // reach - a heading's style on a paragraph of running text, an inline image's on a figure (STY-006) -
+  // naming the block and the style, as `style_missing` names a style the catalogue does not hold; and
+  // a typeface that sets text in the document whose licence, as the theme records it, does not permit
+  // embedding it in a PDF (STY-042), naming its family and nothing of the document, since nothing in
+  // the document can mend it.
+  'style_not_applicable',
+  'typeface_not_embeddable',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

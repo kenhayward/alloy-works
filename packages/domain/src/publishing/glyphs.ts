@@ -59,16 +59,21 @@ const keptInMaths = (codePoint: number) =>
   codePoint === 0x2011 || /^\p{White_Space}$/u.test(String.fromCodePoint(codePoint));
 
 /**
- * Which pinned family a character is set in: the body text's serif, the monospace that preformatted
- * text and inline code are set in, or the maths face an equation is set in (equations 2, ruling R1:
- * the engine's fallback is off for maths, so a character the maths face lacks is never borrowed from
- * the serif). Each covers different characters, so the question is always asked of one of them - a
- * union would pass a character one of them cannot set.
+ * How the engine sets a piece of text, which decides what it does with a character that has no glyph
+ * of its own: as body text, as code - preformatted text and an inline code run, set in `raw` - or in
+ * an equation (equations 2, ruling R1: the engine's fallback is off for maths, so a character the maths
+ * face lacks is never borrowed from another). Which family sets it is a separate question, the theme's
+ * since themes 1: body text may be set in a monospace family, and code in a serif one.
  */
-export type Face = 'body' | 'code' | 'math';
+export type Setting = 'body' | 'code' | 'math';
 
-/** Whether every face of one family can set this character. */
-export type Covers = (codePoint: number, face: Face) => boolean;
+/**
+ * Whether every face of one family - by the family name the theme and the font files both declare -
+ * can set this character (themes 1, ruling R6). The question is always asked of the family that sets
+ * the text, never of a union: each family covers different characters, and a union would pass a
+ * character the one that sets it cannot. A family nobody holds covers nothing.
+ */
+export type Covers = (codePoint: number, family: string) => boolean;
 
 /** `U+0627`, the spelling a failure's detail uses: never the character itself. */
 export const codePointName = (codePoint: number) =>
@@ -76,12 +81,14 @@ export const codePointName = (codePoint: number) =>
 
 /**
  * Each character of `text` the engine would refuse, once each, in the order they first appear:
- * disallowed anywhere, or missing from the family the template sets it in (`covers`, asked of `face`).
+ * disallowed anywhere, or missing from the family that sets it (`covers`, asked of `family`), as the
+ * engine treats a character with no glyph in that `setting`.
  */
 export function characterProblems(
   text: string,
   covers: Covers,
-  face: Face,
+  family: string,
+  setting: Setting,
 ): { readonly problem: CharacterProblem; readonly codePoint: number }[] {
   const seen = new Set<number>();
   const found: { problem: CharacterProblem; codePoint: number }[] = [];
@@ -90,23 +97,23 @@ export function characterProblems(
     if (seen.has(codePoint)) continue;
     seen.add(codePoint);
     if (disallowed(codePoint)) found.push({ problem: 'character_disallowed', codePoint });
-    // **No exemption in the code face.** Inside `raw` the pinned engine drops the character BEFORE
-    // an invisible format character - `ab` then U+200B then `cd` prints `acd` - so what the body
-    // face sets without a glyph loses a letter in code, silently. Refused there instead, with the
-    // code the author meets for any character the monospace face cannot set (final review, finding 1).
-    // **Nor in the maths face, but for a space.** The engine does the same in an equation's tokens: a
+    // **No exemption in code.** Inside `raw` the pinned engine drops the character BEFORE an
+    // invisible format character - `ab` then U+200B then `cd` prints `acd` - so what body text sets
+    // without a glyph loses a letter in code, silently. Refused there instead, with the code the
+    // author meets for any character the family setting the code cannot set (final review, finding 1).
+    // **Nor in an equation, but for a space.** The engine does the same in an equation's tokens: a
     // joiner, a variation selector or an isolate takes the letter before it out of the PDF's text.
     // A space it lays out as one, and copies as one, so those are set. The marks that only say where a
     // line may break never arrive here: the converter drops them (`BREAK_HINTS`, `maths.ts`; measured
     // against the pinned engine in the final review of equations 2, M2).
     else if (
-      face === 'code'
-        ? setWithoutAGlyph(codePoint) || !covers(codePoint, face)
-        : face === 'math'
+      setting === 'code'
+        ? setWithoutAGlyph(codePoint) || !covers(codePoint, family)
+        : setting === 'math'
           ? setWithoutAGlyph(codePoint)
             ? !keptInMaths(codePoint)
-            : !covers(codePoint, face)
-          : !setWithoutAGlyph(codePoint) && !covers(codePoint, face)
+            : !covers(codePoint, family)
+          : !setWithoutAGlyph(codePoint) && !covers(codePoint, family)
     ) {
       found.push({ problem: 'glyph_missing', codePoint });
     }

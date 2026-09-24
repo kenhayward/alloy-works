@@ -252,6 +252,37 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('in no typeface');
   });
 
+  it("says a style is used where it does not apply, and that a typeface's licence forbids embedding it, blaming the theme for the second", async () => {
+    const fake = failing([
+      {
+        stage: 'compose',
+        code: 'style_not_applicable',
+        node: null,
+        block: 'b1',
+        detail: 'heading-1',
+      },
+      {
+        stage: 'compose',
+        code: 'typeface_not_embeddable',
+        node: null,
+        block: null,
+        detail: 'Alloy Sans',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'This paragraph, table or figure uses the style heading-1, which cannot be used where it stands. Choose another style for it.',
+    );
+    // Nothing in the document can mend a face the theme may not embed, so the sentence says it is the
+    // theme's to change and never asks for another attempt.
+    expect(why).toHaveTextContent(
+      "The typeface Alloy Sans cannot be embedded in a PDF: its licence does not permit it. The publication's theme has to change before this document can be published.",
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
   it('says what a table needs before it can be published, in words an author can act on', async () => {
     const fake = failing([
       { stage: 'compose', code: 'table_without_caption', node: null, block: 't1', detail: null },

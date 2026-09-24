@@ -21,6 +21,7 @@ import { loadPinnedFonts } from './fonts.js';
 import { rootImages } from './jobs/publish.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPdf, type InternalLink, type ReadPdf, type TaggedFormula } from './testing/pdf.js';
+import { defaultTheme } from './testing/theme.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath, TypstRefused } from './typst.js';
 
@@ -347,6 +348,7 @@ const assembled = async () => {
     ]),
     refused: [],
     layout: listing,
+    theme: defaultTheme,
     revision: '0.1',
     covers: fonts.covers,
     assets,
@@ -628,6 +630,7 @@ describe('what the converter refuses never reaches the engine (the final review 
       ]),
       refused: [],
       layout: listing,
+      theme: defaultTheme,
       revision: '0.1',
       covers: fonts.covers,
       assets: new Map(),

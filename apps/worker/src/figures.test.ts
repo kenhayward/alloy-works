@@ -17,6 +17,7 @@ import { loadPinnedFonts } from './fonts.js';
 import { rootImages } from './jobs/publish.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
+import { defaultTheme } from './testing/theme.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
@@ -115,6 +116,7 @@ const inputOf = (
   ]),
   refused: [],
   layout: listed,
+  theme: defaultTheme,
   revision: '0.1',
   covers: fonts.covers,
   assets,

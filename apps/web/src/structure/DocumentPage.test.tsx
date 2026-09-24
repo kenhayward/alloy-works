@@ -3,10 +3,13 @@ import {
   applyOutlineOperation,
   assemble,
   canonicaliseOutline,
+  DEFAULT_CATALOGUES_BY_VERSION,
+  DEFAULT_THEME,
   defaultLayout,
   OUTLINE_SCHEMA_VERSION,
   outlineOperationSchema,
   parseLayout,
+  readTheme,
   withholdComponents,
   type Layout,
   type OutlineDocument,
@@ -3504,12 +3507,16 @@ describe("the layout's scheme in the page", () => {
     // And these are the numbers a publish made under that layout prints: `assemble` is the one
     // function the job composes with, and over the same outline and the same layout it gives every
     // node the number the panel has just shown - so the author is never guessing what a section
-    // will be called.
+    // will be called. Under the product's default theme, which every request is made under until a
+    // template binds another.
+    const theme = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+    if (!theme.ok) throw new Error(theme.refusals.map((each) => each.code).join(', '));
     const published = assemble({
       outline: sections,
       occurrences: new Map(),
       refused: [],
       layout: upperRomanLayout,
+      theme: theme.theme,
       revision: '0.1',
       covers: () => true,
       assets: new Map(),

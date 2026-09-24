@@ -19,6 +19,7 @@ import { describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
+import { defaultTheme } from './testing/theme.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
@@ -115,6 +116,7 @@ const inputOf = (nodes: readonly Node[], layout: Layout): AssembleInput => {
     occurrences,
     refused: [],
     layout,
+    theme: defaultTheme,
     revision: '0.7',
     covers: fonts.covers,
     assets: new Map(),

@@ -180,6 +180,8 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_9',
         // Frozen by equations 2, which made `publishing/11`: the schema template 10 reads.
         'PUBLISHING_SCHEMA_10',
+        // Frozen by themes 1, which made `publishing/12`: the schema template 11 reads.
+        'PUBLISHING_SCHEMA_11',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',

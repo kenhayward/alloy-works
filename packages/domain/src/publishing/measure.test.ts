@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ListNode } from '../content/model/blocks.js';
+import { defaultInputs, resolved } from '../theme/theme.fixture.js';
 
 import { defaultLayout } from './layout.js';
 import { columnsAt, columnsOf, expandTabs, listIndent, QUOTATION_INDENT } from './measure.js';
 import { publishedPdf } from './assemble.js';
 
 const pdf = publishedPdf(defaultLayout.formats.pdf);
+const theme = resolved();
+const preformatted = theme.paragraphStyles.get(theme.roles.preformatted)!;
 
 const list = (over: Partial<ListNode>, items = 1): ListNode => ({
   type: 'list',
@@ -28,8 +31,29 @@ describe('the measure a preformatted line is held to', () => {
   });
 
   it('sets 83 columns on the default page and 79 inside a quotation, which is indented on both sides', () => {
-    expect(columnsAt(pdf, 0)).toBe(83);
-    expect(columnsAt(pdf, 2 * QUOTATION_INDENT)).toBe(79);
+    // The default theme's preformatted style is template 11's: 8.8pt of Liberation Mono, whose every
+    // glyph advances 1229/2048 of an em, in a panel padded 6pt each side - so the answer is the one
+    // `CODE_SIZE` and `CODE_ADVANCE` gave before themes 1.
+    expect(columnsAt(pdf, 0, preformatted)).toBe(83);
+    expect(columnsAt(pdf, 2 * QUOTATION_INDENT, preformatted)).toBe(79);
+  });
+
+  it("measures by the preformatted role's size, its face's advance, its indents and its padding (themes 1, ruling R6)", () => {
+    const at = (change: (style: Record<string, unknown>) => void) => {
+      const inputs = defaultInputs();
+      for (const style of inputs.catalogues.paragraph.styles) {
+        if (style.id === 'preformatted') change(style.properties as Record<string, unknown>);
+      }
+      const theme = resolved(inputs);
+      return columnsAt(pdf, 0, theme.paragraphStyles.get(theme.roles.preformatted)!);
+    };
+    // 451.28pt of measure less 12 of padding, over a column of 10 x 1229/2048 points.
+    expect(at((style) => (style.size = 10))).toBe(73);
+    // Indented 20pt at each end: 40 more gone.
+    expect(at((style) => ((style.startIndent = 20), (style.endIndent = 20)))).toBe(75);
+    // With no fill there is no panel, so its padding takes nothing.
+    expect(at((style) => (style.background = 'none'))).toBe(85);
+    expect(at((style) => (style.padding = 12))).toBe(80);
   });
 
   it('indents a list by its widest marker, at or above what the engine was measured to take', () => {

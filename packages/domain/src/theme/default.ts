@@ -45,8 +45,9 @@ export const DEFAULT_CATALOGUE_VERSIONS: Readonly<Record<CatalogueKind, string>>
  * `apps/worker/src/fonts.ts` pins it at, each under the SIL Open Font Licence 1.1 (ADR-0010), which
  * permits embedding anywhere. The metrics are the faces' own: hhea's ascender and descender over the
  * head table's units per em, and Liberation Mono's advance, 1229 of 2048 units, the one every glyph
- * shares (`CODE_ADVANCE` in `publishing/measure.ts`). Written as the fractions they are - each exact
- * in binary - so a test can hold them to the files without a tolerance. The worker's test does.
+ * shares, by which `columnsAt` in `publishing/measure.ts` counts columns. Written as the fractions
+ * they are - each exact in binary - so a test can hold them to the files without a tolerance. The
+ * worker's test does.
  */
 const serif: Typeface = {
   id: 'serif',

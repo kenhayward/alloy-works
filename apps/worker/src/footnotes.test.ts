@@ -12,6 +12,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
+import { defaultTheme } from './testing/theme.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
@@ -126,6 +127,7 @@ const compile = async (blocks: unknown[] = content, language = 'en-GB') => {
     ]),
     refused: [],
     layout: listed,
+    theme: defaultTheme,
     revision: '0.1',
     covers: fonts.covers,
     assets: new Map(),

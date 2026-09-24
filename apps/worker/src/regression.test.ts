@@ -19,6 +19,7 @@ import { describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPdf, type Bookmark } from './testing/pdf.js';
+import { defaultTheme } from './testing/theme.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, TypstRefused, typstBinaryPath } from './typst.js';
 
@@ -80,6 +81,7 @@ const holding = (text: string): AssembleInput => ({
   ]),
   refused: [],
   layout: defaultLayout,
+  theme: defaultTheme,
   revision: '0.1',
   covers: fonts.covers,
   assets: new Map(),
@@ -95,6 +97,7 @@ describe('the publishing regression corpus', () => {
       occurrences: new Map(),
       refused: [],
       layout: defaultLayout,
+      theme: defaultTheme,
       revision: '0.1',
       covers: fonts.covers,
       assets: new Map(),

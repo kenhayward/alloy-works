@@ -18,6 +18,7 @@ import {
   PUBLISHING_SCHEMA_8,
   PUBLISHING_SCHEMA_9,
   PUBLISHING_SCHEMA_10,
+  PUBLISHING_SCHEMA_11,
   type AssembleInput,
   type Layout,
 } from '@alloy-works/domain';
@@ -26,6 +27,7 @@ import { loadPinnedFonts } from './fonts.js';
 import { PIPELINE_VERSION } from './jobs/publish.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPdf } from './testing/pdf.js';
+import { defaultTheme } from './testing/theme.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
@@ -57,9 +59,11 @@ describe('the publication template', () => {
     // Template 9 is template 8 with a footnote and a table's note, and reads `publishing/9`. Template
     // 10 is template 9 with a cross-reference and the labels its targets carry, and reads
     // `publishing/10`. Template 11 is template 10 with an equation - in a run, as a block, numbered
-    // beside it and listed - and a node's title set as runs, and reads `publishing/11`; it is
-    // re-pinned freely until the pull request that makes it merges. Templates 1 to 10 are published
-    // versions and their rows never move again.
+    // beside it and listed - and a node's title set as runs, and reads `publishing/11`. Template 12
+    // reads `publishing/12`, the document set from its theme; until themes 1's task 4 rewrites it to
+    // set everything from the theme it is template 11 with nothing changed but the schema it asserts,
+    // and it is re-pinned freely until the pull request that makes it merges. Templates 1 to 11 are
+    // published versions and their rows never move again.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',
       2: '01bb7d4058901cdf904e05696bb1ccdf4a202a7802d3f7e420f8230d67290e54',
@@ -72,6 +76,7 @@ describe('the publication template', () => {
       9: 'f837e57769f34465377f5e808e759a68eba921bb3b45adaff7c0a1a581e4ced6',
       10: '07589c1d2487e149643bf82ccd183aaf7c7951ed24792decb508db02a7626339',
       11: '00f58bb2f2dc897356b24fdb09e0fa190a292c9b737d5444e7a8b48070a22a77',
+      12: '7979229d2e240477b23d64383966f17e8b640862a437aeacee37f88628a303b2',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
@@ -96,6 +101,7 @@ describe('the publication template', () => {
       'publishing/9': 9,
       'publishing/10': 10,
       'publishing/11': 11,
+      'publishing/12': 12,
     });
   });
 
@@ -103,7 +109,7 @@ describe('the publication template', () => {
     // Decision D, as a guard a reader can see: Typst's `quote` takes an attribution and prints an em
     // dash before it. Templates 5 to 7 set the attribution themselves, so the parameter's name never
     // appears in any of them.
-    for (const version of [5, 6, 7, 8, 9, 10, 11] as const) {
+    for (const version of [5, 6, 7, 8, 9, 10, 11, 12] as const) {
       const source = await readFile(PUBLICATION_TEMPLATE[version].file, 'utf8');
       expect(source, `template ${version}`).not.toContain('attribution:');
     }
@@ -126,7 +132,8 @@ describe('the publication template', () => {
       8: PUBLISHING_SCHEMA_8,
       9: PUBLISHING_SCHEMA_9,
       10: PUBLISHING_SCHEMA_10,
-      11: PUBLISHING_SCHEMA,
+      11: PUBLISHING_SCHEMA_11,
+      12: PUBLISHING_SCHEMA,
     };
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
       const source = await readFile(template.file, 'utf8');
@@ -145,7 +152,7 @@ describe('the publication template', () => {
 /**
  * One fixed input touching each part of `assemble` the published document carries: a section, a
  * reference inside it, a paragraph, and a component in another language than its document's - under
- * the layout given, or none, as a request made before layouts is assembled.
+ * the layout given and the default theme, or neither, as a request made before layouts is assembled.
  */
 const fixed = <Under extends Layout | null>(
   covers: AssembleInput['covers'],
@@ -196,6 +203,7 @@ const fixed = <Under extends Layout | null>(
   ]),
   refused: [],
   layout,
+  theme: layout === null ? null : defaultTheme,
   revision: '0.1',
   covers,
   assets: new Map(),
@@ -210,7 +218,8 @@ describe('the pipeline version', () => {
   // what was made under a layout before a run carried its marks, and nothing makes one now - which is
   // exactly why the row stays, and why '3' - what was made under a layout before a block could be
   // a list - stays beside it, as do '4', '5' and '6', before a quotation, a table and a figure,
-  // '9', before a cross-reference, and '10', before an equation and a title set as runs.
+  // '9', before a cross-reference, '10', before an equation and a title set as runs, and '11',
+  // before a document was set from its theme.
   const madeByPipeline: Record<string, string> = {
     '1': '3b844cb4ceedbe2b52040c79014ea18959295a1602754eb9861631891beb6fa1',
     '2': '699d5c34b7e4049fc32f5846a5525f5d3a35785c2858a78755161c58427ad1d5',
@@ -223,6 +232,7 @@ describe('the pipeline version', () => {
     '9': '4beeacf97465f356d654aa43dee3686e43cd3ca632d61680252d34e37d568ac5',
     '10': '3b9772e627b7af48e407673a67b94837f9a6f033e63b222dbedf97852b67a82d',
     '11': 'f011fd46928c1b68de5c47de2ea4db75a2b52391b94026c8faddddc01f5191bf',
+    '12': 'c69fead9b7fdd2f600b0acb724554240a544b18d51d166bb5b4de9032b452a67',
   };
   const digest = (made: { document: unknown; numbering: unknown }) =>
     createHash('sha256')
@@ -234,7 +244,7 @@ describe('the pipeline version', () => {
     // the one field PUB-063 exists for, so a key that moves while its value stays behind records
     // every publication the new pipeline makes as having been made by the old one - in the PDF's
     // own provenance, with the typecheck clean. Literals, never the constants.
-    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/11': '11' });
+    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/12': '12' });
   });
 
   it('is the version its number says: what assemble makes of a fixed input, the draft notice included', async () => {
@@ -255,7 +265,7 @@ describe('the pipeline version', () => {
     const assembled = assemble(fixed((await loadPinnedFonts()).covers, defaultLayout));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     expect(assembled.document.schema).toBe(PUBLISHING_SCHEMA);
-    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('11');
+    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('12');
     expect(digest(assembled)).toBe(madeByPipeline[PIPELINE_VERSION[assembled.document.schema]]);
     expect(assembled.document.words).toMatchObject({
       notice: DRAFT_NOTICE.page,

@@ -391,13 +391,14 @@ describe('publishing a document, from the request to the stored PDF', () => {
   it("PUB-063 records the engine, the engine's version and the template's version that made it", async () => {
     const { request } = await published();
     const row = await publicationOf(request);
-    // Made under a layout, so by template 11 and pipeline 11, under the layout its request recorded.
+    // Made under a layout and a theme, so by template 12 and pipeline 12, under the layout its request
+    // recorded.
     expect(row).toMatchObject({
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 11,
-      pipeline_version: '11',
+      template_version: 12,
+      pipeline_version: '12',
       layout_version_id: (await requestRow(request)).layout_version_id,
     });
     expect(row!.layout_version_id).not.toBeNull();
@@ -745,6 +746,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       occurrences: new Map([...inputs!.occurrences].map(([node, each]) => [node, each.content])),
       refused: inputs!.refused,
       layout: inputs!.layout?.layout ?? null,
+      theme: inputs!.theme?.theme ?? null,
       revision: inputs!.revision,
       covers: fonts.covers,
       assets: inputs!.assets,
@@ -907,6 +909,7 @@ describe('publishing a request made before layouts', () => {
         occurrences: new Map(),
         refused: [],
         layout: null,
+        theme: null,
         revision: inputs!.revision,
         covers: fonts.covers,
         assets: new Map(),

@@ -118,6 +118,16 @@ export function failureWords(failure: Failure): string {
     // (figures 3); the failure names the block but not its kind, so the sentence names all three.
     case 'style_missing':
       return 'This paragraph, table or figure uses a style the publication template does not set.';
+    // Themes 1: the style is the theme's, and declares where it applies (STY-006) - a heading's style
+    // on running text, a footnote's in a list. `detail` is the style's identifier, which the theme
+    // wrote, never the author's text; the block is named by where it is, as for `style_missing`.
+    case 'style_not_applicable':
+      return `This paragraph, table or figure uses the style ${failure.detail ?? ''}, which cannot be used where it stands. Choose another style for it.`;
+    // Themes 1 (STY-042): the theme records each typeface's licence, and this one's forbids embedding
+    // it in a PDF. Nothing in the document caused it and another attempt fails the same way, so it
+    // blames the theme, as `layout_glyph_missing` blames the layout, and never says to publish again.
+    case 'typeface_not_embeddable':
+      return `The typeface ${failure.detail ?? ''} cannot be embedded in a PDF: its licence does not permit it. The publication's theme has to change before this document can be published.`;
     // Decision K, as Ken reversed it: a tag the engine cannot carry is refused, never shortened, and
     // the author is told what a publication takes (pre-flight finding 9).
     case 'language_not_publishable':

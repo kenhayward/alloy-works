@@ -1,5 +1,6 @@
 import type { ListNode } from '../content/model/blocks.js';
 import { formatCounter } from '../structure/scheme.js';
+import type { ResolvedParagraphStyle } from '../theme/read.js';
 
 import type { PublishedPdfFormat } from './published.js';
 
@@ -18,12 +19,6 @@ import type { PublishedPdfFormat } from './published.js';
 export const TAB_STOP = 8;
 /** The body text's size, in points: what a list marker is set at. */
 export const BODY_SIZE = 11;
-/** Preformatted text's size, in points: Typst's `raw` at 0.8 em of the body, set explicitly. */
-export const CODE_SIZE = 8.8;
-/** One column of Liberation Mono at `CODE_SIZE`: it advances 1229/2048 of an em, 5.28 pt measured. */
-export const CODE_ADVANCE = (CODE_SIZE * 1229) / 2048;
-/** The panel a preformatted block is set in insets its text this much on each side. */
-export const PANEL_INSET = 6;
 /**
  * A quotation indents its body by one em of the body text **on each side**: the engine pads a block
  * quotation horizontally, so it costs twice this of the width a line inside it has. Measured by task
@@ -132,7 +127,22 @@ export function listIndent(list: ListNode): number {
   return BODY_SIZE * widest + BODY_SIZE / 2;
 }
 
-/** How many columns of preformatted text fit where a block stands, `indent` points in from the text block. */
-export function columnsAt(format: PublishedPdfFormat, indent: number): number {
-  return Math.floor((textMeasure(format) - 2 * PANEL_INSET - indent) / CODE_ADVANCE);
+/**
+ * How many columns of preformatted text fit where a block stands, `indent` points in from the text
+ * block, set in `preformatted` - the theme's style for the `preformatted` role (themes 1, ruling R6):
+ * one column is the style's size times its face's advance, which the reader requires of that face
+ * (`preformatted_not_monospaced`), and the measure loses the style's own indents at each end and, where
+ * it has a fill, the padding between the fill's edge and the text on each side. Under the default theme
+ * - 8.8pt of Liberation Mono, 1229/2048 of an em a column, 6pt of padding - this is the answer the
+ * fixed `CODE_SIZE`, `CODE_ADVANCE` and `PANEL_INSET` gave before themes 1.
+ */
+export function columnsAt(
+  format: PublishedPdfFormat,
+  indent: number,
+  preformatted: ResolvedParagraphStyle,
+): number {
+  const { size, startIndent, endIndent, background, padding } = preformatted.properties;
+  const advance = size * preformatted.typeface.advance!;
+  const panel = background === 'none' ? 0 : 2 * padding;
+  return Math.floor((textMeasure(format) - indent - startIndent - endIndent - panel) / advance);
 }
