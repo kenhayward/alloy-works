@@ -7319,6 +7319,8 @@
                               "footnote_unnumbered",
                               "cross_reference_unresolved",
                               "cross_reference_form_unavailable",
+                              "equation_unrenderable",
+                              "equation_unnumbered",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10066,6 +10068,8 @@
                               "footnote_unnumbered",
                               "cross_reference_unresolved",
                               "cross_reference_form_unavailable",
+                              "equation_unrenderable",
+                              "equation_unnumbered",
                               "engine_failed",
                               "store_failed"
                             ]

@@ -1,18 +1,19 @@
 import type { OutlineMatter } from '../structure/outline.js';
 
 import type { SlotPart } from './layout.js';
+import type { MathsTree } from './maths.js';
 
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/10` is the document under a layout whose runs carry their marks and may be images,
- * footnotes or cross-references, and whose blocks may be lists, quotations, preformatted text, tables
- * with their notes and figures, each carrying its anchor where a reference names it, with its
- * generated lists after the contents, which `apps/worker/templates/publication/10/` reads. It is never
- * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
- * template version, not a migration.
+ * `publishing/11` is the document under a layout whose runs carry their marks and may be images,
+ * footnotes, cross-references or equations, whose blocks may be lists, quotations, preformatted text,
+ * tables with their notes, figures and equations, each carrying its anchor where a reference names it,
+ * and whose nodes' titles are runs, with its generated lists after the contents, which
+ * `apps/worker/templates/publication/11/` reads. It is never stored - only its digest is, on the
+ * publication - so a later shape is a new schema string and a new template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/10';
+export const PUBLISHING_SCHEMA = 'publishing/11';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -79,6 +80,14 @@ export const PUBLISHING_SCHEMA_8 = 'publishing/8';
  * with it are a record.
  */
 export const PUBLISHING_SCHEMA_9 = 'publishing/9';
+
+/**
+ * The document under a layout as it stood before a run or a block could be an equation and a node's
+ * title was runs, frozen by equations 2 for the reason `publishing/9` is:
+ * `apps/worker/templates/publication/10/` asserts it, and a template version and the publications
+ * made with it are a record.
+ */
+export const PUBLISHING_SCHEMA_10 = 'publishing/10';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -211,9 +220,37 @@ export interface PublishedReferenceRun {
       };
 }
 
-/** One piece of a published run sequence: text with its marks, an image, a footnote or a reference. */
+/**
+ * An equation as a writer sets it (equations 2, rulings R2 and R4): its maths tree, which `mathsTree`
+ * built from the stored MathML - never the MathML itself, and never its source, so a writer evaluates
+ * nothing of an author's - and its alternative, the MathML's `alttext`, in the language of the text the
+ * equation stands in: the component's, or the document's in a section's title (EQ-D). An equation with
+ * no alternative is refused by name, `alternative_missing`, so here it always has one.
+ */
+export interface PublishedEquation {
+  readonly tree: MathsTree;
+  readonly alternative: { readonly text: string; readonly language: PublishedLanguage };
+}
+
+/**
+ * An equation in a run of text (CNT-046): wherever inline content is published - a paragraph's text,
+ * a table's cell, its header rows included, a footnote's paragraphs, a caption, a term, an attribution,
+ * a table's note and a section's title. It carries no marks, as its stored node carries none.
+ */
+export interface PublishedEquationRun {
+  readonly equation: PublishedEquation;
+}
+
+/**
+ * One piece of a published run sequence: text with its marks, an image, a footnote, a reference or an
+ * equation.
+ */
 export type PublishedInline =
-  PublishedRun | PublishedImageRun | PublishedFootnoteRun | PublishedReferenceRun;
+  | PublishedRun
+  | PublishedImageRun
+  | PublishedFootnoteRun
+  | PublishedReferenceRun
+  | PublishedEquationRun;
 
 /**
  * Every published block carries `anchor`: the label a template sets on it where a cross-reference in
@@ -345,6 +382,20 @@ export interface PublishedFigure {
 }
 
 /**
+ * A block equation (equations 2, ruling R4), wherever the model lets one stand - a component's top
+ * level, a list's item and a quotation. `label` is `number`'s - "Equation 1" - which the template sets
+ * beside the equation as its own text, heard after it, never the engine's counter (EQ-E); null where
+ * the author made the equation unnumbered (CNT-047). A numbered equation the scheme gives no number is
+ * refused, `equation_unnumbered`, so a null label here always means unnumbered.
+ */
+export interface PublishedEquationBlock extends PublishedEquation {
+  readonly type: 'equation';
+  readonly id: string;
+  readonly anchor: string | null;
+  readonly label: string | null;
+}
+
+/**
  * **A target that publishes nothing** (cross-references 2, ruling R4, XR-D): an empty paragraph, an
  * empty preformatted block, a quotation or a list with nothing in it, named by a reference. Such a
  * block is not published - an empty `P` is no content - but a reference to it must still find its
@@ -366,6 +417,7 @@ export type PublishedBlock =
   | PublishedQuotation
   | PublishedTable
   | PublishedFigure
+  | PublishedEquationBlock
   | PublishedMarker;
 
 /** A generated list the template sets after the contents: which sequence, under which title. */
@@ -408,8 +460,18 @@ export interface PublishedNode1 {
 }
 
 /**
+ * A run of a node's title in `publishing/11` (equations 2): its words, carrying no mark - a title's
+ * reference is among them as the number it prints, and a marked title is refused by name - or an
+ * equation, as it is published anywhere. A title is runs rather than a string so that an equation
+ * stored in one is published (CNT-046), set in the heading, and with it in the contents and the running
+ * heads, which set the heading's body again. A component's title is a string, and one run.
+ */
+export type PublishedTitleRun = PublishedRun | PublishedEquationRun;
+
+/**
  * One outline node in `publishing/2`: as in `publishing/1`, and the matter it is in - its top-level
  * node's, carried to every node beneath it, so the template pages and numbers it with no walk upwards.
+ * Its title is runs since `publishing/11`.
  */
 export interface PublishedNode {
   readonly id: string;
@@ -418,7 +480,7 @@ export interface PublishedNode {
   readonly depth: number;
   readonly matter: OutlineMatter;
   readonly number: string | null;
-  readonly title: string;
+  readonly title: readonly PublishedTitleRun[];
   readonly language: PublishedLanguage | null;
   readonly direction: 'ltr' | 'rtl' | null;
   readonly blocks: readonly PublishedBlock[];

@@ -172,6 +172,8 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_8',
         // Frozen by cross-references 2, which made `publishing/10`: the schema template 9 reads.
         'PUBLISHING_SCHEMA_9',
+        // Frozen by equations 2, which made `publishing/11`: the schema template 10 reads.
+        'PUBLISHING_SCHEMA_10',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',

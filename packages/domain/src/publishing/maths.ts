@@ -870,3 +870,61 @@ function table(element: MathElement): {
   }
   return { rows, columns, display: attributes.get('displaystyle') === 'true' };
 }
+
+/**
+ * **Every string a tree sets**, in the order a writer sets them (equations 2, ruling R3): what the
+ * glyph check asks the maths face of, as a paragraph's text is asked of the body face. An identifier's,
+ * a number's, an operator's, a named operator's and a text's characters, an accent's, a stretched bar's,
+ * and the fences of a pair and of a matrix. What a writer draws rather than sets from a character the
+ * content holds - a fraction's bar, a radical, a brace, a prime, the brace of cases - is not here: it is
+ * the template's own, drawn from the pinned face, and the same whatever the author wrote.
+ *
+ * **A branch per kind, and a `default:` that refuses what it cannot name**, so a kind added to
+ * `MathsNode` fails to compile here rather than its characters going unchecked.
+ */
+export function mathsText(node: MathsNode): string {
+  switch (node.k) {
+    case 'i':
+    case 'n':
+    case 'o':
+    case 'mid':
+    case 'op':
+    case 'text':
+      return node.t;
+    case 'primes':
+    case 'space':
+      return '';
+    case 'row':
+      return node.c.map(mathsText).join('');
+    case 'frac':
+    case 'stack':
+    case 'binom':
+      return mathsText(node.n) + mathsText(node.d);
+    case 'sqrt':
+    case 'phantom':
+    case 'display':
+    case 'inline':
+    case 'line':
+      return mathsText(node.body);
+    case 'root':
+      return mathsText(node.index) + mathsText(node.body);
+    case 'attach':
+      return [node.tl, node.bl, node.base, node.b, node.t, node.tr, node.br]
+        .map((part) => (part === undefined ? '' : mathsText(part)))
+        .join('');
+    case 'accent':
+      return mathsText(node.body) + node.a;
+    case 'brace':
+      return mathsText(node.body) + (node.label === undefined ? '' : mathsText(node.label));
+    case 'lr':
+      return node.open + mathsText(node.body) + node.close;
+    case 'mat':
+      return node.open + node.rows.flat().map(mathsText).join('') + node.close;
+    case 'cases':
+      return node.rows.flat().map(mathsText).join('');
+    default: {
+      const unreachable: never = node;
+      throw new Error(`No characters for a maths node of kind ${(unreachable as MathsNode).k}`);
+    }
+  }
+}

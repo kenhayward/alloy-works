@@ -31,6 +31,7 @@ import {
   PUBLISHING_SCHEMA_7,
   PUBLISHING_SCHEMA_8,
   PUBLISHING_SCHEMA_9,
+  PUBLISHING_SCHEMA_10,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -236,7 +237,7 @@ describe('assemble', () => {
         depth: 1,
         matter: 'body',
         number: '1',
-        title: 'Introduction',
+        title: [{ text: 'Introduction', marks: [] }],
         language: null,
         direction: null,
         blocks: [],
@@ -247,7 +248,7 @@ describe('assemble', () => {
             depth: 2,
             matter: 'body',
             number: '1.1',
-            title: 'Calibration',
+            title: [{ text: 'Calibration', marks: [] }],
             language: null,
             direction: null,
             blocks: [
@@ -268,7 +269,7 @@ describe('assemble', () => {
         depth: 1,
         matter: 'body',
         number: '2',
-        title: 'Scope',
+        title: [{ text: 'Scope', marks: [] }],
         language: null,
         direction: null,
         blocks: [],
@@ -673,6 +674,7 @@ describe('assemble', () => {
                 marked('Tray', { type: 'definedTerm', id: 'm1', term: 'tray' }),
                 marked('Reworded', { type: 'comment', id: 'm2', threadId: 'thread-1' }),
               ),
+              // An equation no one has given words to be spoken by (equations 2).
               {
                 type: 'equation',
                 id: 'eq1',
@@ -706,10 +708,10 @@ describe('assemble', () => {
       },
       {
         stage: 'compose',
-        code: 'block_not_publishable',
+        code: 'alternative_missing',
         node: id('calib'),
         block: 'eq1',
-        detail: 'equation',
+        detail: null,
       },
       { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'p2', detail: 'U+0627' },
       { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'p2', detail: 'U+4E2D' },
@@ -1012,8 +1014,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/10, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/10');
+  it('assembles under a layout as publishing/11, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/11');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1303,10 +1305,10 @@ describe('assemble', () => {
       { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'b1', detail: 'U+0627' },
       {
         stage: 'compose',
-        code: 'block_not_publishable',
+        code: 'alternative_missing',
         node: id('calib'),
         block: 'eq1',
-        detail: 'equation',
+        detail: null,
       },
       { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'b2', detail: 'U+4E2D' },
     ]);
@@ -1566,14 +1568,15 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/10, and publishing/4 to publishing/9 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/10');
+  it('makes publishing/11, and publishing/4 to publishing/10 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/11');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
     expect(PUBLISHING_SCHEMA_7).toBe('publishing/7');
     expect(PUBLISHING_SCHEMA_8).toBe('publishing/8');
     expect(PUBLISHING_SCHEMA_9).toBe('publishing/9');
+    expect(PUBLISHING_SCHEMA_10).toBe('publishing/10');
   });
 });
 
@@ -1852,6 +1855,20 @@ describe('a figure, published (figures 3)', () => {
       width: 72.72,
       height: 290.89,
     });
+  });
+
+  it("counts what a caption's equation sets among its words, as the room the caption takes (equations 2)", () => {
+    // The caption above that left the image room, with half of it set as maths instead of text.
+    const maths = {
+      type: 'equation',
+      mathml: `<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"><mtext>${'x'.repeat(1500)}</mtext></math>`,
+    };
+    const tall = asset({ width: 500, height: 2000 });
+    expect(
+      failuresOf(
+        assemble(withAssets({ [RED]: tall }, stored({ caption: [text('x'.repeat(1500)), maths] }))),
+      ),
+    ).toEqual([failed('caption_too_long', null)]);
   });
 
   it('takes the room a quotation leaves it, not the whole measure', () => {
@@ -3323,7 +3340,7 @@ describe('cross-references, published (cross-references 2)', () => {
     );
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     const [methods, published] = assembled.document.nodes;
-    expect(published!.title).toBe('Results of 1');
+    expect(published!.title).toEqual([{ text: 'Results of 1', marks: [] }]);
     // The section it names carries its anchor; the title's reference is words, never a run or a link.
     expect(methods!.anchor).toBe(N('methods'));
     // A reference to that section's title prints the words it is published with.
@@ -3413,5 +3430,482 @@ describe('cross-references, published (cross-references 2)', () => {
       publishedOf(assemble(input({ outline: outline(nodes), occurrences }))).references;
     expect(printedUnder([first, second])).toEqual([printed(B('other', 't2'), 'Table 2.1 Weights')]);
     expect(printedUnder([second, first])).toEqual([printed(B('other', 't2'), 'Table 1.1 Weights')]);
+  });
+});
+
+describe('equations, published (equations 2)', () => {
+  const NAMESPACE = 'http://www.w3.org/1998/Math/MathML';
+  /**
+   * An equation's MathML as the reader keeps it, spoken as `alternative` where it has one: `alttext`
+   * straight after the namespace, and any other attribute of the `math` element after it, which is the
+   * order the reader writes them in.
+   */
+  const mathml = (inner: string, alternative: string | null = 'x', attributes = '') =>
+    `<math xmlns="${NAMESPACE}"${alternative === null ? '' : ` alttext="${alternative}"`}${attributes}>${inner}</math>`;
+  const X = '<mi>x</mi>';
+  const inline = (inner = X, alternative: string | null = 'x') => ({
+    type: 'equation',
+    mathml: mathml(inner, alternative),
+  });
+  const block = (name: string, numbered: boolean, inner = X, alternative: string | null = 'x') => ({
+    type: 'equation',
+    id: name,
+    mathml: mathml(inner, alternative),
+    numbered,
+  });
+  const EN_GB = { lang: 'en', region: 'GB' };
+  /** What `<mi>x</mi>` is published as, spoken as `x` in `language`. */
+  const published = (language: object = EN_GB) => ({
+    tree: { k: 'i', t: 'x', v: 'italic' },
+    alternative: { text: 'x', language },
+  });
+  const failed = (code: string, block: string | null, detail: string | null = null) => ({
+    stage: 'compose',
+    code,
+    node: id('calib'),
+    block,
+    detail,
+  });
+
+  it('publishes an equation in running text as a run of its tree and its alternative, in the language of the text it stands in', () => {
+    expect(paragraphRuns(blocksOf(assemble(oneParagraph(text('Let '), inline()))).at(0))).toEqual([
+      { text: 'Let ', marks: [] },
+      { equation: published() },
+    ]);
+    // A component in another language than the document's: its equation is spoken in its own.
+    const french = assemble(
+      oneOccurrence(component([paragraph('b1', inline())], { language: 'fr-FR' })),
+    );
+    expect(paragraphRuns(blocksOf(french).at(0))).toEqual([
+      { equation: published({ lang: 'fr', region: 'FR' }) },
+    ]);
+  });
+
+  it('publishes a block equation with the label number gives it, and an unnumbered one with none', () => {
+    expect(blocksOf(assemble(oneComponent(block('e1', true), block('e2', false))))).toEqual([
+      { type: 'equation', id: 'e1', anchor: null, label: 'Equation 1', ...published() },
+      { type: 'equation', id: 'e2', anchor: null, label: null, ...published() },
+    ]);
+  });
+
+  it("publishes a block equation wherever the model lets one stand: a list's item and a quotation", () => {
+    const blocks = blocksOf(
+      assemble(
+        oneComponent(storedList('L1', 'unordered', [{ content: [block('e1', true)] }]), {
+          type: 'blockquote',
+          id: 'q1',
+          content: [block('e2', true)],
+        }),
+      ),
+    );
+    expect(blocks).toEqual([
+      expect.objectContaining({
+        type: 'list',
+        items: [
+          {
+            term: null,
+            blocks: [
+              { type: 'equation', id: 'e1', anchor: null, label: 'Equation 1', ...published() },
+            ],
+          },
+        ],
+      }),
+      expect.objectContaining({
+        type: 'blockquote',
+        blocks: [{ type: 'equation', id: 'e2', anchor: null, label: 'Equation 2', ...published() }],
+      }),
+    ]);
+  });
+
+  it('CNT-049 fails the publish, naming the equation and the construct, for everything the converter cannot set', () => {
+    const refused = {
+      merror: '<mrow><mi>x</mi><merror><mtext>bad</mtext></merror></mrow>',
+      multiscripts:
+        '<mmultiscripts><mi>X</mi><mi>a</mi><mi>b</mi><mi>c</mi><mi>d</mi></mmultiscripts>',
+      voffset: '<mpadded voffset="0.5em"><mi>x</mi></mpadded>',
+      spanningCell: '<mtable><mtr><mtd columnspan="2"><mi>a</mi></mtd></mtr></mtable>',
+      mathvariant: '<mi mathvariant="bold-fraktur">x</mi>',
+      element: '<mfrac><mi>a</mi></mfrac>',
+      attribute: '<mfrac displaystyle="true"><mi>a</mi><mi>b</mi></mfrac>',
+    };
+    const stored = component([
+      ...Object.entries(refused).map(([name, inner]) => block(name, false, inner)),
+      // Right to left on the equation itself, where the reader writes `dir` after `alttext`.
+      { type: 'equation', id: 'rtl', mathml: mathml(X, 'x', ' dir="rtl"'), numbered: false },
+      // Inline, the failure names the paragraph the equation stands in.
+      paragraph('b1', text('Then '), inline('<merror><mtext>bad</mtext></merror>')),
+      block('unreadable', false),
+      block('text', false),
+    ]);
+    // Two refusals the stored form cannot reach - MathML the reader cannot read, and text standing
+    // outside a token - built past the parse, as a newer schema's content would be: the converter
+    // refuses them by name all the same. MathML that cannot be read has no alternative to read either,
+    // and is said once, as the equation that cannot be set.
+    const content: ContentDocument = {
+      ...stored,
+      content: stored.content.map((each) => {
+        if (each.id === 'unreadable') return { ...each, mathml: `<math xmlns="${NAMESPACE}"><mi>` };
+        if (each.id === 'text') return { ...each, mathml: mathml('<mrow>x</mrow>') };
+        return each;
+      }),
+    };
+    const assembled = assemble(oneOccurrence(content));
+    // A failure, so nothing reaches a writer: the equation is never set as its source or as nothing.
+    expect(assembled.ok).toBe(false);
+    // Named from a fixed list, never by a value or an element the content wrote: the detail can
+    // carry nothing of the author's.
+    expect(failuresOf(assembled)).toEqual([
+      failed('equation_unrenderable', 'merror', 'merror'),
+      failed('equation_unrenderable', 'multiscripts', 'multiscripts'),
+      failed('equation_unrenderable', 'voffset', 'voffset'),
+      failed('equation_unrenderable', 'spanningCell', 'spanningCell'),
+      failed('equation_unrenderable', 'mathvariant', 'mathvariant'),
+      failed('equation_unrenderable', 'element', 'element'),
+      failed('equation_unrenderable', 'attribute', 'attribute'),
+      failed('equation_unrenderable', 'rtl', 'rtl'),
+      failed('equation_unrenderable', 'b1', 'merror'),
+      failed('equation_unrenderable', 'unreadable', 'unreadable'),
+      failed('equation_unrenderable', 'text', 'text'),
+    ]);
+  });
+
+  it('refuses an equation no one has given words to be spoken by, naming the block it stands in once', () => {
+    expect(
+      failuresOf(
+        assemble(
+          oneComponent(
+            block('e1', true, X, null),
+            // Spaces alone say nothing, as a figure's own text of spaces says nothing.
+            block('e2', false, X, ' '),
+            paragraph('b1', inline(X, null), text(' and '), inline(X, null)),
+          ),
+        ),
+      ),
+    ).toEqual([
+      failed('alternative_missing', 'e1'),
+      failed('alternative_missing', 'e2'),
+      failed('alternative_missing', 'b1'),
+    ]);
+  });
+
+  it('asks the maths face of every character an equation sets, and the body face of the text beside it', () => {
+    // The maths face has ASCII, the angle brackets and the bar; the body face has all of Latin. So a
+    // character one of them lacks fails only where it is set in that face.
+    const faces: Covers = (codePoint, face) =>
+      face === 'math'
+        ? codePoint < 0x80 || [0x27e8, 0x27e9, 0x2223].includes(codePoint)
+        : codePoint < 0x250;
+    const assembled = assemble({
+      ...oneComponent(
+        block(
+          'e1',
+          true,
+          // Stretched fences and a bar between them, an accent, a number and text: every kind of
+          // node that sets a character, each read from the tree rather than the MathML.
+          '<mrow><mo fence="true" form="prefix" stretchy="true">\u{27e8}</mo><mi>\u{e9}</mi>' +
+            '<mo stretchy="true">\u{2223}</mo><mi>\u{e9}</mi>' +
+            '<mo fence="true" form="postfix" stretchy="true">\u{27e9}</mo></mrow>' +
+            '<mover accent="true"><mi>x</mi><mo>\u{2c7}</mo></mover><mn>\u{663}</mn><mtext>\u{fc}</mtext>',
+        ),
+        paragraph('b1', text('Let \u{27e8}'), inline('<mi>\u{e9}</mi>')),
+      ),
+      covers: faces,
+    });
+    expect(failuresOf(assembled)).toEqual([
+      // Each character once for its equation, in the order the equation sets them.
+      failed('glyph_missing', 'e1', 'U+00E9'),
+      failed('glyph_missing', 'e1', 'U+02C7'),
+      failed('glyph_missing', 'e1', 'U+0663'),
+      failed('glyph_missing', 'e1', 'U+00FC'),
+      // In running text, the paragraph: its own text in the body face, its equation in the maths.
+      failed('glyph_missing', 'b1', 'U+27E8'),
+      failed('glyph_missing', 'b1', 'U+00E9'),
+    ]);
+  });
+
+  it('refuses a numbered equation the scheme gives no number, rather than setting it with none', () => {
+    const prefixed = layoutWith((layout) => {
+      for (const matter of ['front', 'body', 'appendix'] as const) {
+        layout.scheme.sequences['equation']![matter].prefix = 1;
+      }
+    });
+    const preface = { ...inMatter('front', reference('calib')), numbered: false };
+    const assembled = assemble(
+      input({
+        layout: prefixed,
+        outline: outline([preface]),
+        occurrences: new Map([[id('calib'), component([block('e1', true), block('e2', false)])]]),
+      }),
+    );
+    // The unnumbered one is published: it asked for no number.
+    expect(failuresOf(assembled)).toEqual([failed('equation_unnumbered', 'e1')]);
+  });
+
+  it('names every reason an equation cannot be published, not the first alone', () => {
+    const prefixed = layoutWith((layout) => {
+      layout.scheme.sequences['equation']!.front.prefix = 1;
+    });
+    const faces: Covers = (codePoint) => codePoint < 0x80;
+    const assembled = assemble(
+      input({
+        layout: prefixed,
+        covers: faces,
+        outline: outline([{ ...inMatter('front', reference('calib')), numbered: false }]),
+        occurrences: new Map([
+          [
+            id('calib'),
+            component([
+              block('e1', true, '<merror><mtext>bad</mtext></merror>', null),
+              block('e2', false, '<mi>\u{e9}</mi>', null),
+            ]),
+          ],
+        ]),
+      }),
+    );
+    expect(failuresOf(assembled)).toEqual([
+      failed('equation_unrenderable', 'e1', 'merror'),
+      failed('alternative_missing', 'e1'),
+      failed('equation_unnumbered', 'e1'),
+      failed('alternative_missing', 'e2'),
+      failed('glyph_missing', 'e2', 'U+00E9'),
+    ]);
+  });
+
+  it('publishes an equation wherever inline content is published: a cell, a header row, a footnote, a caption, a term, an attribution and a note', () => {
+    const cellOf = (...blocks: unknown[]) => ({ content: blocks, colspan: 1, rowspan: 1 });
+    const assembled = assemble(
+      oneComponent(
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [text('Readings of '), inline()],
+          headerRows: 1,
+          headerColumns: 0,
+          // A header row repeats on every page the table reaches, and an equation in it was measured
+          // to set and tag there as it does in the body.
+          rows: [
+            { cells: [cellOf(paragraph('h1', inline()))] },
+            { cells: [cellOf(paragraph('c1', inline()))] },
+          ],
+          note: [text('Where '), inline()],
+        },
+        paragraph('b1', text('Noted'), {
+          type: 'footnote',
+          id: 'n1',
+          anchor: { kind: 'span' },
+          content: [paragraph('np1', inline())],
+        }),
+        storedList('D1', 'definition', [
+          { term: [inline()], content: [paragraph('d1', text('A length'))] },
+        ]),
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [paragraph('q1p', text('Quoted'))],
+          attribution: [inline()],
+        },
+      ),
+    );
+    const [table, noted, list, quotation] = blocksOf(assembled);
+    const equation = { equation: published() };
+    expect(table).toMatchObject({
+      caption: [{ text: 'Readings of ', marks: [] }, equation],
+      rows: [
+        { cells: [{ blocks: [{ id: 'h1', runs: [equation] }] }] },
+        { cells: [{ blocks: [{ id: 'c1', runs: [equation] }] }] },
+      ],
+      note: [{ text: 'Where ', marks: [] }, equation],
+    });
+    expect(paragraphRuns(noted)[1]).toMatchObject({
+      footnote: { paragraphs: [{ id: 'np1', runs: [equation] }] },
+    });
+    expect(list).toMatchObject({ items: [{ term: [equation] }] });
+    expect(quotation).toMatchObject({ attribution: [equation] });
+  });
+
+  it("publishes a section's title as runs, an equation among them spoken in the document's language", () => {
+    const growth = {
+      ...section('growth', 'Growth'),
+      title: [text('Growth as '), inline(), text(' rises')],
+    };
+    const assembled = assemble(
+      input({
+        outline: outline([growth, reference('calib')], 'en-US'),
+        occurrences: new Map([[id('calib'), component([paragraph('b1', text('Set.'))])]]),
+      }),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const [title, occurrence] = assembled.document.nodes;
+    // The title's words are the document's, so its equation is spoken in the document's language,
+    // where an occurrence's are its component's.
+    expect(title!.title).toEqual([
+      { text: 'Growth as ', marks: [] },
+      { equation: published({ lang: 'en', region: 'US' }) },
+      { text: ' rises', marks: [] },
+    ]);
+    // A component's title is its words, one run of them.
+    expect(occurrence!.title).toEqual([{ text: 'Calibration', marks: [] }]);
+  });
+
+  it('names the section for what an equation in its title cannot be published with', () => {
+    const titled = {
+      ...section('growth', 'Growth'),
+      title: [text('Growth as '), inline('<merror><mtext>bad</mtext></merror>')],
+    };
+    expect(failuresOf(assemble(input({ outline: outline([titled]) })))).toEqual([
+      { ...failed('equation_unrenderable', null, 'merror'), node: id('growth') },
+    ]);
+  });
+
+  it("keeps a request made before layouts refusing a title's equation, as a title that is words alone", () => {
+    const titled = { ...section('growth', 'Growth'), title: [text('Growth as '), inline()] };
+    expect(
+      failuresOf(assemble({ ...input({ outline: outline([titled]) }), layout: null })),
+    ).toEqual([{ ...failed('title_not_publishable', null, 'equation'), node: id('growth') }]);
+  });
+
+  describe('as the target of a cross-reference (ruling R7)', () => {
+    const xref = (name: string, block: string, display: string) => ({
+      type: 'crossReference',
+      id: name,
+      target: { kind: 'block', block },
+      display,
+    });
+    const anchor = (block: string) => `b-${id('calib')}-${block}`;
+    /** Every reference run of the one paragraph `b1`, where it stands among the blocks. */
+    const referencesIn = (assembled: Assembled<PublishedDocument>) =>
+      blocksOf(assembled).flatMap((each) =>
+        each.type === 'paragraph'
+          ? each.runs.flatMap((run) => ('reference' in run ? [run.reference] : []))
+          : [],
+      );
+
+    it("prints a numbered equation's number, and the page and the place of any, its anchor on the equation", () => {
+      const assembled = assemble(
+        oneComponent(
+          block('e1', true),
+          block('e2', false),
+          paragraph(
+            'b1',
+            text('By '),
+            xref('x1', 'e1', 'number'),
+            xref('x2', 'e1', 'page'),
+            xref('x3', 'e1', 'relative'),
+            xref('x4', 'e2', 'page'),
+          ),
+        ),
+      );
+      expect(referencesIn(assembled)).toEqual([
+        { anchor: anchor('e1'), text: 'Equation 1', page: false, relative: false, link: true },
+        { anchor: anchor('e1'), text: null, page: true, relative: false, link: true },
+        { anchor: anchor('e1'), text: 'above', page: false, relative: true, link: true },
+        { anchor: anchor('e2'), text: null, page: true, relative: false, link: true },
+      ]);
+      // Each equation a reference names carries the anchor the reference links to.
+      expect(blocksOf(assembled).slice(0, 2)).toMatchObject([
+        { id: 'e1', anchor: anchor('e1') },
+        { id: 'e2', anchor: anchor('e2') },
+      ]);
+    });
+
+    it('fails a number of an unnumbered equation, as of a paragraph, and a title of any, naming the form', () => {
+      const assembled = assemble(
+        oneComponent(
+          block('e1', true),
+          block('e2', false),
+          paragraph(
+            'b1',
+            xref('x1', 'e2', 'number'),
+            xref('x2', 'e1', 'title'),
+            xref('x3', 'e1', 'numberAndTitle'),
+          ),
+        ),
+      );
+      expect(failuresOf(assembled)).toEqual([
+        failed('cross_reference_form_unavailable', 'x1', 'number'),
+        failed('cross_reference_form_unavailable', 'x2', 'title'),
+        failed('cross_reference_form_unavailable', 'x3', 'numberAndTitle'),
+      ]);
+    });
+
+    it('fails a title of a section or a caption holding an equation, which a reference prints as words alone', () => {
+      // A reference prints its target's title as text, and an equation is not text: printing the
+      // title's words without it would say what the author did not write.
+      const growth = {
+        ...section('growth', 'Growth'),
+        title: [text('Growth as '), inline()],
+      };
+      const assembled = assemble(
+        input({
+          outline: outline([growth, reference('calib')]),
+          occurrences: new Map([
+            [
+              id('calib'),
+              component([
+                {
+                  type: 'table',
+                  id: 't1',
+                  style: 'table',
+                  caption: [text('Readings of '), inline()],
+                  headerRows: 0,
+                  headerColumns: 0,
+                  rows: [
+                    { cells: [{ content: [paragraph('c1', text('12'))], colspan: 1, rowspan: 1 }] },
+                  ],
+                },
+                paragraph(
+                  'b1',
+                  {
+                    type: 'crossReference',
+                    id: 'x1',
+                    target: { kind: 'node', node: id('growth') },
+                    display: 'title',
+                  },
+                  xref('x2', 't1', 'numberAndTitle'),
+                  // Its number is still its number.
+                  xref('x3', 't1', 'number'),
+                ),
+              ]),
+            ],
+          ]),
+        }),
+      );
+      expect(failuresOf(assembled)).toEqual([
+        failed('cross_reference_form_unavailable', 'x1', 'title'),
+        failed('cross_reference_form_unavailable', 'x2', 'numberAndTitle'),
+      ]);
+    });
+  });
+
+  it('lists the equations after the contents where the layout declares it and a numbered one is there (ruling R8)', () => {
+    const declaring = layoutWith((layout) => {
+      layout.matter.lists = [
+        { sequence: 'figure', title: 'Figures' },
+        { sequence: 'equation', title: 'Equations' },
+      ];
+    });
+    const numbered = assemble({ ...oneComponent(block('e1', true)), layout: declaring });
+    if (!numbered.ok) throw new Error(JSON.stringify(numbered.failures));
+    expect(numbered.document.front.lists).toEqual([{ sequence: 'equation', title: 'Equations' }]);
+    // An unnumbered equation takes no number and no entry, so a list of it would be a list of nothing.
+    const unnumbered = assemble({ ...oneComponent(block('e1', false)), layout: declaring });
+    if (!unnumbered.ok) throw new Error(JSON.stringify(unnumbered.failures));
+    expect(unnumbered.document.front.lists).toEqual([]);
+    // The default layout declares figures and tables alone, and lists no equation.
+    const undeclared = assemble(oneComponent(block('e1', true)));
+    if (!undeclared.ok) throw new Error(JSON.stringify(undeclared.failures));
+    expect(undeclared.document.front.lists).toEqual([]);
+  });
+
+  it('keeps a request made before layouts refusing an equation by name, since publishing/1 has nowhere to set one', () => {
+    const assembled = assemble({
+      ...oneComponent(block('e1', true), paragraph('b1', text('Let '), inline())),
+      layout: null,
+    });
+    expect(failuresOf(assembled)).toEqual([
+      failed('block_not_publishable', 'e1', 'equation'),
+      failed('inline_not_publishable', 'b1', 'equation'),
+    ]);
   });
 });

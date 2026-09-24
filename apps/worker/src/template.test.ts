@@ -17,6 +17,7 @@ import {
   PUBLISHING_SCHEMA_7,
   PUBLISHING_SCHEMA_8,
   PUBLISHING_SCHEMA_9,
+  PUBLISHING_SCHEMA_10,
   type AssembleInput,
   type Layout,
 } from '@alloy-works/domain';
@@ -116,7 +117,8 @@ describe('the publication template', () => {
       7: PUBLISHING_SCHEMA_7,
       8: PUBLISHING_SCHEMA_8,
       9: PUBLISHING_SCHEMA_9,
-      10: PUBLISHING_SCHEMA,
+      10: PUBLISHING_SCHEMA_10,
+      11: PUBLISHING_SCHEMA,
     };
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
       const source = await readFile(template.file, 'utf8');

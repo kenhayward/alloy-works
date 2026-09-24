@@ -182,7 +182,9 @@ const kindsIn = (document: PublishedDocument) => {
         continue;
       }
       // A marker, like preformatted text, holds no runs.
-      if (block.type === 'preformatted' || block.type === 'marker') continue;
+      if (block.type === 'preformatted' || block.type === 'marker' || block.type === 'equation') {
+        continue;
+      }
       if (block.type === 'figure') {
         marksIn(block.caption);
         continue;

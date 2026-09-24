@@ -3,6 +3,7 @@ import {
   PUBLISHING_SCHEMA,
   PUBLISHING_SCHEMA_1,
   PUBLISHING_SCHEMA_9,
+  PUBLISHING_SCHEMA_10,
   type PublishedDocument,
   type PublishedDocument1,
 } from '@alloy-works/domain';
@@ -19,7 +20,7 @@ export type PublishedSchema = (PublishedDocument | PublishedDocument1)['schema']
  * `template.test.ts`). Freeze the domain's `PUBLISHING_SCHEMA_10` beside the new schema, key template
  * 10's rows by it, and re-point this at the new one.
  */
-export const PUBLISHING_SCHEMA_CURRENT: 'publishing/10' = PUBLISHING_SCHEMA;
+export const PUBLISHING_SCHEMA_CURRENT: 'publishing/11' = PUBLISHING_SCHEMA;
 
 const at = (version: number) =>
   fileURLToPath(new URL(`../templates/publication/${version}/main.typ`, import.meta.url));
@@ -54,14 +55,19 @@ export const PUBLICATION_TEMPLATE = {
   8: { name: 'publication', version: 8, file: at(8) },
   9: { name: 'publication', version: 9, file: at(9) },
   10: { name: 'publication', version: 10, file: at(10) },
+  // Equations 2 repointed `PUBLISHING_SCHEMA` at `publishing/11`, and the guard above asked for this
+  // row: template 11, which task 3 of that plan writes. Until it does the file is not there, so a
+  // `publishing/11` document fails its compile by name rather than being read by template 10.
+  11: { name: 'publication', version: 11, file: at(11) },
 } as const;
 
 /**
  * The template that reads a published document of each schema. `assemble` makes `publishing/1` only
  * for a request made before layouts, which publishes with template 1 as it would have then (Ken's
- * answer F); every request since is made under a layout, and publishes with template 10. Template 9
- * keeps its row for `publishing/9`, the schema it was written for, although nothing makes one now
- * (cross-references 2, ruling R8); no row names templates 2 to 8.
+ * answer F); every request since is made under a layout, and publishes with template 11, the one
+ * equations 2 writes. Templates 9 and 10 keep their rows for `publishing/9` and `publishing/10`, the
+ * schemas they were written for, although nothing makes either now (cross-references 2, ruling R8;
+ * equations 2); no row names templates 2 to 8.
  *
  * **Every key is a frozen constant.** Until cross-references 2 the newest row was keyed by
  * `PUBLISHING_SCHEMA` itself, so repointing it moved the KEY while the value stayed where it was, and
@@ -75,8 +81,9 @@ export const PUBLICATION_TEMPLATE = {
 export const TEMPLATE_READING = {
   [PUBLISHING_SCHEMA_1]: 1,
   [PUBLISHING_SCHEMA_9]: 9,
-  [PUBLISHING_SCHEMA_CURRENT]: 10,
+  [PUBLISHING_SCHEMA_10]: 10,
+  [PUBLISHING_SCHEMA_CURRENT]: 11,
 } as const satisfies Record<
-  PublishedSchema | typeof PUBLISHING_SCHEMA_9,
+  PublishedSchema | typeof PUBLISHING_SCHEMA_9 | typeof PUBLISHING_SCHEMA_10,
   keyof typeof PUBLICATION_TEMPLATE
 >;

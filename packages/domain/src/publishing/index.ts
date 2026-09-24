@@ -77,12 +77,18 @@ export {
   // Frozen by cross-references 2, which made `publishing/10`: the schema template 9 reads, and the
   // schema of every publication made before a run could be a cross-reference.
   PUBLISHING_SCHEMA_9,
+  // Frozen by equations 2, which made `publishing/11`: the schema template 10 reads, and the schema
+  // of every publication made before a run or a block could be an equation.
+  PUBLISHING_SCHEMA_10,
 } from './published.js';
 export type {
   PublishedBlock,
   PublishedBlock1,
   PublishedDocument,
   PublishedDocument1,
+  PublishedEquation,
+  PublishedEquationBlock,
+  PublishedEquationRun,
   PublishedFigure,
   PublishedFootnoteRun,
   PublishedImageRun,
@@ -103,4 +109,5 @@ export type {
   PublishedReferenceRun,
   PublishedRun,
   PublishedRun1,
+  PublishedTitleRun,
 } from './published.js';
