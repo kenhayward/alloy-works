@@ -27,10 +27,11 @@ import type { PublishedPdfFormat } from './published.js';
  *   definition list, and otherwise the widest marker it prints at an em a character and half an em
  *   after it - in ems of the `listItem` place's style's size (`listIndent`).
  * - **A figure's caption** is estimated in ems of the `caption` role's style's size (`captionHeight`).
- * - **An image in a run of text** is printed `INLINE_IMAGE_HEIGHT` high, 1.2 em of the body's 11pt,
- *   as before themes 1. Its measure by the theme - the line spacing of the style it stands in - waits
- *   on a ruling: the default theme's body is spaced 14pt, not 13.2, so it would change what every
- *   inline image publishes as.
+ * - **An image in a run of text** is printed 1.2 ems high - template 11's rule - in ems of the size
+ *   of the paragraph style it stands in, or of the role's style that sets the text it stands in (a
+ *   term the `listItem` place's, an attribution, a table's note or a caption its role's), and as wide
+ *   as its proportions make it (`inlineImageHeight`). Not its line spacing, which would move every
+ *   image published before themes 1.
  *
  * Under the default theme each gives the answer the fixed numbers gave before themes 1.
  */
@@ -38,8 +39,8 @@ import type { PublishedPdfFormat } from './published.js';
 /** Tab stops every eight columns: the stop POSIX `expand`, a terminal and `cat` use (decision E). */
 export const TAB_STOP = 8;
 /**
- * The body text's size before themes 1, in points: what an image in a run of text is measured by, and
- * what the maths tree turns a length in points into ems of.
+ * The body text's size before themes 1, in points: what the maths tree turns a length in points into
+ * ems of, and the size a request made before layouts, which has no theme, is measured in.
  */
 export const BODY_SIZE = 11;
 /** A definition hangs two ems of its item's size beneath its term. */
@@ -108,8 +109,16 @@ export function captionHeight(graphemes: number, width: number, size: number): n
   return lines * CAPTION_LINE * size + CAPTION_GAP * size;
 }
 
-/** How high an image in a run of text is printed (decision F-K's `inline` style): 1.2 em of the body. */
-export const INLINE_IMAGE_HEIGHT = 1.2 * BODY_SIZE;
+/**
+ * How high an image in a run of text is printed (decision F-K's `inline` style), in points: 1.2 ems of
+ * `size`, the size of the style it stands in (themes 1) - 13.2 under the default theme's 11pt body, as
+ * before.
+ */
+export function inlineImageHeight(size: number): number {
+  return INLINE_IMAGE_EMS * size;
+}
+/** An image in a run of text is this many ems high. */
+export const INLINE_IMAGE_EMS = 1.2;
 /** What a table's cell insets its content by on each side: the engine's default, 5 points. */
 export const CELL_INSET = 5;
 

@@ -4462,6 +4462,29 @@ describe('the theme a publication is set from (themes 1)', () => {
     ]);
   });
 
+  it('prints an image in a line 1.2 ems of the size of the style it stands in', () => {
+    // Template 11's rule, in the theme's sizes: 13.2 points high under the default's 11pt body, 12 at
+    // 10pt, and 24 in a 20pt style - each as wide as its 800 by 600 proportions make it.
+    const theme = themed((inputs) => {
+      restyle(inputs, 'body', { size: 10 });
+      addStyle(inputs, 'lead', ['text']);
+      restyle(inputs, 'lead', { size: 20, lineSpacing: 24 });
+    });
+    const imagesOf = (assembled: Assembled<PublishedDocument>) =>
+      blocksOf(assembled).flatMap((block) =>
+        paragraphRuns(block).flatMap((run) => ('image' in run ? [run.image] : [])),
+      );
+    const sized = (width: number, height: number) => expect.objectContaining({ width, height });
+    expect(imagesOf(assemble(under(resolved(), paragraph('p1', image()))))).toEqual([
+      sized(17.6, 13.2),
+    ]);
+    expect(
+      imagesOf(
+        assemble(under(theme, paragraph('p1', image()), styled('p2', 'lead', text('A '), image()))),
+      ),
+    ).toEqual([sized(16, 12), sized(32, 24)]);
+  });
+
   it('is never asked for a document under a layout without a theme, or one made before layouts with one', () => {
     expect(() => assemble({ ...oneParagraph(text('Set.')), theme: null })).toThrow(/theme/);
     expect(() => assemble({ ...oneParagraph(text('Set.')), layout: null })).toThrow(/theme/);

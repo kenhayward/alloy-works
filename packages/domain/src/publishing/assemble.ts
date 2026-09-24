@@ -41,7 +41,8 @@ import {
   columnsAt,
   columnsOf,
   expandTabs,
-  INLINE_IMAGE_HEIGHT,
+  BODY_SIZE,
+  inlineImageHeight,
   listIndent,
   textBlockHeight,
   textMeasure,
@@ -455,12 +456,14 @@ export function assemble(input: AssembleInput): Assembled {
    *
    * `families` are the families the runs are set in where no mark names a face (themes 1): the
    * paragraph style's, or the role's - and every place it is set again, as a caption is in its list.
+   * `size` is that style's size, which an image among the runs is printed 1.2 ems of.
    */
   const publishedRuns = (
     content: readonly InlineNode[],
     node: string,
     block: string,
     families: readonly string[],
+    size: number,
     indent = 0,
     caption = false,
     inParagraph: { readonly table: TableNode | null; readonly heading: boolean } | null = null,
@@ -497,7 +500,7 @@ export function assemble(input: AssembleInput): Assembled {
         continue;
       }
       if (inline.type === 'image' && layout !== null) {
-        const published = publishedImage(inline, node, block, indent);
+        const published = publishedImage(inline, node, block, indent, size);
         if (published !== null) runs.push(published);
         continue;
       }
@@ -563,10 +566,10 @@ export function assemble(input: AssembleInput): Assembled {
     place: Place,
     node: string,
     block: string,
-  ): { readonly id: string; readonly families: readonly string[] } => {
+  ): { readonly id: string; readonly families: readonly string[]; readonly size: number } => {
     if (theme === null) {
       if (stored !== BODY) failures.push(failure('compose', 'style_missing', node, block, stored));
-      return { id: BODY, families: [SLICE_ONE_FAMILY] };
+      return { id: BODY, families: [SLICE_ONE_FAMILY], size: BODY_SIZE };
     }
     const id = stored === BODY ? theme.places[place] : stored;
     const style = theme.paragraphStyles.get(id);
@@ -577,7 +580,7 @@ export function assemble(input: AssembleInput): Assembled {
       failures.push(failure('compose', 'style_not_applicable', node, block, id));
     }
     const setIn = style !== undefined && applies ? style : placeStyle(place);
-    return { id, families: [setBy(setIn.typeface)] };
+    return { id, families: [setBy(setIn.typeface)], size: setIn.properties.size };
   };
 
   /**
@@ -636,10 +639,16 @@ export function assemble(input: AssembleInput): Assembled {
       const style = paragraphStyle(paragraph.style, 'footnote', node, footnote.id);
       // A footnote's text is a paragraph's text, where a reference is a link (R5); a footnote holds no
       // footnote (CNT-129), so nothing here asks the table the flag carries.
-      const runs = publishedRuns(paragraph.content, node, footnote.id, style.families, 0, false, {
-        table,
-        heading: false,
-      });
+      const runs = publishedRuns(
+        paragraph.content,
+        node,
+        footnote.id,
+        style.families,
+        style.size,
+        0,
+        false,
+        { table, heading: false },
+      );
       // A footnote's own paragraph is a block a reference can name (CNT-125), and carries its anchor
       // where one does. An empty one is dropped unless it is named: then it stays, holding nothing,
       // and the template sets its label where it would have begun, as a marker stands for a block.
@@ -677,10 +686,16 @@ export function assemble(input: AssembleInput): Assembled {
     switch (block.type) {
       case 'paragraph': {
         const style = paragraphStyle(block.style, place, node, block.id);
-        const runs = publishedRuns(block.content, node, block.id, style.families, indent, false, {
-          table,
-          heading,
-        });
+        const runs = publishedRuns(
+          block.content,
+          node,
+          block.id,
+          style.families,
+          style.size,
+          indent,
+          false,
+          { table, heading },
+        );
         // An empty paragraph is where a cursor stands and publishes nothing (CNT-124), unless a
         // reference names it: then its marker stands where it would have.
         if (runs.length === 0) return markerOf(node, block.id);
@@ -733,7 +748,14 @@ export function assemble(input: AssembleInput): Assembled {
           const term =
             item.term === undefined
               ? []
-              : publishedRuns(item.term, node, block.id, inPlace('listItem'), indent);
+              : publishedRuns(
+                  item.term,
+                  node,
+                  block.id,
+                  inPlace('listItem'),
+                  placeStyle('listItem').properties.size,
+                  indent,
+                );
           return {
             term: term.length === 0 ? null : term,
             blocks: item.content.flatMap((each) =>
@@ -822,7 +844,14 @@ export function assemble(input: AssembleInput): Assembled {
         const attribution =
           block.attribution === undefined
             ? []
-            : publishedRuns(block.attribution, node, block.id, roles('attribution'), inset);
+            : publishedRuns(
+                block.attribution,
+                node,
+                block.id,
+                roles('attribution'),
+                roleStyle('attribution').properties.size,
+                inset,
+              );
         // Nothing to show and nothing to attribute contributes nothing, rather than an empty
         // `BlockQuote` (decision P) - but the markers it and what it quotes leave, as a list does.
         if (blocks.every(isMarker) && attribution.length === 0) {
@@ -869,6 +898,7 @@ export function assemble(input: AssembleInput): Assembled {
           node,
           block.id,
           captionFamilies('table'),
+          roleStyle('caption').properties.size,
           indent,
           true,
         );
@@ -878,7 +908,14 @@ export function assemble(input: AssembleInput): Assembled {
         const note =
           block.note === undefined
             ? []
-            : publishedRuns(block.note, node, block.id, roles('tableNote'), indent);
+            : publishedRuns(
+                block.note,
+                node,
+                block.id,
+                roles('tableNote'),
+                roleStyle('tableNote').properties.size,
+                indent,
+              );
         const noteSays = note.some((run) => !('text' in run) || run.text.trim() !== '');
         const label =
           numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
@@ -951,6 +988,7 @@ export function assemble(input: AssembleInput): Assembled {
           node,
           block.id,
           captionFamilies('figure'),
+          roleStyle('caption').properties.size,
           indent,
           true,
         );
@@ -1108,14 +1146,16 @@ export function assemble(input: AssembleInput): Assembled {
   /**
    * An image in a run of text as the template reads it (figures 5, rulings R2 to R4), or null with its
    * failures recorded: an image style of the theme's that applies to an image in a line (themes 1),
-   * an image the request resolved, alternative text as a figure's, and one line high no wider than the
-   * room where it stands.
+   * an image the request resolved, alternative text as a figure's, and one line high - 1.2 ems of
+   * `size`, the size of the style it stands in (`inlineImageHeight`) - no wider than the room where it
+   * stands.
    */
   const publishedImage = (
     image: Extract<InlineNode, { type: 'image' }>,
     node: string,
     block: string,
     indent: number,
+    size: number,
   ): PublishedInline | null => {
     const style = theme!.imageStyles.get(image.imageStyle);
     if (style === undefined) {
@@ -1134,7 +1174,8 @@ export function assemble(input: AssembleInput): Assembled {
       return null;
     }
     const alternative = alternativeOf(image.alternative, asset, node, block);
-    const width = (INLINE_IMAGE_HEIGHT * asset.width) / asset.height;
+    const height = inlineImageHeight(size);
+    const width = (height * asset.width) / asset.height;
     const room = textMeasure(publishedPdf(layout!.formats.pdf)) - indent;
     if (width > room) {
       failOnce(failure('compose', 'image_too_wide', node, block, null));
@@ -1145,7 +1186,7 @@ export function assemble(input: AssembleInput): Assembled {
       image: {
         path: publishedImagePath(asset),
         width: points(width),
-        height: points(INLINE_IMAGE_HEIGHT),
+        height: points(height),
         alternative,
       },
     };
