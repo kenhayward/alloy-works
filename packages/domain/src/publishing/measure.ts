@@ -1,6 +1,7 @@
 import type { ListNode } from '../content/model/blocks.js';
 import { formatCounter } from '../structure/scheme.js';
 import type { ResolvedParagraphStyle } from '../theme/read.js';
+import type { ImageLength, ImageStyle } from '../theme/schema.js';
 
 import type { PublishedPdfFormat } from './published.js';
 
@@ -14,9 +15,10 @@ import type { PublishedPdfFormat } from './published.js';
  * Every number here is **measured against the pinned engine and faces**, not chosen, and the template
  * asserts the same bound per line as a backstop that must never fire (task 8).
  *
- * **What `assemble` measures from the theme, which template 12 keeps** (themes 1, ruling R6). Every
- * room `assemble` works out before the engine runs is read from the theme the document is set from, so
- * the template must lay the page out by the same numbers, or a line `assemble` passed runs off it:
+ * **What `assemble` measures from the theme, which templates 12 and 13 keep** (themes 1, ruling R6;
+ * themes 2, ruling R5). Every room `assemble` works out before the engine runs is read from the theme
+ * the document is set from, so the template must lay the page out by the same numbers, or a line
+ * `assemble` passed runs off it:
  *
  * - **Preformatted text** is set in the `preformatted` role's style: one column is its size times its
  *   face's advance, and its measure loses the style's start and end indents and, where it has a fill,
@@ -27,13 +29,18 @@ import type { PublishedPdfFormat } from './published.js';
  *   definition list, and otherwise the widest marker it prints at an em a character and half an em
  *   after it - in ems of the `listItem` place's style's size (`listIndent`).
  * - **A figure's caption** is estimated in ems of the `caption` role's style's size (`captionHeight`).
- * - **An image in a run of text** is printed 1.2 ems high - template 11's rule - in ems of the size
- *   of the paragraph style it stands in, or of the role's style that sets the text it stands in (a
- *   term the `listItem` place's, an attribution, a table's note or a caption its role's), and as wide
- *   as its proportions make it (`inlineImageHeight`). Not its line spacing, which would move every
- *   image published before themes 1.
+ * - **An image** is printed at the size its image style gives it (`styledSize`, themes 2): the
+ *   dimension the style fixes, in points, a share of the measure, a share of the text block's height or,
+ *   in a line of text, ems of the size of the paragraph style it stands in, or of the role's style that
+ *   sets the text it stands in (a term the `listItem` place's, an attribution or a table's note its
+ *   role's); the other from its proportions; both held to the style's maximum. Template 13 prints it at
+ *   exactly that size, which is why the size is here and not in the template.
+ * - **A table's cell** insets what it holds by its table style's padding on each side, which template 13
+ *   sets as the cell's inset; its rules are drawn over the cell's edges and take no room from it.
  *
- * Under the default theme each gives the answer the fixed numbers gave before themes 1.
+ * Under the default theme each gives the answer the fixed numbers gave before themes 1: the default
+ * image styles are template 11's rules - a figure the measure wide and at most 0.6 of the text block
+ * high, an image in a line 1.2 ems high - and the default table style pads 5 points, the engine's.
  */
 
 /** Tab stops every eight columns: the stop POSIX `expand`, a terminal and `cat` use (decision E). */
@@ -110,17 +117,58 @@ export function captionHeight(graphemes: number, width: number, size: number): n
 }
 
 /**
- * How high an image in a run of text is printed (decision F-K's `inline` style), in points: 1.2 ems of
- * `size`, the size of the style it stands in (themes 1) - 13.2 under the default theme's 11pt body, as
- * before.
+ * What an image style's lengths are shares of where the image stands (themes 2, ruling R5): the
+ * layout's measure, the width of its text block, which is the column the editor shows; the height of
+ * its text block; and the size of the text an image in a line stands in, which an em is. The room where
+ * the image stands - less than the measure in a quotation, a list or a table's cell - is not among
+ * them: a share of the measure is the same in a quotation as outside it, and the room is held to after.
  */
-export function inlineImageHeight(size: number): number {
-  return INLINE_IMAGE_EMS * size;
+export interface ImageFrame {
+  readonly measure: number;
+  readonly textHeight: number;
+  readonly size: number;
 }
-/** An image in a run of text is this many ems high. */
-export const INLINE_IMAGE_EMS = 1.2;
-/** What a table's cell insets its content by on each side: the engine's default, 5 points. */
-export const CELL_INSET = 5;
+
+/** One of an image style's lengths in points, where the image stands. */
+export function imageLength(length: ImageLength, frame: ImageFrame): number {
+  switch (length.unit) {
+    case 'pt':
+      return length.value;
+    case 'measure':
+      return length.value * frame.measure;
+    case 'textHeight':
+      return length.value * frame.textHeight;
+    case 'em':
+      return length.value * frame.size;
+  }
+}
+
+/**
+ * The size an image is printed at by its style (STY-015 to STY-017), in points, from its pixels as
+ * displayed: the dimension the style fixes at the length it gives; the other **from the image's own
+ * proportions**, so an image is never distorted (STY-016); and where that other would be more than the
+ * style's maximum, the maximum instead, the fixed one re-derived from it, the proportion kept
+ * (STY-017). Under the default theme a figure is the measure wide and at most 0.6 of the text block
+ * high, and an image in a line 1.2 ems of its text high - template 11's rules, as before.
+ */
+export function styledSize(
+  style: Pick<ImageStyle, 'fixed' | 'maximum'>,
+  pixels: { readonly width: number; readonly height: number },
+  frame: ImageFrame,
+): { readonly width: number; readonly height: number } {
+  const fixed = imageLength(style.fixed, frame);
+  const most = imageLength(style.maximum, frame);
+  if (style.fixed.dimension === 'width') {
+    const height = (fixed * pixels.height) / pixels.width;
+    return height > most
+      ? { width: (most * pixels.width) / pixels.height, height: most }
+      : { width: fixed, height };
+  }
+  const width = (fixed * pixels.width) / pixels.height;
+  return width > most
+    ? { width: most, height: (most * pixels.height) / pixels.width }
+    : { width, height: fixed };
+}
 
 /** A caption's grapheme taken as this many ems across. */
 export const CAPTION_ADVANCE = 0.6;

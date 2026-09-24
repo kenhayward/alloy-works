@@ -150,10 +150,12 @@ describe("publishing/12's projection, kept as template 12 reads it", () => {
 describe('projectTypst, for publishing/13', () => {
   const current = projectTypst(resolved());
 
-  it("states every paragraph style as publishing/12's does, with its contextual spacing", () => {
+  it("states every paragraph style as publishing/12's does, with its identifier and its contextual spacing", () => {
+    // The identifier is what template 13 asks of two consecutive blocks: contextual spacing is between
+    // paragraphs of one style, and two styles stating the same values are still two styles.
     for (const [id, style] of Object.entries(typst.styles)) {
       const contextualSpacing = id === 'quotation';
-      expect(current.styles[id], id).toEqual({ ...style, contextualSpacing });
+      expect(current.styles[id], id).toEqual({ ...style, id, contextualSpacing });
     }
     expect(Object.keys(current.styles)).toEqual(Object.keys(typst.styles));
     expect(current.marks).toEqual(typst.marks);

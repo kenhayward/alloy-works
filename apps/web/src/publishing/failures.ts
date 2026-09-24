@@ -209,6 +209,11 @@ export function failureWords(failure: Failure): string {
     // A figure does not break across pages, so its image and caption must stand on one together.
     case 'caption_too_long':
       return "A figure's caption is too long to stand on a page with its image. Shorten the caption.";
+    // Themes 2's ruling R2: the label is the table style's and its words the layout's, and nothing in
+    // the document mends either, so it is theirs to change and another attempt fails the same way.
+    // `detail` is the style's identifier, as `style_missing` names one.
+    case 'continuation_words_missing':
+      return `This table's style, ${failure.detail ?? ''}, labels each page the table continues onto, but the publication's layout has no words for the label. The layout or the theme has to change before this document can be published.`;
     // Figures 5's ruling R7: an image set in a line has only the line's room, or its cell's.
     case 'image_too_wide':
       return 'An image in a line of text is wider than the room it stands in. Use a narrower image, or make it a figure.';

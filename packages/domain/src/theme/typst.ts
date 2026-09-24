@@ -30,6 +30,12 @@ import {
 
 /** A paragraph style as template 13 sets it. */
 export interface TypstParagraphStyle {
+  /**
+   * Its identifier, the key it is carried under: what template 13 asks of two consecutive blocks to
+   * know whether they are set in one style, which contextual spacing is between. Two styles stating
+   * the same values are still two styles, as they are to Word.
+   */
+  readonly id: string;
   readonly font: string;
   readonly size: number;
   readonly weight: 'regular' | 'bold';
@@ -168,6 +174,7 @@ export function projectTypst(theme: ResolvedTheme, used?: Iterable<string>): Typ
       id,
       {
         ...style,
+        id,
         contextualSpacing: theme.paragraphStyles.get(id)!.properties.contextualSpacing,
       },
     ]),

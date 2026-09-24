@@ -646,11 +646,16 @@ export interface PaintedFill {
   readonly box: Box;
 }
 
-/** A stroked shape - an underline, a table's rule - as a filled one. */
+/**
+ * A stroked shape - an underline, a table's rule - as a filled one, and how thick its line is drawn:
+ * in points on the page, the line width the content stream set scaled by the transformation it was
+ * drawn under (themes 2, whose table styles differ in a rule's thickness as well as its colour).
+ */
 export interface PaintedStroke {
   readonly page: number;
   readonly stroke: string;
   readonly box: Box;
+  readonly width: number;
 }
 
 /**
@@ -712,7 +717,9 @@ export async function readPaint(bytes: Buffer): Promise<Paint> {
       const page = await pdf.getPage(number);
       const list = await page.getOperatorList();
       let ctm = IDENTITY;
-      const saved: Matrix[] = [];
+      // The line width is graphics state, saved and restored with the transformation.
+      let lineWidth = 1;
+      const saved: { ctm: Matrix; lineWidth: number }[] = [];
       let matrix = IDENTITY;
       let face = '';
       let size = 0;
@@ -731,9 +738,11 @@ export async function readPaint(bytes: Buffer): Promise<Paint> {
         } else if (name === 'endMarkedContent') {
           marked.pop();
         } else if (name === 'save') {
-          saved.push(ctm);
+          saved.push({ ctm, lineWidth });
         } else if (name === 'restore') {
-          ctm = saved.pop() ?? IDENTITY;
+          ({ ctm, lineWidth } = saved.pop() ?? { ctm: IDENTITY, lineWidth: 1 });
+        } else if (name === 'setLineWidth') {
+          lineWidth = args[0] as number;
         } else if (name === 'transform') {
           ctm = times(args as unknown as Matrix, ctm);
         } else if (name === 'beginText') {
@@ -776,7 +785,10 @@ export async function readPaint(bytes: Buffer): Promise<Paint> {
             fills.push({ page: number, fill, box });
           }
           if (/^(stroke|closeStroke|fillStroke|eoFillStroke)$/.test(how)) {
-            strokes.push({ page: number, stroke, box });
+            // A width drawn under a transformation is scaled by it: by the square root of its
+            // determinant, which is exact for the uniform scales and the flips the engine writes.
+            const scale = Math.sqrt(Math.abs(ctm[0] * ctm[3] - ctm[1] * ctm[2]));
+            strokes.push({ page: number, stroke, box, width: lineWidth * scale });
           }
         }
       });

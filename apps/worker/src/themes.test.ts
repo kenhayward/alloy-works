@@ -26,15 +26,16 @@ import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/d
 import {
   assemble,
   blockIdentifierFrom,
-  FIRST_DEFAULT_CATALOGUES,
-  FIRST_DEFAULT_CATALOGUES_BY_VERSION,
-  FIRST_DEFAULT_THEME,
+  DEFAULT_CATALOGUES,
+  DEFAULT_CATALOGUES_BY_VERSION,
+  DEFAULT_THEME,
   defaultLayout,
   MATHS_CHARACTERS,
   OUTLINE_SCHEMA_VERSION,
   parseContentDocument,
   parseLayout,
   parseOutlineDocument,
+  PUBLISHING_SCHEMA,
   readTheme,
   withAlternative,
   type CharacterCatalogue,
@@ -63,7 +64,7 @@ import {
 } from './fonts.js';
 import { publishJob } from './jobs/publish.js';
 import { faceMetrics } from './metrics.js';
-import { PUBLICATION_TEMPLATE } from './template.js';
+import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPaint, readPdf, type Paint, type PaintedText, type ReadPdf } from './testing/pdf.js';
 import { defaultTheme } from './testing/theme.js';
 import { checkPdfUa1, type VeraPdfVerdict } from './testing/verapdf.js';
@@ -72,8 +73,8 @@ import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 
 /**
  * Themes 1's worker test (ruling R8): the default theme and a second one differing from it in every
- * paragraph property and every mark, each compiled through the real path - `assemble`, then template
- * 12 - checked by veraPDF and read back from the PDF: its faces, sizes, weights, postures and colours
+ * paragraph property and every mark, each compiled through the real path - `assemble`, then the
+ * template that reads what it makes, 13 since themes 2 - checked by veraPDF and read back from the PDF: its faces, sizes, weights, postures and colours
  * from what is painted, its alignment and indents from where lines start and end, its spaces and line
  * spacing from its baselines, and its pagination across a page's foot. Then the faces' own files: the
  * metrics the theme records for them, and the characters they can set. Then the job, end to end, with
@@ -103,7 +104,7 @@ const restyled = (
   schemaVersion: 2,
   kind: 'paragraph',
   base,
-  styles: FIRST_DEFAULT_CATALOGUES.paragraph.styles.map((style) => ({
+  styles: DEFAULT_CATALOGUES.paragraph.styles.map((style) => ({
     ...style,
     properties: properties[style.id] ?? {},
   })),
@@ -142,7 +143,8 @@ const LEDGER_BASE: ResolvedParagraphProperties = {
   keepTogether: true,
   widowControl: false,
   hyphenate: true,
-  // Template 12 reads no contextual spacing (themes 2): off, as every catalogue/1 reads.
+  // No contextual spacing: every space this test measures is the two blocks' own, as themes 1 set
+  // them. The default's quotation asks for it, measured below (themes 2).
   contextualSpacing: false,
 };
 const LEDGER_STYLES: Readonly<Record<string, ParagraphProperties>> = {
@@ -202,7 +204,7 @@ const LEDGER_RENDERINGS: Readonly<Record<StyledMark, CharacterProperties>> = {
 const ledgerMarks: CharacterCatalogue = {
   schemaVersion: 2,
   kind: 'character',
-  styles: FIRST_DEFAULT_CATALOGUES.character.styles.map((style) => ({
+  styles: DEFAULT_CATALOGUES.character.styles.map((style) => ({
     ...style,
     properties: LEDGER_RENDERINGS[style.mark],
   })),
@@ -211,17 +213,17 @@ const ledgerMarks: CharacterCatalogue = {
 const onLedger = (paragraphs: ParagraphCatalogue): ResolvedTheme =>
   read(
     {
-      ...FIRST_DEFAULT_THEME,
+      ...DEFAULT_THEME,
       name: 'Ledger',
       paper: '#fbf7ee',
       catalogues: {
-        ...FIRST_DEFAULT_THEME.catalogues,
+        ...DEFAULT_THEME.catalogues,
         paragraph: LEDGER_PARAGRAPHS,
         character: LEDGER_MARKS,
       },
     },
     new Map([
-      ...FIRST_DEFAULT_CATALOGUES_BY_VERSION,
+      ...DEFAULT_CATALOGUES_BY_VERSION,
       [LEDGER_PARAGRAPHS, paragraphs],
       [LEDGER_MARKS, ledgerMarks],
     ]),
@@ -336,7 +338,10 @@ const reference = (name: string, children: unknown[] = []) => ({
   children,
 });
 
-/** What the job makes of these components under a layout and a theme: `assemble`, then template 12. */
+/**
+ * What the job makes of these components under a layout and a theme: `assemble`, then the template
+ * that reads what it makes.
+ */
 const compile = async (
   theme: ResolvedTheme,
   layout: Layout,
@@ -371,7 +376,7 @@ const compile = async (
   });
   if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
   const pdf = await typst.compile(
-    PUBLICATION_TEMPLATE[12].file,
+    PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
     JSON.stringify(assembled.document),
     at,
   );
@@ -575,7 +580,8 @@ describe('two themes in the PDF (themes 1)', () => {
     }, 60_000);
 
     it("sets a table's cells in their place's style: centred under the default theme, and at the cell's start where it says start", async () => {
-      // Two columns sharing the measure, each cell inset 5pt, the engine's default (`CELL_INSET`).
+      // Two columns sharing the measure, each cell inset 5pt: the default table style's padding, the
+      // engine's own before themes 2.
       const column = (RIGHT - LEFT) / 2;
       const inset = 5;
       {
@@ -692,16 +698,16 @@ describe('two themes in the PDF (themes 1)', () => {
     const KEPT = '5f0c3a3e-0d8a-4c1e-9d0b-6a51e2f9b003';
     const kept = read(
       {
-        ...FIRST_DEFAULT_THEME,
-        catalogues: { ...FIRST_DEFAULT_THEME.catalogues, paragraph: KEPT },
+        ...DEFAULT_THEME,
+        catalogues: { ...DEFAULT_THEME.catalogues, paragraph: KEPT },
       },
       new Map([
-        ...FIRST_DEFAULT_CATALOGUES_BY_VERSION,
+        ...DEFAULT_CATALOGUES_BY_VERSION,
         [
           KEPT,
           {
-            ...FIRST_DEFAULT_CATALOGUES.paragraph,
-            base: { ...FIRST_DEFAULT_CATALOGUES.paragraph.base, keepTogether: true },
+            ...DEFAULT_CATALOGUES.paragraph,
+            base: { ...DEFAULT_CATALOGUES.paragraph.base, keepTogether: true },
           },
         ],
       ]),
@@ -847,7 +853,11 @@ describe('two themes in the PDF (themes 1)', () => {
       if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
       const halved = { ...assembled.document, theme: { ...assembled.document.theme, script: 0.5 } };
       const paint = await readPaint(
-        await typst.compile(PUBLICATION_TEMPLATE[12].file, JSON.stringify(halved), at),
+        await typst.compile(
+          PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+          JSON.stringify(halved),
+          at,
+        ),
       );
       const size = placeOf(defaultTheme, 'text').size;
       expect(paint.texts.find((each) => each.text === 'Subword')!.size).toBeCloseTo(size / 2, 3);
@@ -874,6 +884,60 @@ describe('two themes in the PDF (themes 1)', () => {
     // The default sets in all three families: the maths face for the equation among them.
     expect((await specimen('default')).paint.embedded).toEqual(
       expect.arrayContaining(['LiberationSerif', 'LiberationMono', 'STIXTwoMath-Regular']),
+    );
+  }, 60_000);
+});
+
+describe('a quotation set off by its style, its own paragraphs a line apart (themes 2)', () => {
+  it('stands a quotation as far from the text around it as template 11 did, and its paragraphs one line spacing apart, by contextual spacing', async () => {
+    // Themes 2, ruling R3: the default quotation's space before and after, and its attribution's, are
+    // template 11's, and it asks for contextual spacing, so that between two of its own paragraphs
+    // only its leading stands. Template 11's distances, baseline to baseline, as themes 1 measured
+    // them: 33.6 from text into a quotation and from a quotation into its attribution, 27.0 from an
+    // attribution or a bare quotation into text. Between a quotation's own paragraphs template 11 set
+    // 17.1; contextual spacing sets its line spacing, 14.35 - the one distance themes 2 moves.
+    const { paint, pdf } = await compile(defaultTheme, bare, [
+      {
+        name: 'quoted',
+        title: 'Quoted',
+        content: [
+          para('p1', text('Beforeword.')),
+          {
+            type: 'blockquote',
+            id: 'q1',
+            content: [para('q1a', text('Quotedone.')), para('q1b', text('Quotedtwo.'))],
+            attribution: [text('Adaword')],
+          },
+          para('p2', text('Betweenword.')),
+          { type: 'blockquote', id: 'q2', content: [para('q2a', text('Barequote.'))] },
+          para('p3', text('Afterword.')),
+        ],
+      },
+    ]);
+    expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+    const y = (words: string) => painted(paint, words).y;
+    const quotation = placeOf(defaultTheme, 'quotation');
+    const body = placeOf(defaultTheme, 'text');
+    const attribution = roleOf(defaultTheme, 'attribution');
+    expect(quotation.contextualSpacing).toBe(true);
+    expect(body.contextualSpacing).toBe(false);
+    expect(y('Beforeword') - y('Quotedone')).toBeCloseTo(33.6, 2);
+    expect(y('Quotedone') - y('Quotedtwo')).toBeCloseTo(quotation.lineSpacing, 2);
+    expect(y('Quotedone') - y('Quotedtwo')).toBeCloseTo(14.35, 2);
+    expect(y('Quotedtwo') - y('Adaword')).toBeCloseTo(33.6, 2);
+    expect(y('Adaword') - y('Betweenword')).toBeCloseTo(27, 2);
+    expect(y('Betweenword') - y('Barequote')).toBeCloseTo(33.6, 2);
+    expect(y('Barequote') - y('Afterword')).toBeCloseTo(27, 2);
+    // Each from the theme's own numbers, by ADR-0014's rule: one's space after, the next's space
+    // before and its line spacing, the faces and sizes being one.
+    expect(y('Quotedtwo') - y('Adaword')).toBeCloseTo(
+      quotation.spaceAfter + attribution.spaceBefore + attribution.lineSpacing,
+      2,
+    );
+    // From running text, which asks for none, into a quotation: both spaces, as between any two styles.
+    expect(y('Beforeword') - y('Quotedone')).toBeCloseTo(
+      body.spaceAfter + quotation.spaceBefore + quotation.lineSpacing,
+      2,
     );
   }, 60_000);
 });
@@ -974,7 +1038,7 @@ describe("the pinned faces' own files (themes 1)", () => {
   };
 
   it("records each typeface's ascent, descent and a monospaced face's advance as its files hold them", async () => {
-    for (const typeface of FIRST_DEFAULT_THEME.typefaces) {
+    for (const typeface of DEFAULT_THEME.typefaces) {
       for (const file of typeface.files) {
         const metrics = faceMetrics(await pinned(file.sha256));
         // hhea's ascender and descender over the head table's units per em, exactly: the theme
@@ -989,9 +1053,7 @@ describe("the pinned faces' own files (themes 1)", () => {
       }
     }
     // The monospace is the one face that records an advance, and is monospaced.
-    expect(FIRST_DEFAULT_THEME.typefaces.filter((each) => each.advance !== undefined)).toHaveLength(
-      1,
-    );
+    expect(DEFAULT_THEME.typefaces.filter((each) => each.advance !== undefined)).toHaveLength(1);
   });
 
   it('STY-074 covers the Latin, Greek, Cyrillic and Hebrew scripts in every file of the text faces, and every character the maths tree sets in the maths face', async () => {
@@ -1032,7 +1094,7 @@ describe("the pinned faces' own files (themes 1)", () => {
       ),
       'Hebrew points': range(0x5b0, 0x5c7),
     };
-    for (const typeface of FIRST_DEFAULT_THEME.typefaces.filter((each) => each.id !== 'maths')) {
+    for (const typeface of DEFAULT_THEME.typefaces.filter((each) => each.id !== 'maths')) {
       for (const file of typeface.files) {
         const covered = codePoints(await pinned(file.sha256));
         for (const [script, letters] of Object.entries({ ...scripts, ...written })) {
@@ -1047,9 +1109,7 @@ describe("the pinned faces' own files (themes 1)", () => {
     // lines, braces and primes - and every letter and digit an identifier's variant maps to, in
     // Mathematical Alphanumeric Symbols and, for the letters Unicode placed there first, in
     // Letterlike Symbols; the code points Unicode leaves unassigned in the block are no letter.
-    const maths = FIRST_DEFAULT_THEME.typefaces.find(
-      (each) => each.id === FIRST_DEFAULT_THEME.maths,
-    )!;
+    const maths = DEFAULT_THEME.typefaces.find((each) => each.id === DEFAULT_THEME.maths)!;
     const covered = codePoints(await pinned(maths.files[0]!.sha256));
     const unassigned = new Set([
       0x1d455, 0x1d49d, 0x1d4a0, 0x1d4a1, 0x1d4a3, 0x1d4a4, 0x1d4a7, 0x1d4a8, 0x1d4ad, 0x1d4ba,
@@ -1076,12 +1136,9 @@ describe("the pinned faces' own files (themes 1)", () => {
 
   it("holds a theme's typefaces to the pinned files exactly: every file of the family and no other, the files' own metrics, and a maths face for equations", () => {
     expect(typefacesNotHeld(defaultTheme, fonts)).toEqual([]);
-    const [serif, mono, maths] = FIRST_DEFAULT_THEME.typefaces;
-    const holding = (typefaces: Theme['typefaces'], mathsFace = FIRST_DEFAULT_THEME.maths) =>
-      read(
-        { ...FIRST_DEFAULT_THEME, typefaces, maths: mathsFace },
-        FIRST_DEFAULT_CATALOGUES_BY_VERSION,
-      );
+    const [serif, mono, maths] = DEFAULT_THEME.typefaces;
+    const holding = (typefaces: Theme['typefaces'], mathsFace = DEFAULT_THEME.maths) =>
+      read({ ...DEFAULT_THEME, typefaces, maths: mathsFace }, DEFAULT_CATALOGUES_BY_VERSION);
     const notHeld = (typefaces: Theme['typefaces'], mathsFace?: string) =>
       typefacesNotHeld(holding(typefaces, mathsFace), fonts);
     // A face of its own, in no file the worker holds.
@@ -1340,9 +1397,9 @@ describe('publishing under a theme it must refuse, from the request to the recor
 
     // The same faces, recorded as a licence that does not permit embedding the serif in a PDF: the
     // publish fails naming it, and nothing is made in its place.
-    const [serif, ...rest] = FIRST_DEFAULT_THEME.typefaces;
+    const [serif, ...rest] = DEFAULT_THEME.typefaces;
     await declare({
-      ...FIRST_DEFAULT_THEME,
+      ...DEFAULT_THEME,
       typefaces: [{ ...serif!, embedding: { pdf: false, word: true } }, ...rest],
     });
     const refused = await requested();
@@ -1364,9 +1421,9 @@ describe('publishing under a theme it must refuse, from the request to the recor
   }, 120_000);
 
   it('fails a theme naming a face the worker does not hold typeface_unavailable, by name, before anything is set', async () => {
-    const [serif, mono, maths] = FIRST_DEFAULT_THEME.typefaces;
+    const [serif, mono, maths] = DEFAULT_THEME.typefaces;
     await declare({
-      ...FIRST_DEFAULT_THEME,
+      ...DEFAULT_THEME,
       typefaces: [
         serif!,
         mono!,
@@ -1400,7 +1457,7 @@ describe('publishing under a theme it must refuse, from the request to the recor
 
     // The serif as the maths face (the final review of themes 1, M1): its files are held, and the
     // engine refused the equation unnamed. Now it is named, before anything is set.
-    await declare({ ...FIRST_DEFAULT_THEME, maths: serif!.id });
+    await declare({ ...DEFAULT_THEME, maths: serif!.id });
     const unmathematical = await requested();
     expect(await work()).toBe('failed');
     const named = await outcomeOf(unmathematical);

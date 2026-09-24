@@ -101,6 +101,10 @@ export const publishFailureCodes = [
   // no face it was not given, so every character would otherwise be `glyph_missing` and the face
   // itself never named.
   'typeface_unavailable',
+  // compose, from themes 2 (ruling R2): a table whose style asks for a continuation label, set in the
+  // layout's words, under a layout that has none - one stored before its schema 4 - naming the table
+  // and the style. The label would otherwise be a table's number with nothing after it.
+  'continuation_words_missing',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

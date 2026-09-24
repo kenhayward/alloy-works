@@ -391,14 +391,14 @@ describe('publishing a document, from the request to the stored PDF', () => {
   it("PUB-063 records the engine, the engine's version and the template's version that made it", async () => {
     const { request } = await published();
     const row = await publicationOf(request);
-    // Made under a layout and a theme, so by template 12 and pipeline 12, under the layout its request
+    // Made under a layout and a theme, so by template 13 and pipeline 13, under the layout its request
     // recorded.
     expect(row).toMatchObject({
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 12,
-      pipeline_version: '12',
+      template_version: 13,
+      pipeline_version: '13',
       layout_version_id: (await requestRow(request)).layout_version_id,
     });
     expect(row!.layout_version_id).not.toBeNull();
