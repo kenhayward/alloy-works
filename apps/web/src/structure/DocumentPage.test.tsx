@@ -14,6 +14,17 @@ import {
   type OutlineOperation,
   type PublishedNode,
 } from '@alloy-works/domain';
+import {
+  createEditorState,
+  fromEditor,
+  insertEquation,
+  mountEditor,
+  NodeSelection,
+  openFootnote,
+  Selection,
+  toEditor,
+  type EditorView,
+} from '@alloy-works/editor';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
@@ -28,6 +39,9 @@ import { OutlinePanel } from './OutlinePanel.js';
 
 // A section's title is a ProseMirror view since equations 3, which scrolls its selection into view.
 shimRangeMeasurement();
+
+/** A node of an editor's document, named through the view since this app has no ProseMirror of its own. */
+type ProseMirrorNode = EditorView['state']['doc'];
 
 const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
 const SPACE = 'aaaaaaaa-0000-4000-8000-000000000001';
@@ -1999,6 +2013,152 @@ describe("a section's title holding an equation (equations 3)", () => {
     expect(title[0]).toEqual(words('Growth as '));
     expect(title[1]).toMatchObject({ type: 'equation', latex: 'x^3' });
     expect(title[1]!.mathml).toContain('<mn>3</mn>');
+  });
+});
+
+describe('an equation in every context (equations 3)', () => {
+  const NS = 'http://www.w3.org/1998/Math/MathML';
+  /** One equation per context, each its own letter, so what is stored says which context it is. */
+  const letter = (name: string) => `<math xmlns="${NS}" alttext="${name}"><mi>${name}</mi></math>`;
+  const choice = (name: string) => ({
+    display: 'inline' as const,
+    mathml: letter(name),
+    latex: name,
+  });
+  const words = (value: string) => ({ type: 'text', value, marks: [] });
+  const paragraph = (id: string, ...content: unknown[]) => ({
+    type: 'paragraph',
+    id,
+    style: 'body',
+    content,
+  });
+  /** A component with running text, a table with a caption and a cell, and a footnote. */
+  const component = {
+    schemaVersion: 1,
+    title: 'Readings',
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [
+      paragraph('b1', words('Where it grows.')),
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [words('Readings')],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [{ content: [paragraph('c1', words('Tray'))], colspan: 1, rowspan: 1 }],
+          },
+        ],
+      },
+      paragraph(
+        'b2',
+        words('Measured'),
+        {
+          type: 'footnote',
+          id: 'f1',
+          anchor: { kind: 'span' },
+          content: [paragraph('fp1', words('At the bench.'))],
+        },
+        words(' twice.'),
+      ),
+    ],
+  };
+
+  /** Where the first node answering `match` starts, and the node. */
+  function find(view: EditorView, match: (node: ProseMirrorNode) => boolean) {
+    let found: { pos: number; node: ProseMirrorNode } | null = null;
+    view.state.doc.descendants((node, pos) => {
+      if (found === null && match(node)) found = { pos, node };
+      return found === null;
+    });
+    if (found === null) throw new Error('not there');
+    return found as { pos: number; node: ProseMirrorNode };
+  }
+  /** The caret at the end of the textblock `match` finds, as a click at its end puts it. */
+  function caretAtEndOf(view: EditorView, match: (node: ProseMirrorNode) => boolean) {
+    const { pos, node } = find(view, match);
+    const end = view.state.doc.resolve(pos + node.nodeSize - 1);
+    view.dispatch(view.state.tr.setSelection(Selection.near(end, -1)));
+  }
+  /** Placed by the command the Equation dialog answers with, where the caret is. */
+  const placeIn = (view: EditorView, name: string) =>
+    expect(insertEquation(choice(name))(view.state, view.dispatch.bind(view))).toBe(true);
+  /** The letter of every equation in a list of inline runs. */
+  const lettersIn = (runs: readonly unknown[]) =>
+    (runs as readonly { type: string; latex?: string }[])
+      .filter((run) => run.type === 'equation')
+      .map((run) => run.latex);
+
+  it('CNT-046 places an equation in running text, a heading, a table cell, a footnote and a caption, and stores each', async () => {
+    // Running text, a table's cell, a table's caption and a footnote: on a component's surface,
+    // mounted as the component editor mounts one.
+    const opened = toEditor(component as never);
+    if (!opened.editable) throw new Error(opened.unsupported.join(', '));
+    let next = 0;
+    const newIdentifier = () => `n${(next += 1)}`;
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const view = mountEditor(host, {
+      state: createEditorState({ doc: opened.doc, newIdentifier }),
+      label: 'Content of Readings',
+      editable: () => true,
+      dispatch: (tr, target) => target.updateState(target.state.apply(tr)),
+      pasted: () => undefined,
+      refused: () => undefined,
+      newIdentifier,
+    });
+    caretAtEndOf(view, (node) => node.attrs['id'] === 'b1');
+    placeIn(view, 'a');
+    caretAtEndOf(view, (node) => node.attrs['id'] === 'c1');
+    placeIn(view, 'b');
+    caretAtEndOf(view, (node) => node.type.name === 'tableCaption');
+    placeIn(view, 'c');
+    const footnote = find(view, (node) => node.type.name === 'footnote').pos;
+    view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, footnote)));
+    const note = openFootnote(view)!;
+    caretAtEndOf(note, (node) => node.type.name === 'footnoteParagraph');
+    placeIn(note, 'd');
+
+    // Stored as the model holds it, through its own parse.
+    const stored = fromEditor(view.state.doc) as unknown as {
+      content: [
+        { content: { type: string }[] },
+        {
+          caption: { type: string }[];
+          rows: [{ cells: [{ content: [{ content: { type: string }[] }] }] }];
+        },
+        { content: { type: string; content?: [{ content: { type: string }[] }] }[] },
+      ];
+    };
+    const [text, table, noted] = stored.content;
+    expect(lettersIn(text.content)).toEqual(['a']);
+    expect(lettersIn(table.rows[0].cells[0].content[0].content)).toEqual(['b']);
+    expect(lettersIn(table.caption)).toEqual(['c']);
+    const held = noted.content.find((run) => run.type === 'footnote')!;
+    expect(lettersIn(held.content![0].content)).toEqual(['d']);
+    view.destroy();
+    host.remove();
+
+    // A heading: a section's title, through its field in the outline panel and the Equation dialog.
+    const fake = service(outline([section(METHOD, 'Method')]));
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Method' }));
+    await typeTitle(' as ');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Equation' });
+    await userEvent.clear(within(dialog).getByLabelText('LaTeX'));
+    await userEvent.paste('e');
+    await waitFor(() => expect(within(dialog).getByLabelText('Description')).not.toHaveValue(''));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    // Stored as the service records it: the outline's next version holds it in the section's title.
+    await waitFor(() => expect(fake.latest().version.number).toBe('0.2'));
+    const [retitled] = fake.latest().outline.nodes;
+    expect(retitled?.type === 'section' && lettersIn(retitled.title)).toEqual(['e']);
   });
 });
 
