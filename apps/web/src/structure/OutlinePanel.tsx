@@ -1,4 +1,5 @@
 import {
+  canonicaliseTitle,
   conditions,
   hasText,
   mayBeFront,
@@ -13,8 +14,18 @@ import {
   type SectionViewNode,
 } from '@alloy-works/domain';
 import {
+  mountTitleEditor,
+  titleToEditor,
+  type EquationAt,
+  type EquationChoice,
+  type TitleEditor,
+} from '@alloy-works/editor';
+import {
+  lazy,
+  Suspense,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -24,6 +35,10 @@ import {
   type MouseEvent,
   type ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
+
+// The title field's editor, and the equations in it, drawn as the component editor draws them.
+import '@alloy-works/editor/style.css';
 
 import { Icon } from '../editor/Icon.js';
 import styles from './OutlinePanel.module.css';
@@ -37,14 +52,32 @@ import {
   nodeLabel,
   nodeName,
   placeOf,
-  plainTitle,
   sectionTitle,
   titleText,
+  trimTitle,
   visibleOrder,
   ancestorsOf,
   type DropTarget,
   type Names,
 } from './tree.js';
+
+/**
+ * The Equation dialog, loaded the first time a title asks for it, and Temml with it - the component
+ * editor's reason (equations 1's final review, L5), and the same chunk of the product's own build.
+ */
+const EquationDialog = lazy(() =>
+  import('../editor/EquationDialog.js').then(({ EquationDialog }) => ({ default: EquationDialog })),
+);
+
+/**
+ * What a section's title field asks the Equation dialog for (equations 3, ruling R3): the equation
+ * selected whole in it, to change, or none, to place one at the caret; and how to place the answer,
+ * which says why it could not or answers null once it has.
+ */
+interface EquationRequest {
+  readonly current: EquationAt | null;
+  readonly place: (choice: EquationChoice) => string | null;
+}
 
 /** A component the panel can add a reference to: what `GET /v1/components` lists. */
 export interface ComponentChoice {
@@ -69,6 +102,8 @@ export type ComponentChoices =
 export type Answered = OutlineView | 'refused' | 'unsent' | 'signedOut';
 
 type RetitleOperation = Extract<OutlineOperation, { operation: 'retitle' }>;
+/** A title as a node holds it. */
+type Title = SectionViewNode['title'];
 
 /** A retitle's answer, or word that a newer commit to the same section took its place. */
 type RetitleAnswer = Answered | 'superseded';
@@ -248,7 +283,9 @@ function inTextField(event: KeyboardEvent): boolean {
   const target = event.target;
   return (
     target instanceof HTMLTextAreaElement ||
-    (target instanceof HTMLInputElement && !UNTYPED_INPUTS.has(target.type))
+    (target instanceof HTMLInputElement && !UNTYPED_INPUTS.has(target.type)) ||
+    // A section's title field is an editor of its own since equations 3, with its own undo.
+    (target instanceof HTMLElement && target.closest('[contenteditable="true"]') !== null)
   );
 }
 
@@ -328,6 +365,23 @@ export function OutlinePanel({
   // The section whose title field is open, written by that field's own effect: a retitle that was not
   // saved after its field closed has nowhere left to keep its text, so the notice names it instead.
   const openField = useRef<string | null>(null);
+  // The Equation dialog, open for a section's title field, or closed (equations 3, ruling R3). Held
+  // here rather than in the field because the panel is what it makes inert, and the focus can only go
+  // back once the panel is no longer inert, which is this render's to say.
+  const [equating, setEquating] = useState<EquationRequest | null>(null);
+  // What had the focus as it opened - the title field, or the button beside it - to give it back to.
+  const equationOpener = useRef<HTMLElement | null>(null);
+  const askEquation = (request: EquationRequest) => {
+    equationOpener.current ??=
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setEquating(request);
+  };
+  useEffect(() => {
+    if (equating !== null) return;
+    const back = equationOpener.current;
+    equationOpener.current = null;
+    back?.focus();
+  }, [equating]);
   // The node a link took the reader to, marked until they choose another (STR-045's panel half).
   const [highlighted, setHighlighted] = useState<string | null>(null);
   // The sections the reader has collapsed: how the outline is shown to them, never part of the
@@ -425,7 +479,7 @@ export function OutlinePanel({
         waiting.resolve('signedOut');
         continue;
       }
-      if (plainTitle(node.title) === titleText(waiting.operation.title)) {
+      if (canonicaliseTitle(node.title) === canonicaliseTitle(waiting.operation.title)) {
         waiting.resolve(outline);
         continue;
       }
@@ -771,189 +825,216 @@ export function OutlinePanel({
   return (
     // Two parts, in the order they always had: the outline itself, and what is said of the node
     // chosen in it. The document page lays them out in columns of their own (interface slice 8).
-    <div data-panel="outline" onKeyDown={onPanelKeyDown}>
-      <div data-part="outline">
-        {head}
-        <div
-          className={styles['panel']}
-          {...(tab ? { role: 'tabpanel', id: tab.panel, 'aria-labelledby': tab.tab } : {})}
-        >
-          {editable && (
-            <div role="toolbar" aria-label="Outline" className={styles['toolbar']}>
-              {/* Nothing here is disabled while an act is in flight, because a control that is disabled
+    <>
+      <div data-panel="outline" onKeyDown={onPanelKeyDown} inert={equating !== null}>
+        <div data-part="outline">
+          {head}
+          <div
+            className={styles['panel']}
+            {...(tab ? { role: 'tabpanel', id: tab.panel, 'aria-labelledby': tab.tab } : {})}
+          >
+            {editable && (
+              <div role="toolbar" aria-label="Outline" className={styles['toolbar']}>
+                {/* Nothing here is disabled while an act is in flight, because a control that is disabled
               under the focus drops it to the page body in a real browser: each waits instead, and
               Undo says it has nothing to undo through aria-disabled, where it can keep the focus. */}
-              {/* Icons, each still named in words - by `aria-label` for a screen reader and by
+                {/* Icons, each still named in words - by `aria-label` for a screen reader and by
                 `title` for a pointer - so the words move rather than going (interface slice 15). */}
-              <button
-                type="button"
-                className={styles['act']}
-                aria-label="Add section"
-                title="Add section"
-                onClick={() => !busy && openAdding('section')}
-              >
-                <Icon name="Add section" />
-              </button>
-              <button
-                type="button"
-                className={styles['act']}
-                aria-label="Add component"
-                title="Add component"
-                onClick={() => !busy && openAdding('component')}
-              >
-                <Icon name="Add component" />
-              </button>
-              <span className={styles['divider']} aria-hidden="true" />
-              <button
-                type="button"
-                className={styles['act']}
-                aria-label="Undo"
-                title="Undo"
-                aria-disabled={!canUndo}
-                onClick={() => {
-                  if (!busy && canUndo) void onUndo?.();
+                <button
+                  type="button"
+                  className={styles['act']}
+                  aria-label="Add section"
+                  title="Add section"
+                  onClick={() => !busy && openAdding('section')}
+                >
+                  <Icon name="Add section" />
+                </button>
+                <button
+                  type="button"
+                  className={styles['act']}
+                  aria-label="Add component"
+                  title="Add component"
+                  onClick={() => !busy && openAdding('component')}
+                >
+                  <Icon name="Add component" />
+                </button>
+                <span className={styles['divider']} aria-hidden="true" />
+                <button
+                  type="button"
+                  className={styles['act']}
+                  aria-label="Undo"
+                  title="Undo"
+                  aria-disabled={!canUndo}
+                  onClick={() => {
+                    if (!busy && canUndo) void onUndo?.();
+                  }}
+                >
+                  <Icon name="Undo" />
+                </button>
+                <span className={styles['overline']} aria-hidden="true">
+                  Outline
+                </span>
+              </div>
+            )}
+            {editable && adding?.kind === 'section' && (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const text = newTitle.trim();
+                  if (!hasText(text)) {
+                    setAttempted(true);
+                    return;
+                  }
+                  void insert({ type: 'section', title: sectionTitle(text) });
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') cancelAdding();
                 }}
               >
-                <Icon name="Undo" />
-              </button>
-              <span className={styles['overline']} aria-hidden="true">
-                Outline
-              </span>
-            </div>
-          )}
-          {editable && adding?.kind === 'section' && (
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                const text = newTitle.trim();
-                if (!hasText(text)) {
-                  setAttempted(true);
-                  return;
+                <label>
+                  New section title
+                  {/* Focus goes where the author asked to type: they opened this form themselves. */}
+                  <input
+                    autoFocus
+                    value={newTitle}
+                    onChange={(event) => setNewTitle(event.target.value)}
+                  />
+                </label>
+                {/* Said about the field as it stands, so it goes the moment the field is fine. */}
+                {attempted && !hasText(newTitle) && <p>A section needs a title.</p>}
+                <button type="submit">Add</button>
+                <button type="button" onClick={cancelAdding}>
+                  Cancel
+                </button>
+              </form>
+            )}
+            {editable && adding?.kind === 'component' && (
+              <ComponentChooser
+                components={components}
+                chosen={chosen}
+                onChoose={setChosen}
+                onAdd={(component) =>
+                  void insert({ type: 'reference', component, mode: { kind: 'latest' } })
                 }
-                void insert({ type: 'section', title: sectionTitle(text) });
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') cancelAdding();
-              }}
-            >
-              <label>
-                New section title
-                {/* Focus goes where the author asked to type: they opened this form themselves. */}
-                <input
-                  autoFocus
-                  value={newTitle}
-                  onChange={(event) => setNewTitle(event.target.value)}
-                />
-              </label>
-              {/* Said about the field as it stands, so it goes the moment the field is fine. */}
-              {attempted && !hasText(newTitle) && <p>A section needs a title.</p>}
-              <button type="submit">Add</button>
-              <button type="button" onClick={cancelAdding}>
-                Cancel
-              </button>
-            </form>
-          )}
-          {editable && adding?.kind === 'component' && (
-            <ComponentChooser
-              components={components}
-              chosen={chosen}
-              onChoose={setChosen}
-              onAdd={(component) =>
-                void insert({ type: 'reference', component, mode: { kind: 'latest' } })
-              }
-              onCancel={cancelAdding}
-              onReload={onReloadComponents}
+                onCancel={cancelAdding}
+                onReload={onReloadComponents}
+              />
+            )}
+            {root}
+            {/* Not shown, and still what the tree is described by: a screen reader hears how to move,
+            and a pointer finds the acts by their tooltips (interface slice 15). */}
+            <p id={`${prefix}-keys`} className={styles['hidden']}>
+              {editable ? KEYS : 'Move between items with the arrow keys.'}
+            </p>
+            {nodes.length === 0 ? (
+              <p>This document has no sections yet.</p>
+            ) : (
+              <ul
+                role="tree"
+                className={styles['tree']}
+                aria-label="Outline"
+                aria-describedby={`${prefix}-keys`}
+                aria-busy={busy}
+                onKeyDown={onTreeKeyDown}
+                onClick={onTreeClick}
+                onDragStart={(event) => {
+                  const item = (event.target as HTMLElement).closest<HTMLElement>(
+                    '[role="treeitem"]',
+                  );
+                  const id = item?.dataset.node;
+                  if (!may || id === undefined) return;
+                  // A tick later, not now: the drop places this renders change the page under the drag,
+                  // and Chromium ends a drag whose source changes in the same task it started in.
+                  clearTimeout(dragTimer.current);
+                  dragTimer.current = setTimeout(() => setDragging(id), 0);
+                  // Firefox starts no drag without data; the node's identifier is what is being moved.
+                  event.dataTransfer?.setData('text/plain', id);
+                  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(event) => allowDrop(event, dropTargetOf(event.target))}
+                onDrop={(event) => dropOnto(event, dropTargetOf(event.target))}
+                onDragEnd={() => {
+                  clearTimeout(dragTimer.current);
+                  setDragging(null);
+                }}
+              >
+                {renderNodes(nodes, 1)}
+              </ul>
+            )}
+            {dragging !== null && (
+              <p
+                onDragOver={(event) => allowDrop(event, endTarget)}
+                onDrop={(event) => dropOnto(event, endTarget)}
+              >
+                Move to the end of the document
+              </p>
+            )}
+          </div>
+        </div>
+        <div data-part="details">
+          {editable && selected && confirming === null && (
+            <NodeDetails
+              key={selected.id}
+              node={selected}
+              topLevel={placeOf(nodes, selected.id)?.parent === null}
+              frontOffered={mayBeFront(nodes, selected.id)}
+              frontAfter={frontAfter(nodes, selected.id)}
+              unnumberedAbove={unnumberedAncestor(nodes, selected.id)}
+              names={names}
+              busy={busy}
+              onOperation={(operation) => send(operation, null)}
+              onRetitle={retitle}
+              openField={openField}
+              onNotice={onNotice}
+              onRemove={() => setConfirming(selected.id)}
+              language={outline.language}
+              direction={outline.direction}
+              onEquation={askEquation}
             />
           )}
-          {root}
-          {/* Not shown, and still what the tree is described by: a screen reader hears how to move,
-            and a pointer finds the acts by their tooltips (interface slice 15). */}
-          <p id={`${prefix}-keys`} className={styles['hidden']}>
-            {editable ? KEYS : 'Move between items with the arrow keys.'}
-          </p>
-          {nodes.length === 0 ? (
-            <p>This document has no sections yet.</p>
-          ) : (
-            <ul
-              role="tree"
-              className={styles['tree']}
-              aria-label="Outline"
-              aria-describedby={`${prefix}-keys`}
-              aria-busy={busy}
-              onKeyDown={onTreeKeyDown}
-              onClick={onTreeClick}
-              onDragStart={(event) => {
-                const item = (event.target as HTMLElement).closest<HTMLElement>(
-                  '[role="treeitem"]',
-                );
-                const id = item?.dataset.node;
-                if (!may || id === undefined) return;
-                // A tick later, not now: the drop places this renders change the page under the drag,
-                // and Chromium ends a drag whose source changes in the same task it started in.
-                clearTimeout(dragTimer.current);
-                dragTimer.current = setTimeout(() => setDragging(id), 0);
-                // Firefox starts no drag without data; the node's identifier is what is being moved.
-                event.dataTransfer?.setData('text/plain', id);
-                if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+          {editable && confirming !== null && (
+            <ConfirmRemoval
+              node={placeOf(nodes, confirming)?.node}
+              names={names}
+              onRemove={() => void remove(confirming)}
+              onKeep={() => {
+                setConfirming(null);
+                setFocusTarget(confirming);
               }}
-              onDragOver={(event) => allowDrop(event, dropTargetOf(event.target))}
-              onDrop={(event) => dropOnto(event, dropTargetOf(event.target))}
-              onDragEnd={() => {
-                clearTimeout(dragTimer.current);
-                setDragging(null);
-              }}
-            >
-              {renderNodes(nodes, 1)}
-            </ul>
+            />
           )}
-          {dragging !== null && (
-            <p
-              onDragOver={(event) => allowDrop(event, endTarget)}
-              onDrop={(event) => dropOnto(event, endTarget)}
-            >
-              Move to the end of the document
-            </p>
+          {selected && linkOf && confirming === null && (
+            <NodeLink
+              address={linkOf(selected.id)}
+              name={nodeName(selected, names)}
+              onNotice={onNotice}
+            />
           )}
         </div>
       </div>
-      <div data-part="details">
-        {editable && selected && confirming === null && (
-          <NodeDetails
-            key={selected.id}
-            node={selected}
-            topLevel={placeOf(nodes, selected.id)?.parent === null}
-            frontOffered={mayBeFront(nodes, selected.id)}
-            frontAfter={frontAfter(nodes, selected.id)}
-            unnumberedAbove={unnumberedAncestor(nodes, selected.id)}
-            names={names}
-            busy={busy}
-            onOperation={(operation) => send(operation, null)}
-            onRetitle={retitle}
-            openField={openField}
-            onNotice={onNotice}
-            onRemove={() => setConfirming(selected.id)}
-          />
+      {equating !== null &&
+        // Beside the panel rather than inside it, because the panel is what it makes inert, and so that
+        // a key pressed in it never reaches the panel's own undo.
+        createPortal(
+          <Suspense fallback={null}>
+            <EquationDialog
+              current={equating.current}
+              // A title is one line: an equation stands in it inline, and a block has nowhere to go.
+              blockPlaceable={false}
+              // The document's language, which a section's title is written in: no section carries a
+              // language of its own in the outline, so there is none to prefer to it.
+              language={outline.language}
+              onDone={(choice) => {
+                const said = equating.place(choice);
+                if (said === null) setEquating(null);
+                return said;
+              }}
+              onCancel={() => setEquating(null)}
+            />
+          </Suspense>,
+          document.body,
         )}
-        {editable && confirming !== null && (
-          <ConfirmRemoval
-            node={placeOf(nodes, confirming)?.node}
-            names={names}
-            onRemove={() => void remove(confirming)}
-            onKeep={() => {
-              setConfirming(null);
-              setFocusTarget(confirming);
-            }}
-          />
-        )}
-        {selected && linkOf && confirming === null && (
-          <NodeLink
-            address={linkOf(selected.id)}
-            name={nodeName(selected, names)}
-            onNotice={onNotice}
-          />
-        )}
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -1103,13 +1184,20 @@ function ConfirmRemoval({
  * What a section title field shows and what the outline held when it last heard: the same
  * reconciliation `ComponentHeader` uses, by value and never by counting renders, so StrictMode's second
  * pass cannot eat a keystroke and an unrelated re-render cannot revert a field being typed.
+ *
+ * **Titles, compared by their canonical form** (equations 3, ruling R2): a title may hold an equation,
+ * and its words are then only the equation's alternative, which two different equations can share -
+ * so "the same title" is `canonicaliseTitle`'s answer, the form the outline's digest takes, and never
+ * a comparison of words. `typed` is what the field's editor holds, mirrored as it changes; setting it
+ * to anything else puts that into the editor.
  */
 interface Field {
-  readonly typed: string;
-  readonly inModel: string;
+  readonly typed: Title;
+  readonly inModel: Title;
   /**
-   * Every title this field has sent and not yet heard back about, oldest first. A second commit can
-   * be made while the first is still in flight, and either coming back is this field's own.
+   * The canonical form of every title this field has sent and not yet heard back about, oldest first.
+   * A second commit can be made while the first is still in flight, and either coming back is this
+   * field's own.
    */
   readonly sent: readonly string[];
 }
@@ -1127,6 +1215,9 @@ function NodeDetails({
   openField,
   onNotice,
   onRemove,
+  language,
+  direction,
+  onEquation,
 }: {
   node: OutlineViewNode;
   /** Whether the node is at the top level, the only place `matter` may be set (STR-016). */
@@ -1147,6 +1238,11 @@ function NodeDetails({
   openField: MutableRefObject<string | null>;
   onNotice: (message: string | null) => void;
   onRemove: () => void;
+  /** The document's language and direction, which a section's title is written in. */
+  language: string;
+  direction: 'ltr' | 'rtl';
+  /** Opens the Equation dialog for the title field (equations 3, ruling R3). */
+  onEquation: (request: EquationRequest) => void;
 }) {
   const hintId = useId();
   const matterHintId = useId();
@@ -1166,7 +1262,15 @@ function NodeDetails({
   return (
     <div>
       {node.type === 'section' && (
-        <TitleField node={node} onRetitle={onRetitle} openField={openField} onNotice={onNotice} />
+        <TitleField
+          node={node}
+          onRetitle={onRetitle}
+          openField={openField}
+          onNotice={onNotice}
+          language={language}
+          direction={direction}
+          onEquation={onEquation}
+        />
       )}
       <label>
         Starts on
@@ -1243,22 +1347,61 @@ function NodeDetails({
   );
 }
 
-/** `sent` with the first occurrence of `text` taken out: the one commit that will not come back. */
-function withoutFirst(sent: readonly string[], text: string): readonly string[] {
-  const at = sent.indexOf(text);
+/** `sent` with the first occurrence of `key` taken out: the one commit that will not come back. */
+function withoutFirst(sent: readonly string[], key: string): readonly string[] {
+  const at = sent.indexOf(key);
   return at < 0 ? sent : [...sent.slice(0, at), ...sent.slice(at + 1)];
 }
 
+/**
+ * Why a title is not changed here, in the words of what it holds that the field cannot keep: a
+ * cross-reference, a footnote, formatting, or - an image, a variable - anything else.
+ */
+function heldBack(title: Title): string {
+  if (title.some((run) => run.type === 'crossReference')) {
+    return 'This title holds a cross-reference, so it is not changed here.';
+  }
+  if (title.some((run) => run.type === 'footnote')) {
+    return 'This title holds a footnote, so it is not changed here.';
+  }
+  if (title.some((run) => run.type === 'text' && run.marks.length > 0)) {
+    return 'This title has formatting this field cannot keep, so it is not changed here.';
+  }
+  return 'This title holds something this field cannot keep, so it is not changed here.';
+}
+
+/** The words a title's text runs hold, joined: what the store's `hasText` asks of a title. */
+const wordsOf = (title: Title) =>
+  title.map((run) => (run.type === 'text' ? run.value : '')).join('');
+
+/**
+ * **A section's title field** (equations 3, rulings R1 to R3): the title editor from
+ * `packages/editor`, one line of words and inline equations, for a title holding only those; a title
+ * holding a mark or a cross-reference keeps a read-only field and a sentence saying what it holds,
+ * because an edit here would quietly drop it.
+ *
+ * The retitle state machine is the one a plain text field had, by canonical title rather than by
+ * text: what was typed, what the outline held when the field last heard, and what it has sent - so a
+ * retitle in flight, a refusal, an undo and another author's title behave as they always did, an
+ * equation included. **Equation** beside it, and `Mod-Shift-E` or `Enter` on an equation in it, open
+ * the Equation dialog for the title; placing one commits the title as it then stands.
+ */
 function TitleField({
   node,
   onRetitle,
   openField,
   onNotice,
+  language,
+  direction,
+  onEquation,
 }: {
   node: SectionViewNode;
   onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
   openField: MutableRefObject<string | null>;
   onNotice: (message: string | null) => void;
+  language: string;
+  direction: 'ltr' | 'rtl';
+  onEquation: (request: EquationRequest) => void;
 }) {
   // Says which section's field is open, for as long as it is: written in an effect, never in render.
   useEffect(() => {
@@ -1268,9 +1411,9 @@ function TitleField({
     };
   }, [openField, node.id]);
 
-  const plain = plainTitle(node.title);
-  const inModel = plain ?? titleText(node.title);
-  const [field, setField] = useState<Field>({ typed: inModel, inModel, sent: [] });
+  const editable = titleToEditor(node.title) !== null;
+  const inModel = canonicaliseTitle(node.title);
+  const [field, setField] = useState<Field>({ typed: node.title, inModel: node.title, sent: [] });
 
   // State derived from a prop, adjusted during render the way React documents it: a second render
   // pass reads what the first set, and the comparison is by value, so it settles at once. Nothing
@@ -1279,81 +1422,171 @@ function TitleField({
   // When it does differ, any of the field's own retitles coming back keeps what has been typed since
   // (and the ones sent after it are still to come); anything else - an undo, somebody else's title -
   // gives way to the outline.
-  if (inModel !== field.inModel) {
+  if (inModel !== canonicaliseTitle(field.inModel)) {
     const at = field.sent.indexOf(inModel);
     setField(
       at >= 0
-        ? { typed: field.typed, inModel, sent: field.sent.slice(at + 1) }
-        : { typed: inModel, inModel, sent: [] },
+        ? { typed: field.typed, inModel: node.title, sent: field.sent.slice(at + 1) }
+        : { typed: node.title, inModel: node.title, sent: [] },
     );
   }
 
-  if (plain === null) {
+  const place = useRef<HTMLDivElement | null>(null);
+  const editor = useRef<TitleEditor | null>(null);
+  // The field is asking for its dialog: the focus leaving it for the dialog is not the author leaving
+  // the title, so it commits nothing until the dialog places an equation or is closed.
+  const asking = useRef(false);
+  // Read by the editor's keys, which are bound once as it mounts: always this render's.
+  const typed = useRef(field.typed);
+  typed.current = field.typed;
+  const commitNow = useRef(() => {});
+  const promptNow = useRef(() => {});
+
+  // The editor, mounted into its place as the field appears and destroyed as it goes: a layout effect,
+  // so the field is there in the same commit as the details around it, as a text input was.
+  useLayoutEffect(() => {
+    const host = place.current;
+    if (!editable || host === null) return undefined;
+    const mounted = mountTitleEditor(host, {
+      title: typed.current,
+      label: 'Title',
+      language,
+      direction,
+      onChange: (title) => setField((previous) => ({ ...previous, typed: title })),
+      onCommit: () => commitNow.current(),
+      onPromptEquation: () => promptNow.current(),
+    });
+    editor.current = mounted;
+    return () => {
+      editor.current = null;
+      mounted.destroy();
+    };
+  }, [editable, language, direction]);
+
+  // The field given way to the outline, or put back after a refusal: what it now says it holds is put
+  // into the editor. Typing reaches here too, and changes nothing, because the editor already holds it.
+  useLayoutEffect(() => {
+    const mounted = editor.current;
+    if (mounted === null) return;
+    if (canonicaliseTitle(mounted.read()) !== canonicaliseTitle(field.typed)) {
+      mounted.replace(field.typed);
+    }
+  }, [field.typed]);
+
+  if (!editable) {
     return (
       <>
         <label>
           Title
-          <input value={inModel} disabled />
+          <input value={titleText(node.title)} disabled />
         </label>
-        <p>This title has formatting a plain field cannot keep, so it is not changed here.</p>
+        <p>{heldBack(node.title)}</p>
       </>
     );
   }
 
   // Committed whether or not another act is in flight: `onRetitle` holds it until that act is
-  // answered, so nothing typed is dropped because the author pressed Enter, or left, too soon.
+  // answered, so nothing typed is dropped because the author pressed Enter, or left, too soon. Read
+  // from the editor rather than from `typed`, which an equation placed a moment ago has not reached.
   const commit = () => {
-    const text = field.typed.trim();
+    const title = trimTitle(editor.current?.read() ?? field.typed);
     // The store's own rule (`hasText`), asked here so the field refuses exactly what the store would.
-    if (!hasText(text)) {
+    if (!hasText(wordsOf(title))) {
+      if (title.some((run) => run.type === 'equation')) {
+        // An equation is not a title on its own - a title also names its section wherever a name
+        // must be words - but it is the author's, so it is kept for them to write words beside.
+        onNotice("A section's title needs words as well as an equation.");
+        return;
+      }
       // Nothing was sent, so the outline never changed and the comparison above never resyncs this
       // field by itself: it is put back here, or it would sit empty beside a tree showing the title.
       onNotice('A section needs a title.');
-      setField({ typed: inModel, inModel, sent: [] });
+      setField({ typed: node.title, inModel: node.title, sent: [] });
       return;
     }
-    // Nothing new: the outline holds it, or it is the text this field sent last and is still waiting
+    const key = canonicaliseTitle(title);
+    // Nothing new: the outline holds it, or it is the title this field sent last and is still waiting
     // on - the blur that follows an Enter - so it is not committed a second time.
-    if (text === inModel || text === field.sent[field.sent.length - 1]) return;
-    setField((previous) => ({ ...previous, sent: [...previous.sent, text] }));
-    void onRetitle({ operation: 'retitle', node: node.id, title: sectionTitle(text) }).then(
-      (answer) => {
-        if (answer === 'refused') {
-          // The page now shows an outline other than the one this title was typed against, and has
-          // said so. The field gives way to it, rather than holding the refused title for the next
-          // blur to send again as an act nobody chose a second time.
-          setField((previous) => ({
-            typed: previous.inModel,
-            inModel: previous.inModel,
-            sent: [],
-          }));
-        } else if (answer === 'unsent' || answer === 'signedOut' || answer === 'superseded') {
-          // Nothing changed and nothing was recorded - or a later commit took its place - so it will
-          // not come back: the text stays, and after a failure the author's next Enter or blur is the
-          // retry the page asks for.
-          setField((previous) => ({ ...previous, sent: withoutFirst(previous.sent, text) }));
-        }
-      },
-    );
+    if (key === inModel || key === field.sent[field.sent.length - 1]) return;
+    setField((previous) => ({ ...previous, sent: [...previous.sent, key] }));
+    void onRetitle({ operation: 'retitle', node: node.id, title }).then((answer) => {
+      if (answer === 'refused') {
+        // The page now shows an outline other than the one this title was typed against, and has
+        // said so. The field gives way to it, rather than holding the refused title for the next
+        // blur to send again as an act nobody chose a second time.
+        setField((previous) => ({
+          typed: previous.inModel,
+          inModel: previous.inModel,
+          sent: [],
+        }));
+      } else if (answer === 'unsent' || answer === 'signedOut' || answer === 'superseded') {
+        // Nothing changed and nothing was recorded - or a later commit took its place - so it will
+        // not come back: the title stays, and after a failure the author's next Enter or blur is the
+        // retry the page asks for.
+        setField((previous) => ({ ...previous, sent: withoutFirst(previous.sent, key) }));
+      }
+    });
   };
+  commitNow.current = commit;
 
+  // The dialog for the title: on the equation selected whole in it, or for a new one at the caret.
+  // Placing it commits the title as it then stands, which is the one act the author asked for.
+  const openEquation = () => {
+    const mounted = editor.current;
+    if (mounted === null) return;
+    asking.current = true;
+    const current = mounted.equationAt();
+    onEquation({
+      current,
+      place: (choice) => {
+        const into = editor.current;
+        if (into === null) {
+          return 'This title can no longer be changed here, so the equation was not placed.';
+        }
+        const placed =
+          current === null ? into.insertEquation(choice) : into.changeEquation(current.pos, choice);
+        if (!placed) {
+          return current === null
+            ? 'An equation cannot be placed where the cursor is.'
+            : 'That equation is not there any more.';
+        }
+        asking.current = false;
+        // This render's commit, not the one the dialog was opened from: an answer to an earlier
+        // retitle may have arrived while the dialog stood, and what was sent is read from the latest.
+        commitNow.current();
+        return null;
+      },
+    });
+  };
+  promptNow.current = openEquation;
+
+  // The field and its button are one place to the author: the focus moving between them is not
+  // leaving the title, and leaving both is, as leaving a text input was. The focus leaving for the
+  // title's own dialog is not either: placing an equation commits, and cancelling comes back here.
   return (
-    <label>
-      Title
-      <input
-        value={field.typed}
-        onChange={(event) => {
-          const typed = event.target.value;
-          setField((previous) => ({ ...previous, typed }));
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.preventDefault();
-            commit();
-          }
-        }}
-        onBlur={commit}
-      />
-    </label>
+    <div
+      className={styles['title']}
+      onFocus={() => {
+        asking.current = false;
+      }}
+      onBlur={(event) => {
+        if (asking.current || event.currentTarget.contains(event.relatedTarget)) return;
+        commit();
+      }}
+    >
+      <span className={styles['titleLabel']} aria-hidden="true">
+        Title
+      </span>
+      <div ref={place} className={styles['titleField']} />
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        // The caret stays in the title, where the equation goes, as a toolbar's button leaves it.
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={openEquation}
+      >
+        Equation
+      </button>
+    </div>
   );
 }

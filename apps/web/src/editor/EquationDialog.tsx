@@ -9,16 +9,30 @@ import { latexToMathml } from './latex.js';
 import styles from './MarkPrompt.module.css';
 import { describeEquation, speechLanguage } from './speech.js';
 
+/**
+ * **The dialog knows nothing of where the equation goes** (equations 3, ruling R3): its caller names
+ * the target - the equation it opens on, whether a block may stand there, the language of what it is
+ * placed in - and places the answer itself in `onDone`. A component's editor places it on its surface
+ * or in a footnote's text; the outline panel places it in a section's title, inline only, in the
+ * document's language.
+ */
 export interface EquationDialogProps {
   /** The equation it opens on and changes, or null where it places a new one. */
   readonly current: EquationAt | null;
-  /** Whether a block equation may stand where a new one would go (`equationPlaceable`). */
+  /**
+   * Whether a block equation may stand where a new one would go (`equationPlaceable`); false where
+   * only an inline one can - a footnote's text, a table's cell, a section's title - and then the dialog
+   * does not ask how to place it.
+   */
   readonly blockPlaceable: boolean;
-  /** The component's base language: the one a description is written in, and the one it is in. */
+  /**
+   * The language of what the equation is placed in: a component's base language, or a section title's
+   * document's. The description is written in it, and marked as being in it.
+   */
   readonly language: string;
   /**
-   * The equation as the author left it; answers why it could not be placed, which the dialog says and
-   * stays open for, or null once it has been.
+   * The equation as the author left it, for the caller to place or change where it opened the dialog;
+   * answers why it could not be, which the dialog says and stays open for, or null once it has been.
    */
   readonly onDone: (choice: EquationChoice) => string | null;
   readonly onCancel: () => void;
@@ -51,7 +65,8 @@ function languageName(tag: string): string {
  * Nothing is placed on Cancel, Close or Escape.
  *
  * **The description is written for the author, and is theirs** (ruling R7; CNT-048): the speech rule
- * engine writes it, in the component's base language, whenever the equation changes - never on
+ * engine writes it, in the language it is given - the component's base language, or a title's
+ * document's - whenever the equation changes - never on
  * opening - until the author changes it, after which it is left as they wrote it and **Generate
  * again** writes it anew on asking. Where the engine does not speak the language, the field is left
  * empty and says so, and an equation placed with none is marked _No description_ where it stands.

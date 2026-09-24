@@ -1,8 +1,9 @@
-import type {
-  OutlineView,
-  OutlineViewNode,
-  OutlineOperation,
-  SectionViewNode,
+import {
+  equationAlternative,
+  type OutlineView,
+  type OutlineViewNode,
+  type OutlineOperation,
+  type SectionViewNode,
 } from '@alloy-works/domain';
 
 /**
@@ -341,27 +342,43 @@ export function inverseOf(
   }
 }
 
-/** A section title typed into a plain field (decision B): one run of unmarked text. */
+/**
+ * A section title typed into a plain field (decision B): one run of unmarked text. A new section's
+ * title is still typed so; an equation is placed in it once it is there (equations 3).
+ */
 export function sectionTitle(text: string): Title {
   return [{ type: 'text', value: text, marks: [] }];
 }
 
 /**
- * The title as plain text, or `null` when it holds anything a plain field would lose - a mark, an
- * equation - so the panel never retitles a section by quietly dropping what nothing here can show.
+ * The title's words, wherever a title must be plain words - a tree's label, a name in a sentence, an
+ * accessible name - whatever else it carries. **An equation is read as its alternative** (equations 3,
+ * ruling R4), the words it is spoken by, so "Growth as x squared" is named as a screen reader reads the
+ * heading rather than as "Growth as "; one with no alternative says nothing, as it has no name either.
  */
-export function plainTitle(title: InlineTitle): string | null {
-  let text = '';
-  for (const node of title) {
-    if (node.type !== 'text' || node.marks.length > 0) return null;
-    text += node.value;
-  }
-  return text;
+export function titleText(title: InlineTitle): string {
+  return title
+    .map((node) => {
+      if (node.type === 'text') return node.value;
+      if (node.type === 'equation') return equationAlternative(node.mathml) ?? '';
+      return '';
+    })
+    .join('');
 }
 
-/** The title's words, for a label, whatever else it carries. */
-export function titleText(title: InlineTitle): string {
-  return title.map((node) => (node.type === 'text' ? node.value : '')).join('');
+/**
+ * A title with the space at its ends taken off, as a plain title's `trim()` took it: from the start of
+ * a run that begins it and the end of a run that ends it, a run left empty dropped. The space beside an
+ * equation inside the title is the author's, and kept - "Growth as " before its equation is two words
+ * and a space, not two words.
+ */
+export function trimTitle(title: InlineTitle): Title {
+  const runs = [...title];
+  const first = runs[0];
+  if (first?.type === 'text') runs[0] = { ...first, value: first.value.trimStart() };
+  const last = runs[runs.length - 1];
+  if (last?.type === 'text') runs[runs.length - 1] = { ...last, value: last.value.trimEnd() };
+  return runs.filter((run) => run.type !== 'text' || run.value !== '');
 }
 
 /**
