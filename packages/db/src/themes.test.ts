@@ -2,6 +2,7 @@ import {
   DEFAULT_CATALOGUES,
   DEFAULT_CATALOGUE_VERSIONS,
   DEFAULT_THEME,
+  upgradeCatalogue1,
   type ParagraphCatalogue,
   type Theme,
 } from '@alloy-works/domain';
@@ -138,7 +139,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, PARAGRAPHS)).toBe(2);
+      expect(await versionsOf(trx, PARAGRAPHS)).toBe(3);
 
       // Every identifier the latest version holds keeps meaning what it meant, and a new one is
       // allocated beside them: 0.3 records.
@@ -162,7 +163,7 @@ describe("the theme's store", () => {
           },
         }),
       );
-      expect(three).toMatchObject({ kind: 'catalogue', revision: 0, version: 3 });
+      expect(three).toMatchObject({ kind: 'catalogue', revision: 0, version: 4 });
     });
   });
 
@@ -197,7 +198,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, PARAGRAPHS)).toBe(1);
+      expect(await versionsOf(trx, PARAGRAPHS)).toBe(2);
     });
   });
 
@@ -243,6 +244,64 @@ describe("the theme's store", () => {
     });
   });
 
+  it('answers unchanged for a catalogue held at catalogue/1 saved again as it reads, at either version of the shape', async () => {
+    const tenant = await environment();
+    await service.withTenant(tenant, async (trx) => {
+      const author = await ada(trx);
+      // The character catalogue's 0.1 is still the row 0024 seeded, at catalogue/1. Saved as it is
+      // held, or as the reader upgrades it, it is the same catalogue: the two are compared as both
+      // read, never by the shape either is written in, so neither records a version.
+      const characters = DEFAULT_CATALOGUE_IDS.character;
+      for (const catalogue of [
+        DEFAULT_CATALOGUES.character,
+        upgradeCatalogue1(DEFAULT_CATALOGUES.character),
+      ]) {
+        expect(
+          await addCatalogueVersion(trx, {
+            artifactId: characters,
+            openedFrom: DEFAULT_CATALOGUE_VERSIONS.character,
+            author,
+            catalogue,
+          }),
+          `catalogue/${catalogue.schemaVersion}`,
+        ).toMatchObject({
+          answer: 'version.unchanged',
+          current: { id: DEFAULT_CATALOGUE_VERSIONS.character, schemaVersion: 1 },
+        });
+      }
+      expect(await versionsOf(trx, characters)).toBe(1);
+
+      // Opened from anything but its latest, it is stale before it is compared, as the chain answers.
+      expect(
+        await addCatalogueVersion(trx, {
+          artifactId: characters,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.paragraph,
+          author,
+          catalogue: DEFAULT_CATALOGUES.character,
+        }),
+      ).toMatchObject({
+        answer: 'version.precondition',
+        current: { id: DEFAULT_CATALOGUE_VERSIONS.character },
+      });
+
+      // A change is still a change, and is written as it reads, at catalogue/2.
+      const renamed = recorded(
+        await addCatalogueVersion(trx, {
+          artifactId: characters,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.character,
+          author,
+          catalogue: {
+            ...DEFAULT_CATALOGUES.character,
+            styles: DEFAULT_CATALOGUES.character.styles.map((style) =>
+              style.id === 'strong' ? { ...style, name: 'Bold' } : style,
+            ),
+          },
+        }),
+      );
+      expect(renamed).toMatchObject({ version: 2, schemaVersion: 2 });
+    });
+  });
+
   it('records a theme version binding a new catalogue version, and the environment is set from it', async () => {
     const tenant = await environment();
     await service.withTenant(tenant, async (trx) => {
@@ -273,12 +332,12 @@ describe("the theme's store", () => {
       expect(version).toMatchObject({
         kind: 'theme',
         revision: 0,
-        version: 2,
+        version: 3,
         author,
         content: next,
       });
       const now = await defaultTheme(trx);
-      expect(now).toMatchObject({ versionId: version.id, number: '0.2', content: next });
+      expect(now).toMatchObject({ versionId: version.id, number: '0.3', content: next });
       expect(now.theme.name).toBe('Italic captions');
       expect(now.theme.catalogues.paragraph).toBe(captions.id);
       expect(now.theme.paragraphStyles.get('caption')!.properties.italic).toBe(true);
@@ -335,7 +394,7 @@ describe("the theme's store", () => {
       });
 
       // Neither was saved: the environment is set from the theme it was.
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(1);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(2);
       expect((await latestVersion(trx, DEFAULT_THEME_ID))!.id).toBe(declared.versionId);
     });
   });
@@ -350,7 +409,10 @@ describe("the theme's store", () => {
         artifactId: DEFAULT_THEME_ID,
         openedFrom: declared.versionId,
         author,
-        theme: { ...DEFAULT_THEME, catalogues: { ...DEFAULT_THEME.catalogues, image: layout!.id } },
+        theme: {
+          ...DEFAULT_THEME,
+          catalogues: { ...DEFAULT_THEME.catalogues, image: layout!.id },
+        },
       });
       expect(answer).toEqual({
         answer: 'refused',
@@ -361,7 +423,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(1);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(2);
     });
   });
 });

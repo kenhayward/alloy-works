@@ -531,12 +531,12 @@ seeded. Building it changed these things here:
 - **Keep-together keeps a paragraph whole where it fits a page**, as Word's `keepLines` does, and
   breaks one taller than the page's text block, which template 12 measures; the engine would have
   painted it off the page.
-- **Not every value is the theme's.** What template 12 never sets is the engine's default, and no
-  theme moves it: the underline's offset and thickness, a list's and an enumeration's indents, a
-  definition list's hanging indent and separator, a table cell's 5pt inset and a table's rules, and
-  the contents' leader and indents stay the template's until themes 2's table and list properties;
-  and how far a script is lowered or raised, and a footnote's separator, clearance and indent, which
-  no property of themes 1 or 2 names. Template 12's header names each.
+- **Not every value is the theme's.** What the template never sets is the engine's default, and no
+  theme moves it: a list's and an enumeration's indents, a definition list's hanging indent and
+  separator, the contents' leader and indents, the underline's offset and thickness, how far a script
+  is lowered or raised, and a footnote's separator, clearance and indent, which no property of themes 1
+  or 2 names. A table cell's inset and a table's rules, which template 12 left to the engine, are the
+  table style's in template 13 (themes 2, below). Template 13's header names each.
 - **A quotation is no longer set off.** The theme styles paragraphs, not a block's edges, so the space
   around a quotation is its paragraphs' own: 16.5pt less above it and before its attribution than
   template 11 set, and 9.9pt less after it. A spacing property for a block's edges, as Word's contextual
@@ -546,6 +546,77 @@ seeded. Building it changed these things here:
 - **`spikes/theme-conformance/` no longer runs against the model**: it calls the prototype's
   `resolveTheme`, `exampleTheme` and `resolveStyle`, which the model replaced. It stays the record of
   what ADR-0014 measured, above; the conformance suite STY-053 asks for is still to be built.
+
+**TH-I and TH-J are built**, by [themes 2](../plans/2026-09-24-themes-02-table-and-image-styles.md):
+`catalogue/2`, which gives the table and image catalogues their properties and a paragraph style
+`contextualSpacing`, the reader upgrading a `catalogue/1` as it reads it; layout schema 4's
+`words.continued`; migration 0025 seeding the default theme's 0.2 - new paragraph, table and image
+catalogues and the theme naming them - and the default layout's 0.5, which says _(continued)_; and
+`publishing/13` and template 13, which set a table's rules, fills, cells' inset, header weight, header
+repetition, rows kept whole and continuation label from its table style, a figure's and an image's
+size, placement and alignment from its image style, and contextual spacing between two paragraphs of
+one style, in one container, that both ask for it. Still nothing chooses or edits a theme. Building it changed these
+things here:
+
+- **The default's tables and images look as template 12 set them**: every rule 1pt black, inside and
+  out; cells padded 5pt; the header neither filled nor bold; no banding; the header repeated, rows
+  allowed to split, and no continuation label, since a label leaves an empty header cell in the
+  structure tree on the table's first page, a cost a theme should choose. A figure fixes its width at the
+  measure, at most 0.6 of the text block's height, a centred block; an image in a line its height at 1.2
+  ems, at most the measure wide. Compiled without quotations, template 12 under 0.1 and template 13
+  under 0.2 paint every run, rule and fill the same to within 0.005pt.
+- **A quotation is set off again.** The quotation's style takes 16.5pt before and 12.65pt after and asks
+  for contextual spacing, and the attribution's takes 6.6pt before and 12.65pt after - one space after
+  on the quotation cannot give both template 11's distance into its attribution and its distance into
+  the text after it. Every distance template 11 set around a quotation is back but two: its own
+  paragraphs stand a line apart, 2.75pt closer than template 11 set them, and two quotations in a row
+  stand 43.5pt apart, 9.9pt further than template 11's 33.6 - the first's space after and the second's
+  space before, which add, where template 11's engine took the larger. Contextual spacing reaches only
+  within one container - one quotation, one list item, one cell, one note, the top level - and never
+  across a list's, a quotation's, a table's or a figure's edge, nor between two notes or a table's
+  caption and its cells, so two quotations are never set as one. The plan has the measured table.
+- **An image style fixes one dimension** in points, a fraction of the layout's measure (a width), a
+  fraction of the text block's height (a height) or ems of the text it stands in (an image in a line);
+  the other comes from the pixels, and both are re-derived where the other would pass the maximum. "The
+  measure" is the layout's, the editor's column, not the room where the image stands, which caps it
+  afterwards: a figure is made smaller to fit its place and what its caption leaves, as before, and an
+  image in a line wider than its room is refused, `image_too_wide`. Under the default an image in a line
+  at the top level can no longer be too wide, since its maximum is the measure: it is made smaller.
+- **An inline image style has no alignment**, rather than one ignored; `block` and `float` require one,
+  and a style for both figures and images in a line is refused, since no placement serves both. Floated
+  goes to the page's head or foot, whichever the engine finds room at: an author cannot choose which.
+- **The continuation label** is a first header row the engine repeats at level 1, with the header rows
+  at level 2 repeating or not by the style, set as an artifact in the caption role's style on every page
+  after the table's first - "Table 3 (continued)", the layout's words in the layout's language. A table
+  style asking for one under a layout with no `continued` fails the publish,
+  `continuation_words_missing`, naming the table and the style. On the table's first page the label is
+  hidden and its row keeps its room, 27pt under the worker test's ruled style, so the header stands that
+  much lower than without a label: the engine sizes a split row's later parts from the page the row
+  begins on, and with no room there the row's last line on each continued page stood below the text
+  block (found in the final whole-branch review). A table broken across pages is framed in
+  the outer rule on each page, as the engine draws it; header bold is applied to the text, so it wins
+  over the cell style and marks.
+- **Contrast is judged on a table's fills** for every paragraph style that applies to `tableCell` or to
+  `listItem` - a paragraph stored in any of them is set in it in a cell - with every mark in each, bold
+  where the header is.
+- **A table style's rules are held to its padding**: a rule takes no room, so half of it stands inside
+  each cell, and one wider than twice the padding would be drawn over the cell's text. The reader
+  refuses it, `table_rule_over_text`, naming the style and the rule. A wide outer rule still reaches
+  half its width into the margin.
+- **A row kept whole is kept only where it fits a page**, as keep-together keeps a paragraph: template 13
+  measures each run of rows a spanning cell joins against the text block less the header and label that
+  repeat above it, and a row taller than that splits, where the engine would have painted it off the
+  page.
+- **An image in a line is held to the text block's height**, its width re-derived, whatever its style
+  allows, and an image style's ems are held to 4.
+- **An environment that recorded its own version of the theme or of the paragraph, table or image
+  catalogue keeps the old look**: 0025 moves only the product's own unchanged chain, each on its own,
+  and its theme stays 0.1, set by the reader's upgrade as template 12 set it. A `catalogue/1` saved again
+  unchanged answers unchanged, judged on the version as the reader reads it.
+- **STY-019 is claimed and not cited.** An asset version cannot be stored without its dimensions - AST
+  records them on ingest - so the named failure it asks for cannot arise, and a test could only pretend
+  to reach it. The claim stands on that, and on `assemble` having nothing to size an image by but those
+  dimensions.
 
 ## Safety
 

@@ -37,15 +37,15 @@ import type { PublishFailure } from './failures.js';
 import { characterProblems, codePointName, type Covers, type Setting } from './glyphs.js';
 import {
   captionHeight,
-  CELL_INSET,
   columnsAt,
   columnsOf,
   expandTabs,
   BODY_SIZE,
-  inlineImageHeight,
   listIndent,
+  styledSize,
   textBlockHeight,
   textMeasure,
+  type ImageFrame,
 } from './measure.js';
 import { publishedLanguage } from './language.js';
 import type { Layout, PdfFormat } from './layout.js';
@@ -158,13 +158,6 @@ export function publishedImagePath(asset: Pick<PublishingAsset, 'object' | 'form
 }
 
 /**
- * The share of the text block's height a figure may stand (decision F-K): past it, the height is held
- * here and the width taken from the proportions - STY-017's rule with a fixed number, since the
- * engine lets an image run off its page and says nothing.
- */
-const FIGURE_HEIGHT_SHARE = 0.6;
-
-/**
  * The least an image may be given, in points - an inch - where its caption takes the rest of the page:
  * a caption that leaves less is refused, `caption_too_long`, rather than set beside a smudge.
  */
@@ -172,6 +165,9 @@ const FIGURE_LEAST_HEIGHT = 72;
 
 /** A length in points as a published document carries it: to hundredths, so its bytes are stable. */
 const points = (length: number) => Math.round(length * 100) / 100;
+
+/** An image style's alignment in the engine's spelling, as the published document carries it. */
+const ALIGNMENTS = { start: 'start', centre: 'center', end: 'end' } as const;
 
 /** Each number format as Typst's page numbering writes it, by name, never by position. */
 const PATTERNS: Readonly<Record<NumberFormat, PublishedPattern>> = {
@@ -379,7 +375,7 @@ export function assemble(input: AssembleInput): Assembled {
       );
     }
     const slotWords = slotParts.flatMap((part) => (part.kind === 'words' ? [part.text] : []));
-    const { contents: title, notice, noticeSentence, above, below } = layout.words;
+    const { contents: title, notice, noticeSentence, above, below, continued } = layout.words;
     const listTitles = layout.matter.lists.map((list) => list.title);
     // A relative reference prints the layout's words for above and below (cross-references 2, R2),
     // where it has them: asked here of running text's family whether or not a reference prints one,
@@ -398,6 +394,13 @@ export function assemble(input: AssembleInput): Assembled {
     for (const words of slotWords) checkWords(words, running, push);
     for (const words of listTitles) checkWords(words, roles('list'), push);
     for (const words of relative) checkWords(words, text, push);
+    // What a continued table's label adds (themes 2, ruling R2), set after the label in the caption
+    // role's style: asked of its family whether or not a table in the document asks for a label, as
+    // the contents' title is asked where there is no contents, and without being set by, since it may
+    // set nothing.
+    if (continued !== undefined) {
+      checkWords(continued, [roleStyle('caption').typeface.family], push);
+    }
   }
 
   // Every cross-reference in the document, resolved before anything is projected (cross-references 2):
@@ -434,10 +437,10 @@ export function assemble(input: AssembleInput): Assembled {
    * its own and the list is the nearest real thing to point an author at. `runsOf` in
    * `packages/editor/src/mapping.ts` names the same place for the same reason.
    *
-   * **An image is published among the runs** under a layout (figures 5): one line high, its width from
-   * its proportions and no wider than the room where it stands - `indent` is what the measure has
-   * lost by then, a table's cell included - and described as a figure is. Its failures name `block`,
-   * the block that holds it.
+   * **An image is published among the runs** under a layout (figures 5): at the size its image style
+   * gives it (themes 2) - one line high under the default theme - and no wider than the room where it
+   * stands - `indent` is what the measure has lost by then, a table's cell included - and described as
+   * a figure is. Its failures name `block`, the block that holds it.
    *
    * **So is a footnote, in a paragraph's runs alone** (footnotes 2, FN-B): `inParagraph` says the runs
    * are a paragraph's, with the table the paragraph stands in, if any, which a footnote anchored to a
@@ -456,7 +459,8 @@ export function assemble(input: AssembleInput): Assembled {
    *
    * `families` are the families the runs are set in where no mark names a face (themes 1): the
    * paragraph style's, or the role's - and every place it is set again, as a caption is in its list.
-   * `size` is that style's size, which an image among the runs is printed 1.2 ems of.
+   * `size` is that style's size, which an em of an image style among the runs is (1.2 of them under
+   * the default theme's `inline`).
    */
   const publishedRuns = (
     content: readonly InlineNode[],
@@ -873,14 +877,27 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
-        // The table's own style, from the theme's table catalogue (themes 1), which holds no property
-        // until themes 2: it must be there, and apply to a table.
+        // The table's own style, from the theme's table catalogue (themes 1): it must be there, and
+        // apply to a table. Its padding is what a cell insets what it holds by (themes 2), and a style
+        // asking for a continuation label needs the layout's words for one, which a layout stored
+        // before its schema 4 has not got (ruling R2): refused by name, naming the table and the style,
+        // rather than set as a number with nothing after it.
         const tableStyle = theme!.tableStyles.get(block.style);
         if (tableStyle === undefined) {
           failures.push(failure('compose', 'style_missing', node, block.id, block.style));
         } else if (!tableStyle.appliesTo.includes('table')) {
           failures.push(failure('compose', 'style_not_applicable', node, block.id, block.style));
+        } else if (tableStyle.breaks.continuationLabel && layout.words.continued === undefined) {
+          failures.push(
+            failure('compose', 'continuation_words_missing', node, block.id, block.style),
+          );
         }
+        // A style that is missing or does not apply has already failed the publish; its cells are
+        // still measured, with no padding, so no failure inside them is one the style would decide.
+        const padding =
+          tableStyle !== undefined && tableStyle.appliesTo.includes('table')
+            ? tableStyle.padding
+            : 0;
         // A caption of no words names nothing (ruling R3), whatever else it holds.
         const words = block.caption.map((inline) => (inline.type === 'text' ? inline.value : ''));
         if (words.join('').trim() === '') {
@@ -934,6 +951,7 @@ export function assemble(input: AssembleInput): Assembled {
             type: 'table',
             id: block.id,
             anchor: anchorOf(node, block.id),
+            style: block.style,
             label,
             caption,
             headerRows: block.headerRows,
@@ -942,13 +960,14 @@ export function assemble(input: AssembleInput): Assembled {
             rows: block.rows.map((row, rowIndex) => ({
               cells: row.cells.map((cell, cellIndex) => ({
                 // Paragraphs and lists alone (decision T-D), each published as it is anywhere else -
-                // in the room the cell has: its share of the measure, less the engine's inset each side.
+                // in the room the cell has: its share of the measure, less its style's padding each
+                // side (themes 2).
                 blocks: cell.content.flatMap((each) =>
                   publishable(
                     each,
                     node,
                     'tableCell',
-                    cellIndent(indent, columns, cell.colspan),
+                    cellIndent(indent, columns, cell.colspan, padding),
                     block,
                     rowIndex < block.headerRows,
                   ),
@@ -968,8 +987,8 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
-        // The image style, from the theme's image catalogue (themes 1), which holds no property until
-        // themes 2: it must be there, and apply to a figure.
+        // The image style, from the theme's image catalogue (themes 1): it must be there, and apply to a
+        // figure. It sizes and places the figure (themes 2).
         const imageStyle = theme!.imageStyles.get(block.imageStyle);
         if (imageStyle === undefined) {
           failures.push(failure('compose', 'style_missing', node, block.id, block.imageStyle));
@@ -1006,10 +1025,12 @@ export function assemble(input: AssembleInput): Assembled {
           }
           return [];
         }
-        // Sized here, never by the template (ruling R3): the width where the figure stands, the height
-        // from the proportions as displayed, and past its share of the text block - or past what its
-        // caption leaves of the page, where that is less - that height instead. A figure does not
-        // break, so image and caption must stand on one page together (final review).
+        // Sized here, never by the template (ruling R3): by its image style (themes 2, ruling R5) - the
+        // dimension it fixes, the other from the proportions as displayed, both held to its maximum -
+        // and then held to the room where the figure stands, and to what its caption leaves of the page,
+        // each re-derived from the proportions where it would be past it. A figure does not break, so
+        // image and caption must stand on one page together (final review); and a figure is never
+        // refused for its size, only made smaller, as it always was.
         const format = publishedPdf(layout.formats.pdf);
         const across = textMeasure(format) - indent;
         // An equation's characters are counted as words are: an estimate, as the words' is, and
@@ -1032,10 +1053,23 @@ export function assemble(input: AssembleInput): Assembled {
         // Asked whatever the caption came to, so both are said at once (PUB-052).
         const alternative = alternativeOf(block.alternative, asset, node, block.id);
         if (tooLong || alternative === undefined) return [];
-        const most = Math.min(textBlockHeight(format) * FIGURE_HEIGHT_SHARE, left);
-        const tall = (across * asset.height) / asset.width;
-        const [width, height] =
-          tall > most ? [(most * asset.width) / asset.height, most] : [across, tall];
+        // A style that is missing or does not apply has already failed the publish. One that applies
+        // to a figure places it as a block or a float: the reader refuses any other, by name.
+        if (imageStyle === undefined || !imageStyle.appliesTo.includes('figure')) return [];
+        if (imageStyle.placement === 'inline') {
+          throw new Error(
+            `The image style ${imageStyle.id} applies to a figure and places it inline`,
+          );
+        }
+        const frame: ImageFrame = {
+          measure: textMeasure(format),
+          textHeight: textBlockHeight(format),
+          // No em is a figure's: the reader refuses one (`image_unit_not_applicable`).
+          size: 0,
+        };
+        let { width, height } = styledSize(imageStyle, asset, frame);
+        if (width > across) [width, height] = [across, (across * asset.height) / asset.width];
+        if (height > left) [width, height] = [(left * asset.width) / asset.height, left];
         return [
           {
             type: 'figure',
@@ -1047,6 +1081,8 @@ export function assemble(input: AssembleInput): Assembled {
             width: points(width),
             height: points(height),
             alternative,
+            placement: imageStyle.placement,
+            alignment: ALIGNMENTS[imageStyle.alignment],
           },
         ];
       }
@@ -1135,20 +1171,29 @@ export function assemble(input: AssembleInput): Assembled {
 
   /**
    * The indent a table's cell stands at: what the measure has lost where the table stands, and the
-   * rest of the measure the cell does not have - its columns' share less the engine's inset each side.
+   * rest of the measure the cell does not have - its columns' share less its table style's padding
+   * each side (themes 2), which template 13 insets it by. A rule is drawn over the cell's edge and takes
+   * nothing from it.
    */
-  const cellIndent = (indent: number, columns: number, colspan: number): number => {
+  const cellIndent = (
+    indent: number,
+    columns: number,
+    colspan: number,
+    padding: number,
+  ): number => {
     const measure = textMeasure(publishedPdf(layout!.formats.pdf));
-    const cell = ((measure - indent) * colspan) / columns - 2 * CELL_INSET;
+    const cell = ((measure - indent) * colspan) / columns - 2 * padding;
     return measure - cell;
   };
 
   /**
    * An image in a run of text as the template reads it (figures 5, rulings R2 to R4), or null with its
    * failures recorded: an image style of the theme's that applies to an image in a line (themes 1),
-   * an image the request resolved, alternative text as a figure's, and one line high - 1.2 ems of
-   * `size`, the size of the style it stands in (`inlineImageHeight`) - no wider than the room where it
-   * stands.
+   * an image the request resolved, alternative text as a figure's, and the size its style gives it
+   * (themes 2, `styledSize`) - an em of it `size`, the size of the style it stands in, so the default's
+   * 1.2 ems is one line high - held to the text block's height, the proportion kept, and no wider than
+   * the room where it stands, refused as `image_too_wide` past it, as it always was: an image in a line
+   * is not made narrower to fit, as a figure is.
    */
   const publishedImage = (
     image: Extract<InlineNode, { type: 'image' }>,
@@ -1174,9 +1219,22 @@ export function assemble(input: AssembleInput): Assembled {
       return null;
     }
     const alternative = alternativeOf(image.alternative, asset, node, block);
-    const height = inlineImageHeight(size);
-    const width = (height * asset.width) / asset.height;
-    const room = textMeasure(publishedPdf(layout!.formats.pdf)) - indent;
+    const format = publishedPdf(layout!.formats.pdf);
+    const frame: ImageFrame = {
+      measure: textMeasure(format),
+      textHeight: textBlockHeight(format),
+      size,
+    };
+    const styled = styledSize(style, asset, frame);
+    // No taller than the text block, the width re-derived, the proportion kept (the final whole-branch
+    // review of themes 2, I2): a style fixing a height in points, or a maximum past the page, would
+    // otherwise stand a line taller than its page, and the engine paints it off the page's foot with
+    // nothing said, as it does a kept block that cannot fit.
+    const { width, height } =
+      styled.height > frame.textHeight
+        ? { width: (styled.width * frame.textHeight) / styled.height, height: frame.textHeight }
+        : styled;
+    const room = textMeasure(format) - indent;
     if (width > room) {
       failOnce(failure('compose', 'image_too_wide', node, block, null));
       return null;
@@ -1188,6 +1246,7 @@ export function assemble(input: AssembleInput): Assembled {
         width: points(width),
         height: points(height),
         alternative,
+        placement: 'inline',
       },
     };
   };
@@ -1391,9 +1450,11 @@ export function assemble(input: AssembleInput): Assembled {
         contents: words.contents,
         notice: words.notice,
         noticeSentence: words.noticeSentence,
+        continued: words.continued ?? null,
       },
       format: publishedPdf(layout.formats.pdf),
-      // Every paragraph style the theme holds, not only those used (themes 1, ruling R6).
+      // Every paragraph, table and image style the theme holds, not only those used (themes 1, ruling
+      // R6; themes 2, ruling R5).
       theme: projectTypst(theme!),
       // Each list the layout declares that has an entry, in its order (ruling R7): a list of nothing
       // is not published, as a contents of nothing is not (decision K).

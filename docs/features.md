@@ -11,7 +11,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > preformatted text, tables and figures published as a laid-out PDF with a cover, a contents, lists
 > of figures and tables and numbered pages that carries all of that formatting.
 > Footnotes, a table's note, cross-references and equations are written and published, and every
-> publication is set from the environment's theme and records it.
+> publication is set from the environment's theme and records it, its tables and images from the
+> theme's table and image styles.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -397,14 +398,23 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Table 1.1** - and a screen reader is told the caption is the table's. Its header rows are marked
   as headers and repeat at the top of every page the table reaches, and a reader still hears them
   once, as headers, not as new rows of data. Its header columns are marked as the headers of their
-  rows, and merged cells print merged. The columns share the width of the page equally. A table
-  whose caption is empty is refused, naming it, because the caption is what names it to a reader; so
+  rows, and merged cells print merged. The columns share the width of the page equally. **How a
+  table looks comes from its table style** in the theme: which rules it draws and how thick and in
+  what colour, how far its cells are padded, whether its header row and header column are filled or
+  bold, whether its body rows are banded, whether its header rows repeat on each page, whether a row
+  may split across a page break or moves whole to the next page where it fits on one, and whether
+  each page it continues onto is labelled **Table 1.1 (continued)**, in the layout's words. The
+  default's looks as tables did: every rule a thin black line, the header neither filled nor bold and repeated, rows allowed to
+  split, and no label. A table whose caption is empty is refused, naming it, because the caption is what names it to a reader; so
   is one whose header cell is merged down into rows that are not header rows, which would make the
   PDF read a row of data as more header.
 
   **A figure prints** with its number and its caption below it, no wider than the text and no taller
   than 60 per cent of the page's text area, so a tall image is made smaller rather than running off
-  the page. A screen reader is told what it shows, in the language that description is written in -
+  the page. **Its size and place come from its image style** in the theme: the width or the height it
+  fixes, the most the other may be, its shape always kept, and whether it stands in the text or floats
+  to the head or foot of a page, at the start, the centre or the end. The default's is the full width
+  of the text, centred where it stands. A screen reader is told what it shows, in the language that description is written in -
   the image's own description in its own language, or the figure's own in the component's. A
   decorative figure's image is passed over by a screen reader altogether; its caption and number stay.
   A long caption makes the image smaller, so the two still stand on one page. A figure is refused,
@@ -430,15 +440,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   paragraph never leaves a single line alone at the foot or head of a page - comes from the environment's **theme**, not from
   the product's fixed settings. Every environment starts with one, the default, and every publication
   records the exact version it was made under, as it records the layout's. The default is set to look
-  as publications looked before, measured from them, with these differences you can see: a quotation
-  is no longer set apart from the text around it by extra space, and stands as close to it as one
-  paragraph stands to the next; a heading straight under another heading, a list after a paragraph,
+  as publications looked before, measured from them, with these differences you can see: a
+  quotation's own paragraphs stand a line apart, a little closer than they did, and two quotations one
+  after the other about 10 points further apart, while the space between a quotation and the text
+  around it and before its attribution is as it was; a heading straight under another heading, a list after a paragraph,
   and a table's rows, caption and note stand a few points further apart; a footnote's second
   paragraph stands closer to its first; and the running head and foot and the first line of a page
   each sit a point or two from where they did. A table's cells are still centred and a figure's
   caption too, both now by the theme. A publication made before the theme is kept as it was.
   **A theme can refuse a publish**, naming what to change: a paragraph, table or figure using a style
-  the theme does not have, or using one where that style cannot be used; and a typeface whose licence
+  the theme does not have, or using one where that style cannot be used; a table whose style labels
+  each page it continues onto, under a layout that has no words for the label; and a typeface whose licence
   forbids embedding it in a PDF, or one the publishing service does not have, whose measurements the
   theme records wrongly, or which cannot set equations. The last two are the theme's to change, and
   publishing again will not help. The default refuses none of these.
@@ -491,7 +503,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
   **An image in a line of text prints** one line high, in the paragraph or table cell it stands in,
   and a screen reader is told what it shows in the language that description is written in; a
-  decorative one is passed over. One wider than the room it stands in - the line, or its cell - is
+  decorative one is passed over. One wider than the text is made smaller to fit it, its shape kept.
+  One still wider than the room it stands in - a quotation, or a table's cell - is
   refused, naming where it is, as are the same things a figure is refused for, and so is one in a
   figure's or a table's caption, which is set again in the lists after the contents.
 
@@ -551,8 +564,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   figures, images in a line of text, footnotes, cross-references and equations, not publishing.** A
   block equation wider than its line runs past both margins and can be cut off at the page's edge,
   and one in a line of text runs past the right margin; nothing refuses either yet. A table too wide
-  for the page is not turned, shrunk or split, and how it breaks across pages is not yet chosen by a
-  style: every table repeats its header rows. A citation
+  for the page is not turned, shrunk or split, and a column is not aligned by the kind of value it
+  holds. A citation
   in a quotation's attribution cannot be written or published yet. A list nested
   past about thirty levels is stored by the editor and cannot be published at all, and the page says
   only that the publish failed. Quotations inside one another stop at fifteen in the editor, which is
@@ -593,8 +606,8 @@ Named explicitly so nobody has to read the source to find out:
   and every document publishes under it.
 - No way to choose, make or edit a theme, or to give a paragraph, a table or a figure a style of your
   own: every environment has the default theme, and every document publishes under it. The theme does
-  not reach the editor, which shows text in its own settings, and a table or a figure has no look of
-  its own to set yet.
+  not reach the editor, which shows text and tables in its own settings, and every table and figure
+  takes the default's one table style and two image styles.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
 - No search, no metadata anybody can fill in, no taxonomy, no workflow, and no revisions, baselines or

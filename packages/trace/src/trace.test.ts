@@ -436,8 +436,13 @@ describe('the citations in the committed model', () => {
   // STY-009, STY-010, STY-074, STY-042 and PUB-019 in apps/worker's themes.test.ts, where two themes
   // are read back from the PDF and a face that may not be embedded is refused. STY-009's prototype
   // citation in theme/runs.test.ts is removed with its test.
+  // 307, from 299 (2026-09-24): themes 2 cites STY-015 with STY-016, and STY-017, in packages/domain's
+  // publishing/assemble.test.ts, where an image is sized from its style's fixed dimension and held to
+  // its maximum with its proportion kept; and STY-076, STY-013 with PUB-017 and TAB-032, and STY-018 in
+  // apps/worker's table-and-image-styles.test.ts, where four table styles over a table crossing pages
+  // and every image placement and alignment are read back from the PDF.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(299);
+    expect(model.citations).toHaveLength(307);
   });
 
   it('cites no identifier the corpus does not hold', () => {

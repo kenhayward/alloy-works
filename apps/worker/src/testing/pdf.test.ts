@@ -18,6 +18,8 @@ const SOURCE = `
 #set page(width: 200pt, height: 200pt, margin: 20pt, fill: rgb("#fdf6e3"), header: [Head])
 #par[#text(size: 20pt, weight: "bold", fill: rgb("#8b0000"), underline[Red]) #text(size: 10pt, font: "Liberation Mono")[mono]]
 #block(fill: rgb("#eeeeee"), width: 50pt, height: 10pt)
+#line(length: 40pt, stroke: 3pt + rgb("#123456"))
+#scale(50%, reflow: true, line(length: 40pt, stroke: 4pt + rgb("#654321")))
 #par[#text(fill: rgb("#000080"))[Blue ]#text(fill: rgb("#006400"))[Green]]
 #par(justify: true)[Justified words run on across the line and over onto the next one, and the next again.]
 `;
@@ -71,6 +73,17 @@ describe("the paint of a PDF's pages: its text's faces, sizes and colours, and i
     expect(rule!.box[0]).toBeCloseTo(red.x, 2);
     expect(rule!.box[2] - rule!.box[0]).toBeCloseTo(red.width, 1);
     expect(rule!.box[1]).toBeLessThan(red.y);
+  });
+
+  it('reads how thick each rule is drawn, in points on the page however it was scaled to get there', () => {
+    // Themes 2: a table style's rules differ in thickness as well as in colour, so a test telling two
+    // apart must read both. The underline is drawn as thick as the engine makes it for its face.
+    const drawn = (colour: string) => paint.strokes.find((each) => each.stroke === colour)!;
+    expect(drawn('#123456').width).toBeCloseTo(3, 3);
+    expect(drawn('#123456').box[2] - drawn('#123456').box[0]).toBeCloseTo(40, 2);
+    // Drawn 4pt thick inside something scaled to half its size: 2pt on the page.
+    expect(drawn('#654321').width).toBeCloseTo(2, 3);
+    expect(drawn('#8b0000').width).toBeGreaterThan(0);
   });
 
   it("reads a run's width as far as its ink goes, a space it ends with left out, and whether it is an artifact", () => {

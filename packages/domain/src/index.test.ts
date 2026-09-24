@@ -182,6 +182,8 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_10',
         // Frozen by themes 1, which made `publishing/12`: the schema template 11 reads.
         'PUBLISHING_SCHEMA_11',
+        // Frozen by themes 2, which made `publishing/13`: the schema template 12 reads.
+        'PUBLISHING_SCHEMA_12',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',
@@ -215,6 +217,9 @@ describe('the domain package', () => {
         // Its third, as 0021 stored it at schema 2, promoted by cross-references 2 when 0.4 took the
         // default's name.
         'THIRD_DEFAULT_LAYOUT',
+        // Its fourth, as 0023 stored it at schema 3, promoted by themes 2 when 0.5 took the
+        // default's name.
+        'FOURTH_DEFAULT_LAYOUT',
         'LISTED_SEQUENCES',
         'speaksFor',
         'unsupportedFormats',
@@ -235,6 +240,17 @@ describe('the domain package', () => {
         'DEFAULT_CATALOGUE_VERSIONS',
         'DEFAULT_THEME',
         'projectTypst',
+        // Themes 2 (ruling R1): the units an image style is given in, the upgrade the reader reads a
+        // catalogue/1 by, the default theme's 0.1 frozen as 0024 stored it beside its 0.2 and 0.2's
+        // fixed version, and publishing/12's projection, frozen with template 12.
+        'IMAGE_UNITS',
+        'upgradeCatalogue1',
+        'FIRST_DEFAULT_CATALOGUES',
+        'FIRST_DEFAULT_CATALOGUES_BY_VERSION',
+        'FIRST_DEFAULT_CATALOGUE_VERSIONS',
+        'FIRST_DEFAULT_THEME',
+        'DEFAULT_THEME_VERSION',
+        'projectTypst12',
         'projectCss',
         'projectStylesXml',
         'markStyleId',

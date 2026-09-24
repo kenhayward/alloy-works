@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import {
   defaultLayout as productDefaultLayout,
   FIRST_DEFAULT_LAYOUT,
+  FOURTH_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
   SECOND_DEFAULT_LAYOUT,
   THIRD_DEFAULT_LAYOUT,
@@ -213,6 +214,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0022_publication_assets',
       '0023_default_layout_relative_words',
       '0024_themes',
+      '0025_table_and_image_styles',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -531,6 +533,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0022_publication_assets',
       '0023_default_layout_relative_words',
       '0024_themes',
+      '0025_table_and_image_styles',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -594,11 +597,16 @@ describe('migration 0021, which gives the default layout a list of figures', () 
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
     // Recorded through today's schema, which is all `recordVersion` takes: 0.2's words and lists,
-    // and no words for above and below, as a layout of schema 2 reads.
+    // and no words for above and below, as a layout of schema 2 reads, with the words a continued
+    // table's label adds, which a layout written at schema 4 gives.
     const own: Layout = {
       ...SECOND_DEFAULT_LAYOUT,
       schemaVersion: LAYOUT_SCHEMA_VERSION,
-      words: { ...SECOND_DEFAULT_LAYOUT.words, contents: 'Table of contents' },
+      words: {
+        ...SECOND_DEFAULT_LAYOUT.words,
+        contents: 'Table of contents',
+        continued: '(continued)',
+      },
     };
     const recorded = await service.withTenant({ ...tenant, id }, async (trx) => {
       const ada = await trx
@@ -622,6 +630,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0022_publication_assets',
       '0023_default_layout_relative_words',
       '0024_themes',
+      '0025_table_and_image_styles',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -670,11 +679,16 @@ describe('migration 0023, which gives the default layout words for a relative re
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
     // Recorded through today's schema, which is all `recordVersion` takes: 0.3's scheme and lists,
-    // and words of its own for above and below.
+    // and words of its own for above and below and for a continued table.
     const own: Layout = {
       ...THIRD_DEFAULT_LAYOUT,
       schemaVersion: LAYOUT_SCHEMA_VERSION,
-      words: { ...THIRD_DEFAULT_LAYOUT.words, above: 'from above', below: 'from below' },
+      words: {
+        ...THIRD_DEFAULT_LAYOUT.words,
+        above: 'from above',
+        below: 'from below',
+        continued: '(continued)',
+      },
     };
     const recorded = await service.withTenant({ ...tenant, id }, async (trx) => {
       const ada = await trx
@@ -696,6 +710,7 @@ describe('migration 0023, which gives the default layout words for a relative re
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
       '0023_default_layout_relative_words',
       '0024_themes',
+      '0025_table_and_image_styles',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -716,25 +731,141 @@ describe('migration 0023, which gives the default layout words for a relative re
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
 
-    // 0023 runs and adds 0.4 on top of the product's own, untouched 0.3.
+    // 0023 runs and adds 0.4 on top of the product's own, untouched 0.3; and 0025, after it, 0.5 on
+    // top of that.
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
       '0023_default_layout_relative_words',
       '0024_themes',
+      '0025_table_and_image_styles',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
-    const fourth = await service.withTenant({ ...tenant, id }, (trx) =>
+    const chain = await service.withTenant({ ...tenant, id }, (trx) =>
       trx
         .selectFrom('artifact_version')
         .selectAll()
         .where('artifact_id', '=', DEFAULT_LAYOUT_ID)
-        .where('revision_no', '=', 0)
-        .where('version_no', '=', 4)
-        .executeTakeFirstOrThrow(),
+        .orderBy('revision_no')
+        .orderBy('version_no')
+        .execute(),
     );
+    expect(chain.map((each) => [each.revision_no, each.version_no])).toEqual([
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+      [0, 5],
+    ]);
+    expect(chain[3]!.content).toEqual(FOURTH_DEFAULT_LAYOUT);
     expect(declared).toEqual({
       artifactId: DEFAULT_LAYOUT_ID,
-      versionId: fourth.id,
-      number: '0.4',
+      versionId: chain[4]!.id,
+      number: '0.5',
+      layout: productDefaultLayout,
+    });
+  });
+});
+
+describe("migration 0025, which gives the default layout the words a continued table's label adds", () => {
+  let db: TestDatabase;
+  let service: TenantDatabase;
+  let before: string;
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    // Every tenant migration up to 0024 and none after, so a tenant stands where every environment
+    // stood before a table's style could ask for a continuation label.
+    before = await mkdtemp(join(tmpdir(), 'aw-before-0025-'));
+    await cp(new URL('../migrations/', import.meta.url), before, {
+      recursive: true,
+      filter: (source) => {
+        const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
+        return numbered === null || Number(numbered[1]) < 25;
+      },
+    });
+    service = createTenantDatabase(db.serviceUrl);
+  });
+
+  afterAll(async () => {
+    await service?.close();
+    await rm(before, { recursive: true, force: true });
+    await db?.drop();
+  });
+
+  /** A tenant standing at 0024, as every environment stood before this migration. */
+  const beforeContinued = async (name: string): Promise<Tenant & { id: string }> => {
+    const id = db.newTenantId();
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    const tenant = await provisionTenant(db.adminUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id, name },
+      hostnames: [`${id}.alloy.test`],
+    });
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    return { ...tenant, id };
+  };
+
+  it('leaves a layout version an environment recorded after 0.4 as the one it declares', async () => {
+    const tenant = await beforeContinued('Own 0.5');
+    // Recorded through today's schema: 0.4's words, and a continued table's words of its own.
+    const own: Layout = {
+      ...FOURTH_DEFAULT_LAYOUT,
+      schemaVersion: LAYOUT_SCHEMA_VERSION,
+      words: { ...FOURTH_DEFAULT_LAYOUT.words, continued: '(cont.)' },
+    };
+    const recorded = await service.withTenant(tenant, async (trx) => {
+      const ada = await trx
+        .insertInto('principal')
+        .values({ issuer: ISSUER, subject: 'ada', email: null, display_name: 'Ada' })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const opened = await defaultLayout(trx);
+      return recordVersion(trx, {
+        artifactId: DEFAULT_LAYOUT_ID,
+        openedFrom: opened.versionId,
+        author: ada.id,
+        substance: { kind: 'layout', content: own },
+      });
+    });
+    if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+
+    // 0025 runs and leaves it: its 0.5 is the environment's own, so the product's goes nowhere.
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0025_table_and_image_styles',
+    ]);
+    const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
+    expect(declared).toEqual({
+      artifactId: DEFAULT_LAYOUT_ID,
+      versionId: recorded.version.id,
+      number: '0.5',
+      layout: own,
+    });
+  });
+
+  it("gives an environment still at the product's 0.4 the words a continued table's label adds", async () => {
+    const tenant = await beforeContinued('Still 0.4');
+    const fourth = await service.withTenant(tenant, (trx) => defaultLayout(trx));
+    expect(fourth.number).toBe('0.4');
+
+    // 0025 runs and adds 0.5 on top of the product's own, untouched 0.4.
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0025_table_and_image_styles',
+    ]);
+    const { declared, fifth } = await service.withTenant(tenant, async (trx) => ({
+      declared: await defaultLayout(trx),
+      fifth: await trx
+        .selectFrom('artifact_version')
+        .selectAll()
+        .where('artifact_id', '=', DEFAULT_LAYOUT_ID)
+        .where('revision_no', '=', 0)
+        .where('version_no', '=', 5)
+        .executeTakeFirstOrThrow(),
+    }));
+    expect(fifth).toMatchObject({ author_id: null, note: null, schema_version: 4 });
+    expect(declared).toEqual({
+      artifactId: DEFAULT_LAYOUT_ID,
+      versionId: fifth.id,
+      number: '0.5',
       layout: productDefaultLayout,
     });
   });

@@ -339,6 +339,27 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('template');
   });
 
+  it("says a table's style asks for a label the layout has no words for, blaming the layout and the theme", async () => {
+    // Themes 2, ruling R2: the words are the layout's and the label the table style's, and nothing in
+    // the document mends either, so the sentence never asks for another attempt.
+    const fake = failing([
+      {
+        stage: 'compose',
+        code: 'continuation_words_missing',
+        node: null,
+        block: 't1',
+        detail: 'labelled',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      "This table's style, labelled, labels each page the table continues onto, but the publication's layout has no words for the label. The layout or the theme has to change before this document can be published.",
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
   it('says what a figure needs before it can be published, and names nothing of an image it may not read', async () => {
     const fake = failing([
       { stage: 'compose', code: 'figure_without_caption', node: null, block: 'f1', detail: null },

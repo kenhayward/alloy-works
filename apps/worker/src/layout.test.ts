@@ -572,6 +572,7 @@ describe('template 4 lays out the page', () => {
         contents: 'In this report',
         notice: 'For review',
         noticeSentence: 'For review. Nobody has approved this publication yet.',
+        continued: '(continued)',
       },
     });
     const { read } = await compiled(FIXTURE, reviewing);

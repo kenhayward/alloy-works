@@ -19,8 +19,8 @@ import { STYLED_MARKS } from './schema.js';
  * **What it projects is what the prototype projected, no more** (themes 1, ruling R1): a paragraph's
  * face, size, weight, posture, colour, first-line indent, spacing and line spacing, and a mark's weight
  * and posture. **Not yet projected**, until the theme reaches the editor (TH-F, STY-058): a paragraph's
- * `background`, `padding`, `alignment`, `startIndent` and `endIndent`, and a mark's `underline`,
- * `colour`, `typeface`, `position` and `scale`.
+ * `background`, `padding`, `alignment`, `startIndent`, `endIndent` and `contextualSpacing`, a mark's
+ * `underline`, `colour`, `typeface`, `position` and `scale`, and every table and image style.
  *
  * Safe to generate from tenant data because the schema already restricts every string that
  * reaches it: identifiers are class-safe and family names cannot contain a quote (STY-N03).

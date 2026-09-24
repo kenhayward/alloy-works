@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_CATALOGUES, DEFAULT_CATALOGUE_VERSIONS, DEFAULT_THEME } from './default.js';
+import {
+  DEFAULT_CATALOGUES,
+  DEFAULT_CATALOGUE_VERSIONS,
+  DEFAULT_THEME,
+  FIRST_DEFAULT_CATALOGUES,
+  FIRST_DEFAULT_CATALOGUES_BY_VERSION,
+  FIRST_DEFAULT_CATALOGUE_VERSIONS,
+  FIRST_DEFAULT_THEME,
+} from './default.js';
 import { readCatalogue, readTheme, themeRefusalCodes } from './read.js';
 import { CATALOGUE_KINDS, PLACES, ROLES, STYLED_MARKS } from './schema.js';
 import { codes, defaultInputs, read, resolved } from './theme.fixture.js';
@@ -555,12 +563,481 @@ describe('contrast, when a theme is read', () => {
   });
 });
 
+describe('table and image styles, when a theme is read', () => {
+  it("resolves each table style and image style whole, by identifier, in the catalogue's order", () => {
+    const theme = resolved();
+    expect([...theme.tableStyles.values()]).toEqual(DEFAULT_CATALOGUES.table.styles);
+    expect([...theme.imageStyles.values()]).toEqual(DEFAULT_CATALOGUES.image.styles);
+  });
+
+  it('reads the theme a publication was made under at 0.1, its catalogues upgraded', () => {
+    const outcome = readTheme(FIRST_DEFAULT_THEME, FIRST_DEFAULT_CATALOGUES_BY_VERSION);
+    if (!outcome.ok) throw new Error(outcome.refusals.map((each) => each.message).join('\n'));
+    expect(outcome.theme.catalogues).toEqual(FIRST_DEFAULT_CATALOGUE_VERSIONS);
+    expect([...outcome.theme.tableStyles.values()]).toEqual(DEFAULT_CATALOGUES.table.styles);
+    expect([...outcome.theme.imageStyles.values()]).toEqual(DEFAULT_CATALOGUES.image.styles);
+    // No contextual spacing anywhere, and the quotation as 0.1 had it.
+    for (const style of outcome.theme.paragraphStyles.values()) {
+      expect(style.properties.contextualSpacing, style.id).toBe(false);
+    }
+    expect(outcome.theme.paragraphStyles.get('quotation')!.properties).toMatchObject({
+      spaceBefore: 0,
+      spaceAfter: 2.75,
+    });
+  });
+
+  it('refuses a table style any of whose rules is wider than twice its padding, naming the style and the rule, since half a rule stands inside each cell', () => {
+    // The final whole-branch review of themes 2, I3: a rule takes no room, so half of it lies inside
+    // the cell beside it, and a padding less than that half puts the rule over the cell's text.
+    const table = DEFAULT_CATALOGUES.table.styles[0]!;
+    const rule = (width: number) => ({ width, colour: '#000000' });
+    const withTables = (...styles: unknown[]) => {
+      const inputs = defaultInputs();
+      (inputs.catalogues as { table: unknown }).table = { schemaVersion: 2, kind: 'table', styles };
+      return inputs;
+    };
+    const outcome = read(
+      withTables(
+        // Every rule 12 points and no padding: named once, by its widest rule, the first of them.
+        {
+          ...table,
+          id: 'thick',
+          rules: { outer: rule(12), horizontal: rule(12), vertical: rule(12) },
+          headerRow: { ...table.headerRow, rule: rule(12) },
+          padding: 0,
+        },
+        { ...table, id: 'dark', rules: { ...table.rules, vertical: rule(6) }, padding: 2.5 },
+        {
+          ...table,
+          id: 'headed',
+          headerColumn: { ...table.headerColumn, rule: rule(3) },
+          padding: 1,
+        },
+        // Exactly twice the padding: half the rule meets the text and no more.
+        { ...table, id: 'even', rules: { ...table.rules, outer: rule(2) }, padding: 1 },
+        // No rule at all, and no padding.
+        {
+          ...table,
+          id: 'bare',
+          rules: { outer: 'none', horizontal: 'none', vertical: 'none' },
+          headerRow: { ...table.headerRow, rule: 'none' },
+          headerColumn: { ...table.headerColumn, rule: 'none' },
+          padding: 0,
+        },
+      ),
+    );
+    expect(outcome.ok ? [] : outcome.refusals).toEqual([
+      {
+        code: 'table_rule_over_text',
+        message:
+          "The table style thick draws its outer rule 12pt wide, more than twice its cells' padding of 0pt: half a rule stands inside the cell beside it, over its text",
+      },
+      {
+        code: 'table_rule_over_text',
+        message:
+          "The table style dark draws its vertical rule 6pt wide, more than twice its cells' padding of 2.5pt: half a rule stands inside the cell beside it, over its text",
+      },
+      {
+        code: 'table_rule_over_text',
+        message:
+          "The table style headed draws its header column's rule 3pt wide, more than twice its cells' padding of 1pt: half a rule stands inside the cell beside it, over its text",
+      },
+    ]);
+    // And a catalogue on its own is refused alike, as the store reads it.
+    const alone = readCatalogue({
+      schemaVersion: 2,
+      kind: 'table',
+      styles: [{ ...table, rules: { ...table.rules, horizontal: rule(12) }, padding: 5 }],
+    });
+    expect(alone.ok ? [] : alone.refusals.map((each) => each.code)).toEqual([
+      'table_rule_over_text',
+    ]);
+  });
+
+  /** The default inputs with the image catalogue's styles replaced. */
+  const withImages = (...styles: unknown[]) => {
+    const inputs = defaultInputs();
+    (inputs.catalogues as { image: unknown }).image = { schemaVersion: 2, kind: 'image', styles };
+    return inputs;
+  };
+  const figure = DEFAULT_CATALOGUES.image.styles[0]!;
+  const inline = DEFAULT_CATALOGUES.image.styles[1]!;
+
+  it('refuses a fraction of the measure for a height and a fraction of the text block for a width, naming the style', () => {
+    const outcome = read(
+      withImages(
+        { ...figure, fixed: { dimension: 'width', value: 0.5, unit: 'textHeight' } },
+        { ...inline, fixed: { dimension: 'height', value: 0.1, unit: 'measure' } },
+        // A figure fixing its height: its maximum is a width, which the text block cannot measure.
+        {
+          ...figure,
+          id: 'tall',
+          fixed: { dimension: 'height', value: 0.5, unit: 'textHeight' },
+          maximum: { value: 0.5, unit: 'textHeight' },
+        },
+        // And fixing its width, its maximum is a height, which the measure cannot.
+        { ...figure, id: 'broad', maximum: { value: 0.5, unit: 'measure' } },
+      ),
+    );
+    expect(outcome.ok ? [] : outcome.refusals).toEqual([
+      {
+        code: 'image_unit_wrong_dimension',
+        message:
+          "The image style figure gives its width as a fraction of the text block's height, which measures only a height",
+      },
+      {
+        code: 'image_unit_wrong_dimension',
+        message:
+          'The image style inline gives its height as a fraction of the measure, which measures only a width',
+      },
+      {
+        code: 'image_unit_wrong_dimension',
+        message:
+          "The image style tall gives its greatest width as a fraction of the text block's height, which measures only a height",
+      },
+      {
+        code: 'image_unit_wrong_dimension',
+        message:
+          'The image style broad gives its greatest height as a fraction of the measure, which measures only a width',
+      },
+    ]);
+  });
+
+  it('refuses ems for an image that is not in a line of text, and a placement that cannot hold what the style applies to', () => {
+    const outcome = read(
+      withImages(
+        {
+          ...figure,
+          fixed: { dimension: 'height', value: 3, unit: 'em' },
+          maximum: { value: 1, unit: 'measure' },
+        },
+        { ...figure, id: 'boxed', maximum: { value: 3, unit: 'em' } },
+        { ...inline, id: 'in-figure', appliesTo: ['figure'] },
+        { ...figure, id: 'standing', appliesTo: ['inlineImage'] },
+        { ...figure, id: 'afloat', placement: 'float', appliesTo: ['inlineImage'] },
+      ),
+    );
+    expect(outcome.ok ? [] : outcome.refusals).toEqual([
+      {
+        code: 'image_unit_not_applicable',
+        message:
+          'The image style figure gives its height in ems, which only an image in a line of text is sized in, and it applies to figure',
+      },
+      {
+        code: 'image_unit_not_applicable',
+        message:
+          'The image style boxed gives its greatest height in ems, which only an image in a line of text is sized in, and it applies to figure',
+      },
+      {
+        code: 'image_unit_not_applicable',
+        message:
+          'The image style in-figure gives its height in ems, which only an image in a line of text is sized in, and it applies to figure',
+      },
+      {
+        code: 'image_placement_not_applicable',
+        message:
+          'The image style in-figure places its image in a line of text, which only an image in a line of text can be, and it applies to figure',
+      },
+      {
+        code: 'image_placement_not_applicable',
+        message:
+          'The image style standing places its image as a block, which an image in a line of text cannot be, and it applies to inlineImage',
+      },
+      {
+        code: 'image_placement_not_applicable',
+        message:
+          'The image style afloat places its image floated, which an image in a line of text cannot be, and it applies to inlineImage',
+      },
+    ]);
+  });
+
+  it('refuses a style applying to a figure and to an image in a line of text alike, since no placement holds both', () => {
+    const outcome = read(withImages({ ...figure, appliesTo: ['figure', 'inlineImage'] }));
+    expect(codes(outcome)).toEqual(['image_placement_not_applicable']);
+    // And a catalogue on its own is refused alike, as the store reads it.
+    const alone = readCatalogue({
+      schemaVersion: 2,
+      kind: 'image',
+      styles: [{ ...inline, appliesTo: ['figure'] }],
+    });
+    expect(alone.ok ? [] : alone.refusals.map((each) => each.code)).toEqual([
+      'image_unit_not_applicable',
+      'image_placement_not_applicable',
+    ]);
+  });
+
+  it('accepts points in either dimension, for either kind of image', () => {
+    expect(
+      read(
+        withImages(
+          {
+            ...figure,
+            fixed: { dimension: 'height', value: 144, unit: 'pt' },
+            maximum: { value: 300, unit: 'pt' },
+          },
+          {
+            ...inline,
+            fixed: { dimension: 'width', value: 20, unit: 'pt' },
+            maximum: { value: 18, unit: 'pt' },
+          },
+          {
+            ...figure,
+            id: 'floated',
+            placement: 'float',
+            alignment: 'end',
+            fixed: { dimension: 'height', value: 0.3, unit: 'textHeight' },
+            maximum: { value: 0.5, unit: 'measure' },
+          },
+        ),
+      ).ok,
+    ).toBe(true);
+  });
+});
+
+describe('contrast on a table style, when a theme is read', () => {
+  const table = DEFAULT_CATALOGUES.table.styles[0]!;
+
+  /**
+   * The default inputs with the one table style changed, and every cell's text as given. A list is
+   * set in the cell's own style, made to apply there too, unless another is named for the listItem
+   * place, so a test judges the one style it changes: `body` then applies to running text alone, since
+   * every style that applies to a list item is judged on the fills.
+   */
+  const tabled = (
+    changes: Record<string, unknown>,
+    cell: Record<string, unknown> = {},
+    marks: Partial<Record<string, Record<string, unknown>>> = {},
+    listItem = 'table-cell',
+  ) => {
+    const inputs = defaultInputs();
+    inputs.theme.places = { ...inputs.theme.places, listItem };
+    (inputs.catalogues as { table: unknown }).table = {
+      schemaVersion: 2,
+      kind: 'table',
+      styles: [{ ...table, ...changes }],
+    };
+    inputs.catalogues.paragraph.styles = inputs.catalogues.paragraph.styles.map((style) =>
+      style.id === 'table-cell'
+        ? {
+            ...style,
+            appliesTo:
+              listItem === style.id ? [...style.appliesTo, 'listItem' as const] : style.appliesTo,
+            properties: { ...style.properties, ...cell },
+          }
+        : style.id === 'body' && listItem !== style.id
+          ? { ...style, appliesTo: style.appliesTo.filter((target) => target !== 'listItem') }
+          : style,
+    );
+    inputs.catalogues.character.styles = inputs.catalogues.character.styles.map((style) => ({
+      ...style,
+      properties: marks[style.mark] ?? style.properties,
+    }));
+    return read(inputs);
+  };
+
+  it("refuses the table cell's text below the contrast its size asks on a header's fill or a band's", () => {
+    // #000000 on #333333 is 1.66:1.
+    const header = tabled({ headerRow: { fill: '#333333', bold: false, rule: 'none' } });
+    expect(header.ok ? [] : header.refusals).toEqual([
+      {
+        code: 'contrast_too_low',
+        message:
+          "The table style table sets the text of the paragraph style table-cell, #000000, on its header row's fill #333333 at 1.66:1, below the 4.5:1 its text needs",
+      },
+    ]);
+    const column = tabled({ headerColumn: { fill: '#333333', bold: true, rule: 'none' } });
+    expect(column.ok ? [] : column.refusals.map((each) => each.message)).toEqual([
+      "The table style table sets the text of the paragraph style table-cell, #000000, on its header column's fill #333333 at 1.66:1, below the 4.5:1 its text needs",
+    ]);
+    const band = tabled({ banding: { fill: '#333333' } });
+    expect(band.ok ? [] : band.refusals.map((each) => each.message)).toEqual([
+      "The table style table sets the text of the paragraph style table-cell, #000000, on its band's fill #333333 at 1.66:1, below the 4.5:1 its text needs",
+    ]);
+    // Fills text stands well on pass, and none is the paper, checked already.
+    expect(
+      tabled({
+        headerRow: { fill: '#dbe4f0', bold: true, rule: 'none' },
+        headerColumn: { fill: '#eeeeee', bold: false, rule: 'none' },
+        banding: { fill: '#f5f5f5' },
+      }).ok,
+    ).toBe(true);
+  });
+
+  it('judges header text bold where the header says bold, so it asks what large bold text asks', () => {
+    // #949494 on white is 3.03:1: enough for 14pt bold, not for 14pt regular.
+    const fill = { fill: '#ffffff', rule: 'none' };
+    const cell = { size: 14, lineSpacing: 18, colour: '#949494' };
+    // The cell's text is refused on the paper as well, and its marks are judged on the fill: only
+    // the cell's text on the header's fill is under test here.
+    const bold = tabled({ headerRow: { ...fill, bold: true } }, cell);
+    const regular = tabled({ headerRow: { ...fill, bold: false } }, cell);
+    const tables = (outcome: ReturnType<typeof read>) =>
+      outcome.ok
+        ? []
+        : outcome.refusals
+            .map((each) => each.message)
+            .filter((each) => each.startsWith('The table style'));
+    expect(tables(bold)).toEqual([]);
+    expect(tables(regular)).toEqual([
+      "The table style table sets the text of the paragraph style table-cell, #949494, on its header row's fill #ffffff at 3.03:1, below the 4.5:1 its text needs",
+    ]);
+  });
+
+  it("judges a mark on a table's fills at the size and weight it sets, in its own colour or the cell's", () => {
+    // Every cell's text 18pt and #595959 on a #b0b0b0 band, 3.22:1: enough for large text. Inline
+    // code at 0.8 of it is 14.4pt and regular, which is not large, and is refused in the cell's
+    // colour; the scripts, smaller still, are refused alike. A link in its own #6a6a6a is 2.49:1, where on the paper and on preformatted text's fill it passes.
+    const outcome = tabled(
+      { banding: { fill: '#b0b0b0' } },
+      { size: 18, lineSpacing: 22, colour: '#595959' },
+      { hyperlink: { colour: '#6a6a6a' } },
+    );
+    expect(outcome.ok ? [] : outcome.refusals.map((each) => each.message)).toEqual([
+      "The character style link sets #6a6a6a on the band's fill #b0b0b0 of the table style table at 2.49:1, below the 3:1 its text needs",
+      "The character style subscript sets #595959, the colour of the paragraph style table-cell, on the band's fill #b0b0b0 of the table style table at 3.22:1, below the 4.5:1 its text needs",
+      "The character style superscript sets #595959, the colour of the paragraph style table-cell, on the band's fill #b0b0b0 of the table style table at 3.22:1, below the 4.5:1 its text needs",
+      "The character style inline-code sets #595959, the colour of the paragraph style table-cell, on the band's fill #b0b0b0 of the table style table at 3.22:1, below the 4.5:1 its text needs",
+    ]);
+  });
+
+  it("judges a list standing in a cell on the fills too, in the listItem place's style", () => {
+    // The table cell's style fills behind its own text, so no fill is behind it; a list in the cell
+    // is set in the listItem place's style, `body`, which has no fill of its own, so the header's is
+    // behind its text. #000000 on #333333 is 1.66:1.
+    const text = tabled(
+      { headerRow: { fill: '#333333', bold: false, rule: 'none' } },
+      { background: '#ffffff' },
+      {},
+      'body',
+    );
+    expect(text.ok ? [] : text.refusals.map((each) => each.message)).toEqual([
+      "The table style table sets the text of the paragraph style body, #000000, on its header row's fill #333333 at 1.66:1, below the 4.5:1 its text needs",
+    ]);
+    // And a mark in the list, in its own colour: a link in #6a6a6a on a #b0b0b0 band is 2.49:1.
+    const mark = tabled(
+      { banding: { fill: '#b0b0b0' } },
+      { background: '#ffffff' },
+      { hyperlink: { colour: '#6a6a6a' } },
+      'body',
+    );
+    expect(mark.ok ? [] : mark.refusals.map((each) => each.message)).toContain(
+      "The character style link sets #6a6a6a on the band's fill #b0b0b0 of the table style table at 2.49:1, below the 4.5:1 its text needs",
+    );
+  });
+
+  it("judges every paragraph style a cell or a list item can be set in on the fills, not only the places' own, and every mark in each", () => {
+    // The final whole-branch review of themes 2, I4: a paragraph in a cell may be stored in any style
+    // that applies to `tableCell`, and a list's in any that applies to `listItem`, so each is text a
+    // table style's fill can stand behind. `dim`, #595959, is 7.0:1 on the paper and 3.01:1 on a
+    // #aaaaaa header; `large`, 18pt, passes there as large text, and its subscript, 11.7pt, does not.
+    const inputs = defaultInputs();
+    (inputs.catalogues as { table: unknown }).table = {
+      schemaVersion: 2,
+      kind: 'table',
+      styles: [{ ...table, headerRow: { fill: '#aaaaaa', bold: false, rule: 'none' } }],
+    };
+    inputs.catalogues.paragraph.styles.push(
+      {
+        id: 'dim',
+        name: 'Dim',
+        appliesTo: ['tableCell', 'listItem'],
+        properties: { colour: '#595959' },
+      },
+      {
+        id: 'large',
+        name: 'Large',
+        appliesTo: ['listItem'],
+        properties: { colour: '#595959', size: 18, lineSpacing: 22 },
+      },
+    );
+    const outcome = read(inputs);
+    expect(outcome.ok ? [] : outcome.refusals.map((each) => each.message)).toEqual([
+      "The table style table sets the text of the paragraph style dim, #595959, on its header row's fill #aaaaaa at 3.01:1, below the 4.5:1 its text needs",
+      "The character style subscript sets #595959, the colour of the paragraph style large, on the header row's fill #aaaaaa of the table style table at 3.01:1, below the 4.5:1 its text needs",
+      "The character style superscript sets #595959, the colour of the paragraph style large, on the header row's fill #aaaaaa of the table style table at 3.01:1, below the 4.5:1 its text needs",
+      "The character style inline-code sets #595959, the colour of the paragraph style large, on the header row's fill #aaaaaa of the table style table at 3.01:1, below the 4.5:1 its text needs",
+    ]);
+  });
+
+  it('judges nothing on a fill where the cell text stands on a background of its own', () => {
+    // The cell's paragraph fills behind its text, so a header's fill is never behind the text.
+    expect(
+      tabled(
+        { headerRow: { fill: '#333333', bold: false, rule: 'none' } },
+        { background: '#ffffff' },
+      ).ok,
+    ).toBe(true);
+  });
+});
+
 describe('readCatalogue', () => {
   it('reads a catalogue on its own, as the store does when a version is saved', () => {
-    for (const kind of CATALOGUE_KINDS) {
+    for (const kind of ['paragraph', 'table', 'image'] as const) {
       const outcome = readCatalogue(DEFAULT_CATALOGUES[kind]);
       expect(outcome, kind).toEqual({ ok: true, catalogue: DEFAULT_CATALOGUES[kind] });
     }
+  });
+
+  it("reads every catalogue/1 by upgrading it: a table and an image style gain template 12's look and today's rules, a paragraph base no contextual spacing", () => {
+    // What the default theme's 0.1 rows hold, read as a publication made under them is set: exactly
+    // the look 0.2 states outright.
+    expect(readCatalogue(FIRST_DEFAULT_CATALOGUES.table)).toEqual({
+      ok: true,
+      catalogue: DEFAULT_CATALOGUES.table,
+    });
+    expect(readCatalogue(FIRST_DEFAULT_CATALOGUES.image)).toEqual({
+      ok: true,
+      catalogue: DEFAULT_CATALOGUES.image,
+    });
+    expect(readCatalogue(FIRST_DEFAULT_CATALOGUES.paragraph)).toEqual({
+      ok: true,
+      catalogue: {
+        ...FIRST_DEFAULT_CATALOGUES.paragraph,
+        schemaVersion: 2,
+        base: { ...FIRST_DEFAULT_CATALOGUES.paragraph.base, contextualSpacing: false },
+      },
+    });
+    for (const kind of ['character', 'admonition', 'citation'] as const) {
+      expect(readCatalogue(FIRST_DEFAULT_CATALOGUES[kind]), kind).toEqual({
+        ok: true,
+        catalogue: { ...FIRST_DEFAULT_CATALOGUES[kind], schemaVersion: 2 },
+      });
+    }
+
+    // Any table style, and each image style by what it applies to.
+    const upgraded = readCatalogue({
+      schemaVersion: 1,
+      kind: 'image',
+      styles: [
+        { id: 'plate', name: 'Plate', appliesTo: ['figure'] },
+        { id: 'glyph', name: 'Glyph', appliesTo: ['inlineImage'] },
+      ],
+    });
+    expect(upgraded.ok && upgraded.catalogue.kind === 'image' && upgraded.catalogue.styles).toEqual(
+      [
+        { ...DEFAULT_CATALOGUES.image.styles[0], id: 'plate', name: 'Plate' },
+        { ...DEFAULT_CATALOGUES.image.styles[1], id: 'glyph', name: 'Glyph' },
+      ],
+    );
+  });
+
+  it('holds a catalogue/1 to the parse its rows were written against, before it upgrades it', () => {
+    // Version 2's properties were never version 1's: stated at 1 they are refused, never upgraded
+    // past, so no row written at 1 can come to say something version 1 could not.
+    const padded = readCatalogue({
+      ...FIRST_DEFAULT_CATALOGUES.table,
+      styles: [{ ...FIRST_DEFAULT_CATALOGUES.table.styles[0]!, padding: 12 }],
+    });
+    expect(padded.ok ? [] : padded.refusals.map((each) => each.code)).toEqual([
+      'catalogue_malformed',
+    ]);
+    expect(padded.ok ? '' : padded.refusals[0]!.message).toMatch(/^The catalogue does not read/);
+    const spaced = readCatalogue({
+      ...FIRST_DEFAULT_CATALOGUES.paragraph,
+      base: { ...FIRST_DEFAULT_CATALOGUES.paragraph.base, contextualSpacing: true },
+    });
+    expect(spaced.ok).toBe(false);
+    expect(readCatalogue({ ...FIRST_DEFAULT_CATALOGUES.table, schemaVersion: 3 }).ok).toBe(false);
   });
 
   it("refuses what it can know without a theme: the shape, duplicates, marks and chains, but not a typeface's name", () => {

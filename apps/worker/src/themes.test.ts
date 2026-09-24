@@ -35,6 +35,7 @@ import {
   parseContentDocument,
   parseLayout,
   parseOutlineDocument,
+  PUBLISHING_SCHEMA,
   readTheme,
   withAlternative,
   type CharacterCatalogue,
@@ -63,7 +64,7 @@ import {
 } from './fonts.js';
 import { publishJob } from './jobs/publish.js';
 import { faceMetrics } from './metrics.js';
-import { PUBLICATION_TEMPLATE } from './template.js';
+import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPaint, readPdf, type Paint, type PaintedText, type ReadPdf } from './testing/pdf.js';
 import { defaultTheme } from './testing/theme.js';
 import { checkPdfUa1, type VeraPdfVerdict } from './testing/verapdf.js';
@@ -72,8 +73,8 @@ import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 
 /**
  * Themes 1's worker test (ruling R8): the default theme and a second one differing from it in every
- * paragraph property and every mark, each compiled through the real path - `assemble`, then template
- * 12 - checked by veraPDF and read back from the PDF: its faces, sizes, weights, postures and colours
+ * paragraph property and every mark, each compiled through the real path - `assemble`, then the
+ * template that reads what it makes, 13 since themes 2 - checked by veraPDF and read back from the PDF: its faces, sizes, weights, postures and colours
  * from what is painted, its alignment and indents from where lines start and end, its spaces and line
  * spacing from its baselines, and its pagination across a page's foot. Then the faces' own files: the
  * metrics the theme records for them, and the characters they can set. Then the job, end to end, with
@@ -100,7 +101,7 @@ const restyled = (
   base: ResolvedParagraphProperties,
   properties: Readonly<Record<string, ParagraphProperties>>,
 ): ParagraphCatalogue => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   kind: 'paragraph',
   base,
   styles: DEFAULT_CATALOGUES.paragraph.styles.map((style) => ({
@@ -142,6 +143,9 @@ const LEDGER_BASE: ResolvedParagraphProperties = {
   keepTogether: true,
   widowControl: false,
   hyphenate: true,
+  // No contextual spacing: every space this test measures is the two blocks' own, as themes 1 set
+  // them. The default's quotation asks for it, measured below (themes 2).
+  contextualSpacing: false,
 };
 const LEDGER_STYLES: Readonly<Record<string, ParagraphProperties>> = {
   quotation: { startIndent: 36, endIndent: 30, italic: true },
@@ -198,7 +202,7 @@ const LEDGER_RENDERINGS: Readonly<Record<StyledMark, CharacterProperties>> = {
   inlineCode: { typeface: 'serif', scale: 1.2 },
 };
 const ledgerMarks: CharacterCatalogue = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   kind: 'character',
   styles: DEFAULT_CATALOGUES.character.styles.map((style) => ({
     ...style,
@@ -334,7 +338,10 @@ const reference = (name: string, children: unknown[] = []) => ({
   children,
 });
 
-/** What the job makes of these components under a layout and a theme: `assemble`, then template 12. */
+/**
+ * What the job makes of these components under a layout and a theme: `assemble`, then the template
+ * that reads what it makes.
+ */
 const compile = async (
   theme: ResolvedTheme,
   layout: Layout,
@@ -369,7 +376,7 @@ const compile = async (
   });
   if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
   const pdf = await typst.compile(
-    PUBLICATION_TEMPLATE[12].file,
+    PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
     JSON.stringify(assembled.document),
     at,
   );
@@ -573,7 +580,8 @@ describe('two themes in the PDF (themes 1)', () => {
     }, 60_000);
 
     it("sets a table's cells in their place's style: centred under the default theme, and at the cell's start where it says start", async () => {
-      // Two columns sharing the measure, each cell inset 5pt, the engine's default (`CELL_INSET`).
+      // Two columns sharing the measure, each cell inset 5pt: the default table style's padding, the
+      // engine's own before themes 2.
       const column = (RIGHT - LEFT) / 2;
       const inset = 5;
       {
@@ -689,7 +697,10 @@ describe('two themes in the PDF (themes 1)', () => {
     // paragraph whole where it fits and breaks it where it does not.
     const KEPT = '5f0c3a3e-0d8a-4c1e-9d0b-6a51e2f9b003';
     const kept = read(
-      { ...DEFAULT_THEME, catalogues: { ...DEFAULT_THEME.catalogues, paragraph: KEPT } },
+      {
+        ...DEFAULT_THEME,
+        catalogues: { ...DEFAULT_THEME.catalogues, paragraph: KEPT },
+      },
       new Map([
         ...DEFAULT_CATALOGUES_BY_VERSION,
         [
@@ -842,7 +853,11 @@ describe('two themes in the PDF (themes 1)', () => {
       if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
       const halved = { ...assembled.document, theme: { ...assembled.document.theme, script: 0.5 } };
       const paint = await readPaint(
-        await typst.compile(PUBLICATION_TEMPLATE[12].file, JSON.stringify(halved), at),
+        await typst.compile(
+          PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+          JSON.stringify(halved),
+          at,
+        ),
       );
       const size = placeOf(defaultTheme, 'text').size;
       expect(paint.texts.find((each) => each.text === 'Subword')!.size).toBeCloseTo(size / 2, 3);
@@ -871,6 +886,121 @@ describe('two themes in the PDF (themes 1)', () => {
       expect.arrayContaining(['LiberationSerif', 'LiberationMono', 'STIXTwoMath-Regular']),
     );
   }, 60_000);
+});
+
+describe('a quotation set off by its style, its own paragraphs a line apart (themes 2)', () => {
+  it('stands a quotation as far from the text around it as template 11 did, and its paragraphs one line spacing apart, by contextual spacing', async () => {
+    // Themes 2, ruling R3: the default quotation's space before and after, and its attribution's, are
+    // template 11's, and it asks for contextual spacing, so that between two of its own paragraphs
+    // only its leading stands. Template 11's distances, baseline to baseline, as themes 1 measured
+    // them: 33.6 from text into a quotation and from a quotation into its attribution, 27.0 from an
+    // attribution or a bare quotation into text. Between a quotation's own paragraphs template 11 set
+    // 17.1; contextual spacing sets its line spacing, 14.35 - the one distance themes 2 moves.
+    const { paint, pdf } = await compile(defaultTheme, bare, [
+      {
+        name: 'quoted',
+        title: 'Quoted',
+        content: [
+          para('p1', text('Beforeword.')),
+          {
+            type: 'blockquote',
+            id: 'q1',
+            content: [para('q1a', text('Quotedone.')), para('q1b', text('Quotedtwo.'))],
+            attribution: [text('Adaword')],
+          },
+          para('p2', text('Betweenword.')),
+          { type: 'blockquote', id: 'q2', content: [para('q2a', text('Barequote.'))] },
+          para('p3', text('Afterword.')),
+        ],
+      },
+    ]);
+    expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+    const y = (words: string) => painted(paint, words).y;
+    const quotation = placeOf(defaultTheme, 'quotation');
+    const body = placeOf(defaultTheme, 'text');
+    const attribution = roleOf(defaultTheme, 'attribution');
+    expect(quotation.contextualSpacing).toBe(true);
+    expect(body.contextualSpacing).toBe(false);
+    expect(y('Beforeword') - y('Quotedone')).toBeCloseTo(33.6, 2);
+    expect(y('Quotedone') - y('Quotedtwo')).toBeCloseTo(quotation.lineSpacing, 2);
+    expect(y('Quotedone') - y('Quotedtwo')).toBeCloseTo(14.35, 2);
+    expect(y('Quotedtwo') - y('Adaword')).toBeCloseTo(33.6, 2);
+    expect(y('Adaword') - y('Betweenword')).toBeCloseTo(27, 2);
+    expect(y('Betweenword') - y('Barequote')).toBeCloseTo(33.6, 2);
+    expect(y('Barequote') - y('Afterword')).toBeCloseTo(27, 2);
+    // Each from the theme's own numbers, by ADR-0014's rule: one's space after, the next's space
+    // before and its line spacing, the faces and sizes being one.
+    expect(y('Quotedtwo') - y('Adaword')).toBeCloseTo(
+      quotation.spaceAfter + attribution.spaceBefore + attribution.lineSpacing,
+      2,
+    );
+    // From running text, which asks for none, into a quotation: both spaces, as between any two styles.
+    expect(y('Beforeword') - y('Quotedone')).toBeCloseTo(
+      body.spaceAfter + quotation.spaceBefore + quotation.lineSpacing,
+      2,
+    );
+  }, 60_000);
+
+  it('applies contextual spacing only within one container: two quotations in a row stand apart by their spaces, and two paragraphs at the top level whose style asks for it still stand a line apart', async () => {
+    // The final whole-branch review of themes 2, I5: two bare quotations in a row were set as one,
+    // 14.35 apart, since each begins and ends in the one style that asks for contextual spacing. It
+    // applies between paragraphs of one style in ONE container - one quotation, one list item, one
+    // cell - so two quotations, two containers, keep the first's space after and the second's space
+    // before; and two consecutive paragraphs of one style at the top level, siblings in the one flow,
+    // still stand only their leading apart, as Word sets them. A theme whose running text asks for it
+    // too shows the second.
+    const CONTEXTUAL = '5f0c3a3e-0d8a-4c1e-9d0b-6a51e2f9b0c5';
+    const contextual = read(
+      { ...DEFAULT_THEME, catalogues: { ...DEFAULT_THEME.catalogues, paragraph: CONTEXTUAL } },
+      new Map([
+        ...DEFAULT_CATALOGUES_BY_VERSION,
+        [
+          CONTEXTUAL,
+          {
+            ...DEFAULT_CATALOGUES.paragraph,
+            styles: DEFAULT_CATALOGUES.paragraph.styles.map((style) =>
+              style.id === 'body'
+                ? { ...style, properties: { ...style.properties, contextualSpacing: true } }
+                : style,
+            ),
+          },
+        ],
+      ]),
+    );
+    const content = [
+      para('p1', text('Beforeword.')),
+      { type: 'blockquote', id: 'q1', content: [para('q1a', text('Firstquote.'))] },
+      { type: 'blockquote', id: 'q2', content: [para('q2a', text('Secondquote.'))] },
+      para('p2', text('Afterword.')),
+      para('p3', text('Closingword.')),
+    ];
+    for (const theme of [defaultTheme, contextual]) {
+      const { paint, pdf } = await compile(theme, bare, [
+        { name: 'quoted', title: 'Quoted', content },
+      ]);
+      expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+      const y = (words: string) => painted(paint, words).y;
+      const quotation = placeOf(theme, 'quotation');
+      const body = placeOf(theme, 'text');
+      expect(quotation.contextualSpacing).toBe(true);
+      // One quotation's foot into the next's head: its space after, the next's space before, and the
+      // next's line spacing - 12.65 + 16.5 + 14.35 under the default.
+      expect(y('Firstquote') - y('Secondquote')).toBeCloseTo(
+        quotation.spaceAfter + quotation.spaceBefore + quotation.lineSpacing,
+        2,
+      );
+      expect(y('Firstquote') - y('Secondquote')).toBeCloseTo(43.5, 2);
+      // Two paragraphs of running text, in one flow: their spaces where the style does not ask, and
+      // only the leading where it does.
+      expect(y('Afterword') - y('Closingword')).toBeCloseTo(
+        body.contextualSpacing
+          ? body.lineSpacing
+          : body.spaceAfter + body.spaceBefore + body.lineSpacing,
+        2,
+      );
+    }
+    expect(placeOf(contextual, 'text').contextualSpacing).toBe(true);
+  }, 120_000);
 });
 
 /**

@@ -3878,7 +3878,7 @@
                             "type": "string"
                           },
                           "additionalProperties": {},
-                          "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9)"
+                          "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
                         }
                       },
                       "required": [
@@ -6433,7 +6433,7 @@
                             "type": "string"
                           },
                           "additionalProperties": {},
-                          "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9)"
+                          "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
                         }
                       },
                       "required": [
@@ -6593,7 +6593,7 @@
                                 "type": "string"
                               },
                               "additionalProperties": {},
-                              "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9)"
+                              "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
                             }
                           },
                           "required": [
@@ -6863,7 +6863,7 @@
                                 "type": "string"
                               },
                               "additionalProperties": {},
-                              "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9)"
+                              "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
                             }
                           },
                           "required": [
@@ -7325,6 +7325,7 @@
                               "style_not_applicable",
                               "typeface_not_embeddable",
                               "typeface_unavailable",
+                              "continuation_words_missing",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10078,6 +10079,7 @@
                               "style_not_applicable",
                               "typeface_not_embeddable",
                               "typeface_unavailable",
+                              "continuation_words_missing",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -13154,7 +13156,7 @@
                             "type": "string"
                           },
                           "additionalProperties": {},
-                          "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9)"
+                          "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
                         }
                       },
                       "required": [

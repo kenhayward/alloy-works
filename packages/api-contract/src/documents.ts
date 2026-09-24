@@ -80,7 +80,9 @@ export const DocumentView = z.object({
         .record(z.string(), z.unknown())
         .describe(
           "The layout's own words - the contents' title, the draft notice, and, both or neither, " +
-            'what a relative cross-reference prints for above and below (cross-references 2, ruling R9)',
+            'what a relative cross-reference prints for above and below (cross-references 2, ruling R9), ' +
+            "and `continued`, the words a continued table's label adds after its label, which a layout " +
+            'read at schema 3 or before has none of (themes 2, ruling R2)',
         ),
     })
     .describe(

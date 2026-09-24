@@ -7,16 +7,20 @@ import type { MathsTree } from './maths.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/12` is the document under a layout **set from a theme** (themes 1, ruling R6): the
- * theme's Typst projection beside the layout, and every paragraph carrying the style it is set in.
- * Otherwise it is `publishing/11`: runs that carry their marks and may be images, footnotes,
- * cross-references or equations, blocks that may be lists, quotations, preformatted text, tables with
- * their notes, figures and equations, each carrying its anchor where a reference names it, and nodes'
- * titles as runs, with its generated lists after the contents, which
- * `apps/worker/templates/publication/12/` reads. It is never stored - only its digest is, on the
- * publication - so a later shape is a new schema string and a new template version, not a migration.
+ * `publishing/13` is the document whose **tables and images are set from their styles** (themes 2,
+ * ruling R5): the theme's projection carries its table and image styles and each paragraph style's
+ * contextual spacing, a table carries the style it is set in, a figure and an image in a line their
+ * placement and the size their style gives them, and the layout's words what a continued table's label
+ * adds. Otherwise it is `publishing/12`, the document under a layout set from a theme (themes 1,
+ * ruling R6): the theme's Typst projection beside the layout, every paragraph carrying the style it is
+ * set in, runs that carry their marks and may be images, footnotes, cross-references or equations,
+ * blocks that may be lists, quotations, preformatted text, tables with their notes, figures and
+ * equations, each carrying its anchor where a reference names it, and nodes' titles as runs, with its
+ * generated lists after the contents, which `apps/worker/templates/publication/13/` reads. It is never
+ * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
+ * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/12';
+export const PUBLISHING_SCHEMA = 'publishing/13';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -101,6 +105,14 @@ export const PUBLISHING_SCHEMA_10 = 'publishing/10';
 export const PUBLISHING_SCHEMA_11 = 'publishing/11';
 
 /**
+ * The document under a layout as it stood before its tables and images were set from their styles -
+ * a table the engine's own, a figure the measure wide and centred - frozen by themes 2 for the reason
+ * `publishing/11` is: `apps/worker/templates/publication/12/` asserts it, and a template version and
+ * the publications made with it are a record.
+ */
+export const PUBLISHING_SCHEMA_12 = 'publishing/12';
+
+/**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
  * region of two. A tag with a script subtag, a numeric region or any variant is refused, naming it,
  * and never shortened to fit (Ken's answer K, 2026-09-19).
@@ -166,8 +178,11 @@ export interface PublishedRun {
 
 /**
  * An image in a run of text (figures 5, ruling R2): where it stands in the compile root, its printed
- * size in points - one line high - and its alternative text resolved, or null where it is decorative,
- * all as a figure's are. It carries no marks, as the stored image carries none.
+ * size in points, and its alternative text resolved, or null where it is decorative, all as a figure's
+ * are. Its size is its image style's since themes 2 (ruling R5) - 1.2 ems of the text it stands in
+ * under the default theme, one line high - and its placement is the style's, which for an image in a
+ * line is always `inline`: it stands where its text puts it, and has no alignment of its own. It
+ * carries no marks, as the stored image carries none.
  */
 export interface PublishedImageRun {
   readonly image: {
@@ -175,6 +190,7 @@ export interface PublishedImageRun {
     readonly width: number;
     readonly height: number;
     readonly alternative: { readonly text: string; readonly language: PublishedLanguage } | null;
+    readonly placement: 'inline';
   };
 }
 
@@ -358,12 +374,18 @@ export interface PublishedCell {
  * never Typst's counter (decision F of the first slice), and null where a caption before any numbered
  * appendix takes no number. The caption is runs, which a template sets above the table as its
  * caption. The header counts are the stored table's, and the template makes the header rows one
- * repeating header and a header column's cells row headers.
+ * header and a header column's cells row headers.
  */
 export interface PublishedTable {
   readonly type: 'table';
   readonly id: string;
   readonly anchor: string | null;
+  /**
+   * The identifier of the table style it is set in (themes 2, ruling R5), which `theme.tables` holds:
+   * its fills, rules, padding, header weights and how it breaks across pages. A template looks it up
+   * and decides nothing.
+   */
+  readonly style: string;
   readonly label: string | null;
   readonly caption: readonly PublishedInline[];
   readonly headerRows: number;
@@ -383,8 +405,15 @@ export interface PublishedTable {
  * runs, which a template sets below the image. The image is named by its **path in the compile root**
  * - its hash and the extension its format declares - and nothing else of the asset reaches a template.
  * Its printed size is `assemble`'s, in points, so a template never decides how big it is and an
- * image never runs off its page. Its alternative text is resolved - its own in the component's
- * language, or the image's in the language that declares - or null where the figure is decorative.
+ * image never runs off its page: its image style's since themes 2 (ruling R5) - the dimension the
+ * style fixes, the other from the image's proportions, held to the style's maximum, and then to the
+ * room where it stands and what its caption leaves of the page. Its alternative text is resolved - its
+ * own in the component's language, or the image's in the language that declares - or null where the
+ * figure is decorative.
+ *
+ * `placement` and `alignment` are its style's (themes 2, TH-J): a block in the flow of the text, or
+ * floated to the head or the foot of a page, the only float the engine has; and aligned at the start,
+ * the centre or the end of the measure, in the engine's spelling.
  */
 export interface PublishedFigure {
   readonly type: 'figure';
@@ -396,6 +425,8 @@ export interface PublishedFigure {
   readonly width: number;
   readonly height: number;
   readonly alternative: { readonly text: string; readonly language: PublishedLanguage } | null;
+  readonly placement: 'block' | 'float';
+  readonly alignment: 'start' | 'center' | 'end';
 }
 
 /**
@@ -560,12 +591,18 @@ export interface PublishedPdfFormat {
  * layout declares none **and** where it would hold no entry: a contents of nothing is not published
  * (decision K).
  *
+ * `words.continued` is what a continued table's label adds after the table's own - `(continued)` - in
+ * the layout's language (themes 2, ruling R2), and **null where the layout has none**: a layout stored
+ * before its schema 4 says nothing for it, and a table style asking for a label under one is refused,
+ * `continuation_words_missing`, so a template never sets a label without its words.
+ *
  * `theme` is the theme the request was made under, as `projectTypst` projects it (themes 1, ruling
- * R6): the paper, **every** paragraph style of its catalogue by identifier - not only those the
- * document uses, so the member is the theme's alone and says the same of every document set from it -
- * each with every property concrete, its face's family and descent and the leading its line spacing
- * leaves; the nine marks' renderings; the maths face's family; and the style each place and each role
- * is set in. Every face, size, weight, colour and space a template sets comes from here.
+ * R6; themes 2, ruling R5): the paper, **every** paragraph style of its catalogue by identifier - not
+ * only those the document uses, so the member is the theme's alone and says the same of every document
+ * set from it - each with every property concrete, its face's family and descent, the leading its line
+ * spacing leaves and its contextual spacing; every table and image style; the nine marks' renderings;
+ * the maths face's family; and the style each place and each role is set in. Every face, size, weight,
+ * colour, rule, fill and space a template sets comes from here.
  */
 export interface PublishedDocument {
   readonly schema: typeof PUBLISHING_SCHEMA;
@@ -579,6 +616,7 @@ export interface PublishedDocument {
     readonly contents: string;
     readonly notice: string;
     readonly noticeSentence: string;
+    readonly continued: string | null;
   };
   readonly format: PublishedPdfFormat;
   readonly theme: TypstTheme;

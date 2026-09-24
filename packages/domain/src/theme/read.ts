@@ -12,11 +12,14 @@ import {
   STYLED_MARKS,
   THEME_SCHEMA_VERSION,
   catalogueSchema,
+  catalogueSchema1,
   themeSchema,
   type Catalogue,
+  type Catalogue1,
   type CatalogueKind,
   type CharacterCatalogue,
   type CharacterProperties,
+  type ImageLength,
   type ImageStyle,
   type ParagraphCatalogue,
   type ParagraphStyle,
@@ -47,7 +50,10 @@ export const themeRefusalCodes = [
   'theme_malformed',
   /** A catalogue version the theme names was not among those given. */
   'catalogue_missing',
-  /** A catalogue is not a `catalogue/1`: one refusal for each place its shape fails. */
+  /**
+   * A catalogue is not a `catalogue/2`, nor a `catalogue/1` the reader can upgrade: one refusal for
+   * each place its shape fails.
+   */
   'catalogue_malformed',
   /** The theme names a catalogue of one kind where it binds another. */
   'catalogue_wrong_kind',
@@ -78,6 +84,23 @@ export const themeRefusalCodes = [
   'line_spacing_below_size',
   /** Text below the contrast its size asks against something it can stand on (STY-069, TH-G). */
   'contrast_too_low',
+  /**
+   * An image style gives a width as a fraction of the text block's height, or a height as a fraction
+   * of the measure: each measures only the other dimension (themes 2, ruling R1).
+   */
+  'image_unit_wrong_dimension',
+  /** An image style sizes in ems an image that is not in a line of text, which has no ems to size by. */
+  'image_unit_not_applicable',
+  /**
+   * An image style places a figure in a line of text, or an image in a line of text as a block or
+   * floated: a figure stands on its own, and an image in a line of text where its text puts it.
+   */
+  'image_placement_not_applicable',
+  /**
+   * A table style draws a rule wider than twice its cells' padding: a rule takes no room, so half of it
+   * stands inside the cell beside it, and over its text (the final whole-branch review of themes 2, I3).
+   */
+  'table_rule_over_text',
 ] as const;
 
 export type ThemeRefusalCode = (typeof themeRefusalCodes)[number];
@@ -138,18 +161,110 @@ export type CatalogueReadOutcome =
 export type ThemeReadOutcome =
   { ok: true; theme: ResolvedTheme } | { ok: false; refusals: ThemeRefusal[] };
 
-// Read-time projections, as every chain's are. Both shapes are at their first version, so neither has
-// a step yet; a stored version from a newer build is refused rather than half read.
+// Read-time projections, as every chain's are: the stored bytes never change. A stored version from a
+// newer build is refused rather than half read.
 export const themeMigrationChain: MigrationChain = {
   subject: 'theme',
   current: THEME_SCHEMA_VERSION,
   migrations: {},
 };
 
+/**
+ * **What a table style at `catalogue/1` reads as**: template 12's look, which the engine drew while no
+ * table style said anything (themes 2, ruling R1) - every rule 1pt black, outer, horizontal and
+ * vertical; cells padded 5pt; the header neither filled nor bold, ruled by the rules alone; no banding;
+ * the header repeated on each page and a row allowed to split; no continuation label. So a publication
+ * made under a version 1 catalogue looks as template 12 set it.
+ */
+const TEMPLATE_12_TABLE = {
+  headerRow: { fill: 'none', bold: false, rule: 'none' },
+  headerColumn: { fill: 'none', bold: false, rule: 'none' },
+  banding: { fill: 'none' },
+  rules: {
+    outer: { width: 1, colour: '#000000' },
+    horizontal: { width: 1, colour: '#000000' },
+    vertical: { width: 1, colour: '#000000' },
+  },
+  padding: 5,
+  breaks: { repeatHeader: true, keepRowsWhole: false, continuationLabel: false },
+} as const satisfies Omit<TableStyle, 'id' | 'name' | 'appliesTo'>;
+
+/**
+ * **What an image style at `catalogue/1` reads as**: today's rules, which `assemble` and template 12
+ * held as their own. A figure fixes its width at the measure, is at most 60 per cent of the text
+ * block's height, and stands as a block, centred; an image in a line of text fixes its height at 1.2
+ * ems of its text, is at most the measure wide, and stands where its text puts it. A version 1 style
+ * applying to both is given the figure's, and refused as `image_placement_not_applicable`: no placement
+ * holds both. None is stored - no route writes a catalogue, and the default's rows apply each to one.
+ */
+const TODAYS_FIGURE = {
+  fixed: { dimension: 'width', value: 1, unit: 'measure' },
+  maximum: { value: 0.6, unit: 'textHeight' },
+  placement: 'block',
+  alignment: 'centre',
+} as const;
+
+const TODAYS_INLINE_IMAGE = {
+  fixed: { dimension: 'height', value: 1.2, unit: 'em' },
+  maximum: { value: 1, unit: 'measure' },
+  placement: 'inline',
+} as const;
+
+/**
+ * **A `catalogue/1` as `catalogue/2` reads it**, from one `catalogueSchema1` has already parsed: a table
+ * style gains template 12's look, an image style today's rules, and a paragraph catalogue's base
+ * contextual spacing, off, as no version 1 paragraph asked for it. A character catalogue, and the empty
+ * two, change only their version. Pure, and it changes nothing it is given.
+ */
+export function upgradeCatalogue1(catalogue: Catalogue1): Catalogue {
+  switch (catalogue.kind) {
+    case 'paragraph':
+      return {
+        ...catalogue,
+        schemaVersion: 2,
+        base: { ...catalogue.base, contextualSpacing: false },
+      };
+    case 'table':
+      return {
+        ...catalogue,
+        schemaVersion: 2,
+        styles: catalogue.styles.map((style) => ({
+          ...style,
+          ...structuredClone(TEMPLATE_12_TABLE),
+        })),
+      };
+    case 'image':
+      return {
+        ...catalogue,
+        schemaVersion: 2,
+        styles: catalogue.styles.map((style) => ({
+          ...style,
+          ...structuredClone(
+            style.appliesTo.includes('figure') ? TODAYS_FIGURE : TODAYS_INLINE_IMAGE,
+          ),
+        })),
+      };
+    case 'character':
+      return { ...catalogue, schemaVersion: 2 };
+    case 'admonition':
+      return { ...catalogue, schemaVersion: 2 };
+    case 'citation':
+      return { ...catalogue, schemaVersion: 2 };
+  }
+}
+
+/**
+ * The catalogue's chain. Its one step is `upgradeCatalogue1`, which takes a version 1 catalogue
+ * `catalogueSchema1` has parsed: `parseCatalogue` holds one to that parse first, so nothing version 1
+ * refused is upgraded past it.
+ */
 export const catalogueMigrationChain: MigrationChain = {
   subject: 'catalogue',
   current: CATALOGUE_SCHEMA_VERSION,
-  migrations: {},
+  migrations: {
+    1: (catalogue) =>
+      upgradeCatalogue1(catalogue as unknown as Catalogue1) as unknown as Record<string, unknown>,
+  },
 };
 
 /**
@@ -159,13 +274,7 @@ export const catalogueMigrationChain: MigrationChain = {
  * the typefaces are the theme's.
  */
 export function readCatalogue(value: unknown): CatalogueReadOutcome {
-  const parsed = parse(
-    value,
-    catalogueMigrationChain,
-    catalogueSchema,
-    'The catalogue',
-    'catalogue_malformed',
-  );
+  const parsed = parseCatalogue(value, 'The catalogue');
   if (!parsed.ok) return parsed;
   const refusals = examine(parsed.value).refusals;
   return refusals.length === 0 ? { ok: true, catalogue: parsed.value } : { ok: false, refusals };
@@ -217,13 +326,7 @@ export function readTheme(
       });
       continue;
     }
-    const parsed = parse(
-      catalogues.get(version),
-      catalogueMigrationChain,
-      catalogueSchema,
-      `The ${kind} catalogue ${version}`,
-      'catalogue_malformed',
-    );
+    const parsed = parseCatalogue(catalogues.get(version), `The ${kind} catalogue ${version}`);
     if (!parsed.ok) {
       refusals.push(...parsed.refusals);
       continue;
@@ -333,16 +436,35 @@ export function readTheme(
     }
   }
 
+  const table = examined.table;
   refusals.push(
     ...contrast(
       stated.paper,
       paragraphStyles,
       character?.kind === 'character' ? [...character.marks.values()] : [],
+      // Every style a table's cell can hold text in (the final whole-branch review of themes 2, I4):
+      // the places' own first, then each other that applies to a cell or, since a list can stand in
+      // one, to a list item, in the catalogue's order - `assemble` sets a paragraph stored in any of
+      // them there.
+      [
+        ...new Set([
+          stated.places.tableCell,
+          stated.places.listItem,
+          ...[...paragraphStyles.values()]
+            .filter(
+              ({ appliesTo }) => appliesTo.includes('tableCell') || appliesTo.includes('listItem'),
+            )
+            .map(({ id }) => id),
+        ]),
+      ].flatMap((id) => {
+        const style = paragraphStyles.get(id);
+        return style === undefined ? [] : [style];
+      }),
+      table?.kind === 'table' ? [...table.styles.values()] : [],
     ),
   );
 
   if (refusals.length > 0 || maths === undefined) return { ok: false, refusals };
-  const table = examined.table;
   const image = examined.image;
   return {
     ok: true,
@@ -442,14 +564,99 @@ function examine(catalogue: Catalogue): Examined {
       }
       return { kind: 'character', refusals, marks };
     }
-    case 'table':
-      return { kind: 'table', refusals, styles: unique(catalogue.styles) };
-    case 'image':
-      return { kind: 'image', refusals, styles: unique(catalogue.styles) };
+    case 'table': {
+      const styles = unique(catalogue.styles);
+      for (const style of catalogue.styles) refusals.push(...tableRefusals(style));
+      return { kind: 'table', refusals, styles };
+    }
+    case 'image': {
+      const styles = unique(catalogue.styles);
+      for (const style of catalogue.styles) refusals.push(...imageRefusals(style));
+      return { kind: 'image', refusals, styles };
+    }
     case 'admonition':
     case 'citation':
       return { kind: catalogue.kind, refusals };
   }
+}
+
+/**
+ * What a table style says that cannot hold: a rule wider than twice its cells' padding (the final
+ * whole-branch review of themes 2, I3). A rule takes no room - template 13 insets a cell's text by the
+ * padding alone and draws the rule over the cell's edge, as the engine does - so half of it stands
+ * inside the cell each side, and where that half is wider than the padding the rule is painted over the
+ * text, and is a background no contrast rule judges. Refused once for the style, by its widest rule, the
+ * first of them where two are as wide: the rule the style would have to narrow, or its padding widen.
+ * Where the outer rule is wide it reaches as far into the margin, half its width, which is left as found.
+ */
+function tableRefusals(style: TableStyle): ThemeRefusal[] {
+  const rules = (
+    [
+      ['outer rule', style.rules.outer],
+      ['horizontal rule', style.rules.horizontal],
+      ['vertical rule', style.rules.vertical],
+      ["header row's rule", style.headerRow.rule],
+      ["header column's rule", style.headerColumn.rule],
+    ] as const
+  ).flatMap(([what, rule]) => (rule === 'none' ? [] : [{ what, width: rule.width }]));
+  const widest = rules.reduce<(typeof rules)[number] | undefined>(
+    (most, each) => (most === undefined || each.width > most.width ? each : most),
+    undefined,
+  );
+  if (widest === undefined || widest.width <= 2 * style.padding) return [];
+  return [
+    {
+      code: 'table_rule_over_text',
+      message: `The table style ${style.id} draws its ${widest.what} ${widest.width}pt wide, more than twice its cells' padding of ${style.padding}pt: half a rule stands inside the cell beside it, over its text`,
+    },
+  ];
+}
+
+/**
+ * What an image style says that cannot hold (themes 2, ruling R1): a unit that measures the other
+ * dimension - the measure is a width, the text block's height a height - for what it fixes or for the
+ * most the other dimension may be; ems for an image that is not in a line of text, which has no text
+ * to take them from; and a placement that cannot hold what the style applies to, `inline` being only an
+ * image in a line of text's and a block or a float only a figure's. The shape has said everything else.
+ */
+function imageRefusals(style: ImageStyle): ThemeRefusal[] {
+  const refusals: ThemeRefusal[] = [];
+  const inLineOnly = !style.appliesTo.includes('figure');
+  const other = style.fixed.dimension === 'width' ? 'height' : 'width';
+  const judge = (length: ImageLength, dimension: 'width' | 'height', what: string) => {
+    if (length.unit === 'measure' && dimension === 'height') {
+      refusals.push({
+        code: 'image_unit_wrong_dimension',
+        message: `The image style ${style.id} gives its ${what} as a fraction of the measure, which measures only a width`,
+      });
+    } else if (length.unit === 'textHeight' && dimension === 'width') {
+      refusals.push({
+        code: 'image_unit_wrong_dimension',
+        message: `The image style ${style.id} gives its ${what} as a fraction of the text block's height, which measures only a height`,
+      });
+    } else if (length.unit === 'em' && !inLineOnly) {
+      refusals.push({
+        code: 'image_unit_not_applicable',
+        message: `The image style ${style.id} gives its ${what} in ems, which only an image in a line of text is sized in, and it applies to ${inWords(style.appliesTo)}`,
+      });
+    }
+  };
+  judge(style.fixed, style.fixed.dimension, style.fixed.dimension);
+  judge(style.maximum, other, `greatest ${other}`);
+
+  if (style.placement === 'inline' && !inLineOnly) {
+    refusals.push({
+      code: 'image_placement_not_applicable',
+      message: `The image style ${style.id} places its image in a line of text, which only an image in a line of text can be, and it applies to ${inWords(style.appliesTo)}`,
+    });
+  } else if (style.placement !== 'inline' && style.appliesTo.includes('inlineImage')) {
+    const how = style.placement === 'block' ? 'as a block' : 'floated';
+    refusals.push({
+      code: 'image_placement_not_applicable',
+      message: `The image style ${style.id} places its image ${how}, which an image in a line of text cannot be, and it applies to ${inWords(style.appliesTo)}`,
+    });
+  }
+  return refusals;
 }
 
 /**
@@ -543,15 +750,26 @@ function overlay(
  * Each character style is judged on its own. Marks nest - inline code in a subscript - and the size a
  * nest sets is the product of theirs, which is not judged: the reader does not know which marks an
  * author will combine.
+ *
+ * **A table style's fills** (themes 2, ruling R1; TH-G): its header row's, its header column's and its
+ * band's, each that is not `none`, are what a table cell's text stands on, so the `tableCell` place's
+ * style is judged against each, **bold where the header says bold** and otherwise as the style says,
+ * and each character style in it, by the rule above, at the size and weight it sets there. So is the
+ * `listItem` place's, where it is another style: a list can stand in a cell, and is set in that style
+ * there as anywhere. And so is **every other style that applies to `tableCell` or to `listItem`** (the
+ * final whole-branch review of themes 2, I4), since a paragraph stored in one is set in it there: the
+ * places' defaults were once the only ones judged, and a style a cell's paragraph named passed on the
+ * paper and was set at 3.01:1 on a header's fill. Where a style fills behind its own text, no table
+ * fill is behind that text, and its own fill is judged already; the others are judged all the same.
  */
 function contrast(
   paper: string,
   paragraphs: ReadonlyMap<string, ResolvedParagraphStyle>,
   marks: readonly CharacterCatalogue['styles'][number][],
+  cells: readonly ResolvedParagraphStyle[],
+  tables: readonly TableStyle[],
 ): ThemeRefusal[] {
   const refusals: ThemeRefusal[] = [];
-  const shortOf = (ratio: number, needed: number) =>
-    `at ${(Math.floor(ratio * 100) / 100).toFixed(2)}:1, below the ${needed}:1 its text needs`;
 
   for (const style of paragraphs.values()) {
     const { colour, background, size, bold } = style.properties;
@@ -594,11 +812,101 @@ function contrast(
       });
     }
   }
+
+  // A mark's failure on a fill is refused once, naming the first style it fails in, as on the paper.
+  const reported = new Set<string>();
+  for (const cell of cells) {
+    if (cell.properties.background !== 'none') continue;
+    refusals.push(...onFills(cell, marks, tables, reported));
+  }
+  return refusals;
+}
+
+/** A ratio short of what text needs, as every contrast refusal words it. */
+function shortOf(ratio: number, needed: number): string {
+  return `at ${(Math.floor(ratio * 100) / 100).toFixed(2)}:1, below the ${needed}:1 its text needs`;
+}
+
+/**
+ * One style a table cell's text can be set in, judged on each fill a table style can put behind it,
+ * with each character style in it: `contrast`'s last rule, for a style that fills behind none of its
+ * own text.
+ */
+function onFills(
+  cell: ResolvedParagraphStyle,
+  marks: readonly CharacterCatalogue['styles'][number][],
+  tables: readonly TableStyle[],
+  reported: Set<string>,
+): ThemeRefusal[] {
+  const refusals: ThemeRefusal[] = [];
+  // Each fill a table style can put behind a cell's text, and whether that text is bold there.
+  const fills = tables.flatMap((table) =>
+    (
+      [
+        ['header row', table.headerRow.fill, table.headerRow.bold],
+        ['header column', table.headerColumn.fill, table.headerColumn.bold],
+        ['band', table.banding.fill, false],
+      ] as const
+    ).flatMap(([where, fill, headerBold]) =>
+      fill === 'none'
+        ? []
+        : [{ table: table.id, where, fill, bold: headerBold || cell.properties.bold }],
+    ),
+  );
+  const { colour: ink, size } = cell.properties;
+  for (const { table, where, fill, bold } of fills) {
+    const ratio = contrastRatio(ink, fill);
+    const needed = requiredContrast(size, bold);
+    if (ratio < needed) {
+      refusals.push({
+        code: 'contrast_too_low',
+        message: `The table style ${table} sets the text of the paragraph style ${cell.id}, ${ink}, on its ${where}'s fill ${fill} ${shortOf(ratio, needed)}`,
+      });
+    }
+  }
+  for (const mark of marks) {
+    const { colour: own, scale = 1, position, bold: markBold } = mark.properties;
+    const factor = scale * (position === undefined ? 1 : SCRIPT_SCALE);
+    for (const { table, where, fill, bold } of fills) {
+      const colour = own ?? ink;
+      const needed = requiredContrast(size * factor, markBold ?? bold);
+      // In the cell's colour, a mark that asks no more than the cell's text is the cell's check.
+      if (own === undefined && needed <= requiredContrast(size, bold)) continue;
+      const ratio = contrastRatio(colour, fill);
+      const key = `${mark.id} ${colour} ${fill} ${needed}`;
+      if (ratio >= needed || reported.has(key)) continue;
+      reported.add(key);
+      const sets =
+        own === undefined ? `${colour}, the colour of the paragraph style ${cell.id},` : colour;
+      refusals.push({
+        code: 'contrast_too_low',
+        message: `The character style ${mark.id} sets ${sets} on the ${where}'s fill ${fill} of the table style ${table} ${shortOf(ratio, needed)}`,
+      });
+    }
+  }
   return refusals;
 }
 
 function missingFace(what: string): ThemeRefusal {
   return { code: 'typeface_missing', message: `${what}, which the theme does not declare` };
+}
+
+/**
+ * A stored catalogue, read at the current version. One written at version 1 is held to
+ * `catalogueSchema1`, the parse it was written against, before `upgradeCatalogue1` reads it as version
+ * 2: a property version 1 never had is refused there, never upgraded past.
+ */
+function parseCatalogue(
+  value: unknown,
+  subject: string,
+): { ok: true; value: Catalogue } | { ok: false; refusals: ThemeRefusal[] } {
+  let stored = value;
+  if (typeof value === 'object' && value !== null && Reflect.get(value, 'schemaVersion') === 1) {
+    const first = issues(catalogueSchema1.safeParse(value), subject, 'catalogue_malformed');
+    if (!first.ok) return first;
+    stored = first.value;
+  }
+  return parse(stored, catalogueMigrationChain, catalogueSchema, subject, 'catalogue_malformed');
 }
 
 /** Migrate a stored value, then parse it, turning each place it fails into a refusal. */
@@ -616,7 +924,15 @@ function parse<T>(
     const reason = error instanceof Error ? error.message : String(error);
     return { ok: false, refusals: [{ code, message: `${subject} does not read: ${reason}` }] };
   }
-  const result = schema.safeParse(migrated);
+  return issues(schema.safeParse(migrated), subject, code);
+}
+
+/** A parse's outcome, each place it fails a refusal naming where. */
+function issues<T>(
+  result: z.ZodSafeParseResult<T>,
+  subject: string,
+  code: 'theme_malformed' | 'catalogue_malformed',
+): { ok: true; value: T } | { ok: false; refusals: ThemeRefusal[] } {
   if (result.success) return { ok: true, value: result.data };
   return {
     ok: false,

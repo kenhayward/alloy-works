@@ -36,11 +36,13 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 > and the list of tables (`publishing/6`), figures and the list of figures (`publishing/7`), an image
 > in a line of text (`publishing/8`), footnotes and a table's note (`publishing/9`),
 > cross-references (`publishing/10`) and equations in the pinned maths face, with a list of
-> equations where a layout declares one (`publishing/11`). The first of slice 4's two pull
-> requests built the theme: every publication is set from the environment's stored default theme and records it
-> (`publishing/12`, [themes 1](../plans/2026-09-24-themes-01-the-theme-in-the-pdf.md)). The defined
-> term, condition, suggestion and comment marks, a citation, a variable and a binding, table and
-> image styles, veraPDF on every publication, preview and Word are later slices'
+> equations where a layout declares one (`publishing/11`). Slice 4's two pull requests built the
+> theme: every publication is set from the environment's stored default theme and records it
+> (`publishing/12`, [themes 1](../plans/2026-09-24-themes-01-the-theme-in-the-pdf.md)), and its
+> tables and images from their table and image styles (`publishing/13`,
+> [themes 2](../plans/2026-09-24-themes-02-table-and-image-styles.md)). The defined
+> term, condition, suggestion and comment marks, a citation, a variable and a binding,
+> veraPDF on every publication, preview and Word are later slices'
 > ([Build order](#build-order)); a block equation wider than its
 > line is still set past the page's edge ([Equations](#equations), its open item); and nothing
 > chooses or edits a layout or a theme yet. [`../architecture.md`](../architecture.md) describes what is built, and
@@ -290,16 +292,16 @@ not enough for a writer: a writer also needs the numbers, the bound references, 
 and the layout, and must decide none of them. So the intermediate is one type in `packages/domain`,
 **`PublishedDocument`**, and both writers read it:
 
-| Member   | Holds                                                                                                                                                                                                                                                                                                                                                                             |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `schema` | `publishing/12`, the version of this shape the template reads. `publishing/2` to `publishing/11` are the same document before a later slice widened it - marks, lists, quotations, tables, figures, inline images, footnotes, cross-references, equations, the theme - and none is made any longer; `publishing/1` is slice 1's, still made for a request recorded before layouts |
-| Identity | Title as plain text and as inline content, language, direction, `revision` (`0.7`), `publishedAt`, `status` (`draft`, `preview`, `approved`)                                                                                                                                                                                                                                      |
-| `words`  | The layout's own words with the language they are set in - the contents' title and the draft notice - which need not be the document's                                                                                                                                                                                                                                            |
-| `format` | The layout's member for this format, in points, with its words                                                                                                                                                                                                                                                                                                                    |
-| `theme`  | The theme's projection for this writer (themes.md): `TypstTheme` for the PDF                                                                                                                                                                                                                                                                                                      |
-| `front`  | Generated front matter the layout declares - cover, contents, lists - each already computed                                                                                                                                                                                                                                                                                       |
-| `nodes`  | The outline as a tree: each node's anchor, depth, matter, number or none, title, `pageBreak`, language and direction where they differ, blocks, and children                                                                                                                                                                                                                      |
-| `back`   | Generated back matter                                                                                                                                                                                                                                                                                                                                                             |
+| Member   | Holds                                                                                                                                                                                                                                                                                                                                                                                                     |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schema` | `publishing/13`, the version of this shape the template reads. `publishing/2` to `publishing/12` are the same document before a later slice widened it - marks, lists, quotations, tables, figures, inline images, footnotes, cross-references, equations, the theme, table and image styles - and none is made any longer; `publishing/1` is slice 1's, still made for a request recorded before layouts |
+| Identity | Title as plain text and as inline content, language, direction, `revision` (`0.7`), `publishedAt`, `status` (`draft`, `preview`, `approved`)                                                                                                                                                                                                                                                              |
+| `words`  | The layout's own words with the language they are set in - the contents' title, the draft notice and, since `publishing/13`, `continued`, null where the layout has none - which need not be the document's                                                                                                                                                                                               |
+| `format` | The layout's member for this format, in points, with its words                                                                                                                                                                                                                                                                                                                                            |
+| `theme`  | The theme's projection for this writer (themes.md): `TypstTheme` for the PDF                                                                                                                                                                                                                                                                                                                              |
+| `front`  | Generated front matter the layout declares - cover, contents, lists - each already computed                                                                                                                                                                                                                                                                                                               |
+| `nodes`  | The outline as a tree: each node's anchor, depth, matter, number or none, title, `pageBreak`, language and direction where they differ, blocks, and children                                                                                                                                                                                                                                              |
+| `back`   | Generated back matter                                                                                                                                                                                                                                                                                                                                                                                     |
 
 **A language tag the engine cannot carry is refused, naming it, never shortened - decision K,
 reversed.** Typst's `text(lang:)` takes two or three letters and `text(region:)` exactly two, so a
@@ -365,6 +367,20 @@ PDF, naming the family; and, from the worker before `assemble`, `typeface_unavai
 declares that the worker does not hold exactly - its family's files, their metrics, a maths face's
 `MATH` table - naming the family and which, `files`, `metrics` or `maths` - see themes.md's
 [What was built](themes.md#what-was-built).
+
+**Table and image styles are published** (themes 2, `publishing/13`, template 13). `theme` is now
+`projectTypst`'s `TypstTheme`: every paragraph style with its `id` and `contextualSpacing`, and the
+theme's `tables` and `images` by identifier, each property concrete; `publishing/12`'s projection is
+frozen beside it as `projectTypst12`. A table carries `style`, its table style's identifier, which the
+template looks up; a figure its `placement`, `block` or `float`, and its `alignment`; an image in a
+line `placement: 'inline'` and no alignment; and each its printed size from its image style, below.
+`words.continued` is the layout's words for a continued table's label, null under a layout read at
+schema 3 or before. The failures join the list: `continuation_words_missing`, a table whose style asks
+for a label under a layout with no `continued`, naming the table and, in `detail`, the style; the words
+themselves are glyph-checked as the layout's others are, `layout_glyph_missing`. Template 13 sets a
+table's rules, fills, cells' inset, header weight, header repetition, rows kept whole and label, and
+a figure's placement and alignment, from those styles, and contextual spacing wherever template 12
+summed two spaces - see themes.md's [What was built](themes.md#what-was-built).
 
 **No content reaches Typst as anything but a value** (PUB-062). The template walks `nodes` and sets
 strings as text; nothing is evaluated. The spike showed an escaping slip becoming a file read; with
@@ -447,7 +463,8 @@ template `publication/6`:
 - the table is a `figure` of kind `table`, breakable, numbering off, the caption at the top with the
   label set as text;
 - the first `headerRows` rows are one `table.header(repeat: true)`, so they repeat on every page the
-  table reaches and remain one header row to assistive technology;
+  table reaches and remain one header row to assistive technology - since template 13, repeated as its
+  table style says, beneath a label header of their own where the style asks for a continuation label;
 - a cell in the first `headerColumns` columns of any other row is a `pdf.header-cell(scope: "row")`,
   and a cell that is in both is `scope: "both"`;
 - a span is `table.cell(colspan, rowspan)`, inside the header cell where the cell is one, and what
@@ -490,7 +507,7 @@ Not claimed, and why:
 | Requirement | Why                                                                                                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | TAB-031     | Superseded by TAB-049 (decision T-G): it asked for header cells associated "in every output", and Word cannot mark a header column. TAB-049 is claimed above                                                                                          |
-| TAB-032     | How a table breaks follows its table style (STY-013), and there are no table styles until themes.md is built. Until then every table repeats its header rows and keeps no rows together, which is a behaviour, not a style                            |
+| TAB-032     | How a table breaks follows its table style (STY-013), which themes.md claims with it; since themes 2 a table repeats its header, keeps its rows whole and labels each page it continues onto as its style says, and themes 2's worker test cites it   |
 | TAB-034     | A caption is required at publish, as above. But "numbered by the outline" is STR-023's, which issue #129 reopens for an explicitly unnumbered table, so TAB-034 is claimed only once #129 is decided                                                  |
 | TAB-041     | Its first half - a table's role and reading order in tagged output, and one table across a page break - is measured above. Its second is about a table "rotated, scaled or split by TAB-033", which is T2's and undesigned, so the claim waits for it |
 | PUB-017     | The same as TAB-032, from publishing's side                                                                                                                                                                                                           |
@@ -567,19 +584,21 @@ component's language; `inherited` is the asset version's default in the language
 asset version with no default is `alternative_missing`; `decorative` is decorative. Nothing else
 reaches the template, so the template never decides.
 
-**Until themes are built, one image style for each placement**, in the manner of the table's (ruling
+**Until themes were built, one image style for each placement**, in the manner of the table's (ruling
 R4 of tables 2): `figure` for a figure and `inline` for an inline image. Any other name is
 `style_missing`. Since themes 1 the two are the default theme's image catalogue's, and
-`style_missing` names a style that catalogue lacks; the sizes below are still `assemble`'s own
-until themes 2 gives an image style properties, an inline image's 1.2 ems now of the style it stands
-in.
+`style_missing` names a style that catalogue lacks; **since themes 2 an image's size, placement and
+alignment are its image style's** (`publishing/13`): the fixed dimension in points, a fraction of the
+layout's measure, a fraction of the text block's height or ems of the text it stands in, the other
+from the pixels, both re-derived from the maximum where the other would pass it, and then, for a
+figure, from the room where it stands and what its caption leaves. The default's two styles give:
 
-| Style    | Printed size, worked out by `assemble`                                                                                                                                                                                  |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `figure` | The full measure wide, the height from the displayed proportions; where that height is over **60 per cent of the text block's height**, that height instead, and the width from it (STY-017's rule, with fixed numbers) |
-| `inline` | **The line's height**, 1.2 ems of the body size, and the width from the proportions; wider than the measure is refused, `image_too_wide`, as a preformatted line is                                                     |
+| Style    | Printed size, worked out by `assemble`                                                                                                                                                                                                                                              |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `figure` | The full measure wide, the height from the displayed proportions; where that height is over **60 per cent of the text block's height**, that height instead, and the width from it; a centred block                                                                                 |
+| `inline` | **The line's height**, 1.2 ems of the style it stands in, and the width from the proportions; wider than the measure, the measure wide and the height from it; wider than the room where it stands - a quotation's, a cell's - refused, `image_too_wide`, as a preformatted line is |
 
-These are STY-015 to STY-017's behaviour with fixed numbers. CNT-122 - resolved by STY's rules, which
+These are STY-015 to STY-018's behaviour with the default's numbers. CNT-122 - resolved by STY's rules, which
 the editor shares - is claimed by themes.md's resolver when themes are built, and not here.
 
 **The list of figures comes with figures**, on layout schema 2's `lists` member, which tables built.
@@ -954,7 +973,7 @@ and B of the second slice). **Version 1, as built:**
 | Member     | Holds                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `language` | The one language its words are in (BCP 47). A document whose language that tag does not match as a language range is refused `layout_language`, naming both, rather than printing "Figure" in a French report. [Issue #144](https://github.com/kenhayward/alloy-works/issues/144) asked for it, and landed with the layout slice as PUB-095                                                                             |
-| `words`    | The product's own words: the contents' title, **Not approved** and its sentence, and since layout schema 3 **above** and **below**, both or neither, which a relative cross-reference prints. The list titles arrived with the lists; "continued" and **Preview - not approved** wait for what sets them                                                                                                                |
+| `words`    | The product's own words: the contents' title, **Not approved** and its sentence, and since layout schema 3 **above** and **below**, both or neither, which a relative cross-reference prints, and since layout schema 4 **continued**, which a continued table's label adds. The list titles arrived with the lists; **Preview - not approved** waits for what sets it                                                  |
 | `scheme`   | A numbering scheme in structure.md's shape, labels included (PUB-011, STR-013, STR-024), with a rule per matter per sequence. The default layout's is structure's default scheme, exactly, `default/1` and all                                                                                                                                                                                                          |
 | `matter`   | `cover`, `contents` with a `depth` or none, and whether appendices start on a new page (PUB-088). No `lists`: nothing publishes a figure or a table yet, so every list would be empty. No approval page: PUB-089's is LIF's and T3's                                                                                                                                                                                    |
 | `formats`  | A member per supported format (PUB-014), each declared on its own (PUB-012). `pdf`: page size in the portrait sense, orientation, margins as top, bottom, inside and outside, and a gutter (PUB-007); running heads and feet as three slots of words and fields (PUB-008); page numbering per matter, each a format and whether it restarts (PUB-009). No `paged`: nothing reads it until a format without pages exists |
@@ -971,6 +990,14 @@ guard as 0021's: only where the environment's layout is still 0021's own unautho
 recorded under 0.3 goes on publishing under it. The two words are checked against the pinned faces
 with the layout's others, `layout_glyph_missing`, and the document page is sent them beside the
 scheme, so the editor shows what the publish prints.
+
+**Layout schema 4 adds the words a continued table's label adds after its label** (themes 2):
+`words.continued`, required of a layout written at version 4 and absent from one read at versions 1
+to 3, since a migration cannot know another language's words. A table whose table style asks for a
+label under a layout with none fails `continuation_words_missing`, naming the table and the style.
+**The default layout's version 0.5** says _(continued)_, inserted by migration 0025 only where the
+environment's layout is still 0023's own unauthored 0.4; the label reads "Table 3 (continued)", in the
+layout's language, and the default theme's table style asks for none.
 
 **The notice is not a slot.** The draft mark's words are the layout's, set in the layout's language,
 but **the template places them itself** - above the running head, on every page including the cover,
@@ -1079,8 +1106,8 @@ files and are pinned as inputs. **Three families are pinned today**: Liberation 
 Mono 2.1.5 and STIX Two Math 2.13 b171, each under the SIL Open Font Licence with its text beside it.
 **Since themes 1 the theme says which face sets what**: the default theme records the three by family
 and by each file's hash, with its licence, its embedding permissions and its metrics - the serif for
-the body, the mono for preformatted text and inline code, the maths face for equations - and template
-12 names every face from `publishing/12`'s `theme`, never a literal. Before `assemble`, the worker
+the body, the mono for preformatted text and inline code, the maths face for equations - and templates
+12 and 13 name every face from their document's `theme`, never a literal. Before `assemble`, the worker
 holds each face the theme declares to its pinned files - exactly its family's files, their own
 metrics, and for the maths face a `MATH` table - and fails the publish `typeface_unavailable`, naming
 the family and why, for one it does not hold; the per-compile check above is unchanged.
@@ -1734,9 +1761,12 @@ Each slice is a plan, lands into something that runs, and cites only what its te
    stored by migration 0024 and recorded on every request and publication, the default theme's Typst
    projection in `publishing/12` and template 12 setting every face, size, colour, space and line
    from it, the faces staying in the image with the theme recording them by hash (TH-B), and the
-   coverage check asking the family that sets the text. **Themes 2 remains**: table and image styles
-   with their properties, and the continuation label's words in layout schema 4. Its claims are
-   themes.md's.
+   coverage check asking the family that sets the text. **Themes 2 is built**
+   ([themes 2](../plans/2026-09-24-themes-02-table-and-image-styles.md)): table and image styles with
+   their properties in `catalogue/2`, the continuation label's words in layout schema 4, migration
+   0025 seeding the default theme's 0.2 and the default layout's 0.5, and `publishing/13` and template
+   13 setting tables and images from their styles and giving the quotation its set-off back by
+   contextual spacing. Its claims are themes.md's.
 5. **Accessible output, checked.** veraPDF per publication and its report kept; reading order of floats
    verified; the budget measured. Cites PUB-091; claims and cites PUB-085 once a warm checker or a
    changed requirement settles it against PUB-091 (Ken's deferral); claims PUB-031 once verified.

@@ -22,7 +22,8 @@ import { STYLED_MARKS, type StyledMark } from './schema.js';
  * colour and size, and a mark's weight and posture under the catalogue's name. **Not yet projected**,
  * until the Word slice: a paragraph's `background` (`w:shd`) and `padding` (`w:pBdr`'s spacing),
  * `alignment` (`w:jc`), `startIndent` and `endIndent` (the rest of `w:ind`), `keepTogether`
- * (`w:keepLines`), `widowControl` (`w:widowControl`) and `hyphenate` (`w:suppressAutoHyphens`), and a
+ * (`w:keepLines`), `widowControl` (`w:widowControl`), `hyphenate` (`w:suppressAutoHyphens`) and
+ * `contextualSpacing` (`w:contextualSpacing`), every table style (`w:tblStylePr`) and image style, and a
  * mark's `underline`, `colour`, `typeface`, `position` and `scale` (`w:u`, `w:color`, `w:rFonts`,
  * `w:vertAlign`, and `w:sz` against the paragraph's) - and a typeface's `embedding.word`, which the
  * Word slice reads to embed a face or report its substitute (STY-052).

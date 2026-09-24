@@ -19,6 +19,7 @@ import {
   PUBLISHING_SCHEMA_9,
   PUBLISHING_SCHEMA_10,
   PUBLISHING_SCHEMA_11,
+  PUBLISHING_SCHEMA_12,
   type AssembleInput,
   type Layout,
 } from '@alloy-works/domain';
@@ -35,9 +36,11 @@ const positional = { numbered: true, matter: 'body', pageBreak: 'none', values: 
 const fonts = await loadPinnedFonts();
 
 /**
- * What template 12 may write as a literal, and why (themes 1, ruling R7): each is where a number or a
- * name from the theme becomes one of the engine's, or a value that is layout or maths rather than
- * typography.
+ * What templates 12 and 13 may write as a literal, and why (themes 1, ruling R7; themes 2, ruling R6):
+ * each is where a number or a name from the theme becomes one of the engine's, or a value that is
+ * layout or maths rather than typography. Template 13 needs no entry template 12 did not: a table's
+ * strokes, fills, inset and header weight, a figure's alignment and a continued table's label are all
+ * read from the theme through the same few lines.
  */
 const ALLOWED: readonly { readonly literal: RegExp; readonly why: string }[] = [
   { literal: /\bn \* 1pt\b/g, why: 'points: the unit a number from the data is multiplied by' },
@@ -70,7 +73,7 @@ const ALLOWED: readonly { readonly literal: RegExp; readonly why: string }[] = [
 ];
 
 /**
- * What template 12 may never write (the final review of themes 1, M3, widened them): a face's name,
+ * What templates 12 and 13 may never write (the final review of themes 1, M3, widened them): a face's name,
  * or any face not read from the theme; a colour, by any of the engine's constructors, its named
  * colours - every one the pinned 0.15.1 defines, `color`'s own members and its gradients - or a hex
  * string; a size or a length; a weight, as a name or a number; a posture; and the engine's `strong`
@@ -140,9 +143,14 @@ describe('the publication template', () => {
     // asserting the new schema to the template that sets the theme, again (f64aa5ff...) when a
     // comment said what a quotation's space is and why, and again (6b88017f...) for the final
     // whole-branch review: a block kept together only where it fits a page, a script set at the
-    // theme's fraction, and the header naming what is still the engine's. It is re-pinned freely
-    // until the pull request that makes it merges. Templates 1 to 11 are published versions and their rows never
-    // move again.
+    // theme's fraction, and the header naming what is still the engine's. Template 13 reads
+    // `publishing/13`: template 12 with a table's rules, fills, inset, header weight and breaks, a
+    // figure's placement and alignment, and contextual spacing between paragraphs, each from the
+    // theme (themes 2, ruling R6). It is re-pinned freely until the pull request that makes it merges:
+    // it moved (6a6aa252...) for the final whole-branch review, a row kept whole only where it fits a
+    // page (I1), again (06d7f004...) for contextual spacing only within one container (I5), and again
+    // (849b8037...) for a continuation label's row keeping its room on the table's first page.
+    // Templates 1 to 12 are published versions and their rows never move again.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',
       2: '01bb7d4058901cdf904e05696bb1ccdf4a202a7802d3f7e420f8230d67290e54',
@@ -156,6 +164,7 @@ describe('the publication template', () => {
       10: '07589c1d2487e149643bf82ccd183aaf7c7951ed24792decb508db02a7626339',
       11: '00f58bb2f2dc897356b24fdb09e0fa190a292c9b737d5444e7a8b48070a22a77',
       12: '13ce79ef435d13b85f7ec29dfe2c7a3fe53f4536384da555f93ea5a26f4b5e9e',
+      13: '147989166ee59018cb518a406e60346356b6eafea9c201a3b6831e0082083d6f',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
@@ -181,6 +190,7 @@ describe('the publication template', () => {
       'publishing/10': 10,
       'publishing/11': 11,
       'publishing/12': 12,
+      'publishing/13': 13,
     });
   });
 
@@ -188,26 +198,28 @@ describe('the publication template', () => {
     // Decision D, as a guard a reader can see: Typst's `quote` takes an attribution and prints an em
     // dash before it. Templates 5 to 7 set the attribution themselves, so the parameter's name never
     // appears in any of them.
-    for (const version of [5, 6, 7, 8, 9, 10, 11, 12] as const) {
+    for (const version of [5, 6, 7, 8, 9, 10, 11, 12, 13] as const) {
       const source = await readFile(PUBLICATION_TEMPLATE[version].file, 'utf8');
       expect(source, `template ${version}`).not.toContain('attribution:');
     }
   });
 
-  it("holds no typographic literal from version 12: every face, size, weight, colour and length is the theme's", async () => {
+  it("holds no typographic literal from version 12: every face, size, weight, colour, rule, fill and length is the theme's", async () => {
     // Themes 1, ruling R7: template 12 sets everything from the document's `theme` and from nothing
     // else, so that the theme is the whole of how a publication looks and a second theme looks
     // different. Read with its comments taken out, which name faces and sizes freely; what is left
     // may hold a face's name, a colour, or a size, weight or length written as a literal only where
     // an entry in `ALLOWED` allows it and says why. Every entry must still be needed, so the list
     // cannot outlive what it excuses. What the engine still decides because the template never sets
-    // it - an underline's offset, a list's indent, a cell's inset - no pattern can see: template 12's
-    // header names each.
-    const source = await readFile(PUBLICATION_TEMPLATE[12].file, 'utf8');
-    expect(typographicLiterals(source)).toEqual([]);
-    const code = withoutComments(source);
-    for (const { literal, why } of ALLOWED) {
-      expect(code.match(literal), `an allowance no longer needed: ${why}`).not.toBeNull();
+    // it - an underline's offset, a list's indent - no pattern can see: each template's header names
+    // each. Template 13 is held to the same list, which it needs every entry of (themes 2, ruling R6).
+    for (const version of [12, 13] as const) {
+      const source = await readFile(PUBLICATION_TEMPLATE[version].file, 'utf8');
+      expect(typographicLiterals(source), `template ${version}`).toEqual([]);
+      const code = withoutComments(source);
+      for (const { literal, why } of ALLOWED) {
+        expect(code.match(literal), `template ${version} no longer needs: ${why}`).not.toBeNull();
+      }
     }
   });
 
@@ -263,7 +275,8 @@ describe('the publication template', () => {
       9: PUBLISHING_SCHEMA_9,
       10: PUBLISHING_SCHEMA_10,
       11: PUBLISHING_SCHEMA_11,
-      12: PUBLISHING_SCHEMA,
+      12: PUBLISHING_SCHEMA_12,
+      13: PUBLISHING_SCHEMA,
     };
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
       const source = await readFile(template.file, 'utf8');
@@ -354,7 +367,8 @@ describe('the pipeline version', () => {
   // default theme's line spacings and spaces were measured from template 11 (themes 1, task 4), again
   // (45748643...) when the default theme gave a table's cells a style of their own, and again
   // (f38feb9a...) when the theme's projection came to state the size a script is set at (the final
-  // whole-branch review, I3).
+  // whole-branch review, I3). '12' is a published pipeline since themes 1 merged, and its row never
+  // moves again; '13' is themes 2's, re-pinned freely until the pull request that makes it merges.
   const madeByPipeline: Record<string, string> = {
     '1': '3b844cb4ceedbe2b52040c79014ea18959295a1602754eb9861631891beb6fa1',
     '2': '699d5c34b7e4049fc32f5846a5525f5d3a35785c2858a78755161c58427ad1d5',
@@ -368,6 +382,7 @@ describe('the pipeline version', () => {
     '10': '3b9772e627b7af48e407673a67b94837f9a6f033e63b222dbedf97852b67a82d',
     '11': 'f011fd46928c1b68de5c47de2ea4db75a2b52391b94026c8faddddc01f5191bf',
     '12': 'c12118a97e6ec79f90ef4cf64107d7ecf3f84112e8014cab92ce2e067ae1c629',
+    '13': '87888c8930915481bea27617df0268ab1c045b097024e92fbc3f4565bdabbf7f',
   };
   const digest = (made: { document: unknown; numbering: unknown }) =>
     createHash('sha256')
@@ -379,7 +394,7 @@ describe('the pipeline version', () => {
     // the one field PUB-063 exists for, so a key that moves while its value stays behind records
     // every publication the new pipeline makes as having been made by the old one - in the PDF's
     // own provenance, with the typecheck clean. Literals, never the constants.
-    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/12': '12' });
+    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/13': '13' });
   });
 
   it('is the version its number says: what assemble makes of a fixed input, the draft notice included', async () => {
@@ -400,7 +415,7 @@ describe('the pipeline version', () => {
     const assembled = assemble(fixed((await loadPinnedFonts()).covers, defaultLayout));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     expect(assembled.document.schema).toBe(PUBLISHING_SCHEMA);
-    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('12');
+    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('13');
     expect(digest(assembled)).toBe(madeByPipeline[PIPELINE_VERSION[assembled.document.schema]]);
     expect(assembled.document.words).toMatchObject({
       notice: DRAFT_NOTICE.page,

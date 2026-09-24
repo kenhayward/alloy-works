@@ -4,7 +4,12 @@ import {
   DEFAULT_CATALOGUES_BY_VERSION,
   DEFAULT_CATALOGUE_VERSIONS,
   DEFAULT_THEME,
+  DEFAULT_THEME_VERSION,
+  FIRST_DEFAULT_CATALOGUES,
+  FIRST_DEFAULT_CATALOGUE_VERSIONS,
+  FIRST_DEFAULT_THEME,
   readTheme,
+  type CatalogueKind,
   type ResolvedTheme,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
@@ -24,6 +29,12 @@ function productDefaultTheme(): ResolvedTheme {
   if (!read.ok) throw new Error(read.refusals.map((each) => each.message).join('; '));
   return read.theme;
 }
+
+/**
+ * The catalogues the theme's 0.2 gave a version of their own (themes 2, ruling R3), by 0025; the other
+ * three are bound at the 0.1 0024 seeded.
+ */
+const REVISED: readonly CatalogueKind[] = ['paragraph', 'table', 'image'];
 
 describe('the theme every environment starts with', () => {
   let db: TestDatabase;
@@ -73,66 +84,88 @@ describe('the theme every environment starts with', () => {
 
   const unauthored = { author_id: null, note: null, component_type_version_id: null };
 
-  it('STY-024 is a versioned artifact in every environment, at 0.1, binding one catalogue version of each of the six kinds', async () => {
+  it('STY-024 is a versioned artifact in every environment, at 0.2, binding one catalogue version of each of the six kinds', async () => {
     for (const tenant of [acme, other]) {
       const declared = await service.withTenant(tenant, (trx) => defaultTheme(trx));
       const theme = await held(tenant, DEFAULT_THEME_ID);
       expect(theme.artifact).toMatchObject({ kind: 'theme', space_id: null });
-      expect(theme.versions).toHaveLength(1);
-      const [version] = theme.versions;
-      expect(version).toMatchObject({
-        ...unauthored,
-        kind: 'theme',
-        revision_no: 0,
-        version_no: 1,
-        schema_version: 1,
-      });
+      // 0.1 as 0024 seeded it, and 0.2 on top, as 0025 seeded it under its fixed identifier.
+      expect(theme.versions).toHaveLength(2);
+      const [first, second] = theme.versions;
+      const seeded = { ...unauthored, kind: 'theme', revision_no: 0, schema_version: 1 };
+      expect(first).toMatchObject({ ...seeded, version_no: 1 });
+      expect(second).toMatchObject({ ...seeded, id: DEFAULT_THEME_VERSION, version_no: 2 });
       expect(declared).toEqual({
         artifactId: DEFAULT_THEME_ID,
-        versionId: version!.id,
-        number: '0.1',
+        versionId: DEFAULT_THEME_VERSION,
+        number: '0.2',
         content: DEFAULT_THEME,
         theme: productDefaultTheme(),
       });
 
-      // It binds six catalogue versions, one of each kind, each a version of an artifact of its own.
+      // It binds six catalogue versions, one of each kind, each a version of an artifact of its own:
+      // three at the 0.2 0025 gave them, at catalogue/2, and three at 0024's 0.1, at catalogue/1.
       expect(Object.keys(declared.theme.catalogues).sort()).toEqual([...CATALOGUE_KINDS].sort());
       for (const kind of CATALOGUE_KINDS) {
         const catalogue = await held(tenant, DEFAULT_CATALOGUE_IDS[kind]);
+        const revised = REVISED.includes(kind);
         expect(catalogue.artifact, kind).toMatchObject({ kind: 'catalogue', space_id: null });
-        expect(catalogue.versions, kind).toHaveLength(1);
+        expect(catalogue.versions, kind).toHaveLength(revised ? 2 : 1);
+        const stored = { ...unauthored, kind: 'catalogue', revision_no: 0 };
         expect(catalogue.versions[0], kind).toMatchObject({
-          ...unauthored,
-          id: DEFAULT_CATALOGUE_VERSIONS[kind],
-          kind: 'catalogue',
-          revision_no: 0,
+          ...stored,
+          id: FIRST_DEFAULT_CATALOGUE_VERSIONS[kind],
           version_no: 1,
           schema_version: 1,
         });
-        expect((catalogue.versions[0]!.content as { kind: string }).kind, kind).toBe(kind);
+        if (revised) {
+          expect(catalogue.versions[1], kind).toMatchObject({
+            ...stored,
+            id: DEFAULT_CATALOGUE_VERSIONS[kind],
+            version_no: 2,
+            schema_version: 2,
+          });
+        }
+        for (const version of catalogue.versions) {
+          expect((version.content as { kind: string }).kind, kind).toBe(kind);
+        }
         expect(declared.theme.catalogues[kind]).toBe(DEFAULT_CATALOGUE_VERSIONS[kind]);
       }
     }
   });
 
-  it("holds the domain's default theme and its six catalogues exactly, with the digests the domain computes", async () => {
+  it("holds each of the domain's default themes and their catalogues exactly, with the digests the domain computes", async () => {
+    // Every row, by its fixed identifier, against the domain's data for it: 0.1's seven as 0024 seeded
+    // them, and 0.2's four as 0025 did.
     const theme = await held(acme, DEFAULT_THEME_ID);
-    const cases = [
-      [theme.versions[0]!, { kind: 'theme', content: DEFAULT_THEME }] as const,
-      ...(await Promise.all(
-        CATALOGUE_KINDS.map(async (kind) => {
-          const catalogue = await held(acme, DEFAULT_CATALOGUE_IDS[kind]);
-          return [
-            catalogue.versions[0]!,
-            { kind: 'catalogue', content: DEFAULT_CATALOGUES[kind] },
-          ] as const;
-        }),
-      )),
+    const expected = new Map<string, { kind: 'theme' | 'catalogue'; content: unknown }>([
+      [theme.versions[0]!.id, { kind: 'theme', content: FIRST_DEFAULT_THEME }],
+      [DEFAULT_THEME_VERSION, { kind: 'theme', content: DEFAULT_THEME }],
+    ]);
+    for (const kind of CATALOGUE_KINDS) {
+      expected.set(FIRST_DEFAULT_CATALOGUE_VERSIONS[kind], {
+        kind: 'catalogue',
+        content: FIRST_DEFAULT_CATALOGUES[kind],
+      });
+      expected.set(DEFAULT_CATALOGUE_VERSIONS[kind], {
+        kind: 'catalogue',
+        content: DEFAULT_CATALOGUES[kind],
+      });
+    }
+    const rows = [
+      ...theme.versions,
+      ...(
+        await Promise.all(CATALOGUE_KINDS.map((kind) => held(acme, DEFAULT_CATALOGUE_IDS[kind])))
+      ).flatMap((each) => each.versions),
     ];
-    for (const [version, substance] of cases) {
-      const name = substance.kind === 'theme' ? 'theme' : `${substance.content.kind} catalogue`;
+    // Two theme versions, and nine catalogue versions: six at 0.1, three at 0.2.
+    expect(rows).toHaveLength(11);
+    expect(new Set(rows.map((row) => row.id))).toEqual(new Set(expected.keys()));
+    for (const version of rows) {
+      const substance = expected.get(version.id)!;
+      const name = `${version.id} (${version.kind} 0.${version.version_no})`;
       expect(version.content, name).toEqual(substance.content);
-      const digests = versionDigests(substance);
+      const digests = versionDigests(substance as Parameters<typeof versionDigests>[0]);
       expect(version.content_hash, name).toBe(digests.contentHash);
       expect(version.version_digest, name).toBe(digests.versionDigest);
     }

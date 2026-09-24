@@ -20,6 +20,7 @@ import { publishedLanguage } from './language.js';
 import {
   defaultLayout,
   FIRST_DEFAULT_LAYOUT,
+  FOURTH_DEFAULT_LAYOUT,
   parseLayout,
   readLayout,
   type Layout,
@@ -37,6 +38,7 @@ import {
   PUBLISHING_SCHEMA_9,
   PUBLISHING_SCHEMA_10,
   PUBLISHING_SCHEMA_11,
+  PUBLISHING_SCHEMA_12,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -914,6 +916,8 @@ describe('assemble', () => {
       notice: 'Not approved',
       noticeSentence:
         'Not approved. This is a draft publication, not made from an approved baseline.',
+      // What a continued table's label adds (themes 2): the default layout's 0.5 says it.
+      continued: '(continued)',
     });
     expect(assembled.document.front).toEqual({ cover: true, contents: { depth: 3 }, lists: [] });
     expect(assembled.document.appendices).toEqual({ newPage: true });
@@ -1026,8 +1030,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/12, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/12');
+  it('assembles under a layout as publishing/13, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/13');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1594,8 +1598,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/12, and publishing/4 to publishing/11 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/12');
+  it('makes publishing/13, and publishing/4 to publishing/12 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/13');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1604,6 +1608,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_9).toBe('publishing/9');
     expect(PUBLISHING_SCHEMA_10).toBe('publishing/10');
     expect(PUBLISHING_SCHEMA_11).toBe('publishing/11');
+    expect(PUBLISHING_SCHEMA_12).toBe('publishing/12');
   });
 });
 
@@ -1661,6 +1666,8 @@ describe('a table, published (tables 2)', () => {
         type: 'table',
         id: 't1',
         anchor: null,
+        // The table style it is set in (themes 2), which `theme.tables` holds.
+        style: 'table',
         label: 'Table 1.1',
         caption: [
           { text: 'Readings ', marks: [] },
@@ -1839,6 +1846,9 @@ describe('a figure, published (figures 3)', () => {
       width: 451.28,
       height: 338.46,
       alternative: { text: 'Two red squares', language: { lang: 'en', region: 'GB' } },
+      // The default `figure` style's (themes 2): a block, centred.
+      placement: 'block',
+      alignment: 'center',
     });
   });
 
@@ -2070,6 +2080,7 @@ describe('an inline image, published (figures 5)', () => {
               width: 17.6,
               height: 13.2,
               alternative: { text: 'Our logo', language: { lang: 'en', region: 'GB' } },
+              placement: 'inline',
             },
           },
           { text: ' to start.', marks: [] },
@@ -2098,11 +2109,13 @@ describe('an inline image, published (figures 5)', () => {
   });
 
   it('refuses an image wider than the line it stands in, naming the paragraph', () => {
-    // 6000 by 100 at 13.2 points high is 792 points wide, and the measure is 451.28.
+    // 6000 by 100 at 13.2 points high is 792 points wide. Until themes 2 that was refused at the top
+    // level too, past the measure of 451.28; the default `inline` style is now at most the measure
+    // wide, so it is held to it there - 451.28 by 7.52 (STY-017, `table and image styles` below) - and
+    // is still wider than the 429.28 a quotation leaves, where it is refused.
+    const quoted = { type: 'blockquote', id: 'q1', content: [inParagraph(image())] };
     expect(
-      failuresOf(
-        assemble(withAssets({ [RED]: asset({ width: 6000, height: 100 }) }, inParagraph(image()))),
-      ),
+      failuresOf(assemble(withAssets({ [RED]: asset({ width: 6000, height: 100 }) }, quoted))),
     ).toEqual([failed('image_too_wide', 'p1')]);
   });
 
@@ -2207,12 +2220,17 @@ describe('an inline image, published (figures 5)', () => {
   });
 
   it('names a block once for each reason, however many of its images share it', () => {
+    // In a quotation, where the measure the default style holds it to is still wider than the room.
     const wide = asset({ width: 6000, height: 100, alternative: null });
-    expect(
-      failuresOf(
-        assemble(withAssets({ [RED]: wide }, inParagraph(image(), text(' and '), image()))),
-      ),
-    ).toEqual([failed('alternative_missing', 'p1'), failed('image_too_wide', 'p1')]);
+    const quoted = {
+      type: 'blockquote',
+      id: 'q1',
+      content: [inParagraph(image(), text(' and '), image())],
+    };
+    expect(failuresOf(assemble(withAssets({ [RED]: wide }, quoted)))).toEqual([
+      failed('alternative_missing', 'p1'),
+      failed('image_too_wide', 'p1'),
+    ]);
   });
 
   it('takes the room a list leaves inside a cell, less than the cell itself', () => {
@@ -4102,12 +4120,14 @@ describe('the theme a publication is set from (themes 1)', () => {
     return styles;
   };
 
-  it('makes publishing/12, carrying the Typst projection of every paragraph style the theme holds, used or not', () => {
+  it('makes publishing/13, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/12');
+    expect(assembled.document.schema).toBe('publishing/13');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
+    expect(Object.keys(assembled.document.theme.tables)).toEqual(['table']);
+    expect(Object.keys(assembled.document.theme.images)).toEqual(['figure', 'inline']);
     // A document of one paragraph uses one style; the theme carries all of them, in catalogue order.
     expect(Object.keys(assembled.document.theme.styles)).toEqual([...theme.paragraphStyles.keys()]);
     expect(assembled.document.theme.maths).toBe('STIX Two Math');
@@ -4174,11 +4194,14 @@ describe('the theme a publication is set from (themes 1)', () => {
 
     // The theme's catalogues say what exists, not a list of four the template knew: a theme whose
     // table catalogue holds `grid` alone has no `table`, and one whose image catalogue holds `plate`
-    // alone has no `figure` and no `inline`.
+    // and `mark` alone has no `figure` and no `inline`.
     const other = themed((inputs) => {
-      inputs.catalogues.table.styles = [{ id: 'grid', name: 'Grid', appliesTo: ['table'] }];
+      const [grid] = inputs.catalogues.table.styles;
+      inputs.catalogues.table.styles = [{ ...grid!, id: 'grid', name: 'Grid' }];
+      const [plate, mark] = inputs.catalogues.image.styles;
       inputs.catalogues.image.styles = [
-        { id: 'plate', name: 'Plate', appliesTo: ['figure', 'inlineImage'] },
+        { ...plate!, id: 'plate', name: 'Plate' },
+        { ...mark!, id: 'mark', name: 'Mark' },
       ];
     });
     expect(
@@ -4191,7 +4214,7 @@ describe('the theme a publication is set from (themes 1)', () => {
             figure('f1'),
             figure('f2', 'plate'),
             paragraph('p2', text('A logo '), image()),
-            paragraph('p3', text('A logo '), image('plate')),
+            paragraph('p3', text('A logo '), image('mark')),
           ),
         ),
       ),
@@ -4489,5 +4512,310 @@ describe('the theme a publication is set from (themes 1)', () => {
   it('is never asked for a document under a layout without a theme, or one made before layouts with one', () => {
     expect(() => assemble({ ...oneParagraph(text('Set.')), theme: null })).toThrow(/theme/);
     expect(() => assemble({ ...oneParagraph(text('Set.')), layout: null })).toThrow(/theme/);
+  });
+});
+
+describe('table and image styles, published (themes 2)', () => {
+  const RED = '00000000-0000-4000-8000-00000000a551';
+  /** An image 800 by 600: four to three, which every size below keeps. */
+  const asset = (over: Partial<PublishingAsset> = {}): PublishingAsset => ({
+    object: `t_acme/sha256/${'ab'.repeat(32)}`,
+    format: 'png',
+    width: 800,
+    height: 600,
+    alternative: { text: 'Two red squares', language: 'en-GB' },
+    ...over,
+  });
+  const figure = (imageStyle: string) => ({
+    type: 'figure',
+    id: 'f1',
+    asset: RED,
+    imageStyle,
+    caption: [text('Shapes')],
+    alternative: { kind: 'inherited' },
+  });
+  const image = (imageStyle: string) => ({
+    type: 'image',
+    asset: RED,
+    imageStyle,
+    alternative: { kind: 'inherited' },
+  });
+  const cellOf = (...blocks: unknown[]) => ({ content: blocks, colspan: 1, rowspan: 1 });
+  /** A table of three columns and one row, the first cell holding these blocks, in this style. */
+  const table = (style: string, ...blocks: unknown[]) => ({
+    type: 'table',
+    id: 't1',
+    style,
+    caption: [text('Readings')],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [
+      {
+        cells: [
+          cellOf(...blocks),
+          cellOf(paragraph('c2', text('b'))),
+          cellOf(paragraph('c3', text('c'))),
+        ],
+      },
+    ],
+  });
+  type ImageStyleInput = ThemeInputs['catalogues']['image']['styles'][number];
+  type TableStyleInput = ThemeInputs['catalogues']['table']['styles'][number];
+  /** The default theme with these image and table styles added beside its own. */
+  const styled = (
+    images: readonly ImageStyleInput[],
+    tables: readonly TableStyleInput[] = [],
+  ): ResolvedTheme => {
+    const inputs = defaultInputs();
+    inputs.catalogues.image.styles.push(...images);
+    inputs.catalogues.table.styles.push(...tables);
+    return resolved(inputs);
+  };
+  type Length = ImageStyleInput['maximum'];
+  const figureStyle = (
+    id: string,
+    fixed: ImageStyleInput['fixed'],
+    maximum: Length,
+    placement: 'block' | 'float' = 'block',
+    alignment: 'start' | 'centre' | 'end' = 'centre',
+  ): ImageStyleInput => ({
+    id,
+    name: id,
+    appliesTo: ['figure'],
+    fixed,
+    maximum,
+    placement,
+    alignment,
+  });
+  const inlineStyle = (
+    id: string,
+    fixed: ImageStyleInput['fixed'],
+    maximum: Length,
+  ): ImageStyleInput => ({
+    id,
+    name: id,
+    appliesTo: ['inlineImage'],
+    fixed,
+    maximum,
+    placement: 'inline',
+  });
+  const width = (value: number, unit: 'pt' | 'measure' | 'em') =>
+    ({ dimension: 'width', value, unit }) as ImageStyleInput['fixed'];
+  const height = (value: number, unit: 'pt' | 'textHeight' | 'em') =>
+    ({ dimension: 'height', value, unit }) as ImageStyleInput['fixed'];
+  const most = (value: number, unit: Length['unit']) => ({ value, unit }) as Length;
+  /** The default table style, changed. */
+  const tableStyle = (id: string, change: Partial<TableStyleInput>): TableStyleInput => ({
+    ...structuredClone(defaultInputs().catalogues.table.styles[0]!),
+    id,
+    name: id,
+    ...change,
+  });
+  const under = (theme: ResolvedTheme, ...blocks: unknown[]) => ({
+    ...oneComponent(...blocks),
+    theme,
+    assets: new Map([[RED, asset()]]),
+  });
+  /** The same, with the one image `width` by 100 pixels. */
+  const underWide = (theme: ResolvedTheme, pixels: number, ...blocks: unknown[]) => ({
+    ...under(theme, ...blocks),
+    assets: new Map([[RED, asset({ width: pixels, height: 100 })]]),
+  });
+  const figureOf = (assembled: Assembled<PublishedDocument>) => {
+    const [block] = blocksOf(assembled);
+    if (block?.type !== 'figure') throw new Error(`${block?.type ?? 'nothing'} is not a figure`);
+    return block;
+  };
+  const imageOf = (assembled: Assembled<PublishedDocument>) => {
+    for (const run of paragraphRuns(blocksOf(assembled)[0])) {
+      if ('image' in run) return run.image;
+    }
+    throw new Error('no image');
+  };
+  /**
+   * Its width and height, having held them to the asset's four to three, to the hundredth of a point
+   * each is published to: never distorted (STY-016).
+   */
+  const kept = (box: { readonly width: number; readonly height: number }) => {
+    expect(Math.abs(box.width * 3 - box.height * 4)).toBeLessThan(0.05);
+    return [box.width, box.height];
+  };
+  const inParagraph = (theme: ResolvedTheme, style: string) =>
+    kept(imageOf(assemble(under(theme, paragraph('p1', text('Press '), image(style))))));
+  const fourth = (() => {
+    const read = readLayout(JSON.parse(JSON.stringify(FOURTH_DEFAULT_LAYOUT)), {
+      artifact: 'a',
+      version: 'v',
+    });
+    if (!read.ok) throw new Error(read.failure);
+    return read.layout;
+  })();
+
+  it("STY-015 STY-016 fixes a figure's or an inline image's width or height at what its style says, in each unit, and derives the other from the asset's proportions", () => {
+    const theme = styled([
+      figureStyle('points', width(200, 'pt'), most(1, 'textHeight')),
+      figureStyle('half', width(0.5, 'measure'), most(1, 'textHeight')),
+      figureStyle('quarter', height(0.25, 'textHeight'), most(1, 'measure')),
+      figureStyle('tall', height(120, 'pt'), most(1, 'measure')),
+      inlineStyle('ems', height(2, 'em'), most(1, 'measure')),
+      inlineStyle('wide', width(30, 'pt'), most(3, 'em')),
+    ]);
+    const sized = (style: string) => kept(figureOf(assemble(under(theme, figure(style)))));
+    // 200 points wide; half of the 451.28 of measure; a quarter of the text block's 697.89 high; 120
+    // points high - and in each the other from 800 by 600.
+    expect(sized('points')).toEqual([200, 150]);
+    expect(sized('half')).toEqual([225.64, 169.23]);
+    expect(sized('quarter')).toEqual([232.63, 174.47]);
+    expect(sized('tall')).toEqual([160, 120]);
+    // Two ems of the 11-point body it stands in, and 30 points wide.
+    expect(inParagraph(theme, 'ems')).toEqual([29.33, 22]);
+    expect(inParagraph(theme, 'wide')).toEqual([30, 22.5]);
+    // The default styles, as before themes 2: a figure the measure wide, an image in a line 1.2 ems.
+    expect(sized('figure')).toEqual([451.28, 338.46]);
+    expect(inParagraph(theme, 'inline')).toEqual([17.6, 13.2]);
+  });
+
+  it('STY-017 holds the dimension a style does not fix to its maximum, re-deriving the fixed one, the proportion kept', () => {
+    const theme = styled([
+      figureStyle('low', width(1, 'measure'), most(150, 'pt')),
+      figureStyle('narrow', height(300, 'pt'), most(0.5, 'measure')),
+      inlineStyle('capped', height(2, 'em'), most(20, 'pt')),
+      inlineStyle('short', width(30, 'pt'), most(2, 'em')),
+    ]);
+    // 451.28 wide would be 338.46 high, past 150; 300 high would be 400 wide, past half the measure.
+    expect(kept(figureOf(assemble(under(theme, figure('low')))))).toEqual([200, 150]);
+    expect(kept(figureOf(assemble(under(theme, figure('narrow')))))).toEqual([225.64, 169.23]);
+    // 22 high would be 29.33 wide, past 20; 30 wide would be 22.5 high, past two ems of 11 points.
+    expect(inParagraph(theme, 'capped')).toEqual([20, 15]);
+    expect(inParagraph(theme, 'short')).toEqual([29.33, 22]);
+    // The default image in a line is at most the measure wide: 6000 by 100 at 13.2 points high would
+    // be 792 wide, so it is the measure wide and as high as that leaves it.
+    const wide = assemble(underWide(resolved(), 6000, paragraph('p1', image('inline'))));
+    expect(imageOf(wide)).toMatchObject({ width: 451.28, height: 7.52 });
+  });
+
+  it('keeps a figure to the room where it stands, and refuses an image in a line wider than its room, whatever its style allows', () => {
+    const theme = styled([
+      figureStyle('broad', width(600, 'pt'), most(1, 'textHeight')),
+      inlineStyle('long', height(2, 'em'), most(600, 'pt')),
+    ]);
+    // Wider than the page's measure, a figure is made the measure wide, as a tall one is made the room
+    // its caption leaves it high: a figure is never refused for its size.
+    expect(kept(figureOf(assemble(under(theme, figure('broad')))))).toEqual([451.28, 338.46]);
+    // An image in a line 22 high would be 1320 wide, held to 600 by its style and still wider than the
+    // line: refused, naming the paragraph, as it always was.
+    expect(failuresOf(assemble(underWide(theme, 6000, paragraph('p1', image('long')))))).toEqual([
+      { stage: 'compose', code: 'image_too_wide', node: id('calib'), block: 'p1', detail: null },
+    ]);
+  });
+
+  it("holds an image in a line to the text block's height, the proportion kept, whatever its style allows", () => {
+    // The final whole-branch review of themes 2, I2: an image in a line was held to nothing but its
+    // width, so a style fixing its height at 1584 points painted it off the page. 40 by 400 pixels at
+    // 1584 points high would be 158.4 wide, held to a fifth of the measure, 90.26, and 902.56 high:
+    // taller than the text block's 697.89, so it is that high and a tenth of it wide.
+    const theme = styled([
+      inlineStyle('huge', height(1584, 'pt'), most(0.2, 'measure')),
+      inlineStyle('page', height(1, 'textHeight'), most(1, 'measure')),
+    ]);
+    const tall = (style: string) =>
+      imageOf(
+        assemble({
+          ...under(theme, paragraph('p1', text('Press '), image(style))),
+          assets: new Map([[RED, asset({ width: 40, height: 400 })]]),
+        }),
+      );
+    expect(tall('huge')).toMatchObject({ width: 69.79, height: 697.89 });
+    // A style that asks for exactly the text block's height is given it.
+    expect(tall('page')).toMatchObject({ width: 69.79, height: 697.89 });
+  });
+
+  it("carries a figure's placement and its alignment from its style, and an image in a line its own", () => {
+    const theme = styled([
+      figureStyle('floated', width(0.5, 'measure'), most(1, 'textHeight'), 'float', 'end'),
+      figureStyle('left', width(0.5, 'measure'), most(1, 'textHeight'), 'block', 'start'),
+    ]);
+    const placed = (style: string) => {
+      const { placement, alignment } = figureOf(assemble(under(theme, figure(style))));
+      return { placement, alignment };
+    };
+    expect(placed('floated')).toEqual({ placement: 'float', alignment: 'end' });
+    expect(placed('left')).toEqual({ placement: 'block', alignment: 'start' });
+    expect(placed('figure')).toEqual({ placement: 'block', alignment: 'center' });
+    const inline = imageOf(
+      assemble(under(theme, paragraph('p1', text('Press '), image('inline')))),
+    );
+    expect(inline.placement).toBe('inline');
+  });
+
+  it("carries the table's style, and measures what a cell holds by that style's padding", () => {
+    const theme = styled(
+      [],
+      [
+        // Unpadded, and so unruled: a rule wider than twice the padding is refused (I3).
+        tableStyle('open', {
+          padding: 0,
+          rules: { outer: 'none', horizontal: 'none', vertical: 'none' },
+        }),
+        tableStyle('roomy', { padding: 12 }),
+      ],
+    );
+    const inCell = (style: string, pixels: number) =>
+      assemble(underWide(theme, pixels, table(style, paragraph('p1', image('inline')))));
+    // 1100 by 100 is 145.2 points wide at 13.2 high: more than a third of the measure less 5 points
+    // each side, 140.43, and less than the whole third, 150.43.
+    expect(failuresOf(inCell('table', 1100)).map((each) => each.code)).toEqual(['image_too_wide']);
+    const open = inCell('open', 1100);
+    expect(blocksOf(open as Assembled<PublishedDocument>)[0]).toMatchObject({
+      type: 'table',
+      style: 'open',
+    });
+    // 1000 by 100 is 132 wide: inside 140.43, and outside the 126.43 that 12 points each side leave.
+    expect(failuresOf(inCell('table', 1000))).toEqual([]);
+    expect(failuresOf(inCell('roomy', 1000)).map((each) => each.code)).toEqual(['image_too_wide']);
+  });
+
+  it("carries the words a continued table's label adds where the layout has them, and none where it has not", () => {
+    const words = (layout: Layout) => {
+      const assembled = assemble({ ...oneParagraph(text('Set.')), layout });
+      if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+      return assembled.document.words.continued;
+    };
+    expect(words(defaultLayout)).toBe('(continued)');
+    expect(words(fourth)).toBeNull();
+  });
+
+  it("checks the words a continued table's label adds against the caption's face, as the layout's own words", () => {
+    const layout = layoutWith((each) => {
+      each.words.continued = '(continued \u{2016})';
+    });
+    expect(failuresOf(assemble({ ...oneParagraph(text('Set.')), layout }))).toEqual([
+      { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+2016' },
+    ]);
+  });
+
+  it('refuses a table whose style asks for a continuation label under a layout with no words for one, naming the table and the style', () => {
+    const theme = styled(
+      [],
+      [
+        tableStyle('labelled', {
+          breaks: { repeatHeader: true, keepRowsWhole: false, continuationLabel: true },
+        }),
+      ],
+    );
+    const labelled = table('labelled', paragraph('p1', text('1')));
+    expect(failuresOf(assemble({ ...under(theme, labelled), layout: fourth }))).toEqual([
+      {
+        stage: 'compose',
+        code: 'continuation_words_missing',
+        node: id('calib'),
+        block: 't1',
+        detail: 'labelled',
+      },
+    ]);
+    // Under a layout with the words, it publishes; and a style asking for no label needs none.
+    expect(assemble(under(theme, labelled)).ok).toBe(true);
+    const plain = table('table', paragraph('p1', text('1')));
+    expect(assemble({ ...under(theme, plain), layout: fourth }).ok).toBe(true);
   });
 });

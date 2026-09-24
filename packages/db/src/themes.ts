@@ -2,6 +2,7 @@ import {
   readCatalogue,
   readTheme,
   type Catalogue,
+  type Catalogue1,
   type CatalogueKind,
   type ResolvedTheme,
   type Theme,
@@ -9,6 +10,7 @@ import {
   type ThemeRefusalCode,
 } from '@alloy-works/domain';
 import type { TenantTransaction } from './tables.js';
+import { versionDigests } from './version-digest.js';
 import {
   latestVersion,
   lockArtifact,
@@ -25,8 +27,10 @@ export const DEFAULT_THEME_ID = '4ae73bd5-48cb-422a-a4f8-2183f0f72866';
 
 /**
  * The artifacts the default theme's six catalogues are versions of, one of each kind (STY-003), each in
- * no space. Their first versions' identifiers are the domain's `DEFAULT_CATALOGUE_VERSIONS`, which the
- * theme's content names; these are the artifacts behind them, which nothing names but the store.
+ * no space. Their first versions' identifiers are the domain's `FIRST_DEFAULT_CATALOGUE_VERSIONS`, which the
+ * theme's 0.1 names, and 0025 gave the paragraph, table and image catalogues a second at `catalogue/2`,
+ * `DEFAULT_CATALOGUE_VERSIONS`, which the theme's 0.2 names (themes 2); these are the artifacts behind
+ * them all, which nothing names but the store.
  */
 export const DEFAULT_CATALOGUE_IDS: Readonly<Record<CatalogueKind, string>> = {
   paragraph: 'd743fbe7-68f8-4530-8e93-46494d0fcdc2',
@@ -161,11 +165,14 @@ export async function themeAt(trx: TenantTransaction, versionId: string): Promis
   return read.theme;
 }
 
-/** The next version of a catalogue, opened from its latest. */
+/**
+ * The next version of a catalogue, opened from its latest. Given at `catalogue/2`, or at `catalogue/1`,
+ * which `readCatalogue` reads by upgrading it and which is written as it reads (themes 2, ruling R1).
+ */
 export interface NextCatalogueVersion extends Authorship {
   readonly artifactId: string;
   readonly openedFrom: string;
-  readonly catalogue: Catalogue;
+  readonly catalogue: Catalogue | Catalogue1;
 }
 
 /**
@@ -175,7 +182,8 @@ export interface NextCatalogueVersion extends Authorship {
  * catalogue's; and a style identifier an earlier version of this catalogue dropped (STY-005), because an
  * identifier is allocated once - a document naming it meant the style that was dropped, and reading it as
  * a new one would set that document in a style nobody chose for it. Otherwise answers as
- * `recordVersion` does.
+ * `recordVersion` does, except that whether the version is unchanged is decided between it and the
+ * latest version as both read, never by the shape either is written in.
  *
  * The catalogue's earlier versions are read under the artifact's lock, so a version recorded at the same
  * moment is among them or has already made this one's `openedFrom` stale.
@@ -206,13 +214,16 @@ export async function addCatalogueVersion(
   const seen = new Set<string>();
   const dropped = new Set<string>();
   let kind: CatalogueKind | undefined;
+  let latest: { readonly versionId: string; readonly catalogue: Catalogue } | undefined;
   for (const version of history) {
     const earlier = readCatalogue(version.content);
-    // Written by this function or seeded by 0024, so it reads: one that does not is a broken store.
+    // Written by this function or seeded by 0024 or 0025, so it reads: one that does not is a broken
+    // store.
     if (!earlier.ok) {
       throw new Error(`The catalogue ${input.artifactId} at ${version.id} does not read`);
     }
     kind = earlier.catalogue.kind;
+    latest = { versionId: version.id, catalogue: earlier.catalogue };
     const held = new Set(earlier.catalogue.styles.map((style) => style.id));
     for (const id of seen) if (!held.has(id)) dropped.add(id);
     for (const id of held) seen.add(id);
@@ -235,12 +246,19 @@ export async function addCatalogueVersion(
   }
   if (refusals.length > 0) return { answer: 'refused', refusals };
 
+  // Whether it changed is decided between the two as both read: a `catalogue/1` row saved again,
+  // given at either version of the shape, is the same catalogue, and records nothing (themes 2).
   return recordReadVersion(trx, {
     artifactId: input.artifactId,
     openedFrom: input.openedFrom,
     author: input.author,
     ...(input.note === undefined ? {} : { note: input.note }),
     substance: { kind: 'catalogue', content: read.catalogue },
+    latestAsRead: {
+      versionId: latest!.versionId,
+      versionDigest: versionDigests({ kind: 'catalogue', content: latest!.catalogue })
+        .versionDigest,
+    },
   });
 }
 
