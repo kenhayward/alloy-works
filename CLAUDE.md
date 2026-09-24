@@ -111,7 +111,7 @@ where they are.
 
 ## Requirements, designs and the trace (required)
 
-There are 1,388 requirements in 22 documents under
+There are 1,392 requirements in 22 documents under
 [`docs/specification/requirements/`](docs/specification/requirements/). **Do not read them to find
 out what to build.** They are compiled to `packages/trace/trace.json` and queried - `pnpm trace
 tranche T1` to see where a tranche stands by area, `tranche T1 CNT` for that tranche's requirements

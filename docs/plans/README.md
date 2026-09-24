@@ -513,6 +513,18 @@ editor to hold one.
 | 2   | [Publishing equations](2026-09-24-equations-02-publishing-equations.md)                      | Every equation set in STIX Two Math from the maths tree, tagged as a formula with its alternative; a numbered one numbered beside it, referable and listed; one that cannot be set refused by name | Built (PR #223) |
 | 3   | [An equation in a section's title](2026-09-24-equations-03-equations-in-a-sections-title.md) | The outline's title field a one-line editor of words and equations, with the equation dialog beside it; a title's equation read as its alternative where a title must be words                     | Built (PR #225) |
 
+## Themes
+
+The themes design is themes.md, over ADR-0014's prototype; its PDF half is
+[Themes in the PDF](../design/themes.md#themes-in-the-pdf), measured against the pinned engine on
+2026-09-24 (decisions TH-A to TH-K). Planned as two pull requests (decision TH-K): the theme stored,
+recorded and set by template 12, then table and image styles; the Word projection comes with Word
+output, and the theme in the editor after it.
+
+| #   | Plan                                                                 | Builds                                                                                                                                                                                                              | Status      |
+| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 1   | [The theme in the PDF](2026-09-24-themes-01-the-theme-in-the-pdf.md) | The default theme and its six catalogues stored and recorded on every request; `publishing/12` and template 12 setting every face, size, colour, space and line from it; styles, faces and contrast refused by name | In progress |
+
 ## Publishing
 
 A document version to a PDF somebody can download, cite and keep, designed in

@@ -21,6 +21,8 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1392, from 1388: STY-074 to STY-077, STY-048 and STY-012 each split by tranche for the themes
+    // design (TH-H, TH-I) - the T1 half superseding the row, the rest a row of its own in T6 or T2.
     // 1388, from 1387: AST-051, each asset format declaring how it is made safe - scanned, or proved
     // by a strict parse and a full decode - superseding AST-003's scan of everything (issue #206).
     // 1387, from 1386: TAB-049, header rows associated in every output and header columns wherever
@@ -62,9 +64,12 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1388);
+    expect(model.requirements).toHaveLength(1392);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 430, from 429: themes 1's plan. themes.md's claims of STY-012 and STY-048 move to STY-076 and
+    // STY-074, their T1 halves, and it claims STY-077, alignment by column type, which it designs;
+    // STY-075 waits for LOC-038's list.
     // 429, from 425: themes.md claims STY-069, PUB-017, TAB-032 and PUB-092 once its Themes in the
     // PDF section designs the contrast check, table styles' page breaks and the keep rules against
     // the pinned engine.
@@ -155,7 +160,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(429);
+    ).toBe(430);
   });
 });
 

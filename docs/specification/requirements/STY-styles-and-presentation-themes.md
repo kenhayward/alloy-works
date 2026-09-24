@@ -91,15 +91,20 @@ asked to make a phrase stand out, and it does.
 
 ## 5. Table styles
 
-| ID          | Requirement                                                                                                                                                        | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------- |
-| **STY-012** | A table style must declare header row and column treatment, banding, rules and borders, cell padding, and alignment by column type                                 | T1      | Specified |
-| **STY-013** | A table style must declare what happens when a table breaks across a page: whether headers repeat, what continuation label appears, and what must be kept together | T1      | Specified |
-| **STY-014** | A table style must declare default field formatting by column type - number, currency, percentage, date, unit - which a specific table may override (**TAB**)      | T2      | Specified |
+| ID          | Requirement                                                                                                                                                        | Tranche | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------------------- |
+| **STY-012** | A table style must declare header row and column treatment, banding, rules and borders, cell padding, and alignment by column type                                 | T1      | Superseded by STY-076 |
+| **STY-076** | A table style must declare header row and column treatment, banding, rules and borders, and cell padding                                                           | T1      | Specified             |
+| **STY-077** | A table style must declare alignment by column type, which a specific table may override (**TAB**)                                                                 | T2      | Specified             |
+| **STY-013** | A table style must declare what happens when a table breaks across a page: whether headers repeat, what continuation label appears, and what must be kept together | T1      | Specified             |
+| **STY-014** | A table style must declare default field formatting by column type - number, currency, percentage, date, unit - which a specific table may override (**TAB**)      | T2      | Specified             |
 
 **STY-013 is a style rather than a layout property on purpose.** How a table behaves at a page break
 is a property of the kind of table it is - a dense data table and a two-row summary want different
 answers - and it travels with the table wherever it is used.
+
+**STY-076 and STY-077 split STY-012 by tranche.** Alignment by column type needs columns that have
+a type, and those arrive with STY-014's field formats in T2; the rest of a table style is T1's.
 
 ## 6. Image styles
 
@@ -205,19 +210,21 @@ day earlier.
 
 ## 12. Typefaces
 
-| ID          | Requirement                                                                                                                                                                                                                                                              | Tranche    | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
-| **STY-039** | A theme must declare the typefaces it uses, and each must be available in a browser, in the desktop shell, and in the publishing pipeline                                                                                                                                | T1         | Specified |
-| **STY-040** | A typeface that cannot be loaded must fail the publish, and must never be substituted silently                                                                                                                                                                           | Constraint | Specified |
-| **STY-041** | A theme must record the licence under which each typeface is held, and whether that licence permits embedding it in published output                                                                                                                                     | T1         | Specified |
-| **STY-042** | Publishing must refuse to embed a typeface whose licence does not permit it, and must say so rather than quietly substituting                                                                                                                                            | T1         | Specified |
-| **STY-045** | Typefaces supplied with the product must be open-licence, on terms that permit embedding in published output and redistribution with the software                                                                                                                        | Constraint | Specified |
-| **STY-046** | A tenant must be able to supply its own typefaces, asserting the licence it holds them under, and the product must not redistribute an uploaded face beyond the tenant that supplied it                                                                                  | T2         | Specified |
-| **STY-047** | A typeface must be a versioned artifact, and a baseline must pin the exact files it published with rather than the theme version that named them                                                                                                                         | Constraint | Specified |
-| **STY-048** | The default theme must cover the scripts the supported locales admit (**LOC-038**), the bidirectional text CNT-059 admits, and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable                                  | T1         | Specified |
-| **STY-049** | Publishing must fail where any character in the document has no glyph in the theme's typefaces, rather than borrowing one from a face the theme never declared or setting an empty box                                                                                   | Constraint | Specified |
-| **STY-052** | A typeface whose licence does not permit embedding in Word must declare a permitted face for Word output, and every publication using it must report the substitution                                                                                                    | T1         | Specified |
-| **STY-062** | A typeface must be validated on ingest for the vertical metrics STY-054 depends on - ascent, descent and line gap - product faces when the product is built and tenant faces when they are supplied (STY-046). A face without them must be refused rather than tolerated | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                              | Tranche    | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------- |
+| **STY-039** | A theme must declare the typefaces it uses, and each must be available in a browser, in the desktop shell, and in the publishing pipeline                                                                                                                                | T1         | Specified             |
+| **STY-040** | A typeface that cannot be loaded must fail the publish, and must never be substituted silently                                                                                                                                                                           | Constraint | Specified             |
+| **STY-041** | A theme must record the licence under which each typeface is held, and whether that licence permits embedding it in published output                                                                                                                                     | T1         | Specified             |
+| **STY-042** | Publishing must refuse to embed a typeface whose licence does not permit it, and must say so rather than quietly substituting                                                                                                                                            | T1         | Specified             |
+| **STY-045** | Typefaces supplied with the product must be open-licence, on terms that permit embedding in published output and redistribution with the software                                                                                                                        | Constraint | Specified             |
+| **STY-046** | A tenant must be able to supply its own typefaces, asserting the licence it holds them under, and the product must not redistribute an uploaded face beyond the tenant that supplied it                                                                                  | T2         | Specified             |
+| **STY-047** | A typeface must be a versioned artifact, and a baseline must pin the exact files it published with rather than the theme version that named them                                                                                                                         | Constraint | Specified             |
+| **STY-048** | The default theme must cover the scripts the supported locales admit (**LOC-038**), the bidirectional text CNT-059 admits, and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable                                  | T1         | Superseded by STY-074 |
+| **STY-074** | The default theme must cover the Latin, Greek, Cyrillic and Hebrew scripts, and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable                                                                                 | T1         | Specified             |
+| **STY-075** | The default theme must cover every script the supported locales admit (**LOC-038**) and the bidirectional text CNT-059 admits                                                                                                                                            | T6         | Specified             |
+| **STY-049** | Publishing must fail where any character in the document has no glyph in the theme's typefaces, rather than borrowing one from a face the theme never declared or setting an empty box                                                                                   | Constraint | Specified             |
+| **STY-052** | A typeface whose licence does not permit embedding in Word must declare a permitted face for Word output, and every publication using it must report the substitution                                                                                                    | T1         | Specified             |
+| **STY-062** | A typeface must be validated on ingest for the vertical metrics STY-054 depends on - ascent, descent and line gap - product faces when the product is built and tenant faces when they are supplied (STY-046). A face without them must be refused rather than tolerated | Constraint | Specified             |
 
 **Section 12 was the open font question from the architecture work, and it is now settled.** The
 constraint that made it hard has not changed: one typographic system has to work in a browser tab,
@@ -240,6 +247,12 @@ characters it is asked to set, and found that Typst either borrows the glyphs si
 nobody declared or, with only pinned fonts, sets empty boxes - exit code 0 and no warning either way.
 The check has to be the pipeline's own. See
 [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md).
+
+**STY-074 and STY-075 split STY-048 by tranche.** "The scripts the supported locales admit" has no
+list until LOC-038 declares one, in T6. What T1's default theme can be held to is the scripts its
+faces set - Latin, Greek, Cyrillic and Hebrew, measured from their character maps - and the
+mathematics; a character outside them fails the publish by name (STY-049) rather than being set
+wrongly. Arabic, which CNT-059 admits, is refused that way until STY-075.
 
 ## 13. Interchange
 
@@ -357,3 +370,13 @@ added, superseded or withdrawn here.
 | Section 16's traceability row for STY-069 rested on PUB-030                           | It rests on **PUB-090** and CNT-078                                                                                                                                                                  |
 | STY-037 cited CNT-095, superseded by CNT-150                                          | STY-037 now cites **CNT-150**. It relies on a preview showing what depends on pagination, and CNT-150's preview is of the PDF, the one paged output                                                  |
 | Section 17's finding "Whether anything covers accessibility" names PUB-030 to PUB-036 | **Not changed.** It records what the v1 review found while those rows were live; a finding is evidence of what was visible when it was written, and is not rewritten to match what happened after it |
+
+### Split by tranche for the themes design, 2026-09-24
+
+Not a review. The [themes design for the PDF](../../design/themes.md#themes-in-the-pdf) found two T1
+rows that nothing in T1 could demonstrate, and Ken agreed to split each (TH-H and TH-I).
+
+| What was found                                                                                                                               | Change                                                                                                                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STY-048 asks for the scripts the supported locales admit, which LOC-038 declares in T6; the pinned faces set no Arabic, which CNT-059 admits | **STY-048 superseded by STY-074** - Latin, Greek, Cyrillic, Hebrew and the mathematics, T1 - with **STY-075**, every script the supported locales admit and CNT-059's bidirectional text, in T6 |
+| STY-012 asks for alignment by column type, and a table's columns have no type until STY-014's field formats in T2                            | **STY-012 superseded by STY-076** - header treatment, banding, rules and padding, T1 - with **STY-077**, alignment by column type, in T2 beside STY-014                                         |
