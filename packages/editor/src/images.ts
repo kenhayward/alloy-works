@@ -13,14 +13,19 @@ import { editorSchema } from './schema.js';
 const imageNode = editorSchema.nodes.image!;
 const footnoteNode = editorSchema.nodes.footnote!;
 const crossReferenceNode = editorSchema.nodes.crossReference!;
+const equationNode = editorSchema.nodes.equation!;
 
 /**
- * An inline node that carries no marks and ends no annotation: an image, a footnote's mark and a
- * cross-reference (cross-references 1, ruling R6). Asked of a node wherever it stands, so the rule
- * reaches every inline home a reference has - a caption and a term among them, where no image stands.
+ * An inline node that carries no marks and ends no annotation: an image, a footnote's mark, a
+ * cross-reference (cross-references 1, ruling R6) and an equation (equations 1, ruling R3). Asked of a
+ * node wherever it stands, so the rule reaches every inline home a reference has - a caption and a
+ * term among them, where no image stands.
  */
 const unmarkedInline = (node: { type: unknown }) =>
-  node.type === imageNode || node.type === footnoteNode || node.type === crossReferenceNode;
+  node.type === imageNode ||
+  node.type === footnoteNode ||
+  node.type === crossReferenceNode ||
+  node.type === equationNode;
 const paragraphNode = editorSchema.nodes.paragraph!;
 
 /** The image selected whole, as the panel reads it: where it stands, what it shows, how it is described. */
@@ -104,7 +109,7 @@ export function replaceImageAsset(asset: string, alternative: Alternative): Comm
  *
  * **A footnote carries none either** (footnotes 1, ruling R4), and for it the mark is taken off the
  * node alone: taken off over the node's range, it would come off the footnote's own text too. Nor
- * does a cross-reference (cross-references 1, ruling R6).
+ * does a cross-reference (cross-references 1, ruling R6), nor an equation (equations 1, ruling R3).
  */
 export const imagesUnmarked = new Plugin({
   appendTransaction(transactions, _before, state) {
@@ -130,7 +135,8 @@ export const imagesUnmarked = new Plugin({
  * link was split and its far half renamed (re-review of figures 4). ProseMirror's own rule decides which
  * carry on: an inclusive mark does, and one that is not - a link - only where the text after has it
  * too. Set as the stored marks, which typing reads first, and never over marks a command stored. A
- * footnote's mark is passed over the same way (footnotes 1, ruling R4), and so is a cross-reference.
+ * footnote's mark is passed over the same way (footnotes 1, ruling R4), and so are a cross-reference
+ * and an equation.
  */
 export const marksPastImages = new Plugin({
   appendTransaction(transactions, _before, state) {

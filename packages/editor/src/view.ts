@@ -9,6 +9,7 @@ import {
   readClipboard,
   type ClipboardSource,
 } from './clipboard.js';
+import { equationView } from './equationView.js';
 import { figureView } from './figureView.js';
 import { footnoteView } from './footnoteView.js';
 import { imageView } from './imageView.js';
@@ -94,6 +95,9 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
       // A cross-reference, drawn with the text its decoration carries (cross-references 1, R10).
       crossReference: (node, owner, _getPos, decorations) =>
         referenceView(node, owner.dom.ownerDocument, decorations),
+      // An equation, inline and as a block, drawn as native MathML (equations 1, ruling R5).
+      equation: (node, owner) => equationView(node, owner.dom.ownerDocument),
+      equationBlock: (node, owner) => equationView(node, owner.dom.ownerDocument),
     },
     handleDOMEvents: {
       paste: (target, event) => {

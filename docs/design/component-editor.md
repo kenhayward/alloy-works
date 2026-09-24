@@ -32,9 +32,12 @@ the outline (STR) and the publishing pipeline are.
 > the PDF. **Block quotations and preformatted text are built too** - a quotation with its
 > attribution, and preformatted text with its whitespace kept exactly and a **Preformatted text**
 > panel for its language label, in the `F6` ring while the cursor is in one - by
-> [editor 5](../plans/2026-09-21-editor-05-quotations-and-preformatted-text.md). What is still design
-> here: tables, footnotes, equations and figures, paste,
-> the metadata panel, undo across a reload, Recovery, lock events on the stream, the desktop's checker
+> [editor 5](../plans/2026-09-21-editor-05-quotations-and-preformatted-text.md). **Tables, footnotes,
+> figures and paste are built too**, by their own plans, and **equations are built in the editor** -
+> typed as LaTeX in a dialog, drawn as MathML, inline or as a block, with a description written for
+> the author - by [equations 1](../plans/2026-09-23-equations-01-equations-in-the-editor.md), described
+> under [Equations](#equations); publishing one is equations 2's. What is still design here: the
+> metadata panel, undo across a reload, Recovery, lock events on the stream, the desktop's checker
 > languages, and the accessibility suite.
 
 ## The shape in one paragraph
@@ -135,7 +138,7 @@ to API-008) - are [service-foundations.md](service-foundations.md)'s.
 | CNT-078, CNT-139                            | WCAG 2.2 AA and its verification are for the editor as a whole, and half of the editor is the document view, not yet designed. This slice is built to it, tested against it, and gated on it below                                            |
 | CNT-079                                     | Headings are outline nodes, rendered by the document view. Lists, tables and footnotes are exposed as structure here                                                                                                                          |
 | CNT-074                                     | Which component the cursor is in is the document view's; this slice shows the lock state of the one component open                                                                                                                            |
-| CNT-045, CNT-046, CNT-049                   | Rendering an equation in PDF and Word is the publisher's; an equation in a heading is the document view's, and **in a caption it is not representable** - see [Captions](#captions)                                                           |
+| CNT-045, CNT-046, CNT-049                   | An equation is made in the editor, in a caption too; rendering it in PDF and Word is the publisher's, which equations 2 builds, and an equation in a section's title is equations 3's - see [Equations](#equations)                           |
 | CNT-122                                     | The editor sizes an image by the shared resolver; resolving it at publish is the publisher's                                                                                                                                                  |
 | CNT-113, COL-026                            | Seeing what this session changed needs the comparison algorithm, which [storage-and-versioning.md](storage-and-versioning.md) leaves for its own design                                                                                       |
 | COL-007, API-036                            | Showing a held lock to others and delivering the change are [realtime.md](realtime.md)'s, which this design extends to a component opened on its own                                                                                          |
@@ -180,25 +183,25 @@ a `null` identifier, so an unidentified block can never reach storage.
 The slice boundary, stated for every node and mark rather than left to be inferred. **Create** means a
 command makes a new one; **edit** means an existing one can be changed.
 
-| Content                                                                         | Create                                                                                                                                                | Edit                                                                                   | Where it waits                                                                                                                        |
-| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Paragraph                                                                       | Yes                                                                                                                                                   | Text, and its style from the theme's allowed list                                      |                                                                                                                                       |
-| Emphasis, strong, underline, subscript, superscript, inline code, quoted phrase | Yes, toolbar and shortcut                                                                                                                             | Apply and remove                                                                       |                                                                                                                                       |
-| Hyperlink                                                                       | Yes, over a selection                                                                                                                                 | Target and title; removal                                                              |                                                                                                                                       |
-| Language                                                                        | Yes, over a selection                                                                                                                                 | Tag; removal                                                                           |                                                                                                                                       |
-| Defined term                                                                    | No                                                                                                                                                    | Removal only                                                                           | LIB's terms, T6                                                                                                                       |
-| List, three kinds                                                               | Yes                                                                                                                                                   | Kind, nesting, start and format                                                        |                                                                                                                                       |
-| Table                                                                           | Yes                                                                                                                                                   | Cells, spans, header rows and columns, key columns, caption, note                      | Key columns wait until after footnotes (FN-A); the note is built (footnotes 1)                                                        |
-| Preformatted                                                                    | Yes                                                                                                                                                   | Text and language label                                                                |                                                                                                                                       |
-| Block quotation                                                                 | Yes                                                                                                                                                   | Content and attribution                                                                |                                                                                                                                       |
-| Equation, inline and block                                                      | Yes                                                                                                                                                   | LaTeX or MathML, alternative text, numbered or not                                     |                                                                                                                                       |
-| Footnote                                                                        | Yes, anchored to a span alone (publishing.md, FN-A)                                                                                                   | Content, restricted to CNT-129's                                                       | Built in the editor (footnotes 1) and published (footnotes 2); one stored by key or position is kept as it is                         |
-| Figure, inline image                                                            | Yes, from a file ([Figures](#figures))                                                                                                                | Caption, alternative text state, the image; image style once themes give more than one | Both built (figures 2 and 4); an inline image is placed in a paragraph alone                                                          |
-| Cross-reference                                                                 | Yes, from a dialog: in a document, over its sections and its components' figures, tables and footnotes; on its own, over its own (structure.md, XR-A) | Target and display form; removal                                                       | Built in the editor ([Cross-references](#cross-references), cross-references 1); published by cross-references 2 (structure.md, XR-G) |
-| Citation                                                                        | No                                                                                                                                                    | Removal only                                                                           | LIB's bibliography, T6                                                                                                                |
-| Variable                                                                        | No                                                                                                                                                    | Removal only                                                                           | REU, T4                                                                                                                               |
-| Binding                                                                         | No                                                                                                                                                    | Removal only                                                                           | DAT, T2                                                                                                                               |
-| Condition, suggestion, comment anchor                                           | No                                                                                                                                                    | None                                                                                   | REU, T4, and COL, T3. Nothing in T1 creates one                                                                                       |
+| Content                                                                         | Create                                                                                                                                                | Edit                                                                                                     | Where it waits                                                                                                                        |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Paragraph                                                                       | Yes                                                                                                                                                   | Text, and its style from the theme's allowed list                                                        |                                                                                                                                       |
+| Emphasis, strong, underline, subscript, superscript, inline code, quoted phrase | Yes, toolbar and shortcut                                                                                                                             | Apply and remove                                                                                         |                                                                                                                                       |
+| Hyperlink                                                                       | Yes, over a selection                                                                                                                                 | Target and title; removal                                                                                |                                                                                                                                       |
+| Language                                                                        | Yes, over a selection                                                                                                                                 | Tag; removal                                                                                             |                                                                                                                                       |
+| Defined term                                                                    | No                                                                                                                                                    | Removal only                                                                                             | LIB's terms, T6                                                                                                                       |
+| List, three kinds                                                               | Yes                                                                                                                                                   | Kind, nesting, start and format                                                                          |                                                                                                                                       |
+| Table                                                                           | Yes                                                                                                                                                   | Cells, spans, header rows and columns, key columns, caption, note                                        | Key columns wait until after footnotes (FN-A); the note is built (footnotes 1)                                                        |
+| Preformatted                                                                    | Yes                                                                                                                                                   | Text and language label                                                                                  |                                                                                                                                       |
+| Block quotation                                                                 | Yes                                                                                                                                                   | Content and attribution                                                                                  |                                                                                                                                       |
+| Equation, inline and block                                                      | Yes, from a dialog, typed as LaTeX ([Equations](#equations)); a block where a block may stand but a table's cell                                      | LaTeX, alternative text, numbered or not; one stored without LaTeX keeps its MathML until LaTeX is typed | Built in the editor (equations 1); published by equations 2, and in a section's title by equations 3 (publishing.md, EQ-G, EQ-H)      |
+| Footnote                                                                        | Yes, anchored to a span alone (publishing.md, FN-A)                                                                                                   | Content, restricted to CNT-129's                                                                         | Built in the editor (footnotes 1) and published (footnotes 2); one stored by key or position is kept as it is                         |
+| Figure, inline image                                                            | Yes, from a file ([Figures](#figures))                                                                                                                | Caption, alternative text state, the image; image style once themes give more than one                   | Both built (figures 2 and 4); an inline image is placed in a paragraph alone                                                          |
+| Cross-reference                                                                 | Yes, from a dialog: in a document, over its sections and its components' figures, tables and footnotes; on its own, over its own (structure.md, XR-A) | Target and display form; removal                                                                         | Built in the editor ([Cross-references](#cross-references), cross-references 1); published by cross-references 2 (structure.md, XR-G) |
+| Citation                                                                        | No                                                                                                                                                    | Removal only                                                                                             | LIB's bibliography, T6                                                                                                                |
+| Variable                                                                        | No                                                                                                                                                    | Removal only                                                                                             | REU, T4                                                                                                                               |
+| Binding                                                                         | No                                                                                                                                                    | Removal only                                                                                             | DAT, T2                                                                                                                               |
+| Condition, suggestion, comment anchor                                           | No                                                                                                                                                    | None                                                                                                     | REU, T4, and COL, T3. Nothing in T1 creates one                                                                                       |
 
 **Nothing in T1 can put a condition, a suggestion or a comment anchor into a component** - the admission
 pipeline drops annotations whose owner does not travel (CNT-133) and follows CNT-Q14's recommendation to
@@ -302,8 +305,8 @@ decisions FN-A to FN-F these follow:
   editor over the node's own content - ProseMirror's footnote pattern - opened by selecting the mark or
   pressing `Enter` on it, and left with `Escape` for the mark again. Its schema is the restricted one,
   paragraphs of runs with the nine marks and links, so what CNT-129 excludes cannot be typed there;
-  a cross-reference stands there too (cross-references 1), and equations and citations wait for
-  their own slices. What it holds is the footnote's
+  a cross-reference stands there too (cross-references 1), and so does an inline equation
+  (equations 1); citations wait for their own slice. What it holds is the footnote's
   node content, so identity, the adjacency rule and the annotation repair reach it as they reach any
   paragraph, and one undo stack covers both editors.
 - **The table's note** (CNT-038) is added and removed from the Table panel (**Add note**, **Remove
@@ -388,13 +391,15 @@ equal; nothing requires it, and a comparison showing a re-entered equation as ch
 
 Chromium renders MathML Core and Electron is Chromium, so there is no typesetting library in the editor.
 
-| Context                              | Equation                                               |
-| ------------------------------------ | ------------------------------------------------------ |
-| Running text, list items, quotations | Inline, and block where blocks are allowed             |
-| A table cell                         | Inline, in the cell's paragraphs, and block            |
-| A footnote                           | Inline                                                 |
-| A caption                            | Inline: a caption is inline content since 2026-09-22   |
-| A section's title                    | Inline, from the outline's title (publishing.md, EQ-G) |
+| Context                                | Equation                                                                                                                                                                                                  |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Running text, list items, quotations   | Inline, and block where blocks are allowed                                                                                                                                                                |
+| A table cell                           | Inline, in the cell's paragraphs. **Not a block**: a cell holds paragraphs and lists alone (tables 1, T-D), and the content model refuses a block equation in one at any depth, a list in a cell included |
+| A footnote                             | Inline                                                                                                                                                                                                    |
+| A term, an attribution, a table's note | Inline                                                                                                                                                                                                    |
+| A caption                              | Inline: a caption is inline content since 2026-09-22                                                                                                                                                      |
+| A section's title                      | Inline, from the outline's title (publishing.md, EQ-G) - **not yet**: the title is edited in a plain text field, and holding an equation makes it an inline editor of its own, which is equations 3       |
+| Preformatted text                      | None                                                                                                                                                                                                      |
 
 **Generating the alternative is assistance, and its absence is never silent.** The alternative is
 generated from the MathML by a speech rule engine where one is available - when an equation is made or
@@ -403,6 +408,50 @@ changed, in the component's language where the engine speaks it, and **never on 
 component change it). It is always editable. If no generator is available or it produces nothing, the field is empty and marked, and a
 missing alternative fails the publish (PUB-072). CNT-048 asks for generation "where possible", so the
 choice of engine does not decide whether this slice meets it.
+
+**Built in the editor by [equations 1](../plans/2026-09-23-equations-01-equations-in-the-editor.md)**,
+EQ-C and EQ-D of publishing.md's [Equations](publishing.md#equations); publishing one is equations 2's,
+and an equation in a section's title equations 3's.
+
+- **Equation** on the toolbar, or `Ctrl+Shift+E` (`Cmd+Shift+E` on a Mac), opens a dialog: the LaTeX,
+  the equation drawn beneath it as it is typed - or what is wrong, in words - its description, and for
+  a new equation where a block may stand **Place as** _Inline_ or _Block_, with **Numbered** for a
+  block. **Insert** places an inline equation at the end of the selection and a block after the
+  paragraph the caret is in, or in place of an empty one, and selects it whole; with an equation
+  selected whole, the button, the shortcut and `Enter` open the dialog on it, and **Change** keeps its
+  kind and a block's identifier. `Enter` in the LaTeX field is a new line, and `Ctrl` or `Cmd` and
+  `Enter` applies. Nothing is placed on Cancel or `Escape`, and the dialog works in a footnote's open
+  editor too.
+- **The nodes** are `equation`, an inline atom holding `mathml` and `latex`, standing in every inline
+  home a cross-reference does and never in preformatted text; and `equationBlock`, in the `block`
+  group, holding `id`, `mathml`, `latex` and `numbered`. Neither takes a mark or breaks an annotation,
+  and the mapping holds both with every stored member, so a component holding one opens for editing.
+  A block that no block would follow in what holds it - nothing, or a quotation's attribution - is
+  placed with an empty paragraph after it, and the caret passes a block by ProseMirror's gap cursor
+  without the document changing.
+- **Temml 0.13.5 is pinned and strict** (EQ-C) and its output is admitted by `admitTemmlMathml` in
+  the domain: an overline or an underline becomes a `mover` or a `munder` with a stretchy line, a
+  table's alignment classes become `columnalign`, and what the reader would lose is refused by name -
+  `\cancel` and every other enclosure, `\boxed`, `\cancelto`, a filled `\rule`, a box raised or
+  lowered (`\raisebox`, `\raise`, `\lower`), an equation number written in the LaTeX (the block's
+  **Numbered** is the product's), and a line broken with `\\` outside an environment's rows, which is
+  found in the LaTeX itself, since a display equation's output cannot show it. An array's column rules
+  are dropped, not refused, and so is negative space (`\!`), which Temml writes as a style. What an
+  equation draws is clipped to its own box, in case MathML reaches the surface by another route.
+- **It is drawn as native MathML** by one function, `drawEquation`, on the surface, in a footnote's
+  open editor, in a document's text and in the dialog's preview: the stored MathML, asked of the reader
+  again, parsed as XML and placed as MathML elements, never as HTML; a block in display style with a
+  `(#)` marker where it is numbered. The `math` element carries its alternative as `alttext` and
+  `aria-label` and takes no wrapping role, so a reader that walks MathML still can; one with no
+  alternative is marked _No description_ in text a screen reader hears.
+- **The alternative, as EQ-D has it**: the speech rule engine 4.1.4, loaded the first time the dialog
+  asks for words, with its language data from the product's own build, speaking 13 languages in
+  ClearSpeak or MathSpeak; in any other base language the field is empty and says so, and the equation
+  is placed with no `alttext`. Once the author has changed the words, a change of LaTeX leaves them,
+  and **Generate again** writes them afresh. **Insert** and **Change** wait for words still being
+  written, and place the equation with them, or with none where the engine failed. The dialog, and
+  Temml with it, is loaded the first time it opens.
+- **Publishing refuses an equation by name** until equations 2, inline or block.
 
 ### Captions
 
@@ -770,11 +819,15 @@ undo, a refusal putting the surface back, or a version cut, and never this field
   that made it. The **preformatted text** panel is the second: it holds a preformatted block's
   language label, stands after the list panel while the cursor is in such a block, and is absent
   everywhere else. So the ring is built from the regions actually rendered, and the wrap is over those.
-- **Nested and transient editors are inline, not modal.** Opening an equation or a footnote moves focus
-  into it; `Escape` closes it and returns focus to the node it was opened from. The symbol palette is a
-  popup grid: `Escape` or inserting a symbol returns focus to where the cursor was.
-- **Equations** are focusable nodes, opened with `Enter`; the LaTeX field has `spellcheck="false"` and an
-  accessible name; the alternative-text field is labelled and marked when empty.
+- **Nested and transient editors are inline, not modal.** Opening a footnote moves focus into it;
+  `Escape` closes it and returns focus to the node it was opened from. The symbol palette is a popup
+  grid: `Escape` or inserting a symbol returns focus to where the cursor was. **An equation is opened
+  in a dialog**, as built by equations 1, as a link or a reference is: the rest of the component is
+  inert while it stands, and focus returns to what opened it.
+- **Equations** are reached as any atom is, selected whole by an arrow, and opened with `Enter`; the
+  LaTeX field has `spellcheck="false"` and an accessible name, and its error is its description; the
+  description field is labelled, and says why when it is empty. The equation on the surface is native
+  MathML named by its alternative; no screen reader has yet been run over it.
 - **Status is announced**, politely, through one live region: saving failing and recovering, the lock
   claimed, a claim refused with its holder and expected release, entering Recovery, a version cut or
   nothing to cut, a definition change, and an unresolvable marker appearing.
@@ -864,12 +917,12 @@ the same, so the component's lock state stays current without anybody polling.
 
 ## Open questions
 
-| ID  | Question                                                                                                                                                                                                          |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New | The lock's inactivity period. Fifteen minutes is a guess that trades an author losing the lock over lunch against a colleague waiting; COL-008 makes it a tenant setting, and the default wants a customer's view |
-| New | The save cadence. Two seconds idle and ten seconds continuous are unmeasured against the service's write budget; the verification above is how they get a number                                                  |
-| New | The speech rule engine - which one, its licence and its size. It no longer decides CNT-048, only how often an author types an alternative by hand                                                                 |
-| New | Whether a tenant should be able to name a house theme for components opened on their own, rather than the product's default                                                                                       |
+| ID  | Question                                                                                                                                                                                                                                                                                                                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New | The lock's inactivity period. Fifteen minutes is a guess that trades an author losing the lock over lunch against a colleague waiting; COL-008 makes it a tenant setting, and the default wants a customer's view                                                                                                                     |
+| New | The save cadence. Two seconds idle and ten seconds continuous are unmeasured against the service's write budget; the verification above is how they get a number                                                                                                                                                                      |
+| New | The speech rule engine - which one, its licence and its size. It no longer decides CNT-048, only how often an author types an alternative by hand. **Answered by equations 1**: the speech rule engine 4.1.4, Apache-2.0, about 89 kB compressed, with 24 kB of shared data and 31 to 46 kB per language, loaded when first asked for |
+| New | Whether a tenant should be able to name a house theme for components opened on their own, rather than the product's default                                                                                                                                                                                                           |
 
 ## Review
 

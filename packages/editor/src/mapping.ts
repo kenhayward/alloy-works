@@ -91,8 +91,13 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
         // Its caption is inline content, walked as a table's is (figures 2).
         marksWithNoType(block.caption, found);
         break;
+      case 'equation':
+        // MathML and a record of LaTeX, which `equationBlock` holds whole (equations 1, ruling R4).
+        break;
       default:
-        found.add(block.type);
+        // Every block the model holds has a node since equations 1; a block type the model gains
+        // is named here until the editor gains one too, rather than opened and dropped.
+        found.add((block as { type: string }).type);
     }
   }
 }
@@ -105,7 +110,8 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
  * neither may stand in one (CNT-129).
  *
  * **A cross-reference has one in every inline home** (cross-references 1, ruling R5) - a footnote's
- * paragraphs included, which CNT-129 admits it to - so wherever this walk meets one, it passes.
+ * paragraphs included, which CNT-129 admits it to - so wherever this walk meets one, it passes. So
+ * does an equation (equations 1, ruling R4).
  */
 function marksWithNoType(
   content: readonly InlineNode[],
@@ -113,7 +119,7 @@ function marksWithNoType(
   inParagraph = false,
 ): void {
   for (const inline of content) {
-    if (inline.type === 'crossReference') continue;
+    if (inline.type === 'crossReference' || inline.type === 'equation') continue;
     if (inline.type === 'image' && inParagraph) continue;
     if (inline.type === 'footnote' && inParagraph) {
       for (const paragraph of footnoteParagraphs(inline)) marksWithNoType(paragraph.content, found);
@@ -192,6 +198,12 @@ function toRun(inline: InlineNode): Node[] {
       }),
     ];
   }
+  if (inline.type === 'equation') {
+    // The MathML as stored, and the LaTeX null where none was typed (ruling R4).
+    return [
+      editorSchema.nodes.equation!.create({ mathml: inline.mathml, latex: inline.latex ?? null }),
+    ];
+  }
   const text = inline as Extract<InlineNode, { type: 'text' }>;
   if (text.value === '') return [];
   return [editorSchema.text(text.value, text.marks.map(toMark))];
@@ -199,7 +211,7 @@ function toRun(inline: InlineNode): Node[] {
 
 /**
  * The stored document as the editor holds it. Total over what it accepts and refuses the rest by name,
- * so opening never loses anything: a component holding a list, an equation or a mark this schema has
+ * so opening never loses anything: a component holding a citation or a mark this schema has
  * no counterpart for opens read-only, saying why, rather than being edited into something without them.
  */
 export function toEditor(document: ContentDocument): Opened {
@@ -288,11 +300,21 @@ function nodeOf(block: BlockNode): Node {
         },
         [editorSchema.node('figureCaption', null, block.caption.flatMap(toRun))],
       );
+    case 'equation':
+      // One node for one (equations 1, ruling R4): the LaTeX is null here where none is stored.
+      return editorSchema.node('equationBlock', {
+        id: block.id,
+        mathml: block.mathml,
+        latex: block.latex ?? null,
+        numbered: block.numbered,
+      });
     default:
       // Unreachable: `toEditor` refuses a block with no node before it builds anything, and this is
       // what keeps it that way. A family given a node in the schema and forgotten here is named
       // rather than opened as something else.
-      throw new Error(`Block ${block.id} is a ${block.type}, which this editor cannot open`);
+      throw new Error(
+        `Block ${(block as { id: string }).id} is a ${(block as { type: string }).type}, which this editor cannot open`,
+      );
   }
 }
 
@@ -369,7 +391,7 @@ function markOf(mark: EditorMark): unknown {
  * spurious version. `parseContentDocument` merges back any two adjacent runs the editor left split
  * carrying one mark set, so what this returns has one stored spelling (issue #154).
  *
- * An image, a footnote and a cross-reference are runs of their own, a footnote carrying its paragraphs
+ * An image, a footnote, a cross-reference and an equation are runs of their own, a footnote carrying its paragraphs
  * back as the stored model's, and a reference its `withoutPages` only where it has one. Any other child that is not a text node is **refused by name**, as a block with no
  * identifier is, rather than coerced into a run with no text: this says which node has no run yet
  * instead of storing a document quietly missing it.
@@ -415,6 +437,12 @@ function runsOf(textblock: Node, id: string): unknown[] {
         display: display as string,
         ...(withoutPages === null ? {} : { withoutPages }),
       });
+      return;
+    }
+    if (child.type.name === 'equation') {
+      // Its LaTeX only where one was typed: absent is the stored spelling of none.
+      const { mathml, latex } = child.attrs;
+      runs.push({ type: 'equation', mathml, ...(latex === null ? {} : { latex }) });
       return;
     }
     if (child.type.name !== 'text') {
@@ -595,6 +623,16 @@ function storedBlock(node: Node, at: string): unknown {
         imageStyle: node.attrs.imageStyle as string,
         caption: runsOf(node.child(0), id),
         alternative: node.attrs.alternative as object,
+      };
+    }
+    case 'equationBlock': {
+      const id = identifierOf(node, at);
+      return {
+        type: 'equation',
+        id,
+        mathml: node.attrs.mathml as string,
+        ...(node.attrs.latex === null ? {} : { latex: node.attrs.latex }),
+        numbered: node.attrs.numbered as boolean,
       };
     }
     default:

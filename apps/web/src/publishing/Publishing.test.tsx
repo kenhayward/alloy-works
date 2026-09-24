@@ -1,5 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -332,6 +332,35 @@ describe('publishing from the document page', () => {
     expect(why).toHaveTextContent(
       'A footnote here would print with no number: the layout numbers footnotes within sections, and no numbered section comes before it.',
     );
+  });
+
+  it('names an equation, in a line of text or a block of its own, as something that cannot be published yet (equations 1)', async () => {
+    const fake = failing([
+      {
+        stage: 'compose',
+        code: 'block_not_publishable',
+        node: null,
+        block: 'e1',
+        detail: 'equation',
+      },
+      {
+        stage: 'compose',
+        code: 'inline_not_publishable',
+        node: null,
+        block: 'b1',
+        detail: 'equation',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    // Both by name, never as formatting or an inline item: an author placed an equation, and it is
+    // the equation the publish cannot carry until equations 2.
+    const said = within(why)
+      .getAllByRole('listitem')
+      .map((each) => each.textContent);
+    expect(said).toHaveLength(2);
+    for (const each of said) expect(each).toContain('An equation cannot be published yet.');
   });
 
   it('names a cross-reference as something a request made before layouts cannot publish (cross-references 2)', async () => {

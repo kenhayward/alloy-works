@@ -155,26 +155,27 @@ describe('pasting', () => {
   });
 
   it('refuses what the pipeline admits and this editor cannot hold, by name', () => {
-    // A block equation: the one block the editor still has no node for.
-    const equation = JSON.stringify({
+    // A citation: every block has a node since equations 1, and a citation is among the inline
+    // nodes the editor still has none for.
+    const cited = JSON.stringify({
       format: 'alloy-works/content',
       schemaVersion: 1,
       content: [
         {
-          type: 'equation',
-          mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
-          numbered: false,
+          type: 'paragraph',
+          style: 'body',
+          content: [{ type: 'citation', entry: 'ada-1843' }],
         },
       ],
     });
     const outcome = pasteInto(
       stateOf([paragraph('b1', 'York')]),
-      readClipboard(clipboard({ [PRODUCT_CLIPBOARD_TYPE]: equation }), 'blocks'),
+      readClipboard(clipboard({ [PRODUCT_CLIPBOARD_TYPE]: cited }), 'blocks'),
       counter(),
     );
     expect(outcome.ok).toBe(false);
     expect(outcome.report.slice(-2)).toMatchObject([
-      { action: 'discarded', subject: 'unrepresentable', detail: 'equation' },
+      { action: 'discarded', subject: 'unrepresentable', detail: 'citation' },
       { action: 'refused', subject: 'invalid' },
     ]);
   });
@@ -579,5 +580,142 @@ describe('pasting what a cross-reference points at', () => {
         },
       ],
     });
+  });
+});
+
+/**
+ * Equations 1: the product's own clipboard carries an equation whole, inline or a block, its LaTeX
+ * with it where it has one - the one way an equation is pasted in this slice.
+ */
+describe('copying and pasting an equation', () => {
+  type Inline = Extract<
+    ContentDocument['content'][number],
+    { type: 'paragraph' }
+  >['content'][number];
+  const NS = 'http://www.w3.org/1998/Math/MathML';
+  const SQUARED = `<math xmlns="${NS}" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>`;
+  const text = (value: string): Inline => ({ type: 'text', value, marks: [] });
+  const typed: Inline = { type: 'equation', mathml: SQUARED, latex: 'x^2' };
+  const untyped: Inline = { type: 'equation', mathml: SQUARED };
+  const withRuns = (id: string, ...content: Inline[]) => ({
+    type: 'paragraph' as const,
+    id,
+    style: 'body',
+    content,
+  });
+  const block = (id: string) => ({
+    type: 'equation' as const,
+    id,
+    mathml: SQUARED,
+    latex: 'x^2',
+    numbered: true,
+  });
+
+  /** Where the node carrying this identifier starts, and where it ends. */
+  const rangeOf = (state: EditorState, id: string) => {
+    let from = -1;
+    state.doc.descendants((node, pos) => {
+      if (from === -1 && node.attrs.id === id) from = pos;
+      return from === -1;
+    });
+    if (from === -1) throw new Error(`no ${id}`);
+    return { from, to: from + state.doc.nodeAt(from)!.nodeSize };
+  };
+
+  /** The product's clipboard for the whole of the node carrying this identifier. */
+  const copyOf = (state: EditorState, id: string) => {
+    const { from, to } = rangeOf(state, id);
+    const copied = productClipboard(state, from, to);
+    if (copied === undefined) throw new Error(`nothing copied of ${id}`);
+    return { [PRODUCT_CLIPBOARD_TYPE]: copied };
+  };
+
+  /** A caret at the end of the textblock carrying this identifier. */
+  const atEndOf = (state: EditorState, id: string) => at(state, rangeOf(state, id).to - 1);
+
+  const pasting = (state: EditorState, data: Record<string, string>) =>
+    pasteInto(state, readClipboard(clipboard(data), 'blocks'), counter('p'));
+
+  it('pastes inline equations copied within the product whole, with their LaTeX or without', () => {
+    const state = stateOf([
+      withRuns('b1', text('Where '), typed, text(' or '), untyped),
+      paragraph('b2', 'End '),
+    ]);
+    const next = paste(atEndOf(state, 'b2'), copyOf(state, 'b1'));
+    expect(stored(next)[1]).toEqual(
+      withRuns('b2', text('End Where '), typed, text(' or '), untyped),
+    );
+  });
+
+  it('pastes a block equation copied within the product whole and newly named, the original still standing', () => {
+    const state = stateOf([paragraph('b1', 'Where'), block('e1'), paragraph('b2', 'End')]);
+    const next = paste(atEndOf(state, 'b2'), copyOf(state, 'e1'));
+    const equations = stored(next).filter((each) => each.type === 'equation');
+    expect(equations).toHaveLength(2);
+    expect(equations[0]).toEqual(block('e1'));
+    expect(equations[1]).toEqual({ ...block(equations[1]!.id) });
+    expect(equations[1]!.id).not.toBe('e1');
+  });
+
+  it("takes an inline equation pasted into a footnote's text, and refuses a block one there by name", () => {
+    const state = stateOf([
+      withRuns('b1', text('Visited'), {
+        type: 'footnote',
+        id: 'f1',
+        anchor: { kind: 'span' },
+        content: [withRuns('f1p', text('Once'))],
+      }),
+      block('e1'),
+      withRuns('b2', text('Where '), typed),
+    ]);
+    const inNote = atEndOf(state, 'f1p');
+    const outcome = pasting(inNote, copyOf(state, 'b2'));
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    const note = (fromEditor(outcome.transaction.doc).content[0] as { content: Inline[] })
+      .content[1] as { content: { content: Inline[] }[] };
+    expect(note.content[0]!.content).toEqual([text('OnceWhere '), typed]);
+
+    const refused = pasting(inNote, copyOf(state, 'e1'));
+    expect(refused.ok).toBe(false);
+    expect(refused.report.slice(-2)).toMatchObject([
+      { action: 'discarded', subject: 'unrepresentable', detail: 'equation' },
+      { action: 'refused', subject: 'invalid' },
+    ]);
+  });
+
+  it("refuses a block equation pasted into a list in a table's cell, which the store would not take", () => {
+    const state = stateOf([
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [
+              {
+                content: [
+                  {
+                    type: 'list',
+                    id: 'l1',
+                    kind: 'unordered',
+                    items: [{ content: [paragraph('li1', 'one')] }],
+                  },
+                ],
+                colspan: 1,
+                rowspan: 1,
+              },
+            ],
+          },
+        ],
+      },
+      block('e1'),
+    ]);
+    const outcome = pasting(atEndOf(state, 'li1'), copyOf(state, 'e1'));
+    expect(outcome.ok).toBe(false);
+    expect(outcome.report.at(-1)).toMatchObject({ action: 'refused', subject: 'invalid' });
   });
 });

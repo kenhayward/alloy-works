@@ -41,6 +41,13 @@ const PATHS: Record<string, readonly string[]> = {
     'M9.5 2.5h4v4h-4z',
     'M3.5 7.8c0-2 1.4-3.3 3.8-3.3M5.9 3.1l1.4 1.4-1.4 1.4',
   ],
+  // A pi, its bar curling in at the left as a typeset one does: the letter word processors draw on
+  // their equation button, where a root sign reads as the square root alone (equations 1).
+  Equation: [
+    'M2.5 5.2c.5-.9 1.2-1.3 2.2-1.3h8.8',
+    'M6.2 3.9c0 3.6-.6 6.6-2.2 8.6',
+    'M10.4 3.9v6.9c0 1 .5 1.6 1.4 1.6h.9',
+  ],
   'Save version': ['M3 2.6h7.2L13.4 5.8V13.4H3z', 'M5.6 2.6v3.6h4.8'],
   'Done editing': ['M3.2 8.4 6.3 11.5 12.8 5'],
   Close: ['M4.2 4.2 11.8 11.8M11.8 4.2 4.2 11.8'],

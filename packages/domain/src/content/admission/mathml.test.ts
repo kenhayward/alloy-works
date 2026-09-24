@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { isKeptMathml, MATHML_NAMESPACE, sanitiseMathml } from './mathml.js';
+import {
+  equationAlternative,
+  isKeptMathml,
+  MATHML_NAMESPACE,
+  sanitiseMathml,
+  withAlternative,
+} from './mathml.js';
 
 const math = (inner: string, attributes = '') =>
   `<math xmlns="${MATHML_NAMESPACE}"${attributes}>${inner}</math>`;
@@ -225,5 +231,59 @@ describe('MathML kept exactly as it stands', () => {
     ]) {
       expect(isKeptMathml(source), JSON.stringify(source)).toBe(false);
     }
+  });
+});
+
+describe('the alternative an equation is spoken by', () => {
+  it('is the alttext on its math element, read as the reader reads it', () => {
+    // A combining mark with no precomposed form, so NFC leaves it be and the reader writes it as a
+    // character reference, which comes back as the mark.
+    const stored = readable(
+      math('<mi>x</mi>', ' alttext="x &amp; &quot;y&quot; q\u{301} &lt; 2"'),
+    ).mathml;
+    expect(stored).toContain('q&#x301;');
+    expect(equationAlternative(stored)).toBe('x & "y" q\u{301} < 2');
+  });
+
+  it('is none where the math element has none, says nothing, or cannot be read', () => {
+    expect(equationAlternative(math('<mi>x</mi>'))).toBeNull();
+    expect(equationAlternative(math('<mi>x</mi>', ' alttext=""'))).toBeNull();
+    expect(equationAlternative(math('<mi>x</mi>', ' alttext="  "'))).toBeNull();
+    // An alttext on anything but the root is not the equation's.
+    expect(equationAlternative(math('<mi alttext="x">x</mi>'))).toBeNull();
+    expect(equationAlternative('<math><mi>x')).toBeNull();
+  });
+});
+
+describe('the alternative written into an equation', () => {
+  const squared = math('<msup><mi>x</mi><mn>2</mn></msup>');
+
+  it('is the alttext on its math element, in the one form the reader writes, whatever it holds', () => {
+    const words = 'x & "y" q\u{301} < 2';
+    const written = withAlternative(squared, words)!;
+    expect(written).toBe(
+      math('<msup><mi>x</mi><mn>2</mn></msup>', ' alttext="x &amp; &quot;y&quot; q&#x301; &lt; 2"'),
+    );
+    expect(isKeptMathml(written)).toBe(true);
+    expect(equationAlternative(written)).toBe(words);
+  });
+
+  it('replaces the one there, and leaves an alttext inside the equation alone', () => {
+    const described = math('<mi alttext="inner">x</mi>', ' alttext="old" display="block"');
+    expect(withAlternative(described, 'x')).toBe(
+      math('<mi alttext="inner">x</mi>', ' alttext="x" display="block"'),
+    );
+  });
+
+  it('takes it away where there are no words, as the model has one spelling of none', () => {
+    const described = math('<mi>x</mi>', ' alttext="x"');
+    expect(withAlternative(described, null)).toBe(math('<mi>x</mi>'));
+    expect(withAlternative(described, '  ')).toBe(math('<mi>x</mi>'));
+  });
+
+  it('is none where the MathML cannot be read, is not an equation, or the words cannot be held', () => {
+    expect(withAlternative('<math><mi>x', 'x')).toBeNull();
+    expect(withAlternative(`<mrow xmlns="${MATHML_NAMESPACE}"><mi>x</mi></mrow>`, 'x')).toBeNull();
+    expect(withAlternative(squared, `x${String.fromCharCode(1)}`)).toBeNull();
   });
 });

@@ -745,3 +745,75 @@ describe('the plugins inside a quotation and around preformatted text (editor 5)
     expect(() => fromEditor(written.doc)).not.toThrow();
   });
 });
+
+describe('the gap cursor (equations 1, ruling R5)', () => {
+  /**
+   * An arrow key through the state's own plugins, in order, with a view that says the caret is at the
+   * edge of its text - which is the view's answer from the DOM, and what the gap cursor asks before
+   * it looks beyond a text block.
+   */
+  function arrow(state: EditorState, key: 'ArrowDown' | 'ArrowUp'): EditorState {
+    let next = state;
+    const view = {
+      get state() {
+        return next;
+      },
+      dispatch: (tr: Transaction) => {
+        next = next.apply(tr);
+      },
+      endOfTextblock: () => true,
+    };
+    const event = {
+      key,
+      keyCode: key === 'ArrowDown' ? 40 : 38,
+      shiftKey: false,
+      ctrlKey: false,
+      altKey: false,
+      metaKey: false,
+    };
+    for (const plugin of state.plugins) {
+      if (plugin.props.handleKeyDown?.call(plugin, view as never, event as never)) break;
+    }
+    return next;
+  }
+
+  it("never stands inside a table's figure, between its table and its note or where one would go", () => {
+    const para = (id: string, value: string) => ({
+      type: 'paragraph',
+      id,
+      style: 'body',
+      content: [{ type: 'text', value, marks: [] }],
+    });
+    const opened = toEditor({
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [{ type: 'text', value: 'Readings', marks: [] }],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [{ cells: [{ content: [para('c1', 'North')], colspan: 1, rowspan: 1 }] }],
+        },
+      ],
+    } as never);
+    if (!opened.editable) throw new Error('expected an editable document');
+    let cell = -1;
+    opened.doc.descendants((node, pos) => {
+      if (node.attrs.id === 'c1') cell = pos;
+    });
+    const state = createEditorState({ doc: opened.doc, newIdentifier: counter() });
+    const inCell = state.apply(
+      state.tr.setSelection(TextSelection.create(state.doc, cell + 1 + 'North'.length)),
+    );
+    // Out of the last cell of a table that ends the component: past the whole figure, where a
+    // paragraph may stand, and never inside it, where what typing made would be a note.
+    const past = arrow(inCell, 'ArrowDown');
+    expect(past.selection.toJSON()).toEqual({ type: 'gapcursor', pos: past.doc.content.size });
+    expect(past.doc.eq(state.doc)).toBe(true);
+  });
+});

@@ -100,8 +100,13 @@ export type MathmlResult =
   | { readonly ok: true; readonly mathml: string; readonly findings: readonly MathmlFinding[] }
   | { readonly ok: false; readonly failure: string };
 
-type MathElement = { name: string; attributes: [string, string][]; children: MathNode[] };
-type MathNode = MathElement | string;
+/**
+ * The tree this reader reads MathML into. Exported inside the package for one caller, the rewrite of
+ * Temml's output (`temml.ts`), which must read that output exactly as this reader does and not with a
+ * second parser of its own; the package's index does not export it.
+ */
+export type MathElement = { name: string; attributes: [string, string][]; children: MathNode[] };
+export type MathNode = MathElement | string;
 
 class Unreadable extends Error {}
 
@@ -122,10 +127,7 @@ const ENTITIES: ReadonlyMap<string, string> = new Map([
 
 export function sanitiseMathml(source: string): MathmlResult {
   try {
-    if (NOT_AN_XML_CHARACTER.test(source)) {
-      throw new Unreadable('it holds a character XML does not allow');
-    }
-    const root = parse(source);
+    const root = read(source);
     if (root.name !== 'math') throw new Unreadable(`its root is <${root.name}>, not <math>`);
     const findings: MathmlFinding[] = [];
     const cleaned = clean(root, findings);
@@ -134,6 +136,76 @@ export function sanitiseMathml(source: string): MathmlResult {
     if (error instanceof Unreadable) return { ok: false, failure: error.message };
     throw error;
   }
+}
+
+/**
+ * Reads MathML into this reader's tree, refusing exactly what `sanitiseMathml` refuses as unreadable,
+ * and keeping everything it read - nothing is cleaned. For the rewrite of Temml's output only, which
+ * changes the tree and hands it back to `sanitiseMathml` through `writeMathmlTree`.
+ */
+export function readMathmlTree(
+  source: string,
+):
+  | { readonly ok: true; readonly root: MathElement }
+  | { readonly ok: false; readonly failure: string } {
+  try {
+    return { ok: true, root: read(source) };
+  } catch (error) {
+    if (error instanceof Unreadable) return { ok: false, failure: error.message };
+    throw error;
+  }
+}
+
+/**
+ * Writes a tree read by `readMathmlTree` back as it holds it - its attributes as read, the namespace
+ * where it was declared - so that `sanitiseMathml` reads it again as it would have read the source.
+ */
+export function writeMathmlTree(root: MathElement): string {
+  return serialise(root, false);
+}
+
+/**
+ * The words an equation is spoken by: the `alttext` on its `math` element, decoded as this reader
+ * decodes every attribute, or null where it has none or where it says nothing (equations 1, ruling
+ * R4 - the alternative is the MathML's own attribute, and nothing is stored beside it). An `alttext`
+ * on any element inside is not the equation's. Read with this reader's own parser rather than a
+ * pattern over the string, so the character references it writes (`&quot;`, a combining mark's
+ * `&#x301;`) come back as the characters they stand for.
+ */
+export function equationAlternative(mathml: string): string | null {
+  const read = readMathmlTree(mathml);
+  if (!read.ok || read.root.name !== 'math') return null;
+  const alternative = read.root.attributes.find(([name]) => name === 'alttext')?.[1];
+  return alternative === undefined || alternative.trim() === '' ? null : alternative;
+}
+
+/**
+ * The equation with `words` as its alternative - the `alttext` on its `math` element, replacing any
+ * there - or with none where `words` is null or says nothing, since the model has one spelling of
+ * none (equations 1, ruling R7). The writing half of `equationAlternative`, and written as it reads:
+ * the tree is read by this reader's parser, the attribute set on its root, and the result written and
+ * read again by `sanitiseMathml`, so the stored form escapes the words as it escapes every attribute -
+ * never a string put together by hand, where a quote or an ampersand in an author's words would end
+ * the attribute or start a reference.
+ *
+ * Null where the MathML cannot be read or is not an equation, and where the result is not one this
+ * reader keeps whole: words holding a character XML does not allow, above all.
+ */
+export function withAlternative(mathml: string, words: string | null): string | null {
+  const read = readMathmlTree(mathml);
+  if (!read.ok || read.root.name !== 'math') return null;
+  const others = read.root.attributes.filter(([name]) => name !== 'alttext');
+  const attributes: [string, string][] =
+    words === null || words.trim() === '' ? others : [...others, ['alttext', words]];
+  const written = sanitiseMathml(writeMathmlTree({ ...read.root, attributes }));
+  return written.ok && written.findings.length === 0 ? written.mathml : null;
+}
+
+function read(source: string): MathElement {
+  if (NOT_AN_XML_CHARACTER.test(source)) {
+    throw new Unreadable('it holds a character XML does not allow');
+  }
+  return parse(source);
 }
 
 function readName(source: string, at: number): string | undefined {

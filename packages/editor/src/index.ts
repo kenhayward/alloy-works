@@ -36,7 +36,17 @@ export {
   type FigureAt,
 } from './figures.js';
 export { MISSING_IMAGE } from './figureView.js';
+// The one drawing of an equation, which the Equation dialog draws its preview with (equations 1, ruling R8).
+export { drawEquation, NO_DESCRIPTION, UNSHOWN_EQUATION } from './equationView.js';
 export { footnoteAt, insertFootnote, openFootnote, type FootnoteAt } from './footnotes.js';
+export {
+  changeEquation,
+  equationAt,
+  equationPlaceable,
+  insertEquation,
+  type EquationAt,
+  type EquationChoice,
+} from './equations.js';
 export {
   changeReference,
   insertReference,

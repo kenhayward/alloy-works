@@ -12,6 +12,7 @@ import {
 import { StepMap } from 'prosemirror-transform';
 import { EditorView, type NodeView } from 'prosemirror-view';
 
+import { equationView } from './equationView.js';
 import { pasteInto, readClipboard, type ClipboardSource, type PasteOutcome } from './clipboard.js';
 import { footnoteAt, openFootnote, recordOpenFootnote } from './footnotes.js';
 import { referenceContextOf, referenceDecorations, referenceView } from './referenceView.js';
@@ -143,6 +144,9 @@ export function footnoteView(
       nodeViews: {
         crossReference: (node, _view, _getPos, decorations) =>
           referenceView(node, document, decorations),
+        // And an equation as one in the component's is (equations 1, ruling R5); only an inline one
+        // stands in a footnote's text (CNT-129).
+        equation: (node) => equationView(node, document),
       },
       decorations: (state) => {
         const pos = getPos();

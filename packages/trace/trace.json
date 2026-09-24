@@ -16095,73 +16095,91 @@
     {
       "id": "AST-015",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3484,
+      "line": 3486,
       "kind": "title"
     },
     {
       "id": "AST-039",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3402,
+      "line": 3404,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3087,
+      "line": 3089,
       "kind": "title"
     },
     {
       "id": "CNT-036",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3849,
+      "line": 3851,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3968,
+      "line": 3970,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-044",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 4561,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-048",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 4586,
       "kind": "title"
     },
     {
       "id": "CNT-063",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 488,
+      "line": 490,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2899,
+      "line": 2901,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-080",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 4631,
       "kind": "title"
     },
     {
       "id": "CNT-087",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3707,
+      "line": 3709,
       "kind": "title"
     },
     {
       "id": "CNT-098",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2016,
+      "line": 2018,
       "kind": "title"
     },
     {
       "id": "CNT-147",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2026,
+      "line": 2028,
       "kind": "title"
     },
     {
       "id": "CNT-152",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2417,
+      "line": 2419,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 216,
+      "line": 217,
       "kind": "title"
     },
     {
@@ -16923,7 +16941,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 200,
+      "line": 209,
       "kind": "title"
     },
     {
@@ -17505,55 +17523,55 @@
     {
       "id": "CNT-003",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 171,
+      "line": 174,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 634,
+      "line": 637,
       "kind": "title"
     },
     {
       "id": "CNT-031",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 151,
+      "line": 154,
       "kind": "title"
     },
     {
       "id": "CNT-117",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 320,
+      "line": 323,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 353,
+      "line": 356,
       "kind": "title"
     },
     {
       "id": "CNT-126",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 194,
+      "line": 197,
       "kind": "title"
     },
     {
       "id": "CNT-004",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 192,
+      "line": 194,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 631,
+      "line": 633,
       "kind": "title"
     },
     {
       "id": "CNT-127",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 310,
+      "line": 312,
       "kind": "title"
     },
     {

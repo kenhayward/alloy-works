@@ -121,10 +121,10 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     shortcutSaid: 'Ctrl or Cmd, Shift and L',
     prompts: true,
   },
-  // The block actions, after the nine marks. None of them prompts but Reference, at the end: nothing
-  // about making a list is a value only the author can give, and a list's start and numbering are set
-  // over a list that already exists, in the renderer's own list panel, rather than asked for before
-  // one is made.
+  // The block actions, after the nine marks. None of them prompts but Reference and Equation, at the
+  // end: nothing about making a list is a value only the author can give, and a list's start and
+  // numbering are set over a list that already exists, in the renderer's own list panel, rather than
+  // asked for before one is made.
   {
     kind: 'block',
     action: 'bulletedList',
@@ -213,6 +213,22 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     label: 'Reference',
     shortcut: 'Mod-Alt-x',
     shortcutSaid: 'Ctrl or Cmd, Alt and X',
+    prompts: true,
+  },
+  // Equations 1, ruling R6: prompting as Reference does, for the LaTeX only the author can type. On
+  // Shift and E rather than a Ctrl-Alt chord, which AltGr types a character with on common layouts
+  // (the euro sign on E among them). Checked for its plan: nothing in this registry or the renderer
+  // takes it; Chromium binds no accelerator to it; Firefox opens its Network Monitor on it (Cmd, Alt
+  // and E on a Mac), but its developer tools' keys are not reserved, so a page that takes the key
+  // first keeps it. IBus typed an emoji on it until 1.5.25 moved that elsewhere; on a Linux still
+  // running an older one, the input method takes the key before the page, and the toolbar's button is
+  // the way in there.
+  {
+    kind: 'block',
+    action: 'equation',
+    label: 'Equation',
+    shortcut: 'Mod-Shift-e',
+    shortcutSaid: 'Ctrl or Cmd, Shift and E',
     prompts: true,
   },
 ];
@@ -418,11 +434,14 @@ export function applyMarkCommand(
 function rangeToMark(state: EditorState, type: MarkType): { from: number; to: number } | null {
   // An image selected whole is nothing to put a mark on: it carries none (figures 4, ruling R1).
   // Nor is a footnote selected whole: its mark carries none, and its text is edited in its own
-  // editor (footnotes 1). Nor is a cross-reference, which carries none (cross-references 1, R6).
+  // editor (footnotes 1). Nor is a cross-reference, which carries none (cross-references 1, R6), nor
+  // an equation, inline or a block of its own (equations 1, ruling R3).
   if (
     state.selection instanceof NodeSelection &&
     (state.selection.node.type.name === 'image' ||
       state.selection.node.type.name === 'crossReference' ||
+      state.selection.node.type.name === 'equation' ||
+      state.selection.node.type.name === 'equationBlock' ||
       isFootnote(state.selection.node))
   ) {
     return null;

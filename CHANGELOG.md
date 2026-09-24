@@ -3,6 +3,34 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.65.0 - 2026-09-23 (PR #222)
+
+### Added
+
+- **Equations, written in the editor.** **Equation** on the toolbar, or `Ctrl+Shift+E`
+  (`Cmd+Shift+E` on a Mac), opens a dialog where you type an equation in LaTeX and see it drawn as
+  you type, or are told what is wrong with it and where. Place it in a line of text - a paragraph, a
+  list, a quotation, a table's cell, a caption, a term, a footnote - or, where a block can stand, as
+  an equation of its own, numbered or not. Select it and press `Enter` to change it.
+- Some LaTeX is refused rather than stored with part of it missing or drawn out of place -
+  `\cancel`, `\boxed`, a filled `\rule`, a box raised with `\raisebox`, a number written into the
+  equation, or a line broken with `\\` on its own - and the dialog says what to write instead.
+- **The words a screen reader says for an equation are written for you**, in the component's
+  language, in thirteen languages including English, French, German and Spanish, and are yours to
+  change: once you have changed them, changing the equation leaves them alone, and **Generate
+  again** writes them afresh. Press **Insert** before they are written and it waits for them. In any
+  other language the field is empty and says so, and the equation is marked _No description_ until
+  you write one. Everything this needs comes from the product
+  itself, never from another site.
+- **The arrow keys pass an equation standing on its own, a figure or a table** at the start or the end of a component
+  without changing anything, and typing there starts a new paragraph.
+
+### Changed
+
+- **A component holding an equation opens for editing**, where before it opened for reading only.
+- **Publishing names an equation in a line of text** as one that cannot be published yet, as it
+  already did for one standing on its own. Equations are published in a later release.
+
 ## 0.64.1 - 2026-09-23 (PR #221)
 
 ### Changed
