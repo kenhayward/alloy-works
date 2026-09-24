@@ -170,6 +170,10 @@ function kindOf(node: Node): ReferenceKind {
       return 'figure';
     case 'footnote':
       return 'footnote';
+    // Equations 2, ruling R7: a block equation is its own kind, not `block`, so a reference to one
+    // with no known number shows _Equation_ rather than _Paragraph_ (`named`, below).
+    case 'equationBlock':
+      return 'equation';
     default:
       return 'block';
   }
@@ -210,7 +214,11 @@ function captionOf(node: Node): string {
  *
  * `at`, where given, is where the reference would stand in `doc`, and each target is _above_ or
  * _below_ it by position, as `referencesShown` judges a reference already placed; without it, null.
- * A paragraph, a list or a cell is never offered, as XR-A offers none.
+ * A paragraph, a list or a cell is never offered, as XR-A offers none. Nor is a block equation the
+ * author left unnumbered (equations 2, ruling R7): it has no number, so a page and a position are all
+ * that would be left to offer, which `documentTargets` already withholds once the document has one to
+ * compare against - offering it here and refusing it there would be an offer this component cannot
+ * keep.
  */
 export function ownTargets(doc: Node, at?: number): readonly ReferenceTarget[] {
   const targets: ReferenceTarget[] = [];
@@ -218,6 +226,7 @@ export function ownTargets(doc: Node, at?: number): readonly ReferenceTarget[] {
     const id = node.attrs.id as unknown;
     const kind = kindOf(node);
     if (typeof id !== 'string' || kind === 'block') return true;
+    if (kind === 'equation' && node.attrs.numbered !== true) return true;
     const caption = captionOf(node);
     targets.push({
       target: { kind: 'block', block: id },

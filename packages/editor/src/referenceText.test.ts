@@ -47,6 +47,11 @@ const figure = (id: string, caption: string): BlockNode => ({
   alternative: { kind: 'decorative' },
 });
 
+const MATHML_NS = 'http://www.w3.org/1998/Math/MathML';
+const SQUARED = `<math xmlns="${MATHML_NS}" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>`;
+const equationBlock = (id: string, numbered: boolean): BlockNode =>
+  ({ type: 'equation', id, mathml: SQUARED, numbered }) as BlockNode;
+
 const docOf = (...content: BlockNode[]): Node => {
   const opened = toEditor({
     schemaVersion: 1,
@@ -171,6 +176,17 @@ describe('what a cross-reference shows (cross-references 1, ruling R10)', () => 
       // On its own, and in a document whose page has not numbered these yet.
       expect(shown(doc, null)).toEqual(expected);
       expect(shown(doc, { targets: [] })).toEqual(expected);
+    });
+
+    it('shows a block equation by name, with no caption, whatever its number is known', () => {
+      const doc = docOf(
+        equationBlock('e1', true),
+        para('b1', text('See '), ref({ kind: 'block', block: 'e1' })),
+      );
+      // Equations 2, ruling R7: a block equation the page has not numbered yet - or has none, on its
+      // own - shows its kind alone, as a footnote does: it carries no caption to add after it.
+      expect(shown(doc, null)).toEqual([{ text: 'Equation', broken: false }]);
+      expect(shown(doc, { targets: [] })).toEqual([{ text: 'Equation', broken: false }]);
     });
 
     it("names a table by its caption's words, whatever else its caption holds", () => {
@@ -366,5 +382,21 @@ describe('what a component offers a reference of its own (cross-references 1, ru
 
   it('offers no paragraph, list or cell, and nothing from a component that holds none', () => {
     expect(ownTargets(docOf(para('b1', text('Visited'))))).toEqual([]);
+  });
+
+  it('offers a numbered block equation, by kind and no caption, and never one left unnumbered', () => {
+    // Equations 2, ruling R7: an equation left unnumbered has no number to point at - a page and a
+    // position are all that would be left to offer, which is not worth an offer of its own, so the
+    // dialog offers it only where the author asked for a number, as `documentTargets` does once one
+    // has been given.
+    const doc = docOf(
+      equationBlock('e1', true),
+      equationBlock('e2', false),
+      table('t1', 'Readings'),
+    );
+    expect(ownTargets(doc)).toEqual([
+      target({ kind: 'block', block: 'e1' }, 'equation', null, null),
+      target({ kind: 'block', block: 't1' }, 'table', null, 'Readings'),
+    ]);
   });
 });

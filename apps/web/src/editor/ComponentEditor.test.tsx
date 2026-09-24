@@ -4179,6 +4179,47 @@ describe('cross-references in the editor (cross-references 1)', () => {
     expect(drawn()).toEqual(['Table 1.1']);
   });
 
+  it('in a document, offers a numbered block equation and the reference shows its label (equations 2)', async () => {
+    const equation = {
+      type: 'equation',
+      id: 'e1',
+      mathml:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>',
+      numbered: true,
+    };
+    const inADocumentWithEquation = {
+      targets: [
+        ...inADocument.targets,
+        {
+          target: { kind: 'block', block: 'e1' },
+          kind: 'equation',
+          label: 'Equation 1',
+          title: null,
+          relative: null,
+        },
+      ],
+    } as const;
+    const { surface } = openWith(blocksOf(para('b1', 'See the equation.'), equation), {
+      referenceContext: inADocumentWithEquation,
+    });
+    const view = await surface();
+    caretIn(view, 'b1');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    expect(choices(dialog, 'Refer to')).toEqual(['1 Introduction', 'Equation 1']);
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Equation 1' }));
+    // No title form: an equation's number is its label, and what it says is maths (ruling R7).
+    expect(choices(dialog, 'Show as')).toEqual(['Number', 'Page', 'Above or below']);
+    expect(within(dialog).getByText(/It will show/)).toHaveTextContent('It will show: Equation 1');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+
+    expect(referencesIn(view)).toMatchObject([
+      { target: { kind: 'block', block: 'e1' }, display: 'number' },
+    ]);
+    expect(drawn()).toEqual(['Equation 1']);
+  });
+
   it("shows the layout's own words for above and below, where the document carries them (cross-references 2, ruling R9)", async () => {
     const { surface } = openWith(blocksOf(para('b1', 'See the readings.'), readings), {
       referenceContext: { ...inADocument, words: { above: 'plus haut', below: 'plus bas' } },
