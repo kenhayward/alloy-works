@@ -70,6 +70,26 @@ describe('LaTeX made into an equation (equations 1, ruling R1)', () => {
     });
   });
 
+  it('refuses an equation that draws nothing, inline and as a block, and not one beside something it draws', () => {
+    // An empty group, a thin space, empty text, a fraction and a matrix of nothing, a phantom: the
+    // editor would store it and a publication tag nothing for it (the final review of equations 2, M1).
+    const said =
+      'An equation has to show something: this one draws nothing. Write what it is to show.';
+    for (const latex of [
+      '{}',
+      '\\,',
+      '\\text{}',
+      '\\frac{}{}',
+      '\\begin{matrix}\\end{matrix}',
+      '\\phantom{x}',
+    ]) {
+      for (const display of ['inline', 'block'] as const) {
+        expect(latexToMathml(latex, display), `${latex} ${display}`).toEqual({ ok: false, said });
+      }
+    }
+    expect(latexToMathml('\\, x', 'inline').ok).toBe(true);
+  });
+
   it('refuses a line broken outside an environment, which a block would lose, and not one inside one', () => {
     const said =
       'A line cannot be broken with \\\\ on its own. For several lines, use an environment such as aligned.';

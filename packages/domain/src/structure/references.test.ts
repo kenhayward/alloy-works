@@ -163,7 +163,7 @@ describe('what a document offers a reference', () => {
     ]);
   });
 
-  it("offers each occurrence's figures, tables and footnotes in its place, as the edited component would store them", () => {
+  it("offers each occurrence's figures, tables, footnotes and numbered equations in its place, as the edited component would store them", () => {
     const targets = offered(
       [
         section('method', 'Method', [occurrence('alice', ALICE), occurrence('ada', ADA)]),
@@ -172,8 +172,13 @@ describe('what a document offers a reference', () => {
       {
         alice: [figure('lf1', ''), footnote('ln1')],
         ada: [figure('af1', 'Readings'), footnote('an1')],
-        // An equation is not offered: nothing in this slice points at one.
-        grace: [table('gt1', 'Totals'), equation('ge1')],
+        // A numbered equation is offered by its number (equations 2, ruling R7); one the author left
+        // unnumbered has no number to offer, and is not.
+        grace: [
+          table('gt1', 'Totals'),
+          equation('ge1'),
+          { block: 'ge2', sequence: 'equation', numbered: false },
+        ],
       },
     );
     expect(targets).toEqual([
@@ -226,6 +231,13 @@ describe('what a document offers a reference', () => {
         kind: 'table',
         label: 'Table 2.1',
         title: 'Totals',
+        relative: 'below',
+      },
+      {
+        target: { kind: 'component', component: GRACE, block: 'ge1' },
+        kind: 'equation',
+        label: 'Equation 1',
+        title: null,
         relative: 'below',
       },
     ]);
@@ -351,9 +363,11 @@ describe('the forms a reference offers', () => {
     for (const kind of ['section', 'figure', 'table'] as const) expect(formsFor(kind)).toEqual(all);
   });
 
-  it('offers a footnote a number, a page and a place, and any other block a page and a place', () => {
-    // A footnote has a number and no title; a paragraph, a list or a quotation has neither.
+  it('offers a footnote and an equation a number, a page and a place, and any other block a page and a place', () => {
+    // A footnote and an equation have a number and no title; a paragraph, a list or a quotation has
+    // neither.
     expect(formsFor('footnote')).toEqual(['number', 'page', 'relative']);
+    expect(formsFor('equation')).toEqual(['number', 'page', 'relative']);
     expect(formsFor('block')).toEqual(['page', 'relative']);
   });
 });
@@ -422,8 +436,10 @@ describe('what a reference prints', () => {
 
   it('names each kind in one word, for text a reference shows with no number', () => {
     expect(
-      (['section', 'figure', 'table', 'footnote', 'block'] as const).map((kind) => kindWord(kind)),
-    ).toEqual(['Section', 'Figure', 'Table', 'Footnote', 'Paragraph']);
+      (['section', 'figure', 'table', 'footnote', 'equation', 'block'] as const).map((kind) =>
+        kindWord(kind),
+      ),
+    ).toEqual(['Section', 'Figure', 'Table', 'Footnote', 'Equation', 'Paragraph']);
   });
 });
 
@@ -513,6 +529,7 @@ describe('resolving a reference in the document that publishes it', () => {
       { type: 'blockquote', id: 'q1', content: [paragraph('qp1', text('Quoted'))] },
       { type: 'preformatted', id: 'x1', text: 'lpr -P office' },
       { type: 'equation', id: 'e1', mathml: MATHML, numbered: true },
+      { type: 'equation', id: 'e2', mathml: MATHML, numbered: false },
       {
         type: 'figure',
         id: 'f2',
@@ -671,8 +688,10 @@ describe('resolving a reference in the document that publishes it', () => {
     // A table, and a figure whose caption has no words, whose title is none.
     expect(resolver(block('t1'), reading)).toEqual(found('t1', 'table', 'Table 1.1', 'Totals'));
     expect(resolver(block('f2'), reading)).toEqual(found('f2', 'figure', 'Figure 1.2', null));
-    // An equation is a block, and nothing prints its number until references to one are planned.
-    expect(resolver(block('e1'), reading)).toEqual(found('e1', 'block', null, null));
+    // An equation, by its number where it has one (equations 2, ruling R7): one left unnumbered has
+    // none to print, and a page and a place alone, as a paragraph.
+    expect(resolver(block('e1'), reading)).toEqual(found('e1', 'equation', 'Equation 1', null));
+    expect(resolver(block('e2'), reading)).toEqual(found('e2', 'equation', null, null));
   });
 
   it('fails a target the occurrence it is bound to does not hold', () => {
@@ -710,7 +729,14 @@ describe('the forms a bound target can print', () => {
     expect(printableForms(target('figure', 'Figure 1.1', 'Readings'))).toEqual(all);
     expect(printableForms(target('section', '2.1', 'Method'))).toEqual(all);
     expect(printableForms(target('footnote', '3', null))).toEqual(['number', 'page', 'relative']);
+    expect(printableForms(target('equation', 'Equation 1', null))).toEqual([
+      'number',
+      'page',
+      'relative',
+    ]);
     expect(printableForms(target('block', null, null))).toEqual(['page', 'relative']);
+    // An unnumbered equation has a page and a place, as a paragraph has.
+    expect(printableForms(target('equation', null, null))).toEqual(['page', 'relative']);
   });
 
   it('prints no number where the target has none, and no title where it has no words', () => {

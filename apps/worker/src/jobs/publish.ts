@@ -30,8 +30,8 @@ import type { JobHandler } from '../worker.js';
  * before one could be a table, and version 6 before one could be a figure - each named only by the
  * publications it made. Version 6 was also the first whose compile runs with
  * `--features a11y-extras` (`typstArguments`), 7 the first to read images from the store, 8 the
- * first to set one in a run of text, 9 the first to set a footnote and a table's note, and 10 the
- * first to resolve and print a cross-reference.
+ * first to set one in a run of text, 9 the first to set a footnote and a table's note, 10 the
+ * first to resolve and print a cross-reference, and 11 the first to set an equation.
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -43,7 +43,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '10',
+  [PUBLISHING_SCHEMA_CURRENT]: '11',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */

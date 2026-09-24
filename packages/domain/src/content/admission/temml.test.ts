@@ -55,6 +55,7 @@ const changedByTheRewrite = new Set([
   'cases alone',
   'aligned alone',
   'array lr',
+  'subarray',
 ]);
 
 const refusedConstructs: Record<string, string> = {
@@ -147,7 +148,7 @@ describe("Temml's output, admitted as the one form an equation is stored in", ()
     }
   });
 
-  it('refuses a filled rule and a box moved off its line, naming them, and keeps a strut, which draws nothing', () => {
+  it('refuses a filled rule and a box moved off its line, naming them, and a strut alone, which draws nothing', () => {
     // The reader drops a rule's colour, as it drops any colour, and would store a filled box as an
     // empty space; and it keeps an offset, which draws a raised box wherever its value says - over the
     // lines above, or the editor's own controls (equations 1's final review, L2 and L3).
@@ -169,7 +170,39 @@ describe("Temml's output, admitted as the one form an equation is stored in", ()
         });
       }
     }
-    for (const source of outputsOf('strut')) expect(admitted(source)).toBe(readerAlone(source));
+    // A strut is kept inside an equation (the integral's root holds one), but alone it is an equation
+    // that draws nothing (the final review of equations 2, M1).
+    for (const source of outputsOf('strut')) {
+      expect(admitTemmlMathml(source)).toEqual({ ok: false, reason: 'empty' });
+    }
+    expect(fixture('integral').block).toContain('<mspace width="0pt" height="0.5em"></mspace>');
+    expect(admitTemmlMathml(fixture('integral').block).ok).toBe(true);
+  });
+
+  it('refuses an equation that draws nothing, which would carry its words in a publication to no one', () => {
+    // As Temml writes an empty group or empty text, a thin space, a fraction or a root of nothing, an
+    // empty matrix, and a phantom (the final review of equations 2, M1): nothing an equation shows, so
+    // nothing a publication tags to carry the words it is spoken by.
+    for (const inner of [
+      '<mrow></mrow>',
+      '<mspace width="0.1667em"></mspace>',
+      '<mtext> </mtext>',
+      '<mfrac><mrow></mrow><mrow></mrow></mfrac>',
+      '<msqrt><mrow></mrow></msqrt>',
+      '<mtable></mtable>',
+      '<mphantom><mi>x</mi></mphantom>',
+    ]) {
+      for (const display of ['', ' display="block"']) {
+        expect(admitTemmlMathml(math(inner, display)), inner).toEqual({
+          ok: false,
+          reason: 'empty',
+        });
+      }
+    }
+    // One thing that shows is enough.
+    expect(
+      admitTemmlMathml(math('<mrow><mspace width="0.1667em"></mspace><mi>x</mi></mrow>')).ok,
+    ).toBe(true);
   });
 
   it("refuses an equation number Temml drew, since a block's number is the product's to set", () => {
@@ -199,9 +232,10 @@ describe("Temml's output, admitted as the one form an equation is stored in", ()
         !changedByTheRewrite.has(name) &&
         !(name in refusedConstructs) &&
         !numbered.has(name) &&
-        !brokenLines.has(name),
+        !brokenLines.has(name) &&
+        name !== 'strut',
     );
-    expect(others).toHaveLength(19);
+    expect(others).toHaveLength(22);
     for (const { name } of others) {
       for (const source of outputsOf(name)) {
         expect(admitted(source), name).toBe(readerAlone(source));

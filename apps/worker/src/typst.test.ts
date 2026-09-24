@@ -152,8 +152,9 @@ describe('the pinned Typst', () => {
   });
 
   it('refuses, once and for all, a document the engine will not set', async () => {
-    // A private-use character no pinned face holds: PDF/UA-1 refuses it every time.
-    const refused = JSON.stringify({ environment: '\u{e000}', requestedAt: 'now' });
+    // A private-use character no pinned face holds: PDF/UA-1 refuses it every time. (STIX Two Math
+    // holds much of the private-use area from U+E000, which the engine would fall back to.)
+    const refused = JSON.stringify({ environment: '\u{f8ff}', requestedAt: 'now' });
     const refusal = typst.compile(SAMPLE_TEMPLATE, refused, at);
     await expect(refusal).rejects.toMatchObject({ code: 'typst_refused' });
     await expect(refusal).rejects.toBeInstanceOf(JobRefused);
@@ -221,6 +222,21 @@ describe('the pinned fonts (issue #145)', () => {
     }
     const licence = await readFile(join(FONT_DIRECTORY, 'LICENSE-Liberation.txt'), 'latin1');
     expect(licence).toContain('SIL OPEN FONT LICENSE Version 1.1');
+    // STIX Two Math's own licence, from the tag its face was taken from (equations 2, ruling R1).
+    const stix = await readFile(join(FONT_DIRECTORY, 'LICENSE-STIX.txt'), 'latin1');
+    expect(stix).toContain('The STIX Fonts Project Authors');
+    expect(stix).toContain('SIL OPEN FONT LICENSE Version 1.1');
+  });
+
+  it('pins STIX Two Math 2.13 b171 as the one maths face', () => {
+    // The hash the equations spike measured, of the file at the tag `v2.13b171` in stipub/stixfonts.
+    expect(PINNED_FONT_FILES.filter((each) => each.face === 'math')).toEqual([
+      {
+        file: 'STIXTwoMath-Regular.otf',
+        face: 'math',
+        sha256: '3a5f3f26f40d5698b3c62dd085d48d6663696a3f80825aab8b553d5097518e8c',
+      },
+    ]);
   });
 
   it('sets every PDF in the pinned faces and in nothing Typst carries itself', async () => {
@@ -269,11 +285,17 @@ describe('the pinned fonts (issue #145)', () => {
         '{}',
         at,
       );
-      // Which pinned face Typst falls back to is its own choice (Liberation Mono, since editor 5
-      // pinned it); what matters is that the planted one is never it.
+      // Which pinned face Typst falls back to is its own choice, and not the same on every platform:
+      // Liberation Mono on Windows, and STIX Two Math on Linux since equations 2 pinned it, which CI
+      // caught after a Windows run passed. What matters is that the planted one is never it, so the
+      // families allowed are the pinned files' own, read from the list rather than written out here.
+      const pinned = [...new Set(PINNED_FONT_FILES.map((each) => each.file.replace(/-.*$/, '')))];
       const set = families(pdf);
       expect(set.length).toBeGreaterThan(0);
-      for (const family of set) expect(family).toMatch(/^Liberation(Serif|Mono)(-|$)/);
+      for (const family of set) {
+        expect(pinned.some((name) => family === name || family.startsWith(`${name}-`))).toBe(true);
+      }
+      expect(set.some((family) => family.startsWith('Interloper'))).toBe(false);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
@@ -337,6 +359,36 @@ describe('the pinned fonts (issue #145)', () => {
       ).length;
     expect(counted('body')).toBe(2321);
     expect(counted('code')).toBe(2305);
+  });
+
+  it('knows which characters the maths face can set, apart from the body faces', () => {
+    // An identifier's italic is a character of its own, beyond U+FFFF, that the body face has not got;
+    // the n-ary sum and the maths angle brackets are the maths face's too. Neither face sets Chinese.
+    expect(fonts.covers(0x1d465, 'math')).toBe(true); // mathematical italic x
+    expect(fonts.covers(0x1d465, 'body')).toBe(false);
+    expect(fonts.covers(0x2211, 'math')).toBe(true);
+    expect(fonts.covers(0x27e8, 'math')).toBe(true);
+    expect(fonts.covers(0x4e2d, 'math')).toBe(false);
+    // What the template draws itself, which no author supplies and so no check asks: the radical,
+    // the braces over and under, the primes, and the brace and parentheses of cases and binomials.
+    for (const drawn of [0x221a, 0x23de, 0x23df, 0x23b4, 0x23b5, 0x23dc, 0x23dd, 0x2032, 0x2033])
+      expect(fonts.covers(drawn, 'math'), drawn.toString(16)).toBe(true);
+    for (const drawn of [0x2034, 0x2057, 0x7b, 0x7d, 0x28, 0x29])
+      expect(fonts.covers(drawn, 'math'), drawn.toString(16)).toBe(true);
+    const counted = Array.from({ length: 0x110000 }, (_, codePoint) => codePoint).filter(
+      (codePoint) => fonts.covers(codePoint, 'math'),
+    ).length;
+    expect(counted).toBe(4605);
+  });
+
+  it('refuses to start when the maths face is missing, as it does for a serif one', async () => {
+    const directory = await copyOfTheFaces('aw-missing-math-');
+    try {
+      await rm(join(directory, 'STIXTwoMath-Regular.otf'));
+      await expect(loadPinnedFonts(directory)).rejects.toBeInstanceOf(FontsUnavailable);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 
   it('refuses to start when a monospace face is missing, as it does for a serif one', async () => {

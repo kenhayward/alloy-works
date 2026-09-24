@@ -7,12 +7,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > **Status: the first pieces of the first tranche, on scaffolding.** Components can be made, edited and
 > versioned, their text formatted, linked, marked with a language and arranged into lists, and
 > documents made, their
-> outlines restructured, their sections numbered and their paragraphs, lists, tables and figures
-> published as a laid-out PDF with
-> a cover, a contents, lists of figures and tables and numbered pages that carries all of that
-> formatting.
-> Footnotes, a table's note and cross-references are written and published, and equations are
-> written in the editor but not yet published.
+> outlines restructured, their sections numbered and their paragraphs, lists, quotations,
+> preformatted text, tables and figures published as a laid-out PDF with a cover, a contents, lists
+> of figures and tables and numbered pages that carries all of that formatting.
+> Footnotes, a table's note, cross-references and equations are written and published.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -256,11 +254,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Cross-references.** **Reference** on the formatting toolbar, or `Ctrl+Alt+X` (`Cmd+Option+X` on a
   Mac), opens a dialog for pointing at something from the cursor. Editing a component in its
   document's page, **Refer to** lists the document's sections by number and title and every figure,
-  table and footnote its components hold, by number and caption; a component opened on its own lists
-  its own figures, tables and footnotes, by kind and caption, since only a document numbers them.
-  **Show as** offers the forms the chosen target has - **Number**, **Title**, **Number and title**,
-  **Page** and **Above or below**, a footnote having no title - and a line says what the reference
-  will show. **Insert** places it after any words you have selected, in a paragraph, a list, a
+  table and footnote its components hold, by number and caption, and every numbered equation, by its
+  number; a component opened on its own lists its own figures, tables, footnotes and numbered
+  equations, by kind and caption, since only a document numbers them. An equation left unnumbered is
+  not listed. **Show as** offers the forms the chosen target has - **Number**, **Title**, **Number and
+  title**, **Page** and **Above or below**, a footnote and an equation having no title - and a line
+  says what the reference will show. **Insert** places it after any words you have selected, in a paragraph, a list, a
   quotation, a table's cell, a caption, a term, an attribution, a table's note or a footnote's text,
   though never in preformatted text. In the text it shows what it will print - _Table 1.1_, a
   section's title, _above_ - or, on its own or for something the page has not numbered yet, the
@@ -301,8 +300,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   formatting of its own. The words for a description are loaded the first time they are asked for,
   from the product itself, never from anywhere else. A component holding an equation opens for
   editing, one copied within the product pastes as one, and the document's text on its page shows it
-  as the editor does. **A published document refuses an equation by name, for now**, and an equation
-  cannot yet stand in a section's title.
+  as the editor does. A published document prints it (see Publishing). An equation cannot yet be
+  written in a section's title.
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
@@ -356,7 +355,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   second or two later the page says it is published. The publication is a tagged PDF of the version on
   the page: its title, its sections numbered as the outline shows them and bookmarked, and each
   component's paragraphs, lists, quotations and preformatted text beneath its heading, set in
-  Liberation Serif, with inline code and preformatted text in Liberation Mono, and everything you
+  Liberation Serif, with inline code and preformatted text in Liberation Mono and equations in STIX
+  Two Math, and everything you
   formatted
   carried into it: strong, emphasis, underline, subscript, superscript, inline code, quoted phrases,
   links a reader can follow, and each run's own language. **Lists print as you made them** - bulleted
@@ -375,8 +375,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   outline: a component you may not read, without saying which; a footnote or any other block that
   cannot be published yet; a cross-reference to something the document does not hold, or asking for
   what its target cannot show; a table with no caption, or whose header cell reaches down into rows that
-  are not header rows; a defined term, which has no control and no published form yet; or a
-  character no typeface can set.
+  are not header rows; an equation that cannot be set, has no description, or would print with no
+  number; a defined term, which has no control and no published form yet; or a character no typeface
+  can set.
 
   **Tables are published.** A table prints under its caption, which begins with its number -
   **Table 1.1** - and a screen reader is told the caption is the table's. Its header rows are marked
@@ -486,16 +487,45 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   section's heading - and one pointing at anything in a table's header rows, which are printed again
   on every page the table reaches. Every one is named.
 
+  **An equation prints** as mathematics, in STIX Two Math, a typeface made for mathematics, wherever
+  you can write one: running text, a list, a quotation, a table's cell, a table's header rows (printed
+  again on every page, and read once), a footnote and a caption. One already stored in a section's
+  heading prints there and in the contents, the running heads and the bookmarks, where a bookmark
+  shows its symbols rather than its description. A screen reader is told each is a formula and reads
+  its description, in the language of the text around it. **A numbered equation carries its number**,
+  _Equation 1_ under the default layout, at the right of its line, read after the equation; where an
+  equation is too wide to leave its number room there, the number goes on a line of its own beneath
+  it, at the right. A cross-reference to a numbered equation prints its number, its page or above or
+  below, and a layout can ask for a **list of equations** after the contents, though the one every
+  environment starts with lists figures and tables only. An equation is refused, naming where it is
+  and never quoting it, where it holds something the typesetter cannot set, such as an error mark,
+  maths written right to left, a box raised or lowered, a cell spanning others, a space of more than
+  twenty ems either way or an accent made of more than one character; where it draws nothing at all,
+  which the equation dialog refuses too; where it has no description; where the maths typeface lacks
+  one of its characters, an invisible one such as a joiner among them; and where it is numbered and
+  the layout gives it no number. Rows stacked under a sum, a small matrix and maths set a size or
+  two smaller print as they are written, and an invisible mark that only says where a line may break
+  is left out of an equation. A reference
+  asking for the title of a section or a caption that holds an equation is refused too, since the
+  equation cannot be printed as words. Some LaTeX prints as less than it asks rather than being
+  refused: `\big(` and its kin print at their normal size, and `\smash` and `\mathrlap` take the
+  room of what they hold. A letter written with a separate accent character that has no combined
+  form - an x and a circumflex as two characters - prints as it should but is missing from the text a
+  reader copies or searches, and so is the same letter in the same style in every other equation in
+  the document; a screen reader reads each equation's description, which is whole.
+
   **This is a PDF of paragraphs, lists, quotations, preformatted text, tables and their notes,
-  figures, images in a line of text, footnotes and cross-references, not publishing.** No equations - a
-  document holding one is refused, naming it. A table too wide
+  figures, images in a line of text, footnotes, cross-references and equations, not publishing.** A
+  block equation wider than its line runs past both margins and can be cut off at the page's edge,
+  and one in a line of text runs past the right margin; nothing refuses either yet. A table too wide
   for the page is not turned, shrunk or split, and how it breaks across pages is not yet chosen by a
   style: every table repeats its header rows. A citation
   in a quotation's attribution cannot be written or published yet. A list nested
   past about thirty levels is stored by the editor and cannot be published at all, and the page says
   only that the publish failed. Quotations inside one another stop at fifteen in the editor, which is
   the most a publication can set.
-  There is no list of equations, no caption labels and no theme; nothing chooses, makes or
+  No publication has a list of equations yet, since the one layout lists only figures and tables;
+  there is no theme; nothing chooses, makes or
   edits a layout, and there is only ever the one the environment started with; and there is no Word
   file, no preview, and no way to approve a publication. The page asks how a publish is going for as
   long as it stays open, and a download link lasts five minutes from when the publication's page was
@@ -512,7 +542,8 @@ Named explicitly so nobody has to read the source to find out:
   there is no control for a defined term or a
   citation. A paste from outside the product keeps no footnote, image or equation, reads Markdown only when **Paste as
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
-  published PDF of a document's paragraphs, lists, quotations, preformatted text and tables. The one sample document is a fixed template with
+  published PDF of a document's paragraphs, lists, quotations, preformatted text, tables, figures,
+  images in a line of text, footnotes, cross-references and equations. The one sample document is a fixed template with
   no content of yours in it.
 - No way to make, change or choose between component types: every environment has one, named Topic, and
   nothing yet lets an administrator add another or change which is the default.
@@ -522,8 +553,8 @@ Named explicitly so nobody has to read the source to find out:
   make a figure or a table unnumbered: every one takes a number.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
   quotations, preformatted text, tables and their notes, figures, images in a line of text,
-  footnotes and cross-references: no equations in a publication, no definition-list structure of PDF's own, no list of equations, no caption
-  labels, no theme, no monospace face for inline code, no Word, no preview, and no way to approve a
+  footnotes, cross-references and equations: no definition-list structure of PDF's own, no list of equations under the one layout, no theme, no
+  Word, no preview, and no way to approve a
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,
   and every document publishes under it.

@@ -29,7 +29,7 @@ export type TemmlFixture = {
 
 /**
  * Temml 0.13.5's output. The first sixteen are the equations spike's samples; the rest are what
- * equations 1 needed besides. Regenerate them from the pinned Temml, never by hand.
+ * equations 1 and 2 needed besides. Regenerate them from the pinned Temml, never by hand.
  */
 export function temmlOutput(): readonly TemmlFixture[] {
   return [
@@ -417,6 +417,49 @@ export function temmlOutput(): readonly TemmlFixture[] {
         '<math xmlns="http://www.w3.org/1998/Math/MathML"><mpadded voffset="-1em" style="padding:0 0 1em 0;"><mi>x</mi></mpadded></math>',
       block:
         '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="tml-display" style="display:block math;"><mpadded voffset="-1em" style="padding:0 0 1em 0;"><mi>x</mi></mpadded></math>',
+    },
+    // What Temml sets a script level smaller - `\substack`, `smallmatrix` and `subarray`, each an
+    // `mstyle` with `scriptlevel="1"` and no display style - and the two styles that set a level
+    // explicitly, which equations 2's converter maps to the engine's script sizes (its final review, I2).
+    {
+      name: 'substack',
+      tex: '\\sum_{\\substack{i < n \\\\ i > 0}} a_i',
+      inline:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mo movablelimits="false">\u{2211}</mo><mstyle scriptlevel="1"><mtable class="tml-small"><mtr><mtd style="padding-left:0em;padding-right:0em;"><mrow><mi>i</mi><mo>&lt;</mo><mi>n</mi></mrow></mtd></mtr><mtr><mtd style="padding-left:0em;padding-right:0em;"><mrow><mi>i</mi><mo>&gt;</mo><mn>0</mn></mrow></mtd></mtr></mtable></mstyle></msub><msub><mi>a</mi><mi>i</mi></msub></mrow></math>',
+      block:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="tml-display" style="display:block math;"><mrow><mrow><munder><mo movablelimits="false">\u{2211}</mo><mstyle scriptlevel="1"><mtable class="tml-small"><mtr><mtd style="padding-left:0em;padding-right:0em;"><mrow><mi>i</mi><mo>&lt;</mo><mi>n</mi></mrow></mtd></mtr><mtr><mtd style="padding-left:0em;padding-right:0em;"><mrow><mi>i</mi><mo>&gt;</mo><mn>0</mn></mrow></mtd></mtr></mtable></mstyle></munder></mrow><msub><mi>a</mi><mi>i</mi></msub></mrow></math>',
+    },
+    {
+      name: 'smallmatrix',
+      tex: '\\left(\\begin{smallmatrix} a & b \\\\ c & d \\end{smallmatrix}\\right)',
+      inline:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mo fence="true" form="prefix" stretchy="true">(</mo><mstyle scriptlevel="1"><mtable class="tml-small"><mtr><mtd style="padding-left:0em;padding-right:0.1389em;"><mi>a</mi></mtd><mtd style="padding-left:0.1389em;padding-right:0em;"><mi>b</mi></mtd></mtr><mtr><mtd style="padding-left:0em;padding-right:0.1389em;"><mi>c</mi></mtd><mtd style="padding-left:0.1389em;padding-right:0em;"><mi>d</mi></mtd></mtr></mtable></mstyle><mo fence="true" form="postfix" stretchy="true">)</mo></mrow></math>',
+      block:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="tml-display" style="display:block math;"><mrow><mo fence="true" form="prefix" stretchy="true">(</mo><mstyle scriptlevel="1"><mtable class="tml-small"><mtr><mtd style="padding-left:0em;padding-right:0.1389em;"><mi>a</mi></mtd><mtd style="padding-left:0.1389em;padding-right:0em;"><mi>b</mi></mtd></mtr><mtr><mtd style="padding-left:0em;padding-right:0.1389em;"><mi>c</mi></mtd><mtd style="padding-left:0.1389em;padding-right:0em;"><mi>d</mi></mtd></mtr></mtable></mstyle><mo fence="true" form="postfix" stretchy="true">)</mo></mrow></math>',
+    },
+    {
+      name: 'subarray',
+      tex: '\\sum_{\\begin{subarray}{l} i < n \\\\ j > 0 \\end{subarray}} a_{ij}',
+      inline:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mo movablelimits="false">\u{2211}</mo><mstyle scriptlevel="1"><mtable class="tml-small"><mtr><mtd class="tml-left" style="padding-left:0em;padding-right:0em;"><mrow><mi>i</mi><mo>&lt;</mo><mi>n</mi></mrow></mtd></mtr><mtr><mtd class="tml-left" style="padding-left:0em;padding-right:0em;"><mrow><mi>j</mi><mo>&gt;</mo><mn>0</mn></mrow></mtd></mtr></mtable></mstyle></msub><msub><mi>a</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub></mrow></math>',
+      block:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="tml-display" style="display:block math;"><mrow><mrow><munder><mo movablelimits="false">\u{2211}</mo><mstyle scriptlevel="1"><mtable class="tml-small"><mtr><mtd class="tml-left" style="padding-left:0em;padding-right:0em;"><mrow><mi>i</mi><mo>&lt;</mo><mi>n</mi></mrow></mtd></mtr><mtr><mtd class="tml-left" style="padding-left:0em;padding-right:0em;"><mrow><mi>j</mi><mo>&gt;</mo><mn>0</mn></mrow></mtd></mtr></mtable></mstyle></munder></mrow><msub><mi>a</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub></mrow></math>',
+    },
+    {
+      name: 'scriptstyle',
+      tex: 'x + {\\scriptstyle y + z}',
+      inline:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>x</mi><mo>+</mo><mstyle scriptlevel="1" displaystyle="false"><mi>y</mi><mo>+</mo><mi>z</mi></mstyle></mrow></math>',
+      block:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="tml-display" style="display:block math;"><mrow><mi>x</mi><mo>+</mo><mstyle scriptlevel="1" displaystyle="false"><mi>y</mi><mo>+</mo><mi>z</mi></mstyle></mrow></math>',
+    },
+    {
+      name: 'scriptscriptstyle',
+      tex: 'x + {\\scriptscriptstyle y + z}',
+      inline:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>x</mi><mo>+</mo><mstyle scriptlevel="2" displaystyle="false"><mi>y</mi><mo>+</mo><mi>z</mi></mstyle></mrow></math>',
+      block:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="tml-display" style="display:block math;"><mrow><mi>x</mi><mo>+</mo><mstyle scriptlevel="2" displaystyle="false"><mi>y</mi><mo>+</mo><mi>z</mi></mstyle></mrow></math>',
     },
   ];
 }

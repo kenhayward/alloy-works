@@ -43,11 +43,21 @@ describe("a face's character map", () => {
     expect([...covered].sort((a, b) => a - b)).toEqual([0x1f600, 0x1f601, 0x1f602]);
   });
 
-  it('finds nothing beyond U+FFFF in the pinned faces, which carry format 4 and no format 12', async () => {
-    for (const pinned of PINNED_FONT_FILES) {
+  it('finds nothing beyond U+FFFF in the Liberation faces, which carry format 4 and no format 12', async () => {
+    for (const pinned of PINNED_FONT_FILES.filter((each) => each.face !== 'math')) {
       const covered = [...codePoints(await readFile(join(FONT_DIRECTORY, pinned.file)))];
       expect(covered.length, pinned.file).toBeGreaterThan(0);
       expect(Math.max(...covered), pinned.file).toBeLessThan(0x10000);
     }
+  });
+
+  it("reads the maths face's format 12 subtable, where its alphanumerics lie beyond U+FFFF", async () => {
+    // Mathematical Alphanumeric Symbols, U+1D400 to U+1D7FF: an identifier's italic, bold, script,
+    // fraktur and double-struck letters, which an equation is set in, and which format 4 cannot hold.
+    const [maths] = PINNED_FONT_FILES.filter((each) => each.face === 'math');
+    const covered = codePoints(await readFile(join(FONT_DIRECTORY, maths!.file)));
+    expect(covered.has(0x1d465)).toBe(true); // mathematical italic x
+    expect(covered.has(0x1d538)).toBe(true); // mathematical double-struck A
+    expect([...covered].filter((codePoint) => codePoint > 0xffff).length).toBeGreaterThan(900);
   });
 });

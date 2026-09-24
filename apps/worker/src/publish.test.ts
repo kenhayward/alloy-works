@@ -391,13 +391,13 @@ describe('publishing a document, from the request to the stored PDF', () => {
   it("PUB-063 records the engine, the engine's version and the template's version that made it", async () => {
     const { request } = await published();
     const row = await publicationOf(request);
-    // Made under a layout, so by template 10 and pipeline 10, under the layout its request recorded.
+    // Made under a layout, so by template 11 and pipeline 11, under the layout its request recorded.
     expect(row).toMatchObject({
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 10,
-      pipeline_version: '10',
+      template_version: 11,
+      pipeline_version: '11',
       layout_version_id: (await requestRow(request)).layout_version_id,
     });
     expect(row!.layout_version_id).not.toBeNull();
@@ -411,6 +411,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       'LiberationMono-BoldItalic.ttf',
       'LiberationMono-Italic.ttf',
       'LiberationMono-Regular.ttf',
+      'STIXTwoMath-Regular.otf',
     ]);
     expect(await requestRow(request)).toMatchObject({ state: 'done', failures: [] });
   });

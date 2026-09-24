@@ -33,7 +33,7 @@ a web application and a desktop application**.
 > toolbar or `Ctrl+Alt+F` and written in a nested editor beneath the text, over its own paragraphs in
 > the component's one history, and a table's note is added and removed from the Table panel; a publish
 > sets the footnote at the foot of its anchor's page and the note beneath its table. A
-> cross-reference to a section, a figure, a table or a footnote is placed and changed from the
+> cross-reference to a section, a figure, a table, a footnote or a numbered equation is placed and changed from the
 > Reference dialog, by toolbar or `Ctrl+Alt+X`, over the targets `packages/domain/src/structure/references.ts`
 > offers, and shows what it will print from the document page's numbering and its layout's words, or
 > its target's kind and caption on its own, or that it is broken; an undo keeps the identifiers it
@@ -44,7 +44,9 @@ a web application and a desktop application**.
 > `admitTemmlMathml` in `packages/domain`, and placed inline in any text or as a block, numbered or
 > not; it is drawn as native MathML, and its alternative is written by the speech rule engine in the
 > component's language from the product's own files, and is the author's to change; a publish
-> refuses it by name. A
+> converts its MathML to the maths tree in `packages/domain/src/publishing/maths.ts` and sets it in a
+> pinned STIX Two Math, tagged as a formula carrying its alternative, a numbered one with its number
+> beside it, or below it where it is too wide, or fails naming the construct it cannot set. A
 > document can be created in a space and its outline - a tree of front matter, sections and component
 > references - restructured a version at a time, through `packages/domain/src/structure/`, the same
 > chain and the documents page in `apps/web`, which numbers its sections with the environment's
@@ -57,12 +59,13 @@ a web application and a desktop application**.
 > under its numbered caption with its header rows repeated and its header columns tagged, run with
 > Typst's `--features a11y-extras`, and a figure sized to the page with its caption below and its
 > description tagged in its own language, or an artifact where decorative, its image read as the
-> publisher and held to its hash, and lists of figures and tables after the contents - marked
+> publisher and held to its hash, and lists of figures, tables and, where a layout declares one,
+> equations after the contents - marked
 > **Not approved** on every page, through the `publish` job in `apps/worker` and the routes in
 > `apps/service/src/publishing.ts` - and nothing else authors or
-> publishes content: no image or equation pasted from outside the product, no equation published or in a section's title, no metadata panel,
+> publishes content: no image or equation pasted from outside the product, no equation made in a section's title (equations 3's), no metadata panel,
 > no making a component type, no defined term written or resolved, no
-> document view, no list of equations, no
+> document view, no list of equations in the default layout, no
 > choosing or editing a layout, and no theme, preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and
 > nothing renders it any more. [`docs/features.md`](docs/features.md) lists what does and does not
 > exist.

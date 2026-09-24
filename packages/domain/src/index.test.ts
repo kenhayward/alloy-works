@@ -172,10 +172,15 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_8',
         // Frozen by cross-references 2, which made `publishing/10`: the schema template 9 reads.
         'PUBLISHING_SCHEMA_9',
+        // Frozen by equations 2, which made `publishing/11`: the schema template 10 reads.
+        'PUBLISHING_SCHEMA_10',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',
         'setWithoutAGlyph',
+        // The maths tree the template and the Word writer both read, from one converter, promoted by
+        // equations 2 so that nothing outside the domain builds a tree by hand (ruling R2).
+        'mathsTree',
         // Promoted by the editor's marks slice, so the editor can warn about a tag a publication
         // could not carry without keeping a second copy of the rule (CNT-152).
         'publishedLanguage',

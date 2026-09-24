@@ -19,8 +19,8 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 [themes.md](themes.md) (the theme's Typst projection and the typefaces) and
 [word-output.md](word-output.md) (the other writer that reads the same resolved document).
 
-> **Two slices are built, and part of a third: a document publishes to a tagged PDF of its outline and
-> its paragraphs, laid out by a layout, with a run's marks set.** The first publishing plan built the
+> **Two slices are built, and most of a third: a document publishes to a tagged PDF of its outline,
+> laid out by a layout, holding every block the content model has.** The first publishing plan built the
 > first slice in two pull requests: 1a,
 > the regression corpus checked by veraPDF in the worker's suite, the worker setting every PDF in
 > pinned Liberation Serif (#145), a job Typst refuses finished at once (#146), and `assemble`; 1b, the
@@ -30,15 +30,17 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 > environment starts with, outline `front` matter, a request made under a layout and refused outside
 > its language or for a format it does not make, template `publication/2` with the page, the cover,
 > running heads and feet, page numbering per matter and a contents tagged as one, and the layout's
-> scheme reaching the routes, the outline panel and its lists. The marks plan then took slice 3's
-> first piece: `publishing/3` carrying a run's marks, and template `publication/3` setting them, so
-> what the editor now writes is what the PDF carries. The lists plan then took the next piece:
-> `publishing/4` carrying a list of any of the three kinds, nested, and template `publication/4`
-> setting it. Every block
-> but a paragraph and a list, the defined term, condition, suggestion and comment marks, the lists of figures and
-> tables, the theme, veraPDF on every
-> publication, preview and Word are later slices' ([Build order](#build-order)), and nothing chooses
-> or edits a layout yet. [`../architecture.md`](../architecture.md) describes what is built, and
+> scheme reaching the routes, the outline panel and its lists. The plans since took slice 3 a piece
+> at a time, each a published schema and a template of the same number: a run's marks
+> (`publishing/3`), lists (`publishing/4`), quotations and preformatted text (`publishing/5`), tables
+> and the list of tables (`publishing/6`), figures and the list of figures (`publishing/7`), an image
+> in a line of text (`publishing/8`), footnotes and a table's note (`publishing/9`),
+> cross-references (`publishing/10`) and equations in the pinned maths face, with a list of
+> equations where a layout declares one (`publishing/11`). The defined term, condition, suggestion
+> and comment marks, a citation, a variable and a binding, the theme, veraPDF on every publication,
+> preview and Word are later slices' ([Build order](#build-order)); a block equation wider than its
+> line is still set past the page's edge ([Equations](#equations), its open item); and nothing
+> chooses or edits a layout yet. [`../architecture.md`](../architecture.md) describes what is built, and
 > [Changed while planning and building the first slice](#changed-while-planning-and-building-the-first-slice)
 > and
 > [Changed while planning and building the second slice](#changed-while-planning-and-building-the-second-slice)
@@ -285,16 +287,16 @@ not enough for a writer: a writer also needs the numbers, the bound references, 
 and the layout, and must decide none of them. So the intermediate is one type in `packages/domain`,
 **`PublishedDocument`**, and both writers read it:
 
-| Member   | Holds                                                                                                                                                                                                                                                                                                                                                      |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `schema` | `publishing/10`, the version of this shape the template reads. `publishing/2` to `publishing/9` are the same document before a later slice widened it - marks, lists, quotations, tables, figures, inline images, footnotes, cross-references - and none is made any longer; `publishing/1` is slice 1's, still made for a request recorded before layouts |
-| Identity | Title as plain text and as inline content, language, direction, `revision` (`0.7`), `publishedAt`, `status` (`draft`, `preview`, `approved`)                                                                                                                                                                                                               |
-| `words`  | The layout's own words with the language they are set in - the contents' title and the draft notice - which need not be the document's                                                                                                                                                                                                                     |
-| `format` | The layout's member for this format, in points, with its words                                                                                                                                                                                                                                                                                             |
-| `theme`  | The theme's projection for this writer (themes.md): `TypstTheme` for the PDF                                                                                                                                                                                                                                                                               |
-| `front`  | Generated front matter the layout declares - cover, contents, lists - each already computed                                                                                                                                                                                                                                                                |
-| `nodes`  | The outline as a tree: each node's anchor, depth, matter, number or none, title, `pageBreak`, language and direction where they differ, blocks, and children                                                                                                                                                                                               |
-| `back`   | Generated back matter                                                                                                                                                                                                                                                                                                                                      |
+| Member   | Holds                                                                                                                                                                                                                                                                                                                                                                  |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schema` | `publishing/11`, the version of this shape the template reads. `publishing/2` to `publishing/10` are the same document before a later slice widened it - marks, lists, quotations, tables, figures, inline images, footnotes, cross-references, equations - and none is made any longer; `publishing/1` is slice 1's, still made for a request recorded before layouts |
+| Identity | Title as plain text and as inline content, language, direction, `revision` (`0.7`), `publishedAt`, `status` (`draft`, `preview`, `approved`)                                                                                                                                                                                                                           |
+| `words`  | The layout's own words with the language they are set in - the contents' title and the draft notice - which need not be the document's                                                                                                                                                                                                                                 |
+| `format` | The layout's member for this format, in points, with its words                                                                                                                                                                                                                                                                                                         |
+| `theme`  | The theme's projection for this writer (themes.md): `TypstTheme` for the PDF                                                                                                                                                                                                                                                                                           |
+| `front`  | Generated front matter the layout declares - cover, contents, lists - each already computed                                                                                                                                                                                                                                                                            |
+| `nodes`  | The outline as a tree: each node's anchor, depth, matter, number or none, title, `pageBreak`, language and direction where they differ, blocks, and children                                                                                                                                                                                                           |
+| `back`   | Generated back matter                                                                                                                                                                                                                                                                                                                                                  |
 
 **A language tag the engine cannot carry is refused, naming it, never shortened - decision K,
 reversed.** Typst's `text(lang:)` takes two or three letters and `text(region:)` exactly two, so a
@@ -336,6 +338,16 @@ is projected, so they come in document order after the layout's failures and bef
 others. A request made before layouts still refuses a reference by name, `inline_not_publishable`,
 since `publishing/1` has no run to carry one.
 
+**Equations are published** (equations 2, `publishing/11`, template 11). A run may be
+`{ equation: { tree, alternative: { text, language } } }`, in every context a run is published, and a
+block `{ type: 'equation', id, anchor, label, tree, alternative }`, its `label` `number`'s and null where
+the author left it unnumbered. The alternative is never null and is in the language of the text the
+equation stands in. **A node's `title` is runs** - text carrying no mark, and equations - where it was
+a string, so an equation stored in a section's title is set in its heading and, from it, in the
+contents, the running heads and the bookmarks. The failures join the list: `equation_unrenderable`,
+naming the block and the construct from a fixed list, `equation_unnumbered` and `math_glyph_missing`,
+beside `alternative_missing` - see [Equations](#equations).
+
 **No content reaches Typst as anything but a value** (PUB-062). The template walks `nodes` and sets
 strings as text; nothing is evaluated. The spike showed an escaping slip becoming a file read; with
 data there is nothing to escape.
@@ -355,7 +367,8 @@ is a content-model change, and it must say how its level relates to the outline'
 **Equations** go from the stored MathML to the maths tree ADR-0013 and word-output.md describe, in one
 converter in `packages/domain` that both writers use; a construct it does not know fails the publish
 (CNT-049) rather than reaching either writer. An equation's alternative text is the MathML's `alttext`,
-or text generated from the tree, so Typst is never given an equation without one.
+written when the equation is made (EQ-D), and one with none fails `alternative_missing`, so Typst is
+never given an equation without one.
 
 ## Tables
 
@@ -770,7 +783,8 @@ it fetches its language data from a CDN unless told otherwise.
   editor's finding that a caption could not hold one is answered.
 - **Set in STIX Two Math** (EQ-A), with the engine's fallback off, and its characters checked against
   that face before the engine starts, as a paragraph's are against Liberation Serif: one it lacks
-  fails `glyph_missing`, naming the block.
+  fails `math_glyph_missing`, naming the block - named apart from `glyph_missing`, as
+  `code_glyph_missing` is, since the body face may well have it.
 - **Built from the maths tree** (EQ-B), one converter in `packages/domain`, both writers reading it; a
   construct it refuses fails `equation_unrenderable`, naming the block and the construct, never the
   equation's text.
@@ -822,11 +836,74 @@ it fetches its language data from a CDN unless told otherwise.
 editor - an equation typed as LaTeX in the **Equation** dialog, Temml's output admitted by
 `admitTemmlMathml` in `packages/domain`, and its alternative written by the speech rule engine in the
 component's language, from the product's own files - as component-editor.md's
-[Equations](component-editor.md#equations) describes; a publish still refuses an equation by name,
-inline or block. Publishing one - EQ-A, EQ-B, EQ-E, EQ-F and every context of EQ-G's but the title - is equations 2. **EQ-G's section title
+[Equations](component-editor.md#equations) describes; a publish refused an equation by name, inline
+or block, until the second. Publishing one - EQ-A, EQ-B, EQ-E, EQ-F and every context of EQ-G's but the title - is equations 2. **EQ-G's section title
 moved to a third slice, equations 3**: a section's title is edited in the outline in a plain text
 field, and holding an equation there makes that field an inline editor of its own, which is more than
 the one control EQ-G counted on.
+
+**EQ-A, EQ-B, EQ-E, EQ-F and EQ-G's publishing are built**, by
+[equations 2](../plans/2026-09-24-equations-02-publishing-equations.md): STIX Two Math 2.13 b171
+pinned as the `math` face, the maths tree in `packages/domain/src/publishing/maths.ts`, `publishing/11`
+and template 11, the list of equations wherever a layout declares one - the default layout does not -
+and the Reference dialog offering a numbered equation. An equation made in a section's title is
+still equations 3's; one stored there is published. Building it changed these things here:
+
+- **A section's title is runs in the published document**, text and equations, so the heading, the
+  contents, the running heads and the bookmarks all carry an equation stored there, the bookmark as
+  its glyphs. A mark in a title is still refused, and a request made before layouts still refuses a
+  title's equation. **A reference's title form** - `title` or `numberAndTitle` - to a section or a
+  caption holding an equation fails `cross_reference_form_unavailable`, since a reference prints a
+  title as text and dropping the equation would print words the author did not write; its number
+  still prints.
+- **The failures are `equation_unrenderable`, `equation_unnumbered` and `math_glyph_missing`**, beside
+  `alternative_missing`. `equation_unrenderable`'s `detail` names the construct from a fixed list -
+  `unreadable`, `merror`, `rtl`, `multiscripts`, `voffset`, `spanningCell`, `mathvariant`, `element`,
+  `attribute`, `text`, and since the final whole-branch review `space`, `accent` and `empty` - never
+  an element's name or an attribute's value, which an author can reach
+  through a paste. `equation_unnumbered` is a numbered equation the scheme gives no number, named
+  apart from `footnote_unnumbered`, whose words are a footnote's. A character the maths face lacks is
+  `math_glyph_missing`, the characters checked being the strings the tree sets. Every reason is said.
+  The converter also refuses a column aligned two ways, a space of more than twenty ems either way
+  or too wide for a number (`space`), an accent that is more than one character once composed
+  (`accent`) - the last two reached the engine and stopped its compile with nothing to say which
+  equation - and an equation with no token anywhere that shows (`empty`), which the engine tags no
+  `Formula` for; the editor's dialog refuses that one too, by the same rule. It sets a script level
+  of one or two (`\substack`, `smallmatrix`, `subarray`, `\scriptstyle`, `\scriptscriptstyle`) in
+  the engine's `script` and `sscript` sizes, and drops from every token the four characters that only
+  say where a line may break, U+00AD, U+200B, U+2060 and U+FEFF, each of which took the letter before
+  it out of the PDF's text; any other character set without a glyph is refused in an equation as
+  `math_glyph_missing`, as it is in code, but a space. It accepts and does not set an operator's `minsize` and `maxsize`
+  (so `\big(` prints at its normal size), `mpadded`'s sizes, `mspace`'s height and depth, and
+  `intent`.
+- **A column is aligned by an alignment point in each of its cells**, since the engine's
+  `mat(align:)` takes one alignment for a whole matrix, and **cases are set as a matrix** fenced on
+  the left, since `math.cases` ignores the points. Aligned rows keep the multi-line form.
+- **The number drops below an equation too wide to leave it room**, as amsmath does. The equation is
+  centred in the line less the number's room on each side, and where it is wider than that the
+  number is placed on a line of its own beneath it, at the right - measured, an inset alone moves
+  nothing, since every equation that would meet its number overflows the inset too. Either way the
+  number is the `Span` after the `Formula`.
+- **The body text's fallback is off in template 11**, as `raw`'s and the maths face's are. With STIX
+  in the font folder the engine would otherwise set a paragraph's character Liberation Serif lacks
+  from the maths face while `assemble`, asking the body face, refused it. Templates 1 to 10 keep
+  theirs, being immutable.
+- **An equation's `/Lang` is its container's.** Every equation is set in its alternative's language,
+  but `assemble` gives an alternative the language of the text it stands in, so the engine declares
+  it on the paragraph or the figure rather than the `Formula`; a `Formula` of its own language waits
+  for an alternative that can differ from its text's.
+- **Open: an equation wider than its line.** A block equation wider than its line is centred on it
+  and runs past **both** margins, and can be cut off at the page's edge, numbered or not; an inline
+  one runs past the right margin. The final whole-branch review measured it: on A4's 451pt line one
+  display term such as a subscripted coefficient times a power is about 40pt, so **about eleven such
+  terms overflow**, and a long aligned line, an expanded polynomial or a long text crosses both
+  margins; veraPDF passes every one, so no gate notices. Nothing measures a tree's width and nothing
+  refuses either, where preformatted text has `line_too_wide`. **Recommended: refuse it in a later
+  slice, measured in the template** - the domain has no maths metrics, so an estimate there would
+  refuse good equations or miss bad ones, and the reliable measure is the template's own
+  `measure(it.body).width` against the line, reported back by name (a `metadata` marker read with
+  `typst query`, which the worker maps to a failure); until then, scaling an overflowing block down
+  to the line would keep its text on the page.
 
 ## The layout
 
@@ -967,7 +1044,9 @@ directory: with no fonts at all Typst 0.15.1 compiles, exits 0 and warns about n
 below). Typst's embedded fonts were rejected because they change with the engine rather than with the
 theme, and ADR-0013 excluded them; waiting for typeface artifacts was rejected because the first slice
 would then wait for the theme store. When themes.md's typeface artifacts exist, they replace the image's
-files and are pinned as inputs.
+files and are pinned as inputs. **Three families are pinned today**: Liberation Serif 2.1.5 for the
+body, Liberation Mono 2.1.5 for preformatted text and inline code (editor 5), and STIX Two Math 2.13
+b171 for equations (equations 2), each under the SIL Open Font Licence with its text beside it.
 
 **The creation time is the request's**, truncated to the second, so a retry, a second worker racing an
 expired lease and a reproduction months later all compile the same bytes, and the object's key - its
@@ -985,11 +1064,11 @@ exit from a refusal without parsing Typst's messages, which this design rules ou
 finished rather than retried, and the author asks again; a platform fault that stops Typst before it
 exits 1 - a crash, a timeout, a missing binary - is still retried.
 
-| Kind                     | Examples                                                                                                             | What happens                                                                                                                                                                                                                                                                                    |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The document's           | `alternative_missing`, `equation_unrenderable`, `occurrence_unreadable`, `glyph_missing`, `language_not_publishable` | Checked before Typst runs. The job is **failed at once**, in one attempt, as `publish_refused` (`PublishRefused`, a `JobRefused`): its verdict is the failure list, written to the request, which is `failed`. Nothing is retried                                                               |
-| The engine's own refusal | Typst exits refusing a document the checks passed - a pipeline defect, such as a check behind the template's version | `JobRefused` (#146, decision F): the job is **failed at once**, in one attempt, with its code (such as `typst_refused`). Never retried                                                                                                                                                          |
-| The platform's           | A crash, a timeout, a missing binary, the store unreachable, the database gone                                       | The handler throws; the queue **retries** with back-off; after the last attempt `failed()` marks the request `failed` with `engine` or `store` - `store` where the PDF was made and could not be kept, the store refusing it or the database refusing its record - and no node, block or detail |
+| Kind                     | Examples                                                                                                                                                          | What happens                                                                                                                                                                                                                                                                                    |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The document's           | `alternative_missing`, `equation_unrenderable`, `equation_unnumbered`, `occurrence_unreadable`, `glyph_missing`, `math_glyph_missing`, `language_not_publishable` | Checked before Typst runs. The job is **failed at once**, in one attempt, as `publish_refused` (`PublishRefused`, a `JobRefused`): its verdict is the failure list, written to the request, which is `failed`. Nothing is retried                                                               |
+| The engine's own refusal | Typst exits refusing a document the checks passed - a pipeline defect, such as a check behind the template's version                                              | `JobRefused` (#146, decision F): the job is **failed at once**, in one attempt, with its code (such as `typst_refused`). Never retried                                                                                                                                                          |
+| The platform's           | A crash, a timeout, a missing binary, the store unreachable, the database gone                                                                                    | The handler throws; the queue **retries** with back-off; after the last attempt `failed()` marks the request `failed` with `engine` or `store` - `store` where the PDF was made and could not be kept, the store refusing it or the database refusing its record - and no node, block or detail |
 
 **Every failure names its stage** - `resolve`, `compose`, `engine`, `store` - its code, and the node,
 block, reference or definition it concerns. That is PUB-086, which replaced PUB-001's four stages
@@ -1173,7 +1252,7 @@ not `202`: a permission-checked handler cannot set its status.
 | `packages/db`           | The two migrations, the Publisher role, `src/layouts.ts` (`defaultLayout`, the environment's declared layout at its latest version), `requestPublication` (decide, resolve, record under the layout, enqueue), `publicationInputs`, `recordPublication`, the listing, and `JobKind` gaining `publish` and `preview`                     |
 | `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                        |
 | `apps/service`          | The handlers; the document and numbering routes answering the document's layout and numbering with its scheme; nothing on the stream, since the requester follows the request by asking (decision G of the first publishing plan)                                                                                                       |
-| `apps/worker`           | `jobs/publish.ts`, the compile root and its flags, the font directory and its refusal when empty, veraPDF, and `templates/publication/1/` and `2/`, chosen by the published document's schema                                                                                                                                           |
+| `apps/worker`           | `jobs/publish.ts`, the compile root and its flags, the font directory and its refusal when empty, veraPDF, and `templates/publication/1/` to `11/`, chosen by the published document's schema                                                                                                                                           |
 | `apps/web`              | **Publish** and **Preview** on the document page for those who may, the publications beneath the outline, a publication's page with its download, the failure list naming each place in the outline, and the outline panel and its lists numbering with the layout's scheme                                                             |
 
 ## Verification
@@ -1604,7 +1683,10 @@ Each slice is a plan, lands into something that runs, and cites only what its te
    ems of a line's width, not one (79 columns inside one under the default layout, not 81), and that a
    quotation is sized to its content, so the attribution is aligned within a block of the full width. What is
    left to this slice: tables with captions and header rows, footnotes, equations through the maths tree, figures
-   with assets, citations failing, and cross-references once structure 4 has built `references`. With
+   with assets, citations failing, and cross-references once structure 4 has built `references` - each
+   since built by a plan of its own but citations failing, equations the last
+   ([equations 2](../plans/2026-09-24-equations-02-publishing-equations.md), `publishing/11` and
+   template 11, with STIX Two Math pinned beside the Liberation faces). With
    figures come the layout's `lists` - by layout schema 2 and a second version of the default layout -
    and caption labels, which slice 2 deliberately left out because every list of a document of
    paragraphs would be empty (decision A). Cites PUB-003, PUB-016, PUB-033, PUB-038, CNT-042,

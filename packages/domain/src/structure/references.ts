@@ -13,11 +13,12 @@ import { walkOutline, type OutlineNode, type OutlineViewNode } from './outline.j
 
 /**
  * What a reference can point at, as an author is offered it and a reference shows it (structure.md,
- * "Making, showing and printing a reference", XR-A and XR-C): a section, a figure, a table or a
- * footnote - and `block` for any other block, a paragraph or a list, which the dialog never offers and
- * only content written by another route points at, but which a reference must still be able to show.
+ * "Making, showing and printing a reference", XR-A and XR-C): a section, a figure, a table, a footnote
+ * or a block equation (equations 2, ruling R7) - and `block` for any other block, a paragraph or a
+ * list, which the dialog never offers and only content written by another route points at, but which a
+ * reference must still be able to show.
  */
-export type ReferenceKind = 'section' | 'figure' | 'table' | 'footnote' | 'block';
+export type ReferenceKind = 'section' | 'figure' | 'table' | 'footnote' | 'equation' | 'block';
 
 /**
  * One thing a reference could point at, as the author is offered it: `target` exactly as a reference
@@ -46,15 +47,17 @@ const EVERY_FORM: readonly CrossReferenceDisplay[] = [
 
 /**
  * The forms a target has (XR-C). A section, a figure and a table have a number and a title, so all
- * five; a footnote has a number and no title; any other block has neither, and offers a page and a
- * place alone. A page and a place are everything's, because anything printed stands on a page and
- * somewhere in the document.
+ * five; a footnote and an equation have a number and no title - an equation's number is its label, and
+ * what it says is maths, which a reference cannot print as words; any other block has neither, and
+ * offers a page and a place alone. A page and a place are everything's, because anything printed stands
+ * on a page and somewhere in the document.
  */
 const FORMS: Readonly<Record<ReferenceKind, readonly CrossReferenceDisplay[]>> = {
   section: EVERY_FORM,
   figure: EVERY_FORM,
   table: EVERY_FORM,
   footnote: ['number', 'page', 'relative'],
+  equation: ['number', 'page', 'relative'],
   block: ['page', 'relative'],
 };
 
@@ -74,6 +77,7 @@ const KIND_WORDS: Readonly<Record<ReferenceKind, string>> = {
   figure: 'Figure',
   table: 'Table',
   footnote: 'Footnote',
+  equation: 'Equation',
   block: 'Paragraph',
 };
 
@@ -81,11 +85,16 @@ export function kindWord(kind: ReferenceKind): string {
   return KIND_WORDS[kind];
 }
 
-/** The sequences whose members a reference may be pointed at from the dialog, and their kinds. */
+/**
+ * The sequences whose members a reference may be pointed at from the dialog, and their kinds. An
+ * equation is offered where it is numbered alone: one the author left unnumbered takes no number, and
+ * is pointed at by nothing the dialog offers (equations 2, ruling R7).
+ */
 const OFFERED: Readonly<Record<string, ReferenceKind>> = {
   figure: 'figure',
   table: 'table',
   footnote: 'footnote',
+  equation: 'equation',
 };
 
 /** What `documentTargets` reads: everything the document page already holds, and what it edits. */
@@ -103,8 +112,8 @@ export interface DocumentTargetsInput {
 /**
  * **What a document offers a reference** (XR-A, XR-B), in document order - the order an author reads
  * the page in: every section, as a `node` target, by its number's label and its title's words; and,
- * in each occurrence's place, every figure, table and footnote it contributes, each by its label and a
- * figure's or a table's caption. Which target each is stored as is the component's view of it:
+ * in each occurrence's place, every figure, table, footnote and numbered equation it contributes, each
+ * by its label and a figure's or a table's caption. Which target each is stored as is the component's view of it:
  *
  * - **the occurrence being edited**: a `block` target, which resolves to whichever occurrence is being
  *   read (STR-056). Its order against the reference is the editor's to say, not the outline's, so its
@@ -121,7 +130,8 @@ export interface DocumentTargetsInput {
  * `editing.node` is not in the outline, nothing is known to be above or below it.
  *
  * A section title's own footnotes are not offered: a `node` target names the section, and no target
- * names a footnote in a title. An equation is not offered either, until references to one are planned.
+ * names a footnote in a title. A block equation is offered where it is numbered, by its number
+ * (equations 2, ruling R7); one left unnumbered is not, and an inline equation is no target at all.
  */
 export function documentTargets({
   outline,
@@ -173,7 +183,7 @@ export function documentTargets({
     if (!own && (component === editing.component || occurs.get(component) !== 1)) return;
     for (const contribution of held) {
       const kind = OFFERED[contribution.sequence];
-      if (kind === undefined) continue;
+      if (kind === undefined || !contribution.numbered) continue;
       const caption = contribution.caption;
       targets.push({
         target: own
@@ -319,10 +329,10 @@ export interface Reading {
  *
  * Bound to an occurrence, a block is looked up in its content, wherever it is nested - a list's item
  * at any depth, a quotation, a table's cell - and a footnote wherever `contributionsOf` finds one. A
- * figure, a table and a footnote take their label from the numbering table; any other block - a
- * paragraph, a list, a quotation, preformatted text, and an equation, which nothing points at by
- * number until references to one are planned - is a `block`, with neither label nor title, which a
- * page or a relative form can still name (XR-C). **So is a footnote's own paragraph** (CNT-125: any
+ * figure, a table, a footnote and a block equation take their label from the numbering table - an
+ * equation the author left unnumbered has none, and a number form of it fails as a paragraph's does
+ * (equations 2, ruling R7); any other block - a paragraph, a list, a quotation, preformatted text - is
+ * a `block`, with neither label nor title, which a page or a relative form can still name (XR-C). **So is a footnote's own paragraph** (CNT-125: any
  * block), set in its note at the foot of the page its text stands on: a label at the start of it, a
  * page reference to it and a link to it were measured against the pinned engine - a note carried on
  * to the next page included - and print and land on the page that paragraph stands on (the final
@@ -468,8 +478,10 @@ function findIn(block: BlockNode, index: Map<string, Found>): void {
       footnotesIn(block.attribution ?? [], index);
       return;
     case 'preformatted':
-    case 'equation':
       index.set(block.id, { kind: 'block', caption: null });
+      return;
+    case 'equation':
+      index.set(block.id, { kind: 'equation', caption: null });
       return;
     case 'table':
       index.set(block.id, { kind: 'table', caption: captionText(block.caption) });

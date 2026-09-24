@@ -7,6 +7,19 @@ export type { Covers, Face } from './glyphs.js';
 // Promoted by editor 5 so the worker's regression corpus probes the exemption with the predicate
 // `assemble` asks, rather than a copy of its ranges.
 export { setWithoutAGlyph } from './glyphs.js';
+// The maths tree, from an equation's stored MathML: what the template and the Word writer read of an
+// equation, and why one cannot be set (equations 2, ruling R2).
+export { mathsTree } from './maths.js';
+export type {
+  MathsAlignment,
+  MathsAttachMode,
+  MathsBrace,
+  MathsConversion,
+  MathsNode,
+  MathsRefusal,
+  MathsTree,
+  MathsVariant,
+} from './maths.js';
 // Promoted by the editor's marks slice: the editor warns an author, at the time they give it, about
 // a language tag a publication could not carry, and the rule it asks is this one rather than a
 // second copy of it kept in the renderer (CNT-152).
@@ -64,12 +77,18 @@ export {
   // Frozen by cross-references 2, which made `publishing/10`: the schema template 9 reads, and the
   // schema of every publication made before a run could be a cross-reference.
   PUBLISHING_SCHEMA_9,
+  // Frozen by equations 2, which made `publishing/11`: the schema template 10 reads, and the schema
+  // of every publication made before a run or a block could be an equation.
+  PUBLISHING_SCHEMA_10,
 } from './published.js';
 export type {
   PublishedBlock,
   PublishedBlock1,
   PublishedDocument,
   PublishedDocument1,
+  PublishedEquation,
+  PublishedEquationBlock,
+  PublishedEquationRun,
   PublishedFigure,
   PublishedFootnoteRun,
   PublishedImageRun,
@@ -90,4 +109,5 @@ export type {
   PublishedReferenceRun,
   PublishedRun,
   PublishedRun1,
+  PublishedTitleRun,
 } from './published.js';

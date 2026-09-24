@@ -74,6 +74,20 @@ export const publishFailureCodes = [
   // reference, and the target or the form, never the author's text.
   'cross_reference_unresolved',
   'cross_reference_form_unavailable',
+  // compose, from equations 2 (EQ-B, CNT-049): an equation holding what the maths tree cannot set -
+  // an error its converter reported, maths set right to left, more than one pair of scripts on a side,
+  // a box moved up or down, a spanning cell, an unknown variant, or an element, an attribute or text
+  // the mapping does not know - named by the block it stands in, and the construct from a fixed list
+  // of names, never the equation's text, its values or its elements. A numbered equation the layout's
+  // scheme gives no number is named apart from `footnote_unnumbered`, whose words are a footnote's:
+  // it would be set with nothing beside it, and a reference to it could print nothing.
+  'equation_unrenderable',
+  'equation_unnumbered',
+  // compose, from equations 2: a character the maths face cannot set, in an equation's tree - named
+  // apart from `glyph_missing` as `code_glyph_missing` is, because the body face may well have it, and
+  // the author needs to know it is the equation that cannot carry it. The engine's fallback is off
+  // for maths, so it would otherwise be set as nothing.
+  'math_glyph_missing',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',
@@ -85,7 +99,8 @@ export type PublishFailureCode = (typeof publishFailureCodes)[number];
  * One failure, naming its stage, its code and the place it concerns: the outline node, and the block
  * within that node's component where there is one. `detail` is what the author needs to act and the
  * code does not say - the kind of block or mark that cannot be published yet, the style, the language
- * tag exactly as stored, or the character as `U+XXXX`, never the character itself - and is `null`
+ * tag exactly as stored, the construct an equation holds that cannot be set, from a fixed list of
+ * names, or the character as `U+XXXX`, never the character itself - and is `null`
  * where the failure is about something the publisher may not read: **an unreadable occurrence carries
  * its node and nothing else** (issue #143).
  */

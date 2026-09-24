@@ -101,9 +101,10 @@ export type MathmlResult =
   | { readonly ok: false; readonly failure: string };
 
 /**
- * The tree this reader reads MathML into. Exported inside the package for one caller, the rewrite of
- * Temml's output (`temml.ts`), which must read that output exactly as this reader does and not with a
- * second parser of its own; the package's index does not export it.
+ * The tree this reader reads MathML into. Exported inside the package for two callers, the rewrite of
+ * Temml's output (`temml.ts`) and the maths tree a publish sets an equation from
+ * (`publishing/maths.ts`), which must each read MathML exactly as this reader does and not with a
+ * second parser of their own; the package's index does not export it.
  */
 export type MathElement = { name: string; attributes: [string, string][]; children: MathNode[] };
 export type MathNode = MathElement | string;
@@ -140,8 +141,9 @@ export function sanitiseMathml(source: string): MathmlResult {
 
 /**
  * Reads MathML into this reader's tree, refusing exactly what `sanitiseMathml` refuses as unreadable,
- * and keeping everything it read - nothing is cleaned. For the rewrite of Temml's output only, which
- * changes the tree and hands it back to `sanitiseMathml` through `writeMathmlTree`.
+ * and keeping everything it read - nothing is cleaned. For the rewrite of Temml's output, which
+ * changes the tree and hands it back to `sanitiseMathml` through `writeMathmlTree`, and for the maths
+ * tree, which reads a stored equation and refuses whatever in it has no mapping of its own.
  */
 export function readMathmlTree(
   source: string,
@@ -177,6 +179,42 @@ export function equationAlternative(mathml: string): string | null {
   if (!read.ok || read.root.name !== 'math') return null;
   const alternative = read.root.attributes.find(([name]) => name === 'alttext')?.[1];
   return alternative === undefined || alternative.trim() === '' ? null : alternative;
+}
+
+/**
+ * A character that shows nothing where it stands: a space of any width, and what Unicode says to
+ * ignore when drawing - the invisible operators, the joiners, the marks that say where a line may
+ * break, the variation selectors - so text of nothing else draws nothing.
+ */
+const SHOWS_NOTHING = /[\p{White_Space}\p{Default_Ignorable_Code_Point}]/gu;
+
+/** The elements whose text is drawn: MathML's tokens. */
+const TOKENS = new Set(['mi', 'mn', 'mo', 'mtext', 'ms']);
+
+/**
+ * Whether an equation draws nothing at all: no token anywhere in it that shows - an identifier, a
+ * number, an operator or text holding a character that is not a space or invisible - outside a
+ * phantom, which takes its content's room and draws none of it, and outside an annotation, which is
+ * not drawn. A string literal always shows, as the quotation marks MathML Core draws around it. What
+ * only a layout element draws - a fraction's bar, a radical, a table's room - is not counted: without
+ * a token beside it, it says nothing to set (the final review of equations 2, M1).
+ *
+ * The one rule for both places that ask it, so they cannot disagree: the editor's dialog refuses such
+ * an equation before it is stored (`admitTemmlMathml`), and a publish refuses one already stored
+ * (`mathsTree`), since the engine tags nothing for it, and the words it is spoken by would be lost.
+ */
+export function drawsNothing(root: MathElement): boolean {
+  const shows = (element: MathElement): boolean => {
+    if (element.name === 'mphantom' || element.name === 'annotation') return false;
+    if (element.name === 'ms') return true;
+    if (TOKENS.has(element.name)) {
+      return element.children.some(
+        (child) => typeof child === 'string' && child.replace(SHOWS_NOTHING, '') !== '',
+      );
+    }
+    return element.children.some((child) => typeof child !== 'string' && shows(child));
+  };
+  return !shows(root);
 }
 
 /**

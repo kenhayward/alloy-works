@@ -197,5 +197,9 @@ function refusalSaid(refusal: TemmlRefusal): string {
       return 'A line cannot be broken with \\\\ on its own. For several lines, use an environment such as aligned.';
     case 'unkept':
       return `Part of this equation could not be kept (${refusal.detail}). Write it another way.`;
+    // An empty group, a space, empty text: nothing a publication could tag to carry the words the
+    // equation is spoken by (the final review of equations 2, M1).
+    case 'empty':
+      return 'An equation has to show something: this one draws nothing. Write what it is to show.';
   }
 }

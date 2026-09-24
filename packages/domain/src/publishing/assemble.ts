@@ -1,3 +1,4 @@
+import { equationAlternative } from '../content/admission/mathml.js';
 import { ADMITTED_FORMATS } from '../assets/header.js';
 import type { AssetVersionContent } from '../assets/version.js';
 import { startsOutsideItsNumbering, type BlockNode } from '../content/model/blocks.js';
@@ -45,6 +46,7 @@ import {
 } from './measure.js';
 import { publishedLanguage } from './language.js';
 import type { Layout, PdfFormat } from './layout.js';
+import { mathsText, mathsTree, type MathsRefusal } from './maths.js';
 import {
   DRAFT_NOTICE,
   PUBLISHED_MARK_ORDER,
@@ -55,6 +57,7 @@ import {
   type PublishedCell,
   type PublishedDocument,
   type PublishedDocument1,
+  type PublishedEquation,
   type PublishedFigure,
   type PublishedInline,
   type PublishedItem,
@@ -63,6 +66,7 @@ import {
   type PublishedNode1,
   type PublishedPattern,
   type PublishedPdfFormat,
+  type PublishedTitleRun,
 } from './published.js';
 
 /**
@@ -311,6 +315,11 @@ export function assemble(input: AssembleInput): Assembled {
    * its target in a paragraph's text - `inParagraph`, a footnote's paragraphs among them - outside a
    * table's header rows, and text everywhere else (R5, XR-D). One that did not resolve, or asked for a
    * form its target lacks, has already failed by name and is not set.
+   *
+   * **And so is an equation, wherever inline content is** (equations 2, EQ-G): as its maths tree and
+   * its alternative, a table's header rows included - measured to set and tag there as in the body,
+   * where a footnote and a link are refused - and a caption, whose list sets it again. Its failures
+   * name `block`, as an image's do.
    */
   const publishedRuns = (
     content: readonly InlineNode[],
@@ -351,6 +360,11 @@ export function assemble(input: AssembleInput): Assembled {
       if (inline.type === 'image' && layout !== null) {
         const published = publishedImage(inline, node, block, indent);
         if (published !== null) runs.push(published);
+        continue;
+      }
+      if (inline.type === 'equation' && layout !== null) {
+        const equation = publishedEquation(inline.mathml, node, block);
+        if (equation !== null) runs.push({ equation });
         continue;
       }
       if (inline.type !== 'text') {
@@ -710,12 +724,17 @@ export function assemble(input: AssembleInput): Assembled {
         // break, so image and caption must stand on one page together (final review).
         const format = publishedPdf(layout.formats.pdf);
         const across = textMeasure(format) - indent;
+        // An equation's characters are counted as words are: an estimate, as the words' is, and
+        // generous where maths sets on one line what words would wrap.
         const said =
           (label === null ? '' : `${label} `) +
           caption
-            .map((run) =>
-              'text' in run ? run.text : 'reference' in run ? (run.reference.text ?? '') : '',
-            )
+            .map((run) => {
+              if ('text' in run) return run.text;
+              if ('reference' in run) return run.reference.text ?? '';
+              if ('equation' in run) return mathsText(run.equation.tree);
+              return '';
+            })
             .join('');
         const left = textBlockHeight(format) - captionHeight(columnsOf(said), across);
         const tooLong = left < FIGURE_LEAST_HEIGHT;
@@ -741,9 +760,29 @@ export function assemble(input: AssembleInput): Assembled {
           },
         ];
       }
-      case 'equation':
-        failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
-        return [];
+      case 'equation': {
+        // Refused by name without a layout, as a list is: the frozen first shape holds paragraphs alone.
+        if (layout === null) {
+          failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
+          return [];
+        }
+        const equation = publishedEquation(block.mathml, node, block.id);
+        // `number`'s label, set beside the equation as its own text (EQ-E). A numbered equation the
+        // scheme gives none - a layout numbering equations within chapters, in a part with no numbered
+        // chapter before it - would be set with nothing beside it, so it is refused, as a footnote is.
+        const label =
+          numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
+            ?.label ?? null;
+        const unnumbered = block.numbered && label === null;
+        if (unnumbered) {
+          failures.push(failure('compose', 'equation_unnumbered', node, block.id, null));
+        }
+        if (label !== null) check(label, node, block.id);
+        if (equation === null || unnumbered) return [];
+        return [
+          { type: 'equation', id: block.id, anchor: anchorOf(node, block.id), label, ...equation },
+        ];
+      }
       default: {
         // **Unreachable, and named rather than left to fall through.** The assignment is what makes
         // an eighth `BlockNode` kind fail to compile - every kind above is accounted for, so what
@@ -847,6 +886,60 @@ export function assemble(input: AssembleInput): Assembled {
     };
   };
 
+  /**
+   * The language the text at a place is in: the component's, for anything an occurrence holds, and the
+   * document's in a section's title, whose words are the document's. What an equation's alternative is
+   * spoken in (EQ-D). Null where the engine cannot carry it, which is refused where the language is.
+   */
+  const spokenIn = (node: string) =>
+    publishedLanguage(input.occurrences.get(node)?.language ?? input.outline.language);
+
+  /**
+   * An equation as a writer sets it (equations 2, rulings R2 to R5), or null with every reason it
+   * cannot be recorded, each naming `block` - the equation, or the block an inline one stands in, or
+   * none for one in a section's title, whose node is the place:
+   *
+   * - **its maths tree**, or `equation_unrenderable` naming the construct the converter refused, from
+   *   `REFUSAL_NAMES` alone (CNT-049) - so nothing of it reaches a writer, as source or as a blank;
+   * - **its alternative**, the MathML's `alttext` as `equationAlternative` reads it - the rule the
+   *   editor reads - or `alternative_missing`, as an image with none: the engine would otherwise refuse
+   *   the whole document without saying which (EQ-D). Read whatever the tree came to, so both are said;
+   * - **its characters**, every one the tree sets asked of the maths face (R3) - the engine's fallback
+   *   is off for maths, so one the face lacks would be set as nothing - `math_glyph_missing` for each,
+   *   named apart from `glyph_missing` because the body face may have it.
+   *
+   * Said once for its block however many of its equations share a reason, as an image's are.
+   */
+  const publishedEquation = (
+    mathml: string,
+    node: string,
+    block: string | null,
+  ): PublishedEquation | null => {
+    const converted = mathsTree(mathml);
+    if (!converted.ok) {
+      failOnce(
+        failure('compose', 'equation_unrenderable', node, block, REFUSAL_NAMES[converted.reason]),
+      );
+    }
+    // MathML that cannot be read has no alternative to read either, and giving it one mends nothing,
+    // so it is said once, as the equation that cannot be set.
+    const alternative = equationAlternative(mathml);
+    const unreadable = !converted.ok && converted.reason === 'unreadable';
+    if (alternative === null && !unreadable) {
+      failOnce(failure('compose', 'alternative_missing', node, block, null));
+    }
+    if (!converted.ok) return null;
+    const faceless = characterProblems(mathsText(converted.tree), input.covers, 'math');
+    for (const { problem, codePoint } of faceless) {
+      const code = problem === 'glyph_missing' ? 'math_glyph_missing' : problem;
+      failOnce(failure('compose', code, node, block, codePointName(codePoint)));
+    }
+    // The language is refused where it is declared - the component, or the document - not again here.
+    const language = spokenIn(node);
+    if (alternative === null || faceless.length > 0 || language === null) return null;
+    return { tree: converted.tree, alternative: { text: alternative, language } };
+  };
+
   /** A node and every node beneath it, in the matter of the top-level node that holds them. */
   const project = (node: OutlineNode, depth: number, matter: OutlineMatter): PublishedNode => {
     const numberText = numbers.get(node.id) ?? null;
@@ -861,14 +954,17 @@ export function assemble(input: AssembleInput): Assembled {
     };
 
     if (node.type === 'section') {
-      // A title's reference is its number in the title's words (R6): a published title is a string,
-      // set again in the contents and the running heads. One that failed has said so and prints nothing.
-      // Without a layout the title is refused for it, as `publishing/1` always did.
+      // A title's reference is its number in the title's words (R6), set again in the contents and the
+      // running heads. One that failed has said so and prints nothing. An equation in it is published
+      // as it is anywhere (equations 2): a published title is runs, which the template sets in the
+      // heading, and so in the contents and the running heads that set the heading's body again. Its
+      // failures name the section. Without a layout both are refused, as `publishing/1` always did.
       const title = textOf(
         node.title,
         layout === null
           ? null
           : (reference) => resolved.printed.get(referenceKey(node.id, reference.id))?.text ?? '',
+        layout === null ? null : (equation) => publishedEquation(equation.mathml, node.id, null),
       );
       // A footnote in a title would be set twice, in the contents and where it stands (FN-B).
       // Under a layout alone: a request made before layouts keeps saying what it always said.
@@ -879,12 +975,12 @@ export function assemble(input: AssembleInput): Assembled {
           failure('compose', 'title_not_publishable', node.id, null, title.unpublishable),
         );
       } else {
-        check(title.words, node.id, null);
+        check(titleWords(title.runs), node.id, null);
       }
       const children = node.children.map((child) => project(child, depth + 1, matter));
       return {
         ...shell,
-        title: 'words' in title ? title.words : '',
+        title: 'runs' in title ? title.runs : [],
         language: null,
         direction: null,
         blocks: [],
@@ -899,7 +995,7 @@ export function assemble(input: AssembleInput): Assembled {
         failures.push(failure('resolve', 'occurrence_unresolved', node.id, null, null));
       }
       const children = node.children.map((child) => project(child, depth + 1, matter));
-      return { ...shell, title: '', language: null, direction: null, blocks: [], children };
+      return { ...shell, title: [], language: null, direction: null, blocks: [], children };
     }
     check(content.title, node.id, null);
     // A component in the document's own language is not refused a second time.
@@ -912,7 +1008,8 @@ export function assemble(input: AssembleInput): Assembled {
     const children = node.children.map((child) => project(child, depth + 1, matter));
     return {
       ...shell,
-      title: content.title,
+      // A component's title is a string, and one run of its words.
+      title: content.title === '' ? [] : [{ text: content.title, marks: [] }],
       language: ownLanguage,
       direction: content.direction === input.outline.direction ? null : content.direction,
       blocks,
@@ -994,15 +1091,17 @@ export function assemble(input: AssembleInput): Assembled {
 }
 
 /**
- * A node as `publishing/1` held it: no matter, and every other member in the order it had then, since
- * the order is part of the bytes Typst reads and of the digest a publication records.
+ * A node as `publishing/1` held it: no matter, its title a string, and every other member in the order
+ * it had then, since the order is part of the bytes Typst reads and of the digest a publication
+ * records. Its title's runs are words alone: without a layout an equation in a title is refused by
+ * name, as anything else in one but words is.
  */
 function withoutMatter(node: PublishedNode): PublishedNode1 {
   return {
     id: node.id,
     depth: node.depth,
     number: node.number,
-    title: node.title,
+    title: titleWords(node.title),
     language: node.language,
     direction: node.direction,
     blocks: node.blocks.map(withoutMarks),
@@ -1037,6 +1136,7 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
     case 'blockquote':
     case 'table':
     case 'figure':
+    case 'equation':
       // Unreachable for the same reason as a list: without a layout each is refused by name first.
       throw new Error(
         `publishing/1 holds paragraphs alone, and block ${block.id} is a ${block.type}`,
@@ -1055,6 +1155,30 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
     }
   }
 }
+
+/**
+ * What `equation_unrenderable` names of each refusal (equations 2, ruling R5): a construct from this
+ * fixed list and nothing else - never the variant, the element or the attribute the content wrote,
+ * which an author reaches by a paste and which a failure's detail must not carry. Keyed by the
+ * refusal's own reason, so a reason added to the converter fails to compile here until it is named.
+ */
+const REFUSAL_NAMES: Readonly<Record<MathsRefusal['reason'], string>> = {
+  unreadable: 'unreadable',
+  error: 'merror',
+  rightToLeft: 'rtl',
+  scripts: 'multiscripts',
+  offset: 'voffset',
+  spanningCell: 'spanningCell',
+  variant: 'mathvariant',
+  element: 'element',
+  attribute: 'attribute',
+  text: 'text',
+  // The final review of equations 2: a space no line holds or no number can, an accent of more than
+  // one character (I1), and an equation that draws nothing (M1).
+  space: 'space',
+  accent: 'accent',
+  empty: 'empty',
+};
 
 /** A cross-reference as the content model stores it. */
 type ReferenceNode = Extract<InlineNode, { type: 'crossReference' }>;
@@ -1137,7 +1261,8 @@ interface Found {
  * depth, a quotation and its attribution, a table's caption, cells and note, a figure's caption, and a
  * footnote's paragraphs - a footnote refused for where it stands included, so every reference's
  * failure is said, not only those in what is published. A footnote's paragraph is a target too
- * (CNT-125), placed after its footnote's mark, where its note begins.
+ * (CNT-125), placed after its footnote's mark, where its note begins. A block equation is placed where
+ * it stands, as any block is (equations 2, R7); an inline one is no target, and holds no reference.
  *
  * Each is resolved in the occurrence it is read in (`referenceResolver`, R1), and then:
  *
@@ -1276,10 +1401,18 @@ function resolveReferences(
    * A section's title as it is published: its references as the numbers they resolved to. And a
    * figure's or a table's caption as a title form prints it: its words, its references as their
    * numbers, each falling back to its kind.
+   *
+   * **A title or a caption holding an equation has no title a reference can print** (equations 2): a
+   * reference prints its words as text, and an equation is not words - its words without it would say
+   * what the author did not write, "Growth as  rises". So a title form of one fails by name, as of a
+   * target with no words, and its number is still its number.
    */
   const published = (target: BoundTarget): BoundTarget => {
     const captioned =
       target.block === null ? undefined : captions.get(blockAnchor(target.node, target.block));
+    if (captioned?.caption.some((inline) => inline.type === 'equation')) {
+      return { ...target, title: null };
+    }
     if (captioned !== undefined) {
       const words = captioned.caption
         .map((inline) => {
@@ -1292,13 +1425,21 @@ function resolveReferences(
     }
     const section = target.block === null ? sections.get(target.node) : undefined;
     if (section === undefined) return target;
-    const title = textOf(section.title, (reference) => {
-      const resolution = resolutions.get(referenceKey(section.id, reference.id));
-      return resolution?.ok === true ? (resolution.target.label ?? '') : '';
-    });
+    const title = textOf(
+      section.title,
+      (reference) => {
+        const resolution = resolutions.get(referenceKey(section.id, reference.id));
+        return resolution?.ok === true ? (resolution.target.label ?? '') : '';
+      },
+      null,
+    );
     // A marked title is refused where it stands, and keeps the words resolution read.
-    if (!('words' in title)) return target;
-    return { ...target, title: hasText(title.words) ? title.words : null };
+    if ('unpublishable' in title && title.unpublishable === 'equation') {
+      return { ...target, title: null };
+    }
+    if (!('runs' in title)) return target;
+    const words = titleWords(title.runs);
+    return { ...target, title: hasText(words) ? words : null };
   };
 
   const printed = new Map<string, Printed>();
@@ -1550,23 +1691,40 @@ function publishedMark(mark: Exclude<CarriedMark, { type: 'language' }>): Publis
 }
 
 /**
- * A section title's words, where it holds nothing but unmarked text, or **what in it** cannot be
- * published: an inline's node type, or a mark's. A title is published as a string and has nowhere to
- * put a mark, so a marked title is refused rather than flattened into words the author did not
- * write - and the refusal names what to look for, as a block that cannot be published names its kind.
+ * A section title's runs, where it holds nothing but unmarked text and what `reference` and `equation`
+ * publish, or **what in it** cannot be published: an inline's node type, or a mark's. A title's words
+ * are set again in the contents and the running heads, and a mark there is not yet decided, so a
+ * marked title is refused rather than flattened into words the author did not write - and the refusal
+ * names what to look for, as a block that cannot be published names its kind.
  *
  * **A cross-reference is words** where `reference` says what it prints (cross-references 2, ruling
- * R6): its number, set in the title's string. Null where there is no layout, and then a reference is
+ * R6): its number, set among the title's words. **An equation is a run of its own** where `equation`
+ * publishes it (equations 2), and nothing where it has already failed by name. Either is null where
+ * there is no layout - and for `equation`, where only the title's words are wanted - and then it is
  * what cannot be published, as it always was.
  */
 function textOf(
   title: readonly InlineNode[],
   reference: ((inline: ReferenceNode) => string) | null,
-): { readonly words: string } | { readonly unpublishable: string } {
+  equation:
+    ((inline: Extract<InlineNode, { type: 'equation' }>) => PublishedEquation | null) | null,
+): { readonly runs: readonly PublishedTitleRun[] } | { readonly unpublishable: string } {
+  const runs: PublishedTitleRun[] = [];
   let words = '';
+  /** The words met since the last equation, as one run: a title's words carry no mark. */
+  const said = () => {
+    if (words !== '') runs.push({ text: words, marks: [] });
+    words = '';
+  };
   for (const inline of title) {
     if (inline.type === 'crossReference' && reference !== null) {
       words += reference(inline);
+      continue;
+    }
+    if (inline.type === 'equation' && equation !== null) {
+      said();
+      const published = equation(inline);
+      if (published !== null) runs.push({ equation: published });
       continue;
     }
     if (inline.type !== 'text') return { unpublishable: inline.type };
@@ -1574,5 +1732,11 @@ function textOf(
     if (mark !== undefined) return { unpublishable: mark.type };
     words += inline.value;
   }
-  return { words };
+  said();
+  return { runs };
+}
+
+/** A title's words: its runs of text joined, what the glyph check and `publishing/1` read of it. */
+function titleWords(runs: readonly PublishedTitleRun[]): string {
+  return runs.map((run) => ('text' in run ? run.text : '')).join('');
 }

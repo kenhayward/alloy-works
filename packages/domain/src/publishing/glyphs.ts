@@ -50,11 +50,22 @@ export const disallowed = (codePoint: number) => DISALLOWED.has(codePoint);
 export type CharacterProblem = 'glyph_missing' | 'character_disallowed';
 
 /**
- * Which pinned family a character is set in: the body text's serif, or the monospace that
- * preformatted text and inline code are set in. The two cover different characters, so the question
- * is always asked of one of them - a union would pass a character one of them cannot set.
+ * Of the characters the engine sets without a glyph, the ones an equation's text keeps: a space, which
+ * it lays out as space and copies as one, and the non-breaking hyphen, which it sets with the face's
+ * hyphen. Every other takes the letter before it out of the PDF's text, as it does in code (measured
+ * in an equation's tokens against the pinned engine in the final review of equations 2, M2).
  */
-export type Face = 'body' | 'code';
+const keptInMaths = (codePoint: number) =>
+  codePoint === 0x2011 || /^\p{White_Space}$/u.test(String.fromCodePoint(codePoint));
+
+/**
+ * Which pinned family a character is set in: the body text's serif, the monospace that preformatted
+ * text and inline code are set in, or the maths face an equation is set in (equations 2, ruling R1:
+ * the engine's fallback is off for maths, so a character the maths face lacks is never borrowed from
+ * the serif). Each covers different characters, so the question is always asked of one of them - a
+ * union would pass a character one of them cannot set.
+ */
+export type Face = 'body' | 'code' | 'math';
 
 /** Whether every face of one family can set this character. */
 export type Covers = (codePoint: number, face: Face) => boolean;
@@ -83,10 +94,19 @@ export function characterProblems(
     // an invisible format character - `ab` then U+200B then `cd` prints `acd` - so what the body
     // face sets without a glyph loses a letter in code, silently. Refused there instead, with the
     // code the author meets for any character the monospace face cannot set (final review, finding 1).
+    // **Nor in the maths face, but for a space.** The engine does the same in an equation's tokens: a
+    // joiner, a variation selector or an isolate takes the letter before it out of the PDF's text.
+    // A space it lays out as one, and copies as one, so those are set. The marks that only say where a
+    // line may break never arrive here: the converter drops them (`BREAK_HINTS`, `maths.ts`; measured
+    // against the pinned engine in the final review of equations 2, M2).
     else if (
       face === 'code'
         ? setWithoutAGlyph(codePoint) || !covers(codePoint, face)
-        : !setWithoutAGlyph(codePoint) && !covers(codePoint, face)
+        : face === 'math'
+          ? setWithoutAGlyph(codePoint)
+            ? !keptInMaths(codePoint)
+            : !covers(codePoint, face)
+          : !setWithoutAGlyph(codePoint) && !covers(codePoint, face)
     ) {
       found.push({ problem: 'glyph_missing', codePoint });
     }
