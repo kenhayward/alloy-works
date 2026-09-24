@@ -464,7 +464,7 @@ describe('requesting and recording a publication', () => {
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.theme).toEqual({ versionId: declared.versionId, theme: declared.theme });
-        expect(inputs!.theme.theme.paper).toBe('#ffffff');
+        expect(inputs!.theme!.theme.paper).toBe('#ffffff');
         // Thrown to roll the theme's 0.2 back: the rest of the suite publishes under the default.
         throw rolledBack;
       }),
@@ -745,8 +745,8 @@ describe('requesting and recording a publication', () => {
         const inputs = await Promise.all(requests.map((id) => publicationInputs(trx, id)));
         expect(inputs.map((each) => each!.request.spaceId)).toEqual([general, quality]);
         for (const each of inputs) {
-          expect(each!.theme.versionId).toBe(declared.versionId);
-          expect(each!.theme.theme.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
+          expect(each!.theme!.versionId).toBe(declared.versionId);
+          expect(each!.theme!.theme.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
         }
         const publications = [];
         for (const id of requests) publications.push(await recordPublication(trx, recording(id)));

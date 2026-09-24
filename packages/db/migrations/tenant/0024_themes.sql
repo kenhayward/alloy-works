@@ -124,9 +124,11 @@ alter table publication_request
     references artifact_version (id, artifact_id, kind) on delete restrict;
 
 -- A request still waiting - queued, which is every request without a publication that has not failed -
--- is given the declared theme at its latest version: nothing has been made under any theme yet, and the
--- job that picks it up sets it from this one. A request already answered, done or failed, keeps none:
--- what it made, or why it made nothing, was not set from a theme, and saying otherwise would be false.
+-- and made under a layout is given the declared theme at its latest version: nothing has been made
+-- under any theme yet, and the job that picks it up sets it from this one. A request already answered,
+-- done or failed, keeps none: what it made, or why it made nothing, was not set from a theme, and saying
+-- otherwise would be false. Nor does one made before layouts, still waiting or not: template 1 sets it,
+-- and reads no theme, so its publication must not claim one.
 --
 -- 0018's finish-once rule refuses any update that leaves a request queued, this one included, and is
 -- the one trigger held off, for this statement alone, inside this migration's transaction: it is
@@ -141,7 +143,7 @@ update publication_request r
           limit 1
        )
   from theme_default d
- where r.state = 'queued';
+ where r.state = 'queued' and r.layout_version_id is not null;
 alter table publication_request enable trigger publication_request_finish_once;
 
 create function publication_request_made_under_a_theme() returns trigger
@@ -158,8 +160,8 @@ create trigger publication_request_made_under_a_theme before insert on publicati
   for each row execute function publication_request_made_under_a_theme();
 
 -- A publication records the theme version it was set from: its request's, exactly, none for none
--- (checked at commit, below). Unlike the layout, no template says whether there is one: a request
--- queued before layouts and still waiting now has a theme and no layout.
+-- (checked at commit, below): none for a request made before layouts, which template 1 sets, or one
+-- answered before themes, which never reaches a publication.
 alter table publication
   add column theme_id uuid,
   add column theme_version_id uuid,

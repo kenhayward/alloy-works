@@ -35,6 +35,7 @@ describe('migration 0024, which gives every environment its default theme', () =
   let db: TestDatabase;
   let service: TenantDatabase;
   let before: string;
+  let beforeLayouts: string;
 
   beforeAll(async () => {
     db = await freshDatabase();
@@ -49,12 +50,22 @@ describe('migration 0024, which gives every environment its default theme', () =
         return numbered === null || Number(numbered[1]) < 24;
       },
     });
+    // And up to 0017, where every environment stood before layouts.
+    beforeLayouts = await mkdtemp(join(tmpdir(), 'aw-before-0018-'));
+    await cp(new URL('../migrations/', import.meta.url), beforeLayouts, {
+      recursive: true,
+      filter: (source) => {
+        const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
+        return numbered === null || Number(numbered[1]) < 18;
+      },
+    });
     service = createTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
     await service?.close();
     await rm(before, { recursive: true, force: true });
+    await rm(beforeLayouts, { recursive: true, force: true });
     await db?.drop();
   });
 
@@ -273,6 +284,49 @@ describe('migration 0024, which gives every environment its default theme', () =
         { row: 'request', id: made.done, state: 'done', ...none },
       ].sort(byRowAndId),
     );
+  });
+
+  it('leaves a request made before layouts, still queued, without a theme: template 1 reads none', async () => {
+    const id = db.newTenantId();
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${beforeLayouts}/`) });
+    const provisioned = await provisionTenant(db.adminUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id, name: 'Before layouts' },
+      hostnames: [`${id}.alloy.test`],
+    });
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${beforeLayouts}/`) });
+    const tenant = { ...provisioned, id };
+    // Inserted as the runtime role could at 0017: by what was asked alone, under no layout.
+    const request = await service.withTenant(tenant, async (trx) => {
+      const { ada, version } = await personAndDocument(trx);
+      return sql<{ id: string }>`
+        insert into publication_request (document_id, document_version_id, formats, requested_by)
+        values (${version.artifactId}, ${version.id}, array['pdf'], ${ada}) returning id`
+        .execute(trx)
+        .then((result) => result.rows[0]!.id);
+    });
+
+    expect((await migrate(db.migratorUrl)).tenants[id]).toContain('0024_themes');
+    const none = { theme_id: null, theme_version_id: null };
+    expect(await themesOf(tenant)).toEqual([
+      { row: 'request', id: request, state: 'queued', ...none },
+    ]);
+
+    // The job is handed neither a layout nor a theme, and its publication, under template 1, claims
+    // neither.
+    const inputs = await service.withTenant(tenant, (trx) => publicationInputs(trx, request));
+    expect(inputs).toMatchObject({ layout: null, theme: null });
+    await service.withTenant(tenant, (trx) =>
+      recordPublication(trx, {
+        ...recording(tenant, request),
+        templateVersion: 1,
+        pipelineVersion: '1',
+      }),
+    );
+    expect(await themesOf(tenant)).toEqual([
+      { row: 'publication', id: request, state: null, ...none },
+      { row: 'request', id: request, state: 'done', ...none },
+    ]);
   });
 
   it('refuses, as the runtime role, a request made under no theme or half of one, and a publication under another theme or none', async () => {

@@ -400,10 +400,11 @@ export interface PublicationInputs {
   readonly layout: { readonly versionId: string; readonly layout: Layout } | null;
   /**
    * The theme version the request was made under, as recorded on it - never the theme's latest - read
-   * with the catalogue versions it names. Every request the job can be handed has one: 0024 gave one to
-   * each request still queued, and every request made since names one.
+   * with the catalogue versions it names; or null for a request made before layouts, which template 1
+   * sets and which reads no theme, as its layout is null (0024 gave a theme only to a request still
+   * queued under a layout, and every request made since names one).
    */
-  readonly theme: { readonly versionId: string; readonly theme: ResolvedTheme };
+  readonly theme: { readonly versionId: string; readonly theme: ResolvedTheme } | null;
   /** The document's version as `revision.version` (VER-009): what a running foot's `revision` shows. */
   readonly revision: string;
   /**
@@ -468,15 +469,15 @@ export async function publicationInputs(
     }
     layout = { versionId: request.layout_version_id, layout: stored.layout };
   }
-  // A queued request with no theme, or one whose theme does not read, is a broken store: thrown, and
-  // so retried and then recorded as the engine's stage, as a layout that does not read is.
-  if (request.theme_version_id === null) {
-    throw new Error(`The request ${request.id} was made under no theme`);
-  }
-  const theme = {
-    versionId: request.theme_version_id,
-    theme: await themeAt(trx, request.theme_version_id),
-  };
+  // A theme that does not read is a broken store: thrown, and so retried and then recorded as the
+  // engine's stage, as a layout that does not read is.
+  const theme =
+    request.theme_version_id === null
+      ? null
+      : {
+          versionId: request.theme_version_id,
+          theme: await themeAt(trx, request.theme_version_id),
+        };
   const rows = await trx
     .selectFrom('publication_request_occurrence as o')
     .innerJoin('artifact_version as v', 'v.id', 'o.version_id')
@@ -658,7 +659,7 @@ async function insertPublication(
       layout_id: request.layout_id,
       layout_version_id: request.layout_version_id,
       // And its theme's, as 0024's `publication_recorded_whole` holds at commit: none for a request
-      // answered before themes, which never reaches here.
+      // made before layouts, which template 1 sets from no theme.
       theme_id: request.theme_id,
       theme_version_id: request.theme_version_id,
     })
