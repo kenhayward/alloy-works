@@ -199,8 +199,10 @@ describe('the sample job, from the queue to the store', () => {
       warn: (...entry) => heard.push(entry),
       error: (...entry) => heard.push(entry),
     };
-    // Typst's diagnostic for this names the character it could not set and the line that holds it.
-    const refused = JSON.stringify({ environment: 'Grace \u{e000}', requestedAt: 'now' });
+    // Typst's diagnostic for this names the character it could not set and the line that holds it:
+    // a private-use character no pinned face has. (STIX Two Math holds much of the private-use area
+    // from U+E000, which the sample's text falls back to since equations 2 pinned it.)
+    const refused = JSON.stringify({ environment: 'Grace \u{f8ff}', requestedAt: 'now' });
     // The sample job as it runs, with the real Typst handed content it refuses in place of the name.
     const real = sampleJob({
       db: worker,
@@ -234,7 +236,7 @@ describe('the sample job, from the queue to the store', () => {
     expect((told[0] as Error).cause).toBeUndefined();
     expect(await sample(id)).toMatchObject({ state: 'failed', object_key: null });
     const everything = JSON.stringify([heard, rows, pino.stdSerializers.err(told[0] as Error)]);
-    for (const quoted of ['e000', '\u{e000}', 'Grace', 'displayed', 'PDF/UA', 'main.typ']) {
+    for (const quoted of ['f8ff', 'F8FF', '\u{f8ff}', 'Grace', 'displayed', 'PDF/UA', 'main.typ']) {
       expect(everything).not.toContain(quoted);
     }
   });

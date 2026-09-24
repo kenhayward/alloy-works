@@ -7,8 +7,10 @@ import { codePoints } from './cmap.js';
 
 /**
  * The faces every PDF is set in, pinned by hash as the Typst binary is (design decision I; issue #145):
- * Liberation Serif 2.1.5 for the body, and Liberation Mono 2.1.5 for preformatted text and inline code,
- * under the SIL Open Font License 1.1 (ADR-0010), whose text ships beside them.
+ * Liberation Serif 2.1.5 for the body, Liberation Mono 2.1.5 for preformatted text and inline code,
+ * and STIX Two Math 2.13 b171 for equations (equations 2, EQ-A: the file at the tag `v2.13b171` of
+ * stipub/stixfonts, whose hash the equations spike measured), each under the SIL Open Font License
+ * 1.1 (ADR-0010), whose text ships beside them - `LICENSE-Liberation.txt` and `LICENSE-STIX.txt`.
  * Typst is handed these files and nothing else - no system fonts and none of its own - so a page is
  * set in these files or not at all. The worker names them when it starts, and every publication's
  * record names them, each with its hash.
@@ -53,6 +55,11 @@ export const PINNED_FONT_FILES = [
     file: 'LiberationMono-Regular.ttf',
     face: 'code',
     sha256: 'f2b83c763e8afd21709333370bed4774337fae82267937e2b5aea7e2fbd922c1',
+  },
+  {
+    file: 'STIXTwoMath-Regular.otf',
+    face: 'math',
+    sha256: '3a5f3f26f40d5698b3c62dd085d48d6663696a3f80825aab8b553d5097518e8c',
   },
 ] as const satisfies readonly { file: string; face: Face; sha256: string }[];
 
@@ -116,8 +123,8 @@ export async function loadPinnedFonts(directory: string = FONT_DIRECTORY): Promi
       .map((each) => codePoints(each.bytes));
     return new Set([...first].filter((codePoint) => rest.every((set) => set.has(codePoint))));
   };
-  // The maths family is empty until its face is pinned (equations 2, task 3), so until then no
-  // character is covered in it and nothing can be set as maths.
+  // The maths family is its one face, which the template sets every equation in with the engine's
+  // fallback off, so a character it lacks would be set as nothing: `assemble` asks it first.
   const everywhere = { body: family('body'), code: family('code'), math: family('math') };
   return {
     directory,
