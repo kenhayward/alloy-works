@@ -73,6 +73,7 @@ conformance suite.
 | **STY-046** | A tenant's uploaded face is a typeface artifact in that tenant's schema, so it cannot be served to anyone else                                                                                                                                                                                                       |
 | **STY-047** | A typeface artifact is the font files themselves, versioned; the baseline pins the files                                                                                                                                                                                                                             |
 | **STY-048** | The default theme is tested against the scripts LOC-004 admits and a mathematics face, by the coverage check below                                                                                                                                                                                                   |
+| **STY-069** | The domain's theme reader refuses a text colour below 4.5:1, or 3:1 for large text, against any background it can stand on, and the store refuses what the reader refuses, so a theme is checked when it is saved ([Themes in the PDF](#themes-in-the-pdf), TH-G)                                                    |
 | **STY-049** | Glyph coverage is checked at resolution, against the pinned files' character maps, before any renderer runs                                                                                                                                                                                                          |
 | **STY-050** | Vertical space between two blocks is the first block's space after plus the second block's space before, in every output                                                                                                                                                                                             |
 | **STY-051** | Line spacing is a minimum baseline-to-baseline distance in points, and means that distance in every output                                                                                                                                                                                                           |
@@ -86,6 +87,9 @@ conformance suite.
 | **CNT-115** | The editor sets text at the layout's measure, scaled, with zoom                                                                                                                                                                                                                                                      |
 | **PUB-019** | Embedding in PDF and in Word is decided per face from its licence (STY-041, STY-042, STY-052)                                                                                                                                                                                                                        |
 | **PUB-027** | The Word projection emits every style as a real Word style, named and identified from the catalogue                                                                                                                                                                                                                  |
+| **PUB-017** | A table breaks across pages as its table style says - header repeated, rows kept whole, a continuation label - which the template sets from the style ([Themes in the PDF](#themes-in-the-pdf), TH-I)                                                                                                                |
+| **TAB-032** | The same, from the table's side                                                                                                                                                                                                                                                                                      |
+| **PUB-092** | Widow and orphan control, keep-with-next and keep-together are paragraph style properties, each passed to Typst as its own rule - the two costs, `sticky`, `breakable: false` - as measured, and to Word as `w:widowControl`, `w:keepNext` and `w:keepLines`; the publishing regression corpus gains a case for each |
 
 Citation styles (STY-020 to STY-023) are bound by a theme but rendered by a citation processor, and
 belong to the design that covers citations and references. How numbering looks - heading numbers,
@@ -140,22 +144,22 @@ does not arrive.
 
 ### Paragraph styles
 
-| Property                 | Canonical form                              | Editor (CSS)                                  | PDF (Typst template)                                                 | Word                                   |
-| ------------------------ | ------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------- |
-| Typeface                 | Reference to a typeface artifact            | `font-family`, from `@font-face`              | `text(font)`, from the pinned directory                              | `w:rFonts`; the Word face if declared  |
-| Size                     | Points                                      | `font-size` in pt                             | `text(size)`                                                         | `w:sz`, half-points                    |
-| Weight, style            | Enumerations                                | `font-weight`, `font-style`                   | `text(weight, style)`                                                | `w:b`, `w:i`, stated explicitly        |
-| Colour                   | sRGB                                        | `color`                                       | `text(fill)`                                                         | `w:color`                              |
-| Alignment                | start, end, centre, justify                 | `text-align`                                  | `par(justify)`, `align`                                              | `w:jc`                                 |
-| Indentation              | Points: first line, start, end              | `text-indent`, `padding-inline`               | `par(first-line-indent)`, `pad`                                      | `w:ind`                                |
-| Space before, after      | Points, **added together** (STY-050)        | `padding-block` - which adds                  | An explicit gap: the template sets it between blocks                 | `w:spacing before/after` - which adds  |
-| Line spacing             | Minimum baseline distance, points (STY-051) | `line-height` in pt, half-leading moved above | Text edges from the face's descender, `leading` = distance minus 1em | `w:spacing line`, `lineRule="atLeast"` |
-| Keep with next           | Boolean                                     | Not rendered (STY-037)                        | `block(sticky)`                                                      | `w:keepNext`                           |
-| Keep together            | Boolean                                     | Not rendered                                  | `block(breakable: false)`                                            | `w:keepLines`                          |
-| Widow and orphan control | Boolean - on means two lines, as Word       | Not rendered                                  | Paragraph costs for widows and orphans                               | `w:widowControl`                       |
-| Hyphenation              | Boolean                                     | Not rendered                                  | `text(hyphenate)`                                                    | Document setting, per style exclusion  |
-| Letter spacing           | Em                                          | `letter-spacing`                              | `text(tracking)`                                                     | `w:spacing` in the run                 |
-| Small capitals           | Boolean                                     | `font-variant-caps`                           | `smallcaps`                                                          | `w:smallCaps`                          |
+| Property                 | Canonical form                                                | Editor (CSS)                                  | PDF (Typst template)                                                 | Word                                   |
+| ------------------------ | ------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------- |
+| Typeface                 | Reference to a typeface artifact                              | `font-family`, from `@font-face`              | `text(font)`, from the pinned directory                              | `w:rFonts`; the Word face if declared  |
+| Size                     | Points                                                        | `font-size` in pt                             | `text(size)`                                                         | `w:sz`, half-points                    |
+| Weight, style            | Enumerations                                                  | `font-weight`, `font-style`                   | `text(weight, style)`                                                | `w:b`, `w:i`, stated explicitly        |
+| Colour                   | sRGB                                                          | `color`                                       | `text(fill)`                                                         | `w:color`                              |
+| Alignment                | start, end, centre, justify                                   | `text-align`                                  | `par(justify)`, `align`                                              | `w:jc`                                 |
+| Indentation              | Points: first line, start, end                                | `text-indent`, `padding-inline`               | `par(first-line-indent)`, `pad`                                      | `w:ind`                                |
+| Space before, after      | Points, **added together** (STY-050)                          | `padding-block` - which adds                  | An explicit gap: the template sets it between blocks                 | `w:spacing before/after` - which adds  |
+| Line spacing             | Minimum baseline distance, points (STY-051)                   | `line-height` in pt, half-leading moved above | Text edges from the face's descender, `leading` = distance minus 1em | `w:spacing line`, `lineRule="atLeast"` |
+| Keep with next           | Boolean                                                       | Not rendered (STY-037)                        | `block(sticky)`                                                      | `w:keepNext`                           |
+| Keep together            | Boolean                                                       | Not rendered                                  | `block(breakable: false)`                                            | `w:keepLines`                          |
+| Widow and orphan control | Boolean - on means two lines, as Word                         | Not rendered                                  | Paragraph costs for widows and orphans                               | `w:widowControl`                       |
+| Hyphenation              | Boolean                                                       | Not rendered                                  | `text(hyphenate)`                                                    | Document setting, per style exclusion  |
+| Letter spacing           | Em                                                            | `letter-spacing`                              | `text(tracking)`                                                     | `w:spacing` in the run                 |
+| Small capitals           | Boolean - **not in T1**: the pinned faces have none, measured | `font-variant-caps`                           | `smallcaps`, which does nothing in a face without them               | `w:smallCaps`                          |
 
 Two rows carry most of the difficulty, and they are covered in the next section. Hyphenation is not
 rendered in the editor even though a browser could: its dictionaries break words in different places
@@ -178,12 +182,15 @@ behaviour: whether the header repeats, the continuation label, and whether rows 
 
 The continuation label matters beyond appearance: the spike found that no engine can express one
 without per-document work. In this design it is a table style property the Typst template renders -
-`"Table 3 (continued)"` built from data - so the work is done once, in the template.
+`"Table 3 (continued)"` built from data - so the work is done once, in the template. Its words are
+the layout's, as the contents' title is, because a theme has no language; the style says whether the
+label appears and how it is set ([TH-I](#decisions-for-ken)).
 
 ### Image styles
 
 The fixed dimension and its value, as points or as a fraction of the measure; a maximum for the other
-dimension; placement and alignment (STY-015 to STY-018). Resolution derives the free dimension from the
+dimension; placement and alignment (STY-015 to STY-018), floated meaning a band at the page's head or
+foot, the only float the engine has ([TH-J](#decisions-for-ken)). Resolution derives the free dimension from the
 asset's intrinsic proportions, re-derives from the maximum where it would be exceeded, and fails
 naming the asset where no dimensions are recorded (STY-019). Because the editor's column is the
 layout's measure (below), an image styled at "column width" is the width it will print.
@@ -353,6 +360,112 @@ pinned words and the spacing. **Still not measured:** Word to the point, and mor
 one fixture with one face is not every theme.
 The conformance suite this becomes (STY-053) needs generated values, more faces - in particular faces
 whose metric tables disagree with each other, where renderers may choose different ones - and Word.
+
+## Themes in the PDF
+
+Designed on 2026-09-24 against the pinned engine, as equations were, to take this design from a
+prototype to the publication. What exists: the resolver and its three projections in
+`packages/domain/src/theme/`, unexported, over a property set of ten paragraph properties and two
+marks; a `style` on every paragraph and table and an `imageStyle` on every figure and inline image,
+of which `assemble` accepts only `body`, `table`, `figure` and `inline` and refuses the rest as
+`style_missing`; three families pinned in the worker's image by hash - Liberation Serif, Liberation
+Mono and STIX Two Math, each under the SIL Open Font Licence; and template 11, which sets every size,
+face, weight and space itself, as literals. There is no theme, catalogue or typeface artifact, and
+nothing a publication records says how it looked.
+
+### What the pinned Typst does with a theme's properties, measured
+
+Throwaway files compiled by the pinned Typst 0.15.1 with the worker's own arguments - PDF/UA-1,
+`--features a11y-extras`, the pinned fonts and no others - read back with the worker's own PDF reader
+and checked by the pinned veraPDF where tagging was the question. Each claim ran against a control.
+
+| Case                                                                                                                                                                                                                 | Result                                                                                                                                                                                                                                                                                                                |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`smallcaps` in Liberation Serif**, and `smallcaps(all: true)`, against the same words unchanged                                                                                                                    | **Nothing happens, and nothing says so.** The words set at exactly the widths of the control, in the regular face: neither Liberation face has small capitals, and the engine neither synthesises them nor warns. The same holds for Liberation Mono                                                                  |
+| **A table's continuation label**: a first header row spanning every column, holding `context` that sets `pdf.artifact(..)` only on a page after the table's first, the row's inset zero and the label padded instead | The label reads on every continuation page and is an **artifact**, as the repeated header rows are; on the first page the row takes **no height** (the first header row's baseline is where the control's is, 357.54pt); veraPDF passes. What remains is an empty header cell in the structure tree on the first page |
+| The same row with the cell's own inset                                                                                                                                                                               | The first page carries a blank row of the inset's height, 10pt, above the header                                                                                                                                                                                                                                      |
+| **A table row too tall for what is left of a page**, as it is and with `table.cell(breakable: false)`                                                                                                                | As it is, the row **splits** across the pages, the header repeated above its second half; not breakable, the row moves whole to the next page. veraPDF passes                                                                                                                                                         |
+| **A floated figure and a floated box**, `placement: bottom` and `place(top + right, float: true)`                                                                                                                    | Each goes to the **foot or the head of the page as a band of its own**; text never runs beside it, so "right" places the box within the band. The content stream follows the page - the box's text first - while the structure tree keeps the source's order; veraPDF passes                                          |
+| **Widow and orphan costs** at 0% and at the engine's default of 100%, a nine-line paragraph moved line by line across a page foot                                                                                    | At 100% neither a first line alone at a page's foot nor a last line alone at its head is ever set - the paragraph moves or two lines go over, Word's two-line rule; at 0% both are set. A boolean in the theme is the two costs                                                                                       |
+| **Keep with next**: a heading's block, `sticky: true`, then the template's weak space, then a paragraph, with one line left on the page                                                                              | Sticky, the heading moves to the next page with its paragraph, weak space or not; not sticky, it is left alone at the foot                                                                                                                                                                                            |
+| **Keep together**: a nine-line paragraph in `block(breakable: false)` where six lines would fit                                                                                                                      | Moves whole; breakable, six and three                                                                                                                                                                                                                                                                                 |
+| **The design's line** - each line one em from the face's descender, `leading` the rest of the line spacing (14pt at 11pt) - with a display-style sum inline                                                          | Lines are 14.00pt apart until the sum; the line holding it is **20.68pt** below the one before and the next **21.42pt** below it. A line grows for what it holds, above and below, as Word's `atLeast` lets it; what Word does with the same line is not measured                                                     |
+| **Scripts in the pinned faces**, read from their character maps                                                                                                                                                      | Liberation Serif and Mono each cover Latin, Greek, Cyrillic and Hebrew; **neither has a single Arabic, Devanagari, Thai, Armenian, Georgian or CJK letter** of those checked. STIX Two Math is a maths face                                                                                                           |
+
+**Three corrections to this design follow from the table.** Small capitals are not a property the
+pinned faces can set, so the paragraph table's `smallcaps` row is a silent approximation - the thing
+STY-037 forbids elsewhere - until a theme declares a face that has them. "Floated" cannot mean text
+wrapping beside an image in the PDF, only a band at the page's head or foot; Word's "top and bottom"
+wrapping is the same shape, so the two outputs can agree. And the continuation label's words are
+words in a language, and a theme has none: they belong to the layout, beside the contents' title, and
+the table style says only whether the label appears and how it is set.
+
+### How a theme reaches the PDF
+
+**The theme is stored, versioned and recorded, as the layout is.** A theme and its catalogues are
+artifacts - kinds `theme` and `catalogue` - and the product's default theme, with one catalogue of each
+kind, is seeded by a migration and made the environment's by a `theme_default` row, as migration 0018
+seeded the default layout. A publication request records the theme version it was made under and each
+catalogue version that theme binds, as it records the layout's, so a publication says how it looked
+and a retry looks the same. The store refuses a theme the domain's reader refuses, the contrast check
+among its rules.
+
+**The faces stay in the worker's image, pinned by hash, and the theme names them.** Each typeface in a
+theme records its family, the hash of each of its files, its licence, whether that licence permits
+embedding in a PDF and in a Word document (STY-041), its ascent and descent, and a Word face where it
+cannot be embedded there (STY-052). A publish refuses, by name, a theme naming a face whose PDF
+embedding is not permitted (STY-042) or whose files the worker does not hold. The metrics are the
+file's: a test reads each pinned file and fails where the theme's numbers differ from it.
+
+**`assemble` resolves; the template reads.** `assemble` resolves the recorded theme once, checks every
+style a document uses - that it exists (`style_missing`, STY-027), that it applies where it stands
+(`style_not_applicable`, STY-006), that the faces its text needs cover every character (the glyph check
+asking the style's face rather than a fixed one) - and puts the Typst projection in `publishing/12`'s
+`theme` member. Template 12 sets **every** face, size, weight, posture, colour, space and line from
+that member and from nothing else: no literal size, face or colour survives in it, which a test reads
+the template for. Template 11 stays frozen for what was made before.
+
+**The paragraph's `body` means the default where it stands.** The editor has written `body` on every
+paragraph since the content model was built, in running text, lists, quotations, table cells and
+footnotes alike, and a footnote set at the body's size would be wrong. So the theme names the default
+paragraph style for each of those places, and a stored `body` is resolved to it; any other identifier
+is the style it names. **Everything the template generates is set in a role's style** - headings by
+depth, the cover's title, the contents and the lists and their entries, captions, a table's note, an
+attribution, preformatted text and its label, running heads and feet, the draft notice - which the
+theme maps to paragraph styles an author cannot choose.
+
+**Spacing and lines follow ADR-0014, now in the template.** Space between two blocks is the first's
+space after plus the second's space before (STY-050), inserted as weak space so it vanishes at a
+page's head; a line is one em from the face's descender and its leading the rest of its line spacing
+(STY-051, STY-054); keep-with-next is `sticky`, keep-together `breakable: false`, widow and orphan
+control the two costs at 100% or 0%, and hyphenation `hyphenate` in the passage's own language. Every
+publication's vertical rhythm changes with template 12, and the default theme's numbers are chosen to
+stay close to template 11's.
+
+### Decisions for Ken
+
+| #    | Decision                                                                                                                                                                                                                                                                                                                                                | Recommended                                                                                                                                                                                                                                                                                                 |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TH-A | **The theme and its catalogues are stored artifacts**, the default seeded and made the environment's, and a publication records the versions it was made under                                                                                                                                                                                          | Yes, as the layout was. A theme held as a constant in code could not be recorded, and a publication that cannot say how it looked cannot be made again                                                                                                                                                      |
+| TH-B | **Cut typeface artifacts from T1.** The faces stay pinned in the worker's image; the theme records each by its files' hashes, with its licence, its two embedding permissions and its metrics                                                                                                                                                           | Yes. Typeface artifacts in the object store exist for a tenant's own faces (STY-046), which are not T1; the product's three faces gain nothing from moving, and the move is a slice of its own - upload, ingest, metrics read on ingest, serving. STY-041 and STY-042 are met by the record and the refusal |
+| TH-C | **All six catalogue kinds exist; admonition and citation are empty** in the default theme                                                                                                                                                                                                                                                               | Yes. STY-003 asks for the six, and there is no admonition or citation to style; an empty catalogue costs a row                                                                                                                                                                                              |
+| TH-D | **T1's property set**: STY-008's list - face, size, weight, colour, alignment, three indents, the two spaces, line spacing, keep-with-next, keep-together - with posture, widow and orphan control and hyphenation; and a character style for **each** of the nine marks. **No small capitals and no letter spacing**                                   | Yes. Small capitals are measured to do nothing in the pinned faces, and a property that does nothing silently is worse than one that is absent; it arrives with a face that has them and a check that refuses one that does not. STY-010's per-theme map holds without them                                 |
+| TH-E | **A stored `body` means the default where it stands**, the theme naming a default per place, and **generated text is set by role**, the template holding no typographic literal                                                                                                                                                                         | Yes. It keeps every paragraph stored so far meaning what its author saw, and makes "the template decides nothing" something a test can check rather than a hope                                                                                                                                             |
+| TH-F | **No style picker in the editor yet.** Choosing a paragraph's style arrives with the theme in the editor (STY-058, CNT-097), where choosing one visibly changes the text                                                                                                                                                                                | Yes. A picker now changes nothing an author can see until they publish. Until then only the defaults and the roles are reached, and a stored identifier the theme lacks, or one used where it does not apply, fails the publish by name                                                                     |
+| TH-G | **Contrast refused when a theme is saved** (STY-069): every text colour against every background it can stand on - the paper, a table's header and band fills, preformatted text's fill - at 4.5:1, or 3:1 for text of 18pt, or 14pt bold                                                                                                               | Yes, for the product's theme, the only one T1 has. Whether a tenant's own palette is refused or warned (STY-Q05) is still open, and nothing here decides it                                                                                                                                                 |
+| TH-H | **Arabic.** The pinned faces cannot set it, and CNT-059 admits it. Pin an Arabic face (Noto Naskh Arabic, OFL) and measure its shaping and tagging; or **narrow STY-048 for T1** to the scripts the faces cover - Latin, Greek, Cyrillic, Hebrew - moving "the scripts the supported locales admit" to T6 beside LOC-038, whose list does not exist yet | **Narrow it**, unless you know of an Arabic-script customer. Until LOC declares its locales, "the scripts the supported locales admit" has no list to meet, and Arabic text is refused by name today rather than set wrongly                                                                                |
+| TH-I | **Tables.** A table style: header row and column treatment, banding, rules, padding, whether the header repeats, whether rows are kept whole, and whether a continuation label appears - its words the layout's (`words.continued`, a layout schema 4). **Alignment by column type waits for column types**, which come with STY-014 in T2              | Yes, and **split STY-012**: its T1 half without column types, and alignment by column type moved to T2 beside STY-014. Otherwise STY-012 is a T1 requirement nothing in T1 can demonstrate                                                                                                                  |
+| TH-J | **Images.** `figure` and `inline` become the image catalogue's two styles at today's numbers; placement is inline, block or floated, and **floated means the page's head or foot**, aligned start, centre or end within it                                                                                                                              | Yes: measured, there is no other float in the engine, and Word's "top and bottom" wrapping matches it                                                                                                                                                                                                       |
+| TH-K | **Two build slices after this one.** Themes 1: TH-A to TH-H - the store, the property set, paragraph and character styles, roles, the line and spacing rules, `publishing/12` and template 12. Themes 2: TH-I and TH-J - table and image styles, and layout schema 4. The Word projection comes with Word; the theme in the editor after that           | Yes. Themes 1 is the size of equations 2; themes 2 is smaller. Each lands something a publication shows                                                                                                                                                                                                     |
+
+**What themes 1 and 2 claim and cite.** STY-001, STY-002, STY-003, STY-005, STY-006, STY-008,
+STY-009, STY-010, STY-024, STY-041, STY-042 and STY-069 by themes 1, with PUB-019 while the PDF is the
+only output; STY-012 (as split), STY-013, STY-015, STY-017, STY-018, STY-019, PUB-017 and TAB-032 by
+themes 2. **Not cited by either**: STY-025, which needs a template to bind a theme (TPL), the
+environment's default standing in as it does for the layout; STY-039, whose browser and desktop half is
+the editor's; STY-048, as TH-H leaves it; PUB-092, which names each engine and so waits for Word; and
+STY-058 and STY-070, the editor's. **STY-009 is cited today by a prototype test over a character catalogue
+of two marks of the nine**; themes 1's character catalogue covers all nine and its test replaces that citation.
 
 ## Safety
 

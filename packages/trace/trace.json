@@ -15822,6 +15822,10 @@
           "howItIsMet": "The default theme is tested against the scripts LOC-004 admits and a mathematics face, by the coverage check below"
         },
         {
+          "id": "STY-069",
+          "howItIsMet": "The domain's theme reader refuses a text colour below 4.5:1, or 3:1 for large text, against any background it can stand on, and the store refuses what the reader refuses, so a theme is checked when it is saved ([Themes in the PDF](#themes-in-the-pdf), TH-G)"
+        },
+        {
           "id": "STY-049",
           "howItIsMet": "Glyph coverage is checked at resolution, against the pinned files' character maps, before any renderer runs"
         },
@@ -15872,6 +15876,18 @@
         {
           "id": "PUB-027",
           "howItIsMet": "The Word projection emits every style as a real Word style, named and identified from the catalogue"
+        },
+        {
+          "id": "PUB-017",
+          "howItIsMet": "A table breaks across pages as its table style says - header repeated, rows kept whole, a continuation label - which the template sets from the style ([Themes in the PDF](#themes-in-the-pdf), TH-I)"
+        },
+        {
+          "id": "TAB-032",
+          "howItIsMet": "The same, from the table's side"
+        },
+        {
+          "id": "PUB-092",
+          "howItIsMet": "Widow and orphan control, keep-with-next and keep-together are paragraph style properties, each passed to Typst as its own rule - the two costs, `sticky`, `breakable: false` - as measured, and to Word as `w:widowControl`, `w:keepNext` and `w:keepLines`; the publishing regression corpus gains a case for each"
         }
       ]
     },
