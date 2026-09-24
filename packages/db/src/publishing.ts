@@ -12,6 +12,7 @@ import {
   type OutlineDocument,
   type PublishFailure,
   type PublishingAsset,
+  type ResolvedTheme,
   type BlockNode,
   type InlineNode,
 } from '@alloy-works/domain';
@@ -22,6 +23,7 @@ import { defaultLayout } from './layouts.js';
 import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
+import { defaultTheme, themeAt } from './themes.js';
 import { latestVersion } from './versions.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -326,6 +328,11 @@ export async function requestPublication(
   );
   const resolved = outcomes.flatMap((each) => (each.outcome === 'resolved' ? [each] : []));
   const images = await resolveImages(trx, resolved, input.requester);
+  // Set from the environment's declared theme at its latest version, recorded by its key beside the
+  // layout's (themes 1, ruling R5): the version names its catalogues' versions, so the job sets the
+  // publication from exactly what was declared now, whatever the theme becomes before it runs. Read
+  // whole, so a declared theme that does not read is a broken store here rather than in the job.
+  const theme = await defaultTheme(trx);
   const request = await trx
     .insertInto('publication_request')
     .values({
@@ -336,6 +343,8 @@ export async function requestPublication(
       failures: JSON.stringify([...failures, ...images.failures]),
       layout_id: layout.artifactId,
       layout_version_id: layout.versionId,
+      theme_id: theme.artifactId,
+      theme_version_id: theme.versionId,
     })
     .returning(['id'])
     .executeTakeFirstOrThrow();
@@ -389,6 +398,12 @@ export interface PublicationInputs {
    * null for a request made before layouts existed (0018), which publishes as the first slice did.
    */
   readonly layout: { readonly versionId: string; readonly layout: Layout } | null;
+  /**
+   * The theme version the request was made under, as recorded on it - never the theme's latest - read
+   * with the catalogue versions it names. Every request the job can be handed has one: 0024 gave one to
+   * each request still queued, and every request made since names one.
+   */
+  readonly theme: { readonly versionId: string; readonly theme: ResolvedTheme };
   /** The document's version as `revision.version` (VER-009): what a running foot's `revision` shows. */
   readonly revision: string;
   /**
@@ -422,6 +437,7 @@ export async function publicationInputs(
       'r.failures',
       'r.layout_id',
       'r.layout_version_id',
+      'r.theme_version_id',
       'a.space_id',
       'v.content',
       'v.revision_no',
@@ -452,6 +468,15 @@ export async function publicationInputs(
     }
     layout = { versionId: request.layout_version_id, layout: stored.layout };
   }
+  // A queued request with no theme, or one whose theme does not read, is a broken store: thrown, and
+  // so retried and then recorded as the engine's stage, as a layout that does not read is.
+  if (request.theme_version_id === null) {
+    throw new Error(`The request ${request.id} was made under no theme`);
+  }
+  const theme = {
+    versionId: request.theme_version_id,
+    theme: await themeAt(trx, request.theme_version_id),
+  };
   const rows = await trx
     .selectFrom('publication_request_occurrence as o')
     .innerJoin('artifact_version as v', 'v.id', 'o.version_id')
@@ -499,6 +524,7 @@ export async function publicationInputs(
     // read back without a parse.
     refused: request.failures as PublishFailure[],
     layout,
+    theme,
     revision: `${request.revision_no}.${request.version_no}`,
     assets,
   };
@@ -558,6 +584,8 @@ export async function recordPublication(
       'r.failures',
       'r.layout_id',
       'r.layout_version_id',
+      'r.theme_id',
+      'r.theme_version_id',
       'a.space_id',
     ])
     .where('r.id', '=', input.requestId)
@@ -596,6 +624,8 @@ async function insertPublication(
     readonly requested_at: Date;
     readonly layout_id: string | null;
     readonly layout_version_id: string | null;
+    readonly theme_id: string | null;
+    readonly theme_version_id: string | null;
     readonly space_id: string | null;
   },
   input: NewPublication,
@@ -627,6 +657,10 @@ async function insertPublication(
       // The request's, read under its lock: none for a request made before layouts (0018).
       layout_id: request.layout_id,
       layout_version_id: request.layout_version_id,
+      // And its theme's, as 0024's `publication_recorded_whole` holds at commit: none for a request
+      // answered before themes, which never reaches here.
+      theme_id: request.theme_id,
+      theme_version_id: request.theme_version_id,
     })
     .execute();
   const occurrences = await trx

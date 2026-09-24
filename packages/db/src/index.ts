@@ -17,6 +17,20 @@ export {
 } from './artifact-kind.js';
 export { DEFAULT_LAYOUT_ID, defaultLayout, type StoredLayout } from './layouts.js';
 export {
+  addCatalogueVersion,
+  addThemeVersion,
+  DEFAULT_CATALOGUE_IDS,
+  DEFAULT_THEME_ID,
+  defaultTheme,
+  themeAt,
+  type NextCatalogueVersion,
+  type NextThemeVersion,
+  type StoredTheme,
+  type ThemeStoreAnswer,
+  type ThemeStoreRefusal,
+  type ThemeStoreRefusalCode,
+} from './themes.js';
+export {
   failPublicationRequest,
   listPublications,
   listReadablePublications,

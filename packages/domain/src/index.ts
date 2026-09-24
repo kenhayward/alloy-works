@@ -18,6 +18,8 @@ export type {
   DocumentSubstance,
   LayoutSubstance,
   AssetSubstance,
+  ThemeSubstance,
+  CatalogueSubstance,
   VersionSubstance,
 } from './version/substance.js';
 

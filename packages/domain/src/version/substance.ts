@@ -12,6 +12,7 @@ import type { AssetVersionContent } from '../assets/version.js';
 import type { Layout } from '../publishing/layout.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { canonicaliseOutline, type OutlineDocument } from '../structure/outline.js';
+import type { Catalogue, Theme } from '../theme/schema.js';
 
 /**
  * What a component version says (ADR-0024): its content, its metadata values, the values it did not
@@ -50,8 +51,27 @@ export type LayoutSubstance = { readonly kind: 'layout'; readonly content: Layou
  */
 export type AssetSubstance = { readonly kind: 'asset'; readonly content: AssetVersionContent };
 
+/**
+ * A theme version says its theme, and nothing else (themes 1, ruling R4): its catalogues are named in it
+ * by version, so the one digest covers what it binds. It takes the shared rule, as a layout does: a
+ * theme's typefaces and a typeface's files are in the order stated, and no array in it is a set.
+ */
+export type ThemeSubstance = { readonly kind: 'theme'; readonly content: Theme };
+
+/**
+ * A catalogue version says its catalogue, and nothing else. The shared rule again: a catalogue's styles
+ * are in catalogue order, which is the order a projection writes them in.
+ */
+export type CatalogueSubstance = { readonly kind: 'catalogue'; readonly content: Catalogue };
+
 export type VersionSubstance =
-  ComponentSubstance | DefinitionSubstance | DocumentSubstance | LayoutSubstance | AssetSubstance;
+  | ComponentSubstance
+  | DefinitionSubstance
+  | DocumentSubstance
+  | LayoutSubstance
+  | AssetSubstance
+  | ThemeSubstance
+  | CatalogueSubstance;
 
 /**
  * The version of the one component type a component version was written against. `definitionsFor`

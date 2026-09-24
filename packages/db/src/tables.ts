@@ -215,6 +215,14 @@ export interface LayoutDefaultTable {
   set_at: ColumnType<Date, never, Date>;
 }
 
+/** The environment's declared theme: one row, set by 0024. The runtime role reads it and nothing else. */
+export interface ThemeDefaultTable {
+  singleton: ColumnType<boolean, boolean | undefined, never>;
+  theme_id: ColumnType<string, string, string>;
+  theme_kind: ColumnType<'theme', never, never>;
+  set_at: ColumnType<Date, never, Date>;
+}
+
 export interface AccessPolicyTable {
   singleton: Generated<boolean>;
   external_default_days: Generated<number>;
@@ -327,6 +335,7 @@ export interface TenantTables {
   first_administrator: FirstAdministratorTable;
   component_type_default: ComponentTypeDefaultTable;
   layout_default: LayoutDefaultTable;
+  theme_default: ThemeDefaultTable;
   publication_request: PublicationRequestTable;
   publication_request_occurrence: PublicationRequestOccurrenceTable;
   publication: PublicationTable;

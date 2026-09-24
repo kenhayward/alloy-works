@@ -23,6 +23,14 @@ export interface PublicationRequestTable {
   layout_id: ColumnType<string | null, string, never>;
   layout_version_id: ColumnType<string | null, string, never>;
   layout_kind: ColumnType<'layout', never, never>;
+  /**
+   * The theme version the request was made under (0024): both or neither, and never neither on a
+   * request made since. A request still queued when 0024 ran was given the declared theme; one already
+   * answered keeps none.
+   */
+  theme_id: ColumnType<string | null, string, never>;
+  theme_version_id: ColumnType<string | null, string, never>;
+  theme_kind: ColumnType<'theme', never, never>;
 }
 
 /** Insert and read, nothing else (0017). */
@@ -74,6 +82,10 @@ export interface PublicationTable {
   layout_id: ColumnType<string | null, string | null, never>;
   layout_version_id: ColumnType<string | null, string | null, never>;
   layout_kind: ColumnType<'layout', never, never>;
+  /** Its request's theme version, exactly: null for null (0024's `publication_recorded_whole`). */
+  theme_id: ColumnType<string | null, string | null, never>;
+  theme_version_id: ColumnType<string | null, string | null, never>;
+  theme_kind: ColumnType<'theme', never, never>;
 }
 
 export interface PublicationInputTable {
