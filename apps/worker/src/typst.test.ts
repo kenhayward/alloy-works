@@ -285,11 +285,17 @@ describe('the pinned fonts (issue #145)', () => {
         '{}',
         at,
       );
-      // Which pinned face Typst falls back to is its own choice (Liberation Mono, since editor 5
-      // pinned it); what matters is that the planted one is never it.
+      // Which pinned face Typst falls back to is its own choice, and not the same on every platform:
+      // Liberation Mono on Windows, and STIX Two Math on Linux since equations 2 pinned it, which CI
+      // caught after a Windows run passed. What matters is that the planted one is never it, so the
+      // families allowed are the pinned files' own, read from the list rather than written out here.
+      const pinned = [...new Set(PINNED_FONT_FILES.map((each) => each.file.replace(/-.*$/, '')))];
       const set = families(pdf);
       expect(set.length).toBeGreaterThan(0);
-      for (const family of set) expect(family).toMatch(/^Liberation(Serif|Mono)(-|$)/);
+      for (const family of set) {
+        expect(pinned.some((name) => family === name || family.startsWith(`${name}-`))).toBe(true);
+      }
+      expect(set.some((family) => family.startsWith('Interloper'))).toBe(false);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
