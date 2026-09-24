@@ -55,7 +55,7 @@ offset, which stay the engine's; the Word projection (with Word); the theme in t
     aligned within that band (measured in the design: there is no other float).
   - **A paragraph property**, `contextualSpacing`: between two consecutive paragraphs of one style that
     both ask for it, neither's space before or after is added, as Word's `w:contextualSpacing` does.
-    The reader checks each text colour a table style can put text on - the header's and the band's fills,
+  - **Contrast**: the reader checks each text colour a table style can put text on - the header's and the band's fills,
     under the `tableCell` place's style and bold where the header is - by themes 1's contrast rule.
 - **R2. The layout's `words.continued`**, by layout schema 4: the words a continued table's label adds
   after its label, in the layout's language, required once version 4 is read, and refused as missing
