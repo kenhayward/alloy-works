@@ -223,9 +223,10 @@ const measuring = [
     inline(stored(injected('mtext'), SAID.injectedText)),
     text('.'),
   ),
-  // Unnumbered, both: each is wider than the room a number beside it would leave, and the number is
-  // placed at the right whatever the equation's width, so it would be set over the equation's end.
-  block('e-source-identifiers', stored(injected('mi'), SAID.injectedIdentifiers), false),
+  // Numbered, and nearly the line's width: wider than the room a number beside it leaves, so it is
+  // also the case of a number that would have been set over the equation's end. The operators' is
+  // unnumbered, so the strings are shown in a numbered and an unnumbered block alike.
+  block('e-source-identifiers', stored(injected('mi'), SAID.injectedIdentifiers)),
   block('e-source-operators', stored(injected('mo'), SAID.injectedOperators), false),
   ...CONSTRUCTS.flatMap((name, n) => [
     block(`e-${name.replaceAll(' ', '-')}`, fromTemml(name, 'block', blockSaid(name))),
@@ -452,21 +453,49 @@ describe('equations in the PDF (equations 2)', () => {
   });
 
   it("sets a numbered equation's number after it, where it is read, and an unnumbered one with none", () => {
-    const numbered = [SAID.listBlock, ...CONSTRUCTS.map(blockSaid), SAID.germanBlock];
+    const numbered = [
+      SAID.listBlock,
+      SAID.injectedIdentifiers,
+      ...CONSTRUCTS.map(blockSaid),
+      SAID.germanBlock,
+    ];
     numbered.forEach((alternative, n) => {
       const { next } = setAt(read, alternative);
       expect(next?.role, alternative).toBe('Span');
       expect(next?.text.trim(), alternative).toBe(`Equation ${n + 1}`);
     });
-    for (const alternative of [
-      SAID.quotedBlock,
-      SAID.injectedIdentifiers,
-      SAID.injectedOperators,
-      SAID.unnumbered,
-    ]) {
+    for (const alternative of [SAID.quotedBlock, SAID.injectedOperators, SAID.unnumbered]) {
       const { next } = setAt(read, alternative);
       expect(next?.role === 'Span' && next.text.includes('Equation'), alternative).toBe(false);
     }
+  });
+
+  it('never sets a numbered equation under its number, however near the line its width comes', () => {
+    // Where the number fits beside the equation centred, it is set there, clear of it; where it does
+    // not, it is set on a line of its own below, as LaTeX's amsmath does. Measured from where each is
+    // drawn: the formula's own box, and the box of the number's text.
+    const numbered = read.formulas.filter(
+      (formula) => formula.next?.role === 'Span' && /Equation/.test(formula.next.text),
+    );
+    expect(numbered).toHaveLength(CONSTRUCTS.length + 3);
+    for (const formula of numbered) {
+      const [, bottom, right] = formula.box!;
+      const [left, , , top] = formula.next!.box!;
+      expect(left > right || top < bottom, formula.alt!).toBe(true);
+    }
+    // The wide one would have run under its number, set beside it: its width, and the number's, leave
+    // less than nothing between them on a line of the page's measure. It fits the line itself.
+    const wide = setAt(read, SAID.injectedIdentifiers);
+    const [left, , right] = wide.box!;
+    const [numberLeft, , numberRight] = wide.next!.box!;
+    const { pdf: format } = listing.formats;
+    const measure =
+      format.page.width - format.margins.inside - format.margins.outside - format.gutter;
+    expect(right - left).toBeGreaterThan(measure - 2 * (numberRight - numberLeft));
+    expect(right - left).toBeLessThan(measure);
+    // And a narrow one keeps its number beside it, on its own line, right of it.
+    const narrow = setAt(read, blockSaid('fraction'));
+    expect(narrow.next!.box![0]).toBeGreaterThan(narrow.box![2]);
   });
 
   it('sets what would be Typst source in an equation as the characters it is', () => {
@@ -502,7 +531,7 @@ describe('equations in the PDF (equations 2)', () => {
           formula.page > equations && /^Equation \d+$/.test(formula.next?.text.trim() ?? ''),
       )
       .sort((a, b) => Number(a.next!.text.trim().slice(9)) - Number(b.next!.text.trim().slice(9)));
-    expect(numbered).toHaveLength(CONSTRUCTS.length + 2);
+    expect(numbered).toHaveLength(CONSTRUCTS.length + 3);
     expect(destinations(equations)).toEqual(numbered.map((formula) => formula.page));
     expect(pageText(read, equations)).toContain(
       `Equation 1 ${read.pageLabels![numbered[0]!.page]!}`,

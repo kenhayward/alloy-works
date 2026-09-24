@@ -78,9 +78,34 @@
 // centred on the equation, so the number is tagged a `Span` straight after the `Formula` and read after
 // it; placing the whole caption put a `Caption` before the formula, and the formula in a `Div` of its own
 // on one page and not on the next. Measured by the equations spike (section 8).
-#show figure.where(kind: "equation"): it => block(width: 100%, {
-  it.body
-  place(right + horizon, it.caption.body)
+//
+// Room for the number, as LaTeX keeps it: the equation is centred in the line less the number's width
+// and a gap on EACH side, so it stays centred on the page, and the number is placed in the room on the
+// right. An equation wider than that room leaves would run under its number wherever it was centred -
+// the room on both sides costs exactly what the number needs on one, so every equation that would
+// have met its number overflows the room too - and so, as amsmath does, the number is set on a line of
+// its own below it, at the right. Measured against the pinned engine: `measure` gives a block
+// equation's own width, and both forms tag the number a `Span` after the `Formula`. A length in `em`
+// cannot be compared with one in points, so each is made absolute where it is measured. An equation wider
+// than the whole line still runs past its edges, numbered or not; nothing measures that yet.
+#show figure.where(kind: "equation"): it => layout(size => {
+  let number = it.caption.body
+  let room = measure(number).width + 1em.to-absolute()
+  if measure(it.body).width + 2 * room <= size.width {
+    block(width: 100%, inset: (left: room, right: room), {
+      it.body
+      place(right + horizon, dx: room, number)
+    })
+  } else {
+    // Placed, as beside the equation, and never set as a paragraph of its own: an aligned paragraph is
+    // tagged a `P`, where a placed number is the `Span` after the `Formula` (measured). The space below
+    // the equation is the line the number takes, with the leading between.
+    block(width: 100%, {
+      it.body
+      v(measure(number).height + 0.65em.to-absolute())
+      place(right + bottom, number)
+    })
+  }
 })
 #let f = doc.format
 // Every page carries the status in its header, placed by the template outside anything a layout

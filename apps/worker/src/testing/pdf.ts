@@ -130,11 +130,25 @@ export interface TaggedFormula {
   /** Every string its marked content holds, joined: what the engine drew for it, as extracted. */
   readonly text: string;
   /**
-   * The element straight after it among its parent's, with the text that element holds, or null where
-   * it is the last. A numbered block equation's number is a `Span` here.
+   * Its layout box as the engine declares it (`/A << /O /Layout /BBox [...] >>`), `[left, bottom,
+   * right, top]` in points on its page, or null where it declares none.
    */
-  readonly next: { readonly role: string; readonly text: string } | null;
+  readonly box: Box | null;
+  /**
+   * The element straight after it among its parent's, with the text that element holds and the box
+   * its text is drawn in, or null where it is the last. A numbered block equation's number is a
+   * `Span` here.
+   */
+  readonly next: {
+    readonly role: string;
+    readonly text: string;
+    /** Where its text stands: the least and greatest of its runs' extents, or null with none. */
+    readonly box: Box | null;
+  } | null;
 }
+
+/** `[left, bottom, right, top]` in points from the page's bottom left. */
+export type Box = readonly [number, number, number, number];
 
 export interface InternalLink {
   /** Where the link stands on its page, `[left, bottom, right, top]` in points from its bottom left. */
@@ -159,6 +173,7 @@ interface StructNode {
   readonly id?: string;
   readonly alt?: string;
   readonly lang?: string;
+  readonly bbox?: readonly [number, number, number, number];
 }
 
 /** A page's own object, as pdf.js names it. */
@@ -406,6 +421,8 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       // Every string of the page by the marked-content sequence it stands in, keyed as the structure
       // tree names its content, so an element's text can be read from the tree.
       const held = new Map<string, string>();
+      // And where each sequence's strings are drawn, as the union of their runs' boxes.
+      const drawn = new Map<string, [number, number, number, number]>();
       const artifacts: string[] = [];
       const tagged: string[] = [];
       const spoken: TaggedLanguage[] = [];
@@ -432,6 +449,17 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
           const inner = open.at(-1)?.id;
           if (inner !== undefined && inner !== null) {
             held.set(inner, (held.get(inner) ?? '') + item.str);
+            if (item.str.trim() !== '') {
+              const x = item.transform[4] as number;
+              const y = item.transform[5] as number;
+              const [left, bottom, right, top] = drawn.get(inner) ?? [x, y, x, y];
+              drawn.set(inner, [
+                Math.min(left, x),
+                Math.min(bottom, y),
+                Math.max(right, x + item.width),
+                Math.max(top, y + item.height),
+              ]);
+            }
           }
           if (item.str.trim() === '') continue;
           if (open.some((each) => each.tag === 'Artifact')) {
@@ -517,6 +545,19 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
         node.type === 'content'
           ? (held.get(node.id ?? '') ?? '')
           : (node.children ?? []).map(textOf).join('');
+      const boxOf = (node: StructNode): Box | null => {
+        const boxes: Box[] =
+          node.type === 'content'
+            ? [drawn.get(node.id ?? '')].filter((each) => each !== undefined)
+            : (node.children ?? []).map(boxOf).filter((each) => each !== null);
+        if (boxes.length === 0) return null;
+        return [
+          Math.min(...boxes.map((each) => each[0])),
+          Math.min(...boxes.map((each) => each[1])),
+          Math.max(...boxes.map((each) => each[2])),
+          Math.max(...boxes.map((each) => each[3])),
+        ];
+      };
       const formulasIn = (node: StructNode, above: readonly StructNode[]) => {
         const children = node.children ?? [];
         children.forEach((child, index) => {
@@ -532,7 +573,11 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
                 .map((each) => each.role ?? '')
                 .filter((role) => role !== '' && role !== 'Root'),
               text: textOf(child),
-              next: next === undefined ? null : { role: next.role!, text: textOf(next) },
+              box: child.bbox ?? null,
+              next:
+                next === undefined
+                  ? null
+                  : { role: next.role!, text: textOf(next), box: boxOf(next) },
             });
           }
           if (child.role !== undefined) formulasIn(child, [node, ...above]);

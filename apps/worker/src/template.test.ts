@@ -71,7 +71,7 @@ describe('the publication template', () => {
       8: '1457d0f36c6b2add227ae9cc95fa04de45517caca043a79b9e900642ba90b68f',
       9: 'f837e57769f34465377f5e808e759a68eba921bb3b45adaff7c0a1a581e4ced6',
       10: '07589c1d2487e149643bf82ccd183aaf7c7951ed24792decb508db02a7626339',
-      11: '1da3d6fa00bd34fb4273335c77b5f6948132d9802446d5e84a02d966297d56b9',
+      11: '65e90b557cb5d7dfa9cccafad53574be7eccf44793ef962b052c5886aa5ede2c',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
