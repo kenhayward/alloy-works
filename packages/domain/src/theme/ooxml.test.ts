@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { scanXml, type XmlElementEvent } from '../content/ooxml/xml.js';
-import { exampleTheme } from './example.js';
 import { projectStylesXml } from './ooxml.js';
-import { resolveTheme } from './resolve.js';
+import { defaultInputs, resolved } from './theme.fixture.js';
 
 /**
  * Word's projection. Every style states every property; `basedOn` is kept so the hierarchy shows
@@ -11,11 +10,11 @@ import { resolveTheme } from './resolve.js';
  * not ours (docs/design/themes.md). Read back rather than string-matched, because attribute order
  * is not what a reader of the file cares about and element order is.
  */
-const xml = projectStylesXml(resolveTheme(exampleTheme()));
+const xml = projectStylesXml(resolved());
 
 /** The elements inside one style, in document order. */
-function styleElements(id: string): XmlElementEvent[] {
-  const events = scanXml(xml);
+function styleElements(id: string, from = xml): XmlElementEvent[] {
+  const events = scanXml(from);
   const start = events.findIndex(
     (e) =>
       e.kind !== 'text' &&
@@ -32,37 +31,38 @@ function styleElements(id: string): XmlElementEvent[] {
   return out;
 }
 
-function attrs(id: string, name: string): Readonly<Record<string, string>> | undefined {
-  return styleElements(id).find((e) => e.name === name)?.attrs;
+function attrs(id: string, name: string, from = xml): Readonly<Record<string, string>> | undefined {
+  return styleElements(id, from).find((e) => e.name === name)?.attrs;
 }
 
 describe('projectStylesXml', () => {
   it('states spacing and line spacing in twentieths of a point, line spacing as a minimum (STY-050, STY-051)', () => {
-    expect(attrs('heading', 'w:spacing')).toEqual({
-      'w:before': '240',
-      'w:after': '120',
-      'w:line': '480',
+    expect(attrs('heading-1', 'w:spacing')).toEqual({
+      'w:before': '448',
+      'w:after': '256',
+      'w:line': '410',
       'w:lineRule': 'atLeast',
     });
   });
 
   it('states the run properties of a style explicitly, false included', () => {
-    expect(attrs('heading', 'w:b')).toEqual({ 'w:val': '1' });
-    expect(attrs('heading', 'w:i')).toEqual({ 'w:val': '0' });
-    expect(attrs('heading', 'w:sz')).toEqual({ 'w:val': '36' });
-    expect(attrs('heading', 'w:color')).toEqual({ 'w:val': '1A1A1A' });
-    expect(attrs('heading', 'w:keepNext')).toEqual({});
+    expect(attrs('heading-1', 'w:b')).toEqual({ 'w:val': '1' });
+    expect(attrs('heading-1', 'w:i')).toEqual({ 'w:val': '0' });
+    expect(attrs('heading-1', 'w:sz')).toEqual({ 'w:val': '32' });
+    expect(attrs('heading-1', 'w:color')).toEqual({ 'w:val': '000000' });
+    expect(attrs('heading-1', 'w:keepNext')).toEqual({});
   });
 
   it('keeps basedOn for the hierarchy but states what it inherits', () => {
-    expect(attrs('quote', 'w:basedOn')).toEqual({ 'w:val': 'body' });
-    expect(attrs('quote', 'w:sz')).toEqual({ 'w:val': '22' });
-    expect(attrs('quote', 'w:spacing')).toMatchObject({ 'w:before': '240', 'w:line': '280' });
-    expect(attrs('quote', 'w:ind')).toEqual({ 'w:firstLine': '360' });
+    expect(attrs('heading-2', 'w:basedOn')).toEqual({ 'w:val': 'heading-1' });
+    expect(attrs('heading-2', 'w:sz')).toEqual({ 'w:val': '26' });
+    expect(attrs('heading-2', 'w:b')).toEqual({ 'w:val': '1' });
+    expect(attrs('heading-2', 'w:spacing')).toMatchObject({ 'w:before': '364', 'w:line': '330' });
+    expect(attrs('preformatted', 'w:rFonts')).toMatchObject({ 'w:ascii': 'Liberation Mono' });
   });
 
   it('writes paragraph and run properties in the order the schema requires', () => {
-    const names = styleElements('heading').map((e) => e.name);
+    const names = styleElements('heading-1').map((e) => e.name);
     const pPr = names.slice(names.indexOf('w:pPr') + 1, names.indexOf('w:rPr'));
     expect(pPr).toEqual(['w:keepNext', 'w:spacing', 'w:ind']);
     expect(names.slice(names.indexOf('w:rPr') + 1)).toEqual([
@@ -76,30 +76,32 @@ describe('projectStylesXml', () => {
   });
 
   it("uses a typeface's declared Word face where it has one (STY-052)", () => {
-    const theme = exampleTheme();
-    theme.typefaces = [
-      {
-        id: 'serif',
-        family: 'Brand Serif',
-        wordFamily: 'Liberation Serif',
-        ascent: 0.9,
-        descent: 0.2,
-      },
-    ];
-    const withStandIn = projectStylesXml(resolveTheme(theme));
+    const inputs = defaultInputs();
+    inputs.theme.typefaces[0] = {
+      ...inputs.theme.typefaces[0]!,
+      family: 'Brand Serif',
+      wordFamily: 'Liberation Serif',
+      embedding: { pdf: true, word: false },
+    };
+    const withStandIn = projectStylesXml(resolved(inputs));
     expect(withStandIn).toContain('w:ascii="Liberation Serif"');
     expect(withStandIn).not.toContain('Brand Serif');
   });
 
   it('escapes a style name', () => {
-    const theme = exampleTheme();
-    theme.paragraphStyles = [{ id: 'body', name: 'Terms & conditions', properties: {} }];
-    expect(projectStylesXml(resolveTheme(theme))).toContain('w:val="Terms &amp; conditions"');
+    const inputs = defaultInputs();
+    inputs.catalogues.paragraph.styles[0] = {
+      ...inputs.catalogues.paragraph.styles[0]!,
+      name: 'Terms & conditions',
+    };
+    expect(projectStylesXml(resolved(inputs))).toContain('w:val="Terms &amp; conditions"');
   });
 
-  it('writes a character style per mark, stating only what the mark changes', () => {
+  it('writes a character style per mark under its catalogue name, stating only what it projects of the mark', () => {
     const names = styleElements('mark-strong').map((e) => e.name);
     expect(names).toContain('w:b');
     expect(names).not.toContain('w:i');
+    expect(attrs('mark-strong', 'w:name')).toEqual({ 'w:val': 'Strong' });
+    expect(attrs('mark-inlineCode', 'w:name')).toEqual({ 'w:val': 'Inline code' });
   });
 });

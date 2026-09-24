@@ -213,6 +213,28 @@ describe('the domain package', () => {
         'LISTED_SEQUENCES',
         'speaksFor',
         'unsupportedFormats',
+        // The theme, promoted by themes 1 (ruling R1), as ADR-0014 said publishing work would: its
+        // shapes' kinds, places, roles and marks, the reader and its codes, the default theme the
+        // store seeds, and the three projections with the run rules Word needs.
+        'CATALOGUE_KINDS',
+        'CATALOGUE_SCHEMA_VERSION',
+        'PLACES',
+        'ROLES',
+        'STYLED_MARKS',
+        'THEME_SCHEMA_VERSION',
+        'readCatalogue',
+        'readTheme',
+        'themeRefusalCodes',
+        'DEFAULT_CATALOGUES',
+        'DEFAULT_CATALOGUES_BY_VERSION',
+        'DEFAULT_CATALOGUE_VERSIONS',
+        'DEFAULT_THEME',
+        'projectTypst',
+        'projectCss',
+        'projectStylesXml',
+        'markStyleId',
+        'runFormat',
+        'wordRun',
       ].sort(),
     );
   });
