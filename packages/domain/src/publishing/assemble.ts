@@ -1191,8 +1191,9 @@ export function assemble(input: AssembleInput): Assembled {
    * failures recorded: an image style of the theme's that applies to an image in a line (themes 1),
    * an image the request resolved, alternative text as a figure's, and the size its style gives it
    * (themes 2, `styledSize`) - an em of it `size`, the size of the style it stands in, so the default's
-   * 1.2 ems is one line high - no wider than the room where it stands, and refused as `image_too_wide`
-   * past it, as it always was: an image in a line is not made smaller to fit, as a figure is.
+   * 1.2 ems is one line high - held to the text block's height, the proportion kept, and no wider than
+   * the room where it stands, refused as `image_too_wide` past it, as it always was: an image in a line
+   * is not made narrower to fit, as a figure is.
    */
   const publishedImage = (
     image: Extract<InlineNode, { type: 'image' }>,
@@ -1224,7 +1225,15 @@ export function assemble(input: AssembleInput): Assembled {
       textHeight: textBlockHeight(format),
       size,
     };
-    const { width, height } = styledSize(style, asset, frame);
+    const styled = styledSize(style, asset, frame);
+    // No taller than the text block, the width re-derived, the proportion kept (the final whole-branch
+    // review of themes 2, I2): a style fixing a height in points, or a maximum past the page, would
+    // otherwise stand a line taller than its page, and the engine paints it off the page's foot with
+    // nothing said, as it does a kept block that cannot fit.
+    const { width, height } =
+      styled.height > frame.textHeight
+        ? { width: (styled.width * frame.textHeight) / styled.height, height: frame.textHeight }
+        : styled;
     const room = textMeasure(format) - indent;
     if (width > room) {
       failOnce(failure('compose', 'image_too_wide', node, block, null));

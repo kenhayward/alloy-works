@@ -374,11 +374,12 @@ describe('catalogue/2', () => {
       [1, 'measure'],
       [1, 'textHeight'],
       [1.2, 'em'],
-      [10, 'em'],
+      [4, 'em'],
     ] as const) {
       expect(accepts(fixing(value, unit)), `${value} ${unit}`).toBe(true);
     }
-    // Nothing, less, a fraction beyond the whole, and a size no page can hold.
+    // Nothing, less, a fraction beyond the whole, and a size no page can hold - past four ems for an
+    // image in a line (the final whole-branch review of themes 2, I2).
     for (const [value, unit] of [
       [0, 'pt'],
       [1585, 'pt'],
@@ -386,7 +387,7 @@ describe('catalogue/2', () => {
       [1.01, 'measure'],
       [1.01, 'textHeight'],
       [-1, 'em'],
-      [10.01, 'em'],
+      [4.01, 'em'],
       [1, 'px'],
       [1, 'percent'],
     ] as const) {

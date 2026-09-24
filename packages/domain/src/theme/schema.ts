@@ -318,14 +318,16 @@ const fraction = z.number().positive().max(1);
  * be; as a fraction of the text block's height, which only a height can be; or in ems of the text an
  * inline image stands in, which only an inline image can be. Which unit fits which dimension and which
  * target is the reader's to refuse, by name (`image_unit_wrong_dimension`, `image_unit_not_applicable`),
- * since it depends on the style's other properties. An em is bounded at ten, a paragraph's height.
+ * since it depends on the style's other properties. An em is bounded at four: an image in a line is
+ * a glyph among glyphs, and at ten ems the style could stand one taller than a small page's text block
+ * (the final whole-branch review of themes 2, I2), where `assemble` holds it besides.
  */
 const lengthOptions = <T extends z.ZodRawShape>(extra: T) =>
   [
     z.strictObject({ ...extra, value: z.number().positive().max(1584), unit: z.literal('pt') }),
     z.strictObject({ ...extra, value: fraction, unit: z.literal('measure') }),
     z.strictObject({ ...extra, value: fraction, unit: z.literal('textHeight') }),
-    z.strictObject({ ...extra, value: z.number().positive().max(10), unit: z.literal('em') }),
+    z.strictObject({ ...extra, value: z.number().positive().max(4), unit: z.literal('em') }),
   ] as const;
 
 const imageStyleShape = {

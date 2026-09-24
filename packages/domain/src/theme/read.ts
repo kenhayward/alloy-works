@@ -96,6 +96,11 @@ export const themeRefusalCodes = [
    * floated: a figure stands on its own, and an image in a line of text where its text puts it.
    */
   'image_placement_not_applicable',
+  /**
+   * A table style draws a rule wider than twice its cells' padding: a rule takes no room, so half of it
+   * stands inside the cell beside it, and over its text (the final whole-branch review of themes 2, I3).
+   */
+  'table_rule_over_text',
 ] as const;
 
 export type ThemeRefusalCode = (typeof themeRefusalCodes)[number];
@@ -437,7 +442,21 @@ export function readTheme(
       stated.paper,
       paragraphStyles,
       character?.kind === 'character' ? [...character.marks.values()] : [],
-      [...new Set([stated.places.tableCell, stated.places.listItem])].flatMap((id) => {
+      // Every style a table's cell can hold text in (the final whole-branch review of themes 2, I4):
+      // the places' own first, then each other that applies to a cell or, since a list can stand in
+      // one, to a list item, in the catalogue's order - `assemble` sets a paragraph stored in any of
+      // them there.
+      [
+        ...new Set([
+          stated.places.tableCell,
+          stated.places.listItem,
+          ...[...paragraphStyles.values()]
+            .filter(
+              ({ appliesTo }) => appliesTo.includes('tableCell') || appliesTo.includes('listItem'),
+            )
+            .map(({ id }) => id),
+        ]),
+      ].flatMap((id) => {
         const style = paragraphStyles.get(id);
         return style === undefined ? [] : [style];
       }),
@@ -545,8 +564,11 @@ function examine(catalogue: Catalogue): Examined {
       }
       return { kind: 'character', refusals, marks };
     }
-    case 'table':
-      return { kind: 'table', refusals, styles: unique(catalogue.styles) };
+    case 'table': {
+      const styles = unique(catalogue.styles);
+      for (const style of catalogue.styles) refusals.push(...tableRefusals(style));
+      return { kind: 'table', refusals, styles };
+    }
     case 'image': {
       const styles = unique(catalogue.styles);
       for (const style of catalogue.styles) refusals.push(...imageRefusals(style));
@@ -556,6 +578,38 @@ function examine(catalogue: Catalogue): Examined {
     case 'citation':
       return { kind: catalogue.kind, refusals };
   }
+}
+
+/**
+ * What a table style says that cannot hold: a rule wider than twice its cells' padding (the final
+ * whole-branch review of themes 2, I3). A rule takes no room - template 13 insets a cell's text by the
+ * padding alone and draws the rule over the cell's edge, as the engine does - so half of it stands
+ * inside the cell each side, and where that half is wider than the padding the rule is painted over the
+ * text, and is a background no contrast rule judges. Refused once for the style, by its widest rule, the
+ * first of them where two are as wide: the rule the style would have to narrow, or its padding widen.
+ * Where the outer rule is wide it reaches as far into the margin, half its width, which is left as found.
+ */
+function tableRefusals(style: TableStyle): ThemeRefusal[] {
+  const rules = (
+    [
+      ['outer rule', style.rules.outer],
+      ['horizontal rule', style.rules.horizontal],
+      ['vertical rule', style.rules.vertical],
+      ["header row's rule", style.headerRow.rule],
+      ["header column's rule", style.headerColumn.rule],
+    ] as const
+  ).flatMap(([what, rule]) => (rule === 'none' ? [] : [{ what, width: rule.width }]));
+  const widest = rules.reduce<(typeof rules)[number] | undefined>(
+    (most, each) => (most === undefined || each.width > most.width ? each : most),
+    undefined,
+  );
+  if (widest === undefined || widest.width <= 2 * style.padding) return [];
+  return [
+    {
+      code: 'table_rule_over_text',
+      message: `The table style ${style.id} draws its ${widest.what} ${widest.width}pt wide, more than twice its cells' padding of ${style.padding}pt: half a rule stands inside the cell beside it, over its text`,
+    },
+  ];
 }
 
 /**
@@ -702,8 +756,11 @@ function overlay(
  * style is judged against each, **bold where the header says bold** and otherwise as the style says,
  * and each character style in it, by the rule above, at the size and weight it sets there. So is the
  * `listItem` place's, where it is another style: a list can stand in a cell, and is set in that style
- * there as anywhere. Where a style fills behind its own text, no table fill is behind that text, and
- * its own fill is judged already; the other is judged all the same.
+ * there as anywhere. And so is **every other style that applies to `tableCell` or to `listItem`** (the
+ * final whole-branch review of themes 2, I4), since a paragraph stored in one is set in it there: the
+ * places' defaults were once the only ones judged, and a style a cell's paragraph named passed on the
+ * paper and was set at 3.01:1 on a header's fill. Where a style fills behind its own text, no table
+ * fill is behind that text, and its own fill is judged already; the others are judged all the same.
  */
 function contrast(
   paper: string,

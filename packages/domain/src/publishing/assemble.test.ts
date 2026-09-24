@@ -4709,6 +4709,27 @@ describe('table and image styles, published (themes 2)', () => {
     ]);
   });
 
+  it("holds an image in a line to the text block's height, the proportion kept, whatever its style allows", () => {
+    // The final whole-branch review of themes 2, I2: an image in a line was held to nothing but its
+    // width, so a style fixing its height at 1584 points painted it off the page. 40 by 400 pixels at
+    // 1584 points high would be 158.4 wide, held to a fifth of the measure, 90.26, and 902.56 high:
+    // taller than the text block's 697.89, so it is that high and a tenth of it wide.
+    const theme = styled([
+      inlineStyle('huge', height(1584, 'pt'), most(0.2, 'measure')),
+      inlineStyle('page', height(1, 'textHeight'), most(1, 'measure')),
+    ]);
+    const tall = (style: string) =>
+      imageOf(
+        assemble({
+          ...under(theme, paragraph('p1', text('Press '), image(style))),
+          assets: new Map([[RED, asset({ width: 40, height: 400 })]]),
+        }),
+      );
+    expect(tall('huge')).toMatchObject({ width: 69.79, height: 697.89 });
+    // A style that asks for exactly the text block's height is given it.
+    expect(tall('page')).toMatchObject({ width: 69.79, height: 697.89 });
+  });
+
   it("carries a figure's placement and its alignment from its style, and an image in a line its own", () => {
     const theme = styled([
       figureStyle('floated', width(0.5, 'measure'), most(1, 'textHeight'), 'float', 'end'),
@@ -4730,7 +4751,14 @@ describe('table and image styles, published (themes 2)', () => {
   it("carries the table's style, and measures what a cell holds by that style's padding", () => {
     const theme = styled(
       [],
-      [tableStyle('open', { padding: 0 }), tableStyle('roomy', { padding: 12 })],
+      [
+        // Unpadded, and so unruled: a rule wider than twice the padding is refused (I3).
+        tableStyle('open', {
+          padding: 0,
+          rules: { outer: 'none', horizontal: 'none', vertical: 'none' },
+        }),
+        tableStyle('roomy', { padding: 12 }),
+      ],
     );
     const inCell = (style: string, pixels: number) =>
       assemble(underWide(theme, pixels, table(style, paragraph('p1', image('inline')))));
