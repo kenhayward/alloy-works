@@ -13,9 +13,10 @@ import {
   inverseOf,
   keyMove,
   leavesTheTopLevel,
-  plainTitle,
+  nodeName,
   sectionTitle,
   titleText,
+  trimTitle,
   visibleOrder,
   ancestorsOf,
 } from './tree.js';
@@ -336,14 +337,42 @@ describe('the inverse of an act is one operation', () => {
 });
 
 describe('titles and order', () => {
-  it('reads a title of unmarked text as plain text, and anything richer as not plain', () => {
-    expect(plainTitle(sectionTitle('Method'))).toBe('Method');
-    expect(
-      plainTitle([{ type: 'text', value: 'Method', marks: [{ type: 'strong', id: 'm1' }] }]),
-    ).toBeNull();
+  it('reads a title as its words, whatever marks it carries', () => {
+    expect(titleText(sectionTitle('Method'))).toBe('Method');
     expect(
       titleText([{ type: 'text', value: 'Method', marks: [{ type: 'strong', id: 'm1' }] }]),
     ).toBe('Method');
+  });
+
+  it('reads an equation in a title as its alternative wherever a title must be words (equations 3, ruling R4)', () => {
+    const squared =
+      '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>';
+    const unspoken = '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>y</mi></math>';
+    const title = [
+      { type: 'text' as const, value: 'Growth as ', marks: [] },
+      { type: 'equation' as const, mathml: squared, latex: 'x^2' },
+    ];
+    expect(titleText(title)).toBe('Growth as x squared');
+    // An equation with no alternative says nothing, as it says nothing to a screen reader's name.
+    expect(titleText([...title, { type: 'equation', mathml: unspoken }])).toBe(
+      'Growth as x squared',
+    );
+    const node = { ...section(METHOD, 'Method'), title } as OutlineNode;
+    expect(nodeName(node, null)).toBe('Growth as x squared');
+  });
+
+  it('trims a title at its ends as a plain one was trimmed, keeping an equation that ends it', () => {
+    const squared =
+      '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>';
+    const equation = { type: 'equation' as const, mathml: squared };
+    const text = (value: string) => ({ type: 'text' as const, value, marks: [] });
+    expect(trimTitle([text('  Methods and materials ')])).toEqual([text('Methods and materials')]);
+    expect(trimTitle([text(' Growth as '), equation, text('  ')])).toEqual([
+      text('Growth as '),
+      equation,
+    ]);
+    expect(trimTitle([equation, text(' rises ')])).toEqual([equation, text(' rises')]);
+    expect(trimTitle([text('   ')])).toEqual([]);
   });
 
   it('walks the nodes in document order, which is the order the arrow keys follow', () => {

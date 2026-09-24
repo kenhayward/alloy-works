@@ -119,6 +119,9 @@ describe('the domain package', () => {
         'readOutlineView',
         'withholdComponents',
         'canonicaliseOutline',
+        // Promoted by equations 3, so the outline panel's title field tells two titles apart by the
+        // canonical form the outline's digest takes, not by their words (ruling R2).
+        'canonicaliseTitle',
         'walkOutline',
         'applyOutlineOperation',
         'outlineOperationSchema',
@@ -152,6 +155,9 @@ describe('the domain package', () => {
         // (docs/plans/2026-09-23-cross-references-02-publishing-references.md).
         'referenceResolver',
         'printableForms',
+        // The forms a target is offered in, so the Reference dialog offers no title form of a section
+        // whose title holds an equation, which the publish refuses (equations 3's final review, L2).
+        'targetForms',
         // Publishing: the published document, its failures and assemble (publishing.md).
         'DRAFT_NOTICE',
         'PUBLISHING_SCHEMA',

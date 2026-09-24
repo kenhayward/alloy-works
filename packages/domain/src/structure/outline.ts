@@ -474,6 +474,18 @@ export function canonicaliseOutline(outline: OutlineDocument): string {
   return `{${members.map(([name, value]) => `${JSON.stringify(name)}:${value}`).join(',')}}`;
 }
 
+/**
+ * A section title's canonical form: the one its outline's canonical form holds for it, marks a set
+ * (CNT-003) and members in order, so two spellings of one title are one string. Exported for a caller
+ * that must tell whether two titles are the same title - the outline panel's field, comparing what it
+ * sent with what came back (equations 3, ruling R2) - which words alone cannot, once a title holds an
+ * equation whose words are only its alternative. The same function `canonicaliseOutlineNode` uses,
+ * so the panel and the digest cannot disagree about what counts as a change.
+ */
+export function canonicaliseTitle(title: readonly InlineNode[]): string {
+  return canonicalJson(title, marksAsASet);
+}
+
 function canonicaliseOutlineNodes(nodes: readonly OutlineNode[]): string {
   return `[${nodes.map(canonicaliseOutlineNode).join(',')}]`;
 }
@@ -489,7 +501,7 @@ function canonicaliseOutlineNode(node: OutlineNode): string {
           ['matter', canonicalJson(node.matter)],
           ['numbered', canonicalJson(node.numbered)],
           ['pageBreak', canonicalJson(node.pageBreak)],
-          ['title', canonicalJson(node.title, marksAsASet)],
+          ['title', canonicaliseTitle(node.title)],
           ['type', canonicalJson(node.type)],
           ['values', canonicalJson(node.values)],
         ]

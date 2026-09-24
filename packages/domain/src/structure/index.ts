@@ -12,6 +12,7 @@ export {
   readOutlineView,
   withholdComponents,
   canonicaliseOutline,
+  canonicaliseTitle,
   walkOutline,
   outlineMatterSchema,
   mayBeFront,
@@ -62,6 +63,7 @@ export {
   printableForms,
   printed,
   referenceResolver,
+  targetForms,
 } from './references.js';
 export type {
   BoundTarget,

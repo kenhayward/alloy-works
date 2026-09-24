@@ -141,3 +141,29 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/*
+ * A section's title field (equations 3): a one-line editor drawn as the text input it replaced, with
+ * Equation beside it. The editor is ProseMirror's element, so it is reached through its holder.
+ */
+.title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4) var(--space-6);
+  font-size: var(--size-body-small);
+}
+
+.titleField {
+  flex: 1 1 12em;
+  min-width: 0;
+}
+
+.titleField > [contenteditable] {
+  min-height: 32px;
+  padding: var(--space-4) var(--space-10);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-6);
+  background: var(--surface);
+  line-height: 1.6;
+}

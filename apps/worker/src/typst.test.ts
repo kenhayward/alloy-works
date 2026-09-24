@@ -29,8 +29,10 @@ const at = new Date('2026-09-11T00:00:00.000Z');
 const families = (pdf: Buffer) =>
   [
     ...new Set(
-      [...pdf.toString('latin1').matchAll(/\/BaseFont\s*\/(?:[A-Z]{6}\+)?([A-Za-z-]+)/g)].map(
-        (match) => match[1],
+      // The group always matches when the pattern does; the type says it might not, so a family is
+      // kept only when there is one, and the caller gets strings.
+      [...pdf.toString('latin1').matchAll(/\/BaseFont\s*\/(?:[A-Z]{6}\+)?([A-Za-z-]+)/g)].flatMap(
+        (match) => (match[1] === undefined ? [] : [match[1]]),
       ),
     ),
   ].sort();

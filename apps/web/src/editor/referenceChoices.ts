@@ -2,6 +2,7 @@ import {
   formsFor,
   kindWord,
   printed,
+  targetForms,
   type CrossReferenceDisplay,
   type CrossReferenceTarget,
   type ReferenceKind,
@@ -116,7 +117,9 @@ export function referenceOptions(
       key: keyOf(target.target),
       target: target.target,
       name,
-      forms: formsFor(target.kind),
+      // The domain's forms for the target, not only its kind's: a section whose title holds an
+      // equation offers no title form, which the publish would refuse (equations 3's final review).
+      forms: targetForms(target),
       shows: (display) =>
         isNumbered ? printed(target, display, target.relative, context?.words) : name,
     };

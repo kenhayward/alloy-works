@@ -14379,6 +14379,10 @@
           "howItIsMet": "Equations render as native MathML carrying `alttext`, which assistive technology reads; an equation is reachable and opened by keyboard"
         },
         {
+          "id": "CNT-046",
+          "howItIsMet": "An equation is made in every context the statement names - running text, a table's cell, a footnote and a caption on the surface, and a section's heading in the outline's title field - and publishing.md's equations 2 sets each in the PDF"
+        },
+        {
           "id": "CNT-098",
           "howItIsMet": "The surface sets `spellcheck`, so the delivery's own checker marks spelling as the author types"
         },
@@ -16125,13 +16129,13 @@
     {
       "id": "CNT-044",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4602,
+      "line": 4638,
       "kind": "title"
     },
     {
       "id": "CNT-048",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4627,
+      "line": 4663,
       "kind": "title"
     },
     {
@@ -16149,7 +16153,7 @@
     {
       "id": "CNT-080",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4672,
+      "line": 4708,
       "kind": "title"
     },
     {
@@ -16207,45 +16211,51 @@
       "kind": "title"
     },
     {
+      "id": "CNT-046",
+      "file": "apps/web/src/structure/DocumentPage.test.tsx",
+      "line": 2213,
+      "kind": "title"
+    },
+    {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2763,
+      "line": 3286,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 417,
+      "line": 464,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2967,
+      "line": 3490,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2803,
+      "line": 3326,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2399,
+      "line": 2922,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2445,
+      "line": 2968,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 798,
+      "line": 844,
       "kind": "title"
     },
     {
@@ -16953,7 +16963,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 214,
+      "line": 220,
       "kind": "title"
     },
     {
@@ -17391,37 +17401,37 @@
     {
       "id": "STR-001",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 78,
+      "line": 79,
       "kind": "title"
     },
     {
       "id": "STR-002",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 93,
+      "line": 94,
       "kind": "title"
     },
     {
       "id": "STR-048",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 127,
+      "line": 128,
       "kind": "title"
     },
     {
       "id": "STR-049",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 140,
+      "line": 141,
       "kind": "title"
     },
     {
       "id": "STR-058",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 169,
+      "line": 170,
       "kind": "title"
     },
     {
       "id": "STR-064",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 654,
+      "line": 679,
       "kind": "title"
     },
     {

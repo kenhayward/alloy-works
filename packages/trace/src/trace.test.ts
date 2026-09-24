@@ -65,6 +65,9 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1388);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 425, from 424: equations 3. component-editor.md claims CNT-046 once a section's title takes an
+    // equation in the outline, so every context it names is made in the editor, and publishing.md's
+    // equations 2 sets each in the PDF.
     // 424, from 422: figures 1. assets.md claims AST-051, and AST-035 once it speaks of an upload's
     // check rather than its scan. AST-037 is not claimed: it asks for the refusal to be audited, and
     // nothing audits one until LIF's log is designed.
@@ -149,7 +152,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(424);
+    ).toBe(425);
   });
 });
 
@@ -414,8 +417,11 @@ describe('the citations in the committed model', () => {
   // apps/worker's equations.test.ts, where every equation is read back from the PDF as a Formula
   // carrying its alternative in the language a reader is told, and the lists of figures, tables and
   // equations are read back, each entry linking to its page.
+  // 286, from 285: equations 3 cites CNT-046 in apps/web's DocumentPage.test.tsx, where an equation is
+  // placed in running text, a table's cell, a caption and a footnote on a component's surface and in a
+  // section's title through the outline's title field, and each is shown stored.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(285);
+    expect(model.citations).toHaveLength(286);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -50,8 +50,10 @@ a web application and a desktop application**.
 > document can be created in a space and its outline - a tree of front matter, sections and component
 > references - restructured a version at a time, through `packages/domain/src/structure/`, the same
 > chain and the documents page in `apps/web`, which numbers its sections with the environment's
-> layout's scheme, the same one a publish uses, gives every node an address, and lists the document's
-> figures, tables and equations beneath the outline. Its latest version can be published from that
+> layout's scheme, the same one a publish uses, gives every node an address, retitles a section with
+> words and inline equations in a one-line editor of its own, `mountTitleEditor` in `packages/editor`,
+> with the Equation dialog beside it, and lists the document's figures, tables and equations beneath
+> the outline. Its latest version can be published from that
 > page to a tagged PDF laid out by that layout - a cover, a contents, running heads and feet, and
 > pages numbered per matter, a run's marks set and linked and tagged for a reader, and a list
 > carrying its own numbering and read to assistive technology as a list, a quotation tagged as one
@@ -63,7 +65,7 @@ a web application and a desktop application**.
 > equations after the contents - marked
 > **Not approved** on every page, through the `publish` job in `apps/worker` and the routes in
 > `apps/service/src/publishing.ts` - and nothing else authors or
-> publishes content: no image or equation pasted from outside the product, no equation made in a section's title (equations 3's), no metadata panel,
+> publishes content: no image or equation pasted from outside the product, no metadata panel,
 > no making a component type, no defined term written or resolved, no
 > document view, no list of equations in the default layout, no
 > choosing or editing a layout, and no theme, preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and

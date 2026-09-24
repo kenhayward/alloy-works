@@ -3,6 +3,36 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.67.0 - 2026-09-24 (PR #225)
+
+### Added
+
+- **A section's title can hold an equation.** The **Title** field in a document's outline now takes
+  words and equations on one line: **Equation** beside it, or `Ctrl+Shift+E` in it, opens the same
+  equation dialog a component uses, with the description written in the document's language, and
+  placing the equation saves the title. Select an equation in the title and press `Enter` to change
+  it. The equation is drawn in the field and in the section's heading on the document's page, and a
+  publication sets it in the heading, the contents, the running heads and the bookmarks. With this,
+  an equation can be written in every place one can stand: running text, a heading, a table's cell, a
+  footnote and a caption.
+- In the outline's tree and in what the page says about a section, an equation in its title is read
+  as its description.
+
+### Changed
+
+- **A title has to have words.** One that is only an equation is not saved: the page says _A
+  section's title needs words as well as an equation._ and keeps the equation in the field for you to
+  add them. A title holding formatting or a cross-reference is still shown and not changed, with a
+  sentence saying why.
+- The **Reference** dialog offers a section whose title holds an equation as a number, a page or a
+  place, and no longer as its title: a publication refuses to print such a title as words, so the
+  reference would not have published.
+
+### Fixed
+
+- The project's own type check passes again: a test added with the last release left it failing, which
+  the build did not stop on (#224).
+
 ## 0.66.0 - 2026-09-24 (PR #223)
 
 ### Added

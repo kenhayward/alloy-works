@@ -36,8 +36,10 @@ the outline (STR) and the publishing pipeline are.
 > figures and paste are built too**, by their own plans, and **equations are built in the editor** -
 > typed as LaTeX in a dialog, drawn as MathML, inline or as a block, with a description written for
 > the author - by [equations 1](../plans/2026-09-23-equations-01-equations-in-the-editor.md), described
-> under [Equations](#equations), and published by
-> [equations 2](../plans/2026-09-24-equations-02-publishing-equations.md). What is still design here: the
+> under [Equations](#equations), published by
+> [equations 2](../plans/2026-09-24-equations-02-publishing-equations.md), and made in a section's title
+> in the outline by
+> [equations 3](../plans/2026-09-24-equations-03-equations-in-a-sections-title.md). What is still design here: the
 > metadata panel, undo across a reload, Recovery, lock events on the stream, the desktop's checker
 > languages, and the accessibility suite.
 
@@ -81,10 +83,21 @@ noticed and explained rather than discovered at a refusal.
 | **CNT-077** | Every command is in a keymap and in the toolbar; the toolbar is a single tab stop with arrow-key movement, and `F6` moves between the regions of the view                                                                                                  |
 | **CNT-048** | An equation's alternative is generated from its MathML wherever a generator is available - when an equation is made or changed, in the component's language where the generator speaks it (publishing.md, EQ-D) - stored as `alttext`, and always editable |
 | **CNT-080** | Equations render as native MathML carrying `alttext`, which assistive technology reads; an equation is reachable and opened by keyboard                                                                                                                    |
+| **CNT-046** | An equation is made in every context the statement names - running text, a table's cell, a footnote and a caption on the surface, and a section's heading in the outline's title field - and publishing.md's equations 2 sets each in the PDF              |
 | **CNT-098** | The surface sets `spellcheck`, so the delivery's own checker marks spelling as the author types                                                                                                                                                            |
 | **CNT-147** | A run carrying a language mark whose language differs from the component's base language is rendered with `spellcheck="false"`, so a passage in another language is never flagged                                                                          |
 | **CNT-148** | The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker                                                                             |
 | **CNT-152** | A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; **OK anyway** then applies it                                                               |
+
+**CNT-046 is answered with publishing.md, not alone.** This design makes an equation in each of the
+five contexts - four on a component's surface through the **Equation** dialog, and a section's heading
+through the outline's title field, which is a one-line editor of words and inline equations since
+[equations 3](../plans/2026-09-24-equations-03-equations-in-a-sections-title.md) - and
+[equations 2](../plans/2026-09-24-equations-02-publishing-equations.md) sets every one of them in the
+PDF, the title in its heading, the contents, the running heads and the bookmarks. "Available" is both
+halves: an equation the editor could make and the publish refused would not be available in that
+context. The test places one in each and shows each stored; that the publish sets each is equations
+2's tests. Word is not a context CNT-046 names, and CNT-045 waits for it.
 
 **What CNT-147's test shows, and what it does not.** The test asserts the attribute the product sets:
 a run whose language mark differs from the component's base language is rendered with
@@ -139,7 +152,7 @@ to API-008) - are [service-foundations.md](service-foundations.md)'s.
 | CNT-078, CNT-139                            | WCAG 2.2 AA and its verification are for the editor as a whole, and half of the editor is the document view, not yet designed. This slice is built to it, tested against it, and gated on it below                                            |
 | CNT-079                                     | Headings are outline nodes, rendered by the document view. Lists, tables and footnotes are exposed as structure here                                                                                                                          |
 | CNT-074                                     | Which component the cursor is in is the document view's; this slice shows the lock state of the one component open                                                                                                                            |
-| CNT-045, CNT-046, CNT-049                   | An equation is made in the editor, in a caption too; rendering it is the publisher's - in a PDF, built by equations 2, and in Word with Word output - and an equation in a section's title is equations 3's - see [Equations](#equations)     |
+| CNT-045, CNT-049                            | An equation is made and drawn in the editor; rendering it in a PDF and in Word, and failing a publish that cannot, are the publisher's - the PDF built by equations 2, Word with Word output - see [Equations](#equations)                    |
 | CNT-122                                     | The editor sizes an image by the shared resolver; resolving it at publish is the publisher's                                                                                                                                                  |
 | CNT-113, COL-026                            | Seeing what this session changed needs the comparison algorithm, which [storage-and-versioning.md](storage-and-versioning.md) leaves for its own design                                                                                       |
 | COL-007, API-036                            | Showing a held lock to others and delivering the change are [realtime.md](realtime.md)'s, which this design extends to a component opened on its own                                                                                          |
@@ -195,7 +208,7 @@ command makes a new one; **edit** means an existing one can be changed.
 | Table                                                                           | Yes                                                                                                                                                                       | Cells, spans, header rows and columns, key columns, caption, note                                        | Key columns wait until after footnotes (FN-A); the note is built (footnotes 1)                                                        |
 | Preformatted                                                                    | Yes                                                                                                                                                                       | Text and language label                                                                                  |                                                                                                                                       |
 | Block quotation                                                                 | Yes                                                                                                                                                                       | Content and attribution                                                                                  |                                                                                                                                       |
-| Equation, inline and block                                                      | Yes, from a dialog, typed as LaTeX ([Equations](#equations)); a block where a block may stand but a table's cell                                                          | LaTeX, alternative text, numbered or not; one stored without LaTeX keeps its MathML until LaTeX is typed | Built in the editor (equations 1); published by equations 2, and in a section's title by equations 3 (publishing.md, EQ-G, EQ-H)      |
+| Equation, inline and block                                                      | Yes, from a dialog, typed as LaTeX ([Equations](#equations)); a block where a block may stand but a table's cell                                                          | LaTeX, alternative text, numbered or not; one stored without LaTeX keeps its MathML until LaTeX is typed | Built in the editor (equations 1), published (equations 2), and made in a section's title (equations 3; publishing.md, EQ-G, EQ-H)    |
 | Footnote                                                                        | Yes, anchored to a span alone (publishing.md, FN-A)                                                                                                                       | Content, restricted to CNT-129's                                                                         | Built in the editor (footnotes 1) and published (footnotes 2); one stored by key or position is kept as it is                         |
 | Figure, inline image                                                            | Yes, from a file ([Figures](#figures))                                                                                                                                    | Caption, alternative text state, the image; image style once themes give more than one                   | Both built (figures 2 and 4); an inline image is placed in a paragraph alone                                                          |
 | Cross-reference                                                                 | Yes, from a dialog: in a document, over its sections and its components' figures, tables, footnotes and numbered equations; on its own, over its own (structure.md, XR-A) | Target and display form; removal                                                                         | Built in the editor ([Cross-references](#cross-references), cross-references 1); published by cross-references 2 (structure.md, XR-G) |
@@ -400,7 +413,7 @@ Chromium renders MathML Core and Electron is Chromium, so there is no typesettin
 | A footnote                             | Inline                                                                                                                                                                                                    |
 | A term, an attribution, a table's note | Inline                                                                                                                                                                                                    |
 | A caption                              | Inline: a caption is inline content since 2026-09-22                                                                                                                                                      |
-| A section's title                      | Inline, from the outline's title (publishing.md, EQ-G) - **not yet**: the title is edited in a plain text field, and holding an equation makes it an inline editor of its own, which is equations 3       |
+| A section's title                      | Inline, from the outline's title field, a one-line editor of words and inline equations with **Equation** beside it (publishing.md, EQ-G; built by equations 3)                                           |
 | Preformatted text                      | None                                                                                                                                                                                                      |
 
 **Generating the alternative is assistance, and its absence is never silent.** The alternative is
@@ -413,8 +426,8 @@ choice of engine does not decide whether this slice meets it.
 
 **Built in the editor by [equations 1](../plans/2026-09-23-equations-01-equations-in-the-editor.md)**,
 EQ-C and EQ-D of publishing.md's [Equations](publishing.md#equations), and published by
-[equations 2](../plans/2026-09-24-equations-02-publishing-equations.md); an equation in a section's
-title is equations 3's.
+[equations 2](../plans/2026-09-24-equations-02-publishing-equations.md), and in a section's title by
+[equations 3](../plans/2026-09-24-equations-03-equations-in-a-sections-title.md).
 
 - **Equation** on the toolbar, or `Ctrl+Shift+E` (`Cmd+Shift+E` on a Mac), opens a dialog: the LaTeX,
   the equation drawn beneath it as it is typed - or what is wrong, in words - its description, and for
@@ -465,6 +478,23 @@ title is equations 3's.
 - **Publishing sets it** (equations 2) in the pinned STIX Two Math, tagged as a formula carrying its
   alternative, a numbered one with its number beside it; one that cannot be set is refused by name,
   with a sentence saying what it holds - see publishing.md's [Equations](publishing.md#equations).
+- **A section's title takes one too** (equations 3), in the outline panel rather than on a surface:
+  the title field is a view of its own, `mountTitleEditor` over `titleSchema` in `packages/editor` -
+  one line of text and inline equations, no marks - with the same `equation` node and node view.
+  **Equation** beside the field, `Ctrl+Shift+E` in it, or `Enter` on an equation selected whole opens
+  the same dialog, inline only and in the document's language, since a section has none of its own;
+  placing the equation commits the retitle. `Enter` otherwise commits and never splits, a paste
+  arrives as one line of text, and undo is the field's own. The equation commands read their node
+  types from the state's schema, so one set serves both views. A title holding a mark, a
+  cross-reference or a footnote keeps a read-only field and a sentence saying what it holds, and a
+  title of an equation alone is refused - _A section's title needs words as well as an equation._ -
+  and kept in the field for words to be added. Where a title must be words - the tree's labels and
+  the panel's sentences - the equation is read as its alternative; the document's page draws the
+  heading's equation as MathML. **The Reference dialog names such a section by its title's words,
+  trimmed, and offers no title form of it**: a publish refuses both title forms of a title holding an
+  equation (`cross_reference_form_unavailable`), because its words without the equation are not what
+  the author wrote, so `targetForms` offers a number, a page and a place alone, and what the dialog
+  offers is what publishes.
 
 ### Captions
 

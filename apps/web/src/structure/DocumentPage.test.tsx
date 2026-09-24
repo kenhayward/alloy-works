@@ -14,16 +14,34 @@ import {
   type OutlineOperation,
   type PublishedNode,
 } from '@alloy-works/domain';
+import {
+  createEditorState,
+  fromEditor,
+  insertEquation,
+  mountEditor,
+  NodeSelection,
+  openFootnote,
+  Selection,
+  toEditor,
+  type EditorView,
+} from '@alloy-works/editor';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { shimRangeMeasurement } from '../test/range.js';
 import { DocumentList } from './DocumentList.js';
 import { DocumentPage } from './DocumentPage.js';
 import { documentAddress } from './links.js';
 import { NewDocument } from './NewDocument.js';
 import { OutlinePanel } from './OutlinePanel.js';
+
+// A section's title is a ProseMirror view since equations 3, which scrolls its selection into view.
+shimRangeMeasurement();
+
+/** A node of an editor's document, named through the view since this app has no ProseMirror of its own. */
+type ProseMirrorNode = EditorView['state']['doc'];
 
 const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
 const SPACE = 'aaaaaaaa-0000-4000-8000-000000000001';
@@ -413,6 +431,35 @@ const undoable = () =>
 const settled = () =>
   waitFor(() => expect(screen.getByRole('tree')).toHaveAttribute('aria-busy', 'false'));
 
+/**
+ * A section's title field: since equations 3 a one-line editor, not a text input (ruling R1), so it
+ * is read by what it shows and typed into where the caret is, rather than by a value. jsdom lays out
+ * nothing, so a click cannot put the caret there; the caret is put at the end of what the field holds,
+ * which is where a text input's own typing began, and the keys are typed from there.
+ */
+const titleField = () => screen.getByRole('textbox', { name: 'Title' });
+/** What the title field shows, as a text input's value was read. */
+const shownTitle = () => titleField().textContent;
+/** Gives the title field the focus, with the caret at its end or all of it selected. */
+function selectInTitle(whole: boolean) {
+  const field = titleField();
+  field.focus();
+  const selection = document.getSelection()!;
+  selection.selectAllChildren(field);
+  if (!whole) selection.collapseToEnd();
+  document.dispatchEvent(new Event('selectionchange'));
+}
+/** Keys typed at the end of the title, as `userEvent.type` typed them at the end of a text input. */
+async function typeTitle(keys: string) {
+  selectInTitle(false);
+  await userEvent.keyboard(keys);
+}
+/** Empties the title, as `userEvent.clear` emptied a text input. */
+async function clearTitle() {
+  selectInTitle(true);
+  await userEvent.keyboard('{Backspace}');
+}
+
 describe('the outline panel', () => {
   it('STR-008 moves a node with its whole subtree, as one action undo takes back', async () => {
     // Method, then Introduction with Scope beneath it.
@@ -681,12 +728,11 @@ describe('the outline panel', () => {
     await screen.findByRole('treeitem', { name: 'Method' });
 
     await userEvent.click(item('Method'));
-    const title = screen.getByLabelText('Title');
-    expect(title).toHaveValue('Method');
-    await userEvent.clear(title);
+    expect(shownTitle()).toBe('Method');
+    await clearTitle();
     // Typed one key at a time under StrictMode, and nothing is sent until the field is committed.
-    await userEvent.type(title, 'Methods and materials ');
-    expect(title).toHaveValue('Methods and materials ');
+    await typeTitle('Methods and materials ');
+    expect(shownTitle()).toBe('Methods and materials ');
     expect(fake.edits()).toEqual([]);
     await userEvent.keyboard('{Enter}');
 
@@ -706,7 +752,7 @@ describe('the outline panel', () => {
     await screen.findByRole('treeitem', { name: 'Method' });
     // The field follows the outline back, rather than keeping the text the undo just took away.
     await userEvent.click(item('Method'));
-    expect(screen.getByLabelText('Title')).toHaveValue('Method');
+    expect(shownTitle()).toBe('Method');
     expect(fake.edits()).toHaveLength(2);
   });
 
@@ -716,10 +762,10 @@ describe('the outline panel', () => {
     await screen.findByRole('treeitem', { name: 'Method' });
 
     await userEvent.click(item('Method'));
-    await userEvent.clear(screen.getByLabelText('Title'));
+    await clearTitle();
     await userEvent.click(item('Method'));
 
-    expect(screen.getByLabelText('Title')).toHaveValue('Method');
+    expect(shownTitle()).toBe('Method');
     expect(screen.getByRole('status')).toHaveTextContent('A section needs a title.');
     expect(fake.edits()).toEqual([]);
   });
@@ -1009,13 +1055,13 @@ describe('the outline panel, answered', () => {
 
     // Grace changes something unrelated - Introduction's page break - so Method's title stays as it was.
     fake.theirs({ operation: 'set', node: INTRODUCTION, pageBreak: 'page' });
-    await userEvent.clear(screen.getByLabelText('Title'));
-    await userEvent.type(screen.getByLabelText('Title'), 'Methods{Enter}');
+    await clearTitle();
+    await typeTitle('Methods{Enter}');
 
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE));
     expect(item('Method')).toBeInTheDocument();
     // The field gives way to the outline it was refused against, rather than holding the refused text.
-    expect(screen.getByLabelText('Title')).toHaveValue('Method');
+    expect(shownTitle()).toBe('Method');
 
     // Leaving the field sends nothing: the act she was told was refused does not go through.
     await userEvent.click(screen.getByRole('button', { name: 'Add section' }));
@@ -1036,13 +1082,13 @@ describe('the outline panel, answered', () => {
     // Nothing that may hold focus is disabled under the author while the answer is awaited.
     expect(screen.getByLabelText('Starts on')).not.toBeDisabled();
     expect(screen.getByRole('button', { name: 'Undo' })).not.toBeDisabled();
-    await userEvent.type(screen.getByLabelText('Title'), 's');
-    expect(screen.getByLabelText('Title')).toHaveValue('Methods');
+    await typeTitle('s');
+    expect(shownTitle()).toBe('Methods');
 
     release();
     await settled();
     expect(screen.getByRole('status')).toHaveTextContent('Method now starts on a new page.');
-    expect(screen.getByLabelText('Title')).toHaveValue('Methods');
+    expect(shownTitle()).toBe('Methods');
     expect(fake.edits()).toHaveLength(1);
   });
 
@@ -1053,18 +1099,18 @@ describe('the outline panel, answered', () => {
     await userEvent.click(item('Method'));
 
     fake.refuse(OUTLINE_URL, 500);
-    await userEvent.type(screen.getByLabelText('Title'), ' and materials{Enter}');
+    await typeTitle(' and materials{Enter}');
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent(
         'The change was not saved. Try it again.',
       ),
     );
     // Nothing else is shown in its place, so the text is still there to try again with.
-    expect(screen.getByLabelText('Title')).toHaveValue('Method and materials');
+    expect(shownTitle()).toBe('Method and materials');
 
     fake.restore(OUTLINE_URL);
     await settled();
-    await userEvent.type(screen.getByLabelText('Title'), '{Enter}');
+    await typeTitle('{Enter}');
     expect(
       await screen.findByRole('treeitem', { name: 'Method and materials' }),
     ).toBeInTheDocument();
@@ -1097,7 +1143,7 @@ describe('the outline panel, answered', () => {
     const release = fake.hold();
     await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
-    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    await typeTitle('s{Enter}');
     expect(fake.edits()).toHaveLength(1);
 
     release();
@@ -1111,7 +1157,7 @@ describe('the outline panel, answered', () => {
         title: [{ type: 'text', value: 'Methods', marks: [] }],
       },
     });
-    expect(screen.getByLabelText('Title')).toHaveValue('Methods');
+    expect(shownTitle()).toBe('Methods');
   });
 
   it('sends a retitle left behind while another act is in flight, even once its field has gone', async () => {
@@ -1125,10 +1171,10 @@ describe('the outline panel, answered', () => {
     const release = fake.hold();
     await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
-    await userEvent.type(screen.getByLabelText('Title'), 's');
+    await typeTitle('s');
     // Leaving for another node blurs the field, and the field goes with the selection.
     await userEvent.click(item('Introduction'));
-    expect(screen.getByLabelText('Title')).toHaveValue('Introduction');
+    expect(shownTitle()).toBe('Introduction');
     expect(fake.edits()).toHaveLength(1);
 
     release();
@@ -1148,7 +1194,7 @@ describe('the outline panel, answered', () => {
     const release = fake.hold();
     await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
-    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    await typeTitle('s{Enter}');
     fake.theirs({
       operation: 'retitle',
       node: METHOD,
@@ -1163,7 +1209,7 @@ describe('the outline panel, answered', () => {
     expect(fake.edits()).toHaveLength(1);
     expect(item('Approach')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE);
-    expect(screen.getByLabelText('Title')).toHaveValue('Approach');
+    expect(shownTitle()).toBe('Approach');
   });
 
   it('drops a held retitle when the act in flight is refused because Grace changed another section', async () => {
@@ -1177,7 +1223,7 @@ describe('the outline panel, answered', () => {
     const release = fake.hold();
     await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
-    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    await typeTitle('s{Enter}');
     fake.theirs({ operation: 'set', node: INTRODUCTION, pageBreak: 'page' });
     release();
 
@@ -1189,7 +1235,7 @@ describe('the outline panel, answered', () => {
     expect(fake.edits()).toHaveLength(1);
     expect(item('Method')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE);
-    expect(screen.getByLabelText('Title')).toHaveValue('Method');
+    expect(shownTitle()).toBe('Method');
   });
 
   it('sends a held retitle anyway when the act in flight was not saved, since nothing it could overwrite was shown', async () => {
@@ -1202,7 +1248,7 @@ describe('the outline panel, answered', () => {
     const release = fake.hold();
     await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
-    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    await typeTitle('s{Enter}');
     release();
 
     expect(await screen.findByRole('treeitem', { name: 'Methods' })).toBeInTheDocument();
@@ -1211,7 +1257,7 @@ describe('the outline panel, answered', () => {
       openedFrom: 'dddddddd-0000-4000-8000-000000000001',
       operation: { operation: 'retitle', node: METHOD },
     });
-    expect(screen.getByLabelText('Title')).toHaveValue('Methods');
+    expect(shownTitle()).toBe('Methods');
   });
 
   it('sends a held retitle whose field has closed when the act in flight was not saved', async () => {
@@ -1226,7 +1272,7 @@ describe('the outline panel, answered', () => {
     const release = fake.hold();
     await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
-    await userEvent.type(screen.getByLabelText('Title'), 's');
+    await typeTitle('s');
     await userEvent.click(item('Introduction'));
     release();
 
@@ -1243,7 +1289,7 @@ describe('the outline panel, answered', () => {
     await userEvent.click(item('Method'));
 
     fake.refuse(OUTLINE_URL, 500);
-    await userEvent.type(screen.getByLabelText('Title'), 's');
+    await typeTitle('s');
     // Leaving for another node commits it, and closes its field.
     await userEvent.click(item('Introduction'));
 
@@ -1268,7 +1314,7 @@ describe('the outline panel, answered', () => {
     const release = fake.hold();
     await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
-    await userEvent.type(screen.getByLabelText('Title'), 's');
+    await typeTitle('s');
     await userEvent.click(item('Introduction'));
     release();
 
@@ -1304,9 +1350,9 @@ describe('the outline panel, answered', () => {
       const release = fake.hold();
       await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
       await waitFor(() => expect(fake.edits()).toHaveLength(1));
-      await userEvent.type(screen.getByLabelText('Title'), 's');
+      await typeTitle('s');
       await userEvent.click(item('Introduction'));
-      await userEvent.type(screen.getByLabelText('Title'), 'x{Enter}');
+      await typeTitle('x{Enter}');
       expect(fake.edits()).toHaveLength(1);
       return release;
     }
@@ -1328,7 +1374,7 @@ describe('the outline panel, answered', () => {
       ]);
       expect(screen.getByText('Version 0.4 in General')).toBeInTheDocument();
       expect(screen.getByRole('status')).not.toHaveTextContent(/not saved/);
-      expect(screen.getByLabelText('Title')).toHaveValue('Introductionx');
+      expect(shownTitle()).toBe('Introductionx');
     });
 
     it('drops both behind a refused act, and names both after the conflict sentence', async () => {
@@ -1346,7 +1392,7 @@ describe('the outline panel, answered', () => {
       await new Promise((resolve) => setTimeout(resolve, 30));
       expect(fake.edits()).toHaveLength(1);
       expect(item('Method')).toBeInTheDocument();
-      expect(screen.getByLabelText('Title')).toHaveValue('Introduction');
+      expect(shownTitle()).toBe('Introduction');
     });
 
     it('sends both behind an act that was not saved, since nothing they could overwrite was shown', async () => {
@@ -1398,7 +1444,7 @@ describe('the outline panel, answered', () => {
       await new Promise((resolve) => setTimeout(resolve, 30));
       expect(fake.edits()).toHaveLength(1);
       // Its field is still open, so what was typed is still there to send once signed in again.
-      expect(screen.getByLabelText('Title')).toHaveValue('Introductionx');
+      expect(shownTitle()).toBe('Introductionx');
     });
   });
 
@@ -1410,10 +1456,10 @@ describe('the outline panel, answered', () => {
 
     // The first commit is sent and waits for its answer; the second is held behind it.
     const release = fake.hold();
-    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    await typeTitle('s{Enter}');
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
-    await userEvent.type(screen.getByLabelText('Title'), 't{Enter}');
-    await userEvent.type(screen.getByLabelText('Title'), 'u');
+    await typeTitle('t{Enter}');
+    await typeTitle('u');
     expect(fake.edits()).toHaveLength(1);
     release();
 
@@ -1433,7 +1479,7 @@ describe('the outline panel, answered', () => {
       },
     ]);
     // Each title that came back was one this field sent, so nothing typed since is given away.
-    expect(screen.getByLabelText('Title')).toHaveValue('Methodstu');
+    expect(shownTitle()).toBe('Methodstu');
   });
 
   it('names each title a conflict took once, in one sentence', async () => {
@@ -1448,10 +1494,10 @@ describe('the outline panel, answered', () => {
     // Methods is sent and waits; leaving the field after Enter commits the same text again, and
     // Introductionx is held behind it. The conflict refuses Methods, and Introductionx behind it.
     const release = fake.hold();
-    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    await typeTitle('s{Enter}');
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     await userEvent.click(item('Introduction'));
-    await userEvent.type(screen.getByLabelText('Title'), 'x{Enter}');
+    await typeTitle('x{Enter}');
     release();
 
     await waitFor(() =>
@@ -1474,14 +1520,14 @@ describe('the outline panel, answered', () => {
     await userEvent.click(item('Method'));
 
     fake.theirs({ operation: 'set', node: INTRODUCTION, pageBreak: 'page' });
-    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    await typeTitle('s{Enter}');
 
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent(
         `${SOMEBODY_ELSE} Your title Methods was not saved.`,
       ),
     );
-    expect(screen.getByLabelText('Title')).toHaveValue('Method');
+    expect(shownTitle()).toBe('Method');
   });
 
   it('says why an act does not apply, in the words the service gave', async () => {
@@ -1754,6 +1800,483 @@ describe('the outline panel, answered', () => {
     const help = document.getElementById(tree.getAttribute('aria-describedby') ?? '');
     expect(help).toHaveTextContent(/Alt and the arrow keys/);
     expect(help).toHaveTextContent(/On a Mac keyboard, remove it with the Remove button/);
+  });
+});
+
+describe("a section's title holding an equation (equations 3)", () => {
+  const NS = 'http://www.w3.org/1998/Math/MathML';
+  const stored = (inner: string, alternative: string | null) =>
+    `<math xmlns="${NS}"${alternative === null ? '' : ` alttext="${alternative}"`}>${inner}</math>`;
+  const SQUARED = stored('<msup><mi>x</mi><mn>2</mn></msup>', 'x squared');
+  /** What the engine says of this fraction in English: the same in jsdom as in a browser. */
+  const FRACTION = '<mfrac><mrow><mi>a</mi><mo>+</mo><mi>b</mi></mrow><mi>c</mi></mfrac>';
+  const SPOKEN = 'the fraction with numerator a plus b and denominator c';
+  const words = (value: string) => ({ type: 'text' as const, value, marks: [] });
+  const squared = { type: 'equation' as const, mathml: SQUARED, latex: 'x^2' };
+  const titled = (id: string, title: unknown[]): OutlineNode =>
+    ({ ...section(id, 'unused'), title }) as OutlineNode;
+
+  const opens = () => screen.findByRole('dialog', { name: 'Equation' });
+  /** LaTeX given as an author pastes it, since userEvent reads a brace it types as a key's name. */
+  const write = async (dialog: HTMLElement, latex: string) => {
+    await userEvent.clear(within(dialog).getByLabelText('LaTeX'));
+    await userEvent.paste(latex);
+  };
+
+  it('retitles a section whose title holds an equation, keeping it, and draws it as MathML in the field and on the page', async () => {
+    const fake = service(
+      outline([titled(METHOD, [words('Growth as '), squared, words(' rises')])]),
+    );
+    open(fake.fetch);
+    // Named by its words wherever a name must be words: the equation read as its alternative.
+    await userEvent.click(
+      await screen.findByRole('treeitem', { name: 'Growth as x squared rises' }),
+    );
+
+    const math = titleField().querySelector('math')!;
+    expect(math.namespaceURI).toBe(NS);
+    expect(math.getAttribute('aria-label')).toBe('x squared');
+    await typeTitle(' fast{Enter}');
+
+    expect(
+      await screen.findByRole('treeitem', { name: 'Growth as x squared rises fast' }),
+    ).toBeInTheDocument();
+    expect(fake.edits().map((request) => request.body)).toEqual([
+      {
+        openedFrom: 'dddddddd-0000-4000-8000-000000000001',
+        operation: {
+          operation: 'retitle',
+          node: METHOD,
+          title: [words('Growth as '), squared, words(' rises fast')],
+        },
+      },
+    ]);
+    // The field keeps what it sent, equation and all.
+    expect(titleField().querySelector('math')).not.toBeNull();
+    // The document's heading draws the equation as the component's text draws one: MathML elements.
+    const text = screen.getByRole('region', { name: "The document's text" });
+    const heading = text.querySelector(`[data-node="${METHOD}"] h3`)!;
+    expect(heading).toHaveTextContent(/Growth as/);
+    const drawn = heading.querySelector('math')!;
+    expect(drawn.namespaceURI).toBe(NS);
+    expect(drawn.querySelector('msup')!.namespaceURI).toBe(NS);
+    expect(drawn.getAttribute('aria-label')).toBe('x squared');
+  });
+
+  it('gives way to another title with the same words and another equation, since titles are compared by what they hold', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        titled(METHOD, [words('Growth as '), squared]),
+      ]),
+    );
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Growth as x squared' }));
+
+    // Grace corrects the exponent and not its words, from another window: the same words, another
+    // equation. Ada's next act is refused against it, and the page shows Grace's outline.
+    const cubed = stored('<msup><mi>x</mi><mn>3</mn></msup>', 'x squared');
+    fake.theirs({
+      operation: 'retitle',
+      node: METHOD,
+      title: [words('Growth as '), { type: 'equation', mathml: cubed, latex: 'x^3' }],
+    });
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE));
+
+    // The field gives way to it, rather than keeping the equation the words could not tell apart.
+    await waitFor(() => expect(titleField().querySelector('mn')).toHaveTextContent('3'));
+  });
+
+  it('keeps the read-only field for a title holding formatting or a cross-reference, saying which', async () => {
+    const fake = service(
+      outline([
+        titled(INTRODUCTION, [
+          { type: 'text', value: 'Introduction', marks: [{ type: 'strong', id: 'm1' }] },
+        ]),
+        titled(METHOD, [
+          words('Method, after '),
+          {
+            type: 'crossReference',
+            id: 'r1',
+            target: { kind: 'node', node: INTRODUCTION },
+            display: 'number',
+          },
+        ]),
+      ]),
+    );
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Introduction' }));
+    expect(screen.getByLabelText('Title')).toBeDisabled();
+    expect(screen.getByLabelText('Title')).toHaveValue('Introduction');
+    expect(
+      screen.getByText(
+        'This title has formatting this field cannot keep, so it is not changed here.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Equation' })).toBeNull();
+
+    await userEvent.click(screen.getByRole('treeitem', { name: /^Method, after/ }));
+    expect(screen.getByLabelText('Title')).toBeDisabled();
+    expect(
+      screen.getByText('This title holds a cross-reference, so it is not changed here.'),
+    ).toBeInTheDocument();
+  });
+
+  it('refuses an equation on its own as a title, says so, and keeps the equation to write words beside', async () => {
+    const fake = service(outline([titled(METHOD, [words('Growth as '), squared])]));
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Growth as x squared' }));
+
+    // The words taken out, the equation left.
+    const field = titleField();
+    field.focus();
+    const typed = field.firstChild!;
+    document.getSelection()!.setBaseAndExtent(typed, 0, typed, 'Growth as '.length);
+    document.dispatchEvent(new Event('selectionchange'));
+    await userEvent.keyboard('{Backspace}');
+    expect(shownTitle()).not.toMatch(/Growth/);
+    await typeTitle('{Enter}');
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "A section's title needs words as well as an equation.",
+    );
+    expect(fake.edits()).toEqual([]);
+    expect(titleField().querySelector('math')).not.toBeNull();
+  });
+
+  it('places an equation from Equation beside the field, in the document language, at the caret, and commits it', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]));
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Method' }));
+    await typeTitle(' as ');
+
+    const button = screen.getByRole('button', { name: 'Equation' });
+    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    await userEvent.click(button);
+    const dialog = await opens();
+    // Only inline: a title has nowhere for a block to stand.
+    expect(within(dialog).queryByRole('group', { name: 'Place as' })).toBeNull();
+    await write(dialog, '\\frac{a+b}{c}');
+    // Written in the document's language, which is English here.
+    await waitFor(() => expect(within(dialog).getByLabelText('Description')).toHaveValue(SPOKEN));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+
+    expect(
+      await screen.findByRole('treeitem', { name: `Method as ${SPOKEN}` }),
+    ).toBeInTheDocument();
+    // One act: leaving the field for its own dialog is not leaving it.
+    expect(fake.edits().map((request) => request.body)).toEqual([
+      {
+        openedFrom: 'dddddddd-0000-4000-8000-000000000001',
+        operation: {
+          operation: 'retitle',
+          node: METHOD,
+          title: [
+            words('Method as '),
+            { type: 'equation', mathml: stored(FRACTION, SPOKEN), latex: '\\frac{a+b}{c}' },
+          ],
+        },
+      },
+    ]);
+    // Back in the field, with the equation it placed.
+    expect(titleField()).toHaveFocus();
+    expect(titleField().querySelector('mfrac')).not.toBeNull();
+  });
+
+  it('opens the dialog from its shortcut in the field, and on an equation selected whole by Enter, to change it', async () => {
+    const fake = service(outline([titled(METHOD, [words('Growth as '), squared])]));
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Growth as x squared' }));
+
+    // Mod-Shift-E asks for a new one; cancelled, nothing is sent and the focus is back in the field.
+    selectInTitle(false);
+    fireEvent.keyDown(titleField(), { key: 'E', keyCode: 69, ctrlKey: true, shiftKey: true });
+    let dialog = await opens();
+    expect(within(dialog).getByRole('button', { name: 'Insert' })).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(titleField()).toHaveFocus();
+
+    // The arrow from the end selects the equation whole, and Enter opens it.
+    fireEvent.keyDown(titleField(), { key: 'ArrowLeft', keyCode: 37 });
+    fireEvent.keyDown(titleField(), { key: 'Enter', keyCode: 13 });
+    dialog = await opens();
+    expect(within(dialog).getByLabelText('LaTeX')).toHaveValue('x^2');
+    await write(dialog, 'x^3');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Change' }));
+
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    const [edit] = fake.edits();
+    const title = (edit!.body as { operation: { title: { mathml?: string; latex?: string }[] } })
+      .operation.title;
+    expect(title[0]).toEqual(words('Growth as '));
+    expect(title[1]).toMatchObject({ type: 'equation', latex: 'x^3' });
+    expect(title[1]!.mathml).toContain('<mn>3</mn>');
+  });
+
+  it('gives the focus to the field when the dialog closes, whoever opened it, so leaving retries a title that was not saved', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    // Chosen in the tree, and Equation clicked straight after: the focus is on the tree item, and the
+    // button leaves it there, as a toolbar's button leaves the caret.
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Method' }));
+    expect(item('Method')).toHaveFocus();
+
+    fake.refuse(OUTLINE_URL, 500);
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    const dialog = await opens();
+    await write(dialog, 'x^2');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'The change was not saved. Try it again.',
+      ),
+    );
+    // The field, not the tree item the dialog was opened from: leaving it is the retry.
+    expect(titleField()).toHaveFocus();
+    expect(titleField().querySelector('math')).not.toBeNull();
+
+    fake.restore(OUTLINE_URL);
+    await userEvent.click(item('Introduction'));
+    await waitFor(() => expect(fake.edits()).toHaveLength(2));
+    const [first, retry] = fake.edits().map((request) => request.body);
+    expect(retry).toEqual(first);
+    expect(retry).toMatchObject({
+      operation: {
+        operation: 'retitle',
+        node: METHOD,
+        title: [words('Method'), { type: 'equation', latex: 'x^2' }],
+      },
+    });
+    // Saved this time: the tree names Method by its words and the equation read as its alternative.
+    expect(await screen.findByRole('treeitem', { name: /^Method.+/ })).toBeInTheDocument();
+  });
+
+  it('closes the dialog, placing nothing, when the field gives way to another title while it is open, and says so', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        titled(METHOD, [words('Growth as '), squared]),
+      ]),
+    );
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Growth as x squared' }));
+
+    // An act in flight, and Grace retitles Method while it is: the act will be refused against hers.
+    const release = fake.hold();
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    fake.theirs({
+      operation: 'retitle',
+      node: METHOD,
+      title: [
+        words('Growth at '),
+        {
+          type: 'equation',
+          mathml: stored('<msup><mi>x</mi><mn>3</mn></msup>', 'x cubed'),
+          latex: 'x^3',
+        },
+      ],
+    });
+
+    // Ada opens her own equation, x^2, to change it.
+    selectInTitle(false);
+    fireEvent.keyDown(titleField(), { key: 'ArrowLeft', keyCode: 37 });
+    fireEvent.keyDown(titleField(), { key: 'Enter', keyCode: 13 });
+    const dialog = await opens();
+    expect(within(dialog).getByLabelText('LaTeX')).toHaveValue('x^2');
+
+    // The refusal gives the field Grace's title: the equation the dialog was opened on is not there.
+    release();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The title changed while the Equation dialog was open, so nothing was placed.',
+    );
+    expect(titleField().querySelector('mn')).toHaveTextContent('3');
+    expect(titleField()).toHaveFocus();
+    // Nothing more was sent: Grace's equation is hers still.
+    expect(fake.edits()).toHaveLength(1);
+    await userEvent.click(item('Introduction'));
+    expect(fake.edits()).toHaveLength(1);
+  });
+
+  it('closes the dialog, placing nothing, when its section goes while it is open, and says so', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Method' }));
+
+    // An act in flight, and Grace removes Method while it is: the act will be refused against hers.
+    const release = fake.hold();
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    fake.theirs({ operation: 'remove', node: METHOD });
+    selectInTitle(false);
+    fireEvent.keyDown(titleField(), { key: 'E', keyCode: 69, ctrlKey: true, shiftKey: true });
+    await opens();
+
+    // The page shows Grace's outline, and Method's field goes with it: there is no title to place into.
+    release();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The title changed while the Equation dialog was open, so nothing was placed.',
+    );
+    expect(screen.queryByRole('treeitem', { name: 'Method' })).toBeNull();
+    // With no field to go back to, the focus goes to the node chosen now, never to the page's body.
+    expect(item('Introduction')).toHaveFocus();
+    expect(fake.edits()).toHaveLength(1);
+  });
+});
+
+describe('an equation in every context (equations 3)', () => {
+  const NS = 'http://www.w3.org/1998/Math/MathML';
+  /** One equation per context, each its own letter, so what is stored says which context it is. */
+  const letter = (name: string) => `<math xmlns="${NS}" alttext="${name}"><mi>${name}</mi></math>`;
+  const choice = (name: string) => ({
+    display: 'inline' as const,
+    mathml: letter(name),
+    latex: name,
+  });
+  const words = (value: string) => ({ type: 'text', value, marks: [] });
+  const paragraph = (id: string, ...content: unknown[]) => ({
+    type: 'paragraph',
+    id,
+    style: 'body',
+    content,
+  });
+  /** A component with running text, a table with a caption and a cell, and a footnote. */
+  const component = {
+    schemaVersion: 1,
+    title: 'Readings',
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [
+      paragraph('b1', words('Where it grows.')),
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [words('Readings')],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [{ content: [paragraph('c1', words('Tray'))], colspan: 1, rowspan: 1 }],
+          },
+        ],
+      },
+      paragraph(
+        'b2',
+        words('Measured'),
+        {
+          type: 'footnote',
+          id: 'f1',
+          anchor: { kind: 'span' },
+          content: [paragraph('fp1', words('At the bench.'))],
+        },
+        words(' twice.'),
+      ),
+    ],
+  };
+
+  /** Where the first node answering `match` starts, and the node. */
+  function find(view: EditorView, match: (node: ProseMirrorNode) => boolean) {
+    let found: { pos: number; node: ProseMirrorNode } | null = null;
+    view.state.doc.descendants((node, pos) => {
+      if (found === null && match(node)) found = { pos, node };
+      return found === null;
+    });
+    if (found === null) throw new Error('not there');
+    return found as { pos: number; node: ProseMirrorNode };
+  }
+  /** The caret at the end of the textblock `match` finds, as a click at its end puts it. */
+  function caretAtEndOf(view: EditorView, match: (node: ProseMirrorNode) => boolean) {
+    const { pos, node } = find(view, match);
+    const end = view.state.doc.resolve(pos + node.nodeSize - 1);
+    view.dispatch(view.state.tr.setSelection(Selection.near(end, -1)));
+  }
+  /** Placed by the command the Equation dialog answers with, where the caret is. */
+  const placeIn = (view: EditorView, name: string) =>
+    expect(insertEquation(choice(name))(view.state, view.dispatch.bind(view))).toBe(true);
+  /** The letter of every equation in a list of inline runs. */
+  const lettersIn = (runs: readonly unknown[]) =>
+    (runs as readonly { type: string; latex?: string }[])
+      .filter((run) => run.type === 'equation')
+      .map((run) => run.latex);
+
+  it('CNT-046 places an equation in running text, a heading, a table cell, a footnote and a caption, and stores each', async () => {
+    // Running text, a table's cell, a table's caption and a footnote: on a component's surface,
+    // mounted as the component editor mounts one.
+    const opened = toEditor(component as never);
+    if (!opened.editable) throw new Error(opened.unsupported.join(', '));
+    let next = 0;
+    const newIdentifier = () => `n${(next += 1)}`;
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const view = mountEditor(host, {
+      state: createEditorState({ doc: opened.doc, newIdentifier }),
+      label: 'Content of Readings',
+      editable: () => true,
+      dispatch: (tr, target) => target.updateState(target.state.apply(tr)),
+      pasted: () => undefined,
+      refused: () => undefined,
+      newIdentifier,
+    });
+    caretAtEndOf(view, (node) => node.attrs['id'] === 'b1');
+    placeIn(view, 'a');
+    caretAtEndOf(view, (node) => node.attrs['id'] === 'c1');
+    placeIn(view, 'b');
+    caretAtEndOf(view, (node) => node.type.name === 'tableCaption');
+    placeIn(view, 'c');
+    const footnote = find(view, (node) => node.type.name === 'footnote').pos;
+    view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, footnote)));
+    const note = openFootnote(view)!;
+    caretAtEndOf(note, (node) => node.type.name === 'footnoteParagraph');
+    placeIn(note, 'd');
+
+    // Stored as the model holds it, through its own parse.
+    const stored = fromEditor(view.state.doc) as unknown as {
+      content: [
+        { content: { type: string }[] },
+        {
+          caption: { type: string }[];
+          rows: [{ cells: [{ content: [{ content: { type: string }[] }] }] }];
+        },
+        { content: { type: string; content?: [{ content: { type: string }[] }] }[] },
+      ];
+    };
+    const [text, table, noted] = stored.content;
+    expect(lettersIn(text.content)).toEqual(['a']);
+    expect(lettersIn(table.rows[0].cells[0].content[0].content)).toEqual(['b']);
+    expect(lettersIn(table.caption)).toEqual(['c']);
+    const held = noted.content.find((run) => run.type === 'footnote')!;
+    expect(lettersIn(held.content![0].content)).toEqual(['d']);
+    view.destroy();
+    host.remove();
+
+    // A heading: a section's title, through its field in the outline panel and the Equation dialog.
+    const fake = service(outline([section(METHOD, 'Method')]));
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Method' }));
+    await typeTitle(' as ');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Equation' });
+    await userEvent.clear(within(dialog).getByLabelText('LaTeX'));
+    await userEvent.paste('e');
+    await waitFor(() => expect(within(dialog).getByLabelText('Description')).not.toHaveValue(''));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    // Stored as the service records it: the outline's next version holds it in the section's title.
+    await waitFor(() => expect(fake.latest().version.number).toBe('0.2'));
+    const [retitled] = fake.latest().outline.nodes;
+    expect(retitled?.type === 'section' && lettersIn(retitled.title)).toEqual(['e']);
   });
 });
 

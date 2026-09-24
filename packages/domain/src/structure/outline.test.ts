@@ -10,6 +10,7 @@ import { canonicaliseVersion, canonicaliseVersionContent } from '../version/subs
 
 import {
   canonicaliseOutline,
+  canonicaliseTitle,
   mayBeFront,
   migrateOutline,
   OUTLINE_SCHEMA_VERSION,
@@ -573,6 +574,30 @@ describe('a section title, under the content model rules', () => {
         ],
       }),
     ).not.toThrow();
+  });
+  it('gives a title one canonical string, the one its outline is digested with, however it is spelled', () => {
+    const strong = { type: 'strong', id: 'm1' };
+    const emphasis = { type: 'emphasis', id: 'm2' };
+    const mathml =
+      '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>';
+    const one = [
+      { type: 'text', value: 'Growth as ', marks: [strong, emphasis] },
+      { type: 'equation', mathml, latex: 'x^2' },
+    ];
+    // The same title, its marks in another order and every member in another order.
+    const other = [
+      { marks: [emphasis, strong], value: 'Growth as ', type: 'text' },
+      { latex: 'x^2', mathml, type: 'equation' },
+    ];
+    expect(canonicaliseTitle(one as never)).toBe(canonicaliseTitle(other as never));
+    expect(canonicaliseTitle(one as never)).not.toBe(
+      canonicaliseTitle([{ type: 'text', value: 'Growth as ', marks: [] }]),
+    );
+    // What the outline's own canonical form holds for that node's title, not a second spelling.
+    const outline = parseOutlineDocument({ ...empty, nodes: [section(NODE, { title: one })] });
+    expect(canonicaliseOutline(outline)).toContain(
+      `"title":${canonicaliseTitle(one as never)},"type":"section"`,
+    );
   });
 });
 

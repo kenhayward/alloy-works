@@ -13,6 +13,7 @@ import {
   printableForms,
   printed,
   referenceResolver,
+  targetForms,
   type BoundTarget,
   type ReferenceKind,
   type ReferenceTarget,
@@ -342,6 +343,36 @@ describe('what a document offers a reference', () => {
     ]);
   });
 
+  it('names a section whose title holds an equation by its words, trimmed, and says its title is not printable as words', () => {
+    // "Growth as " and then x squared: the words without the equation, which a reference cannot print.
+    const growth: OutlineViewNode = {
+      type: 'section',
+      id: id('growth'),
+      title: [
+        { type: 'text', value: 'Growth as ', marks: [] },
+        {
+          type: 'equation',
+          mathml:
+            '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>',
+          latex: 'x^2',
+        },
+      ],
+      ...positional('body', true),
+      children: [],
+    };
+    const targets = offered([growth, occurrence('ada', ADA)], { ada: [] });
+    expect(targets).toEqual([
+      {
+        target: toSection('growth'),
+        kind: 'section',
+        label: '1',
+        title: 'Growth as',
+        relative: 'above',
+        titleHoldsEquation: true,
+      },
+    ]);
+  });
+
   it('says nothing is above or below where the occurrence being edited is not in the outline', () => {
     const targets = offered(
       [section('method', 'Method'), occurrence('grace', GRACE), occurrence('ada', ADA)],
@@ -369,6 +400,27 @@ describe('the forms a reference offers', () => {
     expect(formsFor('footnote')).toEqual(['number', 'page', 'relative']);
     expect(formsFor('equation')).toEqual(['number', 'page', 'relative']);
     expect(formsFor('block')).toEqual(['page', 'relative']);
+  });
+});
+
+describe('the forms a target is offered in', () => {
+  const target = (titleHoldsEquation: boolean): ReferenceTarget => ({
+    target: toSection('growth'),
+    kind: 'section',
+    label: '1',
+    title: 'Growth as',
+    relative: null,
+    ...(titleHoldsEquation ? { titleHoldsEquation: true as const } : {}),
+  });
+
+  it('offers every form its kind has, for a target whose title is words', () => {
+    expect(targetForms(target(false))).toEqual(formsFor('section'));
+  });
+
+  it('offers no title form for a section whose title holds an equation, as the publish prints none', () => {
+    // The publish refuses `title` and `numberAndTitle` of one (`cross_reference_form_unavailable`):
+    // its words without the equation are not what the author wrote.
+    expect(targetForms(target(true))).toEqual(['number', 'page', 'relative']);
   });
 });
 

@@ -9,15 +9,16 @@ import {
   type NumberingScheme,
   type OutlineView,
   type OutlineViewNode,
+  type SectionViewNode,
 } from '@alloy-works/domain';
-import { renderContent, type ReferenceContext } from '@alloy-works/editor';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { drawEquation, renderContent, type ReferenceContext } from '@alloy-works/editor';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { textOffsetIn } from '../editor/caret.js';
 
 import { Lozenge } from '../states/Lozenge.js';
 import styles from './DocumentText.module.css';
-import { nodeName, type Names } from './tree.js';
+import { nodeName, titleText, type Names } from './tree.js';
 
 /** What the text knows of an occurrence's contributions until the page has heard: nothing. */
 const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
@@ -139,6 +140,42 @@ function RenderedText({
   );
 }
 
+/**
+ * An equation in a section's heading, drawn by the editor's own drawing - native MathML, named by its
+ * alternative, never markup set as HTML - exactly as it is in a component's text and in the title's
+ * field (equations 3, ruling R4). React owns the holder and renders nothing into it; the drawing is
+ * all that is inside.
+ */
+function HeadingEquation({ mathml }: { mathml: string }) {
+  const holder = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    if (holder.current !== null) drawEquation(holder.current, { mathml }, 'inline');
+  }, [mathml]);
+  return <span ref={holder} className="aw-equation" />;
+}
+
+/**
+ * A section's title as its heading shows it: its words, and each equation drawn as MathML where the
+ * tree and every sentence read it as its alternative. What else a title may hold is not drawn here, as
+ * it is not named by `nodeName` either, and a title with no words is an untitled section.
+ */
+function SectionTitle({ title }: { title: SectionViewNode['title'] }) {
+  if (titleText(title).trim() === '') return <>Untitled section</>;
+  return (
+    <>
+      {title.map((run, index) => (
+        <Fragment key={index}>
+          {run.type === 'text' ? (
+            run.value
+          ) : run.type === 'equation' ? (
+            <HeadingEquation mathml={run.mathml} />
+          ) : null}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
 const Heading = ({ depth, children }: { depth: number; children: React.ReactNode }) => {
   const level = Math.min(6, depth + 2);
   const Tag = `h${level}` as 'h3';
@@ -210,7 +247,7 @@ export function DocumentText({
             <span className={styles['number']}>{at}</span>{' '}
           </>
         )}
-        {nodeName(node, names)}
+        {node.type === 'section' ? <SectionTitle title={node.title} /> : nodeName(node, names)}
       </Heading>
     );
   };
