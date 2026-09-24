@@ -490,10 +490,11 @@ EQ-C and EQ-D of publishing.md's [Equations](publishing.md#equations), and publi
   title of an equation alone is refused - _A section's title needs words as well as an equation._ -
   and kept in the field for words to be added. Where a title must be words - the tree's labels and
   the panel's sentences - the equation is read as its alternative; the document's page draws the
-  heading's equation as MathML. **The Reference dialog names such a section without its equation,
-  deliberately**: those words are also what a `title` reference prints, and a publish refuses to
-  print a title holding an equation as words, so the alternative there would promise what the PDF
-  refuses.
+  heading's equation as MathML. **The Reference dialog names such a section by its title's words,
+  trimmed, and offers no title form of it**: a publish refuses both title forms of a title holding an
+  equation (`cross_reference_form_unavailable`), because its words without the equation are not what
+  the author wrote, so `targetForms` offers a number, a page and a place alone, and what the dialog
+  offers is what publishes.
 
 ### Captions
 

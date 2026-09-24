@@ -63,6 +63,7 @@ export {
   printableForms,
   printed,
   referenceResolver,
+  targetForms,
 } from './references.js';
 export type {
   BoundTarget,

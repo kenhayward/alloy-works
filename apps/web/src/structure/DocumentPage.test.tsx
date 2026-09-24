@@ -2014,6 +2014,124 @@ describe("a section's title holding an equation (equations 3)", () => {
     expect(title[1]).toMatchObject({ type: 'equation', latex: 'x^3' });
     expect(title[1]!.mathml).toContain('<mn>3</mn>');
   });
+
+  it('gives the focus to the field when the dialog closes, whoever opened it, so leaving retries a title that was not saved', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    // Chosen in the tree, and Equation clicked straight after: the focus is on the tree item, and the
+    // button leaves it there, as a toolbar's button leaves the caret.
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Method' }));
+    expect(item('Method')).toHaveFocus();
+
+    fake.refuse(OUTLINE_URL, 500);
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    const dialog = await opens();
+    await write(dialog, 'x^2');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'The change was not saved. Try it again.',
+      ),
+    );
+    // The field, not the tree item the dialog was opened from: leaving it is the retry.
+    expect(titleField()).toHaveFocus();
+    expect(titleField().querySelector('math')).not.toBeNull();
+
+    fake.restore(OUTLINE_URL);
+    await userEvent.click(item('Introduction'));
+    await waitFor(() => expect(fake.edits()).toHaveLength(2));
+    const [first, retry] = fake.edits().map((request) => request.body);
+    expect(retry).toEqual(first);
+    expect(retry).toMatchObject({
+      operation: {
+        operation: 'retitle',
+        node: METHOD,
+        title: [words('Method'), { type: 'equation', latex: 'x^2' }],
+      },
+    });
+    // Saved this time: the tree names Method by its words and the equation read as its alternative.
+    expect(await screen.findByRole('treeitem', { name: /^Method.+/ })).toBeInTheDocument();
+  });
+
+  it('closes the dialog, placing nothing, when the field gives way to another title while it is open, and says so', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        titled(METHOD, [words('Growth as '), squared]),
+      ]),
+    );
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Growth as x squared' }));
+
+    // An act in flight, and Grace retitles Method while it is: the act will be refused against hers.
+    const release = fake.hold();
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    fake.theirs({
+      operation: 'retitle',
+      node: METHOD,
+      title: [
+        words('Growth at '),
+        {
+          type: 'equation',
+          mathml: stored('<msup><mi>x</mi><mn>3</mn></msup>', 'x cubed'),
+          latex: 'x^3',
+        },
+      ],
+    });
+
+    // Ada opens her own equation, x^2, to change it.
+    selectInTitle(false);
+    fireEvent.keyDown(titleField(), { key: 'ArrowLeft', keyCode: 37 });
+    fireEvent.keyDown(titleField(), { key: 'Enter', keyCode: 13 });
+    const dialog = await opens();
+    expect(within(dialog).getByLabelText('LaTeX')).toHaveValue('x^2');
+
+    // The refusal gives the field Grace's title: the equation the dialog was opened on is not there.
+    release();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The title changed while the Equation dialog was open, so nothing was placed.',
+    );
+    expect(titleField().querySelector('mn')).toHaveTextContent('3');
+    expect(titleField()).toHaveFocus();
+    // Nothing more was sent: Grace's equation is hers still.
+    expect(fake.edits()).toHaveLength(1);
+    await userEvent.click(item('Introduction'));
+    expect(fake.edits()).toHaveLength(1);
+  });
+
+  it('closes the dialog, placing nothing, when its section goes while it is open, and says so', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Method' }));
+
+    // An act in flight, and Grace removes Method while it is: the act will be refused against hers.
+    const release = fake.hold();
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    fake.theirs({ operation: 'remove', node: METHOD });
+    selectInTitle(false);
+    fireEvent.keyDown(titleField(), { key: 'E', keyCode: 69, ctrlKey: true, shiftKey: true });
+    await opens();
+
+    // The page shows Grace's outline, and Method's field goes with it: there is no title to place into.
+    release();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The title changed while the Equation dialog was open, so nothing was placed.',
+    );
+    expect(screen.queryByRole('treeitem', { name: 'Method' })).toBeNull();
+    // With no field to go back to, the focus goes to the node chosen now, never to the page's body.
+    expect(item('Introduction')).toHaveFocus();
+    expect(fake.edits()).toHaveLength(1);
+  });
 });
 
 describe('an equation in every context (equations 3)', () => {

@@ -24,8 +24,9 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   section's title needs words as well as an equation._ and keeps the equation in the field for you to
   add them. A title holding formatting or a cross-reference is still shown and not changed, with a
   sentence saying why.
-- The **Reference** dialog names a section whose title holds an equation by its words without the
-  equation, since a reference cannot print an equation as words.
+- The **Reference** dialog offers a section whose title holds an equation as a number, a page or a
+  place, and no longer as its title: a publication refuses to print such a title as words, so the
+  reference would not have published.
 
 ### Fixed
 

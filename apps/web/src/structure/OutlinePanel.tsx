@@ -77,7 +77,18 @@ const EquationDialog = lazy(() =>
 interface EquationRequest {
   readonly current: EquationAt | null;
   readonly place: (choice: EquationChoice) => string | null;
+  /**
+   * The dialog has closed, placed or cancelled or withdrawn: the field takes the focus back, answering
+   * whether it could. It always does while it is there, whatever opened the dialog - the button, the
+   * keyboard, or a tree item the focus stayed on when the button was clicked - because leaving the
+   * field is what retries a title that came back unsent (the final review, M1).
+   */
+  readonly back: () => boolean;
 }
+
+/** Said after whatever the page says, when a title gives way under its own Equation dialog. */
+const TITLE_CHANGED =
+  'The title changed while the Equation dialog was open, so nothing was placed.';
 
 /** A component the panel can add a reference to: what `GET /v1/components` lists. */
 export interface ComponentChoice {
@@ -369,18 +380,34 @@ export function OutlinePanel({
   // here rather than in the field because the panel is what it makes inert, and the focus can only go
   // back once the panel is no longer inert, which is this render's to say.
   const [equating, setEquating] = useState<EquationRequest | null>(null);
-  // What had the focus as it opened - the title field, or the button beside it - to give it back to.
-  const equationOpener = useRef<HTMLElement | null>(null);
+  // The dialog's request, and what had the focus as it opened. The focus goes back to the title field
+  // that asked, never simply to what had it: a tree item keeps the focus when **Equation** is clicked,
+  // and a title placed from there, failing, would have no field to leave (the final review, M1). What
+  // had it is only where the focus goes when the field is gone.
+  const asked = useRef<{ request: EquationRequest; opener: HTMLElement | null } | null>(null);
+  // Set when the field gave way under its dialog, and said after the notice of the render showing why.
+  const withdrawn = useRef(false);
   const askEquation = (request: EquationRequest) => {
-    equationOpener.current ??=
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    asked.current = { request, opener: asked.current?.opener ?? opener };
     setEquating(request);
+  };
+  // The field's title changed from outside while its dialog stood - somebody else's title, a refusal,
+  // the section gone - so the equation it was opened on, or the caret it would go at, is not the one
+  // the author chose: the dialog closes, placing nothing (the final review, L1).
+  const withdrawEquation = () => {
+    withdrawn.current = true;
+    setEquating(null);
   };
   useEffect(() => {
     if (equating !== null) return;
-    const back = equationOpener.current;
-    equationOpener.current = null;
-    back?.focus();
+    const closed = asked.current;
+    asked.current = null;
+    if (closed === null || closed.request.back()) return;
+    if (closed.opener?.isConnected) closed.opener.focus();
+    else if (current !== null) items.current.get(current)?.focus();
+    // Only the dialog closing moves the focus: `current` is read, not watched.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [equating]);
   // The node a link took the reader to, marked until they choose another (STR-045's panel half).
   const [highlighted, setHighlighted] = useState<string | null>(null);
@@ -453,15 +480,24 @@ export function OutlinePanel({
   // `onOperation`, which is to say from the version the act before it made; the render after its
   // answer sends the next.
   useEffect(() => {
-    if (dropped.current.length > 0) {
+    if (dropped.current.length > 0 || withdrawn.current) {
       // Still showing the sentence this effect said last: the refusal is the same one, so its titles
       // and these are named together, each once, rather than in a second sentence after the first.
+      // A dialog withdrawn is said after the refusal's sentence too, as part of what the titles follow.
       const same = named.current !== null && notice === named.current.said;
-      const after = same ? named.current!.after : (notice ?? '');
+      const after = [
+        same ? named.current!.after : (notice ?? ''),
+        withdrawn.current ? TITLE_CHANGED : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
       const titles = [...new Set([...(same ? named.current!.titles : []), ...dropped.current])];
-      const said = [after, titlesNotSaved(titles)].filter(Boolean).join(' ');
+      const said = [after, titles.length > 0 ? titlesNotSaved(titles) : '']
+        .filter(Boolean)
+        .join(' ');
       named.current = { said, after, titles };
       dropped.current = [];
+      withdrawn.current = false;
       onNotice(said);
     }
     if (busy || sending.current) return;
@@ -990,6 +1026,7 @@ export function OutlinePanel({
               language={outline.language}
               direction={outline.direction}
               onEquation={askEquation}
+              onWithdrawEquation={withdrawEquation}
             />
           )}
           {editable && confirming !== null && (
@@ -1218,6 +1255,7 @@ function NodeDetails({
   language,
   direction,
   onEquation,
+  onWithdrawEquation,
 }: {
   node: OutlineViewNode;
   /** Whether the node is at the top level, the only place `matter` may be set (STR-016). */
@@ -1243,6 +1281,8 @@ function NodeDetails({
   direction: 'ltr' | 'rtl';
   /** Opens the Equation dialog for the title field (equations 3, ruling R3). */
   onEquation: (request: EquationRequest) => void;
+  /** Closes that dialog, placing nothing, because the title changed under it. */
+  onWithdrawEquation: () => void;
 }) {
   const hintId = useId();
   const matterHintId = useId();
@@ -1270,6 +1310,7 @@ function NodeDetails({
           language={language}
           direction={direction}
           onEquation={onEquation}
+          onWithdrawEquation={onWithdrawEquation}
         />
       )}
       <label>
@@ -1394,6 +1435,7 @@ function TitleField({
   language,
   direction,
   onEquation,
+  onWithdrawEquation,
 }: {
   node: SectionViewNode;
   onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
@@ -1402,6 +1444,7 @@ function TitleField({
   language: string;
   direction: 'ltr' | 'rtl';
   onEquation: (request: EquationRequest) => void;
+  onWithdrawEquation: () => void;
 }) {
   // Says which section's field is open, for as long as it is: written in an effect, never in render.
   useEffect(() => {
@@ -1441,6 +1484,8 @@ function TitleField({
   typed.current = field.typed;
   const commitNow = useRef(() => {});
   const promptNow = useRef(() => {});
+  const withdrawNow = useRef(onWithdrawEquation);
+  withdrawNow.current = onWithdrawEquation;
 
   // The editor, mounted into its place as the field appears and destroyed as it goes: a layout effect,
   // so the field is there in the same commit as the details around it, as a text input was.
@@ -1460,16 +1505,21 @@ function TitleField({
     return () => {
       editor.current = null;
       mounted.destroy();
+      // The field going, or turning read-only, under its dialog: nothing is left to place into.
+      if (asking.current) withdrawNow.current();
     };
   }, [editable, language, direction]);
 
   // The field given way to the outline, or put back after a refusal: what it now says it holds is put
   // into the editor. Typing reaches here too, and changes nothing, because the editor already holds it.
+  // A title put in under the field's own dialog takes the dialog away with it: what it was opened on is
+  // gone, and placing its answer would change an equation, or a title, the author never saw.
   useLayoutEffect(() => {
     const mounted = editor.current;
     if (mounted === null) return;
     if (canonicaliseTitle(mounted.read()) !== canonicaliseTitle(field.typed)) {
       mounted.replace(field.typed);
+      if (asking.current) withdrawNow.current();
     }
   }, [field.typed]);
 
@@ -1555,6 +1605,13 @@ function TitleField({
         // retitle may have arrived while the dialog stood, and what was sent is read from the latest.
         commitNow.current();
         return null;
+      },
+      back: () => {
+        asking.current = false;
+        const into = editor.current;
+        if (into === null) return false;
+        into.focus();
+        return true;
       },
     });
   };

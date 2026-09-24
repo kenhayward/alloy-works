@@ -34,6 +34,13 @@ export interface ReferenceTarget {
   readonly label: string | null;
   readonly title: string | null;
   readonly relative: 'above' | 'below' | null;
+  /**
+   * Set where `title` is a section's title's words and the title holds an equation too (equations 3's
+   * final review, L2): the words still name the section, but no title form can print them, because
+   * without the equation they are not what the author wrote - the publish refuses both title forms of
+   * one (`cross_reference_form_unavailable`), and `targetForms` offers neither.
+   */
+  readonly titleHoldsEquation?: true;
 }
 
 /** Every form, in the order the stored enum declares them. */
@@ -63,6 +70,20 @@ const FORMS: Readonly<Record<ReferenceKind, readonly CrossReferenceDisplay[]>> =
 
 export function formsFor(kind: ReferenceKind): readonly CrossReferenceDisplay[] {
   return FORMS[kind];
+}
+
+/**
+ * **The forms a target is offered in**: its kind's (`formsFor`), less `title` and `numberAndTitle`
+ * for a section whose title holds an equation, which the publish would refuse. The one place the
+ * Reference dialog, and anything else offering forms, reads them from, so what is offered is what
+ * publishes. A number not yet known still offers the number forms: the page numbers what the editor
+ * cannot, and `printed` falls back meanwhile.
+ */
+export function targetForms(target: ReferenceTarget): readonly CrossReferenceDisplay[] {
+  const forms = formsFor(target.kind);
+  return target.titleHoldsEquation
+    ? forms.filter((form) => form !== 'title' && form !== 'numberAndTitle')
+    : forms;
 }
 
 /**
@@ -167,13 +188,17 @@ export function documentTargets({
     if (own) passed = true;
     const relative = !found || own ? null : passed ? 'below' : 'above';
     if (node.type === 'section') {
-      const words = titleWords(node.title, labelOf);
+      // Trimmed: the words either side of an equation left out would otherwise end in its space.
+      const words = titleWords(node.title, labelOf).trim();
       targets.push({
         target: { kind: 'node', node: node.id },
         kind: 'section',
         label: labelOf(node.id, null),
         title: hasText(words) ? words : null,
         relative,
+        ...(node.title.some((inline) => inline.type === 'equation')
+          ? { titleHoldsEquation: true as const }
+          : {}),
       });
       return;
     }

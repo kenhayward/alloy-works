@@ -92,11 +92,15 @@ words, then retitled); the document's own title.
   dialog, and shows each stored. The four component contexts are placed by the command, not by the
   toolbar's button four times: the dialog's path on the surface is CNT-044's test. component-editor.md
   now claims CNT-046, answered with publishing.md's equations 2.
-- **The Reference dialog names a section by its title's words without its equation, deliberately.**
-  `titleWords` in `structure/references.ts` drops an equation, so _Growth as x^2_ is offered as
-  _Growth as_. That text is also what a `title` reference prints in the editor, and a publish refuses
-  to print a title holding an equation as words (equations 2's `cross_reference_form_unavailable`), so
-  reading the alternative there would promise what the PDF refuses. The tree's labels and the
+- **The Reference dialog names a section by its title's words without its equation, and offers no
+  title form of it.** `titleWords` in `structure/references.ts` drops an equation, so _Growth as x^2_
+  is offered as _Growth as_, trimmed. The words only name the section in the list: a publish refuses
+  both title forms of a title holding an equation (equations 2's `cross_reference_form_unavailable`),
+  so `documentTargets` marks such a section `titleHoldsEquation` and `targetForms` offers it a number,
+  a page and a place alone - the dialog offers nothing the PDF refuses. The name keeps the words,
+  rather than reading the alternative as the tree does, because it is the reading resolution takes:
+  `referenceResolver` reads a section's title with `captionText`, which drops an equation as it does
+  from a caption, so the dialog and the publish read one title alike. The tree's labels and the
   panel's sentences read the alternative, through `titleText`, and the page's heading draws the
   equation as MathML.
 - **Not run in a real browser**: the field's look, the caret after an equation that ends the title,
@@ -105,6 +109,34 @@ words, then retitled); the document's own title.
 - **Issue #224 is fixed here.** Equations 2's last commit, in PR #223, left the worker's tests failing
   `pnpm typecheck` - `'family' is possibly 'undefined'` in `typst.test.ts`'s pinned-font test - unseen
   because CI's typecheck step is `continue-on-error`. `families` now keeps strings only.
+
+The final whole-branch review found a title placed through the dialog lost without a word when its save
+failed, a Change that could rewrite another author's equation, and a Reference dialog offering a title
+form the publish refuses; these were changed:
+
+- **M1. The focus goes back to the title field whenever its dialog closes**, placed or cancelled,
+  whoever opened it. **Equation** keeps the focus where it was, so a dialog opened after choosing the
+  section in the tree gave it back to the tree item; a title placed from there that came back unsent
+  had no field to leave, and choosing another node dropped it silently. The dialog's request now
+  carries `back`, which puts the focus in the field and answers whether it could; only where the field
+  has gone does the focus go to what had it, and a retitle answered unsent after its field has gone
+  is already named in the page's notice. Tested by the review's reproduction: chosen in the tree,
+  **Equation**, placed, refused, another node chosen - and the retry is sent.
+- **L1. A title given way under its dialog closes the dialog, placing nothing.** The request kept the
+  position of the equation it was opened on, so a refusal that gave the field another author's title
+  let **Change** rewrite whatever equation stood there. Any title put into the field from outside
+  while its dialog stands - and the field going, or turning read-only - now withdraws the dialog, and
+  the page says _The title changed while the Equation dialog was open, so nothing was placed._ after
+  the refusal's own sentence. Tested by the review's reproduction, and by another author removing
+  the section while its dialog stands.
+- **L2. The Reference dialog offers no title form of a section whose title holds an equation**, as the
+  publish refuses both, and names it by its words trimmed of the space the equation left. The flag
+  (`titleHoldsEquation`) is set by `documentTargets`, and the forms are read from one domain function,
+  `targetForms`, rather than from the kind alone. The paragraph above, which argued the words-only
+  naming from what a `title` reference prints, gives the reason that now holds, and the changelog's
+  bullet describes the change this branch made. **A caption holding an equation still offers its
+  title forms**: its contribution carries only `captionText`'s words, and the publish refuses those
+  forms as it does a title's; that is equations 2's precedent, not this slice's to change.
 
 ## Tasks
 

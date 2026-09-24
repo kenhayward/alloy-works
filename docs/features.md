@@ -312,7 +312,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   about a section, it is read as its description. A title has to have words: one that is only an
   equation is not saved, the page says _A section's title needs words as well as an equation._, and
   the equation stays in the field for you to add them. The **Reference** dialog names such a section
-  by its words without the equation, since a reference cannot print an equation as words.
+  by its words and offers a reference to it as a number, a page or a place, never as its title, which
+  a publication cannot print as words.
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.

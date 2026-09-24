@@ -4220,6 +4220,42 @@ describe('cross-references in the editor (cross-references 1)', () => {
     expect(drawn()).toEqual(['Equation 1']);
   });
 
+  it('offers no title form of a section whose title holds an equation, which the publish would refuse (equations 3)', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'See the growth.'), readings), {
+      referenceContext: {
+        targets: [
+          ...inADocument.targets,
+          // "Growth as" and x squared: named by its words, which a title form cannot print.
+          {
+            target: { kind: 'node', node: 'gggggggggggggggggggggggggg' },
+            kind: 'section',
+            label: '2',
+            title: 'Growth as',
+            relative: 'below',
+            titleHoldsEquation: true,
+          },
+        ],
+      },
+    });
+    const view = await surface();
+    caretIn(view, 'b1');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    await userEvent.click(within(dialog).getByRole('radio', { name: '2 Growth as' }));
+    expect(choices(dialog, 'Show as')).toEqual(['Number', 'Page', 'Above or below']);
+    expect(within(dialog).getByText(/It will show/)).toHaveTextContent('It will show: 2');
+    // Any other section keeps all five.
+    await userEvent.click(within(dialog).getByRole('radio', { name: '1 Introduction' }));
+    expect(choices(dialog, 'Show as')).toEqual([
+      'Number',
+      'Title',
+      'Number and title',
+      'Page',
+      'Above or below',
+    ]);
+  });
+
   it("shows the layout's own words for above and below, where the document carries them (cross-references 2, ruling R9)", async () => {
     const { surface } = openWith(blocksOf(para('b1', 'See the readings.'), readings), {
       referenceContext: { ...inADocument, words: { above: 'plus haut', below: 'plus bas' } },
