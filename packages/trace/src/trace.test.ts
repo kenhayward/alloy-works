@@ -409,8 +409,13 @@ describe('the citations in the committed model', () => {
   // where an equation is typed as LaTeX in the dialog and stored with it, its alternative generated in
   // the component's language and changed by the author, and it is drawn as MathML, reached and opened
   // by keyboard.
+  // 285, from 282: equations 2 cites CNT-049 in packages/domain's assemble.test.ts, where every
+  // refusal of the maths tree's converter fails the publish by name, and CNT-080 and PUB-038 in
+  // apps/worker's equations.test.ts, where every equation is read back from the PDF as a Formula
+  // carrying its alternative in the language a reader is told, and the lists of figures, tables and
+  // equations are read back, each entry linking to its page.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(282);
+    expect(model.citations).toHaveLength(285);
   });
 
   it('cites no identifier the corpus does not hold', () => {

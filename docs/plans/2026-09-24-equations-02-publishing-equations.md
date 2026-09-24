@@ -80,6 +80,118 @@ a list of equations (it lists figures and tables; a layout that declares one get
   number after the formula, the injection strings printed literally, each list entry linking to its
   equation's page.
 
+## What the build changed
+
+- **R1's face is the spike's file**: `STIXTwoMath-Regular.otf` from the tag `v2.13b171` of
+  stipub/stixfonts, 838,652 bytes, SHA-256 `3a5f3f26...518e8c`, with the tag's `OFL.txt` beside it as
+  `LICENSE-STIX.txt`. It is the last row of `PINNED_FONT_FILES`, face `math`, so the start log and every
+  publication's record name it with nothing else changed. It is the first pinned face with characters
+  beyond U+FFFF - over 900 of them, the mathematical alphanumerics - which `cmap.ts` already read.
+- **STIX Two Math covers much of the private-use area from U+E000.** Two worker tests used U+E000 as a
+  character no pinned face holds, to make the engine refuse a document; with the maths face in the font
+  folder the engine set it from STIX instead, and both now use U+F8FF, which no pinned face covers.
+- **Template 11 turns the body text's fallback off too**, which the plan did not say. Until this slice
+  the fallback could reach only Liberation Mono, a subset of Serif, so it never set anything; with STIX
+  in the folder it set a paragraph's character Liberation Serif lacks from the maths face, while
+  `assemble` - asking the body face - refused it, and the regression corpus's character probes, which
+  hold `assemble`'s verdict to the engine's, went red. With the fallback off the engine refuses exactly
+  the set it did. Templates 1 to 10 keep theirs, being immutable; template 1 still serves a request made
+  before layouts, where `assemble`'s check against the body face stands in front of it, but the engine
+  alone would now set such a character.
+- **R2's tree has exactly the spike's final function's kinds**, `raise` gone with it, and refuses more
+  than R2 names. **`\scriptstyle` and `\scriptscriptstyle` are refused** - any `scriptlevel` but 0, or
+  one without `displaystyle` beside it - since the tree has no kind for them and adding one departs
+  from the spike. **A column whose cells resolve to two alignments is refused**, as the tree gives a
+  column one; Temml never writes one. So is an element standing where it cannot or with the wrong number
+  of children, an attribute value with no mapping, text directly inside an element that is not a token,
+  and MathML the reader cannot read. The converter keeps an allowlist of its own rather than gating on
+  the reader's, so a later widening of the reader cannot reach the template unmapped.
+- **Some of what MathML asks is accepted and not set**, rather than refused: `minsize` and `maxsize`
+  on an operator, so `\big(` and its kin print at their normal size, since Temml writes every `\big`
+  that way and refusing it would make each unpublishable; `mpadded`'s width, height, depth and
+  `lspace`, so `\mathrlap`, `\smash` and `\hphantom` take their content's room; `mspace`'s height and
+  depth, so a strut does nothing; and `intent` and `arg`. A `voffset` of zero moves nothing and is
+  accepted. An overline is told from a bar by `stretchy`, not by the spike's size rule;
+  `accent="false"` is respected; primes are a kind of their own; and a matrix and cases carry an
+  alignment per column.
+- **R5's `detail` comes from a fixed list**, `REFUSAL_NAMES` in `assemble.ts`, keyed by the converter's
+  reason so a new reason fails to compile until it is named: `unreadable`, `merror`, `rtl`,
+  `multiscripts`, `voffset`, `spanningCell`, `mathvariant`, `element`, `attribute` and `text`. The
+  element's name and the attribute's value are never carried: an author can reach them through a
+  paste, and `detail` must never carry the equation. Every reason is collected - unrenderable,
+  alternative missing, each missing character, unnumbered, then the label's characters - once per
+  block, except that MathML the reader cannot read says only that.
+- **Two codes are new, not one.** A numbered equation the scheme gives no number fails
+  `equation_unnumbered`, beside `footnote_unnumbered`, whose words are a footnote's; codes are never
+  renamed, so a general code could not replace it. **R3's `glyph_missing` became `math_glyph_missing`**
+  (Ken's ruling), named apart as `code_glyph_missing` is: the body face may well have the character,
+  and _in no typeface this publication can use_ would be untrue. The check reads the strings the tree
+  sets - identifiers, numbers, operators, text, an accent, a fence - not the MathML; what the template
+  draws itself (a radical, a brace, a prime, cases' brace) is not asked, and a worker test holds the
+  face to having each.
+- **R4's section title is runs** - `PublishedTitleRun[]`, text and equations, where it was a string -
+  so an equation stored in a section's title is published in its heading and, from there, in the
+  contents, the running heads and the bookmarks, where the engine flattens it to its glyphs (EQ-G). A
+  mark in a title is still refused. `publishing/1` is unchanged byte for byte, and a request made
+  before layouts still refuses a title's equation, `title_not_publishable` with the detail `equation`.
+  Its failures name the section node, with no block.
+- **A title form of a target whose title or caption holds an equation fails**,
+  `cross_reference_form_unavailable` naming the form, and its number still prints: a reference prints
+  a title as text, and dropping the equation would print words the author did not write. Refusing is
+  the direction that can be undone.
+- **R6 aligns a column with an alignment point in each cell**, not `mat(align:)`, which takes one
+  alignment for the whole matrix and refuses a list - measured. A point after a cell aligns its column
+  right, one before it left, none centres it. **Cases are a matrix too**,
+  `mat(delim: ("{", none), column-gap: 1em)`, since `math.cases` ignores the points; rendered beside
+  the spike's cases it is indistinguishable where the columns are left, as Temml's always are. Aligned
+  rows keep the spike's multi-line form only where the table is bare, in display style and its columns
+  alternate right and left - what a multi-line equation's points give - since as a matrix the gap fell
+  before the relation.
+- **A numbered equation keeps room for its number, and its number drops below where it cannot**, as
+  amsmath does. The inset alone moves nothing: insetting both sides by the number's width and a gap
+  leaves less room than the number needed on one, so every equation that would have met its number
+  overflows the inset too, centred, and its right edge lands under the number where it did before -
+  worked through and then measured. So where the equation fits the line less that room on each side it
+  is centred there with the number placed in the room on the right, and where it does not, the number
+  is placed on a line of its own beneath it, at the right. Placed, not aligned: aligned, it was tagged
+  a `P`, where it must be the `Span` after the `Formula`. In a list or a quotation the measure is
+  narrower, so the number drops sooner there. The regression holds every number's box clear of its
+  equation's, and the injection strings' identifier block is numbered again, as the wide case.
+- **The width gap is open.** A block equation wider than its line still runs past the margins,
+  numbered or not, and an inline one past its line; nothing measures a tree's width, and nothing
+  refuses either. `line_too_wide`'s pattern would answer it, and it is not in this slice.
+- **An equation's `/Lang` comes from its container.** The template wraps every equation in its
+  alternative's language, as it does an inline image, but `assemble` always gives an alternative the
+  language of the text it stands in, which the node already sets: so the engine declares no `/Lang` on
+  the `Formula`, and a German one is read as German from its paragraph or its figure's `Div`. The
+  regression reads the language a reader is told, inherited. A `Formula` carrying its own waits for an
+  alternative that can be in another language than its text.
+- **R7's dialog offers only a numbered equation**, in a document and on its own (`ownTargets` skips
+  one left unnumbered, as `documentTargets` does): an unnumbered equation has no number and no title,
+  so it could be offered only as a page or a position. A reference stored to one still resolves, its
+  anchor on the equation itself. The editor names an equation it cannot yet number _Equation_, where it
+  said _Paragraph_.
+- **R8 needed nothing**: `front.lists` was already general, and `equation` a listed sequence since
+  tables 2.
+- **The publishing page's sentences**: one per construct for `equation_unrenderable` - an unreadable
+  equation, an error mark, maths right to left, more than one pre- or postscript on a side, a raised or
+  lowered box, a spanning cell - and one for the rest, _something the typesetter cannot set_, each ending
+  _Open it and rewrite it, or delete it._; `equation_unnumbered` worded as `footnote_unnumbered` is;
+  `math_glyph_missing` naming the maths typeface; `alternative_missing` now naming an equation with no
+  alternative beside an image with no description; and the title forms' sentences naming an equation,
+  and a section or caption holding one. The two sentences equations 1 left are reachable only from a
+  request made before layouts, and say so as the cross-reference one does: _An equation cannot be
+  published from this request. Publish again._
+- **Compile time**, the pinned Typst run directly, median of seven: template 11 costs about 1 ms on a
+  document with no equation, and forty formulas about 10 ms, about 0.25 ms each; keeping room for the
+  number adds about 5 ms to the regression document. The worker also hashes and copies 839 kB more per
+  compile. PUB-085 stays unclaimed.
+- **Citations**: CNT-049 in `packages/domain`'s `assemble.test.ts`, every refusal of the converter
+  failing the publish by name; CNT-080's PDF half and PUB-038 in `apps/worker`'s `equations.test.ts`,
+  every equation a `Formula` with its `/Alt` in the language a reader is told, and the three lists read
+  back and linked. PUB-038 was claimed by publishing.md and uncited until now, since no list of equations
+  could be published. The citations pin moves from 282 to 285.
+
 ## Tasks
 
 1. **`packages/domain`, the tree**: R2, with the domain's `Face` gaining `math`.

@@ -3,6 +3,39 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.66.0 - 2026-09-24 (PR #PRNUM)
+
+### Added
+
+- **Equations are published.** Every equation in a component prints as mathematics in the PDF - in
+  running text, a list, a quotation, a table's cell and its header rows, a footnote and a caption -
+  set in **STIX Two Math**, a typeface made for mathematics that now ships with the product beside
+  Liberation Serif and Liberation Mono, under the same open licence. A screen reader is told each is
+  a formula and reads the words written for it, in the language of the text around it.
+- **A numbered equation prints its number** at the right of its line, as the document numbers it,
+  and a screen reader hears the number after the equation. An equation too wide to leave its number
+  room has the number on a line of its own beneath it.
+- **A cross-reference can point at a numbered equation.** The **Reference** dialog lists each one by
+  its number, and a publication prints its number, its page, or above or below, as a link in running
+  text. An equation left unnumbered is not offered.
+- **A layout can list the equations** after the contents, each entry leading to its page, as it lists
+  figures and tables. The layout every environment starts with lists figures and tables only.
+
+### Changed
+
+- **Publishing says why an equation cannot be published**, rather than refusing every one: one
+  holding something the typesetter cannot set, such as an error mark, maths written right to left or
+  a box raised or lowered, each in its own words; one with no description; one using a character the
+  maths typeface lacks; and a numbered one the layout gives no number. Each is named at its place in
+  the outline, and its text is never quoted.
+- **A reference asking for the title of a section or a caption that holds an equation is refused**,
+  since the equation cannot be printed as words; asking for its number still works.
+- An equation already stored in a section's heading is published there, and in the contents, the
+  running heads and the bookmarks. Writing one there comes in a later release.
+- Some LaTeX prints as less than it asks rather than being refused: `\big(` and its kin print at
+  their normal size, and `\smash` and `\mathrlap` take the room of what they hold. An equation wider
+  than its line runs past the margin, and nothing refuses it yet.
+
 ## 0.65.0 - 2026-09-23 (PR #222)
 
 ### Added
