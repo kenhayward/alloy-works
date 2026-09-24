@@ -729,13 +729,19 @@ describe('table and image styles, when a theme is read', () => {
 describe('contrast on a table style, when a theme is read', () => {
   const table = DEFAULT_CATALOGUES.table.styles[0]!;
 
-  /** The default inputs with the one table style changed, and every cell's text as given. */
+  /**
+   * The default inputs with the one table style changed, and every cell's text as given. A list is
+   * set in the cell's own style, made to apply there too, unless another is named for the listItem
+   * place, so a test judges the one style it changes.
+   */
   const tabled = (
     changes: Record<string, unknown>,
     cell: Record<string, unknown> = {},
     marks: Partial<Record<string, Record<string, unknown>>> = {},
+    listItem = 'table-cell',
   ) => {
     const inputs = defaultInputs();
+    inputs.theme.places = { ...inputs.theme.places, listItem };
     (inputs.catalogues as { table: unknown }).table = {
       schemaVersion: 2,
       kind: 'table',
@@ -743,7 +749,12 @@ describe('contrast on a table style, when a theme is read', () => {
     };
     inputs.catalogues.paragraph.styles = inputs.catalogues.paragraph.styles.map((style) =>
       style.id === 'table-cell'
-        ? { ...style, properties: { ...style.properties, ...cell } }
+        ? {
+            ...style,
+            appliesTo:
+              listItem === style.id ? [...style.appliesTo, 'listItem' as const] : style.appliesTo,
+            properties: { ...style.properties, ...cell },
+          }
         : style,
     );
     inputs.catalogues.character.styles = inputs.catalogues.character.styles.map((style) => ({
@@ -816,6 +827,31 @@ describe('contrast on a table style, when a theme is read', () => {
       "The character style superscript sets #595959, the colour of the paragraph style table-cell, on the band's fill #b0b0b0 of the table style table at 3.22:1, below the 4.5:1 its text needs",
       "The character style inline-code sets #595959, the colour of the paragraph style table-cell, on the band's fill #b0b0b0 of the table style table at 3.22:1, below the 4.5:1 its text needs",
     ]);
+  });
+
+  it("judges a list standing in a cell on the fills too, in the listItem place's style", () => {
+    // The table cell's style fills behind its own text, so no fill is behind it; a list in the cell
+    // is set in the listItem place's style, `body`, which has no fill of its own, so the header's is
+    // behind its text. #000000 on #333333 is 1.66:1.
+    const text = tabled(
+      { headerRow: { fill: '#333333', bold: false, rule: 'none' } },
+      { background: '#ffffff' },
+      {},
+      'body',
+    );
+    expect(text.ok ? [] : text.refusals.map((each) => each.message)).toEqual([
+      "The table style table sets the text of the paragraph style body, #000000, on its header row's fill #333333 at 1.66:1, below the 4.5:1 its text needs",
+    ]);
+    // And a mark in the list, in its own colour: a link in #6a6a6a on a #b0b0b0 band is 2.49:1.
+    const mark = tabled(
+      { banding: { fill: '#b0b0b0' } },
+      { background: '#ffffff' },
+      { hyperlink: { colour: '#6a6a6a' } },
+      'body',
+    );
+    expect(mark.ok ? [] : mark.refusals.map((each) => each.message)).toContain(
+      "The character style link sets #6a6a6a on the band's fill #b0b0b0 of the table style table at 2.49:1, below the 4.5:1 its text needs",
+    );
   });
 
   it('judges nothing on a fill where the cell text stands on a background of its own', () => {

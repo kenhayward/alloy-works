@@ -437,7 +437,10 @@ export function readTheme(
       stated.paper,
       paragraphStyles,
       character?.kind === 'character' ? [...character.marks.values()] : [],
-      paragraphStyles.get(stated.places.tableCell),
+      [...new Set([stated.places.tableCell, stated.places.listItem])].flatMap((id) => {
+        const style = paragraphStyles.get(id);
+        return style === undefined ? [] : [style];
+      }),
       table?.kind === 'table' ? [...table.styles.values()] : [],
     ),
   );
@@ -697,20 +700,19 @@ function overlay(
  * **A table style's fills** (themes 2, ruling R1; TH-G): its header row's, its header column's and its
  * band's, each that is not `none`, are what a table cell's text stands on, so the `tableCell` place's
  * style is judged against each, **bold where the header says bold** and otherwise as the style says,
- * and each character style in it, by the rule above, at the size and weight it sets there. Where that
- * style fills behind its own text, no table fill is behind the text, and its own fill is judged already.
- * A list in a cell is set in the `listItem` place's style, which is not judged against the fills.
+ * and each character style in it, by the rule above, at the size and weight it sets there. So is the
+ * `listItem` place's, where it is another style: a list can stand in a cell, and is set in that style
+ * there as anywhere. Where a style fills behind its own text, no table fill is behind that text, and
+ * its own fill is judged already; the other is judged all the same.
  */
 function contrast(
   paper: string,
   paragraphs: ReadonlyMap<string, ResolvedParagraphStyle>,
   marks: readonly CharacterCatalogue['styles'][number][],
-  cell: ResolvedParagraphStyle | undefined,
+  cells: readonly ResolvedParagraphStyle[],
   tables: readonly TableStyle[],
 ): ThemeRefusal[] {
   const refusals: ThemeRefusal[] = [];
-  const shortOf = (ratio: number, needed: number) =>
-    `at ${(Math.floor(ratio * 100) / 100).toFixed(2)}:1, below the ${needed}:1 its text needs`;
 
   for (const style of paragraphs.values()) {
     const { colour, background, size, bold } = style.properties;
@@ -754,7 +756,32 @@ function contrast(
     }
   }
 
-  if (cell === undefined || cell.properties.background !== 'none') return refusals;
+  // A mark's failure on a fill is refused once, naming the first style it fails in, as on the paper.
+  const reported = new Set<string>();
+  for (const cell of cells) {
+    if (cell.properties.background !== 'none') continue;
+    refusals.push(...onFills(cell, marks, tables, reported));
+  }
+  return refusals;
+}
+
+/** A ratio short of what text needs, as every contrast refusal words it. */
+function shortOf(ratio: number, needed: number): string {
+  return `at ${(Math.floor(ratio * 100) / 100).toFixed(2)}:1, below the ${needed}:1 its text needs`;
+}
+
+/**
+ * One style a table cell's text can be set in, judged on each fill a table style can put behind it,
+ * with each character style in it: `contrast`'s last rule, for a style that fills behind none of its
+ * own text.
+ */
+function onFills(
+  cell: ResolvedParagraphStyle,
+  marks: readonly CharacterCatalogue['styles'][number][],
+  tables: readonly TableStyle[],
+  reported: Set<string>,
+): ThemeRefusal[] {
+  const refusals: ThemeRefusal[] = [];
   // Each fill a table style can put behind a cell's text, and whether that text is bold there.
   const fills = tables.flatMap((table) =>
     (
@@ -783,14 +810,13 @@ function contrast(
   for (const mark of marks) {
     const { colour: own, scale = 1, position, bold: markBold } = mark.properties;
     const factor = scale * (position === undefined ? 1 : SCRIPT_SCALE);
-    const reported = new Set<string>();
     for (const { table, where, fill, bold } of fills) {
       const colour = own ?? ink;
       const needed = requiredContrast(size * factor, markBold ?? bold);
       // In the cell's colour, a mark that asks no more than the cell's text is the cell's check.
       if (own === undefined && needed <= requiredContrast(size, bold)) continue;
       const ratio = contrastRatio(colour, fill);
-      const key = `${colour} ${fill} ${needed}`;
+      const key = `${mark.id} ${colour} ${fill} ${needed}`;
       if (ratio >= needed || reported.has(key)) continue;
       reported.add(key);
       const sets =
