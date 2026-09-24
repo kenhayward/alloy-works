@@ -31,7 +31,7 @@ import {
 import { defaultNumberingScheme, type NumberFormat } from '../structure/scheme.js';
 import type { ResolvedParagraphStyle, ResolvedTheme } from '../theme/read.js';
 import type { Place, Role, Typeface } from '../theme/schema.js';
-import { projectTypst } from '../theme/typst.js';
+import { projectTypst12 } from '../theme/typst.js';
 
 import type { PublishFailure } from './failures.js';
 import { characterProblems, codePointName, type Covers, type Setting } from './glyphs.js';
@@ -1394,7 +1394,7 @@ export function assemble(input: AssembleInput): Assembled {
       },
       format: publishedPdf(layout.formats.pdf),
       // Every paragraph style the theme holds, not only those used (themes 1, ruling R6).
-      theme: projectTypst(theme!),
+      theme: projectTypst12(theme!),
       // Each list the layout declares that has an entry, in its order (ruling R7): a list of nothing
       // is not published, as a contents of nothing is not (decision K).
       front: {

@@ -26,9 +26,9 @@ import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/d
 import {
   assemble,
   blockIdentifierFrom,
-  DEFAULT_CATALOGUES,
-  DEFAULT_CATALOGUES_BY_VERSION,
-  DEFAULT_THEME,
+  FIRST_DEFAULT_CATALOGUES,
+  FIRST_DEFAULT_CATALOGUES_BY_VERSION,
+  FIRST_DEFAULT_THEME,
   defaultLayout,
   MATHS_CHARACTERS,
   OUTLINE_SCHEMA_VERSION,
@@ -100,10 +100,10 @@ const restyled = (
   base: ResolvedParagraphProperties,
   properties: Readonly<Record<string, ParagraphProperties>>,
 ): ParagraphCatalogue => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   kind: 'paragraph',
   base,
-  styles: DEFAULT_CATALOGUES.paragraph.styles.map((style) => ({
+  styles: FIRST_DEFAULT_CATALOGUES.paragraph.styles.map((style) => ({
     ...style,
     properties: properties[style.id] ?? {},
   })),
@@ -142,6 +142,8 @@ const LEDGER_BASE: ResolvedParagraphProperties = {
   keepTogether: true,
   widowControl: false,
   hyphenate: true,
+  // Template 12 reads no contextual spacing (themes 2): off, as every catalogue/1 reads.
+  contextualSpacing: false,
 };
 const LEDGER_STYLES: Readonly<Record<string, ParagraphProperties>> = {
   quotation: { startIndent: 36, endIndent: 30, italic: true },
@@ -198,9 +200,9 @@ const LEDGER_RENDERINGS: Readonly<Record<StyledMark, CharacterProperties>> = {
   inlineCode: { typeface: 'serif', scale: 1.2 },
 };
 const ledgerMarks: CharacterCatalogue = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   kind: 'character',
-  styles: DEFAULT_CATALOGUES.character.styles.map((style) => ({
+  styles: FIRST_DEFAULT_CATALOGUES.character.styles.map((style) => ({
     ...style,
     properties: LEDGER_RENDERINGS[style.mark],
   })),
@@ -209,17 +211,17 @@ const ledgerMarks: CharacterCatalogue = {
 const onLedger = (paragraphs: ParagraphCatalogue): ResolvedTheme =>
   read(
     {
-      ...DEFAULT_THEME,
+      ...FIRST_DEFAULT_THEME,
       name: 'Ledger',
       paper: '#fbf7ee',
       catalogues: {
-        ...DEFAULT_THEME.catalogues,
+        ...FIRST_DEFAULT_THEME.catalogues,
         paragraph: LEDGER_PARAGRAPHS,
         character: LEDGER_MARKS,
       },
     },
     new Map([
-      ...DEFAULT_CATALOGUES_BY_VERSION,
+      ...FIRST_DEFAULT_CATALOGUES_BY_VERSION,
       [LEDGER_PARAGRAPHS, paragraphs],
       [LEDGER_MARKS, ledgerMarks],
     ]),
@@ -689,14 +691,17 @@ describe('two themes in the PDF (themes 1)', () => {
     // paragraph whole where it fits and breaks it where it does not.
     const KEPT = '5f0c3a3e-0d8a-4c1e-9d0b-6a51e2f9b003';
     const kept = read(
-      { ...DEFAULT_THEME, catalogues: { ...DEFAULT_THEME.catalogues, paragraph: KEPT } },
+      {
+        ...FIRST_DEFAULT_THEME,
+        catalogues: { ...FIRST_DEFAULT_THEME.catalogues, paragraph: KEPT },
+      },
       new Map([
-        ...DEFAULT_CATALOGUES_BY_VERSION,
+        ...FIRST_DEFAULT_CATALOGUES_BY_VERSION,
         [
           KEPT,
           {
-            ...DEFAULT_CATALOGUES.paragraph,
-            base: { ...DEFAULT_CATALOGUES.paragraph.base, keepTogether: true },
+            ...FIRST_DEFAULT_CATALOGUES.paragraph,
+            base: { ...FIRST_DEFAULT_CATALOGUES.paragraph.base, keepTogether: true },
           },
         ],
       ]),
@@ -969,7 +974,7 @@ describe("the pinned faces' own files (themes 1)", () => {
   };
 
   it("records each typeface's ascent, descent and a monospaced face's advance as its files hold them", async () => {
-    for (const typeface of DEFAULT_THEME.typefaces) {
+    for (const typeface of FIRST_DEFAULT_THEME.typefaces) {
       for (const file of typeface.files) {
         const metrics = faceMetrics(await pinned(file.sha256));
         // hhea's ascender and descender over the head table's units per em, exactly: the theme
@@ -984,7 +989,9 @@ describe("the pinned faces' own files (themes 1)", () => {
       }
     }
     // The monospace is the one face that records an advance, and is monospaced.
-    expect(DEFAULT_THEME.typefaces.filter((each) => each.advance !== undefined)).toHaveLength(1);
+    expect(FIRST_DEFAULT_THEME.typefaces.filter((each) => each.advance !== undefined)).toHaveLength(
+      1,
+    );
   });
 
   it('STY-074 covers the Latin, Greek, Cyrillic and Hebrew scripts in every file of the text faces, and every character the maths tree sets in the maths face', async () => {
@@ -1025,7 +1032,7 @@ describe("the pinned faces' own files (themes 1)", () => {
       ),
       'Hebrew points': range(0x5b0, 0x5c7),
     };
-    for (const typeface of DEFAULT_THEME.typefaces.filter((each) => each.id !== 'maths')) {
+    for (const typeface of FIRST_DEFAULT_THEME.typefaces.filter((each) => each.id !== 'maths')) {
       for (const file of typeface.files) {
         const covered = codePoints(await pinned(file.sha256));
         for (const [script, letters] of Object.entries({ ...scripts, ...written })) {
@@ -1040,7 +1047,9 @@ describe("the pinned faces' own files (themes 1)", () => {
     // lines, braces and primes - and every letter and digit an identifier's variant maps to, in
     // Mathematical Alphanumeric Symbols and, for the letters Unicode placed there first, in
     // Letterlike Symbols; the code points Unicode leaves unassigned in the block are no letter.
-    const maths = DEFAULT_THEME.typefaces.find((each) => each.id === DEFAULT_THEME.maths)!;
+    const maths = FIRST_DEFAULT_THEME.typefaces.find(
+      (each) => each.id === FIRST_DEFAULT_THEME.maths,
+    )!;
     const covered = codePoints(await pinned(maths.files[0]!.sha256));
     const unassigned = new Set([
       0x1d455, 0x1d49d, 0x1d4a0, 0x1d4a1, 0x1d4a3, 0x1d4a4, 0x1d4a7, 0x1d4a8, 0x1d4ad, 0x1d4ba,
@@ -1067,9 +1076,12 @@ describe("the pinned faces' own files (themes 1)", () => {
 
   it("holds a theme's typefaces to the pinned files exactly: every file of the family and no other, the files' own metrics, and a maths face for equations", () => {
     expect(typefacesNotHeld(defaultTheme, fonts)).toEqual([]);
-    const [serif, mono, maths] = DEFAULT_THEME.typefaces;
-    const holding = (typefaces: Theme['typefaces'], mathsFace = DEFAULT_THEME.maths) =>
-      read({ ...DEFAULT_THEME, typefaces, maths: mathsFace }, DEFAULT_CATALOGUES_BY_VERSION);
+    const [serif, mono, maths] = FIRST_DEFAULT_THEME.typefaces;
+    const holding = (typefaces: Theme['typefaces'], mathsFace = FIRST_DEFAULT_THEME.maths) =>
+      read(
+        { ...FIRST_DEFAULT_THEME, typefaces, maths: mathsFace },
+        FIRST_DEFAULT_CATALOGUES_BY_VERSION,
+      );
     const notHeld = (typefaces: Theme['typefaces'], mathsFace?: string) =>
       typefacesNotHeld(holding(typefaces, mathsFace), fonts);
     // A face of its own, in no file the worker holds.
@@ -1328,9 +1340,9 @@ describe('publishing under a theme it must refuse, from the request to the recor
 
     // The same faces, recorded as a licence that does not permit embedding the serif in a PDF: the
     // publish fails naming it, and nothing is made in its place.
-    const [serif, ...rest] = DEFAULT_THEME.typefaces;
+    const [serif, ...rest] = FIRST_DEFAULT_THEME.typefaces;
     await declare({
-      ...DEFAULT_THEME,
+      ...FIRST_DEFAULT_THEME,
       typefaces: [{ ...serif!, embedding: { pdf: false, word: true } }, ...rest],
     });
     const refused = await requested();
@@ -1352,9 +1364,9 @@ describe('publishing under a theme it must refuse, from the request to the recor
   }, 120_000);
 
   it('fails a theme naming a face the worker does not hold typeface_unavailable, by name, before anything is set', async () => {
-    const [serif, mono, maths] = DEFAULT_THEME.typefaces;
+    const [serif, mono, maths] = FIRST_DEFAULT_THEME.typefaces;
     await declare({
-      ...DEFAULT_THEME,
+      ...FIRST_DEFAULT_THEME,
       typefaces: [
         serif!,
         mono!,
@@ -1388,7 +1400,7 @@ describe('publishing under a theme it must refuse, from the request to the recor
 
     // The serif as the maths face (the final review of themes 1, M1): its files are held, and the
     // engine refused the equation unnamed. Now it is named, before anything is set.
-    await declare({ ...DEFAULT_THEME, maths: serif!.id });
+    await declare({ ...FIRST_DEFAULT_THEME, maths: serif!.id });
     const unmathematical = await requested();
     expect(await work()).toBe('failed');
     const named = await outcomeOf(unmathematical);

@@ -12,7 +12,7 @@ import type { AssetVersionContent } from '../assets/version.js';
 import type { Layout } from '../publishing/layout.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { canonicaliseOutline, type OutlineDocument } from '../structure/outline.js';
-import type { Catalogue, Theme } from '../theme/schema.js';
+import type { Catalogue, Catalogue1, Theme } from '../theme/schema.js';
 
 /**
  * What a component version says (ADR-0024): its content, its metadata values, the values it did not
@@ -59,10 +59,15 @@ export type AssetSubstance = { readonly kind: 'asset'; readonly content: AssetVe
 export type ThemeSubstance = { readonly kind: 'theme'; readonly content: Theme };
 
 /**
- * A catalogue version says its catalogue, and nothing else. The shared rule again: a catalogue's styles
- * are in catalogue order, which is the order a projection writes them in.
+ * A catalogue version says its catalogue, and nothing else, at the version it was written at: a
+ * `catalogue/1` row, the default theme's 0.1 among them, is digested as it is held, never as the reader
+ * upgrades it. The shared rule again: a catalogue's styles are in catalogue order, which is the order a
+ * projection writes them in.
  */
-export type CatalogueSubstance = { readonly kind: 'catalogue'; readonly content: Catalogue };
+export type CatalogueSubstance = {
+  readonly kind: 'catalogue';
+  readonly content: Catalogue | Catalogue1;
+};
 
 export type VersionSubstance =
   | ComponentSubstance

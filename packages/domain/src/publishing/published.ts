@@ -1,5 +1,5 @@
 import type { OutlineMatter } from '../structure/outline.js';
-import type { TypstTheme } from '../theme/typst.js';
+import type { TypstTheme12 } from '../theme/typst.js';
 
 import type { SlotPart } from './layout.js';
 import type { MathsTree } from './maths.js';
@@ -560,7 +560,7 @@ export interface PublishedPdfFormat {
  * layout declares none **and** where it would hold no entry: a contents of nothing is not published
  * (decision K).
  *
- * `theme` is the theme the request was made under, as `projectTypst` projects it (themes 1, ruling
+ * `theme` is the theme the request was made under, as `projectTypst12` projects it (themes 1, ruling
  * R6): the paper, **every** paragraph style of its catalogue by identifier - not only those the
  * document uses, so the member is the theme's alone and says the same of every document set from it -
  * each with every property concrete, its face's family and descent and the leading its line spacing
@@ -581,7 +581,7 @@ export interface PublishedDocument {
     readonly noticeSentence: string;
   };
   readonly format: PublishedPdfFormat;
-  readonly theme: TypstTheme;
+  readonly theme: TypstTheme12;
   readonly front: {
     readonly cover: boolean;
     readonly contents: { readonly depth: number } | null;

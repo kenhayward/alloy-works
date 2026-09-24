@@ -1,9 +1,9 @@
 import {
   CATALOGUE_KINDS,
-  DEFAULT_CATALOGUES,
-  DEFAULT_CATALOGUES_BY_VERSION,
-  DEFAULT_CATALOGUE_VERSIONS,
-  DEFAULT_THEME,
+  FIRST_DEFAULT_CATALOGUES,
+  FIRST_DEFAULT_CATALOGUES_BY_VERSION,
+  FIRST_DEFAULT_CATALOGUE_VERSIONS,
+  FIRST_DEFAULT_THEME,
   readTheme,
   type ResolvedTheme,
 } from '@alloy-works/domain';
@@ -20,7 +20,7 @@ import { createArtifact, recordVersion } from './versions.js';
 
 /** The default theme as the domain reads it from its own data: what every environment must hold. */
 function productDefaultTheme(): ResolvedTheme {
-  const read = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+  const read = readTheme(FIRST_DEFAULT_THEME, FIRST_DEFAULT_CATALOGUES_BY_VERSION);
   if (!read.ok) throw new Error(read.refusals.map((each) => each.message).join('; '));
   return read.theme;
 }
@@ -91,7 +91,7 @@ describe('the theme every environment starts with', () => {
         artifactId: DEFAULT_THEME_ID,
         versionId: version!.id,
         number: '0.1',
-        content: DEFAULT_THEME,
+        content: FIRST_DEFAULT_THEME,
         theme: productDefaultTheme(),
       });
 
@@ -103,14 +103,14 @@ describe('the theme every environment starts with', () => {
         expect(catalogue.versions, kind).toHaveLength(1);
         expect(catalogue.versions[0], kind).toMatchObject({
           ...unauthored,
-          id: DEFAULT_CATALOGUE_VERSIONS[kind],
+          id: FIRST_DEFAULT_CATALOGUE_VERSIONS[kind],
           kind: 'catalogue',
           revision_no: 0,
           version_no: 1,
           schema_version: 1,
         });
         expect((catalogue.versions[0]!.content as { kind: string }).kind, kind).toBe(kind);
-        expect(declared.theme.catalogues[kind]).toBe(DEFAULT_CATALOGUE_VERSIONS[kind]);
+        expect(declared.theme.catalogues[kind]).toBe(FIRST_DEFAULT_CATALOGUE_VERSIONS[kind]);
       }
     }
   });
@@ -118,13 +118,13 @@ describe('the theme every environment starts with', () => {
   it("holds the domain's default theme and its six catalogues exactly, with the digests the domain computes", async () => {
     const theme = await held(acme, DEFAULT_THEME_ID);
     const cases = [
-      [theme.versions[0]!, { kind: 'theme', content: DEFAULT_THEME }] as const,
+      [theme.versions[0]!, { kind: 'theme', content: FIRST_DEFAULT_THEME }] as const,
       ...(await Promise.all(
         CATALOGUE_KINDS.map(async (kind) => {
           const catalogue = await held(acme, DEFAULT_CATALOGUE_IDS[kind]);
           return [
             catalogue.versions[0]!,
-            { kind: 'catalogue', content: DEFAULT_CATALOGUES[kind] },
+            { kind: 'catalogue', content: FIRST_DEFAULT_CATALOGUES[kind] },
           ] as const;
         }),
       )),
@@ -163,21 +163,24 @@ describe('the theme every environment starts with', () => {
           artifactId: DEFAULT_THEME_ID,
           openedFrom: declared.versionId,
           author: ada.id,
-          substance: { kind: 'theme', content: { ...DEFAULT_THEME, name: 'Another' } },
+          substance: { kind: 'theme', content: { ...FIRST_DEFAULT_THEME, name: 'Another' } },
         }),
       ).rejects.toThrow(/addThemeVersion/);
       await expect(
         recordVersion(trx, {
           artifactId: DEFAULT_CATALOGUE_IDS.table,
-          openedFrom: DEFAULT_CATALOGUE_VERSIONS.table,
+          openedFrom: FIRST_DEFAULT_CATALOGUE_VERSIONS.table,
           author: ada.id,
-          substance: { kind: 'catalogue', content: { ...DEFAULT_CATALOGUES.table, styles: [] } },
+          substance: {
+            kind: 'catalogue',
+            content: { ...FIRST_DEFAULT_CATALOGUES.table, styles: [] },
+          },
         }),
       ).rejects.toThrow(/addCatalogueVersion/);
       await expect(
         createArtifact(trx, {
           author: ada.id,
-          substance: { kind: 'theme', content: DEFAULT_THEME },
+          substance: { kind: 'theme', content: FIRST_DEFAULT_THEME },
         }),
       ).rejects.toThrow(/by its migration/);
     });

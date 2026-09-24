@@ -6,7 +6,7 @@ import { markTypes } from '../content/model/marks.js';
 import type { ResolvedTheme } from '../theme/read.js';
 import type { ParagraphProperties, StyleTarget, Typeface } from '../theme/schema.js';
 import { defaultInputs, resolved, type ThemeInputs } from '../theme/theme.fixture.js';
-import { projectTypst } from '../theme/typst.js';
+import { projectTypst12 } from '../theme/typst.js';
 import {
   OUTLINE_SCHEMA_VERSION,
   parseOutlineDocument,
@@ -4107,7 +4107,7 @@ describe('the theme a publication is set from (themes 1)', () => {
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     expect(assembled.document.schema).toBe('publishing/12');
-    expect(assembled.document.theme).toEqual(projectTypst(theme));
+    expect(assembled.document.theme).toEqual(projectTypst12(theme));
     // A document of one paragraph uses one style; the theme carries all of them, in catalogue order.
     expect(Object.keys(assembled.document.theme.styles)).toEqual([...theme.paragraphStyles.keys()]);
     expect(assembled.document.theme.maths).toBe('STIX Two Math');
@@ -4174,11 +4174,14 @@ describe('the theme a publication is set from (themes 1)', () => {
 
     // The theme's catalogues say what exists, not a list of four the template knew: a theme whose
     // table catalogue holds `grid` alone has no `table`, and one whose image catalogue holds `plate`
-    // alone has no `figure` and no `inline`.
+    // and `mark` alone has no `figure` and no `inline`.
     const other = themed((inputs) => {
-      inputs.catalogues.table.styles = [{ id: 'grid', name: 'Grid', appliesTo: ['table'] }];
+      const [grid] = inputs.catalogues.table.styles;
+      inputs.catalogues.table.styles = [{ ...grid!, id: 'grid', name: 'Grid' }];
+      const [plate, mark] = inputs.catalogues.image.styles;
       inputs.catalogues.image.styles = [
-        { id: 'plate', name: 'Plate', appliesTo: ['figure', 'inlineImage'] },
+        { ...plate!, id: 'plate', name: 'Plate' },
+        { ...mark!, id: 'mark', name: 'Mark' },
       ];
     });
     expect(
@@ -4191,7 +4194,7 @@ describe('the theme a publication is set from (themes 1)', () => {
             figure('f1'),
             figure('f2', 'plate'),
             paragraph('p2', text('A logo '), image()),
-            paragraph('p3', text('A logo '), image('plate')),
+            paragraph('p3', text('A logo '), image('mark')),
           ),
         ),
       ),

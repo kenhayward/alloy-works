@@ -238,6 +238,17 @@ describe('the domain package', () => {
         'DEFAULT_CATALOGUE_VERSIONS',
         'DEFAULT_THEME',
         'projectTypst',
+        // Themes 2 (ruling R1): the units an image style is given in, the upgrade the reader reads a
+        // catalogue/1 by, the default theme's 0.1 frozen as 0024 stored it beside its 0.2 and 0.2's
+        // fixed version, and publishing/12's projection, frozen with template 12.
+        'IMAGE_UNITS',
+        'upgradeCatalogue1',
+        'FIRST_DEFAULT_CATALOGUES',
+        'FIRST_DEFAULT_CATALOGUES_BY_VERSION',
+        'FIRST_DEFAULT_CATALOGUE_VERSIONS',
+        'FIRST_DEFAULT_THEME',
+        'DEFAULT_THEME_VERSION',
+        'projectTypst12',
         'projectCss',
         'projectStylesXml',
         'markStyleId',

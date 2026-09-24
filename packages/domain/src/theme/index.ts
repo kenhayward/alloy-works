@@ -7,6 +7,7 @@
 export {
   CATALOGUE_KINDS,
   CATALOGUE_SCHEMA_VERSION,
+  IMAGE_UNITS,
   PLACES,
   ROLES,
   STYLED_MARKS,
@@ -14,15 +15,22 @@ export {
 } from './schema.js';
 export type {
   AdmonitionCatalogue,
+  AdmonitionCatalogue1,
   Catalogue,
+  Catalogue1,
   CatalogueKind,
   CharacterCatalogue,
+  CharacterCatalogue1,
   CharacterProperties,
   CharacterStyle,
   CitationCatalogue,
+  CitationCatalogue1,
   ImageCatalogue,
+  ImageCatalogue1,
+  ImageLength,
   ImageStyle,
   ParagraphCatalogue,
+  ParagraphCatalogue1,
   ParagraphProperties,
   ParagraphStyle,
   Place,
@@ -31,12 +39,14 @@ export type {
   StyleTarget,
   StyledMark,
   TableCatalogue,
+  TableCatalogue1,
+  TableRule,
   TableStyle,
   Theme,
   Typeface,
 } from './schema.js';
 
-export { readCatalogue, readTheme, themeRefusalCodes } from './read.js';
+export { readCatalogue, readTheme, themeRefusalCodes, upgradeCatalogue1 } from './read.js';
 export type {
   CatalogueReadOutcome,
   ResolvedCharacterStyle,
@@ -52,10 +62,26 @@ export {
   DEFAULT_CATALOGUES_BY_VERSION,
   DEFAULT_CATALOGUE_VERSIONS,
   DEFAULT_THEME,
+  DEFAULT_THEME_VERSION,
+  FIRST_DEFAULT_CATALOGUES,
+  FIRST_DEFAULT_CATALOGUES_BY_VERSION,
+  FIRST_DEFAULT_CATALOGUE_VERSIONS,
+  FIRST_DEFAULT_THEME,
 } from './default.js';
 
-export { projectTypst } from './typst.js';
-export type { TypstMark, TypstParagraphStyle, TypstTheme } from './typst.js';
+export { projectTypst, projectTypst12 } from './typst.js';
+export type {
+  TypstImageStyle,
+  TypstMark,
+  TypstMark12,
+  TypstParagraphStyle,
+  TypstParagraphStyle12,
+  TypstStroke,
+  TypstTableHeader,
+  TypstTableStyle,
+  TypstTheme,
+  TypstTheme12,
+} from './typst.js';
 export { projectCss } from './css.js';
 export { markStyleId, projectStylesXml } from './ooxml.js';
 export { runFormat, wordRun } from './runs.js';

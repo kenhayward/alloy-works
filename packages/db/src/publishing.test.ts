@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
   blockIdentifierFrom,
-  DEFAULT_CATALOGUE_VERSIONS,
+  FIRST_DEFAULT_CATALOGUE_VERSIONS,
   defaultNumberingScheme,
   type ContentDocument,
   type OutlineDocument,
@@ -746,7 +746,7 @@ describe('requesting and recording a publication', () => {
         expect(inputs.map((each) => each!.request.spaceId)).toEqual([general, quality]);
         for (const each of inputs) {
           expect(each!.theme!.versionId).toBe(declared.versionId);
-          expect(each!.theme!.theme.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
+          expect(each!.theme!.theme.catalogues).toEqual(FIRST_DEFAULT_CATALOGUE_VERSIONS);
         }
         const publications = [];
         for (const id of requests) publications.push(await recordPublication(trx, recording(id)));
@@ -777,13 +777,13 @@ describe('requesting and recording a publication', () => {
       { space_id: general, theme_id: DEFAULT_THEME_ID, theme_version_id: declared.versionId },
       { space_id: quality, theme_id: DEFAULT_THEME_ID, theme_version_id: declared.versionId },
     ]);
-    expect(declared.content.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
+    expect(declared.content.catalogues).toEqual(FIRST_DEFAULT_CATALOGUE_VERSIONS);
     const catalogues = await service.withTenant(production, (trx) =>
       trx
         .selectFrom('artifact_version as v')
         .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
         .select(['v.id', 'a.kind', 'a.space_id'])
-        .where('v.id', 'in', Object.values(DEFAULT_CATALOGUE_VERSIONS))
+        .where('v.id', 'in', Object.values(FIRST_DEFAULT_CATALOGUE_VERSIONS))
         .execute(),
     );
     expect(catalogues).toHaveLength(6);

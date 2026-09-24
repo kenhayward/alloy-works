@@ -2,6 +2,7 @@ import {
   readCatalogue,
   readTheme,
   type Catalogue,
+  type Catalogue1,
   type CatalogueKind,
   type ResolvedTheme,
   type Theme,
@@ -25,7 +26,7 @@ export const DEFAULT_THEME_ID = '4ae73bd5-48cb-422a-a4f8-2183f0f72866';
 
 /**
  * The artifacts the default theme's six catalogues are versions of, one of each kind (STY-003), each in
- * no space. Their first versions' identifiers are the domain's `DEFAULT_CATALOGUE_VERSIONS`, which the
+ * no space. Their first versions' identifiers are the domain's `FIRST_DEFAULT_CATALOGUE_VERSIONS`, which the
  * theme's content names; these are the artifacts behind them, which nothing names but the store.
  */
 export const DEFAULT_CATALOGUE_IDS: Readonly<Record<CatalogueKind, string>> = {
@@ -161,11 +162,14 @@ export async function themeAt(trx: TenantTransaction, versionId: string): Promis
   return read.theme;
 }
 
-/** The next version of a catalogue, opened from its latest. */
+/**
+ * The next version of a catalogue, opened from its latest. Given at `catalogue/2`, or at `catalogue/1`,
+ * which `readCatalogue` reads by upgrading it and which is written as it reads (themes 2, ruling R1).
+ */
 export interface NextCatalogueVersion extends Authorship {
   readonly artifactId: string;
   readonly openedFrom: string;
-  readonly catalogue: Catalogue;
+  readonly catalogue: Catalogue | Catalogue1;
 }
 
 /**

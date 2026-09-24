@@ -594,11 +594,16 @@ describe('migration 0021, which gives the default layout a list of figures', () 
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
     // Recorded through today's schema, which is all `recordVersion` takes: 0.2's words and lists,
-    // and no words for above and below, as a layout of schema 2 reads.
+    // and no words for above and below, as a layout of schema 2 reads, with the words a continued
+    // table's label adds, which a layout written at schema 4 gives.
     const own: Layout = {
       ...SECOND_DEFAULT_LAYOUT,
       schemaVersion: LAYOUT_SCHEMA_VERSION,
-      words: { ...SECOND_DEFAULT_LAYOUT.words, contents: 'Table of contents' },
+      words: {
+        ...SECOND_DEFAULT_LAYOUT.words,
+        contents: 'Table of contents',
+        continued: '(continued)',
+      },
     };
     const recorded = await service.withTenant({ ...tenant, id }, async (trx) => {
       const ada = await trx
@@ -670,11 +675,16 @@ describe('migration 0023, which gives the default layout words for a relative re
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
     // Recorded through today's schema, which is all `recordVersion` takes: 0.3's scheme and lists,
-    // and words of its own for above and below.
+    // and words of its own for above and below and for a continued table.
     const own: Layout = {
       ...THIRD_DEFAULT_LAYOUT,
       schemaVersion: LAYOUT_SCHEMA_VERSION,
-      words: { ...THIRD_DEFAULT_LAYOUT.words, above: 'from above', below: 'from below' },
+      words: {
+        ...THIRD_DEFAULT_LAYOUT.words,
+        above: 'from above',
+        below: 'from below',
+        continued: '(continued)',
+      },
     };
     const recorded = await service.withTenant({ ...tenant, id }, async (trx) => {
       const ada = await trx
