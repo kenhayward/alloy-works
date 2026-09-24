@@ -12,6 +12,7 @@ export {
   readOutlineView,
   withholdComponents,
   canonicaliseOutline,
+  canonicaliseTitle,
   walkOutline,
   outlineMatterSchema,
   mayBeFront,

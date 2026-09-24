@@ -119,6 +119,9 @@ describe('the domain package', () => {
         'readOutlineView',
         'withholdComponents',
         'canonicaliseOutline',
+        // Promoted by equations 3, so the outline panel's title field tells two titles apart by the
+        // canonical form the outline's digest takes, not by their words (ruling R2).
+        'canonicaliseTitle',
         'walkOutline',
         'applyOutlineOperation',
         'outlineOperationSchema',

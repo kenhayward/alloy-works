@@ -1,11 +1,18 @@
 import { inlineNodeSchema } from '@alloy-works/domain';
 import { NodeSelection, type Command, type EditorState } from 'prosemirror-state';
 
-import { editorSchema } from './schema.js';
-
-const equationNode = editorSchema.nodes.equation!;
-const equationBlockNode = editorSchema.nodes.equationBlock!;
-const paragraphNode = editorSchema.nodes.paragraph!;
+/**
+ * The node types are the state's own, looked up by name, and never the component schema's constants:
+ * a section title's editor has a schema of its own holding the same `equation` node (equations 3,
+ * ruling R1), and a type from one schema matches nothing in another, so a constant here would answer
+ * every question about a title with no. A schema without a block equation - the title's - has no
+ * `equationBlock`, and a block is placeable nowhere in it.
+ */
+const typesOf = (state: EditorState) => ({
+  equation: state.schema.nodes['equation'],
+  equationBlock: state.schema.nodes['equationBlock'],
+  paragraph: state.schema.nodes['paragraph'],
+});
 
 /**
  * What an author answers the Equation dialog with (equations 1, ruling R6): the MathML - Temml's
@@ -50,10 +57,11 @@ export function equationAt(state: EditorState): EquationAt | null {
   const { selection } = state;
   if (!(selection instanceof NodeSelection)) return null;
   const { node } = selection;
+  const { equation, equationBlock } = typesOf(state);
   const mathml = node.attrs.mathml as string;
   const latex = (node.attrs.latex as string | null) ?? null;
-  if (node.type === equationNode) return { display: 'inline', pos: selection.from, mathml, latex };
-  if (node.type !== equationBlockNode) return null;
+  if (node.type === equation) return { display: 'inline', pos: selection.from, mathml, latex };
+  if (equationBlock === undefined || node.type !== equationBlock) return null;
   return {
     display: 'block',
     pos: selection.from,
@@ -91,7 +99,8 @@ function accepted(choice: EquationChoice): { mathml: string; latex: string | nul
 function nowhereForABlock(state: EditorState): boolean {
   const { $from, $to } = state.selection;
   if (!$from.sameParent($to)) return true;
-  if ($from.parent.type !== paragraphNode) return true;
+  const { paragraph } = typesOf(state);
+  if (paragraph === undefined || $from.parent.type !== paragraph) return true;
   for (let depth = $from.depth; depth > 0; depth -= 1) {
     const role = $from.node(depth).type.spec.tableRole as string | undefined;
     if (role === 'cell' || role === 'header_cell') return true;
@@ -104,14 +113,15 @@ function nowhereForABlock(state: EditorState): boolean {
  * the empty paragraph the caret is in or goes after the one it is in; null where it could not.
  */
 function blockPlace(state: EditorState): { readonly empty: boolean } | null {
-  if (nowhereForABlock(state)) return null;
+  const { equationBlock } = typesOf(state);
+  if (equationBlock === undefined || nowhereForABlock(state)) return null;
   const { $from } = state.selection;
   const depth = $from.depth;
   const index = $from.index(depth - 1);
   const parent = $from.node(depth - 1);
   const empty = $from.parent.content.size === 0;
   const at = empty ? index : index + 1;
-  return parent.canReplaceWith(at, empty ? index + 1 : at, equationBlockNode) ? { empty } : null;
+  return parent.canReplaceWith(at, empty ? index + 1 : at, equationBlock) ? { empty } : null;
 }
 
 /**
@@ -125,8 +135,13 @@ function blockPlace(state: EditorState): { readonly empty: boolean } | null {
 export function equationPlaceable(state: EditorState, display: 'inline' | 'block'): boolean {
   if (display === 'block') return blockPlace(state) !== null;
   const { $to } = state.selection;
+  const { equation } = typesOf(state);
   const index = $to.index();
-  return $to.parent.inlineContent && $to.parent.canReplaceWith(index, index, equationNode);
+  return (
+    equation !== undefined &&
+    $to.parent.inlineContent &&
+    $to.parent.canReplaceWith(index, index, equation)
+  );
 }
 
 /**
@@ -157,7 +172,7 @@ export function insertEquation(choice: EquationChoice): Command {
       if (!equationPlaceable(state, 'inline')) return false;
       if (dispatch) {
         const { $to } = state.selection;
-        const tr = state.tr.insert($to.pos, equationNode.create(given));
+        const tr = state.tr.insert($to.pos, typesOf(state).equation!.create(given));
         dispatch(tr.setSelection(NodeSelection.create(tr.doc, $to.pos)).scrollIntoView());
       }
       return true;
@@ -167,7 +182,8 @@ export function insertEquation(choice: EquationChoice): Command {
     if (dispatch) {
       const { $from } = state.selection;
       const depth = $from.depth;
-      const equation = equationBlockNode.create({ ...given, numbered: choice.numbered });
+      const types = typesOf(state);
+      const equation = types.equationBlock!.create({ ...given, numbered: choice.numbered });
       const start = place.empty ? $from.before(depth) : $from.after(depth);
       const tr = place.empty
         ? state.tr.replaceWith(start, $from.after(depth), equation)
@@ -176,7 +192,8 @@ export function insertEquation(choice: EquationChoice): Command {
       // Nothing after it, or nothing a caret can reach from it: a quotation's attribution follows
       // its blocks, and no caret stands between a block and it (equations 1's final review, L1).
       const next = tr.doc.resolve(after).nodeAfter;
-      if (next === null || !next.type.isInGroup('block')) tr.insert(after, paragraphNode.create());
+      if (next === null || !next.type.isInGroup('block'))
+        tr.insert(after, types.paragraph!.create());
       dispatch(tr.setSelection(NodeSelection.create(tr.doc, start)).scrollIntoView());
     }
     return true;
@@ -193,8 +210,9 @@ export function insertEquation(choice: EquationChoice): Command {
 export function changeEquation(pos: number, choice: EquationChoice): Command {
   return (state, dispatch) => {
     const node = state.doc.nodeAt(pos);
-    const type = choice.display === 'inline' ? equationNode : equationBlockNode;
-    if (node?.type !== type) return false;
+    const types = typesOf(state);
+    const type = choice.display === 'inline' ? types.equation : types.equationBlock;
+    if (type === undefined || node?.type !== type) return false;
     const given = accepted(choice);
     if (given === null) return false;
     if (dispatch) {
