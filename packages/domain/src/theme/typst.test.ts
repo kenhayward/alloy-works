@@ -101,6 +101,11 @@ describe('projectTypst', () => {
     });
   });
 
+  it('states the size a subscript or a superscript is set at, as a fraction of its text, so the template leaves it to nothing', () => {
+    // The engine's own for both pinned text faces, measured: a subscript in 11pt text at 7.149pt.
+    expect(typst.script).toBe(1331 / 2048);
+  });
+
   it('carries the places, the roles and the maths face, so the template names no face of its own', () => {
     expect(typst.places).toMatchObject({ text: 'body', footnote: 'footnote' });
     expect(typst.roles).toMatchObject({ heading1: 'heading-1', preformatted: 'preformatted' });

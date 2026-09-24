@@ -87,6 +87,18 @@ export const STYLED_MARKS = PUBLISHED_MARK_ORDER;
 
 export type StyledMark = (typeof STYLED_MARKS)[number];
 
+/**
+ * The size a subscript or a superscript is set at, as a fraction of the text it stands in. No theme
+ * states it: a character style's `position` says only that a mark is lowered or raised. It is Typst
+ * 0.15.1's own - `sub` and `super` take `size: auto`, the face's OS/2 subscript and superscript size -
+ * which both pinned text faces record as 1331 of their 2048 units, measured from a compiled PDF as a
+ * subscript in 11pt Liberation Serif and in 11pt Liberation Mono painted at 7.149pt. Stated here so
+ * that the Typst projection hands it to the template, which sets every script at it rather than
+ * leaving it to the engine, and so that contrast judges a script at the size it is set at (the final
+ * review of themes 1, I3). A script nested in a script takes it twice.
+ */
+export const SCRIPT_SCALE = 1331 / 2048;
+
 /** What a table style may apply to. */
 export const TABLE_TARGETS = ['table'] as const;
 /** What an image style may apply to: a figure, or an image in a line of text. */
@@ -98,8 +110,22 @@ export const IMAGE_TARGETS = ['figure', 'inlineImage'] as const;
  */
 const points = z.number().min(0).max(1584);
 
-/** A size, in points: above nothing, and at most 1638, the most Word sets. */
-const size = z.number().positive().max(1638);
+/**
+ * A size, in points: above nothing, and at most 144 - two inches. Not Word's own most, 1638: the final
+ * review of themes 1 (I1) set a word at 1638pt on an A4 page, and the engine painted it off the page
+ * with nothing said, since a line of type is never broken. 144pt is a display size, and a line of it
+ * fits the text block of any paper size in use; nothing yet holds a theme's sizes to the page a layout
+ * declares, which may be smaller (the final review's M2, left as found). A theme is stored
+ * insert-only, so the bound is set here, before any theme but the default is stored, rather than
+ * lowered under a stored one.
+ */
+const size = z.number().positive().max(144);
+
+/**
+ * A line spacing, in points: above nothing, and at most 288, twice the largest size. That it is no
+ * less than its style's size is the reader's to say, since a style inherits the two apart (I2).
+ */
+const lineSpacing = z.number().positive().max(288);
 
 /** sRGB as lower-case hex. One spelling, so no projection ever has to normalise. */
 const colour = z.string().regex(/^#[0-9a-f]{6}$/, 'not a colour as #rrggbb');
@@ -150,8 +176,12 @@ const paragraphPropertyShape = {
   /** Added to the previous block's space after, in every output (STY-050). */
   spaceBefore: points,
   spaceAfter: points,
-  /** A minimum distance from baseline to baseline, never a multiple (STY-051). */
-  lineSpacing: size,
+  /**
+   * A minimum distance from baseline to baseline, never a multiple (STY-051), and never less than the
+   * size: a line is one em tall, so a line spacing below it would set one line over the next. The
+   * reader refuses a resolved style whose line spacing is below its size (`line_spacing_below_size`).
+   */
+  lineSpacing,
   /**
    * The four pagination-bound properties: set by the PDF and Word, shown in the editor only by
    * preview (STY-037). Widow control on means two lines at least, either side of a break, as Word's.

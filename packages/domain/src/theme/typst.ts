@@ -1,5 +1,5 @@
 import type { ResolvedParagraphStyle, ResolvedTheme } from './read.js';
-import { STYLED_MARKS, type Place, type Role, type StyledMark } from './schema.js';
+import { SCRIPT_SCALE, STYLED_MARKS, type Place, type Role, type StyledMark } from './schema.js';
 
 /**
  * The PDF's projection: resolved styles as data for the fixed Typst template (ADR-0013), carried as
@@ -58,6 +58,11 @@ export interface TypstTheme {
   readonly paper: string;
   /** The family every equation is set in. */
   readonly maths: string;
+  /**
+   * The size a subscript or a superscript is set at, as a fraction of its text (`SCRIPT_SCALE`): the
+   * template's `sub` and `super` read it here rather than taking the engine's.
+   */
+  readonly script: number;
   /** By identifier. */
   readonly styles: Readonly<Record<string, TypstParagraphStyle>>;
   readonly marks: Readonly<Record<StyledMark, TypstMark>>;
@@ -115,6 +120,7 @@ export function projectTypst(theme: ResolvedTheme, used?: Iterable<string>): Typ
   return {
     paper: theme.paper,
     maths: theme.maths.family,
+    script: SCRIPT_SCALE,
     styles,
     marks,
     places: { ...theme.places },

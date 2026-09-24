@@ -8,6 +8,7 @@ import {
   CATALOGUE_SCHEMA_VERSION,
   PLACES,
   ROLES,
+  SCRIPT_SCALE,
   STYLED_MARKS,
   THEME_SCHEMA_VERSION,
   catalogueSchema,
@@ -70,6 +71,11 @@ export const themeRefusalCodes = [
   'style_not_applicable',
   /** Preformatted text is set in a face with no advance, whose columns cannot be measured. */
   'preformatted_not_monospaced',
+  /**
+   * A style's lines, as it resolves, are closer than its size (STY-051): a line is one em tall, so
+   * they would be set over each other (the final review of themes 1, I2).
+   */
+  'line_spacing_below_size',
   /** Text below the contrast its size asks against something it can stand on (STY-069, TH-G). */
   'contrast_too_low',
 ] as const;
@@ -312,6 +318,21 @@ export function readTheme(
     }
   }
 
+  // Line spacing is a minimum distance from baseline to baseline, and a line in this model is one em
+  // tall, its edges the face's descender below the baseline and one em less that above it: a spacing
+  // below the size would set each line over the one before, in the PDF as Word's `atLeast` never
+  // would. Refused for each style as it resolves, so a style that states a size larger than the line
+  // spacing it inherits is named, and the base is named through every style that keeps both.
+  for (const style of paragraphStyles.values()) {
+    const { size, lineSpacing } = style.properties;
+    if (lineSpacing < size) {
+      refusals.push({
+        code: 'line_spacing_below_size',
+        message: `The paragraph style ${style.id} sets its lines ${lineSpacing}pt apart, closer than its size of ${size}pt: a line is never set closer than its size`,
+      });
+    }
+  }
+
   refusals.push(
     ...contrast(
       stated.paper,
@@ -510,10 +531,18 @@ function overlay(
 /**
  * **Contrast** (STY-069, TH-G), at WCAG's relative luminance: 4.5:1, or 3:1 for text of 18pt or of
  * 14pt bold. Each resolved paragraph style's colour against its own background, or the paper where it
- * has none; and each character style that states a colour against every background it can stand on -
- * the paper, and each paragraph style's fill - at the size and weight of the text it would colour. A
- * mark's failure is refused once for each background and ratio, naming the first style it fails in.
- * A mark that states no colour takes its paragraph's, which is already checked.
+ * has none. Then each character style in each paragraph style it can stand in, against that style's
+ * fill or the paper, **at the size and weight its text is set at** (the final review of themes 1, I3):
+ * the paragraph's size times the mark's `scale`, and times `SCRIPT_SCALE` where it is a subscript or a
+ * superscript, bold where the mark says so or, where it says nothing, where the paragraph is. A mark
+ * that states a colour is judged in it; one that states none is judged in its paragraph's, which is
+ * checked already at the paragraph's own size and weight, so it is refused only where it asks more
+ * than its paragraph does - a scale that shrinks the text, a position, bold turned off. A mark's failure
+ * is refused once for each colour, background and ratio, naming the first style it fails in.
+ *
+ * Each character style is judged on its own. Marks nest - inline code in a subscript - and the size a
+ * nest sets is the product of theirs, which is not judged: the reader does not know which marks an
+ * author will combine.
  */
 function contrast(
   paper: string,
@@ -539,24 +568,29 @@ function contrast(
   }
 
   for (const mark of marks) {
-    const colour = mark.properties.colour;
-    if (colour === undefined) continue;
+    const { colour: own, scale = 1, position, bold: markBold } = mark.properties;
+    const factor = scale * (position === undefined ? 1 : SCRIPT_SCALE);
     const reported = new Set<string>();
     for (const style of paragraphs.values()) {
-      const { background, size, bold } = style.properties;
+      const { background, size, bold, colour: inherited } = style.properties;
+      const colour = own ?? inherited;
       const behind = background === 'none' ? paper : background;
       const ratio = contrastRatio(colour, behind);
-      const needed = requiredContrast(size, mark.properties.bold ?? bold);
-      const key = `${background} ${needed}`;
+      const needed = requiredContrast(size * factor, markBold ?? bold);
+      // In its paragraph's colour, a mark that asks no more than its paragraph is the paragraph's check.
+      if (own === undefined && needed <= requiredContrast(size, bold)) continue;
+      const key = `${colour} ${background} ${needed}`;
       if (ratio >= needed || reported.has(key)) continue;
       reported.add(key);
       const on =
         background === 'none'
           ? `the paper ${paper}`
           : `the background ${background} of the paragraph style ${style.id}`;
+      const sets =
+        own === undefined ? `${colour}, the colour of the paragraph style ${style.id},` : colour;
       refusals.push({
         code: 'contrast_too_low',
-        message: `The character style ${mark.id} sets ${colour} on ${on} ${shortOf(ratio, needed)}`,
+        message: `The character style ${mark.id} sets ${sets} on ${on} ${shortOf(ratio, needed)}`,
       });
     }
   }

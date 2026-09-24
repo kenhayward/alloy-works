@@ -100,6 +100,22 @@ describe('catalogue/1', () => {
     }
   });
 
+  it('holds a size to 144pt and a line spacing to 288pt, so a line of type can stand on a page', () => {
+    // The final review of themes 1, I1: Word's own maxima, 1638pt, let a theme set a word taller than
+    // any page a layout declares, and the engine painted it off the page with nothing said.
+    const catalogue = paragraph();
+    const style = catalogue.styles[0]!;
+    for (const properties of [{ size: 144.01 }, { lineSpacing: 288.01 }, { size: 1638 }]) {
+      const odd = { ...style, properties };
+      expect(
+        () => catalogueSchema.parse({ ...catalogue, styles: [odd] }),
+        JSON.stringify(properties),
+      ).toThrow();
+    }
+    const largest = { ...style, properties: { size: 144, lineSpacing: 288 } };
+    expect(() => catalogueSchema.parse({ ...catalogue, styles: [largest] })).not.toThrow();
+  });
+
   it("holds a padding only within an indent's bounds", () => {
     const catalogue = paragraph();
     const style = catalogue.styles[0]!;
