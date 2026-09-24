@@ -1638,11 +1638,12 @@ describe('a table, published (tables 2)', () => {
     block: 't1',
     detail,
   });
+  // A stored `body` in a cell is the `tableCell` place's default: the default theme's `table-cell`.
   const published = (runs: string) => ({
     type: 'paragraph',
     id: runs,
     anchor: null,
-    style: 'body',
+    style: 'table-cell',
     runs: [
       {
         text: { c1: 'Site', c2: 'Values', c3: 'York', c4: '1', c5: '2', c6: '3', c7: '4' }[runs],

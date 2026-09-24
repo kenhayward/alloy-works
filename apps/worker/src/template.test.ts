@@ -61,8 +61,9 @@ describe('the publication template', () => {
     // `publishing/10`. Template 11 is template 10 with an equation - in a run, as a block, numbered
     // beside it and listed - and a node's title set as runs, and reads `publishing/11`. Template 12
     // reads `publishing/12`, the document set from its theme: every face, size, colour, space and
-    // line read from the theme, by ADR-0014's rules. It moved once (7979229d...), from template 11
-    // asserting the new schema to the template that sets the theme, and is re-pinned freely until the
+    // line read from the theme, by ADR-0014's rules. It moved (7979229d...) from template 11
+    // asserting the new schema to the template that sets the theme, and again (f64aa5ff...) when a
+    // comment said what a quotation's space is and why, and is re-pinned freely until the
     // pull request that makes it merges. Templates 1 to 11 are published versions and their rows never
     // move again.
     const pinned: Record<number, string> = {
@@ -77,7 +78,7 @@ describe('the publication template', () => {
       9: 'f837e57769f34465377f5e808e759a68eba921bb3b45adaff7c0a1a581e4ced6',
       10: '07589c1d2487e149643bf82ccd183aaf7c7951ed24792decb508db02a7626339',
       11: '00f58bb2f2dc897356b24fdb09e0fa190a292c9b737d5444e7a8b48070a22a77',
-      12: 'f64aa5ff6ae5abc5dc437cec5314c17b6a14b92fa067bda3eaebd5321939c561',
+      12: '6b88017fe9334c336c41f314c19b688d66dfe1324c0a5d7bf5a93008fd25b88c',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
@@ -275,8 +276,9 @@ describe('the pipeline version', () => {
   // a list - stays beside it, as do '4', '5' and '6', before a quotation, a table and a figure,
   // '9', before a cross-reference, '10', before an equation and a title set as runs, and '11',
   // before a document was set from its theme. '12' is re-pinned freely until the pull request that
-  // makes it merges, since nothing is published from a branch: it moved once (c69fead9...), when the
-  // default theme's line spacings and spaces were measured from template 11 (themes 1, task 4).
+  // makes it merges, since nothing is published from a branch: it moved (c69fead9...) when the
+  // default theme's line spacings and spaces were measured from template 11 (themes 1, task 4), and
+  // again (45748643...) when the default theme gave a table's cells a style of their own.
   const madeByPipeline: Record<string, string> = {
     '1': '3b844cb4ceedbe2b52040c79014ea18959295a1602754eb9861631891beb6fa1',
     '2': '699d5c34b7e4049fc32f5846a5525f5d3a35785c2858a78755161c58427ad1d5',
@@ -289,7 +291,7 @@ describe('the pipeline version', () => {
     '9': '4beeacf97465f356d654aa43dee3686e43cd3ca632d61680252d34e37d568ac5',
     '10': '3b9772e627b7af48e407673a67b94837f9a6f033e63b222dbedf97852b67a82d',
     '11': 'f011fd46928c1b68de5c47de2ea4db75a2b52391b94026c8faddddc01f5191bf',
-    '12': '4574864373df9787956dd3bfecb2ace2aa4ee70267fe571c98d1d6f58e3e6c71',
+    '12': 'f38feb9ac3df3c70b4b856207eee06a204b27914b884fe97ef9b3823a468fa6e',
   };
   const digest = (made: { document: unknown; numbering: unknown }) =>
     createHash('sha256')

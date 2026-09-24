@@ -161,6 +161,7 @@ const LEDGER_STYLES: Readonly<Record<string, ParagraphProperties>> = {
   'heading-2': { size: 14, lineSpacing: 18 },
   'heading-3': { size: 12, lineSpacing: 16 },
   'contents-entry': { ...FLUSH, alignment: 'start', spaceBefore: 0, spaceAfter: 0 },
+  'table-cell': { ...FLUSH, alignment: 'start' },
   'notice-sentence': { ...FLUSH, bold: true, alignment: 'start' },
   notice: { ...FLUSH, size: 8, lineSpacing: 10, alignment: 'end' },
   running: { ...FLUSH, size: 8, lineSpacing: 10, alignment: 'start' },
@@ -568,6 +569,29 @@ describe('two themes in the PDF (themes 1)', () => {
         expect(painted(paint, 'Attributed').x).toBeCloseTo(LEFT + 36, 2);
         const caption = linesOf(paint, 'Table', 'Site')[0]!;
         expect(caption.right).toBeCloseTo(RIGHT, 1);
+      }
+    }, 60_000);
+
+    it("sets a table's cells in their place's style: centred under the default theme, and at the cell's start where it says start", async () => {
+      // Two columns sharing the measure, each cell inset 5pt, the engine's default (`CELL_INSET`).
+      const column = (RIGHT - LEFT) / 2;
+      const inset = 5;
+      {
+        const { paint } = await specimen('default');
+        for (const [word, at] of [
+          ['Site', 0],
+          ['York', 0],
+          ['Value', 1],
+          ['Twelve', 1],
+        ] as const) {
+          const run = painted(paint, word);
+          expect(run.x + run.width / 2, word).toBeCloseTo(LEFT + column * at + column / 2, 1);
+        }
+      }
+      {
+        const { paint } = await specimen('ledger');
+        expect(painted(paint, 'York').x).toBeCloseTo(LEFT + inset, 2);
+        expect(painted(paint, 'Twelve').x).toBeCloseTo(LEFT + column + inset, 2);
       }
     }, 60_000);
 

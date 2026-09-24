@@ -165,6 +165,11 @@
 // nothing else (the contract in `publishing/measure.ts`, by which `assemble` measured what it holds):
 // the engine's own inset of a quotation, an em each side, and its own space around one, are stopped
 // here. Still a `BlockQuote` to a reader: measured, the element carries its role whatever shows it.
+// So the space around a quotation is its paragraphs' own, spaced as any two blocks are: template 11's
+// set-off - 16.5pt more before and after a quotation, and 9.9pt more after its attribution - is gone,
+// since a theme styles paragraphs and has nothing that styles a block's edges alone. Restoring it
+// needs a spacing property for those edges, as Word's contextual spacing is: a later widening of the
+// property set, not something this template can decide.
 #show quote.where(block: true): it => {
   let q = place-style("quotation")
   block(width: 100%, above: 0pt, below: 0pt, context if text.dir == rtl {

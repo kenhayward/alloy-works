@@ -187,7 +187,7 @@ describe('readTheme', () => {
       {
         code: 'style_not_applicable',
         message:
-          'The running role is given the paragraph style body, which applies only to text, listItem and tableCell',
+          'The running role is given the paragraph style body, which applies only to text and listItem',
       },
     ]);
   });

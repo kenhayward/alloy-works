@@ -55,14 +55,21 @@ describe('the default theme', () => {
     expect(paragraph('running').properties).toMatchObject({ size: 9 });
   });
 
-  it('sets the body at every place but the footnote and the quotation, which have their own', () => {
+  it('sets the body at every place but the footnote, the quotation and the table cell, which have their own', () => {
     expect(DEFAULT_THEME.places).toEqual({
       text: 'body',
       listItem: 'body',
       quotation: 'quotation',
-      tableCell: 'body',
+      tableCell: 'table-cell',
       footnote: 'footnote',
     });
+    // A cell's text centred, as template 11's were: a figure centred what it held, the table among it.
+    expect(paragraph('table-cell')).toMatchObject({
+      basedOn: 'body',
+      appliesTo: ['tableCell'],
+      properties: { alignment: 'centre' },
+    });
+    expect(paragraph('body').appliesTo).toEqual(['text', 'listItem']);
   });
 
   it('holds the three pinned families, each under the SIL Open Font Licence and embeddable in both outputs', () => {

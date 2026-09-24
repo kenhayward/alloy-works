@@ -175,7 +175,16 @@ const paragraph: ParagraphCatalogue = {
     hyphenate: false,
   },
   styles: [
-    { id: 'body', name: 'Body', appliesTo: ['text', 'listItem', 'tableCell'], properties: {} },
+    { id: 'body', name: 'Body', appliesTo: ['text', 'listItem'], properties: {} },
+    // A table's cells, centred as template 11's were: a figure centres what it holds, and a table
+    // is set in one.
+    {
+      id: 'table-cell',
+      name: 'Table cell',
+      basedOn: 'body',
+      appliesTo: ['tableCell'],
+      properties: { alignment: 'centre' },
+    },
     {
       id: 'quotation',
       name: 'Quotation',
@@ -444,7 +453,7 @@ export const DEFAULT_THEME: Theme = {
     text: 'body',
     listItem: 'body',
     quotation: 'quotation',
-    tableCell: 'body',
+    tableCell: 'table-cell',
     footnote: 'footnote',
   },
   roles: {
