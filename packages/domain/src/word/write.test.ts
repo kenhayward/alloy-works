@@ -1634,6 +1634,25 @@ describe('writeDocx: preformatted text (Word 2, ruling R5)', () => {
     expect(kept.children.join('')).toBe('  second');
   });
 
+  it('drops one line feed that ends a block, as the engine does, where a block of a line feed alone is one empty line', () => {
+    // Measured, the pinned Typst: raw "x\n" as tall as "x", "\n" one line, "\n\n" two.
+    const ended = writtenOf([
+      said('before'),
+      code('E1', 'ends\n'),
+      said('between'),
+      code('E2', '\n'),
+      said('then'),
+      code('E3', 'two\n\n'),
+      said('after'),
+    ]);
+    const { body, at } = bodyOf(ended.docx);
+    const between = (from: string, to: string) =>
+      body.slice(body.indexOf(at(from)) + 1, body.indexOf(at(to))).map(textOf);
+    expect(between('before', 'between')).toEqual(['ends']);
+    expect(between('between', 'then')).toEqual(['']);
+    expect(between('then', 'after')).toEqual(['two', '']);
+  });
+
   it("R6 sets a block's lines a line apart, as the PDF sets them in one paragraph, and the block apart from what is around it by its style", () => {
     expect(lines.slice(0, 4).map(spacing)).toEqual([
       { 'w:after': '0' },

@@ -1063,7 +1063,10 @@ class Writer {
     // One panel, however many lines: `panelsApart` keeps it apart from a panel beside it.
     const panel = {};
     const closer = this.closer(block, role, place);
-    const lines = block.lines.map((line) =>
+    // The engine drops one line feed that ends its raw text (measured: "x\n" as tall as "x", and "\n"
+    // one empty line), which `assemble` keeps as a last empty line: Word writes what the PDF sets.
+    const ended = block.lines.length > 1 && block.lines[block.lines.length - 1] === '';
+    const lines = (ended ? block.lines.slice(0, -1) : block.lines).map((line) =>
       this.paragraph(role, this.textRun(line, [], role, passage, null, false, closer), {
         bidi: passage.rtl,
         panel,
