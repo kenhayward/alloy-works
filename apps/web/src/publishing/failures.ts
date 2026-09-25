@@ -56,26 +56,40 @@ const NOT_YET_IN_WORD: Readonly<Record<string, string>> = {
 };
 
 /**
- * What `numbering_not_in_word` names (Word 1, ruling R7): `detail` is `section:<matter>:<why>`, the
- * matter whose headings the layout numbers and what in its rule Word would number otherwise.
+ * What `numbering_not_in_word` names (Word 1, ruling R7; Word 2, ruling R1): `detail` is
+ * `<sequence>:<matter>:<why>` - the headings', the figures' or the tables' numbers, the matter the
+ * layout numbers them in, and what in its rule Word would number otherwise.
  */
+const NUMBERED: Readonly<Record<string, string>> = {
+  section: 'the headings',
+  figure: 'the figures',
+  table: 'the tables',
+};
 const NUMBERED_IN: Readonly<Record<string, string>> = {
-  front: 'the headings in front matter',
-  body: 'the headings in the body',
-  appendix: 'the headings in the appendices',
+  front: 'in front matter',
+  body: 'in the body',
+  appendix: 'in the appendices',
 };
 const NOT_IN_WORD_BECAUSE: Readonly<Record<string, string>> = {
   separator: 'its separator holds a % sign, which Word reads as a number',
   letters: 'a number in letters goes past z, which Word writes differently',
   roman: 'a number in roman numerals goes past 3999',
   depth: 'a heading is numbered more than nine levels deep, and Word numbers nine',
+  prefix:
+    "a number's prefix is the number of a heading Word would not find there, such as one with no number",
+  restart:
+    'a number starts again or carries on where Word would not, such as after a heading with no number',
 };
+/** A caption's separator is words between Word's fields, where only a control character fails. */
+const CAPTION_SEPARATOR = 'its separator holds a character Word cannot write';
 
 /** The sentence for `numbering_not_in_word`: the layout's to change, and the PDF can be made. */
 function notInWord(detail: string | null): string {
-  const [, matter = '', why = ''] = (detail ?? '').split(':');
-  const where = NUMBERED_IN[matter] ?? 'the headings';
-  const because = NOT_IN_WORD_BECAUSE[why];
+  const [sequence = '', matter = '', why = ''] = (detail ?? '').split(':');
+  const numbered = NUMBERED[sequence] ?? 'the headings';
+  const where = NUMBERED_IN[matter] === undefined ? numbered : `${numbered} ${NUMBERED_IN[matter]}`;
+  const because =
+    why === 'separator' && sequence !== 'section' ? CAPTION_SEPARATOR : NOT_IN_WORD_BECAUSE[why];
   return (
     `The layout numbers ${where} in a way Word cannot${because === undefined ? '' : `: ${because}`}. ` +
     'Publish this document as a PDF only, or under a layout Word can number.'

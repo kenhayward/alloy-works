@@ -473,6 +473,38 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Publish again');
   });
 
+  it("names a figure's or a table's number Word cannot compute, where the layout numbers it and why, pointing at the PDF", async () => {
+    // Word 2's ruling R1: `detail` is `figure:<matter>:<why>` or `table:<matter>:<why>`, and names the
+    // caption that meets it; the layout, not the document, is what would have to change.
+    const refused = (detail: string) => ({
+      stage: 'compose' as const,
+      code: 'numbering_not_in_word' as const,
+      node: null,
+      block: 'f1',
+      detail,
+    });
+    const fake = failing([
+      refused('figure:body:prefix'),
+      refused('table:appendix:restart'),
+      refused('figure:front:separator'),
+      refused('table:body:letters'),
+      refused('figure:appendix:roman'),
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    const pdf = 'Publish this document as a PDF only, or under a layout Word can number.';
+    for (const said of [
+      "The layout numbers the figures in the body in a way Word cannot: a number's prefix is the number of a heading Word would not find there, such as one with no number.",
+      'The layout numbers the tables in the appendices in a way Word cannot: a number starts again or carries on where Word would not, such as after a heading with no number.',
+      'The layout numbers the figures in front matter in a way Word cannot: its separator holds a character Word cannot write.',
+      'The layout numbers the tables in the body in a way Word cannot: a number in letters goes past z, which Word writes differently.',
+      'The layout numbers the figures in the appendices in a way Word cannot: a number in roman numerals goes past 3999.',
+    ]) {
+      expect(why).toHaveTextContent(`${said} ${pdf}`);
+    }
+  });
+
   it('says what a figure needs before it can be published, and names nothing of an image it may not read', async () => {
     const fake = failing([
       { stage: 'compose', code: 'figure_without_caption', node: null, block: 'f1', detail: null },
