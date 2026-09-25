@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- The validator's messages come from the SDK's neutral resources whatever the machine's
+         culture, so a failure reads the same on every machine that runs it. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- The package and everything it pulls in are pinned, with their content hashes, by
+         packages.lock.json; the image restores with locked mode, so a drift fails the build. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.5.1" />
+  </ItemGroup>
+
+</Project>

@@ -45,3 +45,8 @@ untracked/
 
 # Spike build output. The bundle is 2MB and is rebuilt by one esbuild command.
 spikes/editor-framework/out/
+
+# The Word validator's .NET build output, when it is built outside its image: `dotnet restore` and
+# `dotnet build` write these beside the project.
+apps/worker/tools/ooxml-check/bin/
+apps/worker/tools/ooxml-check/obj/
