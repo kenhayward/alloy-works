@@ -21,6 +21,9 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1449, from 1392: the T1 audit against the code (2026-09-25) - 57 new rows splitting 28 by
+    // tranche, the T1 half superseding each row and the rest rows of their own in T2 to T6. Fifteen
+    // rows moved tranche whole and keep their identifiers, so they leave the count alone.
     // 1392, from 1388: STY-074 to STY-077, STY-048 and STY-012 each split by tranche for the themes
     // design (TH-H, TH-I) - the T1 half superseding the row, the rest a row of its own in T6 or T2.
     // 1388, from 1387: AST-051, each asset format declaring how it is made safe - scanned, or proved
@@ -64,9 +67,14 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1392);
+    expect(model.requirements).toHaveLength(1449);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 429, from 430: the T1 audit against the code. content-model.md stops claiming CNT-055 and
+    // CNT-060, whose T1 halves, CNT-166 and CNT-167, it answers only in part (the editor's display and
+    // the publish failing; Word's footnotes), and names both beside its table; publishing.md claims
+    // PUB-096, PUB-022's cross-reference half, which it had left unclaimed only for citations. STR-012,
+    // CNT-103, VER-011 and IAM-052's claims move to STR-067, CNT-169, VER-056 and IAM-078.
     // 430, from 429: themes 1's plan. themes.md's claims of STY-012 and STY-048 move to STY-076 and
     // STY-074, their T1 halves, and it claims STY-077, alignment by column type, which it designs;
     // STY-075 waits for LOC-038's list.
@@ -160,7 +168,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(430);
+    ).toBe(429);
   });
 });
 
@@ -441,8 +449,13 @@ describe('the citations in the committed model', () => {
   // its maximum with its proportion kept; and STY-076, STY-013 with PUB-017 and TAB-032, and STY-018 in
   // apps/worker's table-and-image-styles.test.ts, where four table styles over a table crossing pages
   // and every image placement and alignment are read back from the PDF.
+  // 317, from 307 (2026-09-25): the T1 audit against the code cites CNT-125, CNT-025, CNT-028,
+  // CNT-037, AST-012, IAM-007, IAM-041 and IAM-039 on tests that already demonstrated them, PUB-096 on
+  // apps/worker's references.test.ts, where a reference in running text, a list's item, a quotation, a
+  // table's cell and a footnote's text is read back as a link, and STR-067 beside STR-003 in
+  // packages/db's documents.test.ts.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(307);
+    expect(model.citations).toHaveLength(317);
   });
 
   it('cites no identifier the corpus does not hold', () => {
