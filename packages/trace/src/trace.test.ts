@@ -476,8 +476,11 @@ describe('the citations in the committed model', () => {
   // Word-only request of a document citing a page is refused before anything is recorded, and one of a
   // document citing none is published with its Word document's record saying it carries no page-cited
   // output, which the same document beside a PDF does not say.
+  // 325, from 324 (2026-09-25): Word 1's Word check cites PUB-029 in apps/worker's
+  // word-check.test.ts, which opens the writer's fixtures in Word itself, updates their fields and
+  // reads back what Word shows; it runs only on Windows with ALLOY_WORD_CHECK=1, so CI skips it.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(324);
+    expect(model.citations).toHaveLength(325);
   });
 
   it('cites no identifier the corpus does not hold', () => {
