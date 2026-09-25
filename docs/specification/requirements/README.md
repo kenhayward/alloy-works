@@ -200,7 +200,9 @@ entries, terms and vocabularies are small structured records with none of that. 
 share - reference by identity and where-used - is an argument for a common mechanism rather than a
 common area, in the same way that `CNT` and `DAT` both anchor footnotes without being one area.
 
-\1
+Two of the twenty-one areas, `STY` and `TPL`, existed only because somebody happened to ask whether
+something was covered elsewhere. Two more, `AST` and `LIB`, came from looking on purpose. The guard
+above is what makes the difference repeatable.
 
 **A twenty-second area, `MET`, came later and from building rather than reading.** Designing the
 content model found a component described as typed and carrying metadata, and the only metadata in the
