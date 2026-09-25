@@ -185,7 +185,10 @@ describe('a publication at its own address', () => {
     expect(screen.getByTitle('The dosing report')).toHaveAttribute('src', VIEW);
     expect(document.querySelectorAll('iframe')).toHaveLength(1);
     expect(aside).toHaveTextContent('Made with Typst 0.15.1 and publication template 13.');
-    expect(aside).toHaveTextContent('The Word document was written by the Word writer word/1.');
+    // The writer's version as the template's is named, a number, never the stored `word/1` (the final
+    // review of Word 1, M7).
+    expect(aside).toHaveTextContent('The Word document was written by the Word writer, version 1.');
+    expect(aside).not.toHaveTextContent('word/1');
     // Each entry of its report, one sentence each.
     const report = within(aside).getByRole('list', { name: 'About the Word document' });
     expect([...report.querySelectorAll('li')].map((each) => each.textContent)).toEqual([

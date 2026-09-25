@@ -174,8 +174,13 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             Made with Typst {shown.engine} and publication template {shown.template}.
           </p>
         )}
+        {/* The writer's version as the template's is named, a number: the store's `word/1` names the
+            producer too, which the sentence already does (the final review of Word 1, M7). */}
         {word?.producerVersion != null && (
-          <p>The Word document was written by the Word writer {word.producerVersion}.</p>
+          <p>
+            The Word document was written by the Word writer, version{' '}
+            {word.producerVersion.replace(/^word\//, '')}.
+          </p>
         )}
         {pdf !== undefined && (
           <p>
