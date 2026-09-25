@@ -471,6 +471,13 @@ band of two rows); with no band size nothing is filled.
 counting from the first row after the header - the template's banding - and the band size is required:
 without it Word bands nothing; with 2 it bands pairs.
 
+**Found later (Word 2, 2026-09-25).** The measurement stands; its reading of the template does not.
+Template 13 fills the first body row and every other one after it (`calc.even(row - headerRows)` in
+`apps/worker/templates/publication/13/main.typ`), so the template's banding is the first variant's
+`band1Horz`, which M6 found on body rows 1, 3, 5, not `band2Horz`. Word 2's writer writes `band1Horz`
+with `w:tblStyleRowBandSize 1`, and the Word check found its banded cells exactly where the PDF paints
+the band. The summary's M6 and M14 lines below carry the misreading.
+
 ## M15 Complex-script size
 
 Script `probes/m15.mjs` (+ `m15.ps1`). M12's Hebrew paragraph (`w:bidi`, runs
@@ -585,3 +592,11 @@ neither right-aligns the number nor breaks, and a too-wide one is cut off at the
 | M15   | Right-to-left runs take `w:szCs`: without it 10pt (9.96), with it 11pt, from docDefaults or the style                                                                                                                        | Write `w:szCs` beside every `w:sz`, in docDefaults and in every style                                                                                                                                                                    |
 | M16   | Cover alone in an unnumbered first section: the front starts at "i", NUMPAGES counts every page (5); a heading's space before is kept after a section break, dropped after a page break                                      | Put the cover in its own section to match the PDF's front numbering; a section-opening heading carries its space before at the page top                                                                                                  |
 | M17   | A borderless two-cell row (equation cell + fixed number cell) keeps the number right, breaks within the cell, and a REF to a bookmark round the SEQ updates; `eqArr` `#` numbering does neither and is clipped when too wide | Number display equations with the two-cell row; never `m:eqArr` `#`; the number-below paragraph is a working fallback                                                                                                                    |
+
+**Found later (Word 2, 2026-09-25).** Three lines of this table are no longer what the writer does, and
+are left as they were written. **M6 and M14**: the template bands the first body row and every other
+one after it, so the writer writes `band1Horz`, not `band2Horz` (the note under M14). **M7**: a floated
+figure is not a `wrapTopAndBottom` anchor. Word put the anchored image at the head of its page and
+left its caption in the text where the figure stood, so the image's paragraph and the caption's share
+one `w:framePr` at the head of the text area, and stand together as the PDF's band does
+([word-output.md](../../docs/design/word-output.md#what-was-built)).

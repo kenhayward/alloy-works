@@ -312,6 +312,29 @@ The documents page asks which formats to publish, and a publication offers each 
 **Ken agreed every recommendation on 2026-09-25**, and gave permission to download the Open XML SDK
 for validating in CI (WO-L).
 
+**What building Word 2 found, 2026-09-25.** The table above is the record of what was decided, and
+stands as it was agreed; three of its lines are no longer what was built, and
+[What was built](#what-was-built) says why at length:
+
+- **WO-F's banding is `band1Horz`, not `band2Horz`.** Template 13 fills the first body row and every
+  other one after it (`calc.even(row - headerRows)`, which `table-and-image-styles.test.ts` asserts).
+  M14 measured `band2Horz` filling the second, fourth and sixth body rows, which is right, and read that
+  as the template's banding, which it is not; `band1Horz` counts from the first row after the header
+  rows and fills exactly the PDF's rows. The writer writes `band1Horz` with `w:tblStyleRowBandSize 1`,
+  and the Word check holds every banded cell to the fill the PDF paints behind the same words. The
+  measured table's row for a table style ("as the PDF does") and "Tables, figures and lists as Word has
+  them" above carry the same misreading.
+- **WO-G's floated figure is a frame, not an anchor.** The head of the page's text area holds; the way
+  there changed. An anchor put the image at the head of its page and left its caption in the text
+  where the figure stood, 226pt below it in the measuring document, where the PDF sets the two as one
+  band; one `w:framePr` shared by the image's paragraph and the caption's keeps them together, within
+  0.06pt of the PDF's band.
+- **WO-M's second and third slices moved.** Captions as fields came into Word 2 (its ruling R1), since
+  tables and figures arrive there and M3 had measured the fields; so did the lists of figures and of
+  tables after the contents, since the default layout lists both and without them no document holding
+  a figure or a table could reach Word under it. Word 3 is footnotes, cross-references and their
+  bookmarks; Word 4 is equations and the list of equations.
+
 **What Word 1 to Word 4 claim and cite.** Word 1: PUB-023 once the rest have landed rather than
 first, PUB-027 (themes.md), PUB-034's and CNT-084's Word halves, CNT-128's, PUB-092's, PUB-012, PUB-065
 and PUB-074, STY-052's report. Word 2: TAB-039's and TAB-049's Word halves, PUB-035. Word 3: PUB-024,
@@ -507,6 +530,181 @@ PUB-023. Open for any of them: how a reader who declines the prompt sees the con
 running to a second page, and a matter entered twice, which the check has not looked at.
 `typeface_not_embeddable` now names a Word document where Word refused the face, its `detail` the
 family and `: docx` (the final review, M6).
+
+**Word 2 is built**, by [Word 2](../plans/2026-09-25-word-02-lists-tables-and-figures.md): WO-F, WO-G
+and WO-I, and what WO-M's second slice holds, with captions as fields and the lists of figures and of
+tables after the contents brought forward from the third. Everything a document holds but footnotes,
+cross-references and equations now reaches Word: lists of every kind nested to nine levels, definition
+lists, quotations, preformatted text, tables in their table styles, figures, and images in a line of
+text or a table's cell, each figure and table numbered by Word's own fields and listed after the
+contents where the layout lists them. The writer is `word/2`. Building it changed these things here:
+
+- **Off `word_not_yet`, and the trap undone.** A list, a quotation, preformatted text, a table, a
+  figure and an image in a line are written; what stays refused by name is an equation, a footnote, a
+  cross-reference and the list of equations. Word 1's trap is closed for what left the list:
+  `caption_too_long` and `image_too_wide`, which dropped their figure and image from the published
+  document, now keep them, still the PDF's refusals alone, so a Word-only publication carries a figure
+  whose caption the PDF's measure refuses; `line_too_wide`, `table_header_spans_body` and
+  `continuation_words_missing` never dropped anything. Three refusals still drop their construct, each
+  still `word_not_yet` for Word: a footnote in a header row, a reference to a header-row target, and an
+  equation the maths tree refuses. **The comment on `pdfsOwn` says so, for Word 3 and 4.**
+- **Captions are Word's fields** (R1):
+  `{word} {STYLEREF n \s}{separator}{SEQ Figure \* <format> \s n}` where the layout's rule prefixes the number of the chapter at depth `n`, `SEQ` alone where it
+  does not, no field where the scheme gives the caption no number, one `SEQ` name per sequence
+  across every matter, each prefilled with the numbering table's label. `captionField` in
+  `word/numbering.ts` is the one shape the writer writes and the refusal reads.
+  **`numbering_not_in_word` follows Word's fields through the document as Word reads it** - every
+  node a heading at its depth to the ninth, numbered or not, `STYLEREF` the last heading at its
+  level, `SEQ \s n` counting again after any heading at `n` or above - and refuses a figure's or a
+  table's number Word would print otherwise, `detail` `figure:<matter>:<why>` or
+  `table:<matter>:<why>`: a prefix Word finds elsewhere or not at all (after an unnumbered chapter,
+  Word printed 0.1), a restart past the ninth level or one Word counts differently, a separator Word
+  cannot hold, letters from the 28th (Word _bb_, the PDF _ab_) and roman past 3999. The default
+  scheme passes. A problem now names its block, so the author is sent to the caption.
+- **The lists of figures and of tables are this slice's.** Each is one `TOC \h \z \c "<SEQ name>"`
+  field after the contents, in its section, its title in the `list` role and on a page of its own,
+  prefilled with the captions the writer wrote a field for and no page, its entries in the writer's
+  `TableofFigures` style, which is the one Word rebuilds them in (M9). Without a contents they stand in
+  a front section of their own. Measured, Word's pages for every entry are the PDF's.
+- **Image sizes are resolved against the Word page** (R3), by the PDF's own functions, `figureSize` and
+  `inlineSize`, against the layout's Word page and each place's indents, into `WordInput.images`,
+  keyed by `figureImageKey(node, block)` and `inlineImageKey(node, site, index)`, the site a paragraph
+  (a cell's included), a term, an attribution or a table's note, and the index the image's place among
+  the published runs. An image in a line too wide for Word's line is refused `image_too_wide` for Word
+  too, said once where both formats refuse it. The job reads the images once, held to their hashes,
+  and hands the same bytes to Typst and to the writer, which writes each once as
+  `word/media/<sha256>.<ext>`, whatever the number of places it stands in.
+- **Lists** (R4, WO-I): each list a numbering definition of its own, nine levels, its format and
+  start at its level and the rest a step in or out, bullets disc, circle and square by the unordered
+  lists it stands in, as the engine counts them. **A marker's width is read from the face file**,
+  `faceAdvances` in `word/advances.ts`, since the engine stands an item after its widest marker as
+  the face sets it; an estimate put items 7 to 14pt off, the face puts every one within 0.07pt, but
+  for roman numerals, which the engine kerns and Word does not (0.73pt on _iv._). Numbers are
+  right-aligned where the widest ends, as the engine's are. An item opening with anything but a
+  paragraph, and an empty one, carries its number on an empty numbered paragraph of its own. A term
+  is bold, as the engine sets it, with its definitions indented 2em. A tenth level, a list numbered
+  in letters from the 28th and one past roman 3999 fail **`list_not_in_word`**, a new code naming
+  the list, rather than `numbering_not_in_word`, whose sentence is the layout's: a list is the
+  document's.
+- **Quotations and M1 d8** (R5, R6). A quotation's blocks are in the quotation's style and its
+  attribution a paragraph after them; where two quotations meet with no attribution between them, the
+  writer turns contextual spacing off on the pair and drops the facing spaces, as M1 measured: 43.44
+  against the PDF's 43.50. The spacing pass states over a style only what Word would read differently,
+  so nothing is written where Word already agrees, and Word 1's documents are byte for byte as they
+  were.
+- **Preformatted text** is its label, then a paragraph a line, spaces kept. **Two blocks in a row
+  joined into one panel in Word** (15.60pt apart, where the PDF sets two panels 27.70 apart); of five
+  ways measured to part them, the writer takes the invisible one, standing the second **a twentieth
+  of a point further in on each side**, alternating, so that a third stands where the first does: two panels, 28.56 apart.
+  `w:between` was not tried, since it draws a rule between a block's own lines. And **a line as wide as
+  the PDF's measure holds wrapped in Word**, as Word 1 foresaw: 8.8pt text is 9pt in Word, in a panel
+  4pt narrower, so Word held 80 columns where the PDF holds 83. The writer sets every line of such a
+  block the least whole twentieths of a point closer that fit it (4, at the default), and none where
+  the line fits or where more than the next half point down's narrowing would be needed; the Word
+  check found it, the line wrapping before the fix and not after.
+- **Tables** (R7, WO-F): a Word table style per theme table style, `Table-<id>`, its rules, padding,
+  header row and header column conditions and **banding by `band1Horz`**, the note beneath the
+  decisions table says why; equal fixed columns; merged cells by `w:gridSpan` and `w:vMerge`; header
+  rows `w:tblHeader`, body rows `w:cantSplit` where the style keeps rows whole. A header's weight is
+  stated in the style both ways and set bold on its runs too, since Word toggles a style's bold over a
+  bold cell style to regular. **A table with two or more header columns** draws them on its cells,
+  since Word's first column is one column. The caption is a paragraph above it with `w:keepNext`, its
+  words the table's `w:tblCaption`; the note a paragraph after it. A section never ends in a table:
+  an empty paragraph a point high closes it, since Word ends a section with a paragraph.
+- **Figures and images** (R8, WO-G): a figure's image in a paragraph of its own in the caption's style,
+  aligned by its image style, as a `wp:inline`, described in `descr` or flagged decorative by M7's
+  extension, its caption below; the space above it the PDF's leading, which Word does not set above a
+  line an image fills. A floated figure is a frame, the note above says why. An image in a line is a
+  `wp:inline` in its run, in a cell too.
+- **The report's table entries**, closed shapes stored and served as Word 1's are, each a sentence on
+  the publication's page: `header_column_lost`, `header_repeated` for a table whose style does not
+  repeat its header, since Word repeats every marked header, and `continuation_label_omitted` for one
+  whose style asks for a label, since Word sets none - for every such table, since the writer cannot
+  know where Word breaks the page. An unnumbered table is said as _A table with no number_.
+- **The Word check holds Word to the PDF.** Two fixtures join Word 1's seven: every construct above,
+  compiled through template 13 beside it with the same image bytes, and captions prefixed and
+  restarted at the third and the ninth levels, every caption field prefilled wrong. It checks nine
+  things more, [`docs/testing.md`](../testing.md#the-word-check) lists them, and each ran green in
+  Word 16; its bite was checked by rebuilding the writer with `band2Horz`, no panel parting and the
+  frame at the foot, and four of them failed.
+
+**What Word showed that the design did not foresee**, measured against the PDF of the same document:
+
+- **A term stands 3.40pt further from its definition** (14.40 against 11.00): the engine sets a
+  definition an em below its term, less than a line, and Word cannot set less than its line. The
+  engine's 11pt looks like an artefact of how `terms` lays out an inline term before a block, and may
+  be the template's to change rather than Word's to copy; the check holds the difference at 3.40.
+- **An item opening with a nested list or preformatted text takes a line more** (14.40): the engine
+  sets two markers on one line, or a marker beside a panel's first line, and a Word paragraph carries
+  one number, so the item's number stands on a paragraph of its own.
+- **Two panels are parted by a twentieth of a point**, and stand 0.98pt further apart than the PDF's
+  (28.68 against 27.70), inside the check's point, but only just.
+- **A cell's top margin takes the line's leading.** Word sets a cell's line whole, its leading above
+  the text, so with the style's padding on every side rows stepped 24.84 where the PDF's step 21.00.
+  The table's own `w:tblCellMar` gives up the cell style's leading at the top (1.65pt of 5 at the
+  default) and the caption's space after takes it: rows step 21.48, the half point the difference
+  being Word's room for a half-point rule, which the PDF does not give. A recipient sees a top cell
+  margin of 1.65pt where the style says 5.
+- **Preformatted text is narrowed where its widest line would wrap**, above: 0.2pt a character at the
+  default, still wider a glyph than the PDF's.
+- **The frame**: the anchor left the caption behind, the frame keeps it, its space below the engine's
+  clearance less the text's leading (13.15pt), the caption's baseline 309.65 against the PDF's 309.61
+  and the text below 337.13 against 337.11.
+- **A line holding an image in a line stands 3.44pt nearer the line above** (18.24 against 21.68):
+  Word grows the line to the image and adds no leading above it, where the PDF adds its leading above
+  the image. It is per line, so no paragraph property fixes it without moving every line; in a cell,
+  the image's row is 2.17pt shorter. Left.
+- **Caption fields hold at the third and the ninth levels** and under an appendix's letter, where
+  Word 2's first task had measured the first and second: Figure 1.1.1.1.1.1.1.1.1.1 and Table
+  1.1.1.1 after the update, from "9" prefilled. Rules take room in Word where the PDF's do not, and
+  a width Word lacks is drawn at its nearest (2pt as 2.25).
+- **The outline's page break is not published**, found by the check's fixture: a reference with
+  `pageBreak: 'page'` ran on in the PDF as in Word. Outside Word's scope, and recorded here for
+  publishing to look at.
+
+**What each claim now stands on**, as `pnpm trace show` reports it; the citations pin moved from 325
+to 328:
+
+| ID          | Claimed by    | Cited                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **TAB-039** | publishing.md | `apps/worker/src/word.test.ts`, one test reading one publication's two outputs together: the PDF, compliant by veraPDF, its `Caption` the `Table`'s first child; the Word document, its caption the paragraph straight above the table in the caption role with `w:keepNext`, its words the table's `w:tblCaption`. "In every output" is both halves                                                                       |
+| **TAB-049** | publishing.md | The same test: in the PDF, `TH` for both header rows and the header column; in Word, both header rows `w:tblHeader` and none other, and the report naming the table whose header column Word cannot mark                                                                                                                                                                                                                   |
+| **PUB-035** | this document | `apps/worker/src/word.test.ts`, one test over the whole Word 2 document reading every item [Accessibility](#accessibility-pub-035) lists: every heading in Word's style for its depth with its outline level; every drawing described by its alternative text or flagged decorative; every table's header rows marked and its caption associated; the header column named in the report; every run of text in its language |
+
+**PUB-035 is whole only while equations, footnotes and cross-references are refused for Word.** No
+Word document carries one today, so none carries one inaccessibly, and the two things Word cannot
+carry are named gaps, not hidden ones: a description's language, which Word has nowhere to put and
+this document says, and a header column, which the report names. **Word 3 and Word 4 must extend
+this test** as footnotes, cross-references and equations reach Word, or the citation goes stale.
+
+**Not cited, and why.** CNT-117, CNT-118, CNT-153, CNT-018 and CNT-019, the lists' kinds, depth,
+start and format: the content model's statements, already covered, which ask nothing of every output,
+so a Word test would be a second citation, not a completion. AST-013, AST-015 and AST-039, a figure's
+alternative text, the decorative flag and the description's language: none asks it of every output,
+and AST-039's Word half cannot be shown at all. PUB-066: the lists after the contents are `TOC`
+fields Word refreshes, but page references are Word 3's. PUB-038 is covered by the PDF. PUB-023 waits
+for Word 4.
+
+**Left for Word 3 and 4.** Of Word 1's list for Word 2, all is done but what is below. Word 3:
+footnotes, cross-references and their bookmarks, named Word's way, and `numbering_not_in_word`
+extended to footnotes; PUB-025, PUB-026, PUB-065 and PUB-066; and the trap above for a footnote in a
+header row and a reference to a header-row target, which must stop dropping them for Word as they
+leave `word_not_yet`. Word 4: equations and the list of equations, which alone of the lists after
+the contents is still refused, deciding which of the maths tree's refusals Word sets and undoing the
+trap for the rest, reporting the maths face's substitution; PUB-067 and CNT-045, then PUB-023. Both
+extend PUB-035's test. **Not measured in Word**, each tested for its XML only: a right-to-left list
+(a right-aligned number in a `w:bidi` paragraph), a table (`w:bidiVisual`) and a figure in a
+right-to-left passage; a style with a first-line indent on an item's first paragraph, which the
+hanging indent replaces; a table, a figure or a frame in a list item or a quotation; preformatted
+text narrowed inside one; and a header cell spanning into the body, which the PDF refuses and Word
+merges. **Known and left**: a kept row taller than a page splits in Word and loses its header on
+that page, as M6 found, where the PDF splits it in place; a header's and a footer's paragraphs are
+not parted as panels, which the default theme cannot reach, since it fills only preformatted text;
+an unnumbered figure may be listed in the PDF's list, which was not measured, and is not in Word's,
+since Word's list is its `SEQ` fields; the report names the same words for every unnumbered table;
+and `apps/web/src/publishing/failures.ts` still says `listOf:figure` and `listOf:table`, which
+stored failures may name. Still open from Word 1: how a reader who declines the prompt sees the
+contents, a cover running to a second page, and a matter entered twice.
 
 ## Open questions
 

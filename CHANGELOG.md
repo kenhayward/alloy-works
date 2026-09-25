@@ -3,6 +3,45 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.71.0 - 2026-09-25 (PR #PRNUM)
+
+### Added
+
+- **Lists, quotations, preformatted text, tables, figures and images now reach Word.** A document
+  holding them, which Word publishing refused until now, can be published to Word, alone or beside
+  its PDF, and looks as the PDF does:
+  - a list is Word's own list, bulleted or numbered as you made it - from any number, in letters or
+    roman numerals - and nested up to nine levels, so a recipient can add an item and Word numbers
+    it; a definition list is its terms in bold with their definitions beneath;
+  - quotations keep their attributions, and two in a row stay apart as in the PDF;
+  - preformatted text keeps every space, and two blocks in a row stay two panels;
+  - a table is a Word table in its table style, with its rules, fills, banding and merged cells, its
+    header rows marked so a screen reader reads them as headers, its caption above it and its note
+    beneath;
+  - a figure is its image, sized for the page, with its description or marked decorative, and its
+    caption below; a floated figure stands at the head of its page with its caption; an image in a
+    line of text or a table's cell stays in its line.
+- **Word numbers figures and tables itself**, as it numbers headings, so moving one in Word renumbers
+  the rest. The lists of figures and of tables follow the contents, and Word fills in their pages as
+  it does the contents'.
+- **The publication's page says what Word could not carry of a table**, table by table: a header
+  column, which Word cannot mark as one; header rows Word repeats on every page although the table's
+  style does not; and a continuation label, which Word cannot set.
+- **Publishing to Word refuses, by name, what Word would number differently**: a list nested more
+  than nine levels, or numbered in letters past _aa_ or in roman numerals past 3999, and a layout
+  whose numbering of figures or tables Word's own could not follow, which the default layout's never
+  is. The PDF is unaffected.
+
+### Changed
+
+- **A Word document is now written by the Word writer's version 2**, which the publication's page
+  names. Word documents already published keep version 1.
+- **Footnotes, cross-references and equations are still refused for Word**, by name, and arrive in
+  later releases. A term stands a little further from its definition in Word than in the PDF, and a
+  list item that opens with a nested list or preformatted text a line lower, since Word sets one
+  number to a line; a line of preformatted text as wide as the PDF's page holds has its characters
+  set a little closer in Word, so it stays one line.
+
 ## 0.70.0 - 2026-09-25 (PR #231)
 
 ### Added
