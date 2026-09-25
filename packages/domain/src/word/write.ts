@@ -1,7 +1,14 @@
 import { strToU8, zipSync, type Zippable } from 'fflate';
 
+import { ADMITTED_FORMATS } from '../assets/header.js';
 import { escapeXml } from '../content/ooxml/xml.js';
-import type { WordInput } from '../publishing/assemble.js';
+import {
+  figureImageKey,
+  inlineImageKey,
+  type RunsSite,
+  type WordImage,
+  type WordInput,
+} from '../publishing/assemble.js';
 import type { PageFormat, PublishingFormat, SlotPart } from '../publishing/layout.js';
 import {
   parseOutputReport,
@@ -12,6 +19,7 @@ import type {
   PublishedBlock,
   PublishedCell,
   PublishedDocument,
+  PublishedFigure,
   PublishedInline,
   PublishedLanguage,
   PublishedList,
@@ -78,11 +86,11 @@ import { spacingOverrides, type SpacingOverride } from './spacing.js';
  *
  * Word 1 wrote paragraphs, headings, marks, links and languages, and the page around them: the
  * cover, the notice, the contents and the running heads and feet. Word 2 writes lists, quotations and
- * preformatted text, each stood in and spaced as the PDF sets it (rulings R4 to R6), and tables in
- * their table styles, captioned by Word's fields (R1, R7). `assemble` refuses equations, footnotes and
- * cross-references by name for Word (`word_not_yet`); figures and images reach it from Word 2's first
- * task, and are written by a later one, so until then meeting one here throws, as meeting anything
- * else does.
+ * preformatted text, each stood in and spaced as the PDF sets it (rulings R4 to R6), tables in
+ * their table styles, captioned by Word's fields (R1, R7), and figures and images in a line, each
+ * drawn from its own image's bytes at the size `assemble` gave it against the Word page (R3, R8).
+ * `assemble` refuses equations, footnotes and cross-references by name for Word (`word_not_yet`), so
+ * meeting one here throws.
  */
 
 /** What the job records as the output's producer version (R12). */
@@ -100,6 +108,12 @@ export interface WordWriting {
    * since the domain reads no file. Only those the document's text is set in are embedded.
    */
   readonly faces: ReadonlyMap<string, Uint8Array>;
+  /**
+   * Every image the request resolved, by the path the published document names it at -
+   * `assets/<sha256>.<extension>` - as the worker reads them for the PDF's compile root (Word 2,
+   * ruling R3). Only those the document places are written into the package.
+   */
+  readonly images: ReadonlyMap<string, Uint8Array>;
 }
 
 export interface WrittenDocx {
@@ -115,6 +129,30 @@ const PACKAGE_RELATIONSHIPS = 'http://schemas.openxmlformats.org/package/2006/re
 const WML = 'application/vnd.openxmlformats-officedocument.wordprocessingml.';
 const DECLARATION = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 const NAMESPACES = `xmlns:w="${W_NS}" xmlns:r="${R_NS}"`;
+const WP_NS = 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';
+const A_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main';
+const PIC_NS = 'http://schemas.openxmlformats.org/drawingml/2006/picture';
+/** The document part's: its text's, and its drawings' (Word 2, ruling R8). */
+const DOCUMENT_NAMESPACES = `${NAMESPACES} xmlns:wp="${WP_NS}" xmlns:a="${A_NS}" xmlns:pic="${PIC_NS}"`;
+
+/** English Metric Units, which a drawing states its extent in, to the point. */
+const EMU_PER_POINT = 12_700;
+
+/**
+ * How far text stands clear of a floated figure, in ems of the text: the pinned Typst's `place`
+ * clearance, which template 13's figure takes as it is.
+ */
+const FLOAT_CLEARANCE = 1.5;
+
+/**
+ * **Word's decorative flag** (measured, M7): the extension Word reads as the picture's `Decorative`,
+ * with no description beside it, so that a screen reader passes it over as it passes over the PDF's
+ * artifact.
+ */
+const DECORATIVE =
+  '<a:extLst><a:ext uri="{C183D7F6-B498-43B3-948B-1728B52AA6E4}">' +
+  '<adec:decorative xmlns:adec="http://schemas.microsoft.com/office/drawing/2017/decorative" val="1"/>' +
+  '</a:ext></a:extLst>';
 
 // Written by code point, so that no escape in this file has to survive being typed.
 const BACKSLASH = String.fromCharCode(92);
@@ -165,8 +203,13 @@ interface Paragraph {
   /** The theme's style its spaces are read from: its own, or the one a style of the writer's is based on. */
   readonly theme: string;
   readonly content: string;
-  /** Kept on the page with what follows it, over its style: a table's caption (Word 2, ruling R7). */
+  /**
+   * Kept on the page with what follows it, over its style: a table's caption (Word 2, ruling R7), and a
+   * figure's image, whose caption stands below it (R8).
+   */
   readonly keepNext?: boolean;
+  /** Its alignment over its style's, as Word spells it: a figure's image's, its image style's (R8). */
+  readonly justify?: 'left' | 'center' | 'right';
   /** Its list and level, where it carries a heading's or an item's number (Word 2, ruling R4). */
   numbering?: string;
   readonly tabs?: string;
@@ -181,6 +224,13 @@ interface Paragraph {
   firstOfSection?: boolean;
   /** The space the PDF puts on each side of it, where a container decides it (Word 2, ruling R6). */
   wanted?: { before?: number; after?: number };
+  /**
+   * The leading the PDF puts above its line, which Word does not: a figure's image fills its line, and
+   * Word sets no leading above it, where the PDF spaces a figure from what is above it by its caption
+   * style's leading as it spaces any block (measured, Word 2, ruling R8). Added to whatever space it is
+   * wanted before.
+   */
+  readonly lead?: number;
   /** What it states over its style for Word to space it so (`spacingOverrides`). */
   spacing?: SpacingOverride;
   /**
@@ -290,6 +340,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     numbering: input.numbering,
     scheme: word.scheme,
     format,
+    images: word.images,
   });
 
   // The page's furniture: the cover's header and footer, the running ones, and the contents' where its
@@ -426,7 +477,13 @@ export function writeDocx(input: WordWriting): WrittenDocx {
             after: own.spaceAfter,
             contextual: own.contextualSpacing,
           },
-          wanted: paragraph.wanted ?? {},
+          wanted:
+            paragraph.lead === undefined
+              ? (paragraph.wanted ?? {})
+              : {
+                  ...paragraph.wanted,
+                  before: (paragraph.wanted?.before ?? own.spaceBefore) + paragraph.lead,
+                },
         };
       }),
     ).forEach((override, index) => {
@@ -473,7 +530,15 @@ export function writeDocx(input: WordWriting): WrittenDocx {
         .concat(last ? properties : '');
     })
     .join('');
-  // The text's links, after the parts, each named in the order the text first meets its target.
+  // The images the text places, each once, in the order the text first meets them; then the text's
+  // links, each named in the order the text first meets its target.
+  const media = [...writer.media].map(([path, id]) => {
+    const bytes = input.images.get(path);
+    if (bytes === undefined) throw new Error(`No bytes for the image ${path}`);
+    const name = path.slice(path.lastIndexOf('/') + 1);
+    relationships.add('image', `media/${name}`, id);
+    return { name, bytes, extension: name.slice(name.lastIndexOf('.') + 1) };
+  });
   for (const [href, id] of writer.links) relationships.external(id, 'hyperlink', href);
 
   const fonts = fontParts(theme, writer.used, input.faces);
@@ -502,6 +567,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       (fonts.files.length === 0
         ? ''
         : '<Default Extension="odttf" ContentType="application/vnd.openxmlformats-officedocument.obfuscatedFont"/>') +
+      imageTypes(media.map((each) => each.extension)) +
       overrides
         .map(([part, type]) => `<Override PartName="${part}" ContentType="${type}"/>`)
         .join('') +
@@ -517,9 +583,10 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   put('docProps/core.xml', coreXml(document));
   put(
     'word/document.xml',
-    `${DECLARATION}<w:document ${NAMESPACES}><w:body>${body}</w:body></w:document>`,
+    `${DECLARATION}<w:document ${DOCUMENT_NAMESPACES}><w:body>${body}</w:body></w:document>`,
   );
   put('word/_rels/document.xml.rels', relationshipsXml(relationships.xml));
+  for (const each of media) put(`word/media/${each.name}`, each.bytes);
   put(
     'word/styles.xml',
     projectStylesXml(
@@ -575,6 +642,13 @@ class Writer {
   readonly used = new Map<string, Set<string>>();
   /** Each link's target, with its relationship's identifier, in the order the text meets them. */
   readonly links = new Map<string, string>();
+  /**
+   * Each image the text places, by its path, with its relationship's identifier, in the order the text
+   * first meets it: one part however often it is placed (Word 2, ruling R8).
+   */
+  readonly media = new Map<string, string>();
+  /** How many drawings the text has placed: each one's number is the next, in document order. */
+  private drawings = 0;
   /** Each list Word numbers, in the order the text meets them (Word 2, ruling R4). */
   readonly lists: WordList[] = [];
   readonly document: Passage;
@@ -595,6 +669,7 @@ class Writer {
       readonly numbering: NumberingTable;
       readonly scheme: NumberingScheme;
       readonly format: PageFormat;
+      readonly images: ReadonlyMap<string, WordImage>;
     },
   ) {
     this.document = {
@@ -746,7 +821,13 @@ class Writer {
           body: [
             this.paragraph(
               block.style,
-              this.inlineRuns(block.runs, block.style, passage, place.strong === true),
+              this.inlineRuns(
+                block.runs,
+                block.style,
+                passage,
+                { kind: 'paragraph', block: block.id },
+                place.strong === true,
+              ),
               { bidi: passage.rtl, ...this.indented(block.style, place) },
             ),
           ],
@@ -762,9 +843,11 @@ class Writer {
         return this.preformatted(block, place, passage);
       case 'table':
         return this.table(block, place, passage);
+      case 'figure':
+        return this.figure(block, place, passage);
       default:
-        // A figure is Word 2's later task's; a block equation Word 4's and a marker, which only a
-        // cross-reference makes, Word 3's: `assemble` refuses each for Word until then.
+        // A block equation is Word 4's and a marker, which only a cross-reference makes, Word 3's:
+        // `assemble` refuses each for Word until then.
         throw new Error(`The Word writer does not write a ${block.type} yet`);
     }
   }
@@ -828,11 +911,12 @@ class Writer {
       within = inner(numbered.marker + gap, list.kind === 'unordered');
     }
     const paragraphs: Body[] = [];
-    for (const each of list.items) {
+    list.items.forEach((each, index) => {
       const own: Paragraph[] = [];
       if (each.term !== null) {
+        const term: RunsSite = { kind: 'term', block: list.id, item: index };
         own.push(
-          this.paragraph(itemStyle, this.inlineRuns(each.term, itemStyle, passage, true), {
+          this.paragraph(itemStyle, this.inlineRuns(each.term, itemStyle, passage, term, true), {
             bidi: passage.rtl,
             ...this.indented(itemStyle, place),
           }),
@@ -870,7 +954,7 @@ class Writer {
       const previous = paragraphs[paragraphs.length - 1];
       if (previous !== undefined) this.adjoin(previous, whole[0] as Paragraph);
       paragraphs.push(...whole);
-    }
+    });
     return { body: paragraphs, top: itemStyle, bottom: itemStyle, container: true };
   }
 
@@ -896,7 +980,10 @@ class Writer {
     const role = this.theme.roles.attribution;
     const attribution = this.paragraph(
       role,
-      this.inlineRuns(quotation.attribution, role, passage),
+      this.inlineRuns(quotation.attribution, role, passage, {
+        kind: 'attribution',
+        block: quotation.id,
+      }),
       { bidi: passage.rtl, ...this.indented(role, within) },
     );
     const last = body[body.length - 1];
@@ -968,21 +1055,23 @@ class Writer {
     caption.wanted = {
       after: this.properties(captionRole).spaceAfter + cell.spaceBefore + leading(cell),
     };
-    const note =
-      table.note === null
-        ? null
-        : this.paragraph(noteRole, this.inlineRuns(table.note, noteRole, passage), {
-            bidi: passage.rtl,
-            ...this.indented(noteRole, place),
-          });
-    if (note !== null) {
-      note.wanted = { before: cell.spaceAfter + this.properties(noteRole).spaceBefore };
-    }
+    // Its cells before its note, so that the drawings in them are numbered in the order they stand.
     const written: WordTable = {
       kind: 'table',
       properties: this.tableProperties(table, style, place, passage),
       rows: this.rows(table, style, place, passage),
     };
+    const note =
+      table.note === null
+        ? null
+        : this.paragraph(
+            noteRole,
+            this.inlineRuns(table.note, noteRole, passage, { kind: 'note', block: table.id }),
+            { bidi: passage.rtl, ...this.indented(noteRole, place) },
+          );
+    if (note !== null) {
+      note.wanted = { before: cell.spaceAfter + this.properties(noteRole).spaceBefore };
+    }
     this.report(table, style);
     return {
       body: note === null ? [caption, written] : [caption, written, note],
@@ -1177,7 +1266,8 @@ class Writer {
       (each) => each.node === this.at && each.block === captioned.id,
     );
     const field = entry === undefined ? null : captionField(this.numbers.scheme, entry);
-    const own = this.inlineRuns(captioned.caption, role, passage);
+    // A caption holds no image: `assemble` refuses one (`image_in_caption`).
+    const own = this.inlineRuns(captioned.caption, role, passage, null);
     if (entry === undefined || field === null || entry.number === null || entry.value === null) {
       // No number of Word's to compute: the label as the PDF prints it, where there is one.
       return (captioned.label === null ? '' : this.runs(`${captioned.label} `, passage)) + own;
@@ -1205,6 +1295,61 @@ class Writer {
     if (style.breaks.continuationLabel) {
       this.reported.push({ kind: 'continuation_label_omitted', ...named });
     }
+  }
+
+  /**
+   * **A figure** (Word 2, ruling R8; WO-G): its image, drawn at the size `assemble` gave it against the
+   * Word page, and its caption a paragraph below it in the caption role's style, numbered by Word's
+   * fields (R1), each where template 13 sets them - the caption kept, number and all, where the image
+   * is decorative (decision F-M). As a block, the image stands in a paragraph of its own in the caption
+   * role's style, as the figure's top is spaced by that style's space before, across what its place
+   * leaves of the measure and aligned there as its image style says, kept on the page with its caption
+   * as the PDF's figure is never parted from it. Floated, the image is anchored at the head of the text
+   * area of its caption's page, where Word keeps it out of the way of the text as the PDF's band is:
+   * anchored in its caption, so no empty line stands where the figure stood.
+   */
+  private figure(figure: PublishedFigure, place: Place, passage: Passage): WrittenBlock {
+    const role = this.theme.roles.caption;
+    const size = this.imageSize(figureImageKey(this.at, figure.id));
+    const align = justification(figure.alignment);
+    const own = this.indented(role, place);
+    if (figure.placement === 'float') {
+      // The margin's left and right are the page's, whatever the text's direction.
+      const across = passage.rtl ? mirrored(align) : align;
+      const caption = this.paragraph(
+        role,
+        `<w:r>${this.drawing(figure.path, size, figure.alternative, across)}</w:r>` +
+          this.captionRuns(figure, role, passage),
+        { bidi: passage.rtl, ...own },
+      );
+      return { body: [caption], top: role, bottom: role, container: true };
+    }
+    const measure: Indent = { left: twips(place.start), right: twips(place.end), firstLine: 0 };
+    const style = this.ownIndent(role);
+    const properties = this.properties(role);
+    const image = this.paragraph(
+      role,
+      `<w:r>${this.drawing(figure.path, size, figure.alternative, null)}</w:r>`,
+      {
+        keepNext: true,
+        lead: leading(properties),
+        bidi: passage.rtl,
+        justify: align,
+        ...(measure.left === style.left && measure.right === style.right && style.firstLine === 0
+          ? {}
+          : { indent: measure }),
+      },
+    );
+    const caption = this.paragraph(role, this.captionRuns(figure, role, passage), {
+      bidi: passage.rtl,
+      ...own,
+    });
+    // Template 13's `figure` sets its caption the style's space before and its leading below the
+    // image, which has no space of its own; Word sets the leading above the caption's text itself.
+    // Measured: each gap within a tenth of a point of the PDF's.
+    image.wanted = { after: 0 };
+    caption.wanted = { before: properties.spaceBefore };
+    return { body: [image, caption], top: role, bottom: role, container: true };
   }
 
   /** A paragraph's indents where its place moves it from its style's, as `indent` gives them. */
@@ -1381,19 +1526,29 @@ class Writer {
    * A paragraph's runs: each by `wordRun` - one character style and what Word's reading would lose
    * pinned (R9) - its language where it differs, and consecutive runs linked to one target as one
    * `w:hyperlink` to an external relationship. A quoted phrase adds nothing but its style: its text is
-   * what the author wrote, marks and all.
+   * what the author wrote, marks and all. An image among them is a drawing in a run of its own, at the
+   * size `assemble` gave it for the Word page under its place among `site`'s runs (Word 2, ruling R8).
    */
   private inlineRuns(
     runs: readonly PublishedInline[],
     styleId: string,
     passage: Passage,
+    site: RunsSite | null,
     strong = false,
   ): string {
     let xml = '';
     let linking: string | null = null;
-    for (const run of runs) {
+    for (const [index, run] of runs.entries()) {
+      if ('image' in run && site !== null) {
+        if (linking !== null) xml += '</w:hyperlink>';
+        linking = null;
+        const size = this.imageSize(inlineImageKey(this.at, site, index));
+        xml += `<w:r>${this.drawing(run.image.path, size, run.image.alternative, null)}</w:r>`;
+        continue;
+      }
       if (!('text' in run)) {
-        throw new Error('Word 1 writes runs of text alone, and assemble refuses the rest for Word');
+        // A footnote, a cross-reference and an equation are Word 3's and Word 4's.
+        throw new Error('The Word writer does not write this run, which assemble refuses for Word');
       }
       let href: string | null = null;
       let language: PublishedLanguage | null = null;
@@ -1411,6 +1566,81 @@ class Writer {
     }
     if (linking !== null) xml += '</w:hyperlink>';
     return xml;
+  }
+
+  /** An image's size against the Word page, as `assemble` gave it (Word 2, ruling R3). */
+  private imageSize(key: string): WordImage {
+    const size = this.numbers.images.get(key);
+    if (size === undefined) throw new Error(`No size for the image ${key} against the Word page`);
+    return size;
+  }
+
+  /**
+   * **A drawing of an image** (Word 2, ruling R8; measured, M7): the picture of its image's part - the
+   * part related once however often the image is placed - its extent the size given, and numbered, in
+   * `wp:docPr`, in the order the document holds its drawings, its description there, or Word's
+   * decorative flag where it has none. In the line, `wp:inline`; floated, a `wp:anchor` at the head of
+   * the text area - its margin's top - aligned across the measure as `align` says, which the text
+   * stands clear of above and below (`wrapTopAndBottom`) as it does of the PDF's band.
+   */
+  private drawing(
+    path: string,
+    size: WordImage,
+    alternative: PublishedFigure['alternative'],
+    align: 'left' | 'center' | 'right' | null,
+  ): string {
+    let relationship = this.media.get(path);
+    if (relationship === undefined) {
+      relationship = `rIdImage${this.media.size + 1}`;
+      this.media.set(path, relationship);
+    }
+    this.drawings += 1;
+    const number = this.drawings;
+    const cx = Math.round(size.width * EMU_PER_POINT);
+    const cy = Math.round(size.height * EMU_PER_POINT);
+    const extent = `<wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>`;
+    const docPr =
+      `<wp:docPr id="${number}" name="Picture ${number}"` +
+      (alternative === null
+        ? `>${DECORATIVE}</wp:docPr>`
+        : ` descr="${escapeAttribute(alternative.text)}"/>`);
+    const graphic =
+      `<a:graphic><a:graphicData uri="${PIC_NS}"><pic:pic>` +
+      `<pic:nvPicPr><pic:cNvPr id="${number}" name="${escapeXml(path.slice(path.lastIndexOf('/') + 1))}"/>` +
+      '<pic:cNvPicPr><a:picLocks noChangeAspect="1" noChangeArrowheads="1"/></pic:cNvPicPr></pic:nvPicPr>' +
+      `<pic:blipFill><a:blip r:embed="${relationship}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>` +
+      `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
+      '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>' +
+      '</pic:pic></a:graphicData></a:graphic>';
+    const frame =
+      '<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>';
+    if (align === null) {
+      return (
+        '<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
+        extent +
+        docPr +
+        frame +
+        graphic +
+        '</wp:inline></w:drawing>'
+      );
+    }
+    // The engine's clearance below a float, `place`'s an em and a half of the text around it.
+    const clearance = Math.round(
+      FLOAT_CLEARANCE * this.properties(this.theme.places.text).size * EMU_PER_POINT,
+    );
+    return (
+      `<w:drawing><wp:anchor distT="0" distB="${clearance}" distL="0" distR="0" simplePos="0" ` +
+      `relativeHeight="${number}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="0">` +
+      '<wp:simplePos x="0" y="0"/>' +
+      `<wp:positionH relativeFrom="margin"><wp:align>${align}</wp:align></wp:positionH>` +
+      '<wp:positionV relativeFrom="margin"><wp:align>top</wp:align></wp:positionV>' +
+      extent +
+      '<wp:wrapTopAndBottom/>' +
+      docPr +
+      frame +
+      graphic +
+      '</wp:anchor></w:drawing>'
+    );
   }
 
   private textRun(
@@ -1494,8 +1724,8 @@ function holdsSection(slots: readonly (readonly SlotPart[])[]): boolean {
 class Relationships {
   readonly xml: string[] = [];
 
-  add(type: string, target: string): string {
-    const id = `rId${this.xml.length + 1}`;
+  add(type: string, target: string, named?: string): string {
+    const id = named ?? `rId${this.xml.length + 1}`;
     this.xml.push(`<Relationship Id="${id}" Type="${R_NS}/${type}" Target="${target}"/>`);
     return id;
   }
@@ -1629,6 +1859,7 @@ function paragraphXml(paragraph: Paragraph, sectionProperties?: string): string 
           '/>') +
     (paragraph.indent === undefined ? '' : indentXml(paragraph.indent)) +
     (paragraph.spacing?.contextual === false ? '<w:contextualSpacing w:val="0"/>' : '') +
+    (paragraph.justify === undefined ? '' : `<w:jc w:val="${paragraph.justify}"/>`) +
     (sectionProperties ?? '');
   return `<w:p><w:pPr>${properties}</w:pPr>${paragraph.content}</w:p>`;
 }
@@ -1828,6 +2059,42 @@ function coreXml(document: PublishedDocument): string {
     `<dc:language>${wordLanguage(document.language)}</dc:language>` +
     '</cp:coreProperties>'
   );
+}
+
+/**
+ * An image format's content type, by the extension its part is named with, for each format the
+ * document places, in the order it first places them: only those, as a package declares no type it
+ * holds no part of.
+ */
+function imageTypes(extensions: readonly string[]): string {
+  return [...new Set(extensions)]
+    .map((extension) => {
+      const format = Object.values(ADMITTED_FORMATS).find((each) => each.extension === extension);
+      if (format === undefined) throw new Error(`No image format is named .${extension}`);
+      return `<Default Extension="${extension}" ContentType="${format.contentType}"/>`;
+    })
+    .join('');
+}
+
+/** An alignment across the measure as Word spells a paragraph's, which it reads by the text's direction. */
+function justification(alignment: PublishedFigure['alignment']): 'left' | 'center' | 'right' {
+  return alignment === 'start' ? 'left' : alignment === 'end' ? 'right' : 'center';
+}
+
+/** The other side. */
+function mirrored(align: 'left' | 'center' | 'right'): 'left' | 'center' | 'right' {
+  return align === 'left' ? 'right' : align === 'right' ? 'left' : 'center';
+}
+
+/**
+ * Text as an attribute's value, whose line feeds, carriage returns and tabs are kept as references,
+ * which a reader would otherwise read as spaces.
+ */
+function escapeAttribute(value: string): string {
+  return escapeXml(value)
+    .replaceAll(LINE_FEED, '&#10;')
+    .replaceAll(String.fromCharCode(13), '&#13;')
+    .replaceAll(TAB, '&#9;');
 }
 
 function relationshipsXml(relationships: readonly string[]): string {

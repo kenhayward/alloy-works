@@ -1,9 +1,17 @@
-import { strFromU8, unzipSync } from 'fflate';
+import { strFromU8, strToU8, unzipSync } from 'fflate';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
 import { scanXml } from '../content/ooxml/xml.js';
-import { assemble, type AssembleInput } from '../publishing/assemble.js';
+import {
+  assemble,
+  figureImageKey,
+  inlineImageKey,
+  publishedImagePath,
+  type AssembleInput,
+  type PublishingAsset,
+  type WordInput,
+} from '../publishing/assemble.js';
 import { defaultLayout, parseLayout, type Layout } from '../publishing/layout.js';
 import type { PublishingFormat } from '../publishing/layout.js';
 import type { PublishedDocument } from '../publishing/published.js';
@@ -329,8 +337,10 @@ interface Written {
   readonly bytes: Uint8Array;
   readonly report: ReturnType<typeof writeDocx>['report'];
   readonly document: PublishedDocument;
+  readonly word: WordInput;
   readonly theme: ResolvedTheme;
   readonly faces: Map<string, Uint8Array>;
+  readonly images: Map<string, Uint8Array>;
 }
 
 /** Assemble for Word as the job does, then write it. */
@@ -354,14 +364,38 @@ function written(
   if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
   if (assembled.word === null) throw new Error('assembled for no Word');
   const faces = facesOf(theme);
+  const images = imagesOf(over.assets ?? new Map());
   const { bytes, report } = writeDocx({
     document: assembled.document,
     numbering: assembled.numbering,
     word: assembled.word,
     formats,
     faces,
+    images,
   });
-  return { docx: read(bytes), bytes, report, document: assembled.document, theme, faces };
+  return {
+    docx: read(bytes),
+    bytes,
+    report,
+    document: assembled.document,
+    word: assembled.word,
+    theme,
+    faces,
+    images,
+  };
+}
+
+/**
+ * Every image the request resolved, by the path the published document names it at: invented bytes,
+ * each its own, which the writer copies into the package as they are and never reads.
+ */
+function imagesOf(assets: ReadonlyMap<string, PublishingAsset>): Map<string, Uint8Array> {
+  return new Map(
+    [...assets.values()].map((asset) => [
+      publishedImagePath(asset),
+      strToU8(`the bytes of ${asset.object}`),
+    ]),
+  );
 }
 
 /** The default layout, changed by `change` and held to the layout's own parse. */
@@ -2037,5 +2071,294 @@ describe('writeDocx: tables (Word 2, ruling R7)', () => {
       Number(each.attrs['w:w']),
     );
     expect(Math.abs(columns[0]! * 3 - Number(own['w:tblW']!['w:w']))).toBeLessThan(3);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------
+// Word 2: figures and images.
+// ---------------------------------------------------------------------------------------------------
+
+const RED = '00000000-0000-4000-8000-00000000a551';
+const BLUE = '00000000-0000-4000-8000-00000000b1e0';
+const RED_HASH = 'ab'.repeat(32);
+const BLUE_HASH = 'cd'.repeat(32);
+/** Two images as the request resolved them: a PNG four by three, and a square JPEG. */
+const IMAGES = new Map<string, PublishingAsset>([
+  [
+    RED,
+    {
+      object: `t_acme/sha256/${RED_HASH}`,
+      format: 'png',
+      width: 800,
+      height: 600,
+      alternative: { text: 'Two red squares', language: 'en-GB' },
+    },
+  ],
+  [
+    BLUE,
+    {
+      object: `t_acme/sha256/${BLUE_HASH}`,
+      format: 'jpeg',
+      width: 400,
+      height: 400,
+      alternative: { text: 'A blue square', language: 'en-GB' },
+    },
+  ],
+]);
+const figure = (name: string, asset: string, caption: string, over: object = {}) => ({
+  type: 'figure',
+  id: name,
+  asset,
+  imageStyle: 'figure',
+  caption: [text(caption)],
+  alternative: { kind: 'inherited' },
+  ...over,
+});
+const image = (asset: string) => ({
+  type: 'image',
+  asset,
+  imageStyle: 'inline',
+  alternative: { kind: 'inherited' },
+});
+/** A float at the end of the measure, half the measure wide: the only float the engine has. */
+const floatedTheme = themeWith((inputs) => {
+  inputs.catalogues.image.styles.push({
+    id: 'floated',
+    name: 'Floated',
+    appliesTo: ['figure'],
+    fixed: { dimension: 'width', value: 0.5, unit: 'measure' },
+    maximum: { value: 0.6, unit: 'textHeight' },
+    placement: 'float',
+    alignment: 'end',
+  });
+});
+
+const EMU = 12700;
+/** A drawing's extent, in EMUs. */
+const extentOf = (drawing: Element) => {
+  const { cx, cy } = first(drawing, 'wp:extent')!.attrs;
+  return { cx: Number(cx), cy: Number(cy) };
+};
+/** Every drawing beneath an element, inline or anchored, in document order. */
+const drawings = (element: Element) => all(element, 'w:drawing').map((each) => kids(each)[0]!);
+/** Where an anchored drawing is placed on one axis: what it is placed from, and its alignment. */
+const positioned = (anchor: Element, axis: 'wp:positionH' | 'wp:positionV') => {
+  const found = kids(anchor, axis)[0]!;
+  return {
+    from: found.attrs['relativeFrom'],
+    align: kids(found, 'wp:align')[0]!.children.join(''),
+  };
+};
+
+describe('writeDocx: figures and images (Word 2, ruling R8)', () => {
+  const figured = tabledOf(
+    [
+      said('before'),
+      figure('f1', RED, 'Shapes at rest'),
+      figure('f2', RED, 'A border', { alternative: { kind: 'decorative' } }),
+      figure('f3', BLUE, 'Blue on top', { imageStyle: 'floated' }),
+      paragraph('p1', text('Press '), image(RED), text(' to start.')),
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [text('Keys')],
+        headerRows: 1,
+        headerColumns: 0,
+        rows: [
+          { cells: [cell('h1', 'Key'), cell('h2', 'Look')] },
+          {
+            cells: [
+              cell('c1', 'Start'),
+              { content: [paragraph('c2', text('Press '), image(BLUE))], colspan: 1, rowspan: 1 },
+            ],
+          },
+        ],
+      },
+      said('after'),
+    ],
+    { theme: floatedTheme, assets: IMAGES },
+  );
+  const document = figured.docx.xml('word/document.xml');
+  const { body, at } = bodyOf(figured.docx);
+  const node = id('blocks');
+  /** The size `assemble` gave an image against the Word page, in EMUs. */
+  const sized = (key: string) => {
+    const size = figured.word.images.get(key)!;
+    return { cx: Math.round(size.width * EMU), cy: Math.round(size.height * EMU) };
+  };
+  /** The paragraph before this one. */
+  const before = (paragraph: Element) => body[body.indexOf(paragraph) - 1]!;
+
+  it("sets a figure's image in a paragraph of its own, aligned as its image style says and kept with its caption, a paragraph below it in the caption role, numbered by Word's fields (R1, M3)", () => {
+    const caption = at('Figure 1.1 Shapes at rest');
+    const held = before(caption);
+    expect(textOf(held)).toBe('');
+    expect(drawings(held).map((each) => each.name)).toEqual(['wp:inline']);
+    expect(styleOf(held)).toBe('caption');
+    expect(properties(held)).toContain('w:keepNext');
+    expect(kids(pPr(held)!, 'w:jc')[0]?.attrs).toEqual({ 'w:val': 'center' });
+    expect(styleOf(caption)).toBe('caption');
+    expect(fieldCodes(caption)).toEqual(['STYLEREF 1 \\s', 'SEQ Figure \\* arabic \\s 1']);
+    expect(drawings(caption)).toEqual([]);
+  });
+
+  it('draws it the size assemble gave it against the Word page, in EMUs, its picture as large as its frame', () => {
+    const [drawing] = drawings(before(at('Figure 1.1 Shapes at rest')));
+    const size = sized(figureImageKey(node, 'f1'));
+    expect(extentOf(drawing!)).toEqual(size);
+    const ext = first(first(drawing!, 'pic:spPr')!, 'a:ext')!.attrs;
+    expect({ cx: Number(ext['cx']), cy: Number(ext['cy']) }).toEqual(size);
+    // Four by three, the measure wide: the Word page's measure, not the PDF's.
+    expect(size.cx / size.cy).toBeCloseTo(4 / 3, 2);
+  });
+
+  it("describes an image by its alternative text in docPr's descr, and flags a decorative one by Word's decorative extension with no description (M7)", () => {
+    const [described, decorative] = drawings(document);
+    expect(first(described!, 'wp:docPr')!.attrs['descr']).toBe('Two red squares');
+    expect(all(described!, 'adec:decorative')).toEqual([]);
+    const flagged = first(decorative!, 'wp:docPr')!;
+    expect(flagged.attrs['descr']).toBeUndefined();
+    const ext = first(flagged, 'a:ext')!;
+    expect(ext.attrs['uri']).toBe('{C183D7F6-B498-43B3-948B-1728B52AA6E4}');
+    expect(kids(ext)[0]).toMatchObject({
+      name: 'adec:decorative',
+      attrs: {
+        'xmlns:adec': 'http://schemas.microsoft.com/office/drawing/2017/decorative',
+        val: '1',
+      },
+    });
+    // Its caption and number are kept, as the PDF keeps them (decision F-M).
+    expect(fieldCodes(at('Figure 1.2 A border'))).toHaveLength(2);
+  });
+
+  it('numbers every drawing from 1 in the order the document holds them, each named, its picture by the same number', () => {
+    const numbered = drawings(document).map((each) => {
+      const docPr = first(each, 'wp:docPr')!.attrs;
+      return [docPr['id'], docPr['name'], first(each, 'pic:cNvPr')!.attrs['id']];
+    });
+    expect(numbered).toEqual([
+      ['1', 'Picture 1', '1'],
+      ['2', 'Picture 2', '2'],
+      ['3', 'Picture 3', '3'],
+      ['4', 'Picture 4', '4'],
+      ['5', 'Picture 5', '5'],
+    ]);
+  });
+
+  it('floats a figure its style floats to the head of the text area, a band the text stands clear of, aligned across the measure as the style says (WO-G, M7)', () => {
+    const caption = at('Figure 1.3 Blue on top');
+    // Anchored in its caption, so no empty line stands where the figure stood, and Word sets the image
+    // on its caption's page.
+    const [anchor] = drawings(caption);
+    expect(anchor!.name).toBe('wp:anchor');
+    expect(textOf(before(caption))).toBe('Figure 1.2 A border');
+    expect(anchor!.attrs).toMatchObject({
+      simplePos: '0',
+      behindDoc: '0',
+      locked: '0',
+      layoutInCell: '1',
+      allowOverlap: '0',
+    });
+    expect(Number(anchor!.attrs['relativeHeight'])).toBeGreaterThan(0);
+    expect(kids(anchor!).map((each) => each.name)).toEqual([
+      'wp:simplePos',
+      'wp:positionH',
+      'wp:positionV',
+      'wp:extent',
+      'wp:effectExtent',
+      'wp:wrapTopAndBottom',
+      'wp:docPr',
+      'wp:cNvGraphicFramePr',
+      'a:graphic',
+    ]);
+    expect(positioned(anchor!, 'wp:positionH')).toEqual({ from: 'margin', align: 'right' });
+    expect(positioned(anchor!, 'wp:positionV')).toEqual({ from: 'margin', align: 'top' });
+    expect(extentOf(anchor!)).toEqual(sized(figureImageKey(node, 'f3')));
+    expect(first(anchor!, 'wp:docPr')!.attrs['descr']).toBe('A blue square');
+  });
+
+  it("sets an image in a line as a wp:inline in a run of its own, sized by assemble for the Word page, in a paragraph's text and in a table's cell", () => {
+    const line = at('Press  to start.');
+    const [inline] = drawings(line);
+    expect(inline!.name).toBe('wp:inline');
+    expect(extentOf(inline!)).toEqual(
+      sized(inlineImageKey(node, { kind: 'paragraph', block: 'p1' }, 1)),
+    );
+    const shown = kids(line, 'w:r').map((run) =>
+      first(run, 'w:drawing') === undefined ? textOf(run) : 'image',
+    );
+    expect(shown).toEqual(['Press ', 'image', ' to start.']);
+    const table = blocksOf(figured.docx).find((each) => each.name === 'w:tbl')!;
+    const [inCell] = drawings(table);
+    expect(inCell!.name).toBe('wp:inline');
+    expect(extentOf(inCell!)).toEqual(
+      sized(inlineImageKey(node, { kind: 'paragraph', block: 'c2' }, 1)),
+    );
+    expect(first(inCell!, 'wp:docPr')!.attrs['descr']).toBe('A blue square');
+  });
+
+  it('writes each image once, a media part named by its hash, related from the document, and types only the formats it holds', () => {
+    const media = Object.keys(figured.docx.files).filter((name) => name.startsWith('word/media/'));
+    expect(media).toEqual([`word/media/${RED_HASH}.png`, `word/media/${BLUE_HASH}.jpg`]);
+    expect(figured.docx.files[`word/media/${RED_HASH}.png`]).toEqual(
+      figured.images.get(`assets/${RED_HASH}.png`),
+    );
+    const related = relationships(figured.docx, 'word/_rels/document.xml.rels');
+    const images = [...related.values()].filter((each) => each['Type']!.endsWith('/image'));
+    expect(images.map((each) => each['Target'])).toEqual([
+      `media/${RED_HASH}.png`,
+      `media/${BLUE_HASH}.jpg`,
+    ]);
+    // Every picture drawn from its own image's part, however often that image is placed.
+    const targets = drawings(document).map(
+      (each) => related.get(first(each, 'a:blip')!.attrs['r:embed']!)!['Target'],
+    );
+    expect(targets).toEqual([
+      `media/${RED_HASH}.png`,
+      `media/${RED_HASH}.png`,
+      `media/${BLUE_HASH}.jpg`,
+      `media/${RED_HASH}.png`,
+      `media/${BLUE_HASH}.jpg`,
+    ]);
+    const defaults = (docx: Package) =>
+      Object.fromEntries(
+        all(docx.xml('[Content_Types].xml'), 'Default').map((each) => [
+          each.attrs['Extension'],
+          each.attrs['ContentType'],
+        ]),
+      );
+    expect(defaults(figured.docx)).toMatchObject({ png: 'image/png', jpg: 'image/jpeg' });
+    const redAlone = tabledOf([figure('f1', RED, 'Shapes')], { assets: IMAGES });
+    expect(Object.keys(defaults(redAlone.docx))).toEqual(['rels', 'xml', 'odttf', 'png']);
+    expect(Object.keys(defaults(plain.docx))).toEqual(['rels', 'xml', 'odttf']);
+    expect(Object.keys(plain.docx.files).filter((name) => name.startsWith('word/media/'))).toEqual(
+      [],
+    );
+  });
+
+  it("R6 spaces a figure as the PDF does: the caption style's leading above the image, where Word sets none above a line an image fills, and the caption its style's space before alone, as Word sets the leading above its text itself (measured)", () => {
+    // The default caption is the body's spaces - none before, 2.75 after - and a 14.35 line at 11pt.
+    const caption = at('Figure 1.1 Shapes at rest');
+    expect(spacing(before(caption))).toEqual({ 'w:before': twips(3.35), 'w:after': '0' });
+    expect(spacing(caption)?.['w:before']).toBeUndefined();
+  });
+
+  it("stands the text clear of a floated figure by the engine's clearance, an em and a half of the text's size", () => {
+    const [anchor] = drawings(at('Figure 1.3 Blue on top'));
+    expect(anchor!.attrs).toMatchObject({
+      distT: '0',
+      distB: String(Math.round(16.5 * EMU)),
+      distL: '0',
+      distR: '0',
+    });
+  });
+
+  it('declares the drawing namespaces on the document', () => {
+    expect(document.attrs).toMatchObject({
+      'xmlns:wp': 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
+      'xmlns:a': 'http://schemas.openxmlformats.org/drawingml/2006/main',
+      'xmlns:pic': 'http://schemas.openxmlformats.org/drawingml/2006/picture',
+    });
   });
 });
