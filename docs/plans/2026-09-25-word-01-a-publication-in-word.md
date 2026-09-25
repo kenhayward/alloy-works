@@ -7,7 +7,7 @@
 > page, with the Word check (WO-L). Ken agreed every recommendation on 2026-09-25, and gave permission
 > to download the Open XML SDK for validating in CI.
 >
-> **Built** (PR #PRNUM). [What the build changed](#what-the-build-changed) records where it departed
+> **Built** (PR #231). [What the build changed](#what-the-build-changed) records where it departed
 > from the rulings below.
 
 **Goal:** a document can be published to Word. A request may name `docx`, alone or beside `pdf`; the
