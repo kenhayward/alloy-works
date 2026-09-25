@@ -78,9 +78,33 @@ function textOf(element: Element): string {
   return text;
 }
 
-/** A field's instructions in a paragraph or a part, trimmed, in order. */
-const fieldCodes = (element: Element): string[] =>
-  all(element, 'w:instrText').map((each) => each.children.join('').trim());
+/**
+ * The fields in a paragraph or a part, each its instruction trimmed, in order: a field nested in
+ * another's instruction is written into it in braces, as Word shows field codes, and not listed apart.
+ */
+function fieldCodes(element: Element): string[] {
+  const codes: string[] = [];
+  // Each field begun and not yet ended, innermost last, with whether its result has begun.
+  const open: { code: string; result: boolean }[] = [];
+  for (const run of all(element, 'w:r')) {
+    for (const child of kids(run)) {
+      const kind = child.attrs['w:fldCharType'];
+      if (child.name === 'w:instrText') {
+        open[open.length - 1]!.code += child.children.join('');
+      } else if (kind === 'begin') {
+        open.push({ code: '', result: false });
+      } else if (kind === 'separate') {
+        open[open.length - 1]!.result = true;
+      } else if (kind === 'end') {
+        const field = open.pop()!;
+        const outer = open[open.length - 1];
+        if (outer === undefined) codes.push(field.code.trim());
+        else if (!outer.result) outer.code += `{${field.code}}`;
+      }
+    }
+  }
+  return codes;
+}
 
 const styleOf = (paragraph: Element) => first(paragraph, 'w:pStyle')?.attrs['w:val'];
 
@@ -693,10 +717,17 @@ describe('writeDocx: headers and footers (ruling R8)', () => {
     expect(textOf(notice!)).toBe('Not approved');
     expect(styleOf(notice!)).toBe('notice');
     expect(styleOf(running!)).toBe('running');
-    // The title as text, then the centre and the end slots after their tabs.
-    expect(textOf(running!)).toBe(`The dosing report${TAB}${TAB} `);
+    // The title as text, then the centre and the end slots after their tabs: the section's space is
+    // its field's, printed only where there is a number before it.
+    expect(textOf(running!)).toBe(`The dosing report${TAB}${TAB}`);
     const BS = String.fromCharCode(92);
-    expect(fieldCodes(running!)).toEqual([`STYLEREF "Heading 1" ${BS}n`, 'STYLEREF "Heading 1"']);
+    // The level-1 heading's number where it has one, then a space, and its title: an unnumbered
+    // heading's number is "0" to `STYLEREF \n`, which the PDF does not print (measured in Word for the
+    // final review of Word 1, I1), and a section's number is never 0.
+    expect(fieldCodes(running!)).toEqual([
+      `IF "{ STYLEREF "Heading 1" ${BS}n }" = "0" "" "{ STYLEREF "Heading 1" ${BS}n } "`,
+      'STYLEREF "Heading 1"',
+    ]);
     // A centre and a right tab stop at the text block's centre and its end: A4 less two inches.
     expect(all(running!, 'w:tab').filter((each) => each.attrs['w:pos'] !== undefined)).toEqual([
       { name: 'w:tab', attrs: { 'w:val': 'center', 'w:pos': '4513' }, children: [] },
@@ -759,6 +790,34 @@ describe('writeDocx: headers and footers (ruling R8)', () => {
       attrs: {},
       children: [{ name: 'w:t', attrs: { 'xml:space': 'preserve' }, children: ['0.7'] }],
     });
+  });
+
+  it("writes the running head's section right to left in a right-to-left document, so its number comes first in reading order, as the PDF's does", () => {
+    // Measured in Word for the final review of Word 1 (M1): with no direction of their own, the
+    // fields' results and the space between them were set left to right, the number after the title
+    // in reading order; with `w:rtl` on every run of them, Word sets the number first, as the PDF.
+    const rtl = written({ outline: { ...OUTLINE, language: 'he-IL', direction: 'rtl' } });
+    const [, , , body] = sections(rtl.docx);
+    const reference = kids(body!.properties, 'w:headerReference').find(
+      (each) => each.attrs['w:type'] === 'default',
+    )!;
+    const rels = relationships(rtl.docx, 'word/_rels/document.xml.rels');
+    const head = rtl.docx.xml(`word/${rels.get(reference.attrs['r:id']!)!['Target']}`);
+    const [, running] = kids(head, 'w:p');
+    const runs = kids(running!, 'w:r');
+    const from = runs.findIndex((run) => kids(run, 'w:fldChar').length > 0);
+    const section = runs.slice(from);
+    expect(section.length).toBeGreaterThan(0);
+    for (const run of section) {
+      expect(kids(first(run, 'w:rPr') ?? run, 'w:rtl'), JSON.stringify(run)).toHaveLength(1);
+    }
+    // Left to right, they carry no direction at all.
+    const [, , , ltrBody] = sections(plain.docx);
+    const ltrReference = kids(ltrBody!.properties, 'w:headerReference')[0]!;
+    const ltrHead = plain.docx.xml(
+      `word/${relationships(plain.docx, 'word/_rels/document.xml.rels').get(ltrReference.attrs['r:id']!)!['Target']}`,
+    );
+    expect(all(ltrHead, 'w:rtl')).toEqual([]);
   });
 
   it('gives every paragraph it writes a style, in the body and in every header and footer', () => {

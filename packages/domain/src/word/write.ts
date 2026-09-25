@@ -524,13 +524,7 @@ class Writer {
       case 'pages':
         return fieldBegin('NUMPAGES') + FIELD_END;
       case 'section':
-        return withSection
-          ? fieldBegin(`STYLEREF "${LEVEL_ONE}" ${BACKSLASH}n`) +
-              FIELD_END +
-              runXml(' ', '') +
-              fieldBegin(`STYLEREF "${LEVEL_ONE}"`) +
-              FIELD_END
-          : '';
+        return withSection ? sectionFields(this.document.rtl ? '<w:rtl/>' : '') : '';
     }
   }
 
@@ -756,15 +750,51 @@ function languageProperties(passage: Passage, own: string | null, documentTag: s
 }
 
 /** A field's start: its instruction, then the separator its result follows. */
-function fieldBegin(code: string): string {
+function fieldBegin(code: string, properties = ''): string {
   return (
-    '<w:r><w:fldChar w:fldCharType="begin"/></w:r>' +
-    `<w:r><w:instrText xml:space="preserve"> ${escapeXml(code)} </w:instrText></w:r>` +
-    '<w:r><w:fldChar w:fldCharType="separate"/></w:r>'
+    fieldChar('begin', properties) +
+    instruction(` ${code} `, properties) +
+    fieldChar('separate', properties)
   );
 }
 
 const FIELD_END = '<w:r><w:fldChar w:fldCharType="end"/></w:r>';
+
+/** A field's begin, separate or end mark, as a run of its own. */
+function fieldChar(kind: 'begin' | 'separate' | 'end', properties: string): string {
+  return `<w:r>${properties === '' ? '' : `<w:rPr>${properties}</w:rPr>`}<w:fldChar w:fldCharType="${kind}"/></w:r>`;
+}
+
+/** Part of a field's instruction, as a run of its own, its spaces kept. */
+function instruction(code: string, properties: string): string {
+  return `<w:r>${properties === '' ? '' : `<w:rPr>${properties}</w:rPr>`}<w:instrText xml:space="preserve">${escapeXml(code)}</w:instrText></w:r>`;
+}
+
+/**
+ * A running head's section (measured in Word for the final review of Word 1, I1 and M1): the level-1
+ * heading's number, a space and its title, as the PDF prints the heading. Word's number for a heading
+ * with none - front matter's under a scheme that numbers none there, or one not numbered - is "0",
+ * which the PDF does not print, so the number and its space stand inside an `IF` that prints nothing
+ * for "0"; a section's number is never 0, so nothing else is lost. `properties` is every run's: in a
+ * right-to-left document `w:rtl`, without which Word set the number after the title in reading order,
+ * where the PDF sets it first.
+ */
+function sectionFields(properties: string): string {
+  const number =
+    fieldBegin(`STYLEREF "${LEVEL_ONE}" ${BACKSLASH}n`, properties) + fieldChar('end', properties);
+  return (
+    fieldChar('begin', properties) +
+    instruction(' IF "', properties) +
+    number +
+    instruction('" = "0" "" "', properties) +
+    number +
+    instruction(' " ', properties) +
+    fieldChar('separate', properties) +
+    fieldChar('end', properties) +
+    fieldBegin(`STYLEREF "${LEVEL_ONE}"`, properties) +
+    fieldChar('end', properties)
+  );
+}
 
 /** The text block's width in points: the page across, less both margins and the gutter. */
 function textBlockWidth(format: PageFormat): number {
