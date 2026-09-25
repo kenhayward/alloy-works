@@ -105,6 +105,15 @@ export const publishFailureCodes = [
   // layout's words, under a layout that has none - one stored before its schema 4 - naming the table
   // and the style. The label would otherwise be a table's number with nothing after it.
   'continuation_words_missing',
+  // compose, from Word 1 (ruling R3): where Word is asked for, a block or an inline the Word writer
+  // does not write yet - a list, a quotation, preformatted text, a table, a figure, an equation, an
+  // image in a line, a footnote or a cross-reference - naming where it stands and, in `detail`, what
+  // it is, by its stored type; and a list after the contents, naming no place and its sequence as
+  // `listOf:<sequence>`. Each later slice of Word output takes its constructs off the list. And a
+  // request for a format its layout has no page for, `detail` the format: refused when the request is
+  // made (PUB-014), so met here only by a request built past that check, and said rather than thrown.
+  'word_not_yet',
+  'format_unsupported',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

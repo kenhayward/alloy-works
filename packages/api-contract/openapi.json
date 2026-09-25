@@ -7326,6 +7326,8 @@
                               "typeface_not_embeddable",
                               "typeface_unavailable",
                               "continuation_words_missing",
+                              "word_not_yet",
+                              "format_unsupported",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10080,6 +10082,8 @@
                               "typeface_not_embeddable",
                               "typeface_unavailable",
                               "continuation_words_missing",
+                              "word_not_yet",
+                              "format_unsupported",
                               "engine_failed",
                               "store_failed"
                             ]

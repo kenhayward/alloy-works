@@ -360,6 +360,60 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Publish again');
   });
 
+  it('names what cannot be published in Word yet, and a layout with no Word page, pointing at the PDF', async () => {
+    // Word 1's ruling R3: `detail` is what the construct is, by its stored type, or a list after the
+    // contents by its sequence; nothing in the document is wrong, so each says the PDF can be made.
+    const notYet = (detail: string) => ({
+      stage: 'compose' as const,
+      code: 'word_not_yet' as const,
+      node: null,
+      block: 'b1',
+      detail,
+    });
+    const constructs = [
+      'list',
+      'blockquote',
+      'preformatted',
+      'table',
+      'figure',
+      'equation',
+      'image',
+      'footnote',
+      'crossReference',
+      'listOf:figure',
+      'listOf:table',
+      'listOf:equation',
+    ];
+    const fake = failing([
+      ...constructs.map(notYet),
+      { stage: 'compose', code: 'format_unsupported', node: null, block: null, detail: 'docx' },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    const pdf = 'Publish this document as a PDF only.';
+    for (const named of [
+      'A list',
+      'A quotation',
+      'Preformatted text',
+      'A table',
+      'A figure',
+      'An equation',
+      'An image in a line of text',
+      'A footnote',
+      'A cross-reference',
+      'The list of figures after the contents',
+      'The list of tables after the contents',
+      'The list of equations after the contents',
+    ]) {
+      expect(why).toHaveTextContent(`${named} cannot be published in Word yet. ${pdf}`);
+    }
+    expect(why).toHaveTextContent(
+      "This publication's layout has no page for Word, so it cannot be published in Word. Publish it as a PDF, or under a layout with a Word page.",
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
   it('says what a figure needs before it can be published, and names nothing of an image it may not read', async () => {
     const fake = failing([
       { stage: 'compose', code: 'figure_without_caption', node: null, block: 'f1', detail: null },

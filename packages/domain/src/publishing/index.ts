@@ -1,5 +1,11 @@
 export { assemble, publishedImagePath } from './assemble.js';
-export type { Assembled, AssembleInput, PublishingAsset } from './assemble.js';
+export type {
+  Assembled,
+  AssembleInput,
+  PublishingAsset,
+  WordImage,
+  WordInput,
+} from './assemble.js';
 export { publishFailureCodes } from './failures.js';
 export type { PublishFailure, PublishFailureCode, PublishStage } from './failures.js';
 // The question the worker's pinned fonts answer, asked of one family at a time (editor 5), by the

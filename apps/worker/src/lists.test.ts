@@ -288,6 +288,7 @@ const bare = parseLayout({
 
 /** What the job would assemble of one component alone, under the bare layout. */
 const inputOf = (content: ContentDocument): AssembleInput => ({
+  formats: ['pdf'],
   outline: parseOutlineDocument({
     schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The printer notes',

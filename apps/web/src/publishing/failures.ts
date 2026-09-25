@@ -36,6 +36,26 @@ const INLINES: Readonly<Record<string, string>> = {
 };
 
 /**
+ * What `word_not_yet` names (Word 1, ruling R3): a block or an inline the Word writer does not write
+ * yet, by its stored type - an equation is one word whether it stands alone or in a line - and a list
+ * after the contents by its sequence. Each later slice of Word output takes its own off this list.
+ */
+const NOT_YET_IN_WORD: Readonly<Record<string, string>> = {
+  list: 'A list',
+  blockquote: 'A quotation',
+  preformatted: 'Preformatted text',
+  table: 'A table',
+  figure: 'A figure',
+  equation: 'An equation',
+  image: 'An image in a line of text',
+  footnote: 'A footnote',
+  crossReference: 'A cross-reference',
+  'listOf:figure': 'The list of figures after the contents',
+  'listOf:table': 'The list of tables after the contents',
+  'listOf:equation': 'The list of equations after the contents',
+};
+
+/**
  * What `equation_unrenderable` names of the construct an equation held that the converter refused
  * (`REFUSAL_NAMES`, `assemble.ts`), in words - never the equation's text, its values or its elements,
  * which `detail` never carries either (R5). `mathvariant`, `element` and `attribute` each name part of
@@ -242,6 +262,14 @@ export function failureWords(failure: Failure): string {
         FORMS[failure.detail ?? ''] ??
         'A cross-reference asks for a form of its target that cannot be shown.'
       );
+    // Word 1's ruling R3: nothing in the document is wrong, and the PDF can be made of it, so the
+    // sentence says so rather than asking for a change or another attempt.
+    case 'word_not_yet':
+      return `${NOT_YET_IN_WORD[failure.detail ?? ''] ?? 'Something here'} cannot be published in Word yet. Publish this document as a PDF only.`;
+    // Refused when the request is made (PUB-014), so met only by a request built past that check: the
+    // layout's to change, as its words are.
+    case 'format_unsupported':
+      return "This publication's layout has no page for Word, so it cannot be published in Word. Publish it as a PDF, or under a layout with a Word page.";
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

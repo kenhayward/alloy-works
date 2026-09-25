@@ -125,6 +125,7 @@ const bare = parseLayout({
 
 /** What the job would assemble of that component alone, under the bare layout. */
 const inputOf = (): AssembleInput => ({
+  formats: ['pdf'],
   outline: parseOutlineDocument({
     schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The printer notes',

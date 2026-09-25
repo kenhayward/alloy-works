@@ -301,6 +301,7 @@ const fixed = <Under extends Layout | null>(
   covers: AssembleInput['covers'],
   layout: Under,
 ): AssembleInput & { readonly layout: Under } => ({
+  formats: ['pdf'],
   outline: parseOutlineDocument({
     schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The dosing report',

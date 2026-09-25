@@ -742,6 +742,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(await work()).toBe('done');
     const row = await publicationOf(id);
     const again = assemble({
+      formats: ['pdf'],
       outline: inputs!.outline,
       occurrences: new Map([...inputs!.occurrences].map(([node, each]) => [node, each.content])),
       refused: inputs!.refused,
@@ -905,6 +906,7 @@ describe('publishing a request made before layouts', () => {
       });
       // What Typst read was slice 1's `publishing/1`, under the default numbering and the draft notice.
       const slice1 = assemble({
+        formats: ['pdf'],
         outline: inputs!.outline,
         occurrences: new Map(),
         refused: [],

@@ -50,6 +50,7 @@ const outline = (nodes: unknown[]) =>
 
 /** One reference whose component is a paragraph of this text. */
 const holding = (text: string): AssembleInput => ({
+  formats: ['pdf'],
   outline: outline([
     {
       type: 'reference',
@@ -93,6 +94,7 @@ const depthOf = (bookmarks: readonly Bookmark[]): number =>
 describe('the publishing regression corpus', () => {
   it('publishes nine heading levels through the template as PDF/UA-1 that veraPDF passes, bookmarked nine deep', async () => {
     const assembled = assemble({
+      formats: ['pdf'],
       outline: outline([nested(1)]),
       occurrences: new Map(),
       refused: [],

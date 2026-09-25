@@ -3512,6 +3512,7 @@ describe("the layout's scheme in the page", () => {
     const theme = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
     if (!theme.ok) throw new Error(theme.refusals.map((each) => each.code).join(', '));
     const published = assemble({
+      formats: ['pdf'],
       outline: sections,
       occurrences: new Map(),
       refused: [],

@@ -83,6 +83,7 @@ const inputOf = (
   assets: ReadonlyMap<string, PublishingAsset>,
   blocks: readonly unknown[] = content,
 ): AssembleInput => ({
+  formats: ['pdf'],
   outline: parseOutlineDocument({
     schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The shapes',

@@ -145,6 +145,8 @@ export function publishJob(deps: {
       }
 
       const assembled = assemble({
+        // The PDF, the one output this job makes until it writes Word too (Word 1, task 5).
+        formats: ['pdf'],
         outline,
         occurrences: new Map([...occurrences].map(([node, each]) => [node, each.content])),
         refused,

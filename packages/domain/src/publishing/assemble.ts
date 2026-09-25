@@ -48,7 +48,7 @@ import {
   type ImageFrame,
 } from './measure.js';
 import { publishedLanguage } from './language.js';
-import type { Layout, PdfFormat } from './layout.js';
+import type { DocxFormat, Layout, PdfFormat, PublishingFormat } from './layout.js';
 import { mathsText, mathsTree, type MathsRefusal } from './maths.js';
 import {
   DRAFT_NOTICE,
@@ -80,6 +80,13 @@ import {
  * each family the worker holds can set.
  */
 export interface AssembleInput {
+  /**
+   * The formats the request asked for (Word 1, ruling R2), at least one, and required so that nothing
+   * is assembled for a format by default. They decide which failures are said - one that is the PDF
+   * engine's own is said only where a PDF is asked for, and what Word 1 does not write only where Word
+   * is - and whether `word` is returned. The published document is the same whatever they are.
+   */
+  readonly formats: readonly [PublishingFormat, ...PublishingFormat[]];
   readonly outline: OutlineDocument;
   readonly occurrences: ReadonlyMap<string, ContentDocument>;
   readonly refused: readonly PublishFailure[];
@@ -117,10 +124,40 @@ export type PublishingAsset = Pick<
   'object' | 'format' | 'width' | 'height' | 'alternative'
 >;
 
+/**
+ * What the Word writer reads beside the published document and its numbering (Word 1, rulings R1 and
+ * R2): carried here, as the numbering table is, rather than in the document, so that nothing template
+ * 13 reads changes and `publishing/13` stays the PDF's byte for byte. The layout's Word page, the theme
+ * the request was made under as `readTheme` resolved it - the Word styles are projected from it, not
+ * from the Typst projection the document carries - and each image's size against the Word page, which
+ * Word 2 fills and keys with the first figure it writes: empty until then, since Word 1 refuses every
+ * image by name.
+ */
+export interface WordInput {
+  readonly format: DocxFormat;
+  readonly theme: ResolvedTheme;
+  readonly images: ReadonlyMap<string, WordImage>;
+}
+
+/** An image's size in points against the Word page's text block, as a figure's is against the PDF's. */
+export interface WordImage {
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * The published document and its numbering, and `word` where Word is asked for (null where it is
+ * not), or every failure at once.
+ */
 export type Assembled<
   Document extends PublishedDocument | PublishedDocument1 = PublishedDocument | PublishedDocument1,
 > =
-  | { readonly ok: true; readonly document: Document; readonly numbering: NumberingTable }
+  | {
+      readonly ok: true;
+      readonly document: Document;
+      readonly numbering: NumberingTable;
+      readonly word: WordInput | null;
+    }
   | { readonly ok: false; readonly failures: readonly PublishFailure[] };
 
 /**
@@ -211,7 +248,43 @@ export function assemble(input: AssembleInput): Assembled {
       'A request made under a layout is set from a theme, and one made before layouts from none',
     );
   }
+  if (input.formats.length === 0) {
+    // A caller's defect too: a request names at least one format, and the store holds it to that.
+    throw new Error('A publication is assembled for at least one format');
+  }
+  const pdf = input.formats.includes('pdf');
+  const docx = input.formats.includes('docx');
   const failures: PublishFailure[] = [...input.refused];
+  /**
+   * **The failures that are the PDF engine's own** (Word 1, ruling R2): what the pinned Typst and the
+   * PDF's page cannot do - a line or an image wider than the PDF's measure, a caption too long for its
+   * page, a header cell the engine would grow the header by, a footnote or a reference's target in a
+   * header row the engine sets on every page, a table's continuation label the PDF sets, and an
+   * equation the maths tree cannot set - said only where a PDF is asked for. Everything else is the
+   * document's, or the layout's or the theme's, and is said whatever is asked for. Held by identity,
+   * since two failures alike in every member may be one of each.
+   *
+   * **This leans on R3.** A block or an inline refused this way is left out of the published document,
+   * as it always was; each one that can be is also one Word 1 does not write, so where Word alone is
+   * asked for it is refused by name all the same. A slice that takes a construct off R3's list must
+   * publish it for Word whatever its PDF failures say, or Word would lose it in silence.
+   */
+  const pdfsOwn = new Set<PublishFailure>();
+  const pdfOnly = (next: PublishFailure): PublishFailure => {
+    pdfsOwn.add(next);
+    return next;
+  };
+  // A layout with no Word page does not make Word, and a request made before layouts made only a PDF:
+  // the request refused either (PUB-014), so one reaching here was built past it, and is told so.
+  if (docx && layout?.formats.docx === undefined) {
+    failures.push(failure('compose', 'format_unsupported', null, null, 'docx'));
+  }
+  /** Where Word is asked for, what Word 1 does not write, refused by name where it stands (R3). */
+  const wordNotYet = (node: string | null, block: string | null, construct: string) => {
+    if (docx && layout !== null) {
+      failOnce(failure('compose', 'word_not_yet', node, block, construct));
+    }
+  };
 
   // resolve and conditions: what each readable occurrence contributes, then REU's stage (#148).
   const contributions = new Map<string, readonly Contribution[]>();
@@ -230,7 +303,7 @@ export function assemble(input: AssembleInput): Assembled {
    * figures 5). Used where one block can meet the same reason again - its images - and nowhere else.
    */
   const failOnce = (next: PublishFailure) => {
-    const said = failures.some(
+    const said = failures.find(
       (each) =>
         each.stage === next.stage &&
         each.code === next.code &&
@@ -238,7 +311,9 @@ export function assemble(input: AssembleInput): Assembled {
         each.block === next.block &&
         each.detail === next.detail,
     );
-    if (!said) failures.push(next);
+    if (said === undefined) failures.push(next);
+    // Said once, and for every format where either time it was met is not the PDF's alone.
+    else if (!pdfsOwn.has(next)) pdfsOwn.delete(said);
   };
   // A figure whose image the request could not read, where it said so: told once, not twice.
   const refusedAssets = new Set(
@@ -248,16 +323,22 @@ export function assemble(input: AssembleInput): Assembled {
   );
   /**
    * **Every face a theme names that sets text here**, by the typeface's identifier (themes 1, ruling
-   * R6): a face that sets text is a face the PDF embeds, so the first time one is asked for, a theme
-   * that records its licence as not permitting embedding in a PDF fails the publish,
-   * `typeface_not_embeddable`, naming its family, once (STY-042). A face the document never sets text
-   * in is never embedded and never refused. Answers the family, which is what the glyph check asks.
+   * R6): a face that sets text is a face each output embeds, so the first time one is asked for, a
+   * theme that records its licence as not permitting embedding it in a format asked for fails the
+   * publish, `typeface_not_embeddable`, naming its family, once (STY-042). For Word (Word 1, ruling
+   * R2) a face that may not be embedded there and names one that may in its place, `wordFamily`, is
+   * not refused: Word sets the text in that one, and the writer reports it (STY-052). `readTheme`
+   * refuses a face that names none, so only a theme built past the reader is refused for Word. A face
+   * the document never sets text in is never embedded and never refused. Answers the family, which is
+   * what the glyph check asks - the same files set Word's text as the PDF's.
    */
   const embedded = new Set<string>();
   const setBy = (typeface: Typeface): string => {
     if (!embedded.has(typeface.id)) {
       embedded.add(typeface.id);
-      if (!typeface.embedding.pdf) {
+      const inPdf = pdf && !typeface.embedding.pdf;
+      const inWord = docx && !typeface.embedding.word && typeface.wordFamily === undefined;
+      if (inPdf || inWord) {
         failOnce(failure('compose', 'typeface_not_embeddable', null, null, typeface.family));
       }
     }
@@ -412,6 +493,7 @@ export function assemble(input: AssembleInput): Assembled {
       ? NO_REFERENCES
       : resolveReferences(input, numbering, layout.words.above, layout.words.below);
   failures.push(...resolved.failures);
+  for (const each of resolved.pdfsOwn) pdfsOwn.add(each);
   /** A block's or a footnote's anchor where a reference names it, else null. */
   const anchorOf = (node: string, block: string): string | null => {
     const anchor = blockAnchor(node, block);
@@ -474,12 +556,16 @@ export function assemble(input: AssembleInput): Assembled {
   ): PublishedInline[] => {
     const runs: PublishedInline[] = [];
     for (const inline of content) {
+      if (WORD_NOT_YET_INLINES.has(inline.type)) wordNotYet(node, block, inline.type);
       if (inline.type === 'footnote' && layout !== null) {
         // A table's header rows repeat on every page it reaches, and the engine refuses a footnote in
         // a repeated header outright - a link in an artifact - naming nothing (final review of
-        // footnotes 2). Refused always, since whether a table crosses a page is not known here.
+        // footnotes 2). Refused always, since whether a table crosses a page is not known here: the
+        // PDF engine's own refusal, where one anywhere else but a paragraph's text is every format's
+        // (FN-B).
         if (inParagraph === null || inParagraph.heading) {
-          failOnce(failure('compose', 'footnote_not_publishable_here', node, block, null));
+          const refused = failure('compose', 'footnote_not_publishable_here', node, block, null);
+          failOnce(inParagraph === null ? refused : pdfOnly(refused));
           continue;
         }
         const published = publishedFootnote(inline, node, block, inParagraph.table, families);
@@ -678,6 +764,10 @@ export function assemble(input: AssembleInput): Assembled {
    * the recursion arrives at. `place` is where the block stands, whatever holds it most nearly -
    * running text, a list's item, a quotation or a table's cell - which a stored `body` means the
    * default style of (themes 1, TH-E).
+   *
+   * **Every kind but a paragraph is one Word 1 does not write** (ruling R3): where Word is asked for,
+   * each is refused by name, `word_not_yet`, before anything else is said of it, and published for the
+   * PDF all the same.
    */
   const publishable = (
     block: BlockNode,
@@ -722,6 +812,7 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
+        wordNotYet(node, block.id, block.type);
         // **A backstop, not the rule.** `checkBlock` asks this same predicate on the way in, and
         // every occurrence reaches `assemble` through `parseContentDocument`, so nothing an author,
         // an import or a paste can store arrives here. It is kept for the reason the frozen shapes
@@ -799,6 +890,7 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
+        wordNotYet(node, block.id, block.type);
         // An empty block is where a cursor stands, as an empty paragraph is (decision P).
         if (block.text === '') return markerOf(node, block.id);
         // Set in the `preformatted` role's style, as code, and measured by it (themes 1, ruling R6);
@@ -815,12 +907,14 @@ export function assemble(input: AssembleInput): Assembled {
           const width = columnsOf(line);
           if (width > most) {
             failures.push(
-              failure(
-                'compose',
-                'line_too_wide',
-                node,
-                block.id,
-                `line ${index + 1}, ${width} of ${most} columns`,
+              pdfOnly(
+                failure(
+                  'compose',
+                  'line_too_wide',
+                  node,
+                  block.id,
+                  `line ${index + 1}, ${width} of ${most} columns`,
+                ),
               ),
             );
           }
@@ -840,6 +934,7 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
+        wordNotYet(node, block.id, block.type);
         // Inset by exactly its style's start and end indents (themes 1), which template 12 sets in
         // place of the engine's own inset of a quotation.
         const quoted = placeStyle('quotation').properties;
@@ -877,6 +972,7 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
+        wordNotYet(node, block.id, block.type);
         // The table's own style, from the theme's table catalogue (themes 1): it must be there, and
         // apply to a table. Its padding is what a cell insets what it holds by (themes 2), and a style
         // asking for a continuation label needs the layout's words for one, which a layout stored
@@ -888,8 +984,9 @@ export function assemble(input: AssembleInput): Assembled {
         } else if (!tableStyle.appliesTo.includes('table')) {
           failures.push(failure('compose', 'style_not_applicable', node, block.id, block.style));
         } else if (tableStyle.breaks.continuationLabel && layout.words.continued === undefined) {
+          // The label is set on the PDF's pages alone: Word repeats no such label (Word 1, R2).
           failures.push(
-            failure('compose', 'continuation_words_missing', node, block.id, block.style),
+            pdfOnly(failure('compose', 'continuation_words_missing', node, block.id, block.style)),
           );
         }
         // A style that is missing or does not apply has already failed the publish; its cells are
@@ -908,7 +1005,9 @@ export function assemble(input: AssembleInput): Assembled {
           .slice(0, block.headerRows)
           .some((row, at) => row.cells.some((each) => at + each.rowspan > block.headerRows));
         if (spansBody) {
-          failures.push(failure('compose', 'table_header_spans_body', node, block.id, null));
+          failures.push(
+            pdfOnly(failure('compose', 'table_header_spans_body', node, block.id, null)),
+          );
         }
         const caption = publishedRuns(
           block.caption,
@@ -987,6 +1086,7 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
+        wordNotYet(node, block.id, block.type);
         // The image style, from the theme's image catalogue (themes 1): it must be there, and apply to a
         // figure. It sizes and places the figure (themes 2).
         const imageStyle = theme!.imageStyles.get(block.imageStyle);
@@ -1049,7 +1149,9 @@ export function assemble(input: AssembleInput): Assembled {
           textBlockHeight(format) -
           captionHeight(columnsOf(said), across, roleStyle('caption').properties.size);
         const tooLong = left < FIGURE_LEAST_HEIGHT;
-        if (tooLong) failures.push(failure('compose', 'caption_too_long', node, block.id, null));
+        if (tooLong) {
+          failures.push(pdfOnly(failure('compose', 'caption_too_long', node, block.id, null)));
+        }
         // Asked whatever the caption came to, so both are said at once (PUB-052).
         const alternative = alternativeOf(block.alternative, asset, node, block.id);
         if (tooLong || alternative === undefined) return [];
@@ -1092,6 +1194,7 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
+        wordNotYet(node, block.id, block.type);
         const equation = publishedEquation(block.mathml, node, block.id);
         // `number`'s label, set beside the equation as its own text (EQ-E). A numbered equation the
         // scheme gives none - a layout numbering equations within chapters, in a part with no numbered
@@ -1236,7 +1339,7 @@ export function assemble(input: AssembleInput): Assembled {
         : styled;
     const room = textMeasure(format) - indent;
     if (width > room) {
-      failOnce(failure('compose', 'image_too_wide', node, block, null));
+      failOnce(pdfOnly(failure('compose', 'image_too_wide', node, block, null)));
       return null;
     }
     if (alternative === undefined) return null;
@@ -1273,7 +1376,10 @@ export function assemble(input: AssembleInput): Assembled {
    *   engine's fallback is off for maths, so one the face lacks would be set as nothing -
    *   `math_glyph_missing` for each, named apart from `glyph_missing` because the body face may have it.
    *
-   * Said once for its block however many of its equations share a reason, as an image's are.
+   * Said once for its block however many of its equations share a reason, as an image's are. A
+   * construct the maths tree cannot set is the PDF engine's own refusal, and said only where a PDF is
+   * asked for; MathML that cannot be read, an error mark and an equation drawing nothing are said for
+   * every format (`EQUATIONS_OWN`).
    */
   const publishedEquation = (
     mathml: string,
@@ -1282,9 +1388,14 @@ export function assemble(input: AssembleInput): Assembled {
   ): PublishedEquation | null => {
     const converted = mathsTree(mathml);
     if (!converted.ok) {
-      failOnce(
-        failure('compose', 'equation_unrenderable', node, block, REFUSAL_NAMES[converted.reason]),
+      const refused = failure(
+        'compose',
+        'equation_unrenderable',
+        node,
+        block,
+        REFUSAL_NAMES[converted.reason],
       );
+      failOnce(EQUATIONS_OWN.has(converted.reason) ? refused : pdfOnly(refused));
     }
     // MathML that cannot be read has no alternative to read either, and giving it one mends nothing,
     // so it is said once, as the equation that cannot be set.
@@ -1324,6 +1435,10 @@ export function assemble(input: AssembleInput): Assembled {
     };
 
     if (node.type === 'section') {
+      // Word 1 writes a title's words alone (R3): what else it holds is named by the section.
+      for (const inline of node.title) {
+        if (WORD_NOT_YET_INLINES.has(inline.type)) wordNotYet(node.id, null, inline.type);
+      }
       // A title's reference is its number in the title's words (R6), set again in the contents and the
       // running heads. One that failed has said so and prints nothing. An equation in it is published
       // as it is anywhere (equations 2): a published title is runs, which the template sets in the
@@ -1395,13 +1510,16 @@ export function assemble(input: AssembleInput): Assembled {
   };
 
   const nodes = input.outline.nodes.map((node) => project(node, 1, node.matter));
+  /** Every failure said for the formats asked for: the PDF engine's own only where a PDF is. */
+  const reported = () => (pdf ? failures : failures.filter((each) => !pdfsOwn.has(each)));
 
   if (layout === null) {
     // A refused document language is already a failure; `language === null` only narrows the type.
-    if (failures.length > 0 || language === null) return { ok: false, failures };
+    if (reported().length > 0 || language === null) return { ok: false, failures: reported() };
     return {
       ok: true,
       numbering,
+      word: null,
       document: {
         schema: PUBLISHING_SCHEMA_1,
         title: input.outline.title,
@@ -1429,15 +1547,33 @@ export function assemble(input: AssembleInput): Assembled {
   if (survivors === 0 && !cover && shownContents === null) {
     failures.push(failure('compose', 'nothing_to_publish', null, null, null));
   }
+  // Each list the layout declares that has an entry, in its order (ruling R7): a list of nothing is
+  // not published, as a contents of nothing is not (decision K). Word 1 writes none (R3), and a list
+  // stands in no node, so it is named by its sequence alone.
+  const lists = layout.matter.lists
+    .filter((list) => listOf(conditioned, numbering, list.sequence).length > 0)
+    .map((list) => ({ sequence: list.sequence, title: list.title }));
+  for (const list of lists) wordNotYet(null, null, `listOf:${list.sequence}`);
 
-  // Either language refused is already a failure; the null checks only narrow the types.
-  if (failures.length > 0 || language === null || wordsLanguage === null) {
-    return { ok: false, failures };
+  // Either language refused is already a failure; the null checks only narrow the types. So does the
+  // Word page, which a request for Word under a layout with none has already failed for.
+  const docxFormat = layout.formats.docx;
+  if (
+    reported().length > 0 ||
+    language === null ||
+    wordsLanguage === null ||
+    (docx && docxFormat === undefined)
+  ) {
+    return { ok: false, failures: reported() };
   }
   const { words } = layout;
   return {
     ok: true,
     numbering,
+    word:
+      docx && docxFormat !== undefined
+        ? { format: docxFormat, theme: theme!, images: new Map() }
+        : null,
     document: {
       schema: PUBLISHING_SCHEMA,
       title: input.outline.title,
@@ -1456,15 +1592,7 @@ export function assemble(input: AssembleInput): Assembled {
       // Every paragraph, table and image style the theme holds, not only those used (themes 1, ruling
       // R6; themes 2, ruling R5).
       theme: projectTypst(theme!),
-      // Each list the layout declares that has an entry, in its order (ruling R7): a list of nothing
-      // is not published, as a contents of nothing is not (decision K).
-      front: {
-        cover,
-        contents: shownContents,
-        lists: layout.matter.lists
-          .filter((list) => listOf(conditioned, numbering, list.sequence).length > 0)
-          .map((list) => ({ sequence: list.sequence, title: list.title })),
-      },
+      front: { cover, contents: shownContents, lists },
       appendices: { newPage: layout.matter.appendices.newPage },
       nodes,
     },
@@ -1561,6 +1689,29 @@ const REFUSAL_NAMES: Readonly<Record<MathsRefusal['reason'], string>> = {
   empty: 'empty',
 };
 
+/**
+ * The refusals of an equation that are the equation's own, whatever sets it (Word 1, ruling R2):
+ * MathML that cannot be read, an error its converter wrote into it, and one that draws nothing. Every
+ * other is what the maths tree - the PDF engine's reading of MathML - cannot set, and is said only
+ * where a PDF is asked for; Word 4 decides which of them Word sets.
+ */
+const EQUATIONS_OWN: ReadonlySet<MathsRefusal['reason']> = new Set([
+  'unreadable',
+  'error',
+  'empty',
+] as const);
+
+/**
+ * The inlines Word 1 does not write (ruling R3), refused by name where Word is asked for, wherever they
+ * stand - a paragraph, a caption, a term, a footnote, a section's title - by their stored type.
+ */
+const WORD_NOT_YET_INLINES: ReadonlySet<InlineNode['type']> = new Set([
+  'image',
+  'equation',
+  'footnote',
+  'crossReference',
+] as const);
+
 /** A cross-reference as the content model stores it. */
 type ReferenceNode = Extract<InlineNode, { type: 'crossReference' }>;
 
@@ -1585,10 +1736,17 @@ interface ResolvedReferences {
   /** The anchor of every target such a reference names: what the file labels, and nothing more. */
   readonly named: ReadonlySet<string>;
   readonly failures: readonly PublishFailure[];
+  /** Those of `failures` that are the PDF engine's own (Word 1, ruling R2), by identity. */
+  readonly pdfsOwn: ReadonlySet<PublishFailure>;
 }
 
 /** Nothing resolved: a request made before layouts, which refuses a reference where it stands. */
-const NO_REFERENCES: ResolvedReferences = { printed: new Map(), named: new Set(), failures: [] };
+const NO_REFERENCES: ResolvedReferences = {
+  printed: new Map(),
+  named: new Set(),
+  failures: [],
+  pdfsOwn: new Set(),
+};
 
 /**
  * The anchors of the published document (publishing.md, "The published document"): a block or a
@@ -1656,7 +1814,8 @@ interface Found {
  *   standing in a table's header rows** (cross-references 2, task 4, measured): the engine sets a
  *   header row again on every page the table reaches, the target's label with it, and a label set
  *   twice refuses the compile - "label occurs multiple times" - wherever the table happens to break,
- *   which only the engine knows. Refused wherever it breaks, as a footnote there is. A header
+ *   which only the engine knows. Refused wherever it breaks, as a footnote there is, and only where a
+ *   PDF is asked for, since it is the PDF engine's own refusal (Word 1, ruling R2). A header
  *   column is set once, and is published;
  * - **every other** prints its form: the label, the title, both with a space between, the layout's
  *   word for above or below, or nothing for a page, which the template prints - and its target's
@@ -1826,6 +1985,7 @@ function resolveReferences(
   const printed = new Map<string, Printed>();
   const named = new Set<string>();
   const failures: PublishFailure[] = [];
+  const pdfsOwn = new Set<PublishFailure>();
   for (const { node, reference, inTitle, at: where } of found) {
     const key = referenceKey(node, reference.id);
     const resolution = resolutions.get(key)!;
@@ -1845,15 +2005,21 @@ function resolveReferences(
     const { display } = reference;
     const anchor =
       target.block === null ? nodeAnchor(target.node) : blockAnchor(target.node, target.block);
-    const unavailable =
+    const lacking =
       !printableForms(target).includes(display) ||
       (inTitle && display === 'page') ||
-      (display === 'relative' && (above === undefined || below === undefined)) ||
-      repeated.has(anchor);
-    if (unavailable) {
-      failures.push(
-        failure('compose', 'cross_reference_form_unavailable', node, reference.id, display),
+      (display === 'relative' && (above === undefined || below === undefined));
+    if (lacking || repeated.has(anchor)) {
+      const refused = failure(
+        'compose',
+        'cross_reference_form_unavailable',
+        node,
+        reference.id,
+        display,
       );
+      failures.push(refused);
+      // A target in a table's header rows is refused for the PDF's engine alone (Word 1, R2).
+      if (!lacking) pdfsOwn.add(refused);
       continue;
     }
     named.add(anchor);
@@ -1874,7 +2040,7 @@ function resolveReferences(
         : { anchor, text: text[display], page: false, relative: display === 'relative' },
     );
   }
-  return { printed, named, failures };
+  return { printed, named, failures, pdfsOwn };
 }
 
 /** A stored table, as a footnote's cell anchor resolves against one. */

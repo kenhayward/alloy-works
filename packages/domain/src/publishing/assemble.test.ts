@@ -21,6 +21,7 @@ import {
   defaultLayout,
   FIRST_DEFAULT_LAYOUT,
   FOURTH_DEFAULT_LAYOUT,
+  FIFTH_DEFAULT_LAYOUT,
   parseLayout,
   readLayout,
   type Layout,
@@ -114,8 +115,9 @@ type UnderALayout = AssembleInput & { readonly layout: Layout };
 /** The default theme, read as the store reads it: what every publish under a layout is set from. */
 const DEFAULT_THEME = resolved();
 
-/** A publish under a layout, the default unless `over` names another. */
+/** A publish under a layout, the default unless `over` names another, for a PDF alone. */
 const input = (over: Partial<UnderALayout>): UnderALayout => ({
+  formats: ['pdf'],
   outline: outline([]),
   occurrences: new Map(),
   refused: [],
@@ -4817,5 +4819,421 @@ describe('table and image styles, published (themes 2)', () => {
     expect(assemble(under(theme, labelled)).ok).toBe(true);
     const plain = table('table', paragraph('p1', text('1')));
     expect(assemble({ ...under(theme, plain), layout: fourth }).ok).toBe(true);
+  });
+});
+
+describe('the formats a publication is assembled for (Word 1)', () => {
+  const RED = '00000000-0000-4000-8000-00000000a551';
+  const asset = (over: Partial<PublishingAsset> = {}): PublishingAsset => ({
+    object: `t_acme/sha256/${'ab'.repeat(32)}`,
+    format: 'png',
+    width: 800,
+    height: 600,
+    alternative: { text: 'Two red squares', language: 'en-GB' },
+    ...over,
+  });
+  const cellOf = (...blocks: unknown[]) => ({ content: blocks, colspan: 1, rowspan: 1 });
+  /** A table of one row of one cell holding `blocks`, captioned, in the default style. */
+  const table = (name: string, over: object = {}, ...blocks: unknown[]) => ({
+    type: 'table',
+    id: name,
+    style: 'table',
+    caption: [text('Readings')],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [
+      { cells: [cellOf(...(blocks.length > 0 ? blocks : [paragraph(`${name}c`, text('1'))]))] },
+    ],
+    ...over,
+  });
+  const figure = (name: string, over: object = {}) => ({
+    type: 'figure',
+    id: name,
+    asset: RED,
+    imageStyle: 'figure',
+    caption: [text('Shapes')],
+    alternative: { kind: 'inherited' },
+    ...over,
+  });
+  const image = {
+    type: 'image',
+    asset: RED,
+    imageStyle: 'inline',
+    alternative: { kind: 'inherited' },
+  };
+  const footnote = (name: string, ...paragraphs: unknown[]) => ({
+    type: 'footnote',
+    id: name,
+    anchor: { kind: 'span' },
+    content: paragraphs,
+  });
+  const xref = (name: string, target: object, display = 'number') => ({
+    type: 'crossReference',
+    id: name,
+    target,
+    display,
+  });
+  const toBlock = (block: string) => ({ kind: 'block', block });
+  const X = '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"><mi>x</mi></math>';
+  const equation = (name: string, mathml = X) => ({
+    type: 'equation',
+    id: name,
+    mathml,
+    numbered: false,
+  });
+  const inlineEquation = { type: 'equation', mathml: X };
+  const quotation = (name: string, ...content: unknown[]) => ({
+    type: 'blockquote',
+    id: name,
+    content,
+  });
+  const list = (name: string, ...content: unknown[]) => ({
+    type: 'list',
+    id: name,
+    kind: 'unordered',
+    items: [{ content }],
+  });
+  /** One component holding these blocks, with the one image resolved. */
+  const holding = (...blocks: unknown[]): UnderALayout => ({
+    ...oneComponent(...blocks),
+    assets: new Map([[RED, asset()]]),
+  });
+  const failed = (code: string, block: string | null, detail: string | null = null) => ({
+    stage: 'compose',
+    code,
+    node: id('calib'),
+    block,
+    detail,
+  });
+  /** What Word 1 does not write, named where it stands. */
+  const notYet = (block: string | null, detail: string) => failed('word_not_yet', block, detail);
+  /** A list after the contents, which stands in no node. */
+  const listNotYet = (sequence: string) => ({ ...notYet(null, `listOf:${sequence}`), node: null });
+  /** The same input assembled for a PDF, for Word, and for both. */
+  const assembledFor = (over: UnderALayout) => ({
+    pdf: assemble({ ...over, formats: ['pdf'] }),
+    docx: assemble({ ...over, formats: ['docx'] }),
+    both: assemble({ ...over, formats: ['pdf', 'docx'] }),
+  });
+  const failuresFor = (over: UnderALayout) => {
+    const { pdf, docx, both } = assembledFor(over);
+    return { pdf: failuresOf(pdf), docx: failuresOf(docx), both: failuresOf(both) };
+  };
+
+  it("carries what Word is written from - the layout's Word page, the theme, and no image sizes yet - only where Word is asked for", () => {
+    const { pdf, docx, both } = assembledFor(
+      holding(paragraph('b1', text('Set the tray.')), paragraph('b2', text('Then wait.'))),
+    );
+    if (!pdf.ok || !docx.ok || !both.ok) throw new Error('refused');
+    expect(pdf.word).toBeNull();
+    const word = { format: defaultLayout.formats.docx, theme: DEFAULT_THEME, images: new Map() };
+    expect(docx.word).toEqual(word);
+    expect(both.word).toEqual(word);
+    // The published document is the PDF's whatever else is asked for (ruling R1): the same bytes, and
+    // the same numbering beside them.
+    expect(JSON.stringify(both.document)).toBe(JSON.stringify(pdf.document));
+    expect(JSON.stringify(docx.document)).toBe(JSON.stringify(pdf.document));
+    expect(both.numbering).toEqual(pdf.numbering);
+  });
+
+  it('is told at least one format, and throws on none, since no request asks for nothing', () => {
+    expect(() =>
+      assemble({ ...oneParagraph(text('Set.')), formats: [] as unknown as ['pdf'] }),
+    ).toThrow(/format/);
+  });
+
+  it('refuses Word under a layout with no Word page, and for a request made before layouts, rather than guessing a page', () => {
+    const fifth = readLayout(JSON.parse(JSON.stringify(FIFTH_DEFAULT_LAYOUT)), {
+      artifact: 'a',
+      version: 'v',
+    });
+    if (!fifth.ok) throw new Error(fifth.failure);
+    expect(fifth.layout.formats.docx).toBeUndefined();
+    const unsupported = {
+      stage: 'compose',
+      code: 'format_unsupported',
+      node: null,
+      block: null,
+      detail: 'docx',
+    };
+    expect(failuresFor({ ...oneParagraph(text('Set.')), layout: fifth.layout })).toEqual({
+      pdf: [],
+      docx: [unsupported],
+      both: [unsupported],
+    });
+    const before = { ...oneParagraph(text('Set.')), layout: null, theme: null };
+    expect(failuresOf(assemble({ ...before, formats: ['pdf'] }))).toEqual([]);
+    expect(failuresOf(assemble({ ...before, formats: ['docx'] }))).toEqual([unsupported]);
+  });
+
+  it('refuses every block and inline Word 1 does not write, by name where it stands, and still publishes the PDF', () => {
+    const over = holding(
+      list('L1', paragraph('i1', text('An item.'))),
+      quotation('q1', paragraph('q1p', text('Quoted.'))),
+      { type: 'preformatted', id: 'pre1', text: 'SELECT 1;' },
+      table('t1'),
+      figure('f1'),
+      equation('e1'),
+      paragraph('p1', text('A logo '), image),
+      paragraph('p2', text('Let '), inlineEquation),
+      paragraph('p3', text('Noted'), footnote('n1', paragraph('n1p', text('A note.')))),
+      paragraph('p4', text('See '), xref('x1', toBlock('t1'))),
+    );
+    const { pdf, docx, both } = failuresFor(over);
+    expect(pdf).toEqual([]);
+    const refused = [
+      notYet('L1', 'list'),
+      notYet('q1', 'blockquote'),
+      notYet('pre1', 'preformatted'),
+      notYet('t1', 'table'),
+      notYet('f1', 'figure'),
+      notYet('e1', 'equation'),
+      notYet('p1', 'image'),
+      notYet('p2', 'equation'),
+      notYet('p3', 'footnote'),
+      notYet('p4', 'crossReference'),
+      // The default layout lists figures and tables after the contents, where there are any.
+      listNotYet('figure'),
+      listNotYet('table'),
+    ];
+    expect(docx).toEqual(refused);
+    expect(both).toEqual(refused);
+  });
+
+  it("refuses what Word 1 does not write wherever it stands: nested, in a caption, or in a section's title", () => {
+    const inner = holding(
+      quotation('q1', list('L1', paragraph('i1', text('One '), inlineEquation))),
+      table('t1', { caption: [text('Readings '), inlineEquation] }),
+    );
+    expect(failuresFor(inner).docx).toEqual([
+      notYet('q1', 'blockquote'),
+      notYet('L1', 'list'),
+      notYet('i1', 'equation'),
+      notYet('t1', 'table'),
+      notYet('t1', 'equation'),
+      listNotYet('table'),
+    ]);
+    // A section's title may hold an equation and a reference, and is named by its node alone.
+    const titled = {
+      ...section('results', 'Results'),
+      title: [
+        text('Results of '),
+        inlineEquation,
+        text(' in '),
+        xref('x1', { kind: 'node', node: id('methods') }),
+      ],
+    };
+    const inTitle = input({ outline: outline([section('methods', 'Methods'), titled]) });
+    const { pdf, docx } = failuresFor(inTitle);
+    expect(pdf).toEqual([]);
+    expect(docx).toEqual([
+      { ...notYet(null, 'equation'), node: id('results') },
+      { ...notYet(null, 'crossReference'), node: id('results') },
+    ]);
+  });
+
+  it("reports a preformatted line too wide for the PDF's page only where the PDF is asked for", () => {
+    const wide = { type: 'preformatted', id: 'pre1', text: 'x'.repeat(200) };
+    const tooWide = {
+      ...failed('line_too_wide', 'pre1'),
+      detail: expect.stringMatching(/^line 1, 200 of \d+ columns$/),
+    };
+    expect(failuresFor(holding(wide))).toEqual({
+      pdf: [tooWide],
+      docx: [notYet('pre1', 'preformatted')],
+      both: [notYet('pre1', 'preformatted'), tooWide],
+    });
+  });
+
+  it("reports a caption too long for the PDF's page beside its image only where the PDF is asked for", () => {
+    const long = {
+      ...holding(figure('f1', { caption: [text('x'.repeat(3000))] })),
+      assets: new Map([[RED, asset({ width: 500, height: 2000 })]]),
+    };
+    expect(failuresFor(long)).toEqual({
+      pdf: [failed('caption_too_long', 'f1')],
+      docx: [notYet('f1', 'figure'), listNotYet('figure')],
+      both: [notYet('f1', 'figure'), failed('caption_too_long', 'f1'), listNotYet('figure')],
+    });
+  });
+
+  it("reports an image in a line wider than the PDF's line only where the PDF is asked for", () => {
+    const wide = {
+      ...holding(quotation('q1', paragraph('p1', image))),
+      assets: new Map([[RED, asset({ width: 6000, height: 100 })]]),
+    };
+    expect(failuresFor(wide)).toEqual({
+      pdf: [failed('image_too_wide', 'p1')],
+      docx: [notYet('q1', 'blockquote'), notYet('p1', 'image')],
+      both: [notYet('q1', 'blockquote'), notYet('p1', 'image'), failed('image_too_wide', 'p1')],
+    });
+  });
+
+  it("reports a header cell spanning into the body, which the PDF's engine takes into the header, only where the PDF is asked for", () => {
+    const spanning = table('t1', {
+      headerRows: 1,
+      rows: [{ cells: [{ ...cellOf(paragraph('h1', text('Site'))), rowspan: 2 }] }, { cells: [] }],
+    });
+    expect(failuresFor(holding(spanning))).toEqual({
+      pdf: [failed('table_header_spans_body', 't1')],
+      docx: [notYet('t1', 'table'), listNotYet('table')],
+      both: [notYet('t1', 'table'), failed('table_header_spans_body', 't1'), listNotYet('table')],
+    });
+  });
+
+  it("reports a footnote in a table's header row, which the PDF's engine sets on every page, only where the PDF is asked for", () => {
+    const headed = table(
+      't1',
+      { headerRows: 1 },
+      paragraph('h1', text('North'), footnote('n1', paragraph('n1p', text('Once.')))),
+    );
+    expect(failuresFor(holding(headed))).toEqual({
+      pdf: [failed('footnote_not_publishable_here', 'h1')],
+      docx: [notYet('t1', 'table'), notYet('h1', 'footnote'), listNotYet('table')],
+      both: [
+        notYet('t1', 'table'),
+        notYet('h1', 'footnote'),
+        failed('footnote_not_publishable_here', 'h1'),
+        listNotYet('table'),
+      ],
+    });
+    // A footnote in a caption is refused whatever the format: it is where no footnote may stand.
+    const captioned = table('t2', {
+      caption: [text('Readings'), footnote('n2', paragraph('n2p', text('Once.')))],
+    });
+    expect(failuresFor(holding(captioned)).docx).toEqual([
+      notYet('t2', 'table'),
+      notYet('t2', 'footnote'),
+      failed('footnote_not_publishable_here', 't2'),
+      listNotYet('table'),
+    ]);
+  });
+
+  it("reports a reference to what stands in a table's header rows only where the PDF is asked for, and a form its target lacks for every format", () => {
+    const over = holding(
+      table('t1', { headerRows: 1 }, paragraph('h1', text('Site'))),
+      paragraph(
+        'b1',
+        text('See '),
+        xref('x1', toBlock('h1'), 'page'),
+        text(' and '),
+        xref('x2', toBlock('b1'), 'number'),
+      ),
+    );
+    const unavailable = (reference: string, form: string) =>
+      failed('cross_reference_form_unavailable', reference, form);
+    expect(failuresFor(over)).toEqual({
+      pdf: [unavailable('x1', 'page'), unavailable('x2', 'number')],
+      docx: [
+        unavailable('x2', 'number'),
+        notYet('t1', 'table'),
+        notYet('b1', 'crossReference'),
+        listNotYet('table'),
+      ],
+      both: [
+        unavailable('x1', 'page'),
+        unavailable('x2', 'number'),
+        notYet('t1', 'table'),
+        notYet('b1', 'crossReference'),
+        listNotYet('table'),
+      ],
+    });
+  });
+
+  it("reports an equation the PDF's engine cannot set only where the PDF is asked for, and MathML nothing can read for every format", () => {
+    const rtl = equation(
+      'e1',
+      '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x" dir="rtl"><mi>x</mi></math>',
+    );
+    expect(failuresFor(holding(rtl))).toEqual({
+      pdf: [failed('equation_unrenderable', 'e1', 'rtl')],
+      docx: [notYet('e1', 'equation')],
+      both: [notYet('e1', 'equation'), failed('equation_unrenderable', 'e1', 'rtl')],
+    });
+    // MathML that cannot be read is the equation's own fault, whatever sets it. The stored shape
+    // refuses it, so it is broken past the parse, as a build reading newer content might meet it.
+    const readable = holding(equation('e2'));
+    const content = readable.occurrences.get(id('calib'))!;
+    const unreadable = { ...content.content[0]!, mathml: '<math><mi>' } as BlockNode;
+    const broken = {
+      ...readable,
+      occurrences: new Map([[id('calib'), { ...content, content: [unreadable] }]]),
+    };
+    expect(failuresFor(broken).docx).toEqual([
+      notYet('e2', 'equation'),
+      failed('equation_unrenderable', 'e2', 'unreadable'),
+    ]);
+  });
+
+  it("reports a table style's continuation label under a layout with no words for it only where the PDF is asked for", () => {
+    const inputs = defaultInputs();
+    const [plain] = inputs.catalogues.table.styles;
+    inputs.catalogues.table.styles.push({
+      ...structuredClone(plain!),
+      id: 'labelled',
+      name: 'labelled',
+      breaks: { repeatHeader: true, keepRowsWhole: false, continuationLabel: true },
+    });
+    // A layout with a Word page and no words for a continued table, built past the parse: Word sets
+    // no such label, so it is the PDF's refusal alone.
+    const wordless = structuredClone(defaultLayout);
+    delete wordless.words.continued;
+    const over = {
+      ...holding(table('t1', { style: 'labelled' })),
+      theme: resolved(inputs),
+      layout: wordless,
+    };
+    expect(failuresFor(over)).toEqual({
+      pdf: [failed('continuation_words_missing', 't1', 'labelled')],
+      docx: [notYet('t1', 'table'), listNotYet('table')],
+      both: [
+        notYet('t1', 'table'),
+        failed('continuation_words_missing', 't1', 'labelled'),
+        listNotYet('table'),
+      ],
+    });
+  });
+
+  it("asks a face's licence of a PDF for a PDF and of Word for Word, where a face Word may not embed is substituted rather than refused", () => {
+    const withSerif = (embedding: { pdf: boolean; word: boolean }, wordFamily?: string) => {
+      const inputs = defaultInputs();
+      const serif = inputs.theme.typefaces.find((each) => each.id === 'serif')!;
+      serif.embedding = embedding;
+      if (wordFamily !== undefined) serif.wordFamily = wordFamily;
+      return { ...oneParagraph(text('Set.')), theme: resolved(inputs) };
+    };
+    const refusal = {
+      stage: 'compose',
+      code: 'typeface_not_embeddable',
+      node: null,
+      block: null,
+      detail: 'Liberation Serif',
+    };
+    expect(failuresFor(withSerif({ pdf: false, word: true }))).toEqual({
+      pdf: [refusal],
+      docx: [],
+      both: [refusal],
+    });
+    // Named by a face Word may embed in its place, which the writer reports, and never refused.
+    expect(failuresFor(withSerif({ pdf: true, word: false }, 'Times New Roman'))).toEqual({
+      pdf: [],
+      docx: [],
+      both: [],
+    });
+    // A theme `readTheme` read never names a face Word may not embed with none in its place
+    // (STY-052); one built past the reader is refused for Word as a PDF's is.
+    const bare = withSerif({ pdf: true, word: true });
+    const body = bare.theme.paragraphStyles.get(bare.theme.places.text)!;
+    const unsubstituted = { ...body.typeface, embedding: { pdf: true, word: false } };
+    const theme: ResolvedTheme = {
+      ...bare.theme,
+      paragraphStyles: new Map(
+        [...bare.theme.paragraphStyles].map(([key, style]) => [
+          key,
+          style.typeface.id === body.typeface.id ? { ...style, typeface: unsubstituted } : style,
+        ]),
+      ),
+    };
+    expect(failuresFor({ ...bare, theme })).toEqual({ pdf: [], docx: [refusal], both: [refusal] });
   });
 });

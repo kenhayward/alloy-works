@@ -324,6 +324,7 @@ const assembled = async () => {
   };
   const assets = new Map([[IMAGE, asset]]);
   const result = assemble({
+    formats: ['pdf'],
     outline: parseOutlineDocument({
       schemaVersion: OUTLINE_SCHEMA_VERSION,
       title: 'The growth survey',
@@ -612,6 +613,7 @@ describe('what the converter refuses never reaches the engine (the final review 
   const ACCENTED = `<math xmlns="${NAMESPACE}"><mover accent="true"><mi>y</mi><mo>x&#x302;</mo></mover></math>`;
   const document = (...equations: string[]) =>
     assemble({
+      formats: ['pdf'],
       outline: parseOutlineDocument({
         schemaVersion: OUTLINE_SCHEMA_VERSION,
         title: 'Two refusals',

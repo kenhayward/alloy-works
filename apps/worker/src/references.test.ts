@@ -229,6 +229,7 @@ const compile = async () => {
   };
   const assets = new Map([[IMAGE, asset]]);
   const assembled = assemble({
+    formats: ['pdf'],
     outline: parseOutlineDocument({
       schemaVersion: OUTLINE_SCHEMA_VERSION,
       title: 'The bridge survey',

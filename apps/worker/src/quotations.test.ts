@@ -36,6 +36,7 @@ const pdfFormat = bare.formats.pdf;
 const RIGHT = pdfFormat.page.width - pdfFormat.margins.outside;
 
 const inputOf = (content: unknown[]): AssembleInput => ({
+  formats: ['pdf'],
   outline: parseOutlineDocument({
     schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The printer notes',

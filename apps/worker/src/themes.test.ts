@@ -348,6 +348,7 @@ const compile = async (
   components: readonly { name: string; title: string; content: unknown[] }[],
 ) => {
   const assembled = assemble({
+    formats: ['pdf'],
     outline: parseOutlineDocument({
       schemaVersion: OUTLINE_SCHEMA_VERSION,
       title: 'The specimen',
@@ -816,6 +817,7 @@ describe('two themes in the PDF (themes 1)', () => {
       // which contrast judges a script at, so the template reads it rather than leaving it to the
       // engine. A document whose projection says a half sets every script at half its text.
       const assembled = assemble({
+        formats: ['pdf'],
         outline: parseOutlineDocument({
           schemaVersion: OUTLINE_SCHEMA_VERSION,
           title: 'The specimen',

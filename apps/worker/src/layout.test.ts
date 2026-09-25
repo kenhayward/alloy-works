@@ -106,6 +106,7 @@ const inputOf = (nodes: readonly Node[], layout: Layout): AssembleInput => {
     };
   };
   return {
+    formats: ['pdf'],
     outline: parseOutlineDocument({
       schemaVersion: OUTLINE_SCHEMA_VERSION,
       title: TITLE,
