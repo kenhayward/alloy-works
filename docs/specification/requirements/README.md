@@ -1,7 +1,7 @@
 # Detailed requirements
 
 > **Status: v1, reviewed.** One document per capability area in
-> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-two written and all twenty-two reviewed. The first twenty-one were read against each other in a [cross-cutting pass](../../reviews/) whose answers are in [`XXX - Response.md`](<../../reviews/XXX - Response.md>); the twenty-second, **MET**, was written afterwards, when a component's metadata turned out to have been specified as a template's. 1388 requirements, 117 non-requirements and 135 numbered questions, twenty-nine of which have since been settled. These say
+> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-two written and all twenty-two reviewed. The first twenty-one were read against each other in a [cross-cutting pass](../../reviews/) whose answers are in [`XXX - Response.md`](<../../reviews/XXX - Response.md>); the twenty-second, **MET**, was written afterwards, when a component's metadata turned out to have been specified as a template's. 1449 requirements, 117 non-requirements and 135 numbered questions, twenty-nine of which have since been settled. These say
 > what the product must do. How it gets built is [`../../design/`](../../design/), one document per
 > subsystem, each naming the requirements it answers - so a requirement no design claims is work not
 > yet designed, and that gap is visible without anybody keeping a list of it.
@@ -200,7 +200,9 @@ entries, terms and vocabularies are small structured records with none of that. 
 share - reference by identity and where-used - is an argument for a common mechanism rather than a
 common area, in the same way that `CNT` and `DAT` both anchor footnotes without being one area.
 
-\1
+Two of the twenty-one areas, `STY` and `TPL`, existed only because somebody happened to ask whether
+something was covered elsewhere. Two more, `AST` and `LIB`, came from looking on purpose. The guard
+above is what makes the difference repeatable.
 
 **A twenty-second area, `MET`, came later and from building rather than reading.** Designing the
 content model found a component described as typed and carrying metadata, and the only metadata in the

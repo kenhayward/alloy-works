@@ -50,16 +50,18 @@ inactivity would return immediately.
 
 ## 4. Versions
 
-| ID          | Requirement                                                                                                                                                                                                                                                                 | Tranche    | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **VER-006** | A version must be an immutable snapshot, promoted from an iteration by a positive act                                                                                                                                                                                       | Constraint | Specified |
-| **VER-007** | A version must record its author, the time, and an optional change note                                                                                                                                                                                                     | T1         | Specified |
-| **VER-008** | A version must never be edited or deleted; correcting one must produce another                                                                                                                                                                                              | Constraint | Specified |
-| **VER-009** | Versions must be numbered sequentially within their revision, and the pair must be presentable as `revision.version`                                                                                                                                                        | T1         | Specified |
-| **VER-010** | Every version must record the schema version its content was written against (**CNT-011**)                                                                                                                                                                                  | T1         | Specified |
-| **VER-011** | Documents, outlines, assets, query definitions, themes, layouts and templates must each be versioned by the same rules as content                                                                                                                                           | T1         | Specified |
-| **VER-042** | Immutability must mean more than an absence of writes: every version must record a content digest over its canonical serialisation, and that digest must be recomputable from the content by anybody holding it, so that tampering is detectable rather than only forbidden | Constraint | Specified |
-| **VER-052** | Every recorded time must be an absolute instant in UTC (**LIF-062**), and the order of a chain must come from its sequence rather than from the clock, so that skew cannot reorder history                                                                                  | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                 | Tranche    | Status                |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| **VER-006** | A version must be an immutable snapshot, promoted from an iteration by a positive act                                                                                                                                                                                       | Constraint | Specified             |
+| **VER-007** | A version must record its author, the time, and an optional change note                                                                                                                                                                                                     | T1         | Specified             |
+| **VER-008** | A version must never be edited or deleted; correcting one must produce another                                                                                                                                                                                              | Constraint | Specified             |
+| **VER-009** | Versions must be numbered sequentially within their revision, and the pair must be presentable as `revision.version`                                                                                                                                                        | T1         | Specified             |
+| **VER-010** | Every version must record the schema version its content was written against (**CNT-011**)                                                                                                                                                                                  | T1         | Specified             |
+| **VER-011** | Documents, outlines, assets, query definitions, themes, layouts and templates must each be versioned by the same rules as content                                                                                                                                           | T1         | Superseded by VER-056 |
+| **VER-056** | Documents, outlines, assets, themes, layouts and templates must each be versioned by the same rules as content                                                                                                                                                              | T1         | Specified             |
+| **VER-057** | Query definitions must be versioned by the same rules as content                                                                                                                                                                                                            | T2         | Specified             |
+| **VER-042** | Immutability must mean more than an absence of writes: every version must record a content digest over its canonical serialisation, and that digest must be recomputable from the content by anybody holding it, so that tampering is detectable rather than only forbidden | Constraint | Specified             |
+| **VER-052** | Every recorded time must be an absolute instant in UTC (**LIF-062**), and the order of a chain must come from its sequence rather than from the clock, so that skew cannot reorder history                                                                                  | Constraint | Specified             |
 
 **VER-042 is the largest gap relative to what section 1 claims.** Immutability carries this whole
 document and appeared six times without a definition: an implementer could satisfy every one of them
@@ -298,5 +300,21 @@ decides, and a baseline's pin list depended on it.
 | Counts           | Before                    | After                     |
 | ---------------- | ------------------------- | ------------------------- |
 | Requirements     | 54, of which 2 superseded | 55, of which 3 superseded |
+| Non-requirements | 4                         | 4                         |
+| Open questions   | 5                         | 5                         |
+
+### From the T1 audit against the code (2026-09-25)
+
+[The T1 audit](<../../reviews/T1 - Audit against the code.md>) read every T1 requirement against the code
+and against what T1 can deliver. A row moving tranche whole keeps its identifier, and only its tranche
+changes; a row split by tranche is superseded by its T1 half, and the rest becomes rows of their own.
+
+| What was found                         | Change                                                                            |
+| -------------------------------------- | --------------------------------------------------------------------------------- |
+| Query definitions are **DAT**'s, in T2 | **VER-011 superseded by VER-056**, T1, with **VER-057**, query definitions, in T2 |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 55, of which 3 superseded | 57, of which 4 superseded |
 | Non-requirements | 4                         | 4                         |
 | Open questions   | 5                         | 5                         |

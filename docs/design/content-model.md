@@ -101,10 +101,8 @@ on read, because versions are immutable and `content_hash` is the hash of what w
 | **CNT-050** | `citation` carries an entry identity and has no text member, so typed citation text is not representable                                                                                                                                                                                                                                                                                                                                        |
 | **CNT-051** | The entry is an artifact in the space; a citation holds its identity and never a copy of it                                                                                                                                                                                                                                                                                                                                                     |
 | **CNT-052** | `citation` carries an optional locator beside its reference                                                                                                                                                                                                                                                                                                                                                                                     |
-| **CNT-055** | Text is JSON strings, so the whole Unicode range is storable, astral planes included                                                                                                                                                                                                                                                                                                                                                            |
 | **CNT-056** | NFC is applied in the pipeline's normalise stage and asserted by validation, so no un-normalised string can be stored                                                                                                                                                                                                                                                                                                                           |
 | **CNT-059** | Direction is explicit on the root and on any run that differs, never derived from the language tag - see "Why direction is not derived"                                                                                                                                                                                                                                                                                                         |
-| **CNT-060** | An OOXML reader feeds the pipeline, producing structure rather than styled runs                                                                                                                                                                                                                                                                                                                                                                 |
 | **CNT-061** | A Markdown reader feeds the same pipeline                                                                                                                                                                                                                                                                                                                                                                                                       |
 | **CNT-062** | An HTML reader feeds the same pipeline                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **CNT-063** | The report is a collector threaded through all six stages, returned with the admitted content rather than logged                                                                                                                                                                                                                                                                                                                                |
@@ -126,28 +124,30 @@ on read, because versions are immutable and `content_hash` is the hash of what w
 
 ## What this document does not own
 
-Eighty-one requirements above, and the ones deliberately left out matter as much.
+Seventy-nine requirements above, and the ones deliberately left out matter as much.
 
 **Answered jointly, so claimed by neither half.** A claim in the table above says this document
 answers that requirement in full. Several of CNT's rows are two requirements in one sentence, where
 the model answers one clause and the outline or the publisher answers the other. Claiming them would
 say this design holds ground it does not.
 
-| Left unclaimed            | Why                                                                                                                                                 |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CNT-041, CNT-047          | The model carries no number and no sequence; **STR** owns the numbering the other clause requires                                                   |
-| CNT-045, CNT-048, CNT-049 | One stored representation is here; rendering it on screen, in PDF and in Word, and failing a publish that cannot, are the publisher's               |
-| CNT-042, CNT-054          | The model produces the named failure; making a publish fail on it is **PUB**'s                                                                      |
-| CNT-084, CNT-128          | The mark is here; carrying a language and a hyperlink into every output format is the publisher's                                                   |
-| CNT-035, CNT-057, CNT-058 | A toolbar, a keyboard shortcut and an insertion palette are the editor's                                                                            |
-| CNT-053, CNT-102          | Citation style rendering is T6, in **PUB**                                                                                                          |
-| CNT-039                   | The strict data anchor is here in shape, but generated content needs a bound table, which is T2. Claiming it would claim the T2 case                |
-| CNT-120                   | Admonitions are T2, and the block is deliberately absent from the vocabulary                                                                        |
-| CNT-122                   | Resolving an image style to real dimensions is **STY**'s, and the editor resolves it by those same rules                                            |
-| CNT-094                   | Already claimed by [themes.md](themes.md)                                                                                                           |
-| CNT-145                   | Claimed by [storage-and-versioning.md](storage-and-versioning.md), which records the component type on the version rather than in content           |
-| CNT-046                   | Claimed by [component-editor.md](component-editor.md), since every context is made in the editor; a heading being inline content is **STR**'s       |
-| AST-005, AST-006          | Asset ingest, and refusing an asset whose intrinsic properties cannot be read, belong to [assets.md](assets.md) rather than to a figure's reference |
+| Left unclaimed            | Why                                                                                                                                                                                                                                                 |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CNT-041, CNT-047          | The model carries no number and no sequence; **STR** owns the numbering the other clause requires                                                                                                                                                   |
+| CNT-045, CNT-048, CNT-049 | One stored representation is here; rendering it on screen, in PDF and in Word, and failing a publish that cannot, are the publisher's                                                                                                               |
+| CNT-042, CNT-054          | The model produces the named failure; making a publish fail on it is **PUB**'s                                                                                                                                                                      |
+| CNT-084, CNT-128          | The mark is here; carrying a language and a hyperlink into every output format is the publisher's                                                                                                                                                   |
+| CNT-166                   | Text is JSON strings, so the whole Unicode range is storable, astral planes included. Showing it in the editor is the editor's, and failing a publish on a character the typefaces cannot set is the publisher's (STY-049)                          |
+| CNT-167                   | Word's paste is read from the HTML Word puts on the clipboard, by the HTML reader in `packages/readers`, not by an OOXML reader. Lists, tables and emphasis come through; **Word's footnotes are not read**, so the row's footnotes clause is unmet |
+| CNT-164, CNT-057, CNT-058 | A toolbar, a keyboard shortcut and an insertion palette are the editor's; component-editor.md claims CNT-164 and CNT-057. CNT-035 was split into CNT-164, T1, and CNT-165, the defined term's control, T6                                           |
+| CNT-053, CNT-102          | Citation style rendering is T6, in **PUB**                                                                                                                                                                                                          |
+| CNT-039                   | The strict data anchor is here in shape, but generated content needs a bound table, which is T2. Claiming it would claim the T2 case                                                                                                                |
+| CNT-120                   | Admonitions are T2, and the block is deliberately absent from the vocabulary                                                                                                                                                                        |
+| CNT-122                   | Resolving an image style to real dimensions is **STY**'s, and the editor resolves it by those same rules                                                                                                                                            |
+| CNT-094                   | Already claimed by [themes.md](themes.md)                                                                                                                                                                                                           |
+| CNT-145                   | Claimed by [storage-and-versioning.md](storage-and-versioning.md), which records the component type on the version rather than in content                                                                                                           |
+| CNT-046                   | Claimed by [component-editor.md](component-editor.md), since every context is made in the editor; a heading being inline content is **STR**'s                                                                                                       |
+| AST-005, AST-006          | Asset ingest, and refusing an asset whose intrinsic properties cannot be read, belong to [assets.md](assets.md) rather than to a figure's reference                                                                                                 |
 
 **A definition list reaches a reader as a list, and that is a named limit rather than a claim.** The
 stored shape is right: a definition list's item carries the term it defines as inline content, so the
@@ -504,20 +504,20 @@ steps.
 
 ## The admission boundary
 
-**One pipeline, not one per source.** CNT-060 to CNT-062 admit Word, Markdown and HTML; CNT-132 to
+**One pipeline, not one per source.** CNT-167, CNT-061 and CNT-062 admit Word, Markdown and HTML; CNT-132 to
 CNT-135 admit content copied within the product; and IMP-047 requires every inbound document to be
 sanitised "on the same terms as a paste". That phrase is only true if there is one implementation, so
 there is: a reader per source, feeding one pipeline. It is the rule [`CLAUDE.md`](../../CLAUDE.md)
 already states for the workspace boundary - one shared module, never re-implemented per backend.
 
-| Stage           | Does                                                                                                        | Requirements       |
-| --------------- | ----------------------------------------------------------------------------------------------------------- | ------------------ |
-| **Read**        | Source-specific: OOXML, Markdown, HTML, the product's own clipboard                                         | CNT-060 to CNT-062 |
-| **Sanitise**    | Scripts, event handlers, embedded objects, and any hyperlink whose scheme is not allowlisted - never stored | CNT-130, CNT-127   |
-| **Migrate**     | Content at an earlier schema version brought to current, or refused with a named error                      | CNT-134            |
-| **Normalise**   | NFC; typeface, size and colour dropped; adjacent empty paragraphs collapsed                                 | CNT-056, CNT-065   |
-| **Re-identify** | A new identifier for every block and every mark; annotations whose owning artifact does not travel dropped  | CNT-132, CNT-133   |
-| **Validate**    | The whole admission refused rather than partly stored                                                       | CNT-010            |
+| Stage           | Does                                                                                                                                      | Requirements              |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| **Read**        | Source-specific: HTML - a web page's, and Word's, which reaches the clipboard as HTML - Markdown, plain text, the product's own clipboard | CNT-167, CNT-061, CNT-062 |
+| **Sanitise**    | Scripts, event handlers, embedded objects, and any hyperlink whose scheme is not allowlisted - never stored                               | CNT-130, CNT-127          |
+| **Migrate**     | Content at an earlier schema version brought to current, or refused with a named error                                                    | CNT-134                   |
+| **Normalise**   | NFC; typeface, size and colour dropped; adjacent empty paragraphs collapsed                                                               | CNT-056, CNT-065          |
+| **Re-identify** | A new identifier for every block and every mark; annotations whose owning artifact does not travel dropped                                | CNT-132, CNT-133          |
+| **Validate**    | The whole admission refused rather than partly stored                                                                                     | CNT-010                   |
 
 The order is load-bearing. **Sanitise before normalise**, so a hostile target cannot survive
 normalisation. **Migrate before re-identify**, so identifiers are allocated in the current schema's

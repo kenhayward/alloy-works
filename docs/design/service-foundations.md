@@ -37,7 +37,7 @@ generated from them and committed, and the renderer's client is generated from t
 | **IAM-043** | Each tenant records the routes it permits; sign-in offers only those, and closing one ends the sessions it issued                                       |
 | **IAM-044** | Sign-in requests `openid`, `email` and `profile` and nothing else, and a test pins the scope list                                                       |
 | **IAM-054** | A tenant accepting Google accounts admits only the addresses it invited and the Workspace domains it names; an invitation binds once, by verified email |
-| **IAM-052** | An organisation groups tenants for billing, administration and a shared provider configuration, and holds no content                                    |
+| **IAM-078** | An organisation groups a customer's tenants - production, a sandbox, a validation copy - and holds no content                                           |
 | **IAM-053** | A hostname table maps any hostname to a tenant: two-level names by default, and a customer's own domain later through the same table                    |
 | **API-001** | The renderer calls the service only through the client generated from the committed OpenAPI document                                                    |
 | **API-002** | Routes are zod schemas; the OpenAPI document is generated from them at build, committed, and the client types generated from it                         |
@@ -51,6 +51,12 @@ generated from them and committed, and the renderer's client is generated from t
 
 IAM-002, isolation at the data layer across every container, is owned by [system.md](system.md); the
 database roles below are how the service and workers meet it.
+
+**IAM-079 is not claimed.** It asks an organisation to share billing, administration and
+identity-provider configuration across its tenants, and is T3. The table below gives the organisation
+those three, and step 1 of the organisation's own provider reads a provider configured for a tenant
+"or its organisation" - but nothing here designs how they are shared, and as built the organisation
+row holds a name and nothing else, while each provider is configured in its tenant's schema.
 
 ## Organisations, tenants and hostnames
 

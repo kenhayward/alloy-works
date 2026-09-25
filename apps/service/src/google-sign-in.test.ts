@@ -190,7 +190,7 @@ describe('signing in with a Google account', () => {
   const me = (host: string, cookie: string) =>
     app.inject({ url: '/v1/me', headers: { host, cookie } });
 
-  it('hands an invited address back to the environment that asked, which signs it in', async () => {
+  it('IAM-041 hands an invited address back to the environment that asked, which signs it in', async () => {
     const { next, cookie } = await untilHandoff(DEV, 'ada');
     expect(`${next.origin}${next.pathname}`).toBe(`http://${DEV}/v1/sign-in/google/complete`);
     const done = await complete(next, cookie);

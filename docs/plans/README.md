@@ -526,6 +526,17 @@ output, and the theme in the editor after it.
 | 1   | [The theme in the PDF](2026-09-24-themes-01-the-theme-in-the-pdf.md)     | The default theme and its six catalogues stored and recorded on every request; `publishing/12` and template 12 setting every face, size, colour, space and line from it; styles, faces and contrast refused by name                                                  | Built (PR #227) |
 | 2   | [Table and image styles](2026-09-24-themes-02-table-and-image-styles.md) | Table styles - header treatment, banding, rules, padding, header repetition, rows kept whole and a continued label in the layout's words; image styles - a fixed dimension, a maximum, placement and alignment; contextual spacing, and the quotation's set-off back | Built (PR #228) |
 
+## The rest of T1
+
+[The T1 audit against the code](<../reviews/T1 - Audit against the code.md>) read every T1 requirement
+not yet covered at 0.69.0 against the code and moved out of T1 what depends on a later tranche. The
+map below orders what is left as fourteen workstreams; each gets its own plan here when its turn
+comes.
+
+| #   | Plan                                         | Builds                                                                                    | Status      |
+| --- | -------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------- |
+| 1   | [The rest of T1](2026-09-25-t1-remainder.md) | The workstreams left in T1 after the rescoping, their order, and the week's share of them | In progress |
+
 ## Publishing
 
 A document version to a PDF somebody can download, cite and keep, designed in

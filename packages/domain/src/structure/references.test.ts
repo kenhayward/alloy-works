@@ -727,7 +727,7 @@ describe('resolving a reference in the document that publishes it', () => {
     expect(resolver(node('elsewhere'), reading)).toEqual(missing);
   });
 
-  it("finds a block that takes no number anywhere in the occurrence, a paragraph at depth in a list's item among them", () => {
+  it("CNT-125 finds a block that takes no number anywhere in the occurrence, a paragraph at depth in a list's item among them", () => {
     const resolver = resolving([placed('ada', ADA)], { ada });
     const reading = { node: id('ada') };
     const found = (name: string, kind: ReferenceKind, label: string | null, title: string | null) =>

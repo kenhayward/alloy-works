@@ -33,6 +33,12 @@ document's change history says so.
 | [metadata-review](design-reviews/metadata-review.md)   | [metadata.md](../design/metadata.md)                 | [its Review section](../design/metadata.md#review)         |
 | [access-review](design-reviews/access-review.md)       | [access.md](../design/access.md)                     | [its Review section](../design/access.md#review)           |
 
+**[T1 - Audit against the code](<T1 - Audit against the code.md>) reads a tranche against the
+code**, not a document against itself: every T1 requirement not yet `Covered` at 0.69.0, with a
+verdict for each, and a recommendation for what leaves T1. It is answered by a **From the T1 audit
+against the code** subsection in the change history of each requirements document it changed, and
+by [the T1 remainder plan](../plans/2026-09-25-t1-remainder.md).
+
 **They are not edited to match what happened.** A review is evidence of what was visible at the time
 it was written, and rewriting it afterwards would destroy exactly that. Where a reviewer was wrong,
 the answer is in the reply, not in a correction here.

@@ -28,7 +28,7 @@ describe('the inline vocabulary', () => {
     expect(() => inlineNodeSchema.parse({ ...node, title: 'Figure 2' })).toThrow();
   });
 
-  it('CNT-050 makes a citation a reference by identity, with no text member', () => {
+  it('CNT-028 CNT-050 makes a citation an inline node, a reference by identity, with no text member', () => {
     expect(inlineNodeSchema.parse({ type: 'citation', entry: 'bib-4' }).type).toBe('citation');
     expect(() => inlineNodeSchema.parse({ type: 'citation', text: 'Smith 2020' })).toThrow();
   });

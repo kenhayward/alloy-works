@@ -382,7 +382,7 @@ describe('cross-references in the PDF (cross-references 2)', () => {
     expect(new Set(pageReferences.map(([, page]) => page)).size).toBeGreaterThanOrEqual(4);
   });
 
-  it("links a reference in a paragraph's text to its target's page, and sets one anywhere else as text", () => {
+  it("PUB-096 links a reference in a paragraph's text to its target's page, and sets one anywhere else as text", () => {
     const on = pages();
     const links: [string, number][] = [
       // Running text, forwards and backwards, in the front matter and the body.
