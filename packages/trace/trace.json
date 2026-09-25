@@ -17122,15 +17122,21 @@
       "kind": "title"
     },
     {
+      "id": "PUB-035",
+      "file": "apps/worker/src/word.test.ts",
+      "line": 538,
+      "kind": "title"
+    },
+    {
       "id": "TAB-039",
       "file": "apps/worker/src/word.test.ts",
-      "line": 339,
+      "line": 471,
       "kind": "title"
     },
     {
       "id": "TAB-049",
       "file": "apps/worker/src/word.test.ts",
-      "line": 339,
+      "line": 471,
       "kind": "title"
     },
     {
@@ -18306,31 +18312,31 @@
     {
       "id": "CNT-084",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1063,
+      "line": 1097,
       "kind": "title"
     },
     {
       "id": "CNT-128",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1045,
+      "line": 1079,
       "kind": "title"
     },
     {
       "id": "PUB-024",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 576,
+      "line": 610,
       "kind": "title"
     },
     {
       "id": "PUB-034",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1063,
+      "line": 1097,
       "kind": "title"
     },
     {
       "id": "STY-052",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1144,
+      "line": 1178,
       "kind": "title"
     },
     {

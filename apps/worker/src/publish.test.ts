@@ -1076,6 +1076,93 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(await work()).toBe('done');
     expect((await outputsOf(pdf)).map((each) => each.format)).toEqual(['pdf']);
   }, 120_000);
+
+  it('publishes a figure to Word alone: its image read from the store, held to its hash, and written into the document once, described', async () => {
+    const bytes = await sharp({
+      create: { width: 80, height: 60, channels: 3, background: { r: 30, g: 60, b: 200 } },
+    })
+      .png()
+      .toBuffer();
+    const hash = createHash('sha256').update(bytes).digest('hex');
+    // The default layout lists the figures after the contents, which Word 3 writes and Word refuses
+    // until then (`word_not_yet`): a version of it listing nothing, as an environment's own may. The
+    // last test of this tenant, so no other publishes under it.
+    await service.withTenant(tenant, async (trx) => {
+      const declared = await defaultLayout(trx);
+      const recorded = await recordVersion(trx, {
+        artifactId: declared.artifactId,
+        openedFrom: declared.versionId,
+        author: ada,
+        substance: {
+          kind: 'layout',
+          content: { ...declared.layout, matter: { ...declared.layout.matter, lists: [] } },
+        },
+      });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+    });
+    const id = await requested(
+      async (trx) => {
+        const store = await stores.forTenant(trx, tenant);
+        const kept = await store.put(bytes, 'image/png');
+        const image = await createArtifact(trx, {
+          spaceId: general,
+          author: ada,
+          substance: {
+            kind: 'asset',
+            content: {
+              schemaVersion: 1,
+              object: kept.key,
+              format: 'png',
+              bytes: bytes.length,
+              width: 80,
+              height: 60,
+              orientation: 1,
+              colour: 'rgb',
+              alpha: false,
+              depth: 8,
+              resolution: null,
+              alternative: { text: 'A blue tray', language: 'en-GB' },
+            },
+          },
+        });
+        const figure = (name: string) => ({
+          type: 'figure',
+          id: name,
+          asset: image.id,
+          imageStyle: 'figure',
+          caption: [{ type: 'text', value: `The tray, ${name}`, marks: [] }],
+          alternative: { kind: 'inherited' },
+        });
+        return [
+          section('Introduction', [
+            reference(
+              await component(
+                trx,
+                general,
+                'Tray',
+                ['Before the figures.'],
+                [figure('f1'), figure('f2')],
+              ),
+            ),
+          ]),
+        ];
+      },
+      ['docx'],
+    );
+    expect(await work()).toBe('done');
+    const [docx, ...rest] = await outputsOf(id);
+    expect(rest).toEqual([]);
+    expect(docx).toMatchObject({ format: 'docx', engine: null });
+    const read = await readDocx(docx!);
+    expect(read.errors).toEqual([]);
+    const parts = unzipSync(new Uint8Array(await pdfOf(docx!.object_key)));
+    // One part for the image placed twice, its bytes the store's.
+    expect(Object.keys(parts).filter((name) => name.startsWith('word/media/'))).toEqual([
+      `word/media/${hash}.png`,
+    ]);
+    expect(Buffer.from(parts[`word/media/${hash}.png`]!).equals(bytes)).toBe(true);
+    expect(read.document.match(/descr="A blue tray"/g)).toHaveLength(2);
+  }, 120_000);
 });
 
 describe('publishing a request made before layouts', () => {

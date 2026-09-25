@@ -590,6 +590,8 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           word: assembled.word!,
           formats: fixture.formats,
           faces,
+          // No fixture places an image yet: the check's own are the next task's (Word 2, R9).
+          images: new Map(),
         });
         await writeFile(join(FOLDER, `${fixture.name}.docx`), bytes);
         const numbers = sectionNumbers(assembled.numbering);

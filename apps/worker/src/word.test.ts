@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   assemble,
   DEFAULT_CATALOGUES,
@@ -8,15 +9,22 @@ import {
   parseContentDocument,
   parseLayout,
   parseOutlineDocument,
+  publishedImagePath,
   readTheme,
   writeDocx,
   type AssembleInput,
+  type ImageCatalogue,
   type Layout,
   type ContentDocument,
+  type PublishedBlock,
+  type PublishedInline,
+  type PublishedNode,
+  type PublishingAsset,
   type ResolvedTheme,
   type TableCatalogue,
 } from '@alloy-works/domain';
 import { strFromU8, unzipSync } from 'fflate';
+import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
@@ -186,8 +194,93 @@ const READINGS = component('Readings', [
   },
 ]);
 
+/** Two images, made from pixels: a PNG four by three and a square JPEG. */
+const RED = '00000000-0000-4000-8000-00000000a551';
+const BLUE = '00000000-0000-4000-8000-00000000b1e0';
+const solid = (width: number, height: number, background: object) =>
+  sharp({ create: { width, height, channels: 3, background } });
+const redBytes = new Uint8Array(await solid(80, 60, { r: 200, g: 30, b: 30 }).png().toBuffer());
+const blueBytes = new Uint8Array(await solid(60, 60, { r: 30, g: 60, b: 200 }).jpeg().toBuffer());
+const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
+const ASSETS = new Map<string, PublishingAsset>([
+  [
+    RED,
+    {
+      object: `t_acme/sha256/${sha256(redBytes)}`,
+      format: 'png',
+      width: 80,
+      height: 60,
+      alternative: { text: 'Two red squares', language: 'en-GB' },
+    },
+  ],
+  [
+    BLUE,
+    {
+      object: `t_acme/sha256/${sha256(blueBytes)}`,
+      format: 'jpeg',
+      width: 60,
+      height: 60,
+      alternative: { text: 'A blue square', language: 'en-GB' },
+    },
+  ],
+]);
+/** Each image by the path the published document names it at: what the job hands both outputs. */
+const IMAGES = new Map([
+  [publishedImagePath(ASSETS.get(RED)!), redBytes],
+  [publishedImagePath(ASSETS.get(BLUE)!), blueBytes],
+]);
+const ROOT_IMAGES = [...IMAGES].map(([path, bytes]) => ({ path, bytes }));
+
+const figure = (name: string, asset: string, caption: string, over: object = {}) => ({
+  type: 'figure',
+  id: name,
+  asset,
+  imageStyle: 'figure',
+  caption: [text(caption)],
+  alternative: { kind: 'inherited' },
+  ...over,
+});
+const image = (asset: string) => ({
+  type: 'image',
+  asset,
+  imageStyle: 'inline',
+  alternative: { kind: 'inherited' },
+});
+
+/**
+ * What Word 2's fourth task writes: a figure described by its image's alternative text, a decorative
+ * one, one floated to the head of its page, and images in a line, in a paragraph's text and in a
+ * table's cell.
+ */
+const FIGURED = component('Shapes', [
+  paragraph('s1', text('The shapes Ada drew.')),
+  figure('f1', RED, 'Two squares'),
+  figure('f2', RED, 'A border', { alternative: { kind: 'decorative' } }),
+  figure('f3', BLUE, 'Blue on top', { imageStyle: 'floated' }),
+  paragraph('s2', text('Press '), image(RED), text(' to start.')),
+  {
+    type: 'table',
+    id: 't2',
+    style: 'table',
+    caption: [text('Keys')],
+    headerRows: 1,
+    headerColumns: 0,
+    rows: [
+      { cells: [cell('Key'), cell('Look')] },
+      {
+        cells: [
+          cell('Start'),
+          { content: [paragraph('s3', text('Press '), image(BLUE))], colspan: 1, rowspan: 1 },
+        ],
+      },
+    ],
+  },
+]);
+
 /** The default theme with a table style beside its own that uses every property a table style has. */
 const TABLES = '7a0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c01';
+/** And a float: half the measure wide at the end of it. */
+const IMAGE_STYLES = '7a0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c03';
 const theme: ResolvedTheme = (() => {
   const tables: TableCatalogue = {
     ...DEFAULT_CATALOGUES.table,
@@ -210,9 +303,27 @@ const theme: ResolvedTheme = (() => {
       },
     ],
   };
+  const images: ImageCatalogue = {
+    ...DEFAULT_CATALOGUES.image,
+    styles: [
+      ...DEFAULT_CATALOGUES.image.styles,
+      {
+        id: 'floated',
+        name: 'Floated',
+        appliesTo: ['figure'],
+        fixed: { dimension: 'width', value: 0.5, unit: 'measure' },
+        maximum: { value: 0.6, unit: 'textHeight' },
+        placement: 'float',
+        alignment: 'end',
+      },
+    ],
+  };
   const read = readTheme(
-    { ...DEFAULT_THEME, catalogues: { ...DEFAULT_THEME.catalogues, table: TABLES } },
-    new Map([...DEFAULT_CATALOGUES_BY_VERSION, [TABLES, tables]]),
+    {
+      ...DEFAULT_THEME,
+      catalogues: { ...DEFAULT_THEME.catalogues, table: TABLES, image: IMAGE_STYLES },
+    },
+    new Map([...DEFAULT_CATALOGUES_BY_VERSION, [TABLES, tables], [IMAGE_STYLES, images]]),
   );
   if (!read.ok) throw new Error(read.refusals.map((each) => each.message).join('\n'));
   return read.theme;
@@ -221,9 +332,9 @@ const theme: ResolvedTheme = (() => {
 /**
  * Everything Word 1 writes, under the default layout's 0.6 and the default theme: a cover, a contents,
  * front matter, a body two levels deep, an appendix, every mark, a link, a German passage and a Hebrew
- * one set right to left - and Word 2's lists, quotations, preformatted text and a table, in a table
- * style of its own. The layout lists nothing after the contents, which Word 3 writes and Word refuses
- * until then (`word_not_yet`).
+ * one set right to left - and Word 2's lists, quotations, preformatted text, a table in a table style
+ * of its own, figures and images in a line. The layout lists nothing after the contents, which Word 3
+ * writes and Word refuses until then (`word_not_yet`).
  */
 const input: AssembleInput & { readonly layout: Layout } = {
   formats: ['pdf', 'docx'],
@@ -239,6 +350,7 @@ const input: AssembleInput & { readonly layout: Layout } = {
         reference('hebrew', 4),
         reference('steps', 6),
         reference('readings', 7),
+        reference('figures', 8),
       ]),
       section('tables', 'Tables of values', [reference('values', 5)], { matter: 'appendix' }),
     ],
@@ -291,13 +403,14 @@ const input: AssembleInput & { readonly layout: Layout } = {
     [id('values'), component('Values', [paragraph('v1', text('The values Grace measured.'))])],
     [id('steps'), LISTED],
     [id('readings'), READINGS],
+    [id('figures'), FIGURED],
   ]),
   refused: [],
   layout: parseLayout({ ...defaultLayout, matter: { ...defaultLayout.matter, lists: [] } }),
   theme,
   revision: '0.7',
   covers: fonts.covers,
-  assets: new Map(),
+  assets: ASSETS,
 };
 
 describe("a publication in Word, written from the worker's own faces (Word 1, Word 2)", () => {
@@ -310,6 +423,7 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
       word: assembled.word!,
       formats: input.formats,
       faces,
+      images: IMAGES,
     });
 
     expect(await checkOoxml(bytes)).toEqual([]);
@@ -334,6 +448,24 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
     const numbering = strFromU8(parts['word/numbering.xml']!);
     expect(numbering.match(/<w:abstractNum /g)).toHaveLength(9);
     expect(numbering).toContain('<w:start w:val="0"/><w:numFmt w:val="decimal"/>');
+    // The three figures and the two images in a line, each a drawing numbered in order - two in the
+    // line, one floated - described or flagged decorative, drawn from the two images' parts.
+    const document = strFromU8(parts['word/document.xml']!);
+    expect([...document.matchAll(/<wp:docPr id="(\d+)"/g)].map((match) => match[1])).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+    ]);
+    expect(document.match(/<wp:inline /g)).toHaveLength(4);
+    expect(document.match(/<wp:anchor /g)).toHaveLength(1);
+    expect(document.match(/descr="Two red squares"/g)).toHaveLength(2);
+    expect(document.match(/descr="A blue square"/g)).toHaveLength(2);
+    expect(document.match(/<adec:decorative /g)).toHaveLength(1);
+    expect(Object.keys(parts).filter((name) => name.startsWith('word/media/'))).toEqual(
+      [...IMAGES.keys()].map((path) => `word/media/${path.slice('assets/'.length)}`),
+    );
   });
 
   it("TAB-039 TAB-049 associates a table's caption and its header rows with it in both outputs of one publication, its header column in the PDF, and names the table whose header column Word cannot mark", async () => {
@@ -347,16 +479,23 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
       PUBLICATION_TEMPLATE[TEMPLATE_READING[assembled.document.schema]].file,
       JSON.stringify(assembled.document),
       new Date('2026-09-25T00:00:00Z'),
+      ROOT_IMAGES,
     );
     expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
     const read = await readPdf(pdf);
     // A row and a header cell more than the table's: the continuation label's, an empty header cell
-    // on the first page, the cost the default theme declines a label for (themes 2).
-    expect(read.elements).toMatchObject({ Table: 1, Caption: 1, TR: 1 + 4 + BODY_ROWS });
+    // on the first page, the cost the default theme declines a label for (themes 2). Beside it, the
+    // figures' table of two rows, its header row's two cells and its body's two, and the three
+    // figures' captions.
+    expect(read.elements).toMatchObject({
+      Table: 2,
+      Caption: 2 + 3,
+      TR: 1 + 4 + BODY_ROWS + 2,
+    });
     expect(read.roles[read.roles.indexOf('Table') + 1]).toBe('Caption');
     expect(read.elements).toMatchObject({
-      TH: 1 + 2 + 2 + 1 + BODY_ROWS,
-      TD: 4 + 2 * BODY_ROWS,
+      TH: 1 + 2 + 2 + 1 + BODY_ROWS + 2,
+      TD: 4 + 2 * BODY_ROWS + 2,
     });
 
     // Word: the caption a paragraph straight above the table, whose title is the caption's words;
@@ -368,6 +507,7 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
       word: assembled.word!,
       formats: input.formats,
       faces,
+      images: IMAGES,
     });
     const xml = strFromU8(unzipSync(bytes)['word/document.xml']!);
     const table = xml.slice(xml.indexOf('<w:tbl>'), xml.indexOf('</w:tbl>'));
@@ -394,4 +534,152 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
       label: 'Table 2.1',
     });
   }, 120_000);
+
+  it("PUB-035 makes the Word document accessible on the PDF's terms: every heading at its outline level, every image described or flagged decorative, every table's header rows marked and its caption its title, and every run in its language", () => {
+    const assembled = assemble(input);
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const { bytes, report } = writeDocx({
+      document: assembled.document,
+      numbering: assembled.numbering,
+      word: assembled.word!,
+      formats: input.formats,
+      faces,
+      images: IMAGES,
+    });
+    const parts = unzipSync(bytes);
+    const document = strFromU8(parts['word/document.xml']!);
+    const styles = strFromU8(parts['word/styles.xml']!);
+    const body = document.slice(document.indexOf('<w:body>'));
+    const words = (xml: string) =>
+      [...xml.matchAll(/<w:t xml:space="preserve">([^<]*)<\/w:t>/g)].map((m) => m[1]).join('');
+
+    // Headings: each node's heading, in order, in the style Word names for its depth - whose name
+    // gives its outline level, which the style states too - so the navigation pane and a screen
+    // reader's list of headings are the PDF's outline.
+    const named = new Map(
+      [...styles.matchAll(/<w:style w:type="paragraph" w:styleId="([^"]+)">(.*?)<\/w:style>/g)].map(
+        (m) => [
+          m[1]!,
+          {
+            name: /<w:name w:val="([^"]+)"\/>/.exec(m[2]!)![1]!,
+            level: /<w:outlineLvl w:val="(\d)"\/>/.exec(m[2]!)?.[1],
+          },
+        ],
+      ),
+    );
+    const paragraphs = body.split('<w:p>').slice(1);
+    const headings = paragraphs.flatMap((paragraph) => {
+      const style = named.get(/<w:pStyle w:val="([^"]+)"\/>/.exec(paragraph)?.[1] ?? '');
+      // Word reads a style's name without regard to case: the projection's are "Heading N".
+      const depth = /^heading (\d)$/i.exec(style?.name ?? '')?.[1];
+      return depth === undefined
+        ? []
+        : [{ depth: Number(depth), level: style!.level, words: words(paragraph) }];
+    });
+    const nodes: { depth: number; title: string }[] = [];
+    const walk = (node: PublishedNode) => {
+      nodes.push({
+        depth: node.depth,
+        title: node.title.map((run) => ('text' in run ? run.text : '')).join(''),
+      });
+      node.children.forEach(walk);
+    };
+    assembled.document.nodes.forEach(walk);
+    expect(headings.map(({ depth, level, words }) => [depth, level, words])).toEqual(
+      nodes.map(({ depth, title }) => [depth, String(depth - 1), title]),
+    );
+
+    // Images: each figure and each image in a line, in order, described by its alternative text or
+    // flagged decorative, as the PDF tags it a Figure with its text or an artifact. The language of a
+    // description no Word document can carry, which word-output.md names among what Word cannot.
+    const expected: string[] = [];
+    const runs = (inlines: readonly PublishedInline[]) => {
+      for (const run of inlines) {
+        if ('image' in run) expected.push(run.image.alternative?.text ?? 'decorative');
+      }
+    };
+    const blocks = (each: readonly PublishedBlock[]) => {
+      for (const block of each) {
+        if (block.type === 'paragraph') runs(block.runs);
+        if (block.type === 'figure') expected.push(block.alternative?.text ?? 'decorative');
+        if (block.type === 'list') {
+          for (const item of block.items) {
+            if (item.term !== null) runs(item.term);
+            blocks(item.blocks);
+          }
+        }
+        if (block.type === 'blockquote') {
+          blocks(block.blocks);
+          if (block.attribution !== null) runs(block.attribution);
+        }
+        if (block.type === 'table') {
+          for (const row of block.rows) for (const cell of row.cells) blocks(cell.blocks);
+          if (block.note !== null) runs(block.note);
+        }
+      }
+    };
+    const inOrder = (node: PublishedNode) => {
+      blocks(node.blocks);
+      node.children.forEach(inOrder);
+    };
+    assembled.document.nodes.forEach(inOrder);
+    const described = [...body.matchAll(/<wp:docPr ([^>]*?)(\/>|>(.*?)<\/wp:docPr>)/g)].map((m) =>
+      m[3]?.includes('<adec:decorative ') && m[3].includes('val="1"')
+        ? 'decorative'
+        : (/descr="([^"]*)"/.exec(m[1]!)?.[1] ?? 'undescribed'),
+    );
+    expect(expected).toHaveLength(5);
+    expect(described).toEqual(expected);
+
+    // Tables: each one's header rows marked header rows, and no others; its caption the paragraph
+    // straight above it, in the caption role, whose words are its title. The header column Word cannot
+    // mark is named in the report (TAB-049).
+    const tables: Extract<PublishedBlock, { type: 'table' }>[] = [];
+    const tabled = (node: PublishedNode) => {
+      for (const block of node.blocks) if (block.type === 'table') tables.push(block);
+      node.children.forEach(tabled);
+    };
+    assembled.document.nodes.forEach(tabled);
+    const written = body.split('<w:tbl>').slice(1);
+    expect(written).toHaveLength(tables.length);
+    tables.forEach((table, at) => {
+      const xml = written[at]!.slice(0, written[at]!.indexOf('</w:tbl>'));
+      const rows = xml.split('<w:tr>').slice(1);
+      expect(rows.map((row) => row.includes('<w:tblHeader/>'))).toEqual(
+        rows.map((_, index) => index < table.headerRows),
+      );
+      const before = body.split('<w:tbl>')[at]!;
+      const caption = before.slice(before.lastIndexOf('<w:p>'));
+      expect(caption).toContain('<w:pStyle w:val="caption"/>');
+      expect(xml).toContain(`<w:tblCaption w:val="${words(caption)}"/>`);
+    });
+    expect(report.filter((entry) => entry.kind === 'header_column_lost')).toHaveLength(
+      tables.filter((table) => table.headerColumns > 0).length,
+    );
+
+    // Languages: the document's in its defaults and its settings, and every run of text in the body
+    // in the language it is written in - a component's, or a marked phrase's - as the PDF tags it.
+    expect(styles).toContain('<w:rPrDefault><w:rPr>');
+    expect(/<w:rPrDefault>.*?<w:lang w:val="en-GB"\/>/.exec(styles)).not.toBeNull();
+    expect(strFromU8(parts['word/settings.xml']!)).toContain('<w:themeFontLang w:val="en-GB"/>');
+    const spoken = new Map<string, Set<string>>();
+    for (const m of body.matchAll(
+      /<w:r>(?:<w:rPr>(.*?)<\/w:rPr>)?((?:<w:t xml:space="preserve">[^<]*<\/w:t>|<w:tab\/>|<w:br\/>)+)<\/w:r>/g,
+    )) {
+      const properties = m[1] ?? '';
+      const language = properties.includes('<w:rtl/>')
+        ? /<w:lang w:bidi="([^"]+)"\/>/.exec(properties)?.[1]
+        : (/<w:lang w:val="([^"]+)"\/>/.exec(properties)?.[1] ?? 'en-GB');
+      const text = words(m[2]!);
+      spoken.set(language ?? 'none', new Set([...(spoken.get(language ?? 'none') ?? []), text]));
+    }
+    expect([...spoken.keys()].sort()).toEqual(['de-DE', 'en', 'en-GB', 'fr-FR', 'he-IL']);
+    // The layout's own words, in the layout's language, as the PDF sets them.
+    expect(spoken.get('en')).toEqual(
+      new Set([assembled.document.words.noticeSentence, assembled.document.words.contents]),
+    );
+    expect(spoken.get('de-DE')).toEqual(new Set(['Grüße', 'Grüße aus Berlin.']));
+    expect(spoken.get('he-IL')).toEqual(new Set([SEFER, `${SHALOM} Ada ${SEFER} 2026.`]));
+    expect(spoken.get('fr-FR')).toEqual(new Set(['la mesure']));
+  });
 });

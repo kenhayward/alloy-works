@@ -483,8 +483,12 @@ describe('the citations in the committed model', () => {
   // word.test.ts, where one publication's PDF and Word document are read together - each output's
   // caption associated with its table, its header rows marked, the header column a TH in the PDF and
   // named in the Word document's report - the whole of each "in every output" in one test.
+  // 328, from 327 (2026-09-25): Word 2's figures cite PUB-035 in apps/worker's word.test.ts, where one
+  // Word document holding everything Word 2 writes is read for each thing the design says makes it
+  // accessible - every heading at its outline level, every image described or flagged decorative,
+  // every table's header rows marked and its caption its title, and every run in its language.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(327);
+    expect(model.citations).toHaveLength(328);
   });
 
   it('cites no identifier the corpus does not hold', () => {
