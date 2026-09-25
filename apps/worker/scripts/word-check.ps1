@@ -9,10 +9,10 @@
 # repairs silently opens as if nothing were wrong, hidden with its alerts off - measurements.md, "Kit
 # and method" - so "opened" is no proof that nothing was repaired); each section as opened and after
 # the update, with where it starts and how its pages are numbered; every paragraph after the update,
-# with its style, its list string and its page; the contents' entries as opened and after the
-# update; whether it embeds its faces; Word's own PDF of it, <name>.pdf, for the per-page reading COM
-# cannot give; and the round trip, a copy saved by Word as <name>-saved.docx and reopened, with every
-# paragraph read again.
+# with its style, its list string, its page and where its first line stands on it; the contents'
+# entries as opened and after the update; whether it embeds its faces; Word's own PDF of it,
+# <name>.pdf, for the per-page reading COM cannot give; and the round trip, a copy saved by Word as
+# <name>-saved.docx and reopened, with every paragraph read again.
 #
 # Tracks the WINWORD process it started and stops only that one, if Quit leaves it running. Where
 # starting Word started no process of its own, it attached to one somebody else runs, and it closes
@@ -23,6 +23,7 @@ $ErrorActionPreference = 'Stop'
 # Word's enumerations, by the values this uses.
 $wdActiveEndSectionNumber = 2
 $wdActiveEndPageNumber = 3
+$wdVerticalPositionRelativeToPage = 6
 $wdStatisticPages = 2
 $wdExportFormatPDF = 17
 $wdFormatXMLDocument = 12
@@ -59,6 +60,7 @@ function ReadParagraphs($doc) {
     $list += [ordered]@{
       text = (Clean $r.Text); style = [string]$para.Style.NameLocal; list = [string]$r.ListFormat.ListString
       page = $r.Information($wdActiveEndPageNumber); section = $r.Information($wdActiveEndSectionNumber)
+      top = $r.Information($wdVerticalPositionRelativeToPage)
     }
   }
   return , $list

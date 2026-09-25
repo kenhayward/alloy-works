@@ -17,6 +17,7 @@ import {
   type AssembleInput,
   type ContentDocument,
   type Layout,
+  type OutlineDocument,
   type OutlineMatter,
   type PublishedNode,
   type PublishingFormat,
@@ -103,7 +104,8 @@ const SEFER = String.fromCodePoint(0x05e1, 0x05e4, 0x05e8);
 const KRIAH = String.fromCodePoint(0x05e7, 0x05e8, 0x05d9, 0x05d0, 0x05d4);
 
 /**
- * The document every left-to-right fixture publishes: front matter, two body chapters each with
+ * The document the left-to-right fixtures publish: front matter - a section with no number, which a
+ * running head names by its title alone, then a numbered preface - two body chapters each with
  * headings at the second level (and one at the third) and each running over a page, and two
  * appendices each with a heading beneath it; every mark, a link, a German passage and a Hebrew one.
  */
@@ -113,6 +115,10 @@ const outline = parseOutlineDocument({
   language: 'en-GB',
   direction: 'ltr',
   nodes: [
+    section('foreword', 'Foreword', [reference('forewordtext', 10)], {
+      matter: 'front',
+      numbered: false,
+    }),
     reference('preface', 1, { matter: 'front' }),
     section('fitting', 'Fitting', [reference('marked', 2), reference('german', 3)]),
     section('reading', 'Reading', [
@@ -123,6 +129,14 @@ const outline = parseOutlineDocument({
     section('sources', 'Sources', [reference('found', 7)], { matter: 'appendix' }),
   ],
 });
+/**
+ * How many one-line paragraphs, under the heading of the appendix and of their component, fill the
+ * appendix's first page to its foot under the default layout and theme, as Word 16 lays them out: the
+ * appendix-at-the-foot fixture asserts that they do, so a change in Word's layout shows as that, not
+ * as the fixture silently no longer testing anything.
+ */
+const FOOT_LINES = 37;
+
 const occurrences = new Map<string, ContentDocument>([
   [
     id('preface'),
@@ -177,6 +191,16 @@ const occurrences = new Map<string, ContentDocument>([
   [id('notes'), component('Notes by Grace', filler('n', 9))],
   [id('values'), component('Values', filler('v', 7))],
   [id('found'), component('Found by Alice', filler('f', 1))],
+  [id('forewordtext'), component('Before we began', filler('b', 1))],
+  [
+    id('lines'),
+    component(
+      'Lines',
+      Array.from({ length: FOOT_LINES }, (_, n) =>
+        paragraph(`l${n}`, text(`Ada measured line ${n + 1}.`)),
+      ),
+    ),
+  ],
 ]);
 
 /**
@@ -206,6 +230,40 @@ const rtlOccurrences = new Map<string, ContentDocument>([
   [id('rtlmore'), hebrew(KRIAH, 2)],
 ]);
 
+/**
+ * Headings to the ninth level, for Word's contents to stop at the layout's sixth as the PDF's does
+ * (the final review of Word 1, I2): the marked component at the ninth, beneath eight sections.
+ */
+const deepOutline = parseOutlineDocument({
+  schemaVersion: OUTLINE_SCHEMA_VERSION,
+  title: 'The deep notes',
+  language: 'en-GB',
+  direction: 'ltr',
+  nodes: [
+    ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'].reduceRight<unknown>(
+      (inner, name) => section(`depth${name}`, `Depth ${name}`, [inner]),
+      reference('marked', 2),
+    ),
+    section('again', 'Depth one again', [reference('notes', 5)]),
+  ],
+});
+
+/**
+ * An appendix whose text ends at its page's foot, before another that starts a page (the final review
+ * of Word 1, M2): a page break written after the first appendix's text would leave a page blank.
+ */
+const footOutline = parseOutlineDocument({
+  schemaVersion: OUTLINE_SCHEMA_VERSION,
+  title: 'The appendix notes',
+  language: 'en-GB',
+  direction: 'ltr',
+  nodes: [
+    section('footbody', 'Fitting', [reference('marked', 2)]),
+    section('footfirst', 'Every line', [reference('lines', 11)], { matter: 'appendix' }),
+    section('footsecond', 'Sources', [reference('found', 7)], { matter: 'appendix' }),
+  ],
+});
+
 /** The kinds of Word section a fixture is written as, in order: what its pages are numbered by. */
 type Kind = 'cover' | 'contents' | OutlineMatter;
 
@@ -214,6 +272,9 @@ interface Fixture {
   readonly layout: Layout;
   readonly formats: readonly [PublishingFormat, ...PublishingFormat[]];
   readonly sections: readonly Kind[];
+  /** The outline and its components, where not the left-to-right document's. */
+  readonly outline?: OutlineDocument;
+  readonly occurrences?: ReadonlyMap<string, ContentDocument>;
   readonly rtl?: boolean;
 }
 
@@ -252,7 +313,23 @@ const FIXTURES: readonly Fixture[] = [
     layout: defaultLayout,
     formats: ['pdf', 'docx'],
     sections: ['cover', 'contents', 'body', 'appendix'],
+    outline: rtlOutline,
+    occurrences: rtlOccurrences,
     rtl: true,
+  },
+  {
+    name: 'deep',
+    layout: withMatter({ contents: { depth: 6 } }),
+    formats: ['pdf', 'docx'],
+    sections: ['cover', 'contents', 'body'],
+    outline: deepOutline,
+  },
+  {
+    name: 'appendix-at-foot',
+    layout: withMatter({ cover: false, contents: null }),
+    formats: ['pdf', 'docx'],
+    sections: ['body', 'appendix'],
+    outline: footOutline,
   },
 ];
 
@@ -297,8 +374,11 @@ interface ParagraphRead {
   readonly text: string;
   readonly style: string;
   readonly list: string;
+  /** The page it ends on, from 1. */
   readonly page: number;
   readonly section: number;
+  /** Where its first line stands, in points from the top of the page it starts on. */
+  readonly top: number;
 }
 
 /** One page of Word's own PDF: its header's and footer's lines, each item joined by a space. */
@@ -309,6 +389,7 @@ interface PdfPage {
 
 interface Checked {
   readonly fixture: Fixture;
+  readonly title: string;
   readonly expected: readonly { number: string; title: string; depth: number }[];
   readonly depth: number | null;
   readonly word: Opened;
@@ -492,8 +573,8 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
       for (const fixture of FIXTURES) {
         const input: AssembleInput & { readonly layout: Layout } = {
           formats: fixture.formats,
-          outline: fixture.rtl ? rtlOutline : outline,
-          occurrences: fixture.rtl ? rtlOccurrences : occurrences,
+          outline: fixture.outline ?? outline,
+          occurrences: fixture.occurrences ?? occurrences,
           refused: [],
           layout: fixture.layout,
           theme: defaultTheme,
@@ -514,6 +595,7 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
         const numbers = sectionNumbers(assembled.numbering);
         made.push({
           fixture,
+          title: assembled.document.title,
           depth: assembled.document.front.contents?.depth ?? null,
           expected: walk(assembled.document.nodes).map((node) => ({
             number: numbers.get(node.id) ?? '',
@@ -562,11 +644,13 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
         const headings = word.paragraphs
           .filter((each) => each.style.startsWith('Heading '))
           .map((each) => ({ list: each.list, text: each.text, style: each.style }));
+        // Each in Word's own heading style for its depth, which gives it its outline level: past the
+        // sixth as well (the final review of Word 1, I2).
         expect(headings, fixture.name).toEqual(
           expected.map((node) => ({
             list: node.number,
             text: node.title,
-            style: `Heading ${Math.min(node.depth, 6)}`,
+            style: `Heading ${node.depth}`,
           })),
         );
         // Nothing else is numbered: the title and the contents' heading are based on Heading 1, and
@@ -619,17 +703,25 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
       }
     });
 
-    it('names the level-one heading a page is in, in its running head: the first on it, else the last before it', () => {
-      for (const { fixture, word, expected, pages } of checked.filter(
-        (each) => !each.fixture.rtl,
-      )) {
+    it('names the level-one heading a page is in, in its running head: the first on it, else the last before it, by its title alone where it has no number', () => {
+      for (const { fixture, word, expected, pages, title } of checked) {
         const headings = word.paragraphs.filter((each) => each.style.startsWith('Heading '));
         const chapters = expected.flatMap((node, index) =>
           node.depth === 1
-            ? [{ name: `${node.number} ${node.title}`, page: headings[index]!.page }]
+            ? [
+                {
+                  parts: [node.number, node.title].filter((part) => part !== ''),
+                  page: headings[index]!.page,
+                },
+              ]
             : [],
         );
-        const title = 'The printer notes';
+        // Each line's items are read left to right across the page, so a right-to-left document's
+        // reads the other way: the title in the start slot at the right, the section in the end slot at
+        // the left, its number first in reading order and so to the right of its title, as the PDF
+        // sets it (the final review of Word 1, M1).
+        const line = (parts: readonly string[]) =>
+          (fixture.rtl ? [...parts].reverse() : parts).join(' ');
         const heads = pages.map((_, index) => {
           const kind =
             fixture.sections[word.sectionsAfter.findLastIndex((each) => each.page <= index + 1)];
@@ -637,13 +729,38 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           if (kind === 'contents') return [title];
           const on = chapters.find((chapter) => chapter.page === index + 1);
           const before = chapters.findLast((chapter) => chapter.page < index + 1);
-          return [`${title} ${(on ?? before)!.name}`];
+          return [line([title, ...(on ?? before)!.parts])];
         });
         expect(
           pages.map((page) => page.header.slice(1)),
           fixture.name,
         ).toEqual(heads);
       }
+    });
+
+    it('leaves no page blank, an appendix that fills its last page to the foot included', () => {
+      for (const { fixture, word } of checked) {
+        const written = new Set(
+          word.paragraphs.filter((each) => each.text !== '').map((each) => each.page),
+        );
+        expect(
+          Array.from({ length: word.pages }, (_, index) => index + 1).filter(
+            (page) => !written.has(page),
+          ),
+          fixture.name,
+        ).toEqual([]);
+      }
+      // The fixture holds what it is for: the first appendix's lines end on its first page, less than
+      // a line from the foot of the text, and the second appendix starts the next page.
+      const { word, fixture } = checked.find((each) => each.fixture.name === 'appendix-at-foot')!;
+      const at = (text: string) => word.paragraphs.find((each) => each.text === text)!;
+      const last = at(`Ada measured line ${FOOT_LINES}.`);
+      const pitch = last.top - at(`Ada measured line ${FOOT_LINES - 1}.`).top;
+      const docx = fixture.layout.formats.docx!;
+      const foot = docx.page.height - docx.margins.bottom;
+      expect(last.page).toBe(at('Every line').page);
+      expect(foot - last.top).toBeLessThan(2 * pitch);
+      expect(at('Sources').page).toBe(last.page + 1);
     });
 
     it('numbers the front matter from i with the cover unnumbered, the body from 1, and the appendices carrying on', () => {
