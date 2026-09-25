@@ -693,9 +693,10 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
       spoken.set(language ?? 'none', new Set([...(spoken.get(language ?? 'none') ?? []), text]));
     }
     expect([...spoken.keys()].sort()).toEqual(['de-DE', 'en', 'en-GB', 'fr-FR', 'he-IL']);
-    // The layout's own words, in the layout's language, as the PDF sets them: a caption's label
-    // among them - its word and each field's result as its caption writes them, and whole where the
-    // list after the contents is prefilled with it - whatever the caption's own language.
+    // The layout's own words, in the layout's language, as the PDF sets them; and a caption's label -
+    // its word and each field's result as its caption writes them, and whole where the list after the
+    // contents is prefilled with it - which is the layout's words too, whatever the caption's own
+    // language. The PDF tags a label in its caption's language: word-output.md says why Word does not.
     const labels = assembled.numbering.entries.flatMap((entry) =>
       entry.block === null || entry.label === null || entry.number === null
         ? []

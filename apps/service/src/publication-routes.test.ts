@@ -172,7 +172,7 @@ describe('publishing a document through the service', () => {
         const stored = await store.put(Buffer.from('PK a stand-in'), OUTPUT_CONTENT_TYPES.docx);
         outputs.push({
           format: 'docx' as const,
-          writerVersion: 'word/1',
+          writerVersion: 'word/2',
           // What the writer says of a table (Word 2), beside what it says of every Word output.
           report: [
             { kind: 'header_column_lost' as const, ...READINGS },
@@ -704,7 +704,7 @@ describe('publishing a document through the service', () => {
         sha256: expect.any(String),
         standard: null,
         producer: 'word',
-        producerVersion: 'word/1',
+        producerVersion: 'word/2',
         report: [{ kind: 'header_column_lost', ...READINGS }, { kind: 'pages_cite_the_pdf' }],
         download: expect.any(String),
         view: null,

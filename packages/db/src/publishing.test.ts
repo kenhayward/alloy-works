@@ -764,13 +764,13 @@ describe('requesting and recording a publication', () => {
     bytes: 1000,
   });
   /**
-   * A Word document made by the writer's first version, with what it could not carry: a face, and a
+   * A Word document made by the writer's second version, with what it could not carry: a face, and a
    * table's header column, its header its style does not repeat, and its label (Word 2, ruling R7).
    */
   const readings = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1', label: 'Table 1.1' };
   const docxOutput = (fill = 'd') => ({
     format: 'docx' as const,
-    writerVersion: 'word/1',
+    writerVersion: 'word/2',
     report: [
       { kind: 'face_substituted' as const, family: 'STIX Two Math', wordFamily: 'Cambria Math' },
       { kind: 'header_column_lost' as const, ...readings },
@@ -1765,7 +1765,7 @@ describe('requesting and recording a publication', () => {
         // A Word document claims no PDF standard.
         standard: null,
         producer: 'word',
-        producer_version: 'word/1',
+        producer_version: 'word/2',
         report: docxOutput().report,
         bytes: 2000,
       },
@@ -1796,7 +1796,7 @@ describe('requesting and recording a publication', () => {
         bytes: 2000,
         standard: null,
         producer: 'word',
-        producerVersion: 'word/1',
+        producerVersion: 'word/2',
         report: docxOutput().report,
       },
     ]);

@@ -5268,7 +5268,7 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     });
   });
 
-  it('refuses a list Word would not print as the PDF does only where Word is asked for, naming the list: nested past the ninth level, counted afresh in a cell, or numbered past z or 3999 (Word 2, ruling R4; WO-I)', () => {
+  it('refuses a list Word would not print as the PDF does only where Word is asked for, naming the list: nested past the ninth level, counted afresh in a cell, or numbered past the 27th letter or 3999 (Word 2, ruling R4; WO-I)', () => {
     /** Lists nested `levels` deep, `name1` outermost, and `inner` in the deepest's item. */
     const nested = (name: string, levels: number, ...inner: unknown[]): unknown =>
       Array.from({ length: levels }, (_, index) => levels - index).reduce<unknown[]>(
