@@ -20,7 +20,7 @@ import {
   TEST_PASSWORDS,
   type TestDatabase,
 } from '@alloy-works/db/testing';
-import { defaultNumberingScheme } from '@alloy-works/domain';
+import { defaultNumberingScheme, OUTPUT_CONTENT_TYPES } from '@alloy-works/domain';
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
@@ -143,21 +143,48 @@ describe('publishing a document through the service', () => {
     return answer.json<{ id: string }>().id;
   };
 
-  /** A publication recorded straight through the store, as a worker would, for the reading routes. */
-  const published = async (requestId: string) =>
+  /**
+   * A publication recorded straight through the store, as a worker would, for the reading routes: of
+   * the formats its request named, the PDF and the Word document each over stand-in bytes kept as
+   * its format's type.
+   */
+  const published = async (requestId: string, formats: readonly ('pdf' | 'docx')[] = ['pdf']) =>
     tenantDb.withTenant(tenant, async (trx) => {
       const store = await stores.forTenant(trx, tenant);
-      const stored = await store.put(Buffer.from('%PDF-1.7 a stand-in'), 'application/pdf');
+      const outputs = [];
+      if (formats.includes('pdf')) {
+        const stored = await store.put(
+          Buffer.from('%PDF-1.7 a stand-in'),
+          OUTPUT_CONTENT_TYPES.pdf,
+        );
+        outputs.push({
+          format: 'pdf' as const,
+          engineVersion: '0.15.1',
+          templateVersion: 2,
+          key: stored.key,
+          sha256: stored.sha256,
+          bytes: stored.size,
+        });
+      }
+      if (formats.includes('docx')) {
+        const stored = await store.put(Buffer.from('PK a stand-in'), OUTPUT_CONTENT_TYPES.docx);
+        outputs.push({
+          format: 'docx' as const,
+          writerVersion: 'word/1',
+          report: [{ kind: 'pages_cite_the_pdf' as const }],
+          key: stored.key,
+          sha256: stored.sha256,
+          bytes: stored.size,
+        });
+      }
       const id = await recordPublication(trx, {
         requestId,
-        engineVersion: '0.15.1',
         // Made under a layout, as every request since layouts is: template 2 and pipeline 2.
-        templateVersion: 2,
         pipelineVersion: '2',
         fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
         dataSha256: 'b'.repeat(64),
         numbering: { scheme: defaultNumberingScheme.id, entries: [] },
-        output: { key: stored.key, sha256: stored.sha256, bytes: stored.size },
+        outputs,
       });
       if (!id) throw new Error(`The request ${requestId} was already finished`);
       return id;
@@ -323,9 +350,9 @@ describe('publishing a document through the service', () => {
     const stale = await publish('grace', older);
     expect(stale.statusCode).toBe(409);
     expect(stale.json()).toMatchObject({ code: 'version_precondition' });
-    const docx = await publish('grace', other, ['docx']);
-    expect(docx.statusCode).toBe(400);
-    expect(docx.json()).toMatchObject({ code: 'format_unsupported' });
+    const html = await publish('grace', other, ['html']);
+    expect(html.statusCode).toBe(400);
+    expect(html.json()).toMatchObject({ code: 'format_unsupported' });
     // A format named twice is a malformed request, not one the template cannot make.
     const twice = await publish('grace', other, ['pdf', 'pdf']);
     expect(twice.statusCode).toBe(400);
@@ -352,14 +379,73 @@ describe('publishing a document through the service', () => {
   it('refuses at the door a format the layout does not make', async () => {
     const document = await documentReferencing([]);
     const before = await requestIds();
-    const answer = await publish('grace', document, ['docx']);
+    const answer = await publish('grace', document, ['pdf', 'html']);
     expect(answer.statusCode, answer.body).toBe(400);
     expect(answer.json()).toEqual({
       code: 'format_unsupported',
-      message: 'The layout this document is published under does not make docx.',
+      message: 'The layout this document is published under does not make html.',
       traceId: expect.any(String),
     });
     expect(await requestIds()).toEqual(before);
+  });
+
+  it('takes Word where the layout makes it, alone or beside the PDF', async () => {
+    const document = await documentReferencing([]);
+    for (const formats of [['docx'], ['docx', 'pdf']]) {
+      const answer = await publish('grace', document, formats);
+      expect(answer.statusCode, answer.body).toBe(200);
+      expect(answer.json()).toMatchObject({ state: 'queued', failures: [] });
+    }
+  });
+
+  it('refuses at the door a request without the PDF whose document cites a page, and queues nothing', async () => {
+    const document = await documentReferencing([]);
+    const text = (value: string) => [{ type: 'text', value, marks: [] }];
+    const step = async (version: string, operation: Json) => {
+      const answer = await call('grace', 'POST', `/v1/documents/${document.id}/outline`, {
+        openedFrom: version,
+        operation,
+      });
+      expect(answer.statusCode, answer.body).toBe(200);
+      return answer.json<{ version: { id: string }; outline: { nodes: { id: string }[] } }>();
+    };
+    const results = await step(document.version, {
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: { type: 'section', title: text('Results') },
+    });
+    // A section whose title cites the page Results starts on.
+    const method = await step(results.version.id, {
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: {
+        type: 'section',
+        title: [
+          ...text('Method, before '),
+          {
+            type: 'crossReference',
+            id: 'r1',
+            target: { kind: 'node', node: results.outline.nodes[0]!.id },
+            display: 'page',
+          },
+        ],
+      },
+    });
+    const cites = { id: document.id, version: method.version.id };
+    const before = await requestIds();
+    const answer = await publish('grace', cites, ['docx']);
+    expect(answer.statusCode, answer.body).toBe(400);
+    expect(answer.json()).toEqual({
+      code: 'page_reference_without_pdf',
+      message:
+        'This document refers to a page, and only the PDF has the pages it refers to. Publish it as a PDF as well.',
+      traceId: expect.any(String),
+    });
+    expect(await requestIds()).toEqual(before);
+    // With the PDF beside it, it is taken.
+    expect((await publish('grace', cites, ['pdf', 'docx'])).statusCode).toBe(200);
   });
 
   it('answers a request to its requester alone', async () => {
@@ -576,6 +662,65 @@ describe('publishing a document through the service', () => {
     expect((await fetch(download)).headers.get('content-disposition')).toBe(
       `attachment; filename="${id}.pdf"`,
     );
+  });
+
+  it('opens a publication in the PDF and Word, each with what made it, and a Word document to save, never to show', async () => {
+    const document = await documentReferencing([]);
+    const answer = await publish('grace', document, ['pdf', 'docx']);
+    expect(answer.statusCode, answer.body).toBe(200);
+    const id = await published(answer.json<{ id: string }>().id, ['pdf', 'docx']);
+    const read = await call('alice', 'GET', `/v1/publications/${id}`);
+    expect(read.statusCode, read.body).toBe(200);
+    const body = read.json<{
+      formats: string[];
+      outputs: { format: string; download: string; view: string | null }[];
+    }>();
+    expect(body).toMatchObject({
+      formats: ['pdf', 'docx'],
+      engine: { name: 'typst', version: '0.15.1' },
+      template: { name: 'publication', version: 2 },
+    });
+    expect(body.outputs).toEqual([
+      {
+        format: 'pdf',
+        bytes: 19,
+        sha256: expect.any(String),
+        standard: 'ua-1',
+        producer: 'typst',
+        producerVersion: '2',
+        report: [],
+        download: expect.any(String),
+        view: expect.any(String),
+      },
+      {
+        format: 'docx',
+        bytes: 13,
+        sha256: expect.any(String),
+        standard: null,
+        producer: 'word',
+        producerVersion: 'word/1',
+        report: [{ kind: 'pages_cite_the_pdf' }],
+        download: expect.any(String),
+        view: null,
+      },
+    ]);
+    // Saved under the publication's id and its own extension, as the type its bytes were kept as.
+    const word = await fetch(body.outputs[1]!.download);
+    expect(word.status).toBe(200);
+    expect(word.headers.get('content-disposition')).toBe(`attachment; filename="${id}.docx"`);
+    expect(word.headers.get('content-type')).toBe(OUTPUT_CONTENT_TYPES.docx);
+    expect(await word.text()).toBe('PK a stand-in');
+  });
+
+  it('opens a Word-only publication with no PDF engine or template', async () => {
+    const document = await documentReferencing([]);
+    const answer = await publish('grace', document, ['docx']);
+    const id = await published(answer.json<{ id: string }>().id, ['docx']);
+    const body = (await call('alice', 'GET', `/v1/publications/${id}`)).json<{
+      outputs: { format: string }[];
+    }>();
+    expect(body).toMatchObject({ formats: ['docx'], engine: null, template: null, pipeline: '2' });
+    expect(body.outputs.map((each) => each.format)).toEqual(['docx']);
   });
 
   it('answers a listing asked of anything but a document as there being no such document', async () => {

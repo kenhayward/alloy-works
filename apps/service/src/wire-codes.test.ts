@@ -35,5 +35,6 @@ describe('wireCode', () => {
 
   it('spells every refusal where a publication is asked for with an underscore too', () => {
     expect(wireCode('format.unsupported')).toBe('format_unsupported');
+    expect(wireCode('page_reference.without_pdf')).toBe('page_reference_without_pdf');
   });
 });

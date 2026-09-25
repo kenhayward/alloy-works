@@ -259,6 +259,13 @@ describe('the domain package', () => {
         // Word 1 (ruling R5): the default theme's 0.2 frozen as 0025 stored it, beside its 0.3.
         'SECOND_DEFAULT_THEME',
         'SECOND_DEFAULT_THEME_VERSION',
+        // Word 1 (ruling R4, R13): the default layout's 0.5 frozen as 0025 stored it beside its 0.6,
+        // what an output's report can say and its one entry point, and the media type of each format.
+        'FIFTH_DEFAULT_LAYOUT',
+        'OUTPUT_CONTENT_TYPES',
+        'OUTPUT_REPORT_KINDS',
+        'outputReportSchema',
+        'parseOutputReport',
       ].sort(),
     );
   });

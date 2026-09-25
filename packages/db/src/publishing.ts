@@ -1,5 +1,7 @@
 import {
   parseAssetVersion,
+  parseOutputReport,
+  PUBLISHING_FORMATS,
   readContent,
   readLayout,
   readOutline,
@@ -10,8 +12,10 @@ import {
   type Layout,
   type NumberingTable,
   type OutlineDocument,
+  type OutputReport,
   type PublishFailure,
   type PublishingAsset,
+  type PublishingFormat,
   type ResolvedTheme,
   type BlockNode,
   type InlineNode,
@@ -175,23 +179,68 @@ function imagesIn(
   });
 }
 
+/** Whether inline content cites a page (PUB-074): a `page` reference, or one in a footnote in it. */
+function pageCitedIn(content: readonly InlineNode[] | undefined): boolean {
+  return (content ?? []).some(
+    (inline) =>
+      (inline.type === 'crossReference' && inline.display === 'page') ||
+      // A footnote's paragraphs, which the content model holds as its own (CNT-129).
+      (inline.type === 'footnote' && citesAPage(inline.content as readonly BlockNode[])),
+  );
+}
+
 /**
- * Every image the resolved occurrences place, decided as the publisher (figures 3, ruling R6;
- * assets.md, "The publisher's half"): the asset versions to record on the request, each once, and a
- * failure naming the node and the figure for each figure whose image the publisher may not read or
- * that names no asset version - the two told apart no more than an occurrence's are, and the image
- * never named (issue #143). An image is read on its asset by the one readable-set predicate every
- * listing of content uses, so a component and an image are decided alike.
+ * Whether these blocks cite a page anywhere they hold inline content, at any depth (PUB-074): a
+ * paragraph's text, a term, an attribution, a caption, a table's note and every cell. Preformatted
+ * text and a block equation hold none. A `page` reference counts whether or not it declares a form for
+ * an output with no pages (STR-055): Word has pages, only not the PDF's, so what it would print there
+ * is a page number that cites the wrong document.
  */
-async function resolveImages(
+function citesAPage(blocks: readonly BlockNode[]): boolean {
+  return blocks.some((block) => {
+    switch (block.type) {
+      case 'paragraph':
+        return pageCitedIn(block.content);
+      case 'list':
+        return block.items.some((item) => pageCitedIn(item.term) || citesAPage(item.content));
+      case 'blockquote':
+        return citesAPage(block.content) || pageCitedIn(block.attribution);
+      case 'table':
+        return (
+          pageCitedIn(block.caption) ||
+          pageCitedIn(block.note) ||
+          block.rows.some((row) => row.cells.some((cell) => citesAPage(cell.content)))
+        );
+      case 'figure':
+        return pageCitedIn(block.caption);
+      default:
+        return false;
+    }
+  });
+}
+
+/** A resolved occurrence with its version's content, read as its publisher resolved it. */
+interface ReadOccurrence {
+  readonly node: string;
+  readonly component: string;
+  readonly version: string;
+  readonly content: ContentDocument;
+}
+
+/**
+ * The content of every version the resolved occurrences take, read once for everything the request
+ * decides from it: the images they place, and whether they cite a page. Only a version the publisher
+ * resolved - one it may read - is ever selected.
+ */
+async function readResolved(
   trx: TenantTransaction,
-  resolved: readonly { readonly node: string; readonly version: string }[],
-  principalId: string,
-): Promise<{
-  readonly assets: readonly { readonly version: string; readonly asset: string }[];
-  readonly failures: readonly PublishFailure[];
-}> {
-  if (resolved.length === 0) return { assets: [], failures: [] };
+  resolved: readonly {
+    readonly node: string;
+    readonly component: string;
+    readonly version: string;
+  }[],
+): Promise<readonly ReadOccurrence[]> {
+  if (resolved.length === 0) return [];
   const rows = await trx
     .selectFrom('artifact_version')
     .select(['id', 'artifact_id', 'content'])
@@ -202,12 +251,33 @@ async function resolveImages(
     )
     .execute();
   const contentOf = new Map(rows.map((row) => [row.id, row]));
-  const placed = resolved.flatMap(({ node, version }) => {
+  return resolved.map(({ node, component, version }) => {
     const row = contentOf.get(version)!;
     const read = readContent(row.content, { artifact: row.artifact_id, version });
     if (!read.ok) throw new Error(`The component ${row.artifact_id} at ${version} does not read`);
-    return imagesIn(read.document.content).map((figure) => ({ node, ...figure }));
+    return { node, component, version, content: read.document };
   });
+}
+
+/**
+ * Every image the resolved occurrences place, decided as the publisher (figures 3, ruling R6;
+ * assets.md, "The publisher's half"): the asset versions to record on the request, each once, and a
+ * failure naming the node and the figure for each figure whose image the publisher may not read or
+ * that names no asset version - the two told apart no more than an occurrence's are, and the image
+ * never named (issue #143). An image is read on its asset by the one readable-set predicate every
+ * listing of content uses, so a component and an image are decided alike.
+ */
+async function resolveImages(
+  trx: TenantTransaction,
+  resolved: readonly ReadOccurrence[],
+  principalId: string,
+): Promise<{
+  readonly assets: readonly { readonly version: string; readonly asset: string }[];
+  readonly failures: readonly PublishFailure[];
+}> {
+  const placed = resolved.flatMap(({ node, content }) =>
+    imagesIn(content.content).map((figure) => ({ node, ...figure })),
+  );
   if (placed.length === 0) return { assets: [], failures: [] };
 
   const readable = await loadReadableSet(trx, principalId);
@@ -264,6 +334,12 @@ export type PublicationRequestAnswer =
    * taken as a language range, does not match the document's. Both tags, and nothing of any component.
    */
   | { readonly answer: 'layout.language'; readonly document: string; readonly layout: string }
+  /**
+   * A request without the PDF whose document cites a page, in a section's title or in a component
+   * the publisher may read (PUB-074): the PDF is the output a page number cites (PUB-065), and Word's
+   * pages are not its. Nothing of where: the author asked for it, and adding the PDF answers it.
+   */
+  | { readonly answer: 'page_reference.without_pdf' }
   | { readonly answer: 'document.missing' };
 
 /**
@@ -271,10 +347,12 @@ export type PublicationRequestAnswer =
  * "Who may publish"): `publish` has been decided on the document before this runs, under the access
  * epoch's shared lock. It is made under the environment's declared layout, and refuses a stale version,
  * a format that layout does not make or a document in another language than its words before recording
- * anything; otherwise it resolves every occurrence **as the publisher**, records the request with the failures
- * resolving found - each naming its node and nothing else (issue #143) - one row per resolved
- * occurrence, and the job, all in one transaction. A request with failures is still queued: `assemble`
- * adds its own for what the publisher can read, and the author is told once (PUB-052).
+ * anything; otherwise it resolves every occurrence **as the publisher**, refuses a request without the
+ * PDF whose document cites a page (PUB-074), and records the request with the failures resolving
+ * found - each naming its node and nothing else (issue #143) - one row per resolved occurrence, and the
+ * job, all in one transaction. A request with failures is still queued: `assemble` adds its own for
+ * what the publisher can read, and the author is told once (PUB-052). The formats are recorded PDF
+ * first, whichever order they were asked in: a set, spelled one way.
  */
 export async function requestPublication(
   trx: TenantTransaction,
@@ -326,7 +404,21 @@ export async function requestPublication(
           },
         ],
   );
-  const resolved = outcomes.flatMap((each) => (each.outcome === 'resolved' ? [each] : []));
+  const resolved = await readResolved(
+    trx,
+    outcomes.flatMap((each) => (each.outcome === 'resolved' ? [each] : [])),
+  );
+  // Decided from what the publisher may read, as everything here is: a component they may not read is
+  // never read for a page, and fails the request as an unreadable occurrence instead.
+  if (!input.formats.includes('pdf')) {
+    let titled = false;
+    walkOutline(read.outline.nodes, (node) => {
+      if (node.type === 'section' && pageCitedIn(node.title)) titled = true;
+    });
+    if (titled || resolved.some((each) => citesAPage(each.content.content))) {
+      return { answer: 'page_reference.without_pdf' };
+    }
+  }
   const images = await resolveImages(trx, resolved, input.requester);
   // Set from the environment's declared theme at its latest version, recorded by its key beside the
   // layout's (themes 1, ruling R5): the version names its catalogues' versions, so the job sets the
@@ -338,7 +430,8 @@ export async function requestPublication(
     .values({
       document_id: input.documentId,
       document_version_id: latest.id,
-      formats: [...input.formats],
+      // Every one named is one the layout makes, which is one of these, checked above.
+      formats: PUBLISHING_FORMATS.filter((format) => input.formats.includes(format)),
       requested_by: input.requester,
       failures: JSON.stringify([...failures, ...images.failures]),
       layout_id: layout.artifactId,
@@ -545,28 +638,51 @@ export async function failPublicationRequest(
     .execute();
 }
 
+/** One output of a publication, in the tenant's store by its hash, with what made it. */
+export type NewPublicationOutput = {
+  readonly key: string;
+  readonly sha256: string;
+  readonly bytes: number;
+} & (
+  | {
+      /** A PDF, made by Typst at this version under this template: the publication's engine. */
+      readonly format: 'pdf';
+      readonly engineVersion: string;
+      readonly templateVersion: number;
+    }
+  | {
+      /** A Word document, made by the Word writer at this version (`word/1`), and its report. */
+      readonly format: 'docx';
+      readonly writerVersion: string;
+      readonly report: OutputReport;
+    }
+);
+
 export interface NewPublication {
   readonly requestId: string;
-  readonly engineVersion: string;
-  readonly templateVersion: number;
+  /** `assemble` and the job as one (PUB-063), which every output is made from. */
   readonly pipelineVersion: string;
   readonly fonts: readonly { readonly file: string; readonly sha256: string }[];
   readonly dataSha256: string;
   readonly numbering: NumberingTable;
-  readonly output: { readonly key: string; readonly sha256: string; readonly bytes: number };
+  /** One per format the request names, each once (Word 1, ruling R11). */
+  readonly outputs: readonly NewPublicationOutput[];
 }
 
 /**
- * The publication, inserted whole in one transaction once its output is stored (PUB-053): its
- * artifact in the document's space, its record, every version it read, and its output - and the
- * request marked done. **The request's row is locked first**, so a second worker racing an expired
+ * The publication, inserted whole in one transaction once its outputs are stored (PUB-053): its
+ * artifact in the document's space, its record, every version it read, and one output per format the
+ * request names, each with its producer and its report (Word 1, ruling R11) - and the request marked
+ * done. **The request's row is locked first**, so a second worker racing an expired
  * lease waits, then finds it done and inserts nothing. Answers the publication's id, or undefined where
  * the request had already finished.
  *
  * A request still carrying failures - an occurrence its publisher could not read or resolve - has no
  * publication to record: `assemble` refuses it, so reaching here with one is a bug in the caller. It
  * throws before inserting anything rather than leaving the refusal to 0017's
- * `publication_request_done_without_failures`, which would only catch it at the last statement.
+ * `publication_request_done_without_failures`, which would only catch it at the last statement. So
+ * does a set of outputs that is not one per format the request names, or a Word report that is not
+ * one, which 0027's checks would otherwise refuse only at a row or at commit.
  */
 export async function recordPublication(
   trx: TenantTransaction,
@@ -582,6 +698,7 @@ export async function recordPublication(
       'r.document_version_id',
       'r.requested_by',
       'r.requested_at',
+      'r.formats',
       'r.failures',
       'r.layout_id',
       'r.layout_version_id',
@@ -598,6 +715,17 @@ export async function recordPublication(
       `The request ${request.id} carries failures, so it has no publication to record: fail it instead`,
     );
   }
+  const made = input.outputs.map((each) => each.format);
+  if (
+    made.length !== request.formats.length ||
+    !request.formats.every((format) => made.includes(format))
+  ) {
+    throw new Error(
+      `The request ${request.id} asked for ${request.formats.join(', ')}, and a publication records one output per format it asked for: ${made.join(', ') || 'none'} is not that`,
+    );
+  }
+  // What the writer reports is held to its closed shape before it is stored, as it is read back.
+  for (const each of input.outputs) if (each.format === 'docx') parseOutputReport(each.report);
   // All or nothing within the caller's transaction too: a failure part way - a refused row, or a lost
   // connection after a statement ran - rolls back to here before it is re-thrown, so a caller that
   // catches it and carries on (to fail the request) keeps no part of the publication. 0017's
@@ -623,6 +751,7 @@ async function insertPublication(
     readonly document_version_id: string;
     readonly requested_by: string;
     readonly requested_at: Date;
+    readonly formats: PublishingFormat[];
     readonly layout_id: string | null;
     readonly layout_version_id: string | null;
     readonly theme_id: string | null;
@@ -631,6 +760,8 @@ async function insertPublication(
   },
   input: NewPublication,
 ): Promise<string> {
+  // The PDF's engine and template are the publication's, as they always were; none without a PDF.
+  const pdf = input.outputs.find((each) => each.format === 'pdf');
   const artifact = await trx
     .insertInto('artifact')
     .values({ kind: 'publication', space_id: request.space_id })
@@ -646,11 +777,11 @@ async function insertPublication(
       publisher: request.requested_by,
       published_at: request.requested_at,
       approval: 'none',
-      formats: ['pdf'],
-      engine: 'typst',
-      engine_version: input.engineVersion,
-      template: 'publication',
-      template_version: input.templateVersion,
+      formats: request.formats,
+      engine: pdf ? 'typst' : null,
+      engine_version: pdf?.engineVersion ?? null,
+      template: pdf ? 'publication' : null,
+      template_version: pdf?.templateVersion ?? null,
       pipeline_version: input.pipelineVersion,
       fonts: JSON.stringify(input.fonts),
       data_sha256: input.dataSha256,
@@ -700,14 +831,29 @@ async function insertPublication(
   }
   await trx
     .insertInto('publication_output')
-    .values({
-      publication_id: artifact.id,
-      format: 'pdf',
-      object_key: input.output.key,
-      sha256: input.output.sha256,
-      bytes: input.output.bytes,
-      standard: 'ua-1',
-    })
+    .values(
+      input.outputs.map((each) => ({
+        publication_id: artifact.id,
+        format: each.format,
+        object_key: each.key,
+        sha256: each.sha256,
+        bytes: each.bytes,
+        ...(each.format === 'pdf'
+          ? {
+              standard: 'ua-1' as const,
+              // Typst, under the template the publication names: 0027 holds the two equal at commit.
+              producer: 'typst' as const,
+              producer_version: String(each.templateVersion),
+              report: '[]',
+            }
+          : {
+              standard: null,
+              producer: 'word' as const,
+              producer_version: each.writerVersion,
+              report: JSON.stringify(each.report),
+            }),
+      })),
+    )
     .execute();
   await trx
     .updateTable('publication_request')
@@ -773,16 +919,21 @@ export interface StoredPublication {
   readonly publisher: { readonly id: string; readonly displayName: string | null };
   readonly publishedAt: Date;
   readonly approval: 'none';
-  readonly formats: readonly string[];
-  readonly engine: { readonly name: 'typst'; readonly version: string };
-  readonly template: { readonly name: 'publication'; readonly version: number };
+  readonly formats: readonly PublishingFormat[];
+  /** The PDF's engine and template, or none where the publication has no PDF (0027). */
+  readonly engine: { readonly name: 'typst'; readonly version: string } | null;
+  readonly template: { readonly name: 'publication'; readonly version: number } | null;
   readonly pipelineVersion: string;
+  /** One per format, in the order the formats are named: the PDF first. */
   readonly outputs: readonly {
-    readonly format: 'pdf';
+    readonly format: PublishingFormat;
     readonly key: string;
     readonly sha256: string;
     readonly bytes: number;
-    readonly standard: 'ua-1';
+    readonly standard: 'ua-1' | null;
+    readonly producer: 'typst' | 'word';
+    readonly producerVersion: string;
+    readonly report: OutputReport;
   }[];
 }
 
@@ -825,19 +976,36 @@ export async function readPublication(
   if (!row) return undefined;
   const outputs = await trx
     .selectFrom('publication_output')
-    .select(['format', 'object_key', 'sha256', 'bytes', 'standard'])
+    .select([
+      'format',
+      'object_key',
+      'sha256',
+      'bytes',
+      'standard',
+      'producer',
+      'producer_version',
+      'report',
+    ])
     .where('publication_id', '=', id)
-    .orderBy('format')
     .execute();
+  // In the order the publication names its formats, the PDF first.
+  const order = (format: PublishingFormat) => row.formats.indexOf(format);
   return {
     ...summaryOf(row),
-    outputs: outputs.map((each) => ({
-      format: each.format,
-      key: each.object_key,
-      sha256: each.sha256,
-      bytes: each.bytes,
-      standard: each.standard,
-    })),
+    outputs: outputs
+      .sort((a, b) => order(a.format) - order(b.format))
+      .map((each) => ({
+        format: each.format,
+        key: each.object_key,
+        sha256: each.sha256,
+        bytes: each.bytes,
+        standard: each.standard,
+        producer: each.producer,
+        producerVersion: each.producer_version,
+        // Written only by `recordPublication`, which parsed it, and by 0027 as empty: a report that
+        // does not parse is a broken store, thrown, as a component that does not read is.
+        report: parseOutputReport(each.report),
+      })),
   };
 }
 
@@ -899,9 +1067,9 @@ function summaryOf(row: {
   title: string;
   published_at: Date;
   approval: 'none';
-  formats: string[];
-  engine_version: string;
-  template_version: number;
+  formats: PublishingFormat[];
+  engine_version: string | null;
+  template_version: number | null;
   pipeline_version: string;
   publisher_id: string;
   publisher_name: string | null;
@@ -920,8 +1088,9 @@ function summaryOf(row: {
     publishedAt: row.published_at,
     approval: row.approval,
     formats: row.formats,
-    engine: { name: 'typst', version: row.engine_version },
-    template: { name: 'publication', version: row.template_version },
+    engine: row.engine_version === null ? null : { name: 'typst', version: row.engine_version },
+    template:
+      row.template_version === null ? null : { name: 'publication', version: row.template_version },
     pipelineVersion: row.pipeline_version,
   };
 }

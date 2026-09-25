@@ -1,3 +1,4 @@
+import type { PublishingFormat } from '@alloy-works/domain';
 import type { ColumnType } from 'kysely';
 
 /**
@@ -9,7 +10,8 @@ export interface PublicationRequestTable {
   document_id: ColumnType<string, string, never>;
   document_version_id: ColumnType<string, string, never>;
   document_kind: ColumnType<'document', never, never>;
-  formats: ColumnType<string[], string[], never>;
+  /** The PDF first, whichever order they were asked in (0027). */
+  formats: ColumnType<PublishingFormat[], PublishingFormat[], never>;
   requested_by: ColumnType<string, string, never>;
   requested_at: ColumnType<Date, never, never>;
   state: ColumnType<'queued' | 'done' | 'failed', never, 'done' | 'failed'>;
@@ -69,11 +71,13 @@ export interface PublicationTable {
   publisher: ColumnType<string, string, never>;
   published_at: ColumnType<Date, Date, never>;
   approval: ColumnType<'none', 'none', never>;
-  formats: ColumnType<string[], string[], never>;
-  engine: ColumnType<'typst', 'typst', never>;
-  engine_version: ColumnType<string, string, never>;
-  template: ColumnType<'publication', 'publication', never>;
-  template_version: ColumnType<number, number, never>;
+  /** The PDF first, as the request names them (0027). */
+  formats: ColumnType<PublishingFormat[], PublishingFormat[], never>;
+  /** The PDF's engine and template: all four null exactly where the publication has no PDF (0027). */
+  engine: ColumnType<'typst' | null, 'typst' | null, never>;
+  engine_version: ColumnType<string | null, string | null, never>;
+  template: ColumnType<'publication' | null, 'publication' | null, never>;
+  template_version: ColumnType<number | null, number | null, never>;
   pipeline_version: ColumnType<string, string, never>;
   fonts: ColumnType<{ file: string; sha256: string }[], string, never>;
   data_sha256: ColumnType<string, string, never>;
@@ -94,11 +98,18 @@ export interface PublicationInputTable {
   node: ColumnType<string | null, string | null, never>;
 }
 
+/** One per format its publication names (0027), each saying what made it and what it could not carry. */
 export interface PublicationOutputTable {
   publication_id: ColumnType<string, string, never>;
-  format: ColumnType<'pdf', 'pdf', never>;
+  format: ColumnType<PublishingFormat, PublishingFormat, never>;
   object_key: ColumnType<string, string, never>;
   sha256: ColumnType<string, string, never>;
   bytes: ColumnType<number, number, never>;
-  standard: ColumnType<'ua-1', 'ua-1', never>;
+  /** A PDF's is PDF/UA-1; a Word document claims none. */
+  standard: ColumnType<'ua-1' | null, 'ua-1' | null, never>;
+  /** Typst for a PDF, at its publication's template version; the Word writer, at `word/N`, for Word. */
+  producer: ColumnType<'typst' | 'word', 'typst' | 'word', never>;
+  producer_version: ColumnType<string, string, never>;
+  /** An `OutputReport`, JSONB in as the text of a JSON document: a PDF's is empty. */
+  report: ColumnType<unknown, string, never>;
 }

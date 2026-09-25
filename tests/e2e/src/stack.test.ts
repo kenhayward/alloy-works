@@ -350,8 +350,8 @@ describe('the whole system', () => {
     // published schema does, and each slice that moved it found out here, on CI, after the branch
     // was green everywhere else - because a build agent cannot run this suite locally. What the
     // test is for is that the request was made under a layout, and that is what it now says.
-    expect(kept!.template.name).toBe('publication');
-    expect(kept!.template.version).toBeGreaterThan(1);
+    expect(kept!.template!.name).toBe('publication');
+    expect(kept!.template!.version).toBeGreaterThan(1);
 
     const pdf = await followSignedLink(new URL(kept!.outputs[0]!.download));
     expect(pdf.status).toBe(200);

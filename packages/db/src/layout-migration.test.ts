@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   defaultLayout as productDefaultLayout,
+  FIFTH_DEFAULT_LAYOUT,
   FIRST_DEFAULT_LAYOUT,
   FOURTH_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
@@ -111,29 +112,37 @@ describe('migration 0018, which gives every environment its default layout', () 
    */
   const recording = (tenant: Tenant, requestId: string, template: 1 | 2 = 2) => ({
     requestId,
-    engineVersion: '0.15.1',
-    templateVersion: template,
     pipelineVersion: String(template),
     fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
     dataSha256: 'b'.repeat(64),
     numbering: { scheme: defaultNumberingScheme.id, entries: [] },
-    output: {
-      key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
-      sha256: 'c'.repeat(64),
-      bytes: 1000,
-    },
+    outputs: [
+      {
+        format: 'pdf' as const,
+        engineVersion: '0.15.1',
+        templateVersion: template,
+        key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
+        sha256: 'c'.repeat(64),
+        bytes: 1000,
+      },
+    ],
   });
 
   /**
    * A publication written row by row as the runtime role, the way `recordPublication` writes one,
    * with the layout columns named only where given - so it runs on a tenant at 0017, where they do
-   * not exist, and can be rigged on one after it.
+   * not exist, and can be rigged on one after it - and its output's producer and report only on a
+   * tenant after 0027, which added them.
    */
   const publicationRows = async (
     trx: TenantTransaction,
     tenant: Tenant,
     request: string,
-    options: { readonly templateVersion?: 1 | 2; readonly done?: boolean } = {},
+    options: {
+      readonly templateVersion?: 1 | 2;
+      readonly done?: boolean;
+      readonly produced?: boolean;
+    } = {},
   ) => {
     const row = await sql<{
       document_id: string;
@@ -156,15 +165,21 @@ describe('migration 0018, which gives every environment its default layout', () 
                 pipeline_version, fonts, data_sha256, numbering)
               values (${artifact}, ${request}, ${row.document_id}, ${row.document_version_id},
                 ${row.requested_by}, ${row.requested_at}, 'none', array['pdf'], 'typst',
-                ${made.engineVersion}, 'publication', ${options.templateVersion ?? 1},
+                ${made.outputs[0]!.engineVersion}, 'publication', ${options.templateVersion ?? 1},
                 ${made.pipelineVersion}, ${JSON.stringify(made.fonts)}, ${made.dataSha256},
                 ${JSON.stringify(made.numbering)})`.execute(trx);
     await sql`insert into publication_input (publication_id, version_id, node)
               values (${artifact}, ${row.document_version_id}, null)`.execute(trx);
-    await sql`insert into publication_output (publication_id, format, object_key, sha256, bytes, standard)
-              values (${artifact}, 'pdf', ${made.output.key}, ${made.output.sha256}, 1000, 'ua-1')`.execute(
-      trx,
-    );
+    const [columns, values] = options.produced
+      ? [
+          sql`, producer, producer_version, report`,
+          sql`, 'typst', ${String(options.templateVersion ?? 1)}, '[]'`,
+        ]
+      : [sql``, sql``];
+    await sql`insert into publication_output (publication_id, format, object_key, sha256, bytes,
+                standard ${columns})
+              values (${artifact}, 'pdf', ${made.outputs[0]!.key}, ${made.outputs[0]!.sha256}, 1000,
+                'ua-1' ${values})`.execute(trx);
     if (options.done ?? true) {
       await sql`update publication_request set state = 'done', finished_at = now()
                 where id = ${request}`.execute(trx);
@@ -216,6 +231,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0024_themes',
       '0025_table_and_image_styles',
       '0026_word',
+      '0027_word_layout_and_outputs',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -445,13 +461,15 @@ describe('migration 0018, which gives every environment its default layout', () 
     // Under template 2 a publication is made under a layout, so one without is refused at once.
     await expect(
       service.withTenant(tenant, (trx) =>
-        publicationRows(trx, tenant, request, { templateVersion: 2 }),
+        publicationRows(trx, tenant, request, { templateVersion: 2, produced: true }),
       ),
     ).rejects.toThrow(/publication_layout/);
     // Under template 1 it may carry none, but only where its request carries none: a publication never
     // drops the layout its request was made under. Refused when its transaction commits.
     await expect(
-      service.withTenant(tenant, (trx) => publicationRows(trx, tenant, request)),
+      service.withTenant(tenant, (trx) =>
+        publicationRows(trx, tenant, request, { produced: true }),
+      ),
     ).rejects.toThrow(/recorded whole/);
 
     // The request is untouched, and publishes under its layout as it was made.
@@ -536,6 +554,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0024_themes',
       '0025_table_and_image_styles',
       '0026_word',
+      '0027_word_layout_and_outputs',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -634,6 +653,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0024_themes',
       '0025_table_and_image_styles',
       '0026_word',
+      '0027_word_layout_and_outputs',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -715,6 +735,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0024_themes',
       '0025_table_and_image_styles',
       '0026_word',
+      '0027_word_layout_and_outputs',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -735,13 +756,14 @@ describe('migration 0023, which gives the default layout words for a relative re
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
 
-    // 0023 runs and adds 0.4 on top of the product's own, untouched 0.3; and 0025, after it, 0.5 on
-    // top of that.
+    // 0023 runs and adds 0.4 on top of the product's own, untouched 0.3; and 0025 and 0027, after it,
+    // 0.5 and 0.6 on top of that.
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
       '0023_default_layout_relative_words',
       '0024_themes',
       '0025_table_and_image_styles',
       '0026_word',
+      '0027_word_layout_and_outputs',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     const chain = await service.withTenant({ ...tenant, id }, (trx) =>
@@ -759,12 +781,13 @@ describe('migration 0023, which gives the default layout words for a relative re
       [0, 3],
       [0, 4],
       [0, 5],
+      [0, 6],
     ]);
     expect(chain[3]!.content).toEqual(FOURTH_DEFAULT_LAYOUT);
     expect(declared).toEqual({
       artifactId: DEFAULT_LAYOUT_ID,
-      versionId: chain[4]!.id,
-      number: '0.5',
+      versionId: chain[5]!.id,
+      number: '0.6',
       layout: productDefaultLayout,
     });
   });
@@ -838,6 +861,7 @@ describe("migration 0025, which gives the default layout the words a continued t
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0025_table_and_image_styles',
       '0026_word',
+      '0027_word_layout_and_outputs',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -853,10 +877,11 @@ describe("migration 0025, which gives the default layout the words a continued t
     const fourth = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(fourth.number).toBe('0.4');
 
-    // 0025 runs and adds 0.5 on top of the product's own, untouched 0.4.
+    // 0025 runs and adds 0.5 on top of the product's own, untouched 0.4; and 0027, after it, 0.6.
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0025_table_and_image_styles',
       '0026_word',
+      '0027_word_layout_and_outputs',
     ]);
     const { declared, fifth } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -869,11 +894,149 @@ describe("migration 0025, which gives the default layout the words a continued t
         .executeTakeFirstOrThrow(),
     }));
     expect(fifth).toMatchObject({ author_id: null, note: null, schema_version: 4 });
+    expect(fifth.content).toEqual(FIFTH_DEFAULT_LAYOUT);
+    expect(declared).toMatchObject({ number: '0.6', layout: productDefaultLayout });
+  });
+});
+
+describe('migration 0027, which gives the default layout a Word page', () => {
+  let db: TestDatabase;
+  let service: TenantDatabase;
+  let before: string;
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    // Every tenant migration up to 0026 and none after, so a tenant stands where every environment
+    // stood before a layout could make Word.
+    before = await mkdtemp(join(tmpdir(), 'aw-before-0027-'));
+    await cp(new URL('../migrations/', import.meta.url), before, {
+      recursive: true,
+      filter: (source) => {
+        const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
+        return numbered === null || Number(numbered[1]) < 27;
+      },
+    });
+    service = createTenantDatabase(db.serviceUrl);
+  });
+
+  afterAll(async () => {
+    await service?.close();
+    await rm(before, { recursive: true, force: true });
+    await db?.drop();
+  });
+
+  /** A tenant standing at 0026, as every environment stood before this migration. */
+  const beforeWord = async (name: string): Promise<Tenant & { id: string }> => {
+    const id = db.newTenantId();
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    const tenant = await provisionTenant(db.adminUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id, name },
+      hostnames: [`${id}.alloy.test`],
+    });
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    return { ...tenant, id };
+  };
+
+  it('leaves a layout version an environment recorded after 0.5 as the one it declares', async () => {
+    const tenant = await beforeWord('Own 0.6');
+    // Recorded through today's schema: 0.5's words, and a Word page of its own, in US Letter.
+    const own: Layout = {
+      ...productDefaultLayout,
+      formats: {
+        pdf: productDefaultLayout.formats.pdf,
+        docx: { ...productDefaultLayout.formats.pdf, page: { width: 612, height: 792 } },
+      },
+    };
+    const recorded = await service.withTenant(tenant, async (trx) => {
+      const ada = await trx
+        .insertInto('principal')
+        .values({ issuer: ISSUER, subject: 'ada', email: null, display_name: 'Ada' })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const opened = await defaultLayout(trx);
+      return recordVersion(trx, {
+        artifactId: DEFAULT_LAYOUT_ID,
+        openedFrom: opened.versionId,
+        author: ada.id,
+        substance: { kind: 'layout', content: own },
+      });
+    });
+    if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+
+    // 0027 runs and leaves it: its 0.6 is the environment's own, so the product's goes nowhere.
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0027_word_layout_and_outputs',
+    ]);
+    const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
       artifactId: DEFAULT_LAYOUT_ID,
-      versionId: fifth.id,
-      number: '0.5',
+      versionId: recorded.version.id,
+      number: '0.6',
+      layout: own,
+    });
+  });
+
+  it("gives an environment still at the product's 0.5 a Word page copying its PDF page, and a request made under 0.5 keeps it", async () => {
+    const tenant = await beforeWord('Still 0.5');
+    const waiting = await service.withTenant(tenant, async (trx) => {
+      const ada = await trx
+        .insertInto('principal')
+        .values({ issuer: ISSUER, subject: 'ada', email: null, display_name: 'Ada' })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const general = await trx
+        .selectFrom('space')
+        .select('id')
+        .where('name', '=', 'General')
+        .executeTakeFirstOrThrow();
+      const made = await createDocument(trx, {
+        spaceId: general.id,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada.id,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      const answer = await requestPublication(trx, {
+        documentId: made.version.artifactId,
+        version: made.version.id,
+        formats: ['pdf'],
+        requester: ada.id,
+      });
+      if (answer.answer !== 'requested') throw new Error(answer.answer);
+      return answer.request.id;
+    });
+    const fifth = await service.withTenant(tenant, (trx) => defaultLayout(trx));
+    expect(fifth.number).toBe('0.5');
+
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0027_word_layout_and_outputs',
+    ]);
+    const { declared, sixth, inputs } = await service.withTenant(tenant, async (trx) => ({
+      declared: await defaultLayout(trx),
+      sixth: await trx
+        .selectFrom('artifact_version')
+        .selectAll()
+        .where('artifact_id', '=', DEFAULT_LAYOUT_ID)
+        .where('revision_no', '=', 0)
+        .where('version_no', '=', 6)
+        .executeTakeFirstOrThrow(),
+      inputs: await publicationInputs(trx, waiting),
+    }));
+    expect(sixth).toMatchObject({ author_id: null, note: null, schema_version: 5 });
+    expect(declared).toEqual({
+      artifactId: DEFAULT_LAYOUT_ID,
+      versionId: sixth.id,
+      number: '0.6',
       layout: productDefaultLayout,
+    });
+    expect(declared.layout.formats.docx).toEqual(declared.layout.formats.pdf);
+    // The request made before it publishes under the 0.5 it was made under, which makes no Word.
+    expect(inputs!.layout).toEqual({
+      versionId: fifth.versionId,
+      layout: { ...FIFTH_DEFAULT_LAYOUT, schemaVersion: LAYOUT_SCHEMA_VERSION },
     });
   });
 });

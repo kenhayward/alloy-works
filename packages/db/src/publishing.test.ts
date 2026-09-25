@@ -6,6 +6,7 @@ import {
   type ContentDocument,
   type OutlineDocument,
   type OutlineNode,
+  type PublishingFormat,
   type ReferenceNode,
 } from '@alloy-works/domain';
 import { sql, type KyselyPlugin } from 'kysely';
@@ -21,6 +22,7 @@ import { createTenant, type Tenant } from './provision.js';
 import {
   failPublicationRequest,
   publicationInputs,
+  readPublication,
   recordPublication,
   requestPublication,
   resolveOccurrences,
@@ -286,8 +288,8 @@ describe('requesting and recording a publication', () => {
         answer: 'version.precondition',
         current: version.id,
       });
-      expect((await asked(version.id, ['docx'])).answer).toBe('format.unsupported');
-      expect((await asked(version.id, ['pdf', 'docx'])).answer).toBe('format.unsupported');
+      expect((await asked(version.id, ['html'])).answer).toBe('format.unsupported');
+      expect((await asked(version.id, ['pdf', 'html'])).answer).toBe('format.unsupported');
       const requests = await trx
         .selectFrom('publication_request')
         .select('id')
@@ -319,30 +321,73 @@ describe('requesting and recording a publication', () => {
   };
 
   it('PUB-014 refuses a format its layout does not make, naming it, and records nothing', async () => {
+    const rolledBack = new Error('rolled back');
+    await expect(
+      service.withTenant(production, async (trx) => {
+        const version = await documentWith(trx, [section('Scope', [])]);
+        // The layout the request would be made under declares its formats, one member each - here a
+        // version of the default recorded without a Word page, so it makes `pdf` alone.
+        const declared = await defaultLayout(trx);
+        const pdfOnly = await recordVersion(trx, {
+          artifactId: DEFAULT_LAYOUT_ID,
+          openedFrom: declared.versionId,
+          author: ada,
+          substance: {
+            kind: 'layout',
+            content: { ...declared.layout, formats: { pdf: declared.layout.formats.pdf } },
+          },
+        });
+        if (pdfOnly.answer !== 'recorded') throw new Error(pdfOnly.answer);
+        expect(Object.keys((await defaultLayout(trx)).layout.formats)).toEqual(['pdf']);
+        const before = await requestIds(trx);
+        const asked = (formats: string[]) =>
+          requestPublication(trx, {
+            documentId: version.artifactId,
+            version: version.id,
+            formats,
+            requester: ada,
+          });
+        // Refused, never approximated as the formats it can make: the one it cannot is named.
+        expect(await asked(['pdf', 'docx'])).toEqual({
+          answer: 'format.unsupported',
+          formats: ['docx'],
+        });
+        expect(await asked(['docx', 'odt', 'docx'])).toEqual({
+          answer: 'format.unsupported',
+          formats: ['docx', 'odt'],
+        });
+        expect(await requestIds(trx)).toEqual(before);
+        // A format it declares is taken.
+        expect((await asked(['pdf'])).answer).toBe('requested');
+        throw rolledBack;
+      }),
+    ).rejects.toBe(rolledBack);
+  });
+
+  it('takes Word where its layout makes it, alone or beside the PDF, and records the formats PDF first', async () => {
     await service.withTenant(production, async (trx) => {
       const version = await documentWith(trx, [section('Scope', [])]);
-      // The layout the request would be made under declares its formats, one member each: `pdf` alone.
-      expect(Object.keys((await defaultLayout(trx)).layout.formats)).toEqual(['pdf']);
-      const before = await requestIds(trx);
-      const asked = (formats: string[]) =>
-        requestPublication(trx, {
+      // The default layout's 0.6 declares a Word page (Word 1, ruling R4).
+      expect(Object.keys((await defaultLayout(trx)).layout.formats)).toEqual(['pdf', 'docx']);
+      const formatsOf = async (formats: string[]) => {
+        const answer = await requestPublication(trx, {
           documentId: version.artifactId,
           version: version.id,
           formats,
           requester: ada,
         });
-      // Refused, never approximated as the formats it can make: the one it cannot is named.
-      expect(await asked(['pdf', 'docx'])).toEqual({
-        answer: 'format.unsupported',
-        formats: ['docx'],
-      });
-      expect(await asked(['docx', 'odt', 'docx'])).toEqual({
-        answer: 'format.unsupported',
-        formats: ['docx', 'odt'],
-      });
-      expect(await requestIds(trx)).toEqual(before);
-      // A format it declares is taken.
-      expect((await asked(['pdf'])).answer).toBe('requested');
+        if (answer.answer !== 'requested') throw new Error(answer.answer);
+        const row = await trx
+          .selectFrom('publication_request')
+          .select('formats')
+          .where('id', '=', answer.request.id)
+          .executeTakeFirstOrThrow();
+        return row.formats;
+      };
+      expect(await formatsOf(['docx'])).toEqual(['docx']);
+      expect(await formatsOf(['pdf', 'docx'])).toEqual(['pdf', 'docx']);
+      // A set, in one order whichever it was asked in.
+      expect(await formatsOf(['docx', 'pdf'])).toEqual(['pdf', 'docx']);
     });
   });
 
@@ -424,14 +469,14 @@ describe('requesting and recording a publication', () => {
           },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.5 since 0025, so the version recorded after it is 0.6.
-        expect((await defaultLayout(trx)).number).toBe('0.6');
+        // The default is at 0.6 since 0027, so the version recorded after it is 0.7.
+        expect((await defaultLayout(trx)).number).toBe('0.7');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.layout).toEqual({ versionId: declared.versionId, layout: declared.layout });
         // The document's version as `revision.version` (VER-009): a first version is 0.1.
         expect(inputs!.revision).toBe('0.1');
-        // Thrown to roll the layout's 0.6 back: the rest of the suite publishes under the default.
+        // Thrown to roll the layout's 0.7 back: the rest of the suite publishes under the default.
         throw rolledBack;
       }),
     ).rejects.toBe(rolledBack);
@@ -706,23 +751,38 @@ describe('requesting and recording a publication', () => {
     );
     expect(occurrences).toHaveLength(1);
   });
+  /** A PDF made by Typst under template 2, over bytes the store need not hold. */
+  const pdfOutput = (fill = 'c') => ({
+    format: 'pdf' as const,
+    engineVersion: '0.15.1',
+    templateVersion: 2,
+    key: `${production.role}/sha256/${fill.repeat(64)}`,
+    sha256: fill.repeat(64),
+    bytes: 1000,
+  });
+  /** A Word document made by the writer's first version, with what it could not carry. */
+  const docxOutput = (fill = 'd') => ({
+    format: 'docx' as const,
+    writerVersion: 'word/1',
+    report: [
+      { kind: 'face_substituted' as const, family: 'STIX Two Math', wordFamily: 'Cambria Math' },
+      { kind: 'pages_cite_the_pdf' as const },
+    ],
+    key: `${production.role}/sha256/${fill.repeat(64)}`,
+    sha256: fill.repeat(64),
+    bytes: 2000,
+  });
   /**
    * What a worker records for a request made under a layout - template 2 and pipeline 2 - over an
    * output the store need not hold.
    */
   const recording = (requestId: string) => ({
     requestId,
-    engineVersion: '0.15.1',
-    templateVersion: 2,
     pipelineVersion: '2',
     fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
     dataSha256: 'b'.repeat(64),
     numbering: { scheme: defaultNumberingScheme.id, entries: [] },
-    output: {
-      key: `${production.role}/sha256/${'c'.repeat(64)}`,
-      sha256: 'c'.repeat(64),
-      bytes: 1000,
-    },
+    outputs: [pdfOutput()],
   });
 
   it('STY-002 sets publications from two spaces by the one tenant-wide theme and its catalogue versions', async () => {
@@ -889,8 +949,10 @@ describe('requesting and recording a publication', () => {
     for (const statement of [
       sql`insert into publication_input (publication_id, version_id, node)
           values (${first}, ${version.id}, ${nodeId()})`,
-      sql`insert into publication_output (publication_id, format, object_key, sha256, bytes, standard)
-          values (${first}, 'pdf', ${`${production.role}/sha256/${other}`}, ${other}, 1, 'ua-1')`,
+      sql`insert into publication_output (publication_id, format, object_key, sha256, bytes, standard,
+            producer, producer_version, report)
+          values (${first}, 'docx', ${`${production.role}/sha256/${other}`}, ${other}, 1, null,
+            'word', 'word/1', '[]')`,
     ]) {
       await expect(service.withTenant(production, (trx) => statement.execute(trx))).rejects.toThrow(
         /only while its publication's request is queued/,
@@ -925,9 +987,9 @@ describe('requesting and recording a publication', () => {
           approval: 'none',
           formats: ['pdf'],
           engine: 'typst',
-          engine_version: made.engineVersion,
+          engine_version: '0.15.1',
           template: 'publication',
-          template_version: made.templateVersion,
+          template_version: 2,
           pipeline_version: made.pipelineVersion,
           fonts: JSON.stringify(made.fonts),
           data_sha256: made.dataSha256,
@@ -955,6 +1017,9 @@ describe('requesting and recording a publication', () => {
             sha256: other,
             bytes: 1,
             standard: 'ua-1',
+            producer: 'typst',
+            producer_version: '2',
+            report: '[]',
           })
           .execute();
         await sql`update publication_request set state = 'done', finished_at = now()
@@ -1064,6 +1129,11 @@ describe('requesting and recording a publication', () => {
           sha256: 'c'.repeat(64),
           bytes: 1000,
           standard: 'ua-1',
+          // Typst, under the template the publication names (Word 1, ruling R11), and a PDF's report,
+          // which says nothing.
+          producer: 'typst',
+          producer_version: '2',
+          report: [],
         },
       ]);
     });
@@ -1123,9 +1193,9 @@ describe('requesting and recording a publication', () => {
             approval: 'none',
             formats: ['pdf'],
             engine: 'typst',
-            engine_version: made.engineVersion,
+            engine_version: '0.15.1',
             template: 'publication',
-            template_version: made.templateVersion,
+            template_version: 2,
             pipeline_version: made.pipelineVersion,
             fonts: JSON.stringify(made.fonts),
             data_sha256: made.dataSha256,
@@ -1153,6 +1223,9 @@ describe('requesting and recording a publication', () => {
             sha256: other,
             bytes: 1,
             standard: 'ua-1',
+            producer: 'typst',
+            producer_version: '2',
+            report: '[]',
           })
           .execute();
         await sql`update publication_request set state = 'done', finished_at = now()
@@ -1182,18 +1255,14 @@ describe('requesting and recording a publication', () => {
     const before = await publications();
     const elsewhere = {
       ...recording(id),
-      output: {
-        key: `${production.role}/sha256/${'d'.repeat(64)}`,
-        sha256: 'c'.repeat(64),
-        bytes: 1000,
-      },
+      outputs: [{ ...pdfOutput(), key: `${production.role}/sha256/${'d'.repeat(64)}` }],
     };
     await expect(
       service.withTenant(production, (trx) => recordPublication(trx, elsewhere)),
     ).rejects.toThrow(/publication_output_check/);
     const anotherTenants = {
       ...recording(id),
-      output: { key: `t_another/sha256/${'c'.repeat(64)}`, sha256: 'c'.repeat(64), bytes: 1000 },
+      outputs: [{ ...pdfOutput(), key: `t_another/sha256/${'c'.repeat(64)}` }],
     };
     await expect(
       service.withTenant(production, (trx) => recordPublication(trx, anotherTenants)),
@@ -1575,9 +1644,9 @@ describe('requesting and recording a publication', () => {
             approval: 'none',
             formats: ['pdf'],
             engine: 'typst',
-            engine_version: made.engineVersion,
+            engine_version: '0.15.1',
             template: 'publication',
-            template_version: made.templateVersion,
+            template_version: 2,
             pipeline_version: made.pipelineVersion,
             fonts: JSON.stringify(made.fonts),
             data_sha256: made.dataSha256,
@@ -1609,10 +1678,13 @@ describe('requesting and recording a publication', () => {
           .values({
             publication_id: artifact.id,
             format: 'pdf',
-            object_key: made.output.key,
-            sha256: made.output.sha256,
-            bytes: made.output.bytes,
+            object_key: made.outputs[0]!.key,
+            sha256: made.outputs[0]!.sha256,
+            bytes: made.outputs[0]!.bytes,
             standard: 'ua-1',
+            producer: 'typst',
+            producer_version: '2',
+            report: '[]',
           })
           .execute();
         await trx
@@ -1638,5 +1710,449 @@ describe('requesting and recording a publication', () => {
         trx.deleteFrom('publication_asset').where('publication_id', '=', publication!).execute(),
       ),
     ).rejects.toThrow(/permission denied/);
+  });
+
+  // Word 1, ruling R11: one output per format the request names, each saying what made it.
+  /** A request for these formats, of a document at 0.1. */
+  const requestedAs = async (formats: string[]) =>
+    service.withTenant(production, async (trx) => {
+      const version = await documentWith(trx, []);
+      const answer = await requestPublication(trx, {
+        documentId: version.artifactId,
+        version: version.id,
+        formats,
+        requester: ada,
+      });
+      if (answer.answer !== 'requested') throw new Error(answer.answer);
+      return answer.request.id;
+    });
+
+  it('records one output per format its request names, each with its producer and its report', async () => {
+    const request = await requestedAs(['pdf', 'docx']);
+    const id = await service.withTenant(production, (trx) =>
+      recordPublication(trx, { ...recording(request), outputs: [docxOutput(), pdfOutput()] }),
+    );
+    const rows = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication_output')
+        .select(['format', 'standard', 'producer', 'producer_version', 'report', 'bytes'])
+        .where('publication_id', '=', id!)
+        .orderBy('format', 'desc')
+        .execute(),
+    );
+    expect(rows).toEqual([
+      {
+        format: 'pdf',
+        standard: 'ua-1',
+        producer: 'typst',
+        producer_version: '2',
+        report: [],
+        bytes: 1000,
+      },
+      {
+        format: 'docx',
+        // A Word document claims no PDF standard.
+        standard: null,
+        producer: 'word',
+        producer_version: 'word/1',
+        report: docxOutput().report,
+        bytes: 2000,
+      },
+    ]);
+    const read = await service.withTenant(production, (trx) => readPublication(trx, id!));
+    expect(read).toMatchObject({
+      formats: ['pdf', 'docx'],
+      engine: { name: 'typst', version: '0.15.1' },
+      template: { name: 'publication', version: 2 },
+      pipelineVersion: '2',
+    });
+    // The PDF first, as the formats are named.
+    expect(read!.outputs).toEqual([
+      {
+        format: 'pdf',
+        key: pdfOutput().key,
+        sha256: pdfOutput().sha256,
+        bytes: 1000,
+        standard: 'ua-1',
+        producer: 'typst',
+        producerVersion: '2',
+        report: [],
+      },
+      {
+        format: 'docx',
+        key: docxOutput().key,
+        sha256: docxOutput().sha256,
+        bytes: 2000,
+        standard: null,
+        producer: 'word',
+        producerVersion: 'word/1',
+        report: docxOutput().report,
+      },
+    ]);
+  });
+
+  it('records a Word-only publication with no PDF engine or template, which made nothing of it', async () => {
+    const request = await requestedAs(['docx']);
+    const id = await service.withTenant(production, (trx) =>
+      recordPublication(trx, { ...recording(request), outputs: [docxOutput('e')] }),
+    );
+    const row = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication')
+        .select(['formats', 'engine', 'engine_version', 'template', 'template_version'])
+        .where('id', '=', id!)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(row).toEqual({
+      formats: ['docx'],
+      engine: null,
+      engine_version: null,
+      template: null,
+      template_version: null,
+    });
+    const read = await service.withTenant(production, (trx) => readPublication(trx, id!));
+    expect(read).toMatchObject({ formats: ['docx'], engine: null, template: null });
+    expect(read!.outputs.map((each) => each.format)).toEqual(['docx']);
+  });
+
+  it('refuses a record whose outputs are not its request formats, or whose report is not one, and keeps nothing', async () => {
+    const both = await requestedAs(['pdf', 'docx']);
+    const pdf = await requestedAs(['pdf']);
+    const before = await publications();
+    const refused = [
+      [both, [pdfOutput()]],
+      [both, [pdfOutput(), docxOutput(), docxOutput('f')]],
+      [pdf, [pdfOutput(), docxOutput()]],
+      [pdf, [docxOutput()]],
+      [pdf, []],
+    ] as const;
+    for (const [request, outputs] of refused) {
+      await expect(
+        service.withTenant(production, (trx) =>
+          recordPublication(trx, { ...recording(request), outputs }),
+        ),
+      ).rejects.toThrow(/one output per format/);
+    }
+    // A report that is not one, which the writer never makes: refused before it is stored.
+    const unreported = { ...docxOutput(), report: [{ kind: 'header_column_lost' }] };
+    await expect(
+      service.withTenant(production, (trx) =>
+        recordPublication(trx, {
+          ...recording(both),
+          outputs: [pdfOutput(), unreported as unknown as ReturnType<typeof docxOutput>],
+        }),
+      ),
+    ).rejects.toThrow();
+    expect(await publications()).toEqual(before);
+    expect(await stateOf(both)).toEqual({ state: 'queued', failures: [], finished_at: null });
+  });
+
+  it('holds each output to its format, and the record to one output per format, as the runtime role', async () => {
+    const other = 'e'.repeat(64);
+    /**
+     * A publication of the request written row by row, with these outputs and publication columns,
+     * committed or refused.
+     */
+    const rigged = async (
+      request: string,
+      columns: Partial<{
+        formats: PublishingFormat[];
+        engine: 'typst' | null;
+        engine_version: string | null;
+        template: 'publication' | null;
+        template_version: number | null;
+      }>,
+      outputs: readonly Record<string, unknown>[],
+    ) =>
+      service.withTenant(production, async (trx) => {
+        const made = await trx
+          .selectFrom('publication_request as r')
+          .innerJoin('artifact as a', 'a.id', 'r.document_id')
+          .selectAll('r')
+          .select('a.space_id')
+          .where('r.id', '=', request)
+          .executeTakeFirstOrThrow();
+        const artifact = await trx
+          .insertInto('artifact')
+          .values({ kind: 'publication', space_id: made.space_id })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        await trx
+          .insertInto('publication')
+          .values({
+            id: artifact.id,
+            request_id: request,
+            document_id: made.document_id,
+            document_version_id: made.document_version_id,
+            publisher: made.requested_by,
+            published_at: made.requested_at,
+            approval: 'none',
+            formats: made.formats,
+            engine: 'typst',
+            engine_version: '0.15.1',
+            template: 'publication',
+            template_version: 2,
+            pipeline_version: '2',
+            fonts: JSON.stringify([
+              { file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) },
+            ]),
+            data_sha256: 'b'.repeat(64),
+            numbering: JSON.stringify({ scheme: defaultNumberingScheme.id, entries: [] }),
+            layout_id: made.layout_id,
+            layout_version_id: made.layout_version_id,
+            theme_id: made.theme_id,
+            theme_version_id: made.theme_version_id,
+            ...columns,
+          })
+          .execute();
+        await trx
+          .insertInto('publication_input')
+          .values({ publication_id: artifact.id, version_id: made.document_version_id, node: null })
+          .execute();
+        for (const output of outputs) {
+          await trx
+            .insertInto('publication_output')
+            .values({
+              publication_id: artifact.id,
+              format: 'pdf',
+              object_key: `${production.role}/sha256/${other}`,
+              sha256: other,
+              bytes: 1,
+              standard: 'ua-1',
+              producer: 'typst',
+              producer_version: '2',
+              report: '[]',
+              ...output,
+            } as never)
+            .execute();
+        }
+        await sql`update publication_request set state = 'done', finished_at = now()
+                  where id = ${request}`.execute(trx);
+      });
+    const typst = {};
+    const word = {
+      format: 'docx',
+      standard: null,
+      producer: 'word',
+      producer_version: 'word/1',
+      report: JSON.stringify([{ kind: 'pages_cite_the_pdf' }]),
+      object_key: `${production.role}/sha256/${'f'.repeat(64)}`,
+      sha256: 'f'.repeat(64),
+    };
+
+    // At the row: each output's standard, producer and report are its format's.
+    const pdf = await requestedAs(['pdf']);
+    const both = await requestedAs(['pdf', 'docx']);
+    for (const [output, constraint] of [
+      [{ standard: null }, 'publication_output_standard'],
+      [{ ...word, standard: 'ua-1' }, 'publication_output_standard'],
+      [{ producer: 'word' }, 'publication_output_producer'],
+      [{ producer_version: 'word/1' }, 'publication_output_producer'],
+      [{ ...word, producer: 'typst' }, 'publication_output_producer'],
+      [{ ...word, producer_version: '2' }, 'publication_output_producer'],
+      [{ format: 'html' }, 'publication_output_format'],
+      [{ report: JSON.stringify([{ kind: 'pages_cite_the_pdf' }]) }, 'publication_output_report'],
+      [{ ...word, report: '{}' }, 'publication_output_report'],
+    ] as const) {
+      await expect(rigged(both, {}, [output]), constraint).rejects.toThrow(new RegExp(constraint));
+    }
+    // And at the publication: its engine and template are the PDF's, none where it has none.
+    await expect(
+      rigged(both, { engine: null, engine_version: null, template: null, template_version: null }, [
+        typst,
+        word,
+      ]),
+    ).rejects.toThrow(/publication_made_by_typst/);
+    await expect(rigged(pdf, { formats: ['pdf', 'pdf'] }, [typst])).rejects.toThrow(
+      /publication_formats_check/,
+    );
+
+    // At commit: one output per format its request names, the formats its request's, and a PDF made
+    // by the template the publication names.
+    const atCommit: [string, { formats?: PublishingFormat[] }, Record<string, unknown>[]][] = [
+      [both, {}, [typst]],
+      [both, {}, [word]],
+      [pdf, { formats: ['pdf', 'docx'] }, [typst, word]],
+      [pdf, {}, [{ producer_version: '3' }]],
+    ];
+    for (const [request, columns, outputs] of atCommit) {
+      await expect(rigged(request, columns, outputs)).rejects.toThrow(/recorded whole/);
+    }
+    expect(await stateOf(both)).toEqual({ state: 'queued', failures: [], finished_at: null });
+    // Whole, it commits.
+    await rigged(both, {}, [typst, word]);
+    expect((await stateOf(both)).state).toBe('done');
+  });
+
+  it('refuses a request without the PDF whose document cites a page, wherever it stands, before recording anything', async () => {
+    await service.withTenant(production, async (trx) => {
+      const scope = section('Scope', []);
+      const pageOf = (id: string) => ({
+        type: 'crossReference' as const,
+        id,
+        target: { kind: 'node' as const, node: scope.id },
+        display: 'page' as const,
+      });
+      const numberOf = (id: string) => ({ ...pageOf(id), display: 'number' as const });
+      const paragraph = (id: string, content: unknown[]) => ({
+        type: 'paragraph',
+        id,
+        style: 'body',
+        content,
+      });
+      const see = { type: 'text', value: 'See ', marks: [] };
+      // In a table's cell, a list's item, a footnote's paragraph and a table's note: each a page.
+      const inCell = await holding(trx, ada, [
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [{ type: 'text', value: 'Readings', marks: [] }],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [
+            {
+              cells: [
+                {
+                  content: [paragraph('c1', [see, pageOf('r1')])],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+              ],
+            },
+          ],
+        },
+      ]);
+      const inItem = await holding(trx, ada, [
+        {
+          type: 'list',
+          id: 'l1',
+          kind: 'unordered',
+          items: [{ content: [paragraph('i1', [see, pageOf('r1')])] }],
+        },
+      ]);
+      const inFootnote = await holding(trx, ada, [
+        paragraph('p1', [
+          see,
+          {
+            type: 'footnote',
+            id: 'n1',
+            anchor: { kind: 'span' },
+            content: [paragraph('n1p', [see, pageOf('r1')])],
+          },
+        ]),
+      ]);
+      const inNote = await holding(trx, ada, [
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [{ type: 'text', value: 'Readings', marks: [] }],
+          headerRows: 0,
+          headerColumns: 0,
+          note: [see, pageOf('r1')],
+          rows: [
+            {
+              cells: [{ content: [paragraph('c1', [see])], colspan: 1, rowspan: 1 }],
+            },
+          ],
+        },
+      ]);
+      const byNumber = await holding(trx, ada, [paragraph('p1', [see, numberOf('r1')])]);
+      const asked = async (nodes: OutlineNode[], formats: string[]) => {
+        const version = await documentWith(trx, nodes);
+        return requestPublication(trx, {
+          documentId: version.artifactId,
+          version: version.id,
+          formats,
+          requester: ada,
+        });
+      };
+      const before = await requestIds(trx);
+      for (const cites of [inCell, inItem, inFootnote, inNote]) {
+        expect(
+          await asked([{ ...scope, children: [reference(cites.artifactId)] }], ['docx']),
+          cites.artifactId,
+        ).toEqual({ answer: 'page_reference.without_pdf' });
+      }
+      // And in a section's title, which a document holds itself.
+      const titled = {
+        ...(section('Method', []) as Extract<OutlineNode, { type: 'section' }>),
+        title: [see, pageOf('r1')] as Extract<OutlineNode, { type: 'section' }>['title'],
+      };
+      expect(await asked([scope, titled], ['docx'])).toEqual({
+        answer: 'page_reference.without_pdf',
+      });
+      expect(await requestIds(trx)).toEqual(before);
+
+      // With the PDF, whose pages it cites, it is taken; and without, where it cites no page.
+      const inCellDoc = [{ ...scope, children: [reference(inCell.artifactId)] }];
+      expect((await asked(inCellDoc, ['pdf', 'docx'])).answer).toBe('requested');
+      expect((await asked([scope, titled], ['pdf'])).answer).toBe('requested');
+      expect(
+        (await asked([{ ...scope, children: [reference(byNumber.artifactId)] }], ['docx'])).answer,
+      ).toBe('requested');
+    });
+  });
+
+  it('decides a page citation as the publisher: a component it may not read is never read for one', async () => {
+    await service.withTenant(production, async (trx) => {
+      const scope = section('Scope', []);
+      // In Quality, which Grace may read and Ada may not, citing a page.
+      const secret = await component(trx, quality, grace, 'Calibration');
+      const substance = substanceOf(secret);
+      if (substance.kind !== 'component') throw new Error('not a component');
+      const cited = await recordVersion(trx, {
+        artifactId: secret.artifactId,
+        openedFrom: secret.id,
+        author: grace,
+        substance: {
+          ...substance,
+          content: {
+            ...substance.content,
+            content: [
+              {
+                type: 'paragraph',
+                id: 'p1',
+                style: 'body',
+                content: [
+                  {
+                    type: 'crossReference',
+                    id: 'r1',
+                    target: { kind: 'node', node: scope.id },
+                    display: 'page',
+                  },
+                ],
+              },
+            ] as ContentDocument['content'],
+          },
+        },
+      });
+      if (cited.answer !== 'recorded') throw new Error(cited.answer);
+      const hidden = reference(secret.artifactId);
+      const version = await documentWith(trx, [{ ...scope, children: [hidden] }]);
+      const asked = (requester: string) =>
+        requestPublication(trx, {
+          documentId: version.artifactId,
+          version: version.id,
+          formats: ['docx'],
+          requester,
+        });
+      // Ada's request is taken, carrying the occurrence she may not read, and fails on it alone; the
+      // answer says nothing of what the component holds.
+      const adas = await asked(ada);
+      if (adas.answer !== 'requested') throw new Error(adas.answer);
+      expect(await failuresIn(trx, adas.request.id)).toEqual([
+        {
+          stage: 'resolve',
+          code: 'occurrence_unreadable',
+          node: hidden.id,
+          block: null,
+          detail: null,
+        },
+      ]);
+      // Grace may read it, and is refused for the page it cites.
+      expect(await asked(grace)).toEqual({ answer: 'page_reference.without_pdf' });
+    });
   });
 });

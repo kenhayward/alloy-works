@@ -16518,7 +16518,7 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 352,
+      "line": 355,
       "kind": "title"
     },
     {
@@ -16572,7 +16572,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 422,
+      "line": 429,
       "kind": "title"
     },
     {
@@ -16668,13 +16668,13 @@
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 474,
+      "line": 560,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 416,
+      "line": 502,
       "kind": "title"
     },
     {
@@ -17202,25 +17202,25 @@
     {
       "id": "PUB-014",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 321,
+      "line": 323,
       "kind": "title"
     },
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 861,
+      "line": 921,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 367,
+      "line": 412,
       "kind": "title"
     },
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 728,
+      "line": 788,
       "kind": "title"
     },
     {
@@ -17682,7 +17682,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 266,
+      "line": 273,
       "kind": "title"
     },
     {
@@ -18024,7 +18024,13 @@
     {
       "id": "PUB-011",
       "file": "packages/domain/src/publishing/layout.test.ts",
-      "line": 30,
+      "line": 33,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-012",
+      "file": "packages/domain/src/publishing/layout.test.ts",
+      "line": 181,
       "kind": "title"
     },
     {

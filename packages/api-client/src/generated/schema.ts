@@ -3553,7 +3553,7 @@ export interface operations {
                 "application/json": {
                     /** @description The document version the caller is publishing, which must be the latest */
                     version: string & (unknown & unknown);
-                    /** @description The formats to publish, each once; `pdf` is the only one until a layout declares another */
+                    /** @description The formats to publish, each once: `pdf`, `docx`, or both, where the document's layout makes them. A format it does not make is refused by name, and one without `pdf` where the document cites a page */
                     formats: string[];
                 };
             };
@@ -3587,7 +3587,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language */
+            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4984,29 +4984,65 @@ export interface operations {
                          */
                         approval: "none";
                         formats: string[];
+                        /** @description The PDF's engine; none where the publication has no PDF */
                         engine: {
                             /** @constant */
                             name: "typst";
                             version: string;
-                        };
+                        } | null;
+                        /** @description The PDF's template; none where the publication has no PDF */
                         template: {
                             /** @constant */
                             name: "publication";
                             version: number;
-                        };
+                        } | null;
                         pipeline: string;
-                        outputs: {
+                        /** @description One per format, the PDF first */
+                        outputs: ({
                             /** @constant */
                             format: "pdf";
                             bytes: number;
                             sha256: string;
                             /** @constant */
                             standard: "ua-1";
-                            /** @description A link to the bytes, valid for five minutes, named by the publication id */
+                            /** @constant */
+                            producer: "typst";
+                            /** @description The template version it was set by */
+                            producerVersion: string;
+                            report: [
+                            ];
+                            /** @description A link to the bytes, valid for five minutes, named by the publication id and format */
                             download: string;
                             /** @description A link to the same bytes, valid for five minutes, that a browser shows rather than saves */
                             view: string;
-                        }[];
+                        } | {
+                            /** @constant */
+                            format: "docx";
+                            bytes: number;
+                            sha256: string;
+                            standard: null;
+                            /** @constant */
+                            producer: "word";
+                            /** @description The Word writer's version, as `word/1` */
+                            producerVersion: string;
+                            /** @description What Word could not carry: a face it set in another, that page numbers cite the PDF, that it carries no page-cited output */
+                            report: ({
+                                /** @constant */
+                                kind: "face_substituted";
+                                family: string;
+                                wordFamily: string;
+                            } | {
+                                /** @constant */
+                                kind: "no_page_cited_output";
+                            } | {
+                                /** @constant */
+                                kind: "pages_cite_the_pdf";
+                            })[];
+                            /** @description A link to the bytes, valid for five minutes, named by the publication id and format */
+                            download: string;
+                            /** @description None: a browser saves a Word document rather than showing it */
+                            view: null;
+                        })[];
                     };
                 };
             };

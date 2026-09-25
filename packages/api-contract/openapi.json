@@ -7240,7 +7240,7 @@
                       "type": "string",
                       "minLength": 1
                     },
-                    "description": "The formats to publish, each once; `pdf` is the only one until a layout declares another"
+                    "description": "The formats to publish, each once: `pdf`, `docx`, or both, where the document's layout makes them. A format it does not make is refused by name, and one without `pdf` where the document cites a page"
                   }
                 },
                 "required": [
@@ -7381,7 +7381,7 @@
             }
           },
           "400": {
-            "description": "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language",
+            "description": "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for",
             "content": {
               "application/json": {
                 "schema": {
@@ -10498,38 +10498,54 @@
                       }
                     },
                     "engine": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string",
-                          "const": "typst"
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "const": "typst"
+                            },
+                            "version": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "version"
+                          ]
                         },
-                        "version": {
-                          "type": "string"
+                        {
+                          "type": "null"
                         }
-                      },
-                      "required": [
-                        "name",
-                        "version"
-                      ]
+                      ],
+                      "description": "The PDF's engine; none where the publication has no PDF"
                     },
                     "template": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string",
-                          "const": "publication"
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "const": "publication"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "version"
+                          ]
                         },
-                        "version": {
-                          "type": "integer",
-                          "minimum": -9007199254740991,
-                          "maximum": 9007199254740991
+                        {
+                          "type": "null"
                         }
-                      },
-                      "required": [
-                        "name",
-                        "version"
-                      ]
+                      ],
+                      "description": "The PDF's template; none where the publication has no PDF"
                     },
                     "pipeline": {
                       "type": "string"
@@ -10537,42 +10553,165 @@
                     "outputs": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "format": {
-                            "type": "string",
-                            "const": "pdf"
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "format": {
+                                "type": "string",
+                                "const": "pdf"
+                              },
+                              "bytes": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "sha256": {
+                                "type": "string"
+                              },
+                              "standard": {
+                                "type": "string",
+                                "const": "ua-1"
+                              },
+                              "producer": {
+                                "type": "string",
+                                "const": "typst"
+                              },
+                              "producerVersion": {
+                                "type": "string",
+                                "description": "The template version it was set by"
+                              },
+                              "report": {
+                                "type": "array",
+                                "prefixItems": [],
+                                "items": false,
+                                "maxItems": 0
+                              },
+                              "download": {
+                                "type": "string",
+                                "description": "A link to the bytes, valid for five minutes, named by the publication id and format"
+                              },
+                              "view": {
+                                "type": "string",
+                                "description": "A link to the same bytes, valid for five minutes, that a browser shows rather than saves"
+                              }
+                            },
+                            "required": [
+                              "format",
+                              "bytes",
+                              "sha256",
+                              "standard",
+                              "producer",
+                              "producerVersion",
+                              "report",
+                              "download",
+                              "view"
+                            ]
                           },
-                          "bytes": {
-                            "type": "integer",
-                            "minimum": -9007199254740991,
-                            "maximum": 9007199254740991
-                          },
-                          "sha256": {
-                            "type": "string"
-                          },
-                          "standard": {
-                            "type": "string",
-                            "const": "ua-1"
-                          },
-                          "download": {
-                            "type": "string",
-                            "description": "A link to the bytes, valid for five minutes, named by the publication id"
-                          },
-                          "view": {
-                            "type": "string",
-                            "description": "A link to the same bytes, valid for five minutes, that a browser shows rather than saves"
+                          {
+                            "type": "object",
+                            "properties": {
+                              "format": {
+                                "type": "string",
+                                "const": "docx"
+                              },
+                              "bytes": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "sha256": {
+                                "type": "string"
+                              },
+                              "standard": {
+                                "type": "null"
+                              },
+                              "producer": {
+                                "type": "string",
+                                "const": "word"
+                              },
+                              "producerVersion": {
+                                "type": "string",
+                                "description": "The Word writer's version, as `word/1`"
+                              },
+                              "report": {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "face_substituted"
+                                        },
+                                        "family": {
+                                          "type": "string",
+                                          "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} ._-]{0,62}$"
+                                        },
+                                        "wordFamily": {
+                                          "type": "string",
+                                          "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} ._-]{0,62}$"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "family",
+                                        "wordFamily"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "no_page_cited_output"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "pages_cite_the_pdf"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "description": "What Word could not carry: a face it set in another, that page numbers cite the PDF, that it carries no page-cited output"
+                              },
+                              "download": {
+                                "type": "string",
+                                "description": "A link to the bytes, valid for five minutes, named by the publication id and format"
+                              },
+                              "view": {
+                                "type": "null",
+                                "description": "None: a browser saves a Word document rather than showing it"
+                              }
+                            },
+                            "required": [
+                              "format",
+                              "bytes",
+                              "sha256",
+                              "standard",
+                              "producer",
+                              "producerVersion",
+                              "report",
+                              "download",
+                              "view"
+                            ]
                           }
-                        },
-                        "required": [
-                          "format",
-                          "bytes",
-                          "sha256",
-                          "standard",
-                          "download",
-                          "view"
                         ]
-                      }
+                      },
+                      "description": "One per format, the PDF first"
                     }
                   },
                   "required": [

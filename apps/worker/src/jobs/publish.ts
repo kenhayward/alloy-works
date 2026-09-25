@@ -184,14 +184,22 @@ export function publishJob(deps: {
         .withTenant(tenant, (trx) =>
           recordPublication(trx, {
             requestId: request.id,
-            engineVersion,
-            templateVersion: template.version,
             pipelineVersion: PIPELINE_VERSION[schema],
             // `compile` re-hashed the faces against these very pins before Typst ran.
             fonts: PINNED_FONT_FILES.map(({ file, sha256 }) => ({ file, sha256 })),
             dataSha256: createHash('sha256').update(data).digest('hex'),
             numbering: assembled.numbering,
-            output: { key: stored.key, sha256: stored.sha256, bytes: stored.size },
+            // The PDF, the one output this job makes until it is told the formats (Word 1, task 5).
+            outputs: [
+              {
+                format: 'pdf',
+                engineVersion,
+                templateVersion: template.version,
+                key: stored.key,
+                sha256: stored.sha256,
+                bytes: stored.size,
+              },
+            ],
           }),
         )
         .catch((error: unknown) => {

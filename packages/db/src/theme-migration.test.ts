@@ -147,17 +147,20 @@ describe('migration 0024, which gives every environment its default theme', () =
   /** What a worker records for a request made under a layout, over an output the store need not hold. */
   const recording = (tenant: Tenant, requestId: string) => ({
     requestId,
-    engineVersion: '0.15.1',
-    templateVersion: 2,
     pipelineVersion: '2',
     fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
     dataSha256: 'b'.repeat(64),
     numbering: { scheme: defaultNumberingScheme.id, entries: [] },
-    output: {
-      key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
-      sha256: 'c'.repeat(64),
-      bytes: 1000,
-    },
+    outputs: [
+      {
+        format: 'pdf' as const,
+        engineVersion: '0.15.1',
+        templateVersion: 2,
+        key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
+        sha256: 'c'.repeat(64),
+        bytes: 1000,
+      },
+    ],
   });
 
   /** A request inserted as the runtime role may insert one at 0023: under the declared layout. */
@@ -180,14 +183,16 @@ describe('migration 0024, which gives every environment its default theme', () =
   /**
    * A publication written row by row as the runtime role, the way `recordPublication` writes one, with
    * the theme columns named only where given - so it runs on a tenant at 0023, where they do not exist,
-   * and can be rigged on one after it. Marks the request done, and is checked when its transaction
-   * commits.
+   * and can be rigged on one after it - and its output's producer and report only where `produced`
+   * says the tenant is past 0027, which added them. Marks the request done, and is checked when its
+   * transaction commits.
    */
   const publicationRows = async (
     trx: TenantTransaction,
     tenant: Tenant,
     request: string,
     theme?: { readonly id: string | null; readonly version: string | null },
+    produced = false,
   ) => {
     const row = await sql<{
       document_id: string;
@@ -218,15 +223,18 @@ describe('migration 0024, which gives every environment its default theme', () =
               values (${values}
                 ${row.layout_id}, ${row.layout_version_id}, ${artifact}, ${request},
                 ${row.document_id}, ${row.document_version_id}, ${row.requested_by},
-                ${row.requested_at}, 'none', array['pdf'], 'typst', ${made.engineVersion},
+                ${row.requested_at}, 'none', array['pdf'], 'typst', ${made.outputs[0]!.engineVersion},
                 'publication', 2, ${made.pipelineVersion}, ${JSON.stringify(made.fonts)},
                 ${made.dataSha256}, ${JSON.stringify(made.numbering)})`.execute(trx);
     await sql`insert into publication_input (publication_id, version_id, node)
               values (${artifact}, ${row.document_version_id}, null)`.execute(trx);
-    await sql`insert into publication_output (publication_id, format, object_key, sha256, bytes, standard)
-              values (${artifact}, 'pdf', ${made.output.key}, ${made.output.sha256}, 1000, 'ua-1')`.execute(
-      trx,
-    );
+    const [outputColumns, outputValues] = produced
+      ? [sql`, producer, producer_version, report`, sql`, 'typst', '2', '[]'`]
+      : [sql``, sql``];
+    await sql`insert into publication_output (publication_id, format, object_key, sha256, bytes,
+                standard ${outputColumns})
+              values (${artifact}, 'pdf', ${made.outputs[0]!.key}, ${made.outputs[0]!.sha256}, 1000,
+                'ua-1' ${outputValues})`.execute(trx);
     await sql`update publication_request set state = 'done', finished_at = now()
               where id = ${request}`.execute(trx);
     return artifact;
@@ -265,6 +273,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0024_themes',
       '0025_table_and_image_styles',
       '0026_word',
+      '0027_word_layout_and_outputs',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -367,8 +376,8 @@ describe('migration 0024, which gives every environment its default theme', () =
     await service.withTenant(tenant, (trx) =>
       recordPublication(trx, {
         ...recording(tenant, request),
-        templateVersion: 1,
         pipelineVersion: '1',
+        outputs: [{ ...recording(tenant, request).outputs[0]!, templateVersion: 1 }],
       }),
     );
     expect(await themesOf(tenant)).toEqual([
@@ -420,20 +429,23 @@ describe('migration 0024, which gives every environment its default theme', () =
           theme: { ...declared.content, paper: '#fafafa' },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        await publicationRows(trx, tenant, request, {
-          id: DEFAULT_THEME_ID,
-          version: next.version.id,
-        });
+        await publicationRows(
+          trx,
+          tenant,
+          request,
+          { id: DEFAULT_THEME_ID, version: next.version.id },
+          true,
+        );
       }),
     ).rejects.toThrow(/recorded whole/);
     await expect(
       service.withTenant(tenant, (trx) =>
-        publicationRows(trx, tenant, request, { id: null, version: null }),
+        publicationRows(trx, tenant, request, { id: null, version: null }, true),
       ),
     ).rejects.toThrow(/recorded whole/);
     await expect(
       service.withTenant(tenant, (trx) =>
-        publicationRows(trx, tenant, request, { id: DEFAULT_THEME_ID, version: null }),
+        publicationRows(trx, tenant, request, { id: DEFAULT_THEME_ID, version: null }, true),
       ),
     ).rejects.toThrow(/publication_theme/);
 
@@ -858,7 +870,10 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       return { version: made.version, waiting: answer.request.id };
     });
 
-    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual(['0026_word']);
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0026_word',
+      '0027_word_layout_and_outputs',
+    ]);
 
     // The theme is at 0.3, under its fixed identifier, unauthored, on top of 0.2; and it binds the
     // catalogues 0.2 bound, which are as they were.
@@ -913,7 +928,10 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
     );
     if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
 
-    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual(['0026_word']);
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0026_word',
+      '0027_word_layout_and_outputs',
+    ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
       expect.any(String),
@@ -946,6 +964,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0025_table_and_image_styles',
       '0026_word',
+      '0027_word_layout_and_outputs',
     ]);
 
     const chain = await themeChain(tenant);
