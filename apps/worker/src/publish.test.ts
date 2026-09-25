@@ -31,17 +31,20 @@ import {
   assemble,
   blockIdentifierFrom,
   DRAFT_NOTICE,
+  OUTPUT_CONTENT_TYPES,
   type ContentDocument,
   type OutlineDocument,
   type OutlineNode,
 } from '@alloy-works/domain';
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
+import { strFromU8, unzipSync } from 'fflate';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, loadPinnedFonts, PINNED_FONT_FILES, type PinnedFonts } from './fonts.js';
 import { publishJob } from './jobs/publish.js';
 import { PUBLICATION_TEMPLATE } from './template.js';
+import { checkOoxml } from './testing/ooxml.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
 import { checkPdfUa1, type VeraPdfVerdict } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath, type Typst } from './typst.js';
@@ -189,14 +192,17 @@ describe('publishing a document, from the request to the stored PDF', () => {
     children: [],
   });
 
-  /** Ada asks to publish a document of these nodes; answers the request's id. */
-  const requested = (nodes: (trx: TenantTransaction) => Promise<OutlineNode[]>) =>
+  /** Ada asks to publish a document of these nodes, as a PDF unless told; answers the request's id. */
+  const requested = (
+    nodes: (trx: TenantTransaction) => Promise<OutlineNode[]>,
+    formats: string[] = ['pdf'],
+  ) =>
     service.withTenant(tenant, async (trx) => {
       const version = await documentWith(trx, await nodes(trx));
       const answer = await requestPublication(trx, {
         documentId: version.artifactId,
         version: version.id,
-        formats: ['pdf'],
+        formats,
         requester: ada,
       });
       if (answer.answer !== 'requested') throw new Error(answer.answer);
@@ -742,6 +748,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(await work()).toBe('done');
     const row = await publicationOf(id);
     const again = assemble({
+      formats: ['pdf'],
       outline: inputs!.outline,
       occurrences: new Map([...inputs!.occurrences].map(([node, each]) => [node, each.content])),
       refused: inputs!.refused,
@@ -765,6 +772,305 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(row!.bytes).toBe(stored.length);
     expect(bytes.equals(stored)).toBe(true);
   });
+
+  /** Every output a request's publication records, the PDF first, with the publication's own fields. */
+  const outputsOf = (requestId: string) =>
+    service.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('publication as p')
+        .innerJoin('publication_output as o', 'o.publication_id', 'p.id')
+        .select([
+          'p.formats',
+          'p.engine',
+          'p.engine_version',
+          'p.template',
+          'p.template_version',
+          'p.pipeline_version',
+          'p.data_sha256',
+          'o.format',
+          'o.standard',
+          'o.producer',
+          'o.producer_version',
+          'o.report',
+          'o.object_key',
+          'o.sha256',
+          'o.bytes',
+        ])
+        .where('p.request_id', '=', requestId)
+        // `pdf` sorts after `docx`, so descending puts the PDF first.
+        .orderBy('o.format', 'desc')
+        .execute(),
+    );
+
+  /** The job, given a store that notes the content type each object was kept as. */
+  const noting = (kept: Map<string, string>) => ({
+    publish: publishJob({
+      db: worker,
+      stores: {
+        forTenant: async (trx, owner) => {
+          const store = await stores.forTenant(trx, owner);
+          return {
+            ...store,
+            put: async (body, contentType) => {
+              const object = await store.put(body, contentType);
+              kept.set(object.key, contentType);
+              return object;
+            },
+          };
+        },
+      },
+      typst,
+      fonts,
+    }),
+  });
+
+  /** A document of one chapter holding a component of two paragraphs, for Word and the PDF alike. */
+  const plain = async (trx: TenantTransaction) => [
+    section('Introduction', [
+      reference(
+        await component(trx, general, 'Calibration', [
+          'Set the tray before every run.',
+          'Grace checks the readings.',
+        ]),
+      ),
+    ]),
+  ];
+
+  /** A stored `.docx`, held to its record and read back: its document part, and the SDK's verdict. */
+  const readDocx = async (output: { object_key: string; sha256: string; bytes: number }) => {
+    const bytes = await pdfOf(output.object_key);
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(output.sha256);
+    expect(bytes.length).toBe(output.bytes);
+    const document = strFromU8(unzipSync(new Uint8Array(bytes))['word/document.xml']!);
+    return { document, errors: await checkOoxml(new Uint8Array(bytes)) };
+  };
+
+  it('publishes to Word alone: a .docx the Open XML SDK finds nothing wrong with, recorded by its writer with its report, and no PDF engine', async () => {
+    const kept = new Map<string, string>();
+    const id = await requested(plain, ['docx']);
+    expect(await work({ handlers: noting(kept) })).toBe('done');
+    const outputs = await outputsOf(id);
+    expect(outputs).toHaveLength(1);
+    const [docx] = outputs;
+    expect(docx).toMatchObject({
+      formats: ['docx'],
+      // Nothing ran Typst, so the publication names no engine and no template.
+      engine: null,
+      engine_version: null,
+      template: null,
+      template_version: null,
+      pipeline_version: '13',
+      format: 'docx',
+      standard: null,
+      producer: 'word',
+      producer_version: 'word/1',
+      report: [{ kind: 'no_page_cited_output' }, { kind: 'pages_cite_the_pdf' }],
+    });
+    // Kept once, as a Word document.
+    expect([...kept]).toEqual([[docx!.object_key, OUTPUT_CONTENT_TYPES.docx]]);
+    const read = await readDocx(docx!);
+    expect(read.errors).toEqual([]);
+    expect(read.document).toContain('Set the tray before every run.');
+    expect(read.document).toContain('Grace checks the readings.');
+    expect(await requestRow(id)).toMatchObject({ state: 'done', failures: [] });
+  }, 120_000);
+
+  it('publishes to the PDF and Word from one assembly, the PDF byte for byte what the PDF alone is made of', async () => {
+    const kept = new Map<string, string>();
+    const id = await requested(plain, ['pdf', 'docx']);
+    const inputs = await service.withTenant(tenant, (trx) => publicationInputs(trx, id));
+    expect(await work({ handlers: noting(kept) })).toBe('done');
+    const [pdf, docx, ...rest] = await outputsOf(id);
+    expect(rest).toEqual([]);
+    expect(pdf).toMatchObject({
+      formats: ['pdf', 'docx'],
+      engine: 'typst',
+      engine_version: '0.15.1',
+      template: 'publication',
+      template_version: 13,
+      pipeline_version: '13',
+      format: 'pdf',
+      standard: 'ua-1',
+      producer: 'typst',
+      producer_version: '13',
+      report: [],
+    });
+    // Beside a PDF, the Word document's pages are cited in the PDF, and it says so; nothing else.
+    expect(docx).toMatchObject({
+      format: 'docx',
+      standard: null,
+      producer: 'word',
+      producer_version: 'word/1',
+      report: [{ kind: 'pages_cite_the_pdf' }],
+    });
+    expect(kept.get(pdf!.object_key)).toBe(OUTPUT_CONTENT_TYPES.pdf);
+    expect(kept.get(docx!.object_key)).toBe(OUTPUT_CONTENT_TYPES.docx);
+    expect((await readDocx(docx!)).errors).toEqual([]);
+
+    // The PDF is what the PDF alone makes of the same inputs: the same data, compiled to the same bytes.
+    const alone = assemble({
+      formats: ['pdf'],
+      outline: inputs!.outline,
+      occurrences: new Map([...inputs!.occurrences].map(([node, each]) => [node, each.content])),
+      refused: inputs!.refused,
+      layout: inputs!.layout?.layout ?? null,
+      theme: inputs!.theme?.theme ?? null,
+      revision: inputs!.revision,
+      covers: fonts.covers,
+      assets: inputs!.assets,
+    });
+    if (!alone.ok) throw new Error('did not assemble');
+    const data = JSON.stringify(alone.document);
+    expect(pdf!.data_sha256).toBe(createHash('sha256').update(data).digest('hex'));
+    const compiled = await typst.compile(
+      PUBLICATION_TEMPLATE[13].file,
+      data,
+      inputs!.request.requestedAt,
+    );
+    expect(compiled.equals(await pdfOf(pdf!.object_key))).toBe(true);
+  }, 120_000);
+
+  it('records neither output when the store keeps the PDF and will not take the Word document, and fails the request at the store stage', async () => {
+    const id = await requested(plain, ['pdf', 'docx']);
+    const before = await publicationCount();
+    const wordless: ObjectStores = {
+      forTenant: async (trx, owner) => {
+        const store = await stores.forTenant(trx, owner);
+        return {
+          ...store,
+          put: async (body, contentType) => {
+            if (contentType === OUTPUT_CONTENT_TYPES.docx) throw new Error('the store is full');
+            return store.put(body, contentType);
+          },
+        };
+      },
+    };
+    const broken = { publish: publishJob({ db: worker, stores: wordless, typst, fonts }) };
+    for (const outcome of ['retry', 'retry', 'failed']) {
+      expect(await work({ handlers: broken, queue: eager() })).toBe(outcome);
+    }
+    expect(await jobOf(id)).toEqual({ attempts: 3, last_error: 'store_failed' });
+    expect(await requestRow(id)).toMatchObject({
+      state: 'failed',
+      failures: [{ stage: 'store', code: 'store_failed', node: null, block: null, detail: null }],
+    });
+    expect(await outputsOf(id)).toEqual([]);
+    expect(await publicationCount()).toBe(before);
+  }, 120_000);
+
+  it('publishes to the PDF alone as it did before Word: one output, by Typst under its template, with nothing to report', async () => {
+    const { request } = await published();
+    expect(await outputsOf(request)).toEqual([
+      expect.objectContaining({
+        formats: ['pdf'],
+        format: 'pdf',
+        standard: 'ua-1',
+        producer: 'typst',
+        producer_version: '13',
+        report: [],
+      }),
+    ]);
+  });
+
+  it('PUB-074 refuses Word alone where a page is cited, and otherwise records on the Word document that it carries no page-cited output', async () => {
+    // A page cited: refused at the request, before anything is queued or recorded.
+    const refused = await service.withTenant(tenant, async (trx) => {
+      const scope = section('Scope', []);
+      const citing = await component(
+        trx,
+        general,
+        'Calibration',
+        [],
+        [
+          {
+            type: 'paragraph',
+            id: 'p1',
+            style: 'body',
+            content: [
+              { type: 'text', value: 'See ', marks: [] },
+              {
+                type: 'crossReference',
+                id: 'r1',
+                target: { kind: 'node', node: scope.id },
+                display: 'page',
+              },
+            ],
+          },
+        ],
+      );
+      const version = await documentWith(trx, [scope, reference(citing)]);
+      return requestPublication(trx, {
+        documentId: version.artifactId,
+        version: version.id,
+        formats: ['docx'],
+        requester: ada,
+      });
+    });
+    expect(refused).toEqual({ answer: 'page_reference.without_pdf' });
+
+    // None cited: published, and the Word document's record says it carries no page a reader could
+    // cite - which a Word document beside the PDF does not say, since the PDF carries them.
+    const alone = await requested(plain, ['docx']);
+    const both = await requested(plain, ['pdf', 'docx']);
+    expect(await work()).toBe('done');
+    expect(await work()).toBe('done');
+    const reportOf = async (id: string) =>
+      (await outputsOf(id)).find((each) => each.format === 'docx')!.report;
+    expect(await reportOf(alone)).toContainEqual({ kind: 'no_page_cited_output' });
+    expect(await reportOf(both)).not.toContainEqual({ kind: 'no_page_cited_output' });
+  }, 120_000);
+
+  it('refuses a list for the PDF and Word by name, as Word cannot carry one yet, records nothing, and publishes it as a PDF alone', async () => {
+    const kept = new Map<string, string>();
+    const listed = (trx: TenantTransaction) =>
+      component(
+        trx,
+        general,
+        'Steps',
+        ['Before the steps.'],
+        [
+          {
+            type: 'list',
+            id: 'l1',
+            kind: 'unordered',
+            items: [
+              {
+                content: [
+                  {
+                    type: 'paragraph',
+                    id: 'i1',
+                    style: 'body',
+                    content: [{ type: 'text', value: 'Set the tray.', marks: [] }],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      ).then((holder) => [reference(holder)]);
+    const before = await publicationCount();
+    const both = await requested(listed, ['pdf', 'docx']);
+    expect(await work({ handlers: noting(kept) })).toBe('failed');
+    const row = await requestRow(both);
+    expect(row.state).toBe('failed');
+    expect(row.failures).toEqual([
+      {
+        stage: 'compose',
+        code: 'word_not_yet',
+        node: expect.any(String),
+        block: 'l1',
+        detail: 'list',
+      },
+    ]);
+    // Refused before either output was made: nothing kept, nothing recorded.
+    expect(kept.size).toBe(0);
+    expect(await outputsOf(both)).toEqual([]);
+    expect(await publicationCount()).toBe(before);
+
+    const pdf = await requested(listed);
+    expect(await work()).toBe('done');
+    expect((await outputsOf(pdf)).map((each) => each.format)).toEqual(['pdf']);
+  }, 120_000);
 });
 
 describe('publishing a request made before layouts', () => {
@@ -905,6 +1211,7 @@ describe('publishing a request made before layouts', () => {
       });
       // What Typst read was slice 1's `publishing/1`, under the default numbering and the draft notice.
       const slice1 = assemble({
+        formats: ['pdf'],
         outline: inputs!.outline,
         occurrences: new Map(),
         refused: [],

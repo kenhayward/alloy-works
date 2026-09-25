@@ -61,6 +61,7 @@ const readings = {
 };
 
 const inputOf = (content: unknown[]): AssembleInput => ({
+  formats: ['pdf'],
   outline: parseOutlineDocument({
     schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The station readings',

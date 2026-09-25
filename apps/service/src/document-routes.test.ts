@@ -50,6 +50,7 @@ interface DocumentBody {
     language: string;
     scheme: Record<string, unknown>;
     words: Record<string, unknown>;
+    formats: string[];
   };
 }
 
@@ -267,6 +268,9 @@ describe('documents through the service', () => {
       // What a relative cross-reference prints for above and below (cross-references 2, ruling R9),
       // beside the rest of the layout's own words.
       words: declared.layout.words,
+      // What a publish may ask for, the PDF first: the default layout's 0.6 makes Word too (Word 1,
+      // ruling R14), so the page offers the choice.
+      formats: ['pdf', 'docx'],
     };
     expect(document.layout).toEqual(expected);
     // Every answer carrying the outline carries it, so the page never has to ask a second route.

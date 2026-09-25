@@ -67,6 +67,8 @@ export {
   FIRST_DEFAULT_CATALOGUES_BY_VERSION,
   FIRST_DEFAULT_CATALOGUE_VERSIONS,
   FIRST_DEFAULT_THEME,
+  SECOND_DEFAULT_THEME,
+  SECOND_DEFAULT_THEME_VERSION,
 } from './default.js';
 
 export { projectTypst, projectTypst12 } from './typst.js';
@@ -84,5 +86,6 @@ export type {
 } from './typst.js';
 export { projectCss } from './css.js';
 export { markStyleId, projectStylesXml } from './ooxml.js';
+export type { WordDocument, WordStylesOptions } from './ooxml.js';
 export { runFormat, wordRun } from './runs.js';
 export type { RunFormat, WordRun } from './runs.js';

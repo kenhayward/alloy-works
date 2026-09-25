@@ -1,7 +1,8 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { failureWords, isProductsOwn, type Failure } from './failures.js';
+import { formatsWords } from './formats.js';
 import { Waiting } from '../states/Waiting.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -26,7 +27,18 @@ interface Listed {
   readonly version: { readonly number: string };
   readonly publisher: { readonly displayName: string | null };
   readonly publishedAt: string;
+  readonly formats: readonly string[];
 }
+
+/**
+ * What an author may ask a publish for where the layout makes Word (Word 1, ruling R14): the PDF,
+ * which is chosen until they choose otherwise, Word, or both - each asked for PDF first.
+ */
+const CHOICES = [
+  { formats: ['pdf'], words: 'PDF' },
+  { formats: ['docx'], words: 'Word' },
+  { formats: ['pdf', 'docx'], words: 'PDF and Word' },
+] as const;
 
 type Publish =
   | { readonly state: 'idle' }
@@ -75,6 +87,9 @@ function listedIn(value: unknown): Listed[] | undefined {
                 typeof item.publisher.displayName === 'string' ? item.publisher.displayName : null,
             },
             publishedAt: item.publishedAt,
+            formats: Array.isArray(item.formats)
+              ? item.formats.filter((format): format is string => typeof format === 'string')
+              : [],
           },
         ]
       : [],
@@ -97,9 +112,11 @@ function failedIntro(failures: readonly Failure[]): string {
 }
 
 /**
- * A document's publications, and - for somebody who may publish it - **Publish as PDF**: the version
- * on screen, asked for, then followed through its request until it is made or every failure is known,
- * each named by its place in the outline (`placeOf`). Nothing is heard from the stream (issue #147,
+ * A document's publications, and - for somebody who may publish it - **Publish as PDF**, or, where the
+ * layout makes Word, a choice of PDF, Word or both before it (PDF until the author chooses otherwise,
+ * native radio buttons, so the arrow keys move along them): the version on screen, asked for, then
+ * followed through its request until it is made or every failure is known, each named by its place in
+ * the outline (`placeOf`). Nothing is heard from the stream (issue #147,
  * decision G): the request is asked about while this page is open - a second after it is made, then
  * twice as long after each answer that it is still waiting, up to half a minute - and only by the
  * person who asked. Its live region is polite and has no `status` role: the page around it has one already
@@ -119,6 +136,7 @@ export function Publishing({
   mayPublish,
   placeOf,
   followMs = FOLLOW_MS,
+  formats = ['pdf'],
 }: {
   readonly client: Client;
   readonly document: string;
@@ -127,7 +145,12 @@ export function Publishing({
   readonly placeOf: (node: string) => string;
   /** Given in tests, which need not wait a second. */
   readonly followMs?: number;
+  /** The formats the layout a publish would be made under makes: the PDF alone unless it says Word. */
+  readonly formats?: readonly string[];
 }) {
+  const offersWord = formats.includes('docx');
+  const [chosen, setChosen] = useState<(typeof CHOICES)[number]>(CHOICES[0]);
+  const choiceId = useId();
   const [listed, setListed] = useState<Listed[] | 'failed' | null>(null);
   const [listAttempt, setListAttempt] = useState(0);
   const [publish, setPublish] = useState<Publish>({ state: 'idle' });
@@ -193,7 +216,8 @@ export function Publishing({
     try {
       const { data, error, response } = await client.POST('/v1/documents/{id}/publications', {
         params: { path: { id: document } },
-        body: { version, formats: ['pdf'] },
+        // What the author chose, or the PDF where there was nothing to choose.
+        body: { version, formats: offersWord ? [...chosen.formats] : ['pdf'] },
       });
       if (!mounted.current) return;
       if (isRecord(data) && typeof data.id === 'string') {
@@ -225,6 +249,24 @@ export function Publishing({
   return (
     <section aria-labelledby="publications-title">
       <h3 id="publications-title">Publications</h3>
+      {mayPublish && offersWord && (
+        <div role="radiogroup" aria-labelledby={`${choiceId}-label`}>
+          <span id={`${choiceId}-label`}>Publish as</span>
+          {CHOICES.map((choice) => (
+            <label key={choice.words}>
+              {' '}
+              <input
+                type="radio"
+                name={`${choiceId}-formats`}
+                checked={chosen === choice}
+                disabled={publish.state === 'working'}
+                onChange={() => setChosen(choice)}
+              />{' '}
+              {choice.words}
+            </label>
+          ))}
+        </div>
+      )}
       {mayPublish && (
         <p>
           <button
@@ -233,7 +275,7 @@ export function Publishing({
             disabled={publish.state === 'working'}
             onClick={() => void start()}
           >
-            Publish as PDF
+            Publish as {offersWord ? chosen.words : 'PDF'}
           </button>
         </p>
       )}
@@ -281,7 +323,7 @@ export function Publishing({
                 Version {each.version.number}, published by{' '}
                 {each.publisher.displayName ?? 'somebody'} on {when(each.publishedAt)}
               </a>{' '}
-              (not approved)
+              ({each.formats.length > 0 && `${formatsWords(each.formats)}, `}not approved)
             </li>
           ))}
         </ul>

@@ -787,17 +787,20 @@ describe('a document in the version chain, and its outline edited a version at a
         if (asked.answer !== 'requested') throw new Error(asked.answer);
         const made = await recordPublication(trx, {
           requestId: asked.request.id,
-          engineVersion: '0.15.1',
-          templateVersion: 5,
           pipelineVersion: '5',
           fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
           dataSha256: 'b'.repeat(64),
           numbering: { scheme: defaultNumberingScheme.id, entries: [] },
-          output: {
-            key: `${production.role}/sha256/${'c'.repeat(64)}`,
-            sha256: 'c'.repeat(64),
-            bytes: 1000,
-          },
+          outputs: [
+            {
+              format: 'pdf' as const,
+              engineVersion: '0.15.1',
+              templateVersion: 5,
+              key: `${production.role}/sha256/${'c'.repeat(64)}`,
+              sha256: 'c'.repeat(64),
+              bytes: 1000,
+            },
+          ],
         });
         if (!made) throw new Error('Expected a publication');
       }

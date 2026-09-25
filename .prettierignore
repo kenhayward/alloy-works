@@ -38,3 +38,7 @@ docs/trace/
 # The interface screens, exported from a design canvas and kept exactly as drawn: formatting their
 # HTML could change the whitespace a browser renders, and the PNG beside each is a picture of it.
 docs/interface/screens/
+
+# The Word validator's NuGet lock file, written by `dotnet restore` and checked by the image's
+# locked-mode restore; it is NuGet's to format, not Prettier's.
+apps/worker/tools/ooxml-check/packages.lock.json

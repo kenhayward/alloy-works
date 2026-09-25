@@ -36,6 +36,53 @@ const INLINES: Readonly<Record<string, string>> = {
 };
 
 /**
+ * What `word_not_yet` names (Word 1, ruling R3): a block or an inline the Word writer does not write
+ * yet, by its stored type - an equation is one word whether it stands alone or in a line - and a list
+ * after the contents by its sequence. Each later slice of Word output takes its own off this list.
+ */
+const NOT_YET_IN_WORD: Readonly<Record<string, string>> = {
+  list: 'A list',
+  blockquote: 'A quotation',
+  preformatted: 'Preformatted text',
+  table: 'A table',
+  figure: 'A figure',
+  equation: 'An equation',
+  image: 'An image in a line of text',
+  footnote: 'A footnote',
+  crossReference: 'A cross-reference',
+  'listOf:figure': 'The list of figures after the contents',
+  'listOf:table': 'The list of tables after the contents',
+  'listOf:equation': 'The list of equations after the contents',
+};
+
+/**
+ * What `numbering_not_in_word` names (Word 1, ruling R7): `detail` is `section:<matter>:<why>`, the
+ * matter whose headings the layout numbers and what in its rule Word would number otherwise.
+ */
+const NUMBERED_IN: Readonly<Record<string, string>> = {
+  front: 'the headings in front matter',
+  body: 'the headings in the body',
+  appendix: 'the headings in the appendices',
+};
+const NOT_IN_WORD_BECAUSE: Readonly<Record<string, string>> = {
+  separator: 'its separator holds a % sign, which Word reads as a number',
+  letters: 'a number in letters goes past z, which Word writes differently',
+  roman: 'a number in roman numerals goes past 3999',
+  depth: 'a heading is numbered more than nine levels deep, and Word numbers nine',
+};
+
+/** The sentence for `numbering_not_in_word`: the layout's to change, and the PDF can be made. */
+function notInWord(detail: string | null): string {
+  const [, matter = '', why = ''] = (detail ?? '').split(':');
+  const where = NUMBERED_IN[matter] ?? 'the headings';
+  const because = NOT_IN_WORD_BECAUSE[why];
+  return (
+    `The layout numbers ${where} in a way Word cannot${because === undefined ? '' : `: ${because}`}. ` +
+    'Publish this document as a PDF only, or under a layout Word can number.'
+  );
+}
+
+/**
  * What `equation_unrenderable` names of the construct an equation held that the converter refused
  * (`REFUSAL_NAMES`, `assemble.ts`), in words - never the equation's text, its values or its elements,
  * which `detail` never carries either (R5). `mathvariant`, `element` and `attribute` each name part of
@@ -126,10 +173,16 @@ export function failureWords(failure: Failure): string {
     case 'style_not_applicable':
       return `This paragraph, table or figure uses the style ${failure.detail ?? ''}, which cannot be used where it stands.`;
     // Themes 1 (STY-042): the theme records each typeface's licence, and this one's forbids embedding
-    // it in a PDF. Nothing in the document caused it and another attempt fails the same way, so it
-    // blames the theme, as `layout_glyph_missing` blames the layout, and never says to publish again.
-    case 'typeface_not_embeddable':
-      return `The typeface ${failure.detail ?? ''} cannot be embedded in a PDF: its licence does not permit it. The publication's theme has to change before this document can be published.`;
+    // it in a PDF, or since Word 1 in a Word document. Nothing in the document caused it and another
+    // attempt fails the same way, so it blames the theme, as `layout_glyph_missing` blames the layout,
+    // and never says to publish again. `detail` is the family, and where Word refused it the family
+    // and the format, `<family>: docx` (the final review of Word 1, M6).
+    case 'typeface_not_embeddable': {
+      const detail = failure.detail ?? '';
+      const word = detail.endsWith(': docx');
+      const family = word ? detail.slice(0, -': docx'.length) : detail;
+      return `The typeface ${family} cannot be embedded in ${word ? 'a Word document' : 'a PDF'}: its licence does not permit it. The publication's theme has to change before this document can be published.`;
+    }
     // Themes 1 (ruling R5): the theme names a typeface by its files' hashes, and the worker holds only
     // the faces pinned in its image, so a face it does not hold cannot set a word. As the licence's
     // refusal, it is the theme's to change, and another attempt finds the same faces. `detail` is the
@@ -242,6 +295,18 @@ export function failureWords(failure: Failure): string {
         FORMS[failure.detail ?? ''] ??
         'A cross-reference asks for a form of its target that cannot be shown.'
       );
+    // Word 1's ruling R3: nothing in the document is wrong, and the PDF can be made of it, so the
+    // sentence says so rather than asking for a change or another attempt.
+    case 'word_not_yet':
+      return `${NOT_YET_IN_WORD[failure.detail ?? ''] ?? 'Something here'} cannot be published in Word yet. Publish this document as a PDF only.`;
+    // Refused when the request is made (PUB-014), so met only by a request built past that check: the
+    // layout's to change, as its words are.
+    case 'format_unsupported':
+      return "This publication's layout has no page for Word, so it cannot be published in Word. Publish it as a PDF, or under a layout with a Word page.";
+    // Word 1's ruling R7: nothing in the document is wrong; the layout's scheme asks Word for a number
+    // it would print differently from the PDF's.
+    case 'numbering_not_in_word':
+      return notInWord(failure.detail);
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

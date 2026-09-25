@@ -94,6 +94,7 @@ const content = [
 
 const compile = async (blocks: unknown[] = content, language = 'en-GB') => {
   const assembled = assemble({
+    formats: ['pdf'],
     outline: parseOutlineDocument({
       schemaVersion: OUTLINE_SCHEMA_VERSION,
       title: 'The station report',

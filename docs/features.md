@@ -12,7 +12,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > of figures and tables and numbered pages that carries all of that formatting.
 > Footnotes, a table's note, cross-references and equations are written and published, and every
 > publication is set from the environment's theme and records it, its tables and images from the
-> theme's table and image styles.
+> theme's table and image styles. A document of paragraphs can be published to Word as well, or
+> instead, as a Word document in the theme's styles with its headings numbered by Word.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -365,9 +366,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   one is shown and not changed, with a sentence saying why - and a document's own title, language and
   direction cannot be changed once it is made.
 
-- **Publishing a document as a PDF.** Somebody who may publish a document - the Publisher role, which
-  Ada and Grace hold on General in development - has **Publish as PDF** beneath its outline, and a
-  second or two later the page says it is published. The publication is a tagged PDF of the version on
+- **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
+  Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath
+  its outline, and before it a choice of **PDF**, **Word** or **PDF and Word**, PDF unless they choose
+  otherwise, the button's name following the choice; a second or two later the page says it is
+  published. A PDF publication is a tagged PDF of the version on
   the page: its title, its sections numbered as the outline shows them and bookmarked, and each
   component's paragraphs, lists, quotations and preformatted text beneath its heading, set from the
   environment's **theme** - Liberation Serif, with inline code and preformatted text in Liberation
@@ -455,10 +458,36 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   theme records wrongly, or which cannot set equations. The last two are the theme's to change, and
   publishing again will not help. The default refuses none of these.
 
+  **Publishing to Word.** Choose **Word**, or **PDF and Word**, and the publication holds a Word
+  document, made from the same version at the same time as its PDF, which a recipient can edit and
+  restyle as their own. Its paragraphs are in the theme's styles, as real Word styles - change
+  **Heading 1** in Word and every level-one heading follows - and its headings are numbered by Word,
+  from the layout's numbering, so moving one renumbers the rest; a heading holds only its title. It
+  opens with the cover, then the contents as Word's own table of contents, whose page numbers Word
+  fills in when it opens, once the reader agrees to update the document; every page carries **Not approved** at its head
+  and, after the cover, the running head and foot, the part named by the heading the page is in; front matter is
+  numbered i, ii, the body from 1 and the appendices carrying on. Strong, emphasis, underline,
+  subscript, superscript, inline code and quoted phrases are carried, links can be followed, and every
+  passage in another language is marked as that language, right to left where it reads that way. The
+  Liberation typefaces are embedded, so it looks the same on a machine that does not have them.
+  Word lays out its own pages, so its page numbers can differ from the PDF's, and **a page number
+  cited from a publication is always the PDF's**: each Word document comes with a note saying so, on
+  the publication's page, and a document that refers to a page cannot be published to Word alone.
+  The note also names any typeface Word shows in another, and says when a publication has no PDF.
+  The publication's page offers each file to download, **Download the PDF** and **Download the Word
+  document**, and shows the PDF in the page; a Word document is only downloaded. **Only paragraphs,
+  headings and the page reach Word so far**: a document holding a list, a quotation, preformatted text, a
+  table, a figure, an image in a line of text, a footnote, a cross-reference or an equation is
+  refused for Word, naming each one and where
+  it stands, and can still be published as a PDF alone. So can a layout whose numbering Word would
+  count differently - letters past _z_, say - which the default's does not. The Word documents the
+  product's tests make are checked against the file format's own rules, and opened in Word itself
+  before any change to how Word documents are written lands.
+
   **A document is published only under a layout written in its own language.** Where the two do not
   agree the page says so, naming both, before anything is queued; an English layout publishes an
-  `en-GB` document as well as an `en` one. Asking for a format the layout does not make - Word, today
-  - is refused the same way.
+  `en-GB` document as well as an `en` one. Asking for a format the layout does not make is refused
+  the same way; the default layout makes both.
 
   **Four things about formatting in a PDF, said plainly rather than left to be found.** Inline code
   prints in Liberation Mono, the fixed-width typeface preformatted text uses, and a screen reader is
@@ -572,8 +601,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the most a publication can set.
   No publication has a list of equations yet, since the one layout lists only figures and tables;
   nothing chooses, makes or edits a layout or a theme, and there is only ever the one of each the
-  environment started with, and no style to choose for a paragraph; and there is no Word
-  file, no preview, and no way to approve a publication. The page asks how a publish is going for as
+  environment started with, and no style to choose for a paragraph; and there is no preview, and no
+  way to approve a publication. The page asks how a publish is going for as
   long as it stays open, and a download link lasts five minutes from when the publication's page was
   opened. In the desktop app, downloading has not been checked.
 
@@ -589,7 +618,8 @@ Named explicitly so nobody has to read the source to find out:
   citation. A paste from outside the product keeps no footnote, image or equation, reads Markdown only when **Paste as
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
   published PDF of a document's paragraphs, lists, quotations, preformatted text, tables, figures,
-  images in a line of text, footnotes, cross-references and equations. The one sample document is a fixed template with
+  images in a line of text, footnotes, cross-references and equations, and a published Word document
+  of its paragraphs and headings. The one sample document is a fixed template with
   no content of yours in it.
 - No way to make, change or choose between component types: every environment has one, named Topic, and
   nothing yet lets an administrator add another or change which is the default.
@@ -599,8 +629,10 @@ Named explicitly so nobody has to read the source to find out:
   make a figure or a table unnumbered: every one takes a number.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
   quotations, preformatted text, tables and their notes, figures, images in a line of text,
-  footnotes, cross-references and equations: no definition-list structure of PDF's own, no list of equations under the one layout, no
-  Word, no preview, and no way to approve a
+  footnotes, cross-references and equations, and a Word document of its formatted paragraphs and
+  headings: no definition-list structure of PDF's own, no list of equations under the one layout, no
+  list, quotation, preformatted text, table, figure, image, footnote, cross-reference or equation in
+  Word yet, no preview, and no way to approve a
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,
   and every document publishes under it.

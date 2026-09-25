@@ -1,5 +1,11 @@
 export { assemble, publishedImagePath } from './assemble.js';
-export type { Assembled, AssembleInput, PublishingAsset } from './assemble.js';
+export type {
+  Assembled,
+  AssembleInput,
+  PublishingAsset,
+  WordImage,
+  WordInput,
+} from './assemble.js';
 export { publishFailureCodes } from './failures.js';
 export type { PublishFailure, PublishFailureCode, PublishStage } from './failures.js';
 // The question the worker's pinned fonts answer, asked of one family at a time (editor 5), by the
@@ -33,6 +39,7 @@ export {
   SECOND_DEFAULT_LAYOUT,
   THIRD_DEFAULT_LAYOUT,
   FOURTH_DEFAULT_LAYOUT,
+  FIFTH_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
   LISTED_SEQUENCES,
   layoutMigrationChain,
@@ -45,15 +52,28 @@ export {
   unsupportedFormats,
 } from './layout.js';
 export type {
+  DocxFormat,
   Layout,
   Layout2,
   Layout3,
+  Layout4,
   LayoutField,
   LayoutList,
   LayoutReadOutcome,
+  PageFormat,
   PdfFormat,
+  PublishingFormat,
   SlotPart,
 } from './layout.js';
+// Word 1 (ruling R13): what each output's report can say, closed, which the store checks on the way in
+// and out, and the media type each format's bytes are kept and served as.
+export {
+  OUTPUT_CONTENT_TYPES,
+  OUTPUT_REPORT_KINDS,
+  outputReportSchema,
+  parseOutputReport,
+} from './outputs.js';
+export type { OutputReport, OutputReportEntry } from './outputs.js';
 export {
   DRAFT_NOTICE,
   PUBLISHING_SCHEMA,

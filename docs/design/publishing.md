@@ -40,9 +40,13 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 > theme: every publication is set from the environment's stored default theme and records it
 > (`publishing/12`, [themes 1](../plans/2026-09-24-themes-01-the-theme-in-the-pdf.md)), and its
 > tables and images from their table and image styles (`publishing/13`,
-> [themes 2](../plans/2026-09-24-themes-02-table-and-image-styles.md)). The defined
+> [themes 2](../plans/2026-09-24-themes-02-table-and-image-styles.md)). The first of slice 7's four
+> built Word: a publication may be a PDF, a Word document or both, from one `assemble`, each output
+> recorded with its producer and a report ([Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md),
+> [word-output.md](word-output.md#what-was-built)), and a document holding anything Word 1 does not
+> write is refused for Word by name. The defined
 > term, condition, suggestion and comment marks, a citation, a variable and a binding,
-> veraPDF on every publication, preview and Word are later slices'
+> veraPDF on every publication, preview and the rest of Word are later slices'
 > ([Build order](#build-order)); a block equation wider than its
 > line is still set past the page's edge ([Equations](#equations), its open item); and nothing
 > chooses or edits a layout or a theme yet. [`../architecture.md`](../architecture.md) describes what is built, and
@@ -167,7 +171,7 @@ or not T1's.
 | PUB-068, PUB-070 to PUB-072          | Typst overflows an unbreakable block silently. Detecting what cannot be laid out needs the template to measure and refuse, which is designed as a rule ([Failure](#failure-retry-and-what-an-author-sees)) and not as checks                           |
 | PUB-020                              | PDF/A is a layout member away, and not T1                                                                                                                                                                                                              |
 | CNT-150, CNT-096, CNT-151            | The warm range preview is shaped here and designed by its own slice. CNT-151 now measures from the save (finding 11), and CNT-150 asks for PDF alone                                                                                                   |
-| CNT-128                              | A hyperlink is a PDF link here; word-output.md does not design Word's                                                                                                                                                                                  |
+| CNT-128                              | A hyperlink is a PDF link here; word-output.md designs Word's and claims it                                                                                                                                                                            |
 | TPL-013, TPL-055                     | A required section and document-level fields need TPL's link from a document to its template, which does not exist (finding 5). TPL-030 repeated TPL-013 and is withdrawn                                                                              |
 | STR-030                              | REU's, T4                                                                                                                                                                                                                                              |
 
@@ -980,8 +984,15 @@ and B of the second slice). **Version 1, as built:**
 | `matter`   | `cover`, `contents` with a `depth` or none, and whether appendices start on a new page (PUB-088). No `lists`: nothing publishes a figure or a table yet, so every list would be empty. No approval page: PUB-089's is LIF's and T3's                                                                                                                                                                                    |
 | `formats`  | A member per supported format (PUB-014), each declared on its own (PUB-012). `pdf`: page size in the portrait sense, orientation, margins as top, bottom, inside and outside, and a gutter (PUB-007); running heads and feet as three slots of words and fields (PUB-008); page numbering per matter, each a format and whether it restarts (PUB-009). No `paged`: nothing reads it until a format without pages exists |
 
-`docx` is absent from the default layout until the Word slice, so asking for Word is refused
-`format_unsupported` until it can be answered.
+`docx` was absent from every layout until layout schema 5, so asking for Word was refused
+`format_unsupported` until it could be answered.
+
+**Layout schema 5 adds the Word page** (Word 1): `formats.docx`, optional, the `pdf` member's shape -
+the page, its orientation, margins and gutter, the running slots and each matter's page numbering - by
+the same rules, but no more than 22 inches (1584pt) each way, Word's own limit. A layout without it
+still refuses Word (PUB-014), and one read at schema 4 reads as having none. **The default layout's
+version 0.6** is 0.5 with a `docx` member copying its PDF page, inserted by migration 0027 only where
+the environment's layout is still 0025's own unauthored 0.5.
 
 **Layout schema 3 adds the words a relative cross-reference prints** (cross-references 2):
 `words.above` and `words.below`, both or neither, each held to showing something as the notice is. A
@@ -1218,10 +1229,27 @@ and a preview worker holds a handful. The slice sizes them and evicts the least 
 ## Word
 
 The Word writer ([word-output.md](word-output.md)) reads the same `PublishedDocument` and owns
-everything about its parts. This design gives it three things: the job runs it when `docx` is in the
-request's formats and the layout supports it; its output is a `publication_output` row like the PDF's;
-and a request without `pdf` is refused where any reference cites a page (PUB-074), because the PDF is
-the paged record (PUB-065).
+everything about its parts. This design gives it four things, each built by
+[Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md):
+
+- **One `assemble`, told the formats.** A request names `pdf`, `docx` or both, where the layout has a
+  page for each; the job calls `assemble` once with them, which says the PDF engine's own refusals only
+  where a PDF is asked for, refuses what the writer does not write yet by name (`word_not_yet`) and a
+  heading number Word would compute differently (`numbering_not_in_word`), and returns what the writer
+  needs beside the document - the layout's Word page, the resolved theme and the scheme - so the
+  published document is still `publishing/13` and a PDF made beside Word is byte for byte the PDF
+  made alone.
+- **The job makes every output asked for or none.** It compiles the PDF with Typst and writes the
+  `.docx` with the writer, reading the pinned face files by hash for it to embed, keeps each in the
+  store by its hash, and records all of them in one transaction.
+- **One `publication_output` row per format**, each saying what made it - `typst` and the template's
+  version, or `word` and `word/1` - with its own report, which is empty for a PDF and for Word says
+  which faces Word set in another face (STY-052), that no PDF stands beside it where none does
+  (PUB-074), and that a page number cited from the publication is the PDF's (PUB-065).
+- **A request without `pdf` is refused where anything the document holds cites a page**,
+  `page_reference_without_pdf`, at the door (PUB-074), because the PDF is the paged record (PUB-065).
+  Word 1 refuses every reference for Word by name anyway; the door's refusal is the one an author
+  meets first, and it says to add the PDF.
 
 ## Stores
 
@@ -1284,6 +1312,13 @@ what finishing never changes, and its commit-time rule gains one condition: the 
 version `is not distinct from` its request's, so a publication can neither name another layout nor
 drop the one it was made under.
 
+**As built, migration 0027 widens the record for Word** (Word 1). A request's and a publication's
+`formats` are `{pdf}`, `{docx}` or `{pdf, docx}`, spelled PDF first; a publication's engine and
+template are null exactly where it has no PDF; `publication_output` takes `docx`, with a null
+`standard`, and every output gains `producer`, `producer_version` and `report`, backfilled for the
+outputs already kept as Typst's under their publication's template; and the commit-time rule holds
+one output per format the publication names, where it held exactly one.
+
 ## Routes
 
 | Route                                  | Permission        | Does                                                                                                                           |
@@ -1295,7 +1330,7 @@ drop the one it was made under.
 | `GET /v1/publications`                 | Signed in         | Every publication the caller may read, of every document, newest first, filtered by the readable set; unpaged                  |
 | `GET /v1/publications/{id}`            | Read, artifact    | The record, and two signed links per output, valid five minutes: `download`, which saves it, and `view`, which a browser shows |
 
-`format_unsupported`, `layout_language` and `page_citation_without_pdf` are refused at the door, before
+`format_unsupported`, `layout_language` and `page_reference_without_pdf` are refused at the door, before
 anything is queued; everything else is the job's. A signed link's file name is the publication's id,
 never its title: the link's query string reaches the store's logs, and a title is content.
 
@@ -1776,9 +1811,14 @@ Each slice is a plan, lands into something that runs, and cites only what its te
 6. **Preview.** The whole-document preview (PUB-005, PUB-006), then the warm range preview as images
    (PUB-080), once the cadence question is answered.
 7. **Word.** word-output.md's writer in the job, `docx` in the default layout by a layout schema
-   version that reads one. Cites PUB-034, CNT-084, PUB-073, PUB-074 and **PUB-012**, all of which
-   need a second format to show: with one format there is nothing for a layout to differ about
-   (decision B of the second slice).
+   version that reads one, in four slices (WO-M). **Word 1 is built**
+   ([Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md)): layout schema 5 and the default
+   layout's 0.6, `assemble` told its formats, the writer, one output per format with its report, and
+   the job making them all or none. It cites PUB-034, CNT-084, PUB-074 and **PUB-012**, which needed a
+   second format to show: with one format there was nothing for a layout to differ about (decision B
+   of the second slice). PUB-073 waits for T3's baselines: its "one baseline" has nothing to name
+   yet. Word 2 to 4 carry the rest of the content (word-output.md,
+   [What was built](word-output.md#what-was-built)).
 
 **Claimed and cited by nothing yet**, each for a reason a test cannot get round: PUB-013 and STR-052
 need a baseline to pin into (T3); PUB-042 needs conditions to be anything but the identity (REU, T4);

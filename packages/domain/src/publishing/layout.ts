@@ -19,7 +19,7 @@ import { DRAFT_NOTICE } from './published.js';
  * The layout's stored shape (docs/design/publishing.md, "The layout"). A layout is an artifact kind
  * whose versions are insert-only, so **the shape is closed at its first version**: every object is
  * strict at every depth, and whatever this parse accepts a later reader must go on accepting. A member
- * nothing reads yet - `paged`, a `docx` format - is refused rather than stored, and arrives with the
+ * nothing reads yet - `paged`, an `html` format - is refused rather than stored, and arrives with the
  * schema version that reads it.
  *
  * **Version 2 added `matter.lists`** (tables 2): the generated lists of figures, tables and equations a
@@ -37,8 +37,16 @@ import { DRAFT_NOTICE } from './published.js';
  * as having none for version 3's reason: a migration cannot know another language's words. A table
  * style asking for a label under a layout with none fails the publish by name rather than printing
  * English.
+ *
+ * **Version 5 added `formats.docx`** (Word 1, ruling R4): the Word page - its size, orientation,
+ * margins and gutter, its running heads and feet, and each matter's page numbering - in the PDF
+ * page's shape and held to its rules, and free to differ from it (PUB-012). **Optional at every
+ * version**: a layout without one does not make Word, and a request for `docx` under it is refused
+ * (PUB-014). A layout stored at version 4 reads as one without, for version 2's reason: which page an
+ * author would give Word is not a migration's to guess. The PDF page stays required - every layout
+ * makes the PDF, the one output a page number cites (PUB-065).
  */
-export const LAYOUT_SCHEMA_VERSION = 4;
+export const LAYOUT_SCHEMA_VERSION = 5;
 
 /** The sequences a generated list can list: those a caption-bearing block takes (CNT-081, STR-041). */
 export const LISTED_SEQUENCES = ['figure', 'table', 'equation'] as const;
@@ -49,8 +57,14 @@ export interface LayoutList {
   title: string;
 }
 
-/** The formats a layout may declare a member for (PUB-012, PUB-014). Word arrives with its slice. */
-export const PUBLISHING_FORMATS = ['pdf'] as const;
+/**
+ * The formats a layout may declare a member for (PUB-012, PUB-014), in the order a request and a
+ * publication record them: the PDF first, then Word (Word 1, ruling R4).
+ */
+export const PUBLISHING_FORMATS = ['pdf', 'docx'] as const;
+
+/** One of the formats a publication can be made in. */
+export type PublishingFormat = (typeof PUBLISHING_FORMATS)[number];
 
 /** What a running head or foot can print besides words (PUB-008). */
 export type LayoutField = 'title' | 'section' | 'page' | 'pages' | 'revision';
@@ -58,7 +72,8 @@ export type LayoutField = 'title' | 'section' | 'page' | 'pages' | 'revision';
 /** One part of a running head or foot's slot: some of the layout's words, or a field. */
 export type SlotPart = { kind: 'words'; text: string } | { kind: 'field'; field: LayoutField };
 
-export interface PdfFormat {
+/** A paged format's page and its running matter: the PDF's, and since schema 5 Word's, one shape. */
+export interface PageFormat {
   /** In points, in the portrait sense - width never exceeds height - from 72 to 14400 each. */
   page: { width: number; height: number };
   /** Landscape turns the page; it is never said by swapping the dimensions. */
@@ -73,6 +88,12 @@ export interface PdfFormat {
   /** Per matter (PUB-009): how its pages are numbered, and whether it starts again at one. */
   pageNumbering: Record<OutlineMatter, { format: NumberFormat; restart: boolean }>;
 }
+
+/** The PDF's page, as the layout declares it. */
+export type PdfFormat = PageFormat;
+
+/** Word's page, as the layout declares it (schema 5): the PDF's shape, and free to differ from it. */
+export type DocxFormat = PageFormat;
 
 export interface Layout {
   schemaVersion: typeof LAYOUT_SCHEMA_VERSION;
@@ -102,8 +123,11 @@ export interface Layout {
     /** In the order they are set, after the contents; an empty list of one is not set (decision K). */
     lists: LayoutList[];
   };
-  /** One member per format it makes, each declared on its own (PUB-012, PUB-014). */
-  formats: { pdf: PdfFormat };
+  /**
+   * One member per format it makes, each declared on its own (PUB-012, PUB-014): always the PDF, and
+   * Word where the layout makes it.
+   */
+  formats: { pdf: PdfFormat; docx?: DocxFormat | undefined };
 }
 
 /** The most a layout's words or a slot's words may hold: a line, never a paragraph. */
@@ -164,32 +188,39 @@ const slots = z.tuple([slot, slot, slot]);
 const points = z.number().min(0);
 /** A page side, in points: from an inch to two hundred inches, the most a PDF page can be. */
 const pageSide = z.number().min(72).max(14400);
+// Word lays out no page past 22 inches either way, so its member is bounded there, not at 200.
+const wordPageSide = z
+  .number()
+  .min(72)
+  .max(1584, 'A Word page is at most 22 inches (1584pt) each way');
 const pageNumber = z.strictObject({ format: numberFormatSchema, restart: z.boolean() });
 
-const pdfFormatSchema = z
-  .strictObject({
-    page: z
-      .strictObject({ width: pageSide, height: pageSide })
-      .refine(
-        (page) => page.width <= page.height,
-        'A page is given in the portrait sense; landscape is its orientation',
-      ),
-    orientation: z.enum(['portrait', 'landscape']),
-    margins: z.strictObject({ top: points, bottom: points, inside: points, outside: points }),
-    gutter: points,
-    head: slots,
-    foot: slots,
-    pageNumbering: z.strictObject({ front: pageNumber, body: pageNumber, appendix: pageNumber }),
-  })
-  .refine((pdf) => {
-    const turned = pdf.orientation === 'landscape';
-    const across = turned ? pdf.page.height : pdf.page.width;
-    const down = turned ? pdf.page.width : pdf.page.height;
-    const { top, bottom, inside, outside } = pdf.margins;
-    return (
-      across - inside - pdf.gutter - outside >= LEAST_TEXT && down - top - bottom >= LEAST_TEXT
-    );
-  }, 'A page leaves at least an inch each way to set text in, inside its margins and gutter');
+/** A paged format's member - the PDF's, and Word's - held to one set of rules, with its sides. */
+const pageFormatSchema = (side: z.ZodNumber) =>
+  z
+    .strictObject({
+      page: z
+        .strictObject({ width: side, height: side })
+        .refine(
+          (page) => page.width <= page.height,
+          'A page is given in the portrait sense; landscape is its orientation',
+        ),
+      orientation: z.enum(['portrait', 'landscape']),
+      margins: z.strictObject({ top: points, bottom: points, inside: points, outside: points }),
+      gutter: points,
+      head: slots,
+      foot: slots,
+      pageNumbering: z.strictObject({ front: pageNumber, body: pageNumber, appendix: pageNumber }),
+    })
+    .refine((format) => {
+      const turned = format.orientation === 'landscape';
+      const across = turned ? format.page.height : format.page.width;
+      const down = turned ? format.page.width : format.page.height;
+      const { top, bottom, inside, outside } = format.margins;
+      return (
+        across - inside - format.gutter - outside >= LEAST_TEXT && down - top - bottom >= LEAST_TEXT
+      );
+    }, 'A page leaves at least an inch each way to set text in, inside its margins and gutter');
 
 /**
  * **A layout's words on their own** (`Layout['words']`): what the product sets itself, above and
@@ -247,7 +278,10 @@ const upgradedLayoutSchema: z.ZodType<Layout> = z
           'A layout lists each sequence once',
         ),
     }),
-    formats: z.strictObject({ pdf: pdfFormatSchema }),
+    formats: z.strictObject({
+      pdf: pageFormatSchema(pageSide),
+      docx: pageFormatSchema(wordPageSide).optional(),
+    }),
   })
   .refine(storableEverywhere, CANNOT_BE_STORED);
 
@@ -258,10 +292,13 @@ const upgradedLayoutSchema: z.ZodType<Layout> = z
 export const layoutSchema: z.ZodType<Layout> = upgradedLayoutSchema.refine(
   (layout) => layout.words.continued !== undefined,
   {
-    message: "A layout at schema version 4 gives the words a continued table's label adds",
+    message: "A layout from schema version 4 on gives the words a continued table's label adds",
     path: ['words', 'continued'],
   },
 );
+
+/** The version from which a layout is written with the words a continued table's label adds. */
+const CONTINUED_SINCE = 4;
 
 /** The one entry point for a layout at the current schema version, as it is written. */
 export function parseLayout(value: unknown): Layout {
@@ -269,15 +306,15 @@ export function parseLayout(value: unknown): Layout {
 }
 
 /**
- * A stored layout, migrated and parsed: held to `layoutSchema` where it was written at the current
- * version, and to what an older version reads as where it was written before, so a layout stored at
- * version 3 reads with no words for a continued table while one stored at 4 without them is refused.
- * Throws, as `parseLayout` does.
+ * A stored layout, migrated and parsed: held to `layoutSchema` where it was written at a version that
+ * required the words a continued table's label adds, and to what an older version reads as where it
+ * was written before, so a layout stored at version 3 reads with no words for a continued table while
+ * one stored at 4 or 5 without them is refused. Throws, as `parseLayout` does.
  */
 function parseStoredLayout(value: unknown): Layout {
   const migrated = migrateStored(value, layoutMigrationChain);
   const written = (value as { schemaVersion: unknown }).schemaVersion;
-  return written === LAYOUT_SCHEMA_VERSION
+  return typeof written === 'number' && written >= CONTINUED_SINCE
     ? parseLayout(migrated)
     : upgradedLayoutSchema.parse(migrated);
 }
@@ -297,6 +334,8 @@ export const layoutMigrationChain: MigrationChain = {
     2: (layout) => layout,
     // Version 3 had no words for a continued table, and reads as having none, for version 2's reason.
     3: (layout) => layout,
+    // Version 4 had no Word page, and reads as a layout that makes no Word, for version 2's reason.
+    4: (layout) => layout,
   },
 };
 
@@ -454,13 +493,38 @@ export const FOURTH_DEFAULT_LAYOUT: Layout3 = (() => {
 })();
 
 /**
- * The default layout as it stands, **version 0.5**: 0.4 with the words a continued table's label adds,
- * _(continued)_, in its language, English (themes 2, ruling R2), at schema version 4.
+ * A layout as schema version 4 stored it: words for a continued table, and no Word page. The shape of
+ * the default layout's 0.5 row, which is frozen at it.
+ */
+export type Layout4 = Omit<Layout, 'schemaVersion' | 'formats'> & {
+  schemaVersion: 4;
+  formats: { pdf: PdfFormat };
+};
+
+/**
+ * **The default layout's version 0.5, as migration 0025 stored it**: 0.4 with the words a continued
+ * table's label adds, _(continued)_, in its language, English (themes 2, ruling R2). Frozen, at schema
+ * 4, for 0.2's reason, and checked as 0.2 is to read through today's chain.
+ */
+export const FIFTH_DEFAULT_LAYOUT: Layout4 = (() => {
+  const layout: Layout4 = {
+    ...FOURTH_DEFAULT_LAYOUT,
+    schemaVersion: 4,
+    words: { ...FOURTH_DEFAULT_LAYOUT.words, continued: '(continued)' },
+  };
+  parseStoredLayout(layout);
+  return layout;
+})();
+
+/**
+ * The default layout as it stands, **version 0.6**: 0.5 with a Word page, the PDF page's values copied
+ * (Word 1, ruling R4) - A4, an inch margin, the same running matter and page numbering - at schema
+ * version 5. Copied, not shared: each is the layout's to change apart from the other (PUB-012).
  */
 export const defaultLayout: Layout = parseLayout({
-  ...FOURTH_DEFAULT_LAYOUT,
+  ...FIFTH_DEFAULT_LAYOUT,
   schemaVersion: LAYOUT_SCHEMA_VERSION,
-  words: { ...FOURTH_DEFAULT_LAYOUT.words, continued: '(continued)' },
+  formats: { pdf: defaultPdf, docx: defaultPdf },
 });
 
 /**

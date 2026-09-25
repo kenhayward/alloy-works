@@ -461,8 +461,26 @@ describe('the citations in the committed model', () => {
   // packages/db's documents.test.ts.
   // 316, from 317 (2026-09-25): the T1 audit's review takes IAM-039 off apps/service's
   // session-routes.test.ts until its wording is ruled on.
+  // 317, from 316 (2026-09-25): Word 1 cites PUB-027 in packages/domain's theme/ooxml.test.ts, where
+  // every paragraph and character style of the default theme is read back as a Word style under its
+  // catalogue identifier, every paragraph property stated.
+  // 318, from 317 (2026-09-25): Word 1 cites PUB-012 in packages/domain's publishing/layout.test.ts,
+  // where a layout whose Word page differs from its PDF page in size, orientation, margins, running
+  // matter and page numbering is read back with each page as written.
+  // 323, from 318 (2026-09-25): Word 1's writer cites PUB-024, CNT-128, PUB-034 with CNT-084, and
+  // STY-052 in packages/domain's word/write.test.ts, where every heading is numbered by a numbering
+  // definition and none by its text, a link is a w:hyperlink to an external relationship beside the
+  // PDF's link in apps/worker's marks.test.ts, the document's and each passage's language are read back
+  // beside the PDF's there too, and a face with a Word face is named by it and reported.
+  // 324, from 323 (2026-09-25): Word 1's job cites PUB-074 in apps/worker's publish.test.ts, where a
+  // Word-only request of a document citing a page is refused before anything is recorded, and one of a
+  // document citing none is published with its Word document's record saying it carries no page-cited
+  // output, which the same document beside a PDF does not say.
+  // 325, from 324 (2026-09-25): Word 1's Word check cites PUB-029 in apps/worker's
+  // word-check.test.ts, which opens the writer's fixtures in Word itself, updates their fields and
+  // reads back what Word shows; it runs only on Windows with ALLOY_WORD_CHECK=1, so CI skips it.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(316);
+    expect(model.citations).toHaveLength(325);
   });
 
   it('cites no identifier the corpus does not hold', () => {

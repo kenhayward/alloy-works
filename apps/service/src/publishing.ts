@@ -111,6 +111,13 @@ export function publishingHandlers(
             wireCode('format.unsupported'),
             `The layout this document is published under does not make ${answer.formats.join(', ')}.`,
           );
+        // Nothing of where it cites a page: the requester is told what to add, which answers it.
+        case 'page_reference.without_pdf':
+          throw new AppError(
+            400,
+            wireCode('page_reference.without_pdf'),
+            'This document refers to a page, and only the PDF has the pages it refers to. Publish it as a PDF as well.',
+          );
         case 'layout.language':
           throw new AppError(
             400,
@@ -167,8 +174,10 @@ export function publishingHandlers(
     /**
      * `read` was decided on the publication artifact itself, so a grant on its document reaches none
      * of it (decision D). A document's or a component's id authorises, and is then no publication. Each
-     * output's link is signed for five minutes and saves the bytes as `{id}.pdf`: never the title,
-     * because the link's query string reaches the store's logs.
+     * output's link is signed for five minutes and saves the bytes as `{id}.pdf` or `{id}.docx`: never
+     * the title, because the link's query string reaches the store's logs. Each is served as the type
+     * its bytes were kept as, its format's (`OUTPUT_CONTENT_TYPES`). Only the PDF has a link that shows
+     * it in place: a browser saves a Word document whatever the link says.
      */
     getPublication: async (
       request: FastifyRequest,
@@ -181,24 +190,42 @@ export function publishingHandlers(
       const store = await objects.forTenant(trx, tenantOf(request));
       return {
         ...summaryView(publication),
-        engine: { ...publication.engine },
-        template: { ...publication.template },
+        engine: publication.engine && { ...publication.engine },
+        template: publication.template && { ...publication.template },
         pipeline: publication.pipelineVersion,
         outputs: await Promise.all(
-          publication.outputs.map(async (output) => ({
-            format: output.format,
-            bytes: output.bytes,
-            sha256: output.sha256,
-            standard: output.standard,
-            download: await store.signedLink(
-              output.key,
-              DOWNLOAD_SECONDS,
-              `${publication.id}.${output.format}`,
-            ),
-            // Signed with no name, and so no `attachment`: stored as application/pdf, the bytes
-            // open in the browser's own viewer, which is how the publication page shows them.
-            view: await store.signedLink(output.key, DOWNLOAD_SECONDS),
-          })),
+          publication.outputs.map(async (output) => {
+            const common = {
+              bytes: output.bytes,
+              sha256: output.sha256,
+              producerVersion: output.producerVersion,
+              download: await store.signedLink(
+                output.key,
+                DOWNLOAD_SECONDS,
+                `${publication.id}.${output.format}`,
+              ),
+            };
+            return output.format === 'pdf'
+              ? {
+                  ...common,
+                  format: 'pdf' as const,
+                  standard: 'ua-1' as const,
+                  producer: 'typst' as const,
+                  report: [] as [],
+                  // Signed with no name, and so no `attachment`: stored as application/pdf, the
+                  // bytes open in the browser's own viewer, which is how the publication page shows
+                  // them.
+                  view: await store.signedLink(output.key, DOWNLOAD_SECONDS),
+                }
+              : {
+                  ...common,
+                  format: 'docx' as const,
+                  standard: null,
+                  producer: 'word' as const,
+                  report: output.report.map((entry) => ({ ...entry })),
+                  view: null,
+                };
+          }),
         ),
       };
     },

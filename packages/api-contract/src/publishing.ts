@@ -1,10 +1,10 @@
-import { publishFailureCodes } from '@alloy-works/domain';
+import { outputReportSchema, publishFailureCodes } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { DocumentParams } from './documents.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
-/** What publishing takes: the version the caller is looking at, and the formats, `pdf` alone for now. */
+/** What publishing takes: the version the caller is looking at, and the formats to make. */
 export const RequestPublicationBody = z.strictObject({
   version: LowercaseUuid.describe(
     'The document version the caller is publishing, which must be the latest',
@@ -18,7 +18,7 @@ export const RequestPublicationBody = z.strictObject({
       message: 'Name each format once',
     })
     .describe(
-      'The formats to publish, each once; `pdf` is the only one until a layout declares another',
+      "The formats to publish, each once: `pdf`, `docx`, or both, where the document's layout makes them. A format it does not make is refused by name, and one without `pdf` where the document cites a page",
     ),
 });
 export type RequestPublicationBody = z.infer<typeof RequestPublicationBody>;
@@ -69,26 +69,55 @@ export type PublicationSummary = z.infer<typeof PublicationSummary>;
 export const PublicationList = z.object({ items: z.array(PublicationSummary) });
 export type PublicationList = z.infer<typeof PublicationList>;
 
-export const PublicationView = PublicationSummary.extend({
-  engine: z.object({ name: z.literal('typst'), version: z.string() }),
-  template: z.object({ name: z.literal('publication'), version: z.number().int() }),
-  pipeline: z.string(),
-  outputs: z.array(
-    z.object({
-      format: z.literal('pdf'),
-      bytes: z.number().int(),
-      sha256: z.string(),
-      standard: z.literal('ua-1'),
-      download: z
-        .string()
-        .describe('A link to the bytes, valid for five minutes, named by the publication id'),
-      view: z
-        .string()
-        .describe(
-          'A link to the same bytes, valid for five minutes, that a browser shows rather than saves',
-        ),
-    }),
+const download = z
+  .string()
+  .describe('A link to the bytes, valid for five minutes, named by the publication id and format');
+
+/** A PDF: PDF/UA-1, made by Typst under the publication's template, with nothing to report. */
+const PdfOutputView = z.object({
+  format: z.literal('pdf'),
+  bytes: z.number().int(),
+  sha256: z.string(),
+  standard: z.literal('ua-1'),
+  producer: z.literal('typst'),
+  producerVersion: z.string().describe('The template version it was set by'),
+  report: z.tuple([]),
+  download,
+  view: z
+    .string()
+    .describe(
+      'A link to the same bytes, valid for five minutes, that a browser shows rather than saves',
+    ),
+});
+
+/** A Word document: no PDF standard, made by the Word writer, and what it could not carry. */
+const DocxOutputView = z.object({
+  format: z.literal('docx'),
+  bytes: z.number().int(),
+  sha256: z.string(),
+  standard: z.null(),
+  producer: z.literal('word'),
+  producerVersion: z.string().describe("The Word writer's version, as `word/1`"),
+  report: outputReportSchema.describe(
+    'What Word could not carry: a face it set in another, that page numbers cite the PDF, that it carries no page-cited output',
   ),
+  download,
+  view: z.null().describe('None: a browser saves a Word document rather than showing it'),
+});
+
+export const PublicationView = PublicationSummary.extend({
+  engine: z
+    .object({ name: z.literal('typst'), version: z.string() })
+    .nullable()
+    .describe("The PDF's engine; none where the publication has no PDF"),
+  template: z
+    .object({ name: z.literal('publication'), version: z.number().int() })
+    .nullable()
+    .describe("The PDF's template; none where the publication has no PDF"),
+  pipeline: z.string(),
+  outputs: z
+    .array(z.discriminatedUnion('format', [PdfOutputView, DocxOutputView]))
+    .describe('One per format, the PDF first'),
 });
 export type PublicationView = z.infer<typeof PublicationView>;
 
@@ -116,7 +145,7 @@ export const publishingRoutes = {
       },
       400: {
         description:
-          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language",
+          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for",
         schema: ErrorBody,
       },
       401: unauthenticated,

@@ -2479,6 +2479,8 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
+                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            formats: string[];
                         };
                     };
                 };
@@ -3221,6 +3223,8 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
+                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            formats: string[];
                         };
                     };
                 };
@@ -3280,6 +3284,8 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
+                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                formats: string[];
                             };
                         };
                         /** @description outline_invalid: why the operation does not apply */
@@ -3396,6 +3402,8 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
+                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                formats: string[];
                             };
                         };
                         /** @description outline_invalid: why the operation does not apply */
@@ -3553,7 +3561,7 @@ export interface operations {
                 "application/json": {
                     /** @description The document version the caller is publishing, which must be the latest */
                     version: string & (unknown & unknown);
-                    /** @description The formats to publish, each once; `pdf` is the only one until a layout declares another */
+                    /** @description The formats to publish, each once: `pdf`, `docx`, or both, where the document's layout makes them. A format it does not make is refused by name, and one without `pdf` where the document cites a page */
                     formats: string[];
                 };
             };
@@ -3574,7 +3582,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "engine_failed" | "store_failed";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "engine_failed" | "store_failed";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -3587,7 +3595,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language */
+            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4800,7 +4808,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "engine_failed" | "store_failed";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "engine_failed" | "store_failed";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -4984,29 +4992,65 @@ export interface operations {
                          */
                         approval: "none";
                         formats: string[];
+                        /** @description The PDF's engine; none where the publication has no PDF */
                         engine: {
                             /** @constant */
                             name: "typst";
                             version: string;
-                        };
+                        } | null;
+                        /** @description The PDF's template; none where the publication has no PDF */
                         template: {
                             /** @constant */
                             name: "publication";
                             version: number;
-                        };
+                        } | null;
                         pipeline: string;
-                        outputs: {
+                        /** @description One per format, the PDF first */
+                        outputs: ({
                             /** @constant */
                             format: "pdf";
                             bytes: number;
                             sha256: string;
                             /** @constant */
                             standard: "ua-1";
-                            /** @description A link to the bytes, valid for five minutes, named by the publication id */
+                            /** @constant */
+                            producer: "typst";
+                            /** @description The template version it was set by */
+                            producerVersion: string;
+                            report: [
+                            ];
+                            /** @description A link to the bytes, valid for five minutes, named by the publication id and format */
                             download: string;
                             /** @description A link to the same bytes, valid for five minutes, that a browser shows rather than saves */
                             view: string;
-                        }[];
+                        } | {
+                            /** @constant */
+                            format: "docx";
+                            bytes: number;
+                            sha256: string;
+                            standard: null;
+                            /** @constant */
+                            producer: "word";
+                            /** @description The Word writer's version, as `word/1` */
+                            producerVersion: string;
+                            /** @description What Word could not carry: a face it set in another, that page numbers cite the PDF, that it carries no page-cited output */
+                            report: ({
+                                /** @constant */
+                                kind: "face_substituted";
+                                family: string;
+                                wordFamily: string;
+                            } | {
+                                /** @constant */
+                                kind: "no_page_cited_output";
+                            } | {
+                                /** @constant */
+                                kind: "pages_cite_the_pdf";
+                            })[];
+                            /** @description A link to the bytes, valid for five minutes, named by the publication id and format */
+                            download: string;
+                            /** @description None: a browser saves a Word document rather than showing it */
+                            view: null;
+                        })[];
                     };
                 };
             };
@@ -6286,6 +6330,8 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
+                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            formats: string[];
                         };
                     };
                 };

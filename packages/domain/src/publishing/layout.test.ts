@@ -7,11 +7,13 @@ import { canonicaliseVersionContent } from '../version/substance.js';
 
 import {
   defaultLayout,
+  FIFTH_DEFAULT_LAYOUT,
   FIRST_DEFAULT_LAYOUT,
   FOURTH_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
   layoutWordsSchema,
   parseLayout,
+  PUBLISHING_FORMATS,
   readLayout,
   SECOND_DEFAULT_LAYOUT,
   speaksFor,
@@ -25,6 +27,7 @@ import { DRAFT_NOTICE } from './published.js';
 const copy = (): Layout => JSON.parse(JSON.stringify(defaultLayout)) as Layout;
 
 const pdfOf = (layout: Layout) => layout.formats.pdf;
+const docxOf = (layout: Layout) => layout.formats.docx!;
 
 describe('a layout', () => {
   it('PUB-011 declares the scheme sections, figures, tables and equations are numbered by, and refuses a layout without one', () => {
@@ -44,8 +47,31 @@ describe('a layout', () => {
   });
 
   it('holds the default layout to its own schema', () => {
+    const page: Layout['formats']['pdf'] = {
+      page: { width: 595.28, height: 841.89 },
+      orientation: 'portrait',
+      margins: { top: 72, bottom: 72, inside: 72, outside: 72 },
+      gutter: 0,
+      head: [[{ kind: 'field', field: 'title' }], [], [{ kind: 'field', field: 'section' }]],
+      foot: [
+        [
+          { kind: 'words', text: 'Revision ' },
+          { kind: 'field', field: 'revision' },
+        ],
+        [],
+        [
+          { kind: 'words', text: 'Page ' },
+          { kind: 'field', field: 'page' },
+        ],
+      ],
+      pageNumbering: {
+        front: { format: 'lowerRoman', restart: true },
+        body: { format: 'decimal', restart: true },
+        appendix: { format: 'decimal', restart: false },
+      },
+    };
     const expected: Layout = {
-      schemaVersion: 4,
+      schemaVersion: 5,
       language: 'en',
       words: {
         contents: 'Contents',
@@ -68,33 +94,11 @@ describe('a layout', () => {
           { sequence: 'table', title: 'Tables' },
         ],
       },
-      formats: {
-        pdf: {
-          page: { width: 595.28, height: 841.89 },
-          orientation: 'portrait',
-          margins: { top: 72, bottom: 72, inside: 72, outside: 72 },
-          gutter: 0,
-          head: [[{ kind: 'field', field: 'title' }], [], [{ kind: 'field', field: 'section' }]],
-          foot: [
-            [
-              { kind: 'words', text: 'Revision ' },
-              { kind: 'field', field: 'revision' },
-            ],
-            [],
-            [
-              { kind: 'words', text: 'Page ' },
-              { kind: 'field', field: 'page' },
-            ],
-          ],
-          pageNumbering: {
-            front: { format: 'lowerRoman', restart: true },
-            body: { format: 'decimal', restart: true },
-            appendix: { format: 'decimal', restart: false },
-          },
-        },
-      },
+      // Version 0.6's Word page is its PDF page, copied (Word 1, ruling R4).
+      formats: { pdf: page, docx: page },
     };
-    expect(LAYOUT_SCHEMA_VERSION).toBe(4);
+    expect(LAYOUT_SCHEMA_VERSION).toBe(5);
+    expect(PUBLISHING_FORMATS).toEqual(['pdf', 'docx']);
     expect(defaultLayout).toEqual(expected);
     expect(parseLayout(defaultLayout)).toEqual(expected);
 
@@ -138,11 +142,132 @@ describe('a layout', () => {
   it("keeps the default layout's 0.4, as migration 0023 stored it at schema 3, and 0.5 is 0.4 with the words a continued table's label adds", () => {
     expect(FOURTH_DEFAULT_LAYOUT.schemaVersion).toBe(3);
     expect(FOURTH_DEFAULT_LAYOUT.words).not.toHaveProperty('continued');
-    expect(defaultLayout).toEqual({
+    expect(FIFTH_DEFAULT_LAYOUT).toEqual({
       ...FOURTH_DEFAULT_LAYOUT,
       schemaVersion: 4,
       words: { ...FOURTH_DEFAULT_LAYOUT.words, continued: '(continued)' },
     });
+  });
+
+  it("keeps the default layout's 0.5, as migration 0025 stored it at schema 4, and 0.6 is 0.5 with a Word page copying its PDF page", () => {
+    expect(FIFTH_DEFAULT_LAYOUT.schemaVersion).toBe(4);
+    expect(FIFTH_DEFAULT_LAYOUT.formats).not.toHaveProperty('docx');
+    expect(defaultLayout).toEqual({
+      ...FIFTH_DEFAULT_LAYOUT,
+      schemaVersion: 5,
+      formats: { pdf: FIFTH_DEFAULT_LAYOUT.formats.pdf, docx: FIFTH_DEFAULT_LAYOUT.formats.pdf },
+    });
+  });
+
+  it('reads a layout stored at schema version 4 as one that makes no Word document', () => {
+    // A migration cannot know the page an author would give Word, so it gives none: a request for
+    // `docx` under it is refused as a format the layout does not make (PUB-014).
+    const read = readLayout(JSON.parse(JSON.stringify(FIFTH_DEFAULT_LAYOUT)), {
+      artifact: 'layout-artifact',
+      version: 'layout-version',
+    });
+    if (!read.ok) throw new Error(read.failure);
+    expect(read.layout).toEqual({ ...FIFTH_DEFAULT_LAYOUT, schemaVersion: 5 });
+    expect(read.layout.formats).not.toHaveProperty('docx');
+    expect(unsupportedFormats(read.layout, ['pdf', 'docx'])).toEqual(['docx']);
+
+    // Stored at 4 without the words a continued table adds is still refused: 4 required them.
+    const without = JSON.parse(JSON.stringify(FIFTH_DEFAULT_LAYOUT)) as Layout;
+    delete without.words.continued;
+    const refused = readLayout(without, { artifact: 'layout-artifact', version: 'layout-version' });
+    expect(refused.ok === false && refused.failure).toMatch(/continued table/);
+  });
+
+  it('PUB-012 declares a Word page apart from its PDF page, each read back as its own', () => {
+    // A layout whose Word page is US Letter, turned, with other margins, running matter and page
+    // numbering than its PDF's A4: each format is laid out on its own terms.
+    const differs = copy();
+    differs.formats.docx = {
+      page: { width: 612, height: 792 },
+      orientation: 'landscape',
+      margins: { top: 54, bottom: 54, inside: 90, outside: 60 },
+      gutter: 18,
+      head: [[], [{ kind: 'field', field: 'title' }], []],
+      foot: [[], [], [{ kind: 'field', field: 'page' }]],
+      pageNumbering: {
+        front: { format: 'upperRoman', restart: true },
+        body: { format: 'decimal', restart: false },
+        appendix: { format: 'upperAlpha', restart: true },
+      },
+    };
+    const parsed = parseLayout(differs);
+    expect(parsed.formats.docx).toEqual(differs.formats.docx);
+    expect(parsed.formats.pdf).toEqual(defaultLayout.formats.pdf);
+    expect(parsed.formats.docx).not.toEqual(parsed.formats.pdf);
+
+    // And as stored: the version reads back with both pages as written.
+    const read = readLayout(JSON.parse(JSON.stringify(differs)), {
+      artifact: 'layout-artifact',
+      version: 'layout-version',
+    });
+    if (!read.ok) throw new Error(read.failure);
+    expect(read.layout.formats).toEqual({
+      pdf: defaultLayout.formats.pdf,
+      docx: differs.formats.docx,
+    });
+    expect(unsupportedFormats(read.layout, ['pdf', 'docx'])).toEqual([]);
+  });
+
+  it('makes Word only where it declares a Word page, and makes a PDF always', () => {
+    const pdfOnly = copy();
+    delete pdfOnly.formats.docx;
+    expect(parseLayout(pdfOnly).formats).toEqual({ pdf: defaultLayout.formats.pdf });
+    expect(unsupportedFormats(pdfOnly, ['docx'])).toEqual(['docx']);
+
+    const wordOnly = copy();
+    Reflect.deleteProperty(wordOnly.formats, 'pdf');
+    expect(() => parseLayout(wordOnly)).toThrow(/pdf/);
+  });
+
+  it('holds the Word page to the rules the PDF page is held to', () => {
+    const narrow = copy();
+    docxOf(narrow).margins = { top: 72, bottom: 72, inside: 270, outside: 270 };
+    expect(() => parseLayout(narrow)).toThrow(/an inch/);
+
+    const swapped = copy();
+    docxOf(swapped).page = { width: 841.89, height: 595.28 };
+    expect(() => parseLayout(swapped)).toThrow(/portrait sense/);
+
+    // Word lays out no page past 22 inches either way, so its page is bounded there, not at the
+    // PDF's 200 inches: 1584pt is read, 1585pt refused, naming the Word member.
+    const largest = copy();
+    docxOf(largest).page = { width: 1584, height: 1584 };
+    expect(parseLayout(largest).formats.docx!.page).toEqual({ width: 1584, height: 1584 });
+    for (const page of [
+      { width: 595.28, height: 1585 },
+      { width: 1585, height: 1585 },
+    ]) {
+      const huge = copy();
+      docxOf(huge).page = page;
+      expect(() => parseLayout(huge), JSON.stringify(page)).toThrow(/22 inches/);
+      expect(() => parseLayout(huge), JSON.stringify(page)).toThrow(/"docx",\s*"page"/);
+    }
+    // The PDF's page may still be that large.
+    const pdfLarge = copy();
+    pdfOf(pdfLarge).page = { width: 1585, height: 1585 };
+    pdfOf(pdfLarge).margins = { top: 72, bottom: 72, inside: 72, outside: 72 };
+    expect(parseLayout(pdfLarge).formats.pdf.page).toEqual({ width: 1585, height: 1585 });
+
+    const negativeGutter = copy();
+    docxOf(negativeGutter).gutter = -1;
+    expect(() => parseLayout(negativeGutter)).toThrow();
+
+    const crowded = copy();
+    docxOf(crowded).head[1] = Array.from({ length: 9 }, () => ({ kind: 'field', field: 'page' }));
+    expect(() => parseLayout(crowded)).toThrow();
+
+    const disallowed = copy();
+    docxOf(disallowed).foot[2][0] = { kind: 'words', text: 'Page\u{FEFF} ' };
+    expect(() => parseLayout(disallowed)).toThrow(/engine refuses/);
+
+    const unnumbered = copy();
+    Reflect.deleteProperty(docxOf(unnumbered).pageNumbering, 'appendix');
+    expect(() => parseLayout(unnumbered)).toThrow();
   });
 
   it('reads a layout stored at schema version 3 as one with no words for a continued table', () => {
@@ -153,7 +278,7 @@ describe('a layout', () => {
       version: 'layout-version',
     });
     if (!read.ok) throw new Error(read.failure);
-    expect(read.layout).toEqual({ ...FOURTH_DEFAULT_LAYOUT, schemaVersion: 4 });
+    expect(read.layout).toEqual({ ...FOURTH_DEFAULT_LAYOUT, schemaVersion: LAYOUT_SCHEMA_VERSION });
     expect(read.layout.words).not.toHaveProperty('continued');
   });
 
@@ -192,7 +317,7 @@ describe('a layout', () => {
         version: 'layout-version',
       });
       if (!read.ok) throw new Error(read.failure);
-      expect(read.layout).toEqual({ ...stored, schemaVersion: 4 });
+      expect(read.layout).toEqual({ ...stored, schemaVersion: LAYOUT_SCHEMA_VERSION });
       expect(read.layout.words).not.toHaveProperty('above');
       expect(read.layout.words).not.toHaveProperty('below');
       expect(read.layout.words).not.toHaveProperty('continued');
@@ -309,9 +434,13 @@ describe('a layout', () => {
     const lists = { ...copy(), lists: [] };
     expect(() => parseLayout(lists)).toThrow(/Unrecognized key/);
 
-    const docx = copy();
-    Object.assign(docx.formats, { docx: {} });
-    expect(() => parseLayout(docx)).toThrow(/Unrecognized key/);
+    const html = copy();
+    Object.assign(html.formats, { html: {} });
+    expect(() => parseLayout(html)).toThrow(/Unrecognized key/);
+
+    const empty = copy();
+    Object.assign(empty.formats, { docx: {} });
+    expect(() => parseLayout(empty)).toThrow();
 
     const paged = copy();
     Object.assign(pdfOf(paged), { paged: true });
@@ -342,6 +471,13 @@ describe('a layout', () => {
       ['front page numbering', (layout) => pdfOf(layout).pageNumbering.front],
       ['body page numbering', (layout) => pdfOf(layout).pageNumbering.body],
       ['appendix page numbering', (layout) => pdfOf(layout).pageNumbering.appendix],
+      ['docx', (layout) => docxOf(layout)],
+      ['the Word page', (layout) => docxOf(layout).page],
+      ['the Word margins', (layout) => docxOf(layout).margins],
+      ['a Word field part', (layout) => docxOf(layout).head[0][0]!],
+      ['a Word words part', (layout) => docxOf(layout).foot[0][0]!],
+      ['Word page numbering', (layout) => docxOf(layout).pageNumbering],
+      ['Word body page numbering', (layout) => docxOf(layout).pageNumbering.body],
     ];
     for (const [name, object] of objects) {
       const extended = copy();
@@ -495,12 +631,15 @@ describe('a layout', () => {
   });
 
   it('names the formats a layout does not make', () => {
-    expect(unsupportedFormats(defaultLayout, ['pdf', 'docx'])).toEqual(['docx']);
-    expect(unsupportedFormats(defaultLayout, ['pdf'])).toEqual([]);
-    expect(unsupportedFormats(defaultLayout, ['toString', 'docx', 'docx'])).toEqual([
+    expect(unsupportedFormats(defaultLayout, ['pdf', 'docx'])).toEqual([]);
+    expect(unsupportedFormats(defaultLayout, ['pdf', 'html'])).toEqual(['html']);
+    expect(unsupportedFormats(defaultLayout, ['toString', 'html', 'html'])).toEqual([
       'toString',
-      'docx',
+      'html',
     ]);
+    const pdfOnly = copy();
+    delete pdfOnly.formats.docx;
+    expect(unsupportedFormats(pdfOnly, ['pdf', 'docx', 'docx'])).toEqual(['docx']);
   });
 
   it("digests a layout version's content as canonical JSON", () => {

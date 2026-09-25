@@ -23,6 +23,12 @@
   box-shadow: var(--shadow-document);
 }
 
+/* Where a publication in Word alone has no page a browser could show. */
+.unshown {
+  margin: 0;
+  color: var(--muted);
+}
+
 .record {
   padding: var(--space-14) var(--space-16);
   border: 1px solid var(--border);

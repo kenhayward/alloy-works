@@ -175,18 +175,21 @@ describe('routes that check a permission', () => {
       if (asked.answer !== 'requested') throw new Error(`refused: ${asked.answer}`);
       const recorded = await recordPublication(trx, {
         requestId: asked.request.id,
-        engineVersion: '0.15.1',
         // Made under a layout, as every request since layouts is: template 2 and pipeline 2.
-        templateVersion: 2,
         pipelineVersion: '2',
         fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
         dataSha256: 'b'.repeat(64),
         numbering: { scheme: 'default/1', entries: [] },
-        output: {
-          key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
-          sha256: 'c'.repeat(64),
-          bytes: 1,
-        },
+        outputs: [
+          {
+            format: 'pdf' as const,
+            engineVersion: '0.15.1',
+            templateVersion: 2,
+            key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
+            sha256: 'c'.repeat(64),
+            bytes: 1,
+          },
+        ],
       });
       if (!recorded) throw new Error('The publication was not recorded');
       reportPublication = recorded;

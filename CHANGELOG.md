@@ -3,6 +3,49 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.70.0 - 2026-09-25 (PR #231)
+
+### Added
+
+- **A document can be published to Word.** Beside **Publish as PDF** on the document page there is now
+  a choice of **PDF**, **Word** or **PDF and Word**, the PDF unless you choose otherwise. A Word
+  document is made from the same version at the same moment as the PDF, and is one a recipient can
+  edit and restyle as their own:
+  - its paragraphs are in the theme's styles, as real Word styles, so changing **Heading 1** in Word
+    changes every level-one heading;
+  - its headings are numbered by Word, from the layout's numbering, so moving one renumbers the rest,
+    and a heading holds only its title;
+  - it opens with the cover, then the contents as Word's own table of contents, whose page numbers
+    Word fills in when the document opens and the reader agrees to update it;
+  - every page says **Not approved**, and every page after the cover carries the running head and
+    foot, numbered i, ii through the front matter, from 1 in the body and on through the appendices;
+  - strong, emphasis, underline, subscript, superscript, inline code, quoted phrases, links and each
+    passage's language are carried, right to left where a passage reads that way;
+  - the Liberation typefaces are embedded, so it looks the same on a machine without them.
+- **Each output of a publication is kept and offered on its own.** The publication's page offers
+  **Download the PDF** and **Download the Word document**, shows the PDF in the page, and names the Word
+  writer's version beside the typesetter's. The document's publications, and the Publications list,
+  say which formats each was made in.
+- **A Word document comes with a note of what it could not carry**, shown on the publication's page:
+  that Word lays out its own pages, so a page number cited from the publication is always the PDF's;
+  when there is no PDF beside it; and any typeface Word shows in another.
+- **Publishing refuses what Word cannot have yet, by name**, and the PDF is unaffected: a document
+  holding a list, a quotation, preformatted text, a table, a figure, an image in a line of text, a
+  footnote, a cross-reference or an equation is refused for Word, naming each one and where it
+  stands, and can still be published as a PDF alone. These arrive in Word in later releases. So is a
+  layout whose section numbering Word would count differently, such as letters past _z_, which the
+  default layout's is not; and a document that refers to a page cannot be published to Word alone,
+  since the page it means is the PDF's.
+
+### Changed
+
+- **The default layout has a Word page**, the same A4 page with an inch margin as its PDF, so every
+  environment can publish to Word; a publication already asked for under the earlier layout keeps it.
+- **The default theme names Cambria Math for equations in Word**, since Word cannot carry STIX Two
+  Math. Nothing sets an equation in Word yet, and the PDF is unchanged.
+- **Home says a document publishes as a PDF, a Word document or both**, and that a publication
+  downloads as either.
+
 ## 0.69.2 - 2026-09-25 (PR #230)
 
 ### Changed

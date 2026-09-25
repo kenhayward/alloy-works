@@ -120,6 +120,16 @@ export async function readPinnedFaces(directory: string): Promise<PinnedFace[]> 
 }
 
 /**
+ * Every pinned face's bytes by its hash, which is how a theme names each of its files: what the Word
+ * writer embeds from (Word 1, ruling R10). Read and checked as each compile reads them, so a face
+ * removed or altered under a running worker stops the Word document as it stops the PDF.
+ */
+export async function pinnedFacesByHash(directory: string): Promise<Map<string, Uint8Array>> {
+  const faces = await readPinnedFaces(directory);
+  return new Map(faces.map((face, index) => [PINNED_FONT_FILES[index]!.sha256, face.bytes]));
+}
+
+/**
  * The pinned faces, each checked against its hash, and the characters all of them can set. With no
  * fonts at all Typst 0.15.1 compiles, exits 0 and warns about nothing (issue #145), so an empty or
  * altered directory is refused here, before any compile, rather than noticed in a PDF with no text.

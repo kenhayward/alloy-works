@@ -108,7 +108,8 @@ describe('readTheme', () => {
     ).toEqual([
       { id: 'serif', licence: 'OFL-1.1', embedding: { pdf: true, word: true } },
       { id: 'mono', licence: 'OFL-1.1', embedding: { pdf: true, word: true } },
-      { id: 'maths', licence: 'OFL-1.1', embedding: { pdf: true, word: true } },
+      // Its outlines, not its licence, keep STIX Two Math out of a Word document (default.ts).
+      { id: 'maths', licence: 'OFL-1.1', embedding: { pdf: true, word: false } },
     ]);
 
     for (const member of ['licence', 'embedding']) {
@@ -252,6 +253,25 @@ describe('readTheme', () => {
       'typeface_missing',
       'typeface_missing',
       'typeface_missing',
+    ]);
+  });
+
+  it('refuses a typeface Word may not embed that declares no face for Word, naming it, and reads one that declares one', () => {
+    const inputs = defaultInputs();
+    inputs.theme.typefaces = inputs.theme.typefaces.map(({ wordFamily, ...face }) =>
+      face.id === 'maths'
+        ? { ...face, embedding: { pdf: true, word: false } }
+        : face.id === 'mono'
+          ? { ...face, embedding: { pdf: true, word: false }, wordFamily: 'Courier New' }
+          : { ...face, ...(wordFamily === undefined ? {} : { wordFamily }) },
+    );
+    const outcome = read(inputs);
+    expect(outcome.ok ? [] : outcome.refusals).toEqual([
+      {
+        code: 'typeface_word_face_missing',
+        message:
+          'The typeface maths (STIX Two Math) may not be embedded in a Word document and declares no face to set it in there',
+      },
     ]);
   });
 

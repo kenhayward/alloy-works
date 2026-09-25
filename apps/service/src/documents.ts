@@ -24,6 +24,7 @@ import {
   conditions,
   decide,
   number,
+  PUBLISHING_FORMATS,
   readOutline,
   resolve,
   walkOutline,
@@ -107,6 +108,8 @@ async function documentView(
       language: layout.layout.language,
       scheme: { ...layout.layout.scheme },
       words: { ...layout.layout.words },
+      // Every layout makes the PDF; Word only where it declares a Word page (Word 1, ruling R4).
+      formats: PUBLISHING_FORMATS.filter((format) => layout.layout.formats[format] !== undefined),
     },
   };
 }

@@ -41,6 +41,7 @@ export {
   requestPublication,
   resolveOccurrences,
   type NewPublication,
+  type NewPublicationOutput,
   type OccurrenceOutcome,
   type PublicationInputs,
   type PublicationRequestAnswer,

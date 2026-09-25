@@ -226,6 +226,7 @@ const compile = async (
   assets: readonly { version: string; bytes: Buffer; asset: PublishingAsset }[] = [],
 ) => {
   const assembled = assemble({
+    formats: ['pdf'],
     outline: parseOutlineDocument({
       schemaVersion: OUTLINE_SCHEMA_VERSION,
       title: 'The styles',

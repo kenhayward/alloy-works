@@ -47,6 +47,24 @@ describe('Home', () => {
     expect(within(publications).getByText('publication you may read')).toBeInTheDocument();
   });
 
+  it('says a document publishes to PDF and Word, and a publication downloads as either', async () => {
+    render(<Home client={service(everything)} />);
+
+    const documents = await screen.findByRole('link', { name: /^Documents/ });
+    expect(
+      within(documents).getByText('Publish as a tagged PDF, a Word document or both'),
+    ).toBeInTheDocument();
+    expect(within(documents).queryByText('Publish as a tagged PDF')).not.toBeInTheDocument();
+
+    const publications = screen.getByRole('link', { name: /^Publications/ });
+    expect(
+      within(publications).getByText('Download the PDF or the Word document'),
+    ).toBeInTheDocument();
+    expect(within(publications).queryByText('Download the PDF')).not.toBeInTheDocument();
+    // The totals arrive after the first render; waiting for one keeps React's update inside the test.
+    expect(await within(publications).findByText('1')).toBeInTheDocument();
+  });
+
   it('leaves a total off its card when it could not be read', async () => {
     render(
       <Home

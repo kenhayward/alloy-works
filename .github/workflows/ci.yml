@@ -69,6 +69,11 @@ jobs:
       - name: veraPDF
         run: pnpm --filter @alloy-works/worker fetch-verapdf
 
+      # The Word validator, built from digest-pinned .NET images and a locked Open XML SDK: the check
+      # every .docx a worker test makes answers to.
+      - name: Word validator
+        run: pnpm --filter @alloy-works/worker fetch-ooxml-check
+
       # ---------------------------------------------------------------------------------------
       # TEMPORARY: every check below is continue-on-error while the repo is finding its baseline.
       # The run reports results without blocking a merge.

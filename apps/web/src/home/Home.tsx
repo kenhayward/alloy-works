@@ -9,7 +9,8 @@ type Module = 'components' | 'documents' | 'publications';
 
 /**
  * Each module as its Home card says it: what it is for, and what can be done there today - the
- * drawing's words, less those for what is not built yet (interface slice 11).
+ * drawing's words, less those for what is not built yet (interface slice 11), and naming Word beside
+ * the PDF since Word 1, which the drawing, made before it, does not.
  */
 const CARDS: readonly {
   readonly module: Module;
@@ -34,7 +35,10 @@ const CARDS: readonly {
     name: 'Documents',
     href: '#/documents',
     about: 'Build an outline of sections and component references, and publish it.',
-    can: ['Restructure the outline, a version at a time', 'Publish as a tagged PDF'],
+    can: [
+      'Restructure the outline, a version at a time',
+      'Publish as a tagged PDF, a Word document or both',
+    ],
     one: 'document you may read',
     many: 'documents you may read',
   },
@@ -45,7 +49,7 @@ const CARDS: readonly {
     about: 'Read what has been published. Kept exactly as it was made, never changed.',
     can: [
       'Read a publication in the browser',
-      'Download the PDF',
+      'Download the PDF or the Word document',
       'See the version it was made from',
     ],
     one: 'publication you may read',

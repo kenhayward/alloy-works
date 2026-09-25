@@ -71,6 +71,12 @@ export const themeRefusalCodes = [
   'typeface_duplicate',
   /** A style, a catalogue's base or the maths face names a typeface the theme does not declare. */
   'typeface_missing',
+  /**
+   * A typeface Word may not embed declares no face to set it in there (STY-052's "must declare"):
+   * a Word document would otherwise name a face its recipient does not hold, and Word would set
+   * another of its own choosing with nothing said.
+   */
+  'typeface_word_face_missing',
   /** A place or a role is given a style the paragraph catalogue does not contain (STY-027). */
   'style_missing',
   /** A place or a role is given a style that does not apply there (STY-006). */
@@ -308,6 +314,14 @@ export function readTheme(
       });
     } else {
       typefaces.set(face.id, face);
+    }
+  }
+  for (const face of typefaces.values()) {
+    if (!face.embedding.word && face.wordFamily === undefined) {
+      refusals.push({
+        code: 'typeface_word_face_missing',
+        message: `The typeface ${face.id} (${face.family}) may not be embedded in a Word document and declares no face to set it in there`,
+      });
     }
   }
   const maths = typefaces.get(stated.maths);

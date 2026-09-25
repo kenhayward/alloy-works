@@ -60,7 +60,13 @@ function service(answers: Record<string, unknown[] | (() => unknown)>) {
   return { fetch, sent };
 }
 
-const open = (fetch: typeof globalThis.fetch, mayPublish = true, followMs = 0) =>
+const open = (
+  fetch: typeof globalThis.fetch,
+  mayPublish = true,
+  followMs = 0,
+  /** What the layout makes; the PDF alone unless a test says Word too. */
+  formats?: readonly string[],
+) =>
   render(
     <StrictMode>
       <Publishing
@@ -70,6 +76,7 @@ const open = (fetch: typeof globalThis.fetch, mayPublish = true, followMs = 0) =
         mayPublish={mayPublish}
         placeOf={(node) => (node === HIDDEN ? '1.2 A component' : '1.1 Calibration')}
         followMs={followMs}
+        {...(formats === undefined ? {} : { formats })}
       />
     </StrictMode>,
   );
@@ -283,6 +290,27 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Publish again');
   });
 
+  it("names a Word document where a typeface's licence forbids embedding it there", async () => {
+    // `detail` is the family and the format, `<family>: docx`, where Word refused it (the final review
+    // of Word 1, M6); a PDF's is the family alone.
+    const fake = failing([
+      {
+        stage: 'compose',
+        code: 'typeface_not_embeddable',
+        node: null,
+        block: null,
+        detail: 'Alloy Sans: docx',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      "The typeface Alloy Sans cannot be embedded in a Word document: its licence does not permit it. The publication's theme has to change before this document can be published.",
+    );
+    expect(why).not.toHaveTextContent('PDF');
+  });
+
   it('says a typeface the theme names is not one the publisher holds, and why, blaming the theme', async () => {
     // `detail` is the family and why, from a fixed list (the final review of themes 1, M1): the files
     // the theme names for it, the measurements it records, or equations it cannot set.
@@ -357,6 +385,91 @@ describe('publishing from the document page', () => {
     expect(why).toHaveTextContent(
       "This table's style, labelled, labels each page the table continues onto, but the publication's layout has no words for the label. The layout or the theme has to change before this document can be published.",
     );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
+  it('names what cannot be published in Word yet, and a layout with no Word page, pointing at the PDF', async () => {
+    // Word 1's ruling R3: `detail` is what the construct is, by its stored type, or a list after the
+    // contents by its sequence; nothing in the document is wrong, so each says the PDF can be made.
+    const notYet = (detail: string) => ({
+      stage: 'compose' as const,
+      code: 'word_not_yet' as const,
+      node: null,
+      block: 'b1',
+      detail,
+    });
+    const constructs = [
+      'list',
+      'blockquote',
+      'preformatted',
+      'table',
+      'figure',
+      'equation',
+      'image',
+      'footnote',
+      'crossReference',
+      'listOf:figure',
+      'listOf:table',
+      'listOf:equation',
+    ];
+    const fake = failing([
+      ...constructs.map(notYet),
+      { stage: 'compose', code: 'format_unsupported', node: null, block: null, detail: 'docx' },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    const pdf = 'Publish this document as a PDF only.';
+    for (const named of [
+      'A list',
+      'A quotation',
+      'Preformatted text',
+      'A table',
+      'A figure',
+      'An equation',
+      'An image in a line of text',
+      'A footnote',
+      'A cross-reference',
+      'The list of figures after the contents',
+      'The list of tables after the contents',
+      'The list of equations after the contents',
+    ]) {
+      expect(why).toHaveTextContent(`${named} cannot be published in Word yet. ${pdf}`);
+    }
+    expect(why).toHaveTextContent(
+      "This publication's layout has no page for Word, so it cannot be published in Word. Publish it as a PDF, or under a layout with a Word page.",
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
+  it('names a heading number Word cannot compute, where the layout numbers it and why, pointing at the PDF', async () => {
+    // Word 1's ruling R7: `detail` is `section:<matter>:<why>`, and the layout, not the document, is
+    // what would have to change.
+    const refused = (detail: string) => ({
+      stage: 'compose' as const,
+      code: 'numbering_not_in_word' as const,
+      node: null,
+      block: null,
+      detail,
+    });
+    const fake = failing([
+      refused('section:front:separator'),
+      refused('section:body:depth'),
+      refused('section:appendix:letters'),
+      refused('section:front:roman'),
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    const pdf = 'Publish this document as a PDF only, or under a layout Word can number.';
+    for (const said of [
+      'The layout numbers the headings in front matter in a way Word cannot: its separator holds a % sign, which Word reads as a number.',
+      'The layout numbers the headings in the body in a way Word cannot: a heading is numbered more than nine levels deep, and Word numbers nine.',
+      'The layout numbers the headings in the appendices in a way Word cannot: a number in letters goes past z, which Word writes differently.',
+      'The layout numbers the headings in front matter in a way Word cannot: a number in roman numerals goes past 3999.',
+    ]) {
+      expect(why).toHaveTextContent(`${said} ${pdf}`);
+    }
     expect(why).not.toHaveTextContent('Publish again');
   });
 
@@ -983,5 +1096,77 @@ describe('publishing from the document page', () => {
       await screen.findByRole('link', { name: /Version 0\.3, published by Ada/ }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Publish as PDF' })).toBeNull();
+  });
+
+  it('asks for PDF, Word or both where the layout makes Word, the PDF unless the author chooses otherwise, from the keyboard', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [queued()],
+      [`GET /v1/publication-requests/${REQUEST}`]: [queued()],
+    });
+    open(fake.fetch, true, 60_000, ['pdf', 'docx']);
+    const choice = await screen.findByRole('radiogroup', { name: 'Publish as' });
+    // Three, in this order.
+    expect(within(choice).getAllByRole('radio')).toEqual(
+      ['PDF', 'Word', 'PDF and Word'].map((name) => within(choice).getByRole('radio', { name })),
+    );
+    expect(within(choice).getByRole('radio', { name: 'PDF' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeInTheDocument();
+
+    // From the keyboard alone: into the choice, along it, and on to the button.
+    within(choice).getByRole('radio', { name: 'PDF' }).focus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(within(choice).getByRole('radio', { name: 'Word' })).toBeChecked();
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Publish as Word' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(fake.sent.filter((each) => each.method === 'POST').map((each) => each.body)).toEqual([
+        { version: VERSION, formats: ['docx'] },
+      ]),
+    );
+  });
+
+  it('asks for both formats, the PDF first, when both are chosen', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [queued()],
+      [`GET /v1/publication-requests/${REQUEST}`]: [queued()],
+    });
+    open(fake.fetch, true, 60_000, ['pdf', 'docx']);
+    await userEvent.click(await screen.findByRole('radio', { name: 'PDF and Word' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF and Word' }));
+    await waitFor(() =>
+      expect(fake.sent.find((each) => each.method === 'POST')?.body).toEqual({
+        version: VERSION,
+        formats: ['pdf', 'docx'],
+      }),
+    );
+  });
+
+  it('offers no choice where the layout makes the PDF alone', async () => {
+    const fake = service({ [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])] });
+    open(fake.fetch, true, 0, ['pdf']);
+    expect(await screen.findByRole('button', { name: 'Publish as PDF' })).toBeInTheDocument();
+    expect(screen.queryByRole('radiogroup')).toBeNull();
+  });
+
+  it('lists which formats each publication was made in', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [
+        listed([
+          { ...publication, id: 'p3', formats: ['docx'] },
+          { ...publication, id: 'p2', formats: ['pdf', 'docx'] },
+          publication,
+        ]),
+      ],
+    });
+    open(fake.fetch, false);
+    const items = await screen.findAllByRole('listitem');
+    expect(items.map((each) => each.textContent?.replace(/ on .*? \(/, ' ('))).toEqual([
+      'Version 0.3, published by Ada (Word, not approved)',
+      'Version 0.3, published by Ada (PDF and Word, not approved)',
+      'Version 0.3, published by Ada (PDF, not approved)',
+    ]);
   });
 });

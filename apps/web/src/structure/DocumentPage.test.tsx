@@ -3512,6 +3512,7 @@ describe("the layout's scheme in the page", () => {
     const theme = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
     if (!theme.ok) throw new Error(theme.refusals.map((each) => each.code).join(', '));
     const published = assemble({
+      formats: ['pdf'],
       outline: sections,
       occurrences: new Map(),
       refused: [],
@@ -3617,6 +3618,28 @@ describe('publishing from the document page', () => {
     expect(fake.sent.find((each) => each.url.endsWith('/publications') && each.body)?.body).toEqual(
       { version: 'dddddddd-0000-4000-8000-000000000001', formats: ['pdf'] },
     );
+  });
+
+  it('offers Word beside the PDF where the layout the document would publish under makes it, and the PDF alone where not', async () => {
+    const shown = (layout: unknown) => {
+      const fake = service(outline([section(METHOD, 'Method')]), { mayPublish: true, layout });
+      return render(
+        <StrictMode>
+          <DocumentPage client={client(fake.fetch)} id={DOCUMENT} followMs={0} />
+        </StrictMode>,
+      );
+    };
+    const word = shown({ ...layoutView(defaultLayout.scheme), formats: ['pdf', 'docx'] });
+    await screen.findByRole('treeitem', { name: 'Method' });
+    const choice = screen.getByRole('radiogroup', { name: 'Publish as' });
+    expect(within(choice).getByRole('radio', { name: 'PDF' })).toBeChecked();
+    expect(within(choice).getByRole('radio', { name: 'Word' })).not.toBeChecked();
+    word.unmount();
+
+    shown({ ...layoutView(defaultLayout.scheme), formats: ['pdf'] });
+    await screen.findByRole('treeitem', { name: 'Method' });
+    expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeInTheDocument();
+    expect(screen.queryByRole('radiogroup')).toBeNull();
   });
 });
 
