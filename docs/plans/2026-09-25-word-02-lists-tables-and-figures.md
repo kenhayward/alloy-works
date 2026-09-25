@@ -7,7 +7,7 @@
 > [What was built](../design/word-output.md#what-was-built) left for Word 2. Ken agreed the design's
 > recommendations on 2026-09-25.
 >
-> **Built** (PR #PRNUM). [What the build changed](#what-the-build-changed) records where it departed
+> **Built** (PR #236). [What the build changed](#what-the-build-changed) records where it departed
 > from the rulings below.
 
 **Goal:** everything a document holds but footnotes, cross-references and equations reaches Word. A
