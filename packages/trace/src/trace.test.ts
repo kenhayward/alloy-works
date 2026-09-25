@@ -467,8 +467,13 @@ describe('the citations in the committed model', () => {
   // 318, from 317 (2026-09-25): Word 1 cites PUB-012 in packages/domain's publishing/layout.test.ts,
   // where a layout whose Word page differs from its PDF page in size, orientation, margins, running
   // matter and page numbering is read back with each page as written.
+  // 323, from 318 (2026-09-25): Word 1's writer cites PUB-024, CNT-128, PUB-034 with CNT-084, and
+  // STY-052 in packages/domain's word/write.test.ts, where every heading is numbered by a numbering
+  // definition and none by its text, a link is a w:hyperlink to an external relationship beside the
+  // PDF's link in apps/worker's marks.test.ts, the document's and each passage's language are read back
+  // beside the PDF's there too, and a face with a Word face is named by it and reported.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(318);
+    expect(model.citations).toHaveLength(323);
   });
 
   it('cites no identifier the corpus does not hold', () => {

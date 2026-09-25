@@ -414,6 +414,37 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Publish again');
   });
 
+  it('names a heading number Word cannot compute, where the layout numbers it and why, pointing at the PDF', async () => {
+    // Word 1's ruling R7: `detail` is `section:<matter>:<why>`, and the layout, not the document, is
+    // what would have to change.
+    const refused = (detail: string) => ({
+      stage: 'compose' as const,
+      code: 'numbering_not_in_word' as const,
+      node: null,
+      block: null,
+      detail,
+    });
+    const fake = failing([
+      refused('section:front:separator'),
+      refused('section:body:depth'),
+      refused('section:appendix:letters'),
+      refused('section:front:roman'),
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    const pdf = 'Publish this document as a PDF only, or under a layout Word can number.';
+    for (const said of [
+      'The layout numbers the headings in front matter in a way Word cannot: its separator holds a % sign, which Word reads as a number.',
+      'The layout numbers the headings in the body in a way Word cannot: a heading is numbered more than nine levels deep, and Word numbers nine.',
+      'The layout numbers the headings in the appendices in a way Word cannot: a number in letters goes past z, which Word writes differently.',
+      'The layout numbers the headings in front matter in a way Word cannot: a number in roman numerals goes past 3999.',
+    ]) {
+      expect(why).toHaveTextContent(`${said} ${pdf}`);
+    }
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
   it('says what a figure needs before it can be published, and names nothing of an image it may not read', async () => {
     const fake = failing([
       { stage: 'compose', code: 'figure_without_caption', node: null, block: 'f1', detail: null },

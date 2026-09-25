@@ -7328,6 +7328,7 @@
                               "continuation_words_missing",
                               "word_not_yet",
                               "format_unsupported",
+                              "numbering_not_in_word",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10084,6 +10085,7 @@
                               "continuation_words_missing",
                               "word_not_yet",
                               "format_unsupported",
+                              "numbering_not_in_word",
                               "engine_failed",
                               "store_failed"
                             ]

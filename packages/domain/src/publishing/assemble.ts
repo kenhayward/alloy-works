@@ -28,10 +28,15 @@ import {
   type BoundTarget,
   type ReferenceResolution,
 } from '../structure/references.js';
-import { defaultNumberingScheme, type NumberFormat } from '../structure/scheme.js';
+import {
+  defaultNumberingScheme,
+  type NumberFormat,
+  type NumberingScheme,
+} from '../structure/scheme.js';
 import type { ResolvedParagraphStyle, ResolvedTheme } from '../theme/read.js';
 import type { Place, Role, Typeface } from '../theme/schema.js';
 import { projectTypst } from '../theme/typst.js';
+import { numberingNotInWord } from '../word/numbering.js';
 
 import type { PublishFailure } from './failures.js';
 import { characterProblems, codePointName, type Covers, type Setting } from './glyphs.js';
@@ -129,13 +134,15 @@ export type PublishingAsset = Pick<
  * R2): carried here, as the numbering table is, rather than in the document, so that nothing template
  * 13 reads changes and `publishing/13` stays the PDF's byte for byte. The layout's Word page, the theme
  * the request was made under as `readTheme` resolved it - the Word styles are projected from it, not
- * from the Typst projection the document carries - and each image's size against the Word page, which
+ * from the Typst projection the document carries - the layout's numbering scheme, whose section rules
+ * Word numbers the headings by (ruling R7), and each image's size against the Word page, which
  * Word 2 fills and keys with the first figure it writes: empty until then, since Word 1 refuses every
  * image by name.
  */
 export interface WordInput {
   readonly format: DocxFormat;
   readonly theme: ResolvedTheme;
+  readonly scheme: NumberingScheme;
   readonly images: ReadonlyMap<string, WordImage>;
 }
 
@@ -294,6 +301,15 @@ export function assemble(input: AssembleInput): Assembled {
   // number: with the scheme the layout declares (STR-013), and never a number worked out here.
   const numbering = number(conditioned, layout?.scheme ?? defaultNumberingScheme);
   const numbers = sectionNumbers(numbering);
+  // Where Word is asked for, a heading number the scheme writes and Word would compute differently is
+  // refused by name before anything is written (ruling R7): Word's number would replace the PDF's.
+  if (docx && layout !== null) {
+    for (const problem of numberingNotInWord(layout.scheme, numbering)) {
+      failures.push(
+        failure('compose', 'numbering_not_in_word', problem.node, null, problem.detail),
+      );
+    }
+  }
 
   // check and project: one walk, collecting every failure.
   const refusedNodes = new Set(input.refused.map((each) => each.node));
@@ -1572,7 +1588,7 @@ export function assemble(input: AssembleInput): Assembled {
     numbering,
     word:
       docx && docxFormat !== undefined
-        ? { format: docxFormat, theme: theme!, images: new Map() }
+        ? { format: docxFormat, theme: theme!, scheme: layout.scheme, images: new Map() }
         : null,
     document: {
       schema: PUBLISHING_SCHEMA,

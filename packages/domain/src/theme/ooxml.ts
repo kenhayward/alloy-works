@@ -58,15 +58,33 @@ export function wordFamily(face: Typeface): string {
   return face.wordFamily ?? face.family;
 }
 
-export function projectStylesXml(theme: ResolvedTheme, document: WordDocument): string {
+/**
+ * What the Word writer adds to the theme's styles (Word 1, ruling R7): `headingList`, the `w:numId` of
+ * the list the headings are numbered by, which each heading role's style links to at its depth - and
+ * from which every other style is taken off, since Word hands a style's number down to a style based
+ * on it, as it does an outline level; and `extraStyles`, styles of the writer's own - a contents
+ * entry's at each level Word names - written after the theme's. Without either, the projection is the
+ * theme's alone.
+ */
+export interface WordStylesOptions {
+  readonly headingList?: number;
+  readonly extraStyles?: readonly string[];
+}
+
+export function projectStylesXml(
+  theme: ResolvedTheme,
+  document: WordDocument,
+  options: WordStylesOptions = {},
+): string {
   const headings = headingDepths(theme);
   const paragraphs = [...theme.paragraphStyles.values()].map((style) =>
-    paragraphStyle(style, headings.get(style.id)),
+    paragraphStyle(style, headings.get(style.id), options.headingList),
   );
   const characters = STYLED_MARKS.map((mark) => characterStyle(theme.characterStyles[mark]));
+  const extra = (options.extraStyles ?? []).join('');
   return (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
-    `<w:styles ${W_NS}>${docDefaults(theme, document)}${paragraphs.join('')}${characters.join('')}</w:styles>`
+    `<w:styles ${W_NS}>${docDefaults(theme, document)}${paragraphs.join('')}${characters.join('')}${extra}</w:styles>`
   );
 }
 
@@ -90,9 +108,9 @@ function docDefaults(theme: ResolvedTheme, document: WordDocument): string {
 
 /**
  * The depth of each style a heading role is set in, by its identifier: a style two heading roles share
- * takes the shallower's.
+ * takes the shallower's. The Word writer asks it too, to know which headings their style numbers.
  */
-function headingDepths(theme: ResolvedTheme): Map<string, number> {
+export function headingDepths(theme: ResolvedTheme): Map<string, number> {
   const depths = new Map<string, number>();
   // In ROLES' order, heading1 first.
   for (const role of ROLES) {
@@ -137,7 +155,11 @@ const MOST_BORDER_SPACE = 31;
  * it, and a contents field would list them - so a heading role's style states its depth and every
  * other style states body text, 9.
  */
-function paragraphStyle(style: ResolvedParagraphStyle, depth: number | undefined): string {
+function paragraphStyle(
+  style: ResolvedParagraphStyle,
+  depth: number | undefined,
+  headingList: number | undefined,
+): string {
   const p = style.properties;
   const filled = p.background !== 'none';
   const inset = filled ? p.padding + PANEL_REACH : 0;
@@ -156,6 +178,11 @@ function paragraphStyle(style: ResolvedParagraphStyle, depth: number | undefined
     onOff('keepNext', p.keepWithNext) +
     onOff('keepLines', p.keepTogether) +
     onOff('widowControl', p.widowControl) +
+    (headingList === undefined
+      ? ''
+      : depth === undefined
+        ? '<w:numPr><w:ilvl w:val="0"/><w:numId w:val="0"/></w:numPr>'
+        : `<w:numPr><w:ilvl w:val="${depth - 1}"/><w:numId w:val="${headingList}"/></w:numPr>`) +
     `<w:pBdr>${['top', 'left', 'bottom', 'right'].map(border).join('')}</w:pBdr>` +
     (filled ? `<w:shd w:val="clear" w:color="auto" w:fill="${fill}"/>` : '<w:shd w:val="nil"/>') +
     onOff('suppressAutoHyphens', !p.hyphenate) +
@@ -201,13 +228,17 @@ function characterStyle(style: ResolvedCharacterStyle): string {
   );
 }
 
-function rFonts(face: Typeface): string {
+/**
+ * A face, a toggle, a size and a colour as the styles spell them - and so as the Word writer spells a
+ * value it pins on a run (`wordRun`), in pairs where Word reads a complex script's apart.
+ */
+export function rFonts(face: Typeface): string {
   const family = escapeXml(wordFamily(face));
   return `<w:rFonts w:ascii="${family}" w:hAnsi="${family}" w:cs="${family}" w:eastAsia="${family}"/>`;
 }
 
 /** A toggle property and its complex-script twin, stated either way. */
-function toggle(name: 'b' | 'i', on: boolean): string {
+export function toggle(name: 'b' | 'i', on: boolean): string {
   const value = on ? 1 : 0;
   return `<w:${name} w:val="${value}"/><w:${name}Cs w:val="${value}"/>`;
 }
@@ -217,11 +248,11 @@ function onOff(name: string, on: boolean): string {
   return on ? `<w:${name}/>` : `<w:${name} w:val="0"/>`;
 }
 
-function size(points: number): string {
+export function size(points: number): string {
   return `<w:sz w:val="${halfPoints(points)}"/><w:szCs w:val="${halfPoints(points)}"/>`;
 }
 
-function hex(colour: string): string {
+export function hex(colour: string): string {
   return colour.slice(1).toUpperCase();
 }
 

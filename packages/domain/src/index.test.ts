@@ -266,6 +266,9 @@ describe('the domain package', () => {
         'OUTPUT_REPORT_KINDS',
         'outputReportSchema',
         'parseOutputReport',
+        // Word 1 (ruling R6): the Word writer, and the version the job records it at.
+        'writeDocx',
+        'WORD_WRITER_VERSION',
       ].sort(),
     );
   });

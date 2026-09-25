@@ -86,6 +86,6 @@ export type {
 } from './typst.js';
 export { projectCss } from './css.js';
 export { markStyleId, projectStylesXml } from './ooxml.js';
-export type { WordDocument } from './ooxml.js';
+export type { WordDocument, WordStylesOptions } from './ooxml.js';
 export { runFormat, wordRun } from './runs.js';
 export type { RunFormat, WordRun } from './runs.js';

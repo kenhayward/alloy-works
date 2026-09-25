@@ -4920,13 +4920,18 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     return { pdf: failuresOf(pdf), docx: failuresOf(docx), both: failuresOf(both) };
   };
 
-  it("carries what Word is written from - the layout's Word page, the theme, and no image sizes yet - only where Word is asked for", () => {
+  it("carries what Word is written from - the layout's Word page, the theme, the scheme and no image sizes yet - only where Word is asked for", () => {
     const { pdf, docx, both } = assembledFor(
       holding(paragraph('b1', text('Set the tray.')), paragraph('b2', text('Then wait.'))),
     );
     if (!pdf.ok || !docx.ok || !both.ok) throw new Error('refused');
     expect(pdf.word).toBeNull();
-    const word = { format: defaultLayout.formats.docx, theme: DEFAULT_THEME, images: new Map() };
+    const word = {
+      format: defaultLayout.formats.docx,
+      theme: DEFAULT_THEME,
+      scheme: defaultLayout.scheme,
+      images: new Map(),
+    };
     expect(docx.word).toEqual(word);
     expect(both.word).toEqual(word);
     // The published document is the PDF's whatever else is asked for (ruling R1): the same bytes, and
@@ -5190,6 +5195,56 @@ describe('the formats a publication is assembled for (Word 1)', () => {
         notYet('t1', 'table'),
         failed('continuation_words_missing', 't1', 'labelled'),
         listNotYet('table'),
+      ],
+    });
+  });
+
+  it('refuses a section rule Word cannot compute only where Word is asked for, naming the rule, and passes the default scheme', () => {
+    // The default layout's scheme numbers what Word numbers (ruling R7): front, body and appendix,
+    // three levels deep, publish for Word.
+    const nested = input({
+      outline: outline([
+        inMatter('front', section('preface', 'Preface')),
+        section('intro', 'Introduction', [
+          section('scope', 'Scope', [section('limits', 'Limits')]),
+        ]),
+        inMatter('appendix', section('tables', 'Tables', [section('values', 'Values')])),
+      ]),
+    });
+    expect(failuresFor(nested)).toEqual({ pdf: [], docx: [], both: [] });
+    // A separator Word would read as a number to come, and letters past z in the appendices.
+    const scheme = structuredClone(defaultLayout.scheme);
+    const rules = scheme.sequences['section']!;
+    // Node identifiers are letters: the 28th appendix is `appxbb`.
+    const appendix = (index: number) =>
+      `appx${String.fromCharCode(97 + Math.floor(index / 26), 97 + (index % 26))}`;
+    rules.body = { ...rules.body, separator: '%' };
+    const lettered = input({
+      layout: layoutWith((layout) => {
+        layout.scheme = scheme;
+      }),
+      outline: outline(
+        Array.from({ length: 28 }, (_, index) =>
+          inMatter('appendix', section(appendix(index), `Appendix ${index + 1}`)),
+        ),
+      ),
+    });
+    const refused = (node: string | null, detail: string) => ({
+      stage: 'compose',
+      code: 'numbering_not_in_word',
+      node,
+      block: null,
+      detail,
+    });
+    expect(failuresFor(lettered)).toEqual({
+      pdf: [],
+      docx: [
+        refused(null, 'section:body:separator'),
+        refused(id(appendix(27)), 'section:appendix:letters'),
+      ],
+      both: [
+        refused(null, 'section:body:separator'),
+        refused(id(appendix(27)), 'section:appendix:letters'),
       ],
     });
   });

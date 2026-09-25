@@ -114,6 +114,11 @@ export const publishFailureCodes = [
   // made (PUB-014), so met here only by a request built past that check, and said rather than thrown.
   'word_not_yet',
   'format_unsupported',
+  // compose, from Word 1 (ruling R7): where Word is asked for, a heading number the layout's scheme
+  // writes that Word would compute differently - `detail` is `section:<matter>:<why>`: a separator
+  // holding `%` (no node), letters past z, a roman numeral past 3999, or a heading numbered past the
+  // ninth level (the first heading that meets it). The PDF is unaffected.
+  'numbering_not_in_word',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

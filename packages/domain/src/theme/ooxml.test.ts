@@ -382,6 +382,61 @@ describe('projectStylesXml, heading names', () => {
   });
 });
 
+describe('projectStylesXml, heading numbers (Word 1, ruling R7)', () => {
+  const numbered = projectStylesXml(resolved(), BRITISH, { headingList: 1 });
+  const numPr = (id: string, from = numbered) => {
+    const elements = styleElements(id, from);
+    const at = elements.findIndex((each) => each.name === 'w:numPr');
+    return at < 0
+      ? undefined
+      : { ilvl: elements[at + 1]?.attrs['w:val'], numId: elements[at + 2]?.attrs['w:val'] };
+  };
+
+  it("links each heading role's style to the list Word numbers headings by, at its depth", () => {
+    for (let depth = 1; depth <= 6; depth += 1) {
+      expect(numPr(`heading-${depth}`), `heading-${depth}`).toEqual({
+        ilvl: String(depth - 1),
+        numId: '1',
+      });
+    }
+  });
+
+  it("takes every other style off any list, since Word hands a heading style's number down to a style based on it", () => {
+    for (const id of ['title', 'contents-heading', 'body', 'caption']) {
+      expect(numPr(id), id).toEqual({ ilvl: '0', numId: '0' });
+    }
+  });
+
+  it('states the number where the schema puts it, after widow control and before the borders', () => {
+    const names = properties('heading-2', 'w:pPr', numbered);
+    expect(names.slice(names.indexOf('w:widowControl'), names.indexOf('w:pBdr') + 1)).toEqual([
+      'w:widowControl',
+      'w:numPr',
+      'w:ilvl',
+      'w:numId',
+      'w:pBdr',
+    ]);
+  });
+
+  it('links a style two heading roles share at the shallower depth', () => {
+    const inputs = defaultInputs();
+    inputs.catalogues.paragraph.styles = inputs.catalogues.paragraph.styles.map((style) =>
+      style.id === 'heading-5' ? { ...style, appliesTo: ['heading5', 'heading6'] } : style,
+    );
+    inputs.theme.roles.heading6 = 'heading-5';
+    const from = projectStylesXml(resolved(inputs), BRITISH, { headingList: 1 });
+    expect(numPr('heading-5', from)).toEqual({ ilvl: '4', numId: '1' });
+    expect(numPr('heading-6', from)).toEqual({ ilvl: '0', numId: '0' });
+  });
+
+  it("links nothing where it is not asked to, and adds the writer's own styles after the theme's", () => {
+    expect(numPr('heading-1', xml)).toBeUndefined();
+    const more = '<w:style w:type="paragraph" w:styleId="TOC1"><w:name w:val="toc 1"/></w:style>';
+    const from = projectStylesXml(resolved(), BRITISH, { extraStyles: [more] });
+    expect(from).toContain(`${more}</w:styles>`);
+  });
+});
+
 describe('projectStylesXml, character styles', () => {
   it('writes a character style per mark under its catalogue name, stating only what the mark states', () => {
     expect(properties('mark-strong', 'w:rPr')).toEqual(['w:b', 'w:bCs']);

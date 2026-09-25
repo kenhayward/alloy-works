@@ -56,6 +56,33 @@ const NOT_YET_IN_WORD: Readonly<Record<string, string>> = {
 };
 
 /**
+ * What `numbering_not_in_word` names (Word 1, ruling R7): `detail` is `section:<matter>:<why>`, the
+ * matter whose headings the layout numbers and what in its rule Word would number otherwise.
+ */
+const NUMBERED_IN: Readonly<Record<string, string>> = {
+  front: 'the headings in front matter',
+  body: 'the headings in the body',
+  appendix: 'the headings in the appendices',
+};
+const NOT_IN_WORD_BECAUSE: Readonly<Record<string, string>> = {
+  separator: 'its separator holds a % sign, which Word reads as a number',
+  letters: 'a number in letters goes past z, which Word writes differently',
+  roman: 'a number in roman numerals goes past 3999',
+  depth: 'a heading is numbered more than nine levels deep, and Word numbers nine',
+};
+
+/** The sentence for `numbering_not_in_word`: the layout's to change, and the PDF can be made. */
+function notInWord(detail: string | null): string {
+  const [, matter = '', why = ''] = (detail ?? '').split(':');
+  const where = NUMBERED_IN[matter] ?? 'the headings';
+  const because = NOT_IN_WORD_BECAUSE[why];
+  return (
+    `The layout numbers ${where} in a way Word cannot${because === undefined ? '' : `: ${because}`}. ` +
+    'Publish this document as a PDF only, or under a layout Word can number.'
+  );
+}
+
+/**
  * What `equation_unrenderable` names of the construct an equation held that the converter refused
  * (`REFUSAL_NAMES`, `assemble.ts`), in words - never the equation's text, its values or its elements,
  * which `detail` never carries either (R5). `mathvariant`, `element` and `attribute` each name part of
@@ -270,6 +297,10 @@ export function failureWords(failure: Failure): string {
     // layout's to change, as its words are.
     case 'format_unsupported':
       return "This publication's layout has no page for Word, so it cannot be published in Word. Publish it as a PDF, or under a layout with a Word page.";
+    // Word 1's ruling R7: nothing in the document is wrong; the layout's scheme asks Word for a number
+    // it would print differently from the PDF's.
+    case 'numbering_not_in_word':
+      return notInWord(failure.detail);
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:
