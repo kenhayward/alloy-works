@@ -1077,29 +1077,14 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect((await outputsOf(pdf)).map((each) => each.format)).toEqual(['pdf']);
   }, 120_000);
 
-  it('publishes a figure to Word alone: its image read from the store, held to its hash, and written into the document once, described', async () => {
+  it('publishes a figure to Word alone under the default layout: its image read from the store, held to its hash, written into the document once, described, and listed after the contents', async () => {
     const bytes = await sharp({
       create: { width: 80, height: 60, channels: 3, background: { r: 30, g: 60, b: 200 } },
     })
       .png()
       .toBuffer();
     const hash = createHash('sha256').update(bytes).digest('hex');
-    // The default layout lists the figures after the contents, which Word 3 writes and Word refuses
-    // until then (`word_not_yet`): a version of it listing nothing, as an environment's own may. The
-    // last test of this tenant, so no other publishes under it.
-    await service.withTenant(tenant, async (trx) => {
-      const declared = await defaultLayout(trx);
-      const recorded = await recordVersion(trx, {
-        artifactId: declared.artifactId,
-        openedFrom: declared.versionId,
-        author: ada,
-        substance: {
-          kind: 'layout',
-          content: { ...declared.layout, matter: { ...declared.layout.matter, lists: [] } },
-        },
-      });
-      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
-    });
+    // Under the default layout, which lists the figures after the contents.
     const id = await requested(
       async (trx) => {
         const store = await stores.forTenant(trx, tenant);
@@ -1162,6 +1147,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     ]);
     expect(Buffer.from(parts[`word/media/${hash}.png`]!).equals(bytes)).toBe(true);
     expect(read.document.match(/descr="A blue tray"/g)).toHaveLength(2);
+    expect(read.document).toContain(' TOC \\h \\z \\c &quot;Figure&quot; ');
   }, 120_000);
 });
 

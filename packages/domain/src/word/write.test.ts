@@ -2139,16 +2139,8 @@ const extentOf = (drawing: Element) => {
   const { cx, cy } = first(drawing, 'wp:extent')!.attrs;
   return { cx: Number(cx), cy: Number(cy) };
 };
-/** Every drawing beneath an element, inline or anchored, in document order. */
+/** Every drawing beneath an element, in document order. */
 const drawings = (element: Element) => all(element, 'w:drawing').map((each) => kids(each)[0]!);
-/** Where an anchored drawing is placed on one axis: what it is placed from, and its alignment. */
-const positioned = (anchor: Element, axis: 'wp:positionH' | 'wp:positionV') => {
-  const found = kids(anchor, axis)[0]!;
-  return {
-    from: found.attrs['relativeFrom'],
-    align: kids(found, 'wp:align')[0]!.children.join(''),
-  };
-};
 
 describe('writeDocx: figures and images (Word 2, ruling R8)', () => {
   const figured = tabledOf(
@@ -2246,36 +2238,50 @@ describe('writeDocx: figures and images (Word 2, ruling R8)', () => {
     ]);
   });
 
-  it('floats a figure its style floats to the head of the text area, a band the text stands clear of, aligned across the measure as the style says (WO-G, M7)', () => {
+  it("floats a figure its style floats to the head of its page's text area, its image and its caption one frame the measure wide that the text stands clear of, as the PDF's band (WO-G, measured)", () => {
     const caption = at('Figure 1.3 Blue on top');
-    // Anchored in its caption, so no empty line stands where the figure stood, and Word sets the image
-    // on its caption's page.
-    const [anchor] = drawings(caption);
-    expect(anchor!.name).toBe('wp:anchor');
-    expect(textOf(before(caption))).toBe('Figure 1.2 A border');
-    expect(anchor!.attrs).toMatchObject({
-      simplePos: '0',
-      behindDoc: '0',
-      locked: '0',
-      layoutInCell: '1',
-      allowOverlap: '0',
+    const held = before(caption);
+    const frameOf = (paragraph: Element) => kids(pPr(paragraph)!, 'w:framePr')[0]?.attrs;
+    const page = sections(figured.docx).at(-1)!.properties;
+    const size = first(page, 'w:pgSz')!.attrs;
+    const margins = first(page, 'w:pgMar')!.attrs;
+    const measure =
+      Number(size['w:w']) -
+      Number(margins['w:left']) -
+      Number(margins['w:right']) -
+      Number(margins['w:gutter']);
+    // Word groups paragraphs of one frame: the image's and the caption's, so they stand together.
+    expect(frameOf(held)).toEqual({
+      'w:w': String(measure),
+      // The engine's clearance, an em and a half of the text, less the leading Word sets above the
+      // text's first line where the PDF sets none.
+      'w:vSpace': twips(16.5 - 3.35),
+      'w:wrap': 'notBeside',
+      'w:vAnchor': 'margin',
+      'w:hAnchor': 'margin',
+      'w:xAlign': 'center',
+      'w:yAlign': 'top',
     });
-    expect(Number(anchor!.attrs['relativeHeight'])).toBeGreaterThan(0);
-    expect(kids(anchor!).map((each) => each.name)).toEqual([
-      'wp:simplePos',
-      'wp:positionH',
-      'wp:positionV',
-      'wp:extent',
-      'wp:effectExtent',
-      'wp:wrapTopAndBottom',
-      'wp:docPr',
-      'wp:cNvGraphicFramePr',
-      'a:graphic',
-    ]);
-    expect(positioned(anchor!, 'wp:positionH')).toEqual({ from: 'margin', align: 'right' });
-    expect(positioned(anchor!, 'wp:positionV')).toEqual({ from: 'margin', align: 'top' });
-    expect(extentOf(anchor!)).toEqual(sized(figureImageKey(node, 'f3')));
-    expect(first(anchor!, 'wp:docPr')!.attrs['descr']).toBe('A blue square');
+    expect(frameOf(caption)).toEqual(frameOf(held));
+    // In CT_PPr's order: after the style and the keep, before everything else.
+    expect(properties(held).slice(0, 3)).toEqual(['w:pStyle', 'w:keepNext', 'w:framePr']);
+    // The image inline in its paragraph, aligned across the frame as its style says; the caption after.
+    const [inline] = drawings(held);
+    expect(inline!.name).toBe('wp:inline');
+    expect(kids(pPr(held)!, 'w:jc')[0]?.attrs).toEqual({ 'w:val': 'right' });
+    expect(extentOf(inline!)).toEqual(sized(figureImageKey(node, 'f3')));
+    expect(first(inline!, 'wp:docPr')!.attrs['descr']).toBe('A blue square');
+    expect(fieldCodes(caption)).toEqual(['STYLEREF 1 \\s', 'SEQ Figure \\* arabic \\s 1']);
+    expect(textOf(before(held))).toBe('Figure 1.2 A border');
+    expect(all(document, 'wp:anchor')).toEqual([]);
+  });
+
+  it("spaces a floated figure's frame as the PDF's band: the image at its head, the caption its style's space before below it, and nothing after it but the clearance", () => {
+    const caption = at('Figure 1.3 Blue on top');
+    // The default caption has no space before, which the image keeps: the leading a block figure's
+    // image takes above it is the flow's, which the frame stands out of.
+    expect(spacing(before(caption))).toEqual({ 'w:after': '0' });
+    expect(spacing(caption)).toEqual({ 'w:after': '0' });
   });
 
   it("sets an image in a line as a wp:inline in a run of its own, sized by assemble for the Word page, in a paragraph's text and in a table's cell", () => {
@@ -2344,21 +2350,93 @@ describe('writeDocx: figures and images (Word 2, ruling R8)', () => {
     expect(spacing(caption)?.['w:before']).toBeUndefined();
   });
 
-  it("stands the text clear of a floated figure by the engine's clearance, an em and a half of the text's size", () => {
-    const [anchor] = drawings(at('Figure 1.3 Blue on top'));
-    expect(anchor!.attrs).toMatchObject({
-      distT: '0',
-      distB: String(Math.round(16.5 * EMU)),
-      distL: '0',
-      distR: '0',
-    });
-  });
-
   it('declares the drawing namespaces on the document', () => {
     expect(document.attrs).toMatchObject({
       'xmlns:wp': 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
       'xmlns:a': 'http://schemas.openxmlformats.org/drawingml/2006/main',
       'xmlns:pic': 'http://schemas.openxmlformats.org/drawingml/2006/picture',
     });
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------
+// Word 2: the lists of figures and of tables after the contents.
+// ---------------------------------------------------------------------------------------------------
+
+describe('writeDocx: the lists after the contents (Word 2, M9)', () => {
+  /** Two figures and a table, under the default layout, which lists both after the contents. */
+  const listed = writtenOf(
+    [
+      figure('f1', RED, 'Shapes at rest'),
+      readings({ style: 'table' }),
+      figure('f2', BLUE, 'A blue one', { alternative: { kind: 'decorative' } }),
+    ],
+    { assets: IMAGES },
+  );
+  const [, front, opened] = sections(listed.docx);
+  const at = (text: string) => front!.paragraphs.find((each) => textOf(each) === text)!;
+  const BS = String.fromCharCode(92);
+
+  it("stands each list after the contents, in the contents' section, each on a page of its own under its title in the list role", () => {
+    const shown = front!.paragraphs.map(textOf);
+    expect(shown.slice(shown.indexOf('Figures'))).toEqual([
+      'Figures',
+      'Figure 1.1 Shapes at rest',
+      'Figure 1.2 A blue one',
+      'Tables',
+      'Table 1.1 Readings at noon',
+    ]);
+    for (const title of ['Figures', 'Tables']) {
+      expect(styleOf(at(title))).toBe('contents-heading');
+      expect(properties(at(title))).toContain('w:pageBreakBefore');
+    }
+    // The body starts its own section, after them.
+    expect(textOf(opened!.paragraphs[0]!)).toBe('Blocks');
+  });
+
+  it("is a TOC field over its sequence's captions, the SEQ name captionField writes, prefilled with each caption paragraph's words and no page (M9)", () => {
+    const section: Element = { name: 'section', attrs: {}, children: front!.paragraphs };
+    expect(fieldCodes(section)).toEqual([
+      `TOC ${BS}o "1-3" ${BS}h ${BS}z ${BS}u`,
+      `TOC ${BS}h ${BS}z ${BS}c "Figure"`,
+      `TOC ${BS}h ${BS}z ${BS}c "Table"`,
+    ]);
+    // Begun in the first entry and ended in the last, as the contents is.
+    const ends = (paragraph: Element) =>
+      all(paragraph, 'w:fldChar').map((each) => each.attrs['w:fldCharType']);
+    expect(ends(at('Figure 1.1 Shapes at rest')).slice(0, 2)).toEqual(['begin', 'separate']);
+    expect(ends(at('Figure 1.2 A blue one')).at(-1)).toBe('end');
+    for (const entry of ['Figure 1.1 Shapes at rest', 'Figure 1.2 A blue one']) {
+      expect(styleOf(at(entry))).toBe('TableofFigures');
+    }
+  });
+
+  it("names the entries' style as Word names the one it rebuilds a list in, based on the list entry role's", () => {
+    const style = all(listed.docx.xml('word/styles.xml'), 'w:style').find(
+      (each) => each.attrs['w:styleId'] === 'TableofFigures',
+    )!;
+    expect(first(style, 'w:name')!.attrs['w:val']).toBe('table of figures');
+    expect(first(style, 'w:basedOn')!.attrs['w:val']).toBe('contents-entry');
+    // And none where there is no list.
+    expect(
+      all(plain.docx.xml('word/styles.xml'), 'w:style').some(
+        (each) => each.attrs['w:styleId'] === 'TableofFigures',
+      ),
+    ).toBe(false);
+  });
+
+  it('stands the lists in a front section of their own where the layout sets no contents, numbered as front matter', () => {
+    const alone = writtenOf([figure('f1', RED, 'Shapes at rest')], {
+      assets: IMAGES,
+      layout: layoutWith((layout) => {
+        layout.matter.contents = null;
+      }),
+    });
+    const [, lists, body] = sections(alone.docx);
+    expect(lists!.paragraphs.map(textOf)).toEqual(['Figures', 'Figure 1.1 Shapes at rest']);
+    // The first thing on the section's page: no break before it.
+    expect(properties(lists!.paragraphs[0]!)).not.toContain('w:pageBreakBefore');
+    expect(first(lists!.properties, 'w:pgNumType')!.attrs['w:fmt']).toBe('lowerRoman');
+    expect(textOf(body!.paragraphs[0]!)).toBe('Blocks');
   });
 });

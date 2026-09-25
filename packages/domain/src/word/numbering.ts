@@ -184,6 +184,14 @@ const isCaptioned = (sequence: string): sequence is Captioned =>
  */
 const SEQUENCE_NAMES: Readonly<Record<Captioned, string>> = { figure: 'Figure', table: 'Table' };
 
+/**
+ * A sequence's `SEQ` name, which its captions' fields count and a list after the contents collects them
+ * by (`TOC \c`); null for a sequence Word does not number by fields.
+ */
+export function sequenceName(sequence: string): string | null {
+  return isCaptioned(sequence) ? SEQUENCE_NAMES[sequence] : null;
+}
+
 /** Each number format as a field's `\*` switch names it, by name, never by position. */
 const FIELD_FORMATS: Readonly<Record<NumberFormat, string>> = {
   decimal: 'arabic',

@@ -20,6 +20,7 @@ import type {
   PublishedCell,
   PublishedDocument,
   PublishedFigure,
+  PublishedGeneratedList,
   PublishedInline,
   PublishedLanguage,
   PublishedList,
@@ -65,6 +66,7 @@ import {
   captionField,
   HEADING_LISTS,
   numberingXml,
+  sequenceName,
   WORD_FORMATS,
   WORD_LEVELS,
   type CaptionField,
@@ -140,7 +142,7 @@ const EMU_PER_POINT = 12_700;
 
 /**
  * How far text stands clear of a floated figure, in ems of the text: the pinned Typst's `place`
- * clearance, which template 13's figure takes as it is.
+ * clearance, which template 13's figure takes as it is (`frame`).
  */
 const FLOAT_CLEARANCE = 1.5;
 
@@ -231,6 +233,13 @@ interface Paragraph {
    * wanted before.
    */
   readonly lead?: number;
+  /**
+   * The spaces it is set with whatever the flow wants: a floated figure's frame's, which stands out of
+   * the flow as the PDF's band does, so that the flow's spaces reach neither (Word 2, ruling R8).
+   */
+  readonly held?: { readonly before: number; readonly after: number };
+  /** Its frame, where it stands in one: a floated figure's image and caption (`frame`). */
+  readonly frame?: string;
   /** What it states over its style for Word to space it so (`spacingOverrides`). */
   spacing?: SpacingOverride;
   /**
@@ -371,8 +380,9 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   // The contents stands before any heading a running head's section could name, where Word's field
   // would print an error rather than the nothing the PDF prints: its pages carry the slots without it,
   // in a header or a footer of their own where the slots hold a section.
+  const generated = document.front.lists;
   const contentsFurniture: Furniture =
-    document.front.contents === null
+    document.front.contents === null && generated.length === 0
       ? runningFurniture
       : {
           header: holdsSection(format.head) ? header(false) : runningFurniture.header,
@@ -412,13 +422,24 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     });
   }
   const contents = document.front.contents;
-  if (contents !== null) {
+  // The contents and the lists after it, in one section, as the PDF sets them in its front segment;
+  // the lists' entries are written once the nodes are, being the captions Word's fields number.
+  let front: Body[] | null = null;
+  if (contents !== null || generated.length > 0) {
+    front = [
+      ...opening(),
+      ...(contents === null
+        ? []
+        : [
+            writer.paragraph(
+              theme.roles.contents,
+              writer.runs(document.words.contents, writer.words),
+            ),
+            ...writer.contents(document.nodes, contents.depth, sectionNumbers(input.numbering)),
+          ]),
+    ];
     sections.push({
-      body: [
-        ...opening(),
-        writer.paragraph(theme.roles.contents, writer.runs(document.words.contents, writer.words)),
-        ...writer.contents(document.nodes, contents.depth, sectionNumbers(input.numbering)),
-      ],
+      body: front,
       cover: false,
       furniture: contentsFurniture,
       pageNumbering: pageNumbering('front'),
@@ -442,6 +463,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       pageNumbering: pageNumbering(segment.matter),
     });
   }
+  if (front !== null) front.push(...writer.listsAfterContents(generated, front.length > 0));
 
   const relationships = new Relationships();
   relationships.add('styles', 'styles.xml');
@@ -478,12 +500,14 @@ export function writeDocx(input: WordWriting): WrittenDocx {
             contextual: own.contextualSpacing,
           },
           wanted:
-            paragraph.lead === undefined
-              ? (paragraph.wanted ?? {})
-              : {
-                  ...paragraph.wanted,
-                  before: (paragraph.wanted?.before ?? own.spaceBefore) + paragraph.lead,
-                },
+            paragraph.held !== undefined
+              ? paragraph.held
+              : paragraph.lead === undefined
+                ? (paragraph.wanted ?? {})
+                : {
+                    ...paragraph.wanted,
+                    before: (paragraph.wanted?.before ?? own.spaceBefore) + paragraph.lead,
+                  },
         };
       }),
     ).forEach((override, index) => {
@@ -597,6 +621,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
         extraStyles: [
           ...ownHeadingStyles(theme),
           ...(contents === null ? [] : contentsStyles(theme, contents.depth)),
+          ...(generated.length === 0 ? [] : [listEntryStyle(theme)]),
         ],
       },
     ),
@@ -654,6 +679,11 @@ class Writer {
   readonly document: Passage;
   readonly words: Passage;
   private readonly headings: ReadonlyMap<number, HeadingStyle>;
+  /**
+   * Each caption Word's fields number, in the order the text meets them, by its sequence's `SEQ`
+   * name: what a list after the contents lists, and Word's update rebuilds it from (Word 2, M9).
+   */
+  private readonly captioned: { sequence: string; words: string; passage: Passage }[] = [];
   /** What the report says of each table, in the order the text meets them (Word 2, ruling R7). */
   readonly reported: OutputReportEntry[] = [];
   /** Each face file's advances, read once, by its hash. */
@@ -1274,6 +1304,7 @@ class Writer {
     }
     const rule = this.numbers.scheme.sequences[entry.sequence]![entry.matter];
     const counter = formatCounter(entry.value, rule.format[rule.format.length - 1]!);
+    this.captioned.push({ sequence: field.sequence, words: captionText(captioned), passage });
     return (
       captionLabel(field, entry.number, counter, (text) => this.runs(text, passage)) +
       this.runs(' ', passage) +
@@ -1299,50 +1330,49 @@ class Writer {
 
   /**
    * **A figure** (Word 2, ruling R8; WO-G): its image, drawn at the size `assemble` gave it against the
-   * Word page, and its caption a paragraph below it in the caption role's style, numbered by Word's
-   * fields (R1), each where template 13 sets them - the caption kept, number and all, where the image
-   * is decorative (decision F-M). As a block, the image stands in a paragraph of its own in the caption
-   * role's style, as the figure's top is spaced by that style's space before, across what its place
-   * leaves of the measure and aligned there as its image style says, kept on the page with its caption
-   * as the PDF's figure is never parted from it. Floated, the image is anchored at the head of the text
-   * area of its caption's page, where Word keeps it out of the way of the text as the PDF's band is:
-   * anchored in its caption, so no empty line stands where the figure stood.
+   * Word page, in a paragraph of its own in the caption role's style - as the figure's top is spaced by
+   * that style's space before - aligned as its image style says and kept on the page with its caption,
+   * as the PDF's figure is never parted from it; and its caption a paragraph below it in the caption
+   * role's style, numbered by Word's fields (R1), the caption kept, number and all, where the image is
+   * decorative (decision F-M). As a block, the image stands across what its place leaves of the
+   * measure. Floated, image and caption are one Word frame (`frame`) at the head of the text area of
+   * the page they fall on, the measure wide, as the PDF's band is: measured, Word keeps them together
+   * there, where an anchored image left its caption in the text.
    */
   private figure(figure: PublishedFigure, place: Place, passage: Passage): WrittenBlock {
     const role = this.theme.roles.caption;
     const size = this.imageSize(figureImageKey(this.at, figure.id));
-    const align = justification(figure.alignment);
-    const own = this.indented(role, place);
-    if (figure.placement === 'float') {
-      // The margin's left and right are the page's, whatever the text's direction.
-      const across = passage.rtl ? mirrored(align) : align;
-      const caption = this.paragraph(
-        role,
-        `<w:r>${this.drawing(figure.path, size, figure.alternative, across)}</w:r>` +
-          this.captionRuns(figure, role, passage),
-        { bidi: passage.rtl, ...own },
-      );
-      return { body: [caption], top: role, bottom: role, container: true };
-    }
-    const measure: Indent = { left: twips(place.start), right: twips(place.end), firstLine: 0 };
-    const style = this.ownIndent(role);
     const properties = this.properties(role);
-    const image = this.paragraph(
-      role,
-      `<w:r>${this.drawing(figure.path, size, figure.alternative, null)}</w:r>`,
-      {
+    const drawn = `<w:r>${this.drawing(figure.path, size, figure.alternative)}</w:r>`;
+    const common = { bidi: passage.rtl, justify: justification(figure.alignment) };
+    if (figure.placement === 'float') {
+      const frame = this.frame();
+      const image = this.paragraph(role, drawn, {
+        ...common,
         keepNext: true,
-        lead: leading(properties),
+        frame,
+        // The band's image at its head; its caption its style's space before below it, and nothing
+        // after it but the frame's clearance, measured against the PDF's band.
+        held: { before: 0, after: 0 },
+        ...this.across(role, TOP_LEVEL),
+      });
+      const caption = this.paragraph(role, this.captionRuns(figure, role, passage), {
         bidi: passage.rtl,
-        justify: align,
-        ...(measure.left === style.left && measure.right === style.right && style.firstLine === 0
-          ? {}
-          : { indent: measure }),
-      },
-    );
+        frame,
+        held: { before: properties.spaceBefore, after: 0 },
+        ...this.indented(role, TOP_LEVEL),
+      });
+      return { body: [image, caption], top: role, bottom: role, container: true };
+    }
+    const image = this.paragraph(role, drawn, {
+      ...common,
+      keepNext: true,
+      lead: leading(properties),
+      ...this.across(role, place),
+    });
     const caption = this.paragraph(role, this.captionRuns(figure, role, passage), {
       bidi: passage.rtl,
-      ...own,
+      ...this.indented(role, place),
     });
     // Template 13's `figure` sets its caption the style's space before and its leading below the
     // image, which has no space of its own; Word sets the leading above the caption's text itself.
@@ -1350,6 +1380,36 @@ class Writer {
     image.wanted = { after: 0 };
     caption.wanted = { before: properties.spaceBefore };
     return { body: [image, caption], top: role, bottom: role, container: true };
+  }
+
+  /**
+   * An image's paragraph's indents: across what its place leaves of the measure, with no first line,
+   * where that differs from its style's.
+   */
+  private across(styleId: string, place: Place): { indent?: Indent } {
+    const measure: Indent = { left: twips(place.start), right: twips(place.end), firstLine: 0 };
+    const style = this.ownIndent(styleId);
+    return measure.left === style.left && measure.right === style.right && style.firstLine === 0
+      ? {}
+      : { indent: measure };
+  }
+
+  /**
+   * **A floated figure's frame** (Word 2, ruling R8; measured): the measure wide, at the head of the
+   * text area (`margin`, `top`) of the page its paragraphs fall on, the text above and below it and
+   * never beside it (`notBeside`), clear of it by the engine's clearance - `place`'s, an em and a half
+   * of the text - less the leading Word sets above the text's first line, where the PDF sets none.
+   * Word groups consecutive paragraphs of one frame into one, which keeps the image and its caption
+   * together as the PDF's band does.
+   */
+  private frame(): string {
+    const text = this.properties(this.theme.places.text);
+    const clearance = FLOAT_CLEARANCE * text.size - leading(text);
+    return (
+      `<w:framePr w:w="${twips(textBlockWidth(this.numbers.format))}" ` +
+      `w:vSpace="${twips(clearance)}" w:wrap="notBeside" w:vAnchor="margin" ` +
+      'w:hAnchor="margin" w:xAlign="center" w:yAlign="top"/>'
+    );
   }
 
   /** A paragraph's indents where its place moves it from its style's, as `indent` gives them. */
@@ -1460,6 +1520,47 @@ class Writer {
   }
 
   /**
+   * **The lists after the contents** (Word 2; measured, M9): each under its title in the list role's
+   * style, starting a page where anything stands before it in the section, as the PDF's weak page break
+   * does; then one `TOC \h \z \c` field over the captions its sequence's `SEQ` name numbers - one
+   * name for the sequence in every matter, as `captionField` writes it - begun in its first entry and
+   * ended in its last, prefilled with each caption paragraph's words, label included, which is what
+   * Word rebuilds, and no page, which only Word can know. The entries are in the style Word rebuilds
+   * them in, `table of figures`, based on the list entry role's (`listEntryStyle`). A caption the
+   * scheme gives no number carries no field, so Word lists it neither before an update nor after.
+   */
+  listsAfterContents(lists: readonly PublishedGeneratedList[], opened: boolean): Paragraph[] {
+    const paragraphs: Paragraph[] = [];
+    for (const list of lists) {
+      const name = sequenceName(list.sequence);
+      // `assemble` refuses the list of equations for Word (`word_not_yet`) until Word 4.
+      if (name === null)
+        throw new Error(`The Word writer does not write a list of ${list.sequence}`);
+      paragraphs.push(
+        this.paragraph(this.theme.roles.list, this.runs(list.title, this.words), {
+          pageBreakBefore: opened || paragraphs.length > 0,
+        }),
+      );
+      const code = ['TOC', 'h', 'z', `c "${name}"`].join(` ${BACKSLASH}`);
+      const entries = this.captioned.filter((each) => each.sequence === name);
+      const shown = entries.length === 0 ? [null] : entries;
+      shown.forEach((entry, index) => {
+        paragraphs.push(
+          this.paragraph(
+            this.theme.roles.listEntry,
+            (index === 0 ? fieldBegin(code) : '') +
+              (entry === null ? '' : this.runs(entry.words, entry.passage)) +
+              (index === shown.length - 1 ? FIELD_END : ''),
+            {},
+            LIST_ENTRY_STYLE,
+          ),
+        );
+      });
+    }
+    return paragraphs;
+  }
+
+  /**
    * A running head or foot (R8): the notice's paragraph stands above it, in the header. One paragraph
    * in the running role's style, its three slots at its start, at a centre tab stop at the middle of
    * the text block and at a right tab stop at its end. The section is the level-1 heading's number and
@@ -1543,7 +1644,7 @@ class Writer {
         if (linking !== null) xml += '</w:hyperlink>';
         linking = null;
         const size = this.imageSize(inlineImageKey(this.at, site, index));
-        xml += `<w:r>${this.drawing(run.image.path, size, run.image.alternative, null)}</w:r>`;
+        xml += `<w:r>${this.drawing(run.image.path, size, run.image.alternative)}</w:r>`;
         continue;
       }
       if (!('text' in run)) {
@@ -1577,17 +1678,14 @@ class Writer {
 
   /**
    * **A drawing of an image** (Word 2, ruling R8; measured, M7): the picture of its image's part - the
-   * part related once however often the image is placed - its extent the size given, and numbered, in
-   * `wp:docPr`, in the order the document holds its drawings, its description there, or Word's
-   * decorative flag where it has none. In the line, `wp:inline`; floated, a `wp:anchor` at the head of
-   * the text area - its margin's top - aligned across the measure as `align` says, which the text
-   * stands clear of above and below (`wrapTopAndBottom`) as it does of the PDF's band.
+   * part related once however often the image is placed - in the line (`wp:inline`), its extent the size
+   * given, and numbered, in `wp:docPr`, in the order the document holds its drawings, its description
+   * there, or Word's decorative flag where it has none.
    */
   private drawing(
     path: string,
     size: WordImage,
     alternative: PublishedFigure['alternative'],
-    align: 'left' | 'center' | 'right' | null,
   ): string {
     let relationship = this.media.get(path);
     if (relationship === undefined) {
@@ -1598,48 +1696,22 @@ class Writer {
     const number = this.drawings;
     const cx = Math.round(size.width * EMU_PER_POINT);
     const cy = Math.round(size.height * EMU_PER_POINT);
-    const extent = `<wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>`;
-    const docPr =
+    return (
+      '<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
+      `<wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>` +
       `<wp:docPr id="${number}" name="Picture ${number}"` +
       (alternative === null
         ? `>${DECORATIVE}</wp:docPr>`
-        : ` descr="${escapeAttribute(alternative.text)}"/>`);
-    const graphic =
+        : ` descr="${escapeAttribute(alternative.text)}"/>`) +
+      '<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>' +
       `<a:graphic><a:graphicData uri="${PIC_NS}"><pic:pic>` +
       `<pic:nvPicPr><pic:cNvPr id="${number}" name="${escapeXml(path.slice(path.lastIndexOf('/') + 1))}"/>` +
       '<pic:cNvPicPr><a:picLocks noChangeAspect="1" noChangeArrowheads="1"/></pic:cNvPicPr></pic:nvPicPr>' +
       `<pic:blipFill><a:blip r:embed="${relationship}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>` +
       `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
       '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>' +
-      '</pic:pic></a:graphicData></a:graphic>';
-    const frame =
-      '<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>';
-    if (align === null) {
-      return (
-        '<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
-        extent +
-        docPr +
-        frame +
-        graphic +
-        '</wp:inline></w:drawing>'
-      );
-    }
-    // The engine's clearance below a float, `place`'s an em and a half of the text around it.
-    const clearance = Math.round(
-      FLOAT_CLEARANCE * this.properties(this.theme.places.text).size * EMU_PER_POINT,
-    );
-    return (
-      `<w:drawing><wp:anchor distT="0" distB="${clearance}" distL="0" distR="0" simplePos="0" ` +
-      `relativeHeight="${number}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="0">` +
-      '<wp:simplePos x="0" y="0"/>' +
-      `<wp:positionH relativeFrom="margin"><wp:align>${align}</wp:align></wp:positionH>` +
-      '<wp:positionV relativeFrom="margin"><wp:align>top</wp:align></wp:positionV>' +
-      extent +
-      '<wp:wrapTopAndBottom/>' +
-      docPr +
-      frame +
-      graphic +
-      '</wp:anchor></w:drawing>'
+      '</pic:pic></a:graphicData></a:graphic>' +
+      '</wp:inline></w:drawing>'
     );
   }
 
@@ -1846,6 +1918,7 @@ function paragraphXml(paragraph: Paragraph, sectionProperties?: string): string 
     `<w:pStyle w:val="${paragraph.style}"/>` +
     (paragraph.keepNext === true ? '<w:keepNext/>' : '') +
     (paragraph.pageBreakBefore === true ? '<w:pageBreakBefore/>' : '') +
+    (paragraph.frame ?? '') +
     (paragraph.numbering ?? '') +
     (paragraph.tabs ?? '') +
     (paragraph.bidi === true ? '<w:bidi/>' : '') +
@@ -2081,11 +2154,6 @@ function justification(alignment: PublishedFigure['alignment']): 'left' | 'cente
   return alignment === 'start' ? 'left' : alignment === 'end' ? 'right' : 'center';
 }
 
-/** The other side. */
-function mirrored(align: 'left' | 'center' | 'right'): 'left' | 'center' | 'right' {
-  return align === 'left' ? 'right' : align === 'right' ? 'left' : 'center';
-}
-
 /**
  * Text as an attribute's value, whose line feeds, carriage returns and tabs are kept as references,
  * which a reader would otherwise read as spaces.
@@ -2154,6 +2222,22 @@ function ownHeadingStyles(theme: ResolvedTheme): string[] {
         `<w:numId w:val="${HEADING_LISTS.body}"/></w:numPr>` +
         `<w:outlineLvl w:val="${depth - 1}"/></w:pPr></w:style>`,
     );
+}
+
+/** The style Word sets a rebuilt list of figures' entries in, by its identifier. */
+const LIST_ENTRY_STYLE = 'TableofFigures';
+
+/**
+ * The entries of a list after the contents in the style Word names `table of figures`, which it sets a
+ * rebuilt list's entries in (M9) - a list of tables' too: the list entry role's style, which it is
+ * based on and adds nothing to.
+ */
+function listEntryStyle(theme: ResolvedTheme): string {
+  return (
+    `<w:style w:type="paragraph" w:styleId="${LIST_ENTRY_STYLE}">` +
+    `<w:name w:val="table of figures"/><w:basedOn w:val="${theme.roles.listEntry}"/>` +
+    '<w:uiPriority w:val="99"/><w:unhideWhenUsed/></w:style>'
+  );
 }
 
 /**

@@ -1712,12 +1712,16 @@ export function assemble(input: AssembleInput): Assembled {
     failures.push(failure('compose', 'nothing_to_publish', null, null, null));
   }
   // Each list the layout declares that has an entry, in its order (ruling R7): a list of nothing is
-  // not published, as a contents of nothing is not (decision K). Word 1 writes none (R3), and a list
-  // stands in no node, so it is named by its sequence alone.
+  // not published, as a contents of nothing is not (decision K). Word writes the lists of figures and
+  // of tables (Word 2), and not yet the list of equations (Word 4) - which has an entry only where a
+  // numbered equation stands, itself refused for Word - named by its sequence alone, since a list
+  // stands in no node.
   const lists = layout.matter.lists
     .filter((list) => listOf(conditioned, numbering, list.sequence).length > 0)
     .map((list) => ({ sequence: list.sequence, title: list.title }));
-  for (const list of lists) wordNotYet(null, null, `listOf:${list.sequence}`);
+  for (const list of lists) {
+    if (list.sequence === 'equation') wordNotYet(null, null, `listOf:${list.sequence}`);
+  }
 
   // Either language refused is already a failure; the null checks only narrow the types. So does the
   // Word page, which a request for Word under a layout with none has already failed for.

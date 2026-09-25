@@ -7,7 +7,6 @@ import {
   defaultLayout,
   OUTLINE_SCHEMA_VERSION,
   parseContentDocument,
-  parseLayout,
   parseOutlineDocument,
   publishedImagePath,
   readTheme,
@@ -333,8 +332,7 @@ const theme: ResolvedTheme = (() => {
  * Everything Word 1 writes, under the default layout's 0.6 and the default theme: a cover, a contents,
  * front matter, a body two levels deep, an appendix, every mark, a link, a German passage and a Hebrew
  * one set right to left - and Word 2's lists, quotations, preformatted text, a table in a table style
- * of its own, figures and images in a line. The layout lists nothing after the contents, which Word 3
- * writes and Word refuses until then (`word_not_yet`).
+ * of its own, figures and images in a line, and the lists of figures and of tables after the contents.
  */
 const input: AssembleInput & { readonly layout: Layout } = {
   formats: ['pdf', 'docx'],
@@ -406,7 +404,7 @@ const input: AssembleInput & { readonly layout: Layout } = {
     [id('figures'), FIGURED],
   ]),
   refused: [],
-  layout: parseLayout({ ...defaultLayout, matter: { ...defaultLayout.matter, lists: [] } }),
+  layout: defaultLayout,
   theme,
   revision: '0.7',
   covers: fonts.covers,
@@ -448,8 +446,9 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
     const numbering = strFromU8(parts['word/numbering.xml']!);
     expect(numbering.match(/<w:abstractNum /g)).toHaveLength(9);
     expect(numbering).toContain('<w:start w:val="0"/><w:numFmt w:val="decimal"/>');
-    // The three figures and the two images in a line, each a drawing numbered in order - two in the
-    // line, one floated - described or flagged decorative, drawn from the two images' parts.
+    // The three figures and the two images in a line, each a drawing in its line numbered in order -
+    // the floated one's in the frame it shares with its caption - described or flagged decorative,
+    // drawn from the two images' parts.
     const document = strFromU8(parts['word/document.xml']!);
     expect([...document.matchAll(/<wp:docPr id="(\d+)"/g)].map((match) => match[1])).toEqual([
       '1',
@@ -458,8 +457,15 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
       '4',
       '5',
     ]);
-    expect(document.match(/<wp:inline /g)).toHaveLength(4);
-    expect(document.match(/<wp:anchor /g)).toHaveLength(1);
+    expect(document.match(/<wp:inline /g)).toHaveLength(5);
+    expect(document.match(/<w:framePr /g)).toHaveLength(2);
+    // The lists after the contents, each a TOC field over its sequence's captions.
+    expect(document).toContain(
+      '<w:instrText xml:space="preserve"> TOC \\h \\z \\c &quot;Figure&quot; </w:instrText>',
+    );
+    expect(document).toContain(
+      '<w:instrText xml:space="preserve"> TOC \\h \\z \\c &quot;Table&quot; </w:instrText>',
+    );
     expect(document.match(/descr="Two red squares"/g)).toHaveLength(2);
     expect(document.match(/descr="A blue square"/g)).toHaveLength(2);
     expect(document.match(/<adec:decorative /g)).toHaveLength(1);
@@ -676,7 +682,11 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
     expect([...spoken.keys()].sort()).toEqual(['de-DE', 'en', 'en-GB', 'fr-FR', 'he-IL']);
     // The layout's own words, in the layout's language, as the PDF sets them.
     expect(spoken.get('en')).toEqual(
-      new Set([assembled.document.words.noticeSentence, assembled.document.words.contents]),
+      new Set([
+        assembled.document.words.noticeSentence,
+        assembled.document.words.contents,
+        ...assembled.document.front.lists.map((list) => list.title),
+      ]),
     );
     expect(spoken.get('de-DE')).toEqual(new Set(['Grüße', 'Grüße aus Berlin.']));
     expect(spoken.get('he-IL')).toEqual(new Set([SEFER, `${SHALOM} Ada ${SEFER} 2026.`]));

@@ -4982,7 +4982,7 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(failuresOf(assemble({ ...before, formats: ['docx'] }))).toEqual([unsupported]);
   });
 
-  it('refuses what Word does not write yet - an equation, a footnote, a cross-reference and the lists after the contents - by name where it stands, and still publishes the PDF', () => {
+  it('refuses what Word does not write yet - an equation, a footnote, a cross-reference and the list of equations - by name where it stands, and still publishes the PDF', () => {
     const over = holding(
       list('L1', paragraph('i1', text('An item.'))),
       quotation('q1', paragraph('q1p', text('Quoted.'))),
@@ -5002,12 +5002,30 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       notYet('p2', 'equation'),
       notYet('p3', 'footnote'),
       notYet('p4', 'crossReference'),
-      // The default layout lists figures and tables after the contents, where there are any.
-      listNotYet('figure'),
-      listNotYet('table'),
     ];
     expect(docx).toEqual(refused);
     expect(both).toEqual(refused);
+    // The lists of figures and of tables are Word's since Word 2's fourth task; the list of equations
+    // is Word 4's. It lists numbered equations alone, so it stands only beside one, itself refused.
+    const equations = layoutWith((layout) => {
+      layout.matter.lists = [...layout.matter.lists, { sequence: 'equation', title: 'Equations' }];
+    });
+    expect(failuresFor({ ...over, layout: equations }).docx).toEqual(refused);
+    const numbered = { ...holding({ ...equation('e2'), numbered: true }), layout: equations };
+    const listed = [notYet('e2', 'equation'), listNotYet('equation')];
+    expect(failuresFor(numbered).docx).toEqual(listed);
+    expect(failuresFor(numbered).both).toEqual(listed);
+  });
+
+  it('publishes the lists of figures and of tables after the contents for Word, as the PDF does', () => {
+    const over = holding(table('t1'), figure('f1'));
+    const { pdf, docx } = assembledFor(over);
+    if (!pdf.ok || !docx.ok) throw new Error('refused');
+    expect(docx.document.front.lists).toEqual([
+      { sequence: 'figure', title: 'Figures' },
+      { sequence: 'table', title: 'Tables' },
+    ]);
+    expect(JSON.stringify(docx.document)).toBe(JSON.stringify(pdf.document));
   });
 
   it('publishes a list, a quotation, preformatted text, a table, a figure and an image for Word, in the document the PDF is made from (Word 2, ruling R2)', () => {
@@ -5041,11 +5059,7 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       quotation('q1', list('L1', paragraph('i1', text('One '), inlineEquation))),
       table('t1', { caption: [text('Readings '), inlineEquation] }),
     );
-    expect(failuresFor(inner).docx).toEqual([
-      notYet('i1', 'equation'),
-      notYet('t1', 'equation'),
-      listNotYet('table'),
-    ]);
+    expect(failuresFor(inner).docx).toEqual([notYet('i1', 'equation'), notYet('t1', 'equation')]);
     // A section's title may hold an equation and a reference, and is named by its node alone.
     const titled = {
       ...section('results', 'Results'),
@@ -5139,12 +5153,8 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     // Word does not write a footnote yet (Word 3), so it is refused by name wherever it stands.
     expect(failuresFor(holding(headed))).toEqual({
       pdf: [failed('footnote_not_publishable_here', 'h1')],
-      docx: [notYet('h1', 'footnote'), listNotYet('table')],
-      both: [
-        notYet('h1', 'footnote'),
-        failed('footnote_not_publishable_here', 'h1'),
-        listNotYet('table'),
-      ],
+      docx: [notYet('h1', 'footnote')],
+      both: [notYet('h1', 'footnote'), failed('footnote_not_publishable_here', 'h1')],
     });
     // A footnote in a caption is refused whatever the format: it is where no footnote may stand.
     const captioned = table('t2', {
@@ -5153,7 +5163,6 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(failuresFor(holding(captioned)).docx).toEqual([
       notYet('t2', 'footnote'),
       failed('footnote_not_publishable_here', 't2'),
-      listNotYet('table'),
     ]);
   });
 
@@ -5173,12 +5182,11 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     // Word does not write a reference yet (Word 3), so it is refused by name where it stands.
     expect(failuresFor(over)).toEqual({
       pdf: [unavailable('x1', 'page'), unavailable('x2', 'number')],
-      docx: [unavailable('x2', 'number'), notYet('b1', 'crossReference'), listNotYet('table')],
+      docx: [unavailable('x2', 'number'), notYet('b1', 'crossReference')],
       both: [
         unavailable('x1', 'page'),
         unavailable('x2', 'number'),
         notYet('b1', 'crossReference'),
-        listNotYet('table'),
       ],
     });
   });
