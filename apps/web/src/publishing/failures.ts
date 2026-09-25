@@ -173,10 +173,16 @@ export function failureWords(failure: Failure): string {
     case 'style_not_applicable':
       return `This paragraph, table or figure uses the style ${failure.detail ?? ''}, which cannot be used where it stands.`;
     // Themes 1 (STY-042): the theme records each typeface's licence, and this one's forbids embedding
-    // it in a PDF. Nothing in the document caused it and another attempt fails the same way, so it
-    // blames the theme, as `layout_glyph_missing` blames the layout, and never says to publish again.
-    case 'typeface_not_embeddable':
-      return `The typeface ${failure.detail ?? ''} cannot be embedded in a PDF: its licence does not permit it. The publication's theme has to change before this document can be published.`;
+    // it in a PDF, or since Word 1 in a Word document. Nothing in the document caused it and another
+    // attempt fails the same way, so it blames the theme, as `layout_glyph_missing` blames the layout,
+    // and never says to publish again. `detail` is the family, and where Word refused it the family
+    // and the format, `<family>: docx` (the final review of Word 1, M6).
+    case 'typeface_not_embeddable': {
+      const detail = failure.detail ?? '';
+      const word = detail.endsWith(': docx');
+      const family = word ? detail.slice(0, -': docx'.length) : detail;
+      return `The typeface ${family} cannot be embedded in ${word ? 'a Word document' : 'a PDF'}: its licence does not permit it. The publication's theme has to change before this document can be published.`;
+    }
     // Themes 1 (ruling R5): the theme names a typeface by its files' hashes, and the worker holds only
     // the faces pinned in its image, so a face it does not hold cannot set a word. As the licence's
     // refusal, it is the theme's to change, and another attempt finds the same faces. `detail` is the

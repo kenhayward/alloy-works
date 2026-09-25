@@ -290,6 +290,27 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Publish again');
   });
 
+  it("names a Word document where a typeface's licence forbids embedding it there", async () => {
+    // `detail` is the family and the format, `<family>: docx`, where Word refused it (the final review
+    // of Word 1, M6); a PDF's is the family alone.
+    const fake = failing([
+      {
+        stage: 'compose',
+        code: 'typeface_not_embeddable',
+        node: null,
+        block: null,
+        detail: 'Alloy Sans: docx',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      "The typeface Alloy Sans cannot be embedded in a Word document: its licence does not permit it. The publication's theme has to change before this document can be published.",
+    );
+    expect(why).not.toHaveTextContent('PDF');
+  });
+
   it('says a typeface the theme names is not one the publisher holds, and why, blaming the theme', async () => {
     // `detail` is the family and why, from a fixed list (the final review of themes 1, M1): the files
     // the theme names for it, the measurements it records, or equations it cannot set.

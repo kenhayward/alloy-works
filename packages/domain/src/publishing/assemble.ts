@@ -344,18 +344,23 @@ export function assemble(input: AssembleInput): Assembled {
    * publish, `typeface_not_embeddable`, naming its family, once (STY-042). For Word (Word 1, ruling
    * R2) a face that may not be embedded there and names one that may in its place, `wordFamily`, is
    * not refused: Word sets the text in that one, and the writer reports it (STY-052). `readTheme`
-   * refuses a face that names none, so only a theme built past the reader is refused for Word. A face
-   * the document never sets text in is never embedded and never refused. Answers the family, which is
-   * what the glyph check asks - the same files set Word's text as the PDF's.
+   * refuses a face that names none, so only a theme built past the reader is refused for Word, its
+   * `detail` the family and the format, `<family>: docx`, as `typeface_unavailable` gives its reason,
+   * so the page can name a Word document rather than a PDF (the final review of Word 1, M6); refused
+   * for both, it is said for each. A face the document never sets text in is never embedded and never
+   * refused. Answers the family, which is what the glyph check asks - the same files set Word's text
+   * as the PDF's.
    */
   const embedded = new Set<string>();
   const setBy = (typeface: Typeface): string => {
     if (!embedded.has(typeface.id)) {
       embedded.add(typeface.id);
-      const inPdf = pdf && !typeface.embedding.pdf;
-      const inWord = docx && !typeface.embedding.word && typeface.wordFamily === undefined;
-      if (inPdf || inWord) {
+      if (pdf && !typeface.embedding.pdf) {
         failOnce(failure('compose', 'typeface_not_embeddable', null, null, typeface.family));
+      }
+      if (docx && !typeface.embedding.word && typeface.wordFamily === undefined) {
+        const detail = `${typeface.family}: docx`;
+        failOnce(failure('compose', 'typeface_not_embeddable', null, null, detail));
       }
     }
     return typeface.family;

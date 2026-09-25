@@ -5276,19 +5276,33 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       both: [],
     });
     // A theme `readTheme` read never names a face Word may not embed with none in its place
-    // (STY-052); one built past the reader is refused for Word as a PDF's is.
+    // (STY-052); one built past the reader is refused for Word as a PDF's is, `detail` naming the
+    // format after the family, so the page can say a Word document rather than a PDF (the final
+    // review of Word 1, M6).
     const bare = withSerif({ pdf: true, word: true });
     const body = bare.theme.paragraphStyles.get(bare.theme.places.text)!;
-    const unsubstituted = { ...body.typeface, embedding: { pdf: true, word: false } };
-    const theme: ResolvedTheme = {
+    const unsubstituted = (embedding: { pdf: boolean; word: boolean }): ResolvedTheme => ({
       ...bare.theme,
       paragraphStyles: new Map(
         [...bare.theme.paragraphStyles].map(([key, style]) => [
           key,
-          style.typeface.id === body.typeface.id ? { ...style, typeface: unsubstituted } : style,
+          style.typeface.id === body.typeface.id
+            ? { ...style, typeface: { ...body.typeface, embedding } }
+            : style,
         ]),
       ),
-    };
-    expect(failuresFor({ ...bare, theme })).toEqual({ pdf: [], docx: [refusal], both: [refusal] });
+    });
+    const inWord = { ...refusal, detail: 'Liberation Serif: docx' };
+    expect(failuresFor({ ...bare, theme: unsubstituted({ pdf: true, word: false }) })).toEqual({
+      pdf: [],
+      docx: [inWord],
+      both: [inWord],
+    });
+    // Refused in both, it is said for each.
+    expect(failuresFor({ ...bare, theme: unsubstituted({ pdf: false, word: false }) })).toEqual({
+      pdf: [refusal],
+      docx: [inWord],
+      both: [refusal, inWord],
+    });
   });
 });
