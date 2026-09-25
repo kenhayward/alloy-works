@@ -516,8 +516,8 @@ describe('writeDocx: the package (Word 1, ruling R6)', () => {
     }
   });
 
-  it('is the Word writer at word/1', () => {
-    expect(WORD_WRITER_VERSION).toBe('word/1');
+  it('is the Word writer at word/2', () => {
+    expect(WORD_WRITER_VERSION).toBe('word/2');
   });
 });
 
