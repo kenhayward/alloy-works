@@ -1663,6 +1663,35 @@ describe('writeDocx: preformatted text (Word 2, ruling R5)', () => {
     expect(indents(at('four'))).toBeUndefined();
   });
 
+  it("sets a block whose widest line the PDF's measure holds but Word's panel does not the least whole twentieths of a point closer that fits it, every line alike, and no closer than half a point's size would", () => {
+    // Measured in Word 16 (the Word check, Word 2 task 5): 8.8pt text is 9pt in Word, in a panel 4pt
+    // narrower than the PDF's, so of the 83 columns the PDF's measure holds Word set 80 and wrapped
+    // the rest. 83 at 9pt is 448.20pt against a room of 435.28; 4 twentieths closer is 431.60.
+    const widest = '1234567890'.repeat(9).slice(0, 83);
+    const fits = 'x'.repeat(80);
+    const over = 'y'.repeat(90);
+    const set = writtenOf([
+      code('W1', `${widest}\nshort`),
+      said('between'),
+      code('W2', fits),
+      said('and'),
+      code('W3', over),
+    ]);
+    const { at } = bodyOf(set.docx);
+    const closer = (paragraph: Element) =>
+      all(paragraph, 'w:r').map((run) => first(run, 'w:spacing')?.attrs['w:val'] ?? null);
+    expect(closer(at(widest))).toEqual(['-4']);
+    expect(closer(at('short'))).toEqual(['-4']);
+    expect(closer(at(fits))).toEqual([null]);
+    // Ninety columns would want 12 twentieths, more than the 6 the next half point down gives: Word
+    // wraps it as it would have, rather than set its characters over each other.
+    expect(closer(at(over))).toEqual([null]);
+    // In the order CT_RPr keeps: after the colour, before the size.
+    const properties = kids(first(at(widest), 'w:rPr')!).map((each) => each.name);
+    expect(properties.indexOf('w:spacing')).toBeGreaterThan(-1);
+    expect(properties.slice(properties.indexOf('w:spacing') + 1)).not.toContain('w:color');
+  });
+
   it('keeps a panel apart from a paragraph of another style with the same panel, which Word would join to it too', () => {
     const labelled = writtenOf([code('P1', 'one'), code('P2', 'two', 'shell')], {
       theme: themeWith((inputs) => {

@@ -10,6 +10,7 @@ import {
   type WordInput,
 } from '../publishing/assemble.js';
 import type { PageFormat, PublishingFormat, SlotPart } from '../publishing/layout.js';
+import { columnsOf } from '../publishing/measure.js';
 import {
   parseOutputReport,
   type OutputReport,
@@ -1033,8 +1034,9 @@ class Writer {
     const role = this.theme.roles.preformatted;
     // One panel, however many lines: `panelsApart` keeps it apart from a panel beside it.
     const panel = {};
+    const closer = this.closer(block, role, place);
     const lines = block.lines.map((line) =>
-      this.paragraph(role, this.textRun(line, [], role, passage, null), {
+      this.paragraph(role, this.textRun(line, [], role, passage, null, false, closer), {
         bidi: passage.rtl,
         panel,
         ...this.indented(role, place),
@@ -1053,6 +1055,33 @@ class Writer {
     });
     this.space(label, labelRole, lines[0]!, role, true);
     return { body: [label, ...lines], top: labelRole, bottom: role, container: false };
+  }
+
+  /**
+   * **How much closer a preformatted block's characters are set in Word** than its face sets them, in
+   * twentieths of a point (Word 2, task 5; measured in the Word check): none where its widest line fits
+   * its panel. `assemble` holds a line to the columns the PDF's measure has room for, and refuses a
+   * longer one, so the PDF never wraps one; but Word sets the text at the nearest half point - 8.8pt
+   * at 9 - in a panel 4pt narrower than the PDF's, its fill reaching 2pt past its border's spacing
+   * each side (`panelInset`), and of the 83 columns the default's PDF holds, Word set 80 and wrapped
+   * the rest. So a block whose widest line Word would wrap has every character of every line set the
+   * least whole twentieths closer that fits it, alike so its columns stay columns - 4 under the
+   * default - counting its columns and their advance as `assemble` counts them. No closer than the
+   * next half point down would set it: a line wanting more is left for Word to wrap, as it would have,
+   * rather than set with its characters over each other. A twip each side is kept for `panelsApart`.
+   */
+  private closer(block: PublishedPreformatted, role: string, place: Place): number {
+    const style = this.style(role);
+    const advance = style.typeface.advance;
+    if (advance === undefined) return 0;
+    const column = (Math.round(style.properties.size * 2) / 2) * advance;
+    const indent = this.indent(role, place);
+    const room = textBlockWidth(this.numbers.format) - (indent.left + indent.right + 2) / 20;
+    const columns = Math.max(...block.lines.map(columnsOf));
+    const over = columns * column - room;
+    if (over <= 0) return 0;
+    const closer = Math.ceil((over / columns) * 20);
+    return closer > (advance / 2) * 20 ? 0 : closer;
   }
 
   /**
@@ -1722,6 +1751,7 @@ class Writer {
     passage: Passage,
     language: PublishedLanguage | null,
     strong = false,
+    closer = 0,
   ): string {
     const style = this.style(styleId);
     const rendered = runFormat(this.theme, style, marks);
@@ -1730,7 +1760,7 @@ class Writer {
     const run = wordRun(this.theme, style, marks);
     return runXml(
       text,
-      pinned(strong ? { ...run, pins: { ...run.pins, bold: true } } : run) +
+      pinned(strong ? { ...run, pins: { ...run.pins, bold: true } } : run, closer) +
         languageProperties(
           passage,
           language === null ? null : wordLanguage(language),
@@ -1973,9 +2003,10 @@ function runXml(text: string, properties: string): string {
 
 /**
  * What `wordRun` says of a run, in CT_RPr's order: its character style, then each value pinned, in
- * pairs where Word reads a complex script's apart (task 2's projection spells them the same way).
+ * pairs where Word reads a complex script's apart (task 2's projection spells them the same way); and
+ * where a preformatted block's characters are set closer, by how much (`closer`).
  */
-function pinned(run: WordRun): string {
+function pinned(run: WordRun, closer = 0): string {
   const { pins } = run;
   return (
     (run.characterStyle === undefined
@@ -1985,6 +2016,7 @@ function pinned(run: WordRun): string {
     (pins.bold === undefined ? '' : toggle('b', pins.bold)) +
     (pins.italic === undefined ? '' : toggle('i', pins.italic)) +
     (pins.colour === undefined ? '' : `<w:color w:val="${hex(pins.colour)}"/>`) +
+    (closer === 0 ? '' : `<w:spacing w:val="${-closer}"/>`) +
     (pins.size === undefined ? '' : size(pins.size)) +
     (pins.underline === undefined ? '' : `<w:u w:val="${pins.underline ? 'single' : 'none'}"/>`) +
     (pins.position === undefined ? '' : `<w:vertAlign w:val="${pins.position}"/>`)

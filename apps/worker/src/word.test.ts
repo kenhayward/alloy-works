@@ -96,7 +96,8 @@ const quotation = (name: string, attribution: string, ...content: unknown[]) => 
 /**
  * What Word 2's second task writes: lists of each kind nested three deep, each with a start and a
  * format where it is ordered, their items of more than one paragraph; a definition list; two
- * quotations in a row, each attributed; and two blocks of preformatted text in a row.
+ * quotations in a row, each attributed; and two blocks of preformatted text in a row, the second with
+ * a line as wide as the PDF's measure holds.
  */
 const LISTED = component('Steps', [
   list(
@@ -153,7 +154,8 @@ const LISTED = component('Steps', [
   ),
   quotation('Q2', 'Grace', paragraph('q3', text('Then measure again.'))),
   { type: 'preformatted', id: 'C1', language: 'shell', text: 'tray open\n  guide up' },
-  { type: 'preformatted', id: 'C2', text: 'tray closed' },
+  // Its second line as wide as the PDF's measure holds, which Word sets its characters closer for.
+  { type: 'preformatted', id: 'C2', text: `tray closed\n${'1234567890'.repeat(9).slice(0, 83)}` },
 ]);
 
 const cell = (value: string, spans: { colspan?: number; rowspan?: number } = {}) => ({
@@ -446,6 +448,10 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
     const numbering = strFromU8(parts['word/numbering.xml']!);
     expect(numbering.match(/<w:abstractNum /g)).toHaveLength(9);
     expect(numbering).toContain('<w:start w:val="0"/><w:numFmt w:val="decimal"/>');
+    // The widest preformatted line's characters set closer, in the place CT_RPr gives it.
+    expect(strFromU8(parts['word/document.xml']!).match(/<w:spacing w:val="-4"\/>/g)).toHaveLength(
+      2,
+    );
     // The three figures and the two images in a line, each a drawing in its line numbered in order -
     // the floated one's in the frame it shares with its caption - described or flagged decorative,
     // drawn from the two images' parts.
