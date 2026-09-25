@@ -271,7 +271,7 @@ change meets it.
 
 Passing the validator says Word will open a file, not what it will show. **The Word check opens the
 writer's fixtures in Word itself**, as a standing practice (PUB-029): `apps/worker/src/word-check.test.ts`
-makes seven documents through the worker's own path - `assemble` under the default theme and layout
+makes nine documents through the worker's own path - `assemble` under the default theme and layout
 with the worker's own face files, then `writeDocx` - and `apps/worker/scripts/word-check.ps1` opens
 each in a hidden Word through COM, updates its contents and fields, reads every section, paragraph,
 list string and field back, has Word export it to PDF, and saves it again. The test then checks ten
@@ -285,6 +285,23 @@ revision on every page but the cover, right to left too; the Liberation faces ar
 visible character is set in them, never Times New Roman, with one exception Word makes and the test
 pins (digits alone in a right-to-left heading); and saving again changes no paragraph's text, style or
 number.
+
+Since Word 2 it also holds Word to the PDF of the same document. One fixture carries every construct
+Word 2 writes - lists of each kind, format and start nested to the ninth level, a definition list, two
+attributed quotations in a row, two preformatted blocks in a row and a line as wide as the PDF's
+measure holds, a banded table crossing a page, described, decorative and floated figures, images in a
+line and in a cell - and is compiled through template 13 beside it, with the same image bytes; a
+second numbers its captions under the third and the ninth levels. Every caption field is prefilled
+"9" before Word opens it. The test then checks nine things more, reading both PDFs by baseline and by
+their operators: every list string is the marker the PDF prints; every step between two lines of the
+lists and the quotations both PDFs set on one page is the PDF's within a point, but a term above its
+definition, which is Word's line; two preformatted blocks are two panels; the widest line stays one
+line; the table's header rows are marked and repeated on every page its body reaches, and every
+cell's fill is the one the PDF paints behind the same words; every caption's label is the numbering
+table's after the update; every image is the PDF's size within half a point, described or flagged
+decorative; the floated figure and its caption are one frame at the head of the page, where the PDF
+sets them; and the lists after the contents name every figure and table with the page Word sets it
+on, which is the page the PDF's lists name.
 
 - **Who and when.** Whoever changes the Word writer - `packages/domain/src/word/`, the theme's Word
   projection or `wordRun` - runs it before the change lands, on Windows with Word installed. **A pull

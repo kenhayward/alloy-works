@@ -12,7 +12,11 @@
 # with its style, its list string, its page and where its first line stands on it; the contents'
 # entries as opened and after the update; whether it embeds its faces; Word's own PDF of it,
 # <name>.pdf, for the per-page reading COM cannot give; and the round trip, a copy saved by Word as
-# <name>-saved.docx and reopened, with every paragraph read again.
+# <name>-saved.docx and reopened, with every paragraph read again. And what Word 2 writes (ruling R9),
+# after the update: each list after the contents (a table of figures) by its paragraphs; every table's
+# title and cells, each cell with its fill, whether its row is a header row Word repeats, and its page;
+# every image in a line, with its description, its decorative flag, its size and whether it stands in
+# a frame; and every frame, with what it holds and where it is placed from.
 #
 # Tracks the WINWORD process it started and stops only that one, if Quit leaves it running. Where
 # starting Word started no process of its own, it attached to one somebody else runs, and it closes
@@ -31,8 +35,71 @@ $wdDoNotSaveChanges = 0
 
 function Clean([string]$s) {
   # A paragraph mark, a cell's end, a line break and a page break, each read as a space; tabs are kept.
+  # An image in a line is read as Word gives it, a slash.
   if ($null -eq $s) { return '' }
   return (($s -replace "[\r\a\x0b\x0c]", ' ').Trim())
+}
+
+# A colour as COM gives it, blue-green-red in an integer, as the PDF's #rrggbb less its hash; or auto.
+function Rgb([int]$c) {
+  if ($c -eq -16777216) { return 'auto' }
+  $h = '{0:x6}' -f $c
+  return $h.Substring(4, 2) + $h.Substring(2, 2) + $h.Substring(0, 2)
+}
+
+function ReadFigureLists($doc) {
+  $lists = @()
+  foreach ($t in $doc.TablesOfFigures) {
+    $list = @()
+    foreach ($para in $t.Range.Paragraphs) {
+      $list += [ordered]@{ text = (Clean $para.Range.Text); style = [string]$para.Style.NameLocal }
+    }
+    $lists += , $list
+  }
+  return , $lists
+}
+
+function ReadTables($doc) {
+  $list = @()
+  foreach ($t in $doc.Tables) {
+    $cells = @()
+    # By its cells: a table with a vertical merge has no row COM will hand out, but each cell's range
+    # still says whether the row it stands in is a header row.
+    foreach ($c in $t.Range.Cells) {
+      $r = $c.Range
+      $cells += [ordered]@{
+        row = $c.RowIndex; column = $c.ColumnIndex; text = (Clean $r.Text)
+        fill = (Rgb $c.Shading.BackgroundPatternColor); heading = [int]$r.Rows.HeadingFormat
+        page = $r.Information($wdActiveEndPageNumber)
+      }
+    }
+    $list += [ordered]@{ title = [string]$t.Title; cells = $cells }
+  }
+  return , $list
+}
+
+function ReadImages($doc) {
+  $list = @()
+  foreach ($s in $doc.InlineShapes) {
+    $r = $s.Range
+    $list += [ordered]@{
+      alternative = [string]$s.AlternativeText; decorative = [int]$s.Decorative
+      width = $s.Width; height = $s.Height; page = $r.Information($wdActiveEndPageNumber); framed = $r.Frames.Count
+    }
+  }
+  return , $list
+}
+
+function ReadFrames($doc) {
+  $list = @()
+  foreach ($f in $doc.Frames) {
+    $r = $f.Range
+    $list += [ordered]@{
+      text = (Clean $r.Text); images = $r.InlineShapes.Count; page = $r.Information($wdActiveEndPageNumber)
+      vertical = $f.VerticalPosition; relativeVertical = $f.RelativeVerticalPosition
+    }
+  }
+  return , $list
 }
 
 function Short([string]$s) { return $s.Substring(0, [Math]::Min(60, $s.Length)) }
@@ -60,7 +127,7 @@ function ReadParagraphs($doc) {
     $list += [ordered]@{
       text = (Clean $r.Text); style = [string]$para.Style.NameLocal; list = [string]$r.ListFormat.ListString
       page = $r.Information($wdActiveEndPageNumber); section = $r.Information($wdActiveEndSectionNumber)
-      top = $r.Information($wdVerticalPositionRelativeToPage)
+      top = $r.Information($wdVerticalPositionRelativeToPage); images = $r.InlineShapes.Count
     }
   }
   return , $list
@@ -79,6 +146,7 @@ function ReadContents($doc) {
 function Update($doc) {
   # What a person gets by accepting the prompt to update fields on opening, or by pressing F9.
   foreach ($t in $doc.TablesOfContents) { $t.Update() }
+  foreach ($t in $doc.TablesOfFigures) { $t.Update() }
   [void]$doc.Fields.Update()
   foreach ($s in $doc.Sections) {
     foreach ($i in 1..3) {
@@ -116,6 +184,10 @@ try {
       $out.sectionsAfter = (ReadSections $doc)
       $out.paragraphs = (ReadParagraphs $doc)
       $out.contents = (ReadContents $doc)
+      $out.figureLists = (ReadFigureLists $doc)
+      $out.tables = (ReadTables $doc)
+      $out.images = (ReadImages $doc)
+      $out.frames = (ReadFrames $doc)
       # Each path cast to a plain string: Join-Path's answer reaches COM wrapped, and Word then waits
       # forever inside ExportAsFixedFormat or SaveAs2 rather than failing.
       $pdf = [string](Join-Path $Folder "$name.pdf")
