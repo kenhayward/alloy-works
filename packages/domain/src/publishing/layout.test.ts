@@ -233,9 +233,25 @@ describe('a layout', () => {
     docxOf(swapped).page = { width: 841.89, height: 595.28 };
     expect(() => parseLayout(swapped)).toThrow(/portrait sense/);
 
-    const huge = copy();
-    docxOf(huge).page = { width: 595.28, height: 14401 };
-    expect(() => parseLayout(huge)).toThrow(/expected number to be <=14400/);
+    // Word lays out no page past 22 inches either way, so its page is bounded there, not at the
+    // PDF's 200 inches: 1584pt is read, 1585pt refused, naming the Word member.
+    const largest = copy();
+    docxOf(largest).page = { width: 1584, height: 1584 };
+    expect(parseLayout(largest).formats.docx!.page).toEqual({ width: 1584, height: 1584 });
+    for (const page of [
+      { width: 595.28, height: 1585 },
+      { width: 1585, height: 1585 },
+    ]) {
+      const huge = copy();
+      docxOf(huge).page = page;
+      expect(() => parseLayout(huge), JSON.stringify(page)).toThrow(/22 inches/);
+      expect(() => parseLayout(huge), JSON.stringify(page)).toThrow(/"docx",\s*"page"/);
+    }
+    // The PDF's page may still be that large.
+    const pdfLarge = copy();
+    pdfOf(pdfLarge).page = { width: 1585, height: 1585 };
+    pdfOf(pdfLarge).margins = { top: 72, bottom: 72, inside: 72, outside: 72 };
+    expect(parseLayout(pdfLarge).formats.pdf.page).toEqual({ width: 1585, height: 1585 });
 
     const negativeGutter = copy();
     docxOf(negativeGutter).gutter = -1;

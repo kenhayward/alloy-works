@@ -188,33 +188,39 @@ const slots = z.tuple([slot, slot, slot]);
 const points = z.number().min(0);
 /** A page side, in points: from an inch to two hundred inches, the most a PDF page can be. */
 const pageSide = z.number().min(72).max(14400);
+// Word lays out no page past 22 inches either way, so its member is bounded there, not at 200.
+const wordPageSide = z
+  .number()
+  .min(72)
+  .max(1584, 'A Word page is at most 22 inches (1584pt) each way');
 const pageNumber = z.strictObject({ format: numberFormatSchema, restart: z.boolean() });
 
-/** A paged format's member - the PDF's, and Word's - held to one set of rules. */
-const pageFormatSchema = z
-  .strictObject({
-    page: z
-      .strictObject({ width: pageSide, height: pageSide })
-      .refine(
-        (page) => page.width <= page.height,
-        'A page is given in the portrait sense; landscape is its orientation',
-      ),
-    orientation: z.enum(['portrait', 'landscape']),
-    margins: z.strictObject({ top: points, bottom: points, inside: points, outside: points }),
-    gutter: points,
-    head: slots,
-    foot: slots,
-    pageNumbering: z.strictObject({ front: pageNumber, body: pageNumber, appendix: pageNumber }),
-  })
-  .refine((format) => {
-    const turned = format.orientation === 'landscape';
-    const across = turned ? format.page.height : format.page.width;
-    const down = turned ? format.page.width : format.page.height;
-    const { top, bottom, inside, outside } = format.margins;
-    return (
-      across - inside - format.gutter - outside >= LEAST_TEXT && down - top - bottom >= LEAST_TEXT
-    );
-  }, 'A page leaves at least an inch each way to set text in, inside its margins and gutter');
+/** A paged format's member - the PDF's, and Word's - held to one set of rules, with its sides. */
+const pageFormatSchema = (side: z.ZodNumber) =>
+  z
+    .strictObject({
+      page: z
+        .strictObject({ width: side, height: side })
+        .refine(
+          (page) => page.width <= page.height,
+          'A page is given in the portrait sense; landscape is its orientation',
+        ),
+      orientation: z.enum(['portrait', 'landscape']),
+      margins: z.strictObject({ top: points, bottom: points, inside: points, outside: points }),
+      gutter: points,
+      head: slots,
+      foot: slots,
+      pageNumbering: z.strictObject({ front: pageNumber, body: pageNumber, appendix: pageNumber }),
+    })
+    .refine((format) => {
+      const turned = format.orientation === 'landscape';
+      const across = turned ? format.page.height : format.page.width;
+      const down = turned ? format.page.width : format.page.height;
+      const { top, bottom, inside, outside } = format.margins;
+      return (
+        across - inside - format.gutter - outside >= LEAST_TEXT && down - top - bottom >= LEAST_TEXT
+      );
+    }, 'A page leaves at least an inch each way to set text in, inside its margins and gutter');
 
 /**
  * **A layout's words on their own** (`Layout['words']`): what the product sets itself, above and
@@ -272,7 +278,10 @@ const upgradedLayoutSchema: z.ZodType<Layout> = z
           'A layout lists each sequence once',
         ),
     }),
-    formats: z.strictObject({ pdf: pageFormatSchema, docx: pageFormatSchema.optional() }),
+    formats: z.strictObject({
+      pdf: pageFormatSchema(pageSide),
+      docx: pageFormatSchema(wordPageSide).optional(),
+    }),
   })
   .refine(storableEverywhere, CANNOT_BE_STORED);
 
