@@ -83,6 +83,8 @@ const NAMESPACES = `xmlns:w="${W_NS}" xmlns:r="${R_NS}"`;
 const BACKSLASH = String.fromCharCode(92);
 const TAB = String.fromCharCode(9);
 const LINE_FEED = String.fromCharCode(10);
+const RIGHT_TO_LEFT_EMBEDDING = String.fromCharCode(0x202b);
+const POP_DIRECTIONAL_FORMATTING = String.fromCharCode(0x202c);
 
 /**
  * The time on every entry of the zip: the first a zip can hold. Built from local fields, as fflate
@@ -536,7 +538,7 @@ class Writer {
       case 'pages':
         return fieldBegin('NUMPAGES') + FIELD_END;
       case 'section':
-        return withSection ? sectionFields(this.document.rtl ? '<w:rtl/>' : '') : '';
+        return withSection ? sectionFields(this.document.rtl) : '';
     }
   }
 
@@ -760,24 +762,20 @@ function languageProperties(passage: Passage, own: string | null, documentTag: s
 }
 
 /** A field's start: its instruction, then the separator its result follows. */
-function fieldBegin(code: string, properties = ''): string {
-  return (
-    fieldChar('begin', properties) +
-    instruction(` ${code} `, properties) +
-    fieldChar('separate', properties)
-  );
+function fieldBegin(code: string): string {
+  return fieldChar('begin') + instruction(` ${code} `) + fieldChar('separate');
 }
 
-const FIELD_END = '<w:r><w:fldChar w:fldCharType="end"/></w:r>';
+const FIELD_END = fieldChar('end');
 
 /** A field's begin, separate or end mark, as a run of its own. */
-function fieldChar(kind: 'begin' | 'separate' | 'end', properties: string): string {
-  return `<w:r>${properties === '' ? '' : `<w:rPr>${properties}</w:rPr>`}<w:fldChar w:fldCharType="${kind}"/></w:r>`;
+function fieldChar(kind: 'begin' | 'separate' | 'end'): string {
+  return `<w:r><w:fldChar w:fldCharType="${kind}"/></w:r>`;
 }
 
 /** Part of a field's instruction, as a run of its own, its spaces kept. */
-function instruction(code: string, properties: string): string {
-  return `<w:r>${properties === '' ? '' : `<w:rPr>${properties}</w:rPr>`}<w:instrText xml:space="preserve">${escapeXml(code)}</w:instrText></w:r>`;
+function instruction(code: string): string {
+  return `<w:r><w:instrText xml:space="preserve">${escapeXml(code)}</w:instrText></w:r>`;
 }
 
 /**
@@ -785,24 +783,26 @@ function instruction(code: string, properties: string): string {
  * heading's number, a space and its title, as the PDF prints the heading. Word's number for a heading
  * with none - front matter's under a scheme that numbers none there, or one not numbered - is "0",
  * which the PDF does not print, so the number and its space stand inside an `IF` that prints nothing
- * for "0"; a section's number is never 0, so nothing else is lost. `properties` is every run's: in a
- * right-to-left document `w:rtl`, without which Word set the number after the title in reading order,
- * where the PDF sets it first.
+ * for "0"; a section's number is never 0, so nothing else is lost. In a right-to-left document the
+ * number and its space are a right-to-left embedding, without which Word set the number after the
+ * title in reading order, where the PDF sets it first; with it, Word sets a number of digits and one
+ * of letters where the PDF does, to the point. A right-to-left mark before the number placed digits
+ * but not a letter, and `w:rtl` on the fields' runs placed both but had Word draw them in Times New
+ * Roman rather than the embedded face.
  */
-function sectionFields(properties: string): string {
-  const number =
-    fieldBegin(`STYLEREF "${LEVEL_ONE}" ${BACKSLASH}n`, properties) + fieldChar('end', properties);
+function sectionFields(rtl: boolean): string {
+  const number = fieldBegin(`STYLEREF "${LEVEL_ONE}" ${BACKSLASH}n`) + FIELD_END;
   return (
-    fieldChar('begin', properties) +
-    instruction(' IF "', properties) +
+    fieldChar('begin') +
+    instruction(' IF "') +
     number +
-    instruction('" = "0" "" "', properties) +
+    instruction(`" = "0" "" "${rtl ? RIGHT_TO_LEFT_EMBEDDING : ''}`) +
     number +
-    instruction(' " ', properties) +
-    fieldChar('separate', properties) +
-    fieldChar('end', properties) +
-    fieldBegin(`STYLEREF "${LEVEL_ONE}"`, properties) +
-    fieldChar('end', properties)
+    instruction(` ${rtl ? POP_DIRECTIONAL_FORMATTING : ''}" `) +
+    fieldChar('separate') +
+    FIELD_END +
+    fieldBegin(`STYLEREF "${LEVEL_ONE}"`) +
+    FIELD_END
   );
 }
 

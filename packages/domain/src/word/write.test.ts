@@ -885,10 +885,14 @@ describe('writeDocx: headers and footers (ruling R8)', () => {
     });
   });
 
-  it("writes the running head's section right to left in a right-to-left document, so its number comes first in reading order, as the PDF's does", () => {
-    // Measured in Word for the final review of Word 1 (M1): with no direction of their own, the
-    // fields' results and the space between them were set left to right, the number after the title
-    // in reading order; with `w:rtl` on every run of them, Word sets the number first, as the PDF.
+  it("embeds the running head's number right to left in a right-to-left document, so it comes first in reading order, as the PDF's does", () => {
+    // Measured in Word for the final review of Word 1 (M1): with nothing to say otherwise, Word set
+    // the number after the title in reading order, where the PDF sets it first. A right-to-left
+    // embedding around the number and its space puts a number of digits and one of letters where the
+    // PDF does, to the point. A right-to-left mark before it placed digits but not a letter, and
+    // `w:rtl` on the fields' runs placed both but drew them in Times New Roman, not the embedded face.
+    const BS = String.fromCharCode(92);
+    const [EMBED, POP] = [String.fromCharCode(0x202b), String.fromCharCode(0x202c)];
     const rtl = written({ outline: { ...OUTLINE, language: 'he-IL', direction: 'rtl' } });
     const [, , , body] = sections(rtl.docx);
     const reference = kids(body!.properties, 'w:headerReference').find(
@@ -897,20 +901,13 @@ describe('writeDocx: headers and footers (ruling R8)', () => {
     const rels = relationships(rtl.docx, 'word/_rels/document.xml.rels');
     const head = rtl.docx.xml(`word/${rels.get(reference.attrs['r:id']!)!['Target']}`);
     const [, running] = kids(head, 'w:p');
+    expect(fieldCodes(running!)).toEqual([
+      `IF "{ STYLEREF "Heading 1" ${BS}n }" = "0" "" "${EMBED}{ STYLEREF "Heading 1" ${BS}n } ${POP}"`,
+      'STYLEREF "Heading 1"',
+    ]);
     const runs = kids(running!, 'w:r');
-    const from = runs.findIndex((run) => kids(run, 'w:fldChar').length > 0);
-    const section = runs.slice(from);
-    expect(section.length).toBeGreaterThan(0);
-    for (const run of section) {
-      expect(kids(first(run, 'w:rPr') ?? run, 'w:rtl'), JSON.stringify(run)).toHaveLength(1);
-    }
-    // Left to right, they carry no direction at all.
-    const [, , , ltrBody] = sections(plain.docx);
-    const ltrReference = kids(ltrBody!.properties, 'w:headerReference')[0]!;
-    const ltrHead = plain.docx.xml(
-      `word/${relationships(plain.docx, 'word/_rels/document.xml.rels').get(ltrReference.attrs['r:id']!)!['Target']}`,
-    );
-    expect(all(ltrHead, 'w:rtl')).toEqual([]);
+    const section = runs.slice(runs.findIndex((run) => kids(run, 'w:fldChar').length > 0));
+    expect(section.flatMap((run) => all(run, 'w:rtl'))).toEqual([]);
   });
 
   it('gives every paragraph it writes a style, in the body and in every header and footer', () => {
