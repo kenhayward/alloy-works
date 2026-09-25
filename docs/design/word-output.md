@@ -319,6 +319,159 @@ PUB-025, PUB-026, PUB-066. Word 4: PUB-067 and CNT-045. PUB-029 by the Word chec
 Word half needs its measurements automated where Word runs; the Word check is where they will live, and
 the claim waits for them.
 
+### What was built
+
+**Word 1 is built**, by [Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md): WO-A, WO-J,
+WO-K and WO-L, and the styles, paragraphs, headings, marks, links, languages, faces and page of WO-M's
+first slice. A request may name `docx`, alone or beside `pdf`, where the layout has a Word page;
+`assemble` is told the formats; the Word writer, `writeDocx` in `packages/domain/src/word/`, makes the
+`.docx` - the theme's styles as Word styles, headings numbered by Word from the layout's scheme, the
+cover, the contents as a `TOC` field, running heads and feet, **Not approved** on every page, marks,
+links and languages, and the Liberation faces embedded - with a report of what Word could not carry;
+and the publication holds one output per format, each with its producer and its report. Every `.docx`
+a test makes is valid by the Open XML SDK, and the Word check opened the fixtures in Word 16. What it
+does not write yet it refuses by name, below. Building it changed these things here:
+
+- **There is no `publishing/14`.** Nothing the Typst template reads changed, so the published
+  document, `PUBLISHING_SCHEMA_CURRENT`, template 13 and `PIPELINE_VERSION` stay; what the writer
+  needs beside the document - the layout's `docx` member, the resolved theme, the numbering scheme and
+  image sizes against the Word page (none yet) - is `assemble`'s `word: WordInput`, returned exactly
+  where `docx` is asked for, as the numbering table is returned beside it. A schema whose PDF half is
+  byte for byte 13's would have bought a template copy and nothing else. The PDF made beside a Word
+  output is byte for byte the PDF made alone, which the job's test compiles to show.
+- **`assemble` is told its formats**, required, at least one. The PDF engine's own refusals -
+  `line_too_wide`, `caption_too_long`, `image_too_wide`, `table_header_spans_body`, a footnote or a
+  reference target in a table's header rows, `continuation_words_missing`, and every
+  `equation_unrenderable` reason but `unreadable`, `merror` and `empty`, which are wrong whatever sets
+  them - are said only where `pdf` is asked for; a failure is the PDF's only where its every cause is.
+  `typeface_not_embeddable` is judged per format: for the PDF by `embedding.pdf`, for Word only where a
+  face may not be embedded and declares no Word face. A request that reaches `assemble` asking for Word
+  under a layout with no Word page fails `format_unsupported`, a new compose failure, though the door
+  refuses it first (PUB-014).
+- **What Word 1 does not write is refused by name**, `word_not_yet`, naming where the construct stands
+  and what it is: a list, a quotation, preformatted text, a table, a figure and a block equation, an
+  image, an equation, a footnote and a cross-reference in a line or a section's title, and each list
+  after the contents. Refused at the stored construct, before its PDF checks; a PDF-only request is
+  unchanged. **The trap each later slice inherits**: a PDF engine refusal also drops its construct from
+  the published document - a figure whose caption is too long, an image too wide, a reference into a
+  header row - and filtering the refusal out for a Word-only request is safe today only because
+  `word_not_yet` refuses the same construct. When Word 2 takes figures, images and tables off the list,
+  those refusals must stop dropping the construct for Word, or a Word-only publication loses it in
+  silence. The comment on `pdfsOwn` in `assemble.ts` says so.
+- **A scheme Word cannot compute fails `numbering_not_in_word`**, `detail` `section:<matter>:<why>`: a
+  separator holding `%`, letters past _z_ (Word doubles them, _aa_, _bb_, where the scheme counts on,
+  from the 28th), a roman numeral past 3999, and a heading numbered past a ninth level. Only the
+  section sequence is checked, since captions, equations and footnotes do not reach Word yet. The
+  default scheme passes.
+- **Two migrations, not one.** 0026 seeds the default theme's 0.3 alone - 0.2 with STIX Two Math
+  declaring `embedding.word: false` and **Cambria Math** as its `wordFamily` - where the theme is still
+  0025's 0.2. 0027 seeds the default layout's 0.6, at **layout schema 5**, 0.5 with a `docx` member
+  copying the PDF's page, where the layout is still 0025's 0.5, and widens the store: `formats` any of
+  `{pdf}`, `{docx}` and `{pdf, docx}`, spelled PDF first; `engine` and `template` null exactly where
+  there is no PDF; `publication_output` taking `docx`, with `producer` (`typst` or `word`),
+  `producer_version` (the template's version, or `word/1`), and `report`, empty for a PDF, backfilled
+  for every existing output; and the whole-record trigger holding one output per format. `docx` is
+  optional in schema 5, so a layout without it still refuses Word, and a Word page is at most 22 inches
+  (1584pt) each way, Word's own limit, where a PDF page may be 200 inches.
+- **The theme's reader refuses a face Word may not embed that names no Word face**,
+  `typeface_word_face_missing`. `embedding.word` now means that a Word document can carry the face,
+  which STIX Two Math's licence allows and its CFF outlines do not.
+- **The projection writes every property, and Word showed three things the design did not say.**
+  Every style states `w:outlineLvl` - its depth for a heading's, 9 for the rest - because the default's
+  Title and Contents heading are based on heading 1, and Word listed them in its contents without it;
+  and `numId 0` for the same reason, or they would take heading 1's number. A style whose catalogue
+  name is _heading N_ and which is not that heading is written `<name> (<id>)`, since Word takes such a
+  name as its built-in heading whatever the identifier. And a panel's indents are its padding and 2pt
+  more, measured, since Word's fill reaches about 2pt past its border's spacing: so a preformatted
+  panel's measure is 4pt narrower in Word than in the PDF. Word's sizes are half points, so 8.8pt
+  preformatted text is 9pt in Word and a 9.35pt footnote 9.5pt; together a preformatted line that just
+  fits the PDF's measure can wrap in Word, which Word 2's check should include. `w:bCs` and `w:iCs`
+  stand beside `w:b` and `w:i` by the reading M15 measured for `w:szCs`, not measured themselves. A
+  character style states no size: a mark's `scale` reaches Word as each run's size. `wordRun` names the
+  first mark whose character style states anything, which under the default skips the link, the
+  language and the quoted phrase.
+- **Headings and the page, as built.** A heading's number is followed by a space, not M2's tab, with
+  no indent of its own, as the PDF prints it; three numbering definitions, the body's linked from the
+  heading styles and front matter's and appendices' given by direct `w:numPr`. The contents stands in
+  a section of its own, so its running head can leave out the section, which before any level-1 heading
+  Word would print as an error. The section field is `STYLEREF "Heading 1" \n`, a space, and `STYLEREF
+"Heading 1"`, the heading's number and title. A header and a footer stand half their margin from the
+  edge, since the layout says nothing. A matter entered a second time continues the page numbers
+  before it, since Word cannot resume a chain; the PDF resumes.
+- **M1 d8 is not written, and is Word 2's.** No two same-style paragraphs of different containers face
+  each other in Word 1: each component's paragraphs follow its own heading, and template 13 sets the
+  top level as one flow, which Word's own contextual spacing already matches. Writing d8 there would
+  contradict the PDF. It belongs to the containers Word 2 brings - quotations, list items and cells.
+- **Faces are embedded as used.** Each Word family is named once in the font table; the files the
+  text is set in are embedded, obfuscated by a key taken from the file's hash, so the bytes are the
+  same every time. A face with a Word face is named by it, not embedded, and reported,
+  `face_substituted` - **but only for a face the text is set in**, so the default theme's maths face,
+  which `m:mathFont` names as Cambria Math, reports nothing until Word 4 sets an equation.
+- **The report** holds `face_substituted`, `no_page_cited_output` where no PDF stands beside the Word
+  output, and `pages_cite_the_pdf` on every Word output, each a closed shape checked on the way into
+  and out of the store; the publication's page says each in a sentence.
+- **Verification is two tools.** The Open XML SDK's validator (3.5.1, Office 2019 rules) runs in a
+  .NET 8 image built from digest-pinned images and a NuGet lock file, tagged by its sources' hash and
+  built by `fetch-ooxml-check`, in CI beside veraPDF; every worker test that makes a `.docx` asserts it
+  finds nothing. The Word check is a worker test, `src/word-check.test.ts`, skipped unless it runs on
+  Windows with `ALLOY_WORD_CHECK=1`, driving `scripts/word-check.ps1` through COM over five fixtures -
+  the full document, one without a cover, one without a contents, one for Word alone, and a
+  right-to-left one - and checking nine things: each opens without an error; the headings' list
+  strings are the numbering table's; the updated contents lists every heading to the layout's depth
+  with its number and page and keeps its section; **Not approved** heads every page; each running head,
+  page label and foot; the Liberation faces embedded and every visible character set in them; and a
+  save changes no paragraph. [`docs/testing.md`](../testing.md#the-word-check) says how it is run.
+- **What Word showed that the design did not foresee.** In a right-to-left document the foot read
+  "0.7Revision": the revision carried `w:rtl`, which forces digits right to left where Typst's bidi
+  places them by their characters; it is now written in no direction, as the page number is, and reads
+  as the PDF's does. In a right-to-left heading, **a number of digits alone is drawn in Times New Roman
+  Bold** where Liberation Serif is embedded; seven variants of the markup changed nothing and COM
+  reports Liberation Serif throughout, so it is Word's, the metrics are the same and nothing moves, and
+  the check pins it exactly so a change either way shows. And **Word hidden, with its alerts off,
+  updated the contents and fields on opening by itself**, taking the prompt's default: the prefilled
+  contents, which a reader who declines the prompt would see, was never seen. Word rebuilds an entry
+  as number, space, title, tab and page, where the writer prefills number, tab, title; the field's end
+  moves to an empty paragraph after the last entry, which now carries the section break. Saving adds
+  Word's own theme, `Normal`, `Hyperlink` and Aptos beside the Liberation faces, and renames style
+  identifiers, keeping every paragraph's text, style and number.
+
+**What each claim now stands on.** The chain for each requirement Word 1 touched, as `pnpm trace show`
+reports it:
+
+| ID          | Claimed by    | Cited                                                                                                                                                                                                                                                    |
+| ----------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PUB-012** | publishing.md | `layout.test.ts`: a Word page apart from its PDF page, each read back as its own                                                                                                                                                                         |
+| **PUB-024** | this document | `word/write.test.ts`: three numbering definitions, headings referring to them by style or `w:numPr`, no number in a heading's text. **Moved from Word 3 to Word 1**, since a heading cannot be written without its number                                |
+| **PUB-027** | themes.md     | `theme/ooxml.test.ts`, every style a Word style, every property stated; that runs name them rather than carrying direct formatting is the writer's use of `wordRun`                                                                                      |
+| **PUB-034** | publishing.md | `word/write.test.ts`'s languages test, the document's, a component's and a mark's, beside the PDF's in `marks.test.ts`                                                                                                                                   |
+| **CNT-084** | publishing.md | The same test                                                                                                                                                                                                                                            |
+| **CNT-128** | this document | `word/write.test.ts`'s link test, beside the PDF's in `marks.test.ts`                                                                                                                                                                                    |
+| **STY-052** | themes.md     | `theme/ooxml.test.ts`, the Word face declared and used, and `word/write.test.ts`, the substitution reported                                                                                                                                              |
+| **PUB-074** | publishing.md | `publish.test.ts`: a Word-only request of a document citing a page refused, and one citing none recording `no_page_cited_output`                                                                                                                         |
+| **PUB-029** | this document | `word-check.test.ts`, so Covered; **Verified only by a local run**, since CI skips it and a skipped test verifies nothing. The Word check carries no PUB-024 citation for the same reason: a skipped citation would demote a requirement shown elsewhere |
+
+**Not cited, and why.** PUB-092: the Word styles carry `w:keepNext`, `w:keepLines` and
+`w:widowControl`, but it asks for the regression corpus to show them holding, and nothing measures
+Word's pagination. PUB-065: it asks Word to carry cross-references, which Word 1 refuses; every Word
+output's `pages_cite_the_pdf` is its record half, for Word 3 to cite beside a carried reference.
+PUB-066: the contents is a `TOC` field that Word refreshes, but the lists and page references are Word
+3's. PUB-023 waits for Word 4, PUB-073 for T3's baselines, and STY-053 for the Word check to measure
+style properties.
+
+**Left for Word 2 to 4.** Word 2: lists, quotations, preformatted text, tables, figures and images
+off `word_not_yet`, each with the trap above undone for it; M1 d8 in its containers; `WordInput.images`,
+whose key is left for the first figure; the report's table entries (TAB-049's header columns,
+unrepeated headers and omitted labels); TAB-039's and TAB-049's Word halves, and PUB-035; and a
+full-measure preformatted line in the Word check. Word 3: footnotes, captions, cross-references and
+the lists after the contents, with bookmarks named Word's way and `numbering_not_in_word` extended to
+their sequences; PUB-025, PUB-026, PUB-065 and PUB-066. Word 4: equations, deciding which of the maths
+tree's refusals Word sets, and reporting the maths face's substitution; PUB-067 and CNT-045, then
+PUB-023. Open for any of them: whether to prefill a contents entry as Word rebuilds it, number and
+title with a space, so a reader who declines the update sees what Word would build; how a reader who
+declines the prompt sees the contents; a cover running to a second page, and a matter entered twice,
+which the check has not looked at; and `typeface_not_embeddable`'s sentence, which names the PDF also
+where Word refused it.
+
 ## Open questions
 
 | ID  | Question                                                                                                                                                                             |

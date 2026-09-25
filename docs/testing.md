@@ -192,7 +192,8 @@ is and [`docs/trace/0.13.0/`](trace/0.13.0/README.md) for the evidence pack `pac
 
 `packages/objects` and `apps/worker` need Postgres and the object store running
 (`docker compose -f deploy/compose.yaml up -d --wait postgres seaweedfs`), and the pinned Typst
-fetched once with `pnpm --filter @alloy-works/worker fetch-typst`. Each test file takes a bucket of
+fetched once with `pnpm --filter @alloy-works/worker fetch-typst`, and the checkers' images once with
+`fetch-verapdf` and `fetch-ooxml-check` (below). Each test file takes a bucket of
 its own and removes it afterwards, exactly as it takes a database of its own, so two files never see
 each other's objects. The worker's suite renders with the real Typst rather than a stand-in for it:
 the binary is the thing being pinned.
@@ -248,6 +249,58 @@ the whole role tree, so an engine that changed either would be caught. Reading o
 person can judge - whether a heading sounds like a heading, whether a table's structure matches what it
 shows - are read from the same cases by hand when the engine or the template changes; they are not run
 by any suite.
+
+## The Open XML validator
+
+Every worker test that makes a `.docx` - `apps/worker/src/word.test.ts` and the publish job's Word
+tests - asserts that the Open XML SDK's validator finds nothing wrong with it, since Word refuses a
+file whose elements are out of order rather than reading past them, and a schema check finds that
+without anybody opening Word. `checkOoxml` in `apps/worker/src/testing/ooxml.ts` runs it, beside
+veraPDF's checker, from an image of the worker's own: `apps/worker/tools/ooxml-check/` is a small .NET
+8 program over `DocumentFormat.OpenXml`'s `OpenXmlValidator` with Office 2019's rules, its package
+pinned by a NuGet lock file and its .NET images by digest. There is no image to pull, so
+`pnpm --filter @alloy-works/worker fetch-ooxml-check` builds it, once per machine and in CI beside
+`fetch-verapdf` (needs Docker; three tries, since mcr.microsoft.com and nuget.org are outside the
+repository's control). The image is tagged by a hash of the files it is built from, so changing any of
+them names an image no machine has, and the tests then fail saying to run `fetch-ooxml-check` rather
+than validating with a stale build. The unit tests in `packages/domain/src/word/` read the parts back
+and cannot run the validator, since the domain has no Docker; the worker's tests are where a writer
+change meets it.
+
+## The Word check
+
+Passing the validator says Word will open a file, not what it will show. **The Word check opens the
+writer's fixtures in Word itself**, as a standing practice (PUB-029): `apps/worker/src/word-check.test.ts`
+makes five documents through the worker's own path - `assemble` under the default theme and layout
+with the worker's own face files, then `writeDocx` - and `apps/worker/scripts/word-check.ps1` opens
+each in a hidden Word through COM, updates its contents and fields, reads every section, paragraph,
+list string and field back, has Word export it to PDF, and saves it again. The test then checks nine
+things: each opens without an error; each heading's list string is the numbering table's number and
+its text holds none; the updated contents lists every heading to the layout's depth with its number
+and page, and keeps its section; **Not approved** heads every page, the cover's included; each running
+head names the level-one heading the page is in; the page labels run per matter; the foot carries the
+revision on every page but the cover, right to left too; the Liberation faces are embedded and every
+visible character is set in them, never Times New Roman, with one exception Word makes and the test
+pins (digits alone in a right-to-left heading); and saving again changes no paragraph's text, style or
+number.
+
+- **Who and when.** Whoever changes the Word writer - `packages/domain/src/word/`, the theme's Word
+  projection or `wordRun` - runs it before the change lands, on Windows with Word installed. **A pull
+  request that changes the writer pastes its result**: the test run and a summary of what Word showed.
+- **How.** `ALLOY_WORD_CHECK=1 pnpm --filter @alloy-works/worker test -- src/word-check.test.ts`
+  (in PowerShell, `$env:ALLOY_WORD_CHECK = '1'` first), after
+  `pnpm --filter @alloy-works/domain build` if the writer changed, since the worker reads the domain's
+  `dist/`. It takes about half a minute. It leaves the fixtures, Word's PDFs, the copies Word saved and
+  `record.json`, everything Word reported, in `alloy-works-word-check` under the system's temporary
+  folder, for a person to read and to summarise in the pull request.
+- **What CI does with it.** It is skipped: `describe.runIf` runs it only on Windows with the variable
+  set, and CI runs Linux and has no Word. So **PUB-029, which it cites, is Covered by the citation and
+  Verified only by a local run**; the report CI writes records it as skipped. It cites nothing else,
+  for that reason: a skipped citation would demote a requirement another test verifies.
+- **What it cannot see.** A file Word repairs in silence opens as if nothing were wrong, so "opens
+  without an error" is not proof nothing was repaired; and hidden, with its alerts off, Word takes the
+  field-update prompt's default and updates on opening, so the contents as prefilled - what a reader
+  who declines the prompt sees - is never looked at.
 
 ## The end-to-end suite
 
