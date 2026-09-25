@@ -274,7 +274,7 @@ describe('a document in the version chain, and its outline edited a version at a
     expect(documents).toEqual([]);
   });
 
-  it('STR-003 records each structural act as the next version, with a node identifier from real randomness', async () => {
+  it('STR-003 STR-067 records each structural act as the next version, with a node identifier from real randomness', async () => {
     const first = await created();
     const second = await recorded(first, section('Introduction'));
     expect(second).toMatchObject({ artifactId: first.artifactId, revision: 0, version: 2 });

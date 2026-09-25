@@ -89,7 +89,7 @@ describe('signing in with the organisation provider', () => {
     expect(cookie?.domain).toBeUndefined();
   });
 
-  it('comes back signed in, with a session cookie and a principal found by issuer and subject', async () => {
+  it('IAM-007 comes back signed in, with a session cookie and a principal found by issuer and subject', async () => {
     const started = await start();
     const signIn = started.cookies.find((candidate) => candidate.name === '__Host-aw_signin')!;
     const back = await completeAtStandIn(started.headers.location!, 'ada', idp.issuer);

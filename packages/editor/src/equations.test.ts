@@ -454,7 +454,7 @@ function homesOf(state: EditorState): Record<string, number> {
 }
 
 describe('placing an equation (equations 1)', () => {
-  it('places an inline one at the caret, selected whole, with its MathML and its LaTeX', () => {
+  it('CNT-025 places an inline one at the caret, selected whole, with its MathML and its LaTeX', () => {
     const state = caretIn(stateOf(documentOf(paragraph('p1', text('Where it grows.')))), 0, 5);
     const { handled, next } = run(state, insertEquation(INLINE));
     expect(handled).toBe(true);

@@ -21,7 +21,7 @@ const version = (over: Record<string, unknown> = {}) => ({
 });
 
 describe("an asset version's stored shape (figures 1)", () => {
-  it('AST-005 AST-041 holds the key, the intrinsic properties and a default description in a language', () => {
+  it('AST-005 AST-012 AST-041 holds the key, the intrinsic properties and a default description in a language', () => {
     expect(ASSET_SCHEMA_VERSION).toBe(1);
     expect(parseAssetVersion(version())).toEqual(version());
     expect(parseAssetVersion(version({ alternative: null, resolution: 300 }))).toMatchObject({

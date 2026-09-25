@@ -2516,7 +2516,7 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
     ).toEqual(unresolved);
   });
 
-  it('publishes a footnote whose anchor to a cell resolves, where it stands', () => {
+  it('CNT-037 publishes a footnote whose anchor to a cell resolves, where it stands', () => {
     const anchored = (anchor: object, over: object = {}) =>
       table(over, [text('North'), footnote('f1', [paragraph('fp1', text('Once.'))], anchor)]);
     for (const [anchor, over] of [
