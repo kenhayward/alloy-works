@@ -11,18 +11,13 @@ import {
 } from '@alloy-works/domain';
 import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { loadPinnedFonts, PINNED_FONT_FILES, readPinnedFaces, FONT_DIRECTORY } from './fonts.js';
+import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
 import { checkOoxml } from './testing/ooxml.js';
 import { defaultTheme } from './testing/theme.js';
 
 const fonts = await loadPinnedFonts();
 /** The worker's own face files, by the hash the theme names each by: what the job hands the writer. */
-const faces = new Map(
-  (await readPinnedFaces(FONT_DIRECTORY)).map((face, index) => [
-    PINNED_FONT_FILES[index]!.sha256,
-    new Uint8Array(face.bytes),
-  ]),
-);
+const faces = await pinnedFacesByHash(FONT_DIRECTORY);
 
 const id = (name: string) => name.padEnd(26, 'a');
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;

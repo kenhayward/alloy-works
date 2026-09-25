@@ -364,7 +364,7 @@ describe('requesting and recording a publication', () => {
     ).rejects.toBe(rolledBack);
   });
 
-  it('takes Word where its layout makes it, alone or beside the PDF, and records the formats PDF first', async () => {
+  it('takes Word where its layout makes it, alone or beside the PDF, records the formats PDF first, and hands them to the job', async () => {
     await service.withTenant(production, async (trx) => {
       const version = await documentWith(trx, [section('Scope', [])]);
       // The default layout's 0.6 declares a Word page (Word 1, ruling R4).
@@ -382,6 +382,9 @@ describe('requesting and recording a publication', () => {
           .select('formats')
           .where('id', '=', answer.request.id)
           .executeTakeFirstOrThrow();
+        // The job makes exactly the outputs the request recorded, in the order it recorded them.
+        const inputs = await publicationInputs(trx, answer.request.id);
+        expect(inputs!.request.formats).toEqual(row.formats);
         return row.formats;
       };
       expect(await formatsOf(['docx'])).toEqual(['docx']);
@@ -910,6 +913,7 @@ describe('requesting and recording a publication', () => {
         requestedBy: ada,
         requestedAt: row.requested_at,
         spaceId: general,
+        formats: ['pdf'],
       });
       expect(inputs!.outline).toEqual(version.content);
       expect(inputs!.occurrences.get(open.id)?.version).toBe(shared.id);

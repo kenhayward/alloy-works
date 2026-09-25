@@ -479,6 +479,12 @@ export interface PublicationInputs {
     readonly requestedBy: string;
     readonly requestedAt: Date;
     readonly spaceId: string;
+    /**
+     * The formats it asked for, PDF first, as recorded (Word 1, ruling R12): the job makes one output
+     * of each, and a publication records exactly these. Never empty: 0027's check holds it to one of
+     * three sets.
+     */
+    readonly formats: readonly [PublishingFormat, ...PublishingFormat[]];
   };
   readonly outline: OutlineDocument;
   readonly occurrences: ReadonlyMap<
@@ -528,6 +534,7 @@ export async function publicationInputs(
       'r.requested_by',
       'r.requested_at',
       'r.state',
+      'r.formats',
       'r.failures',
       'r.layout_id',
       'r.layout_version_id',
@@ -610,6 +617,7 @@ export async function publicationInputs(
       requestedBy: request.requested_by,
       requestedAt: request.requested_at,
       spaceId: request.space_id!,
+      formats: request.formats as [PublishingFormat, ...PublishingFormat[]],
     },
     outline: read.outline,
     occurrences,

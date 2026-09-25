@@ -16578,19 +16578,19 @@
     {
       "id": "STR-054",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 239,
+      "line": 240,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 471,
+      "line": 475,
       "kind": "title"
     },
     {
       "id": "STR-061",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 211,
+      "line": 212,
       "kind": "title"
     },
     {
@@ -16968,49 +16968,55 @@
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 342,
+      "line": 348,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 552,
+      "line": 558,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 370,
+      "line": 376,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 386,
+      "line": 392,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 391,
+      "line": 397,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-074",
+      "file": "apps/worker/src/publish.test.ts",
+      "line": 975,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 570,
+      "line": 576,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 356,
+      "line": 362,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 497,
+      "line": 503,
       "kind": "title"
     },
     {
@@ -17208,19 +17214,19 @@
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 921,
+      "line": 925,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 412,
+      "line": 415,
       "kind": "title"
     },
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 788,
+      "line": 791,
       "kind": "title"
     },
     {

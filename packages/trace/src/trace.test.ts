@@ -472,8 +472,12 @@ describe('the citations in the committed model', () => {
   // definition and none by its text, a link is a w:hyperlink to an external relationship beside the
   // PDF's link in apps/worker's marks.test.ts, the document's and each passage's language are read back
   // beside the PDF's there too, and a face with a Word face is named by it and reported.
+  // 324, from 323 (2026-09-25): Word 1's job cites PUB-074 in apps/worker's publish.test.ts, where a
+  // Word-only request of a document citing a page is refused before anything is recorded, and one of a
+  // document citing none is published with its Word document's record saying it carries no page-cited
+  // output, which the same document beside a PDF does not say.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(323);
+    expect(model.citations).toHaveLength(324);
   });
 
   it('cites no identifier the corpus does not hold', () => {
