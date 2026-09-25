@@ -709,6 +709,7 @@ class Writer {
    */
   private readonly captioned: {
     sequence: string;
+    label: string;
     words: string;
     passage: Passage;
     floated: boolean;
@@ -1349,8 +1350,12 @@ class Writer {
    * as `captionField` says (R1; measured, M3) - the label's word, then where the scheme prefixes the
    * number, `STYLEREF` and the separator, then `SEQ` - each prefilled with the numbering table's label,
    * so a reader who never updates them sees the PDF's number; then a space and the caption's own runs,
-   * as template 13 sets them. A caption the scheme gives no number has no field. `floated`, where it
-   * is a floated figure's, which stands in a text box.
+   * as template 13 sets them. A caption the scheme gives no number has no field. The label is the
+   * layout's words, set left to right in the layout's language as the running head is, whatever the
+   * caption's direction: measured, in a right-to-left caption Word printed a label right to left in
+   * the component's language after the caption's words, each field's result an island of its own
+   * (M2 of Word 2's final review). `floated`, where it is a floated figure's, which stands in a text
+   * box.
    */
   private captionRuns(
     captioned: Captioned,
@@ -1366,18 +1371,23 @@ class Writer {
     const own = this.inlineRuns(captioned.caption, role, passage, null);
     if (entry === undefined || field === null || entry.number === null || entry.value === null) {
       // No number of Word's to compute: the label as the PDF prints it, where there is one.
-      return (captioned.label === null ? '' : this.runs(`${captioned.label} `, passage)) + own;
+      return (
+        (captioned.label === null
+          ? ''
+          : this.runs(captioned.label, this.words) + this.runs(' ', passage)) + own
+      );
     }
     const rule = this.numbers.scheme.sequences[entry.sequence]![entry.matter];
     const counter = formatCounter(entry.value, rule.format[rule.format.length - 1]!);
     this.captioned.push({
       sequence: field.sequence,
-      words: captionText(captioned),
+      label: captioned.label ?? '',
+      words: captionText({ ...captioned, label: null }),
       passage,
       floated,
     });
     return (
-      captionLabel(field, entry.number, counter, (text) => this.runs(text, passage)) +
+      captionLabel(field, entry.number, counter, (text) => this.runs(text, this.words)) +
       this.runs(' ', passage) +
       own
     );
@@ -1653,7 +1663,10 @@ class Writer {
           this.paragraph(
             this.theme.roles.listEntry,
             (index === 0 ? fieldBegin(code) : '') +
-              (entry === null ? '' : this.runs(entry.words, entry.passage)) +
+              (entry === null
+                ? ''
+                : this.runs(entry.label, this.words) +
+                  this.runs(` ${entry.words}`, entry.passage)) +
               (index === shown.length - 1 ? FIELD_END : ''),
             {},
             LIST_ENTRY_STYLE,

@@ -1847,6 +1847,54 @@ describe('writeDocx: tables (Word 2, ruling R7)', () => {
     expect(first(emphasised, 'w:rStyle')?.attrs['w:val']).toBe('mark-emphasis');
   });
 
+  it("sets a right-to-left table's caption label - its word, its fields' results and its separator - in the layout's words, left to right, as the PDF prints it, and its own words right to left; its entry in the list of tables likewise", () => {
+    // Measured in Word for Word 2's final review (M2): with the label's runs right to left in the
+    // component's language, Word laid each field's result out as an island of its own and printed
+    // "1.1 Table" after the caption's words, where the PDF prints "Table 1.1" before them.
+    const hebrew = written({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: SEFER,
+        language: 'he-IL',
+        direction: 'rtl',
+        nodes: [reference('blocks', 9)],
+      }),
+      occurrences: new Map([
+        [
+          id('blocks'),
+          component(SEFER, [readings({ style: 'table', caption: [text(SEFER)] })], {
+            language: 'he-IL',
+            direction: 'rtl',
+          }),
+        ],
+      ]),
+    });
+    // The default layout's words are English.
+    expect(hebrew.document.words.language).toEqual({ lang: 'en', region: null });
+    const words = { 'w:val': 'en' };
+    const right = { 'w:bidi': 'he-IL' };
+    const shown = (paragraph: Element) =>
+      all(paragraph, 'w:r')
+        .filter((run) => kids(run, 'w:t').length > 0)
+        .map((run) => [textOf(run), all(run, 'w:rtl').length > 0, first(run, 'w:lang')?.attrs]);
+    const blocks = blocksOf(hebrew.docx);
+    const table = blocks.find((each) => each.name === 'w:tbl')!;
+    expect(shown(blocks[blocks.indexOf(table) - 1]!)).toEqual([
+      ['Table ', false, words],
+      ['1', false, words],
+      ['.', false, words],
+      ['1', false, words],
+      [' ', true, right],
+      [SEFER, true, right],
+    ]);
+    const [, front] = sections(hebrew.docx);
+    const entry = front!.paragraphs.find((each) => textOf(each) === `Table 1.1 ${SEFER}`)!;
+    expect(shown(entry)).toEqual([
+      ['Table 1.1', false, words],
+      [` ${SEFER}`, true, right],
+    ]);
+  });
+
   it("names the table by its caption's words, which Word reads as the table's title", () => {
     expect(stated(table, 'w:tblPr')['w:tblCaption']).toEqual({
       'w:val': 'Table 1.1 Readings at noon',

@@ -248,8 +248,33 @@ const hebrew = (title: string, count: number) =>
     ),
     { language: 'he-IL', direction: 'rtl' },
   );
+/**
+ * A numbered table in a right-to-left component, its caption's words the component's: its label, the
+ * layout's words, reads left to right before them, as the PDF prints it (Word 2's final review, M2).
+ */
+const rtlTable = {
+  type: 'table',
+  id: 'RT',
+  style: 'table',
+  caption: [text(SEFER)],
+  headerRows: 1,
+  headerColumns: 0,
+  rows: [SHALOM, '2026'].map((value, row) => ({
+    cells: [value, KRIAH].map((each, column) => ({
+      content: [paragraph(`rt${row}${column}`, text(each))],
+      colspan: 1,
+      rowspan: 1,
+    })),
+  })),
+};
 const rtlOccurrences = new Map<string, ContentDocument>([
-  [id('rtlpart'), hebrew(SEFER, 3)],
+  [
+    id('rtlpart'),
+    component(SEFER, [...hebrew(SEFER, 3).content, rtlTable], {
+      language: 'he-IL',
+      direction: 'rtl',
+    }),
+  ],
   [id('rtlmore'), hebrew(KRIAH, 2)],
 ]);
 
@@ -2037,6 +2062,25 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
         const below = boxOf(compared.word, second);
         expect(below.page, fixture.name).toBe(boxOf(compared.word, first).page);
         expect(below.top, fixture.name).toBeGreaterThan(lineOf(compared.word, floated[0]!)!.top);
+      }
+    });
+
+    it("prints a right-to-left caption's label left to right before its words, as the PDF does: across the page, its words, then the label", async () => {
+      const shown = checked.filter(({ fixture }) => fixture.rtl);
+      expect(shown).toHaveLength(1);
+      for (const { fixture, word, captions } of shown) {
+        const laid = await laidOut(
+          new Uint8Array(await readFile(word.pdf)),
+          fixture.layout.formats.docx!.margins,
+        );
+        const caption = captions.find((each) => each.sequence === 'table')!;
+        // Measured for the review: "ספר 1.1 Table" where the label was right to left in the
+        // component's language, each field's result an island of its own.
+        const key = `${caption.words}${caption.label}`.replace(/\s+/g, '');
+        expect(
+          laid.lines.map((line) => line.key),
+          fixture.name,
+        ).toContain(key);
       }
     });
 
