@@ -465,9 +465,16 @@ export const typefaceSchema = z.strictObject({
     ),
   /** The licence the face is held under, as an SPDX identifier (STY-041). */
   licence: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9.+-]{0,63}$/, 'not an SPDX identifier'),
-  /** Whether that licence permits embedding the face, in a PDF and in a Word document (STY-041). */
+  /**
+   * Whether that licence permits embedding the face, in a PDF and in a Word document (STY-041). For
+   * Word it is false too where the face's outlines are ones Word does not embed - CFF, as STIX Two
+   * Math's are (the default theme's 0.3) - since a Word document can carry the face no more then.
+   */
   embedding: z.strictObject({ pdf: z.boolean(), word: z.boolean() }),
-  /** STY-052: a permitted face for Word output, where this one may not be embedded there. */
+  /**
+   * STY-052: a permitted face for Word output, where this one may not be embedded there. The reader
+   * refuses a face with `embedding.word` false that declares none (`typeface_word_face_missing`).
+   */
   wordFamily: familyName.optional(),
   /**
    * Vertical metrics, as fractions of the em, from the face's own tables. They place the baseline

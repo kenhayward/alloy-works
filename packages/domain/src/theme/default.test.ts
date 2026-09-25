@@ -10,6 +10,8 @@ import {
   FIRST_DEFAULT_CATALOGUES_BY_VERSION,
   FIRST_DEFAULT_CATALOGUE_VERSIONS,
   FIRST_DEFAULT_THEME,
+  SECOND_DEFAULT_THEME,
+  SECOND_DEFAULT_THEME_VERSION,
 } from './default.js';
 import { readTheme, type ResolvedTheme } from './read.js';
 import { CATALOGUE_KINDS } from './schema.js';
@@ -83,7 +85,7 @@ describe('the default theme', () => {
     expect(paragraph('body').appliesTo).toEqual(['text', 'listItem']);
   });
 
-  it('holds the three pinned families, each under the SIL Open Font Licence and embeddable in both outputs', () => {
+  it('holds the three pinned families, each under the SIL Open Font Licence, the text faces embeddable in both outputs and the maths face in a PDF only, set in Cambria Math in Word', () => {
     expect(DEFAULT_THEME.typefaces.map((each) => each.family)).toEqual([
       'Liberation Serif',
       'Liberation Mono',
@@ -91,8 +93,16 @@ describe('the default theme', () => {
     ]);
     for (const each of DEFAULT_THEME.typefaces) {
       expect(each.licence, each.id).toBe('OFL-1.1');
-      expect(each.embedding, each.id).toEqual({ pdf: true, word: true });
     }
+    expect(face('serif').embedding).toEqual({ pdf: true, word: true });
+    expect(face('mono').embedding).toEqual({ pdf: true, word: true });
+    expect(face('serif').wordFamily).toBeUndefined();
+    expect(face('mono').wordFamily).toBeUndefined();
+    // Measured (M10): STIX Two Math's outlines are CFF, which Word does not embed - embedded, Word
+    // sets its equations in Calibri - so a Word document sets them in Cambria Math, which Word and
+    // Office carry.
+    expect(face('maths').embedding).toEqual({ pdf: true, word: false });
+    expect(face('maths').wordFamily).toBe('Cambria Math');
     expect(face('serif').files).toHaveLength(4);
     expect(face('mono').files).toHaveLength(4);
     expect(face('maths').files).toEqual([
@@ -232,7 +242,31 @@ describe('the default theme', () => {
   });
 });
 
-describe("the default theme's version 0.2", () => {
+describe("the default theme's version 0.3", () => {
+  it("is its 0.2 with the maths face's Word face declared, nothing else changed, under a fixed identifier of its own", () => {
+    const [serif, mono, maths] = SECOND_DEFAULT_THEME.typefaces;
+    expect(DEFAULT_THEME).toEqual({
+      ...SECOND_DEFAULT_THEME,
+      typefaces: [
+        serif,
+        mono,
+        { ...maths, embedding: { pdf: true, word: false }, wordFamily: 'Cambria Math' },
+      ],
+    });
+    expect(DEFAULT_THEME.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
+    expect(DEFAULT_THEME_VERSION).toBe('3c00d89a-547f-468e-94a3-8a4b82ab05d3');
+    expect([
+      SECOND_DEFAULT_THEME_VERSION,
+      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(DEFAULT_THEME_VERSION);
+  });
+
+  it('reads', () => {
+    expect(readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION).ok).toBe(true);
+  });
+});
+
+describe("the default theme's version 0.2, as migration 0025 stored it", () => {
   it('binds new versions of its paragraph, table and image catalogues, each by a fixed identifier, and the other three as 0.1 did', () => {
     for (const kind of ['paragraph', 'table', 'image'] as const) {
       expect(DEFAULT_CATALOGUE_VERSIONS[kind], kind).not.toBe(
@@ -256,12 +290,24 @@ describe("the default theme's version 0.2", () => {
   });
 
   it('is its 0.1 naming those catalogue versions, with nothing else changed, under a fixed identifier of its own', () => {
-    expect(DEFAULT_THEME).toEqual({
+    expect(SECOND_DEFAULT_THEME).toEqual({
       ...FIRST_DEFAULT_THEME,
       catalogues: DEFAULT_CATALOGUE_VERSIONS,
     });
-    expect(DEFAULT_THEME_VERSION).toBe('29c4ade2-741b-48fa-bc45-94c06257bd75');
-    expect([...Object.values(DEFAULT_CATALOGUE_VERSIONS)]).not.toContain(DEFAULT_THEME_VERSION);
+    expect(SECOND_DEFAULT_THEME_VERSION).toBe('29c4ade2-741b-48fa-bc45-94c06257bd75');
+    expect([...Object.values(DEFAULT_CATALOGUE_VERSIONS)]).not.toContain(
+      SECOND_DEFAULT_THEME_VERSION,
+    );
+    // Its maths face as 0025 stored it: embeddable in Word, with no Word face.
+    expect(SECOND_DEFAULT_THEME.typefaces.map((each) => each.embedding)).toEqual([
+      { pdf: true, word: true },
+      { pdf: true, word: true },
+      { pdf: true, word: true },
+    ]);
+  });
+
+  it('still reads, as the theme a publication made under it was set from', () => {
+    expect(readTheme(SECOND_DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION).ok).toBe(true);
   });
 });
 

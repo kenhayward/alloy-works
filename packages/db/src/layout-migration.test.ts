@@ -215,6 +215,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0023_default_layout_relative_words',
       '0024_themes',
       '0025_table_and_image_styles',
+      '0026_word',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -534,6 +535,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0023_default_layout_relative_words',
       '0024_themes',
       '0025_table_and_image_styles',
+      '0026_word',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -631,6 +633,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0023_default_layout_relative_words',
       '0024_themes',
       '0025_table_and_image_styles',
+      '0026_word',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -711,6 +714,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0023_default_layout_relative_words',
       '0024_themes',
       '0025_table_and_image_styles',
+      '0026_word',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -737,6 +741,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0023_default_layout_relative_words',
       '0024_themes',
       '0025_table_and_image_styles',
+      '0026_word',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     const chain = await service.withTenant({ ...tenant, id }, (trx) =>
@@ -832,6 +837,7 @@ describe("migration 0025, which gives the default layout the words a continued t
     // 0025 runs and leaves it: its 0.5 is the environment's own, so the product's goes nowhere.
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0025_table_and_image_styles',
+      '0026_word',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -850,6 +856,7 @@ describe("migration 0025, which gives the default layout the words a continued t
     // 0025 runs and adds 0.5 on top of the product's own, untouched 0.4.
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0025_table_and_image_styles',
+      '0026_word',
     ]);
     const { declared, fifth } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),

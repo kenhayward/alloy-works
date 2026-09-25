@@ -461,8 +461,11 @@ describe('the citations in the committed model', () => {
   // packages/db's documents.test.ts.
   // 316, from 317 (2026-09-25): the T1 audit's review takes IAM-039 off apps/service's
   // session-routes.test.ts until its wording is ruled on.
+  // 317, from 316 (2026-09-25): Word 1 cites PUB-027 in packages/domain's theme/ooxml.test.ts, where
+  // every paragraph and character style of the default theme is read back as a Word style under its
+  // catalogue identifier, every paragraph property stated.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(316);
+    expect(model.citations).toHaveLength(317);
   });
 
   it('cites no identifier the corpus does not hold', () => {

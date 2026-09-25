@@ -18,12 +18,15 @@ import type {
  * every publication is set from until TPL lets a template bind another. As data - a `theme/1` and the
  * six catalogue versions it binds - which the store seeds as literals and a test recomputes from here.
  *
- * **Two versions, both stated, because both are stored.** **0.1**, the `FIRST_` constants, is exactly
+ * **Three versions, all stated, because all are stored.** **0.1**, the `FIRST_` constants, is exactly
  * what migration 0024 seeded: six `catalogue/1` versions and the theme naming them. Frozen - the rows
  * are insert-only and the store's test recomputes their hashes from these - so nothing in it may change.
- * **0.2**, the unprefixed constants, is themes 2's (ruling R3): new versions of the paragraph, table and
- * image catalogues at `catalogue/2`, giving a table and an image their look and the quotation its
- * set-off, and the theme naming them; the character, admonition and citation catalogues are 0.1's.
+ * **0.2** is themes 2's (ruling R3), seeded by 0025: new versions of the paragraph, table and image
+ * catalogues at `catalogue/2`, giving a table and an image their look and the quotation its set-off,
+ * and the theme naming them; the character, admonition and citation catalogues are 0.1's. Its
+ * catalogues are the unprefixed `DEFAULT_CATALOGUE` constants, and its theme, frozen too, is
+ * `SECOND_DEFAULT_THEME`. **0.3**, `DEFAULT_THEME`, is Word 1's (ruling R5), seeded by 0026: 0.2 with
+ * the maths face's Word face declared, binding the same six catalogues.
  *
  * **Its numbers are template 11's wherever template 11 wrote one** - the body at 11pt, headings at 16
  * and 13pt bold, preformatted text at 8.8pt on `luma(240)`, which is `#f0f0f0`, in a 6pt panel, its
@@ -139,7 +142,7 @@ const mono: Typeface = {
   advance: 1229 / 2048,
 };
 
-/** STIX Two Math 2.13 b171: one face, in a 1000-unit em. */
+/** STIX Two Math 2.13 b171: one face, in a 1000-unit em, as the theme's 0.1 and 0.2 declare it. */
 const maths: Typeface = {
   id: 'maths',
   family: 'STIX Two Math',
@@ -647,10 +650,44 @@ export const DEFAULT_CATALOGUES_BY_VERSION: ReadonlyMap<string, unknown> = new M
  * 0.1's defaulted, and is found through `theme_default`, but a migration guarding on what it inserts
  * is simpler with one it names.
  */
-export const DEFAULT_THEME_VERSION = '29c4ade2-741b-48fa-bc45-94c06257bd75';
+export const SECOND_DEFAULT_THEME_VERSION = '29c4ade2-741b-48fa-bc45-94c06257bd75';
 
-/** **The default theme as it stands, 0.2**: 0.1 naming the catalogue versions above, nothing else changed. */
-export const DEFAULT_THEME: Theme = {
+/**
+ * **The default theme's 0.2, as migration 0025 stored it**: 0.1 naming the catalogue versions above,
+ * nothing else changed. Frozen, as 0.1 is: the row is insert-only, and a request made under it is set
+ * from it.
+ */
+export const SECOND_DEFAULT_THEME: Theme = {
   ...FIRST_DEFAULT_THEME,
   catalogues: { ...DEFAULT_CATALOGUE_VERSIONS },
+};
+
+// ---------------------------------------------------------------------------------------------------
+// Version 0.3 (Word 1, ruling R5): 0.2 with the maths face's Word face declared. No catalogue changes.
+// ---------------------------------------------------------------------------------------------------
+
+/**
+ * STIX Two Math as Word takes it: **not embeddable in a Word document, set there in Cambria Math**
+ * (STY-052). Its licence permits embedding, but its outlines are CFF - the file's tag is `OTTO` - and
+ * Word embeds TrueType outlines only: measured (word-output.md, M10), an embedded STIX Two Math has
+ * Word set the equations in Calibri, and without it in Cambria Math. So `embedding.word` says what a
+ * Word document can carry, which for this face is decided by its outlines before its licence, and
+ * the Word face is the one Word and Office carry. The PDF is unchanged.
+ */
+const mathsForWord: Typeface = {
+  ...maths,
+  embedding: { pdf: true, word: false },
+  wordFamily: 'Cambria Math',
+};
+
+/** The fixed identifier the store seeds the default theme's 0.3 under, by 0026, as 0.2's is fixed. */
+export const DEFAULT_THEME_VERSION = '3c00d89a-547f-468e-94a3-8a4b82ab05d3';
+
+/**
+ * **The default theme as it stands, 0.3**: 0.2 with the maths face above, nothing else changed - it
+ * binds 0.2's six catalogue versions.
+ */
+export const DEFAULT_THEME: Theme = {
+  ...SECOND_DEFAULT_THEME,
+  typefaces: [serif, mono, mathsForWord],
 };

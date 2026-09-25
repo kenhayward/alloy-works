@@ -256,6 +256,9 @@ describe('the domain package', () => {
         'markStyleId',
         'runFormat',
         'wordRun',
+        // Word 1 (ruling R5): the default theme's 0.2 frozen as 0025 stored it, beside its 0.3.
+        'SECOND_DEFAULT_THEME',
+        'SECOND_DEFAULT_THEME_VERSION',
       ].sort(),
     );
   });
