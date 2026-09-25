@@ -1020,9 +1020,10 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(await reportOf(both)).not.toContainEqual({ kind: 'no_page_cited_output' });
   }, 120_000);
 
-  it('refuses a list for the PDF and Word by name, as Word cannot carry one yet, records nothing, and publishes it as a PDF alone', async () => {
+  it('refuses a footnote for the PDF and Word by name, as Word cannot carry one yet, records nothing, and publishes it as a PDF alone', async () => {
     const kept = new Map<string, string>();
-    const listed = (trx: TenantTransaction) =>
+    // Word 2 writes lists; a footnote is Word 3's.
+    const noted = (trx: TenantTransaction) =>
       component(
         trx,
         general,
@@ -1030,17 +1031,21 @@ describe('publishing a document, from the request to the stored PDF', () => {
         ['Before the steps.'],
         [
           {
-            type: 'list',
-            id: 'l1',
-            kind: 'unordered',
-            items: [
+            type: 'paragraph',
+            id: 'b1',
+            style: 'body',
+            content: [
+              { type: 'text', value: 'Set the tray.', marks: [] },
               {
+                type: 'footnote',
+                id: 'n1',
+                anchor: { kind: 'span' },
                 content: [
                   {
                     type: 'paragraph',
-                    id: 'i1',
+                    id: 'n1p',
                     style: 'body',
-                    content: [{ type: 'text', value: 'Set the tray.', marks: [] }],
+                    content: [{ type: 'text', value: 'Level it first.', marks: [] }],
                   },
                 ],
               },
@@ -1049,7 +1054,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
         ],
       ).then((holder) => [reference(holder)]);
     const before = await publicationCount();
-    const both = await requested(listed, ['pdf', 'docx']);
+    const both = await requested(noted, ['pdf', 'docx']);
     expect(await work({ handlers: noting(kept) })).toBe('failed');
     const row = await requestRow(both);
     expect(row.state).toBe('failed');
@@ -1058,8 +1063,8 @@ describe('publishing a document, from the request to the stored PDF', () => {
         stage: 'compose',
         code: 'word_not_yet',
         node: expect.any(String),
-        block: 'l1',
-        detail: 'list',
+        block: 'b1',
+        detail: 'footnote',
       },
     ]);
     // Refused before either output was made: nothing kept, nothing recorded.
@@ -1067,7 +1072,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(await outputsOf(both)).toEqual([]);
     expect(await publicationCount()).toBe(before);
 
-    const pdf = await requested(listed);
+    const pdf = await requested(noted);
     expect(await work()).toBe('done');
     expect((await outputsOf(pdf)).map((each) => each.format)).toEqual(['pdf']);
   }, 120_000);

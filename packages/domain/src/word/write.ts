@@ -44,8 +44,10 @@ import { HEADING_LISTS, numberingXml, WORD_FORMATS, WORD_LEVELS } from './number
  * met, and each embedded face's key taken from its own hash (`fontKey`).
  *
  * This slice writes paragraphs, headings, marks, links and languages, and the page around them: the
- * cover, the notice, the contents and the running heads and feet. `assemble` refuses everything else
- * by name for Word (`word_not_yet`), so meeting anything else here is the caller's defect, and throws.
+ * cover, the notice, the contents and the running heads and feet. `assemble` refuses equations,
+ * footnotes and cross-references by name for Word (`word_not_yet`); lists, quotations, preformatted
+ * text, tables, figures and images reach it from Word 2's first task, and are written by the tasks
+ * after it, so until then meeting one here throws, as meeting anything else does.
  */
 
 /** What the job records as the output's producer version (R12). */
