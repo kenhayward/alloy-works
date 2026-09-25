@@ -511,8 +511,11 @@ class Writer {
     switch (part.field) {
       case 'title':
         return this.runs(this.published.title, this.document);
+      // A revision is a token in no language, as a page's number is: written with no direction of its
+      // own, so the bidi algorithm places it as the PDF's does. Written right to left in a right-to-left
+      // document, Word set "Revision 0.7" as "0.7Revision" (the Word check).
       case 'revision':
-        return this.runs(this.published.revision, this.document);
+        return runXml(this.published.revision, '');
       // Numbers only Word knows, left empty until Word lays out the page: copying the PDF's would be
       // wrong the moment Word reflows (PUB-065).
       case 'page':

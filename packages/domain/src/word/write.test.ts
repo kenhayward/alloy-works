@@ -730,6 +730,37 @@ describe('writeDocx: headers and footers (ruling R8)', () => {
     expect(fieldCodes(footer)).toEqual(['PAGE', 'NUMPAGES', 'PAGE']);
   });
 
+  it("leaves the revision's direction to the text around it in a right-to-left document, as the page's number is left, so the foot reads as the PDF's does", () => {
+    // Found by the Word check: the revision written right to left, as the document's own words are,
+    // made Word set "Revision 0.7" as "0.7Revision", where the PDF's bidi, finding no strong letter
+    // in "0.7", sets it after the words before it.
+    const rtl = written({ outline: { ...OUTLINE, language: 'he-IL', direction: 'rtl' } });
+    const [, , , body] = sections(rtl.docx);
+    const reference = kids(body!.properties, 'w:footerReference').find(
+      (each) => each.attrs['w:type'] === 'default',
+    )!;
+    const rels = relationships(rtl.docx, 'word/_rels/document.xml.rels');
+    const foot = rtl.docx.xml(`word/${rels.get(reference.attrs['r:id']!)!['Target']}`);
+    const [running] = kids(foot, 'w:p');
+    expect(properties(running!)).toContain('w:bidi');
+    const runs = all(running!, 'w:r');
+    expect(
+      first(
+        runs.find((run) => textOf(run) === 'Revision ')!,
+        'w:rPr',
+      ),
+    ).toEqual({
+      name: 'w:rPr',
+      attrs: {},
+      children: [{ name: 'w:lang', attrs: { 'w:val': 'en' }, children: [] }],
+    });
+    expect(runs.find((run) => textOf(run) === '0.7')).toEqual({
+      name: 'w:r',
+      attrs: {},
+      children: [{ name: 'w:t', attrs: { 'xml:space': 'preserve' }, children: ['0.7'] }],
+    });
+  });
+
   it('gives every paragraph it writes a style, in the body and in every header and footer', () => {
     const parts = Object.keys(plain.docx.files).filter((name) =>
       /^word\/(document|header\d+|footer\d+)\.xml$/.test(name),
