@@ -453,7 +453,9 @@ class Writer {
 
   /**
    * The contents' entries, prefilled: each node to the layout's depth, its number and its title with a
-   * tab between, in the contents entry style of its level, and no page, which only Word can know (M9).
+   * space between - the level's suffix, as the PDF prints an entry and Word rebuilds one (the final
+   * review of Word 1, M3) - in the contents entry style of its level, and no page, which only Word can
+   * know (M9).
    * One `TOC` field over them all, begun in the first and ended in the last, which Word rebuilds -
    * entries, numbers and pages - when it updates its fields (R8).
    */
@@ -477,7 +479,7 @@ class Writer {
       const number = numbers.get(node.id);
       const content =
         (index === 0 ? fieldBegin(code) : '') +
-        (number === undefined ? '' : runXml(number + TAB, '')) +
+        (number === undefined ? '' : runXml(`${number} `, '')) +
         this.titleRuns(node.title, entryStyle, passage) +
         (index === listed.length - 1 ? FIELD_END : '');
       const style = this.style(entryStyle);

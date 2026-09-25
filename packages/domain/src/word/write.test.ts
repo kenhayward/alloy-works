@@ -933,21 +933,22 @@ describe('writeDocx: the contents (ruling R8)', () => {
     expect(fieldCodes(first(plain.docx.xml('word/document.xml'), 'w:body')!)).toContain(
       `TOC ${BS}o "1-3" ${BS}h ${BS}z ${BS}u`,
     );
-    const TAB = String.fromCharCode(9);
+    // Number, space and title, as the PDF prints an entry and Word rebuilds one (final review of Word
+    // 1, M3): a reader who declines the update sees what Word would build, less the page.
     const entries = contents!.paragraphs.slice(1);
     expect(entries.map(textOf)).toEqual([
-      `i${TAB}Preface by Ada`,
-      `1${TAB}Introduction`,
-      `1.1${TAB}Readings`,
-      `1.2${TAB}Grüße`,
-      `2${TAB}Method`,
-      `2.1${TAB}${SEFER}`,
-      `2.2${TAB}Level 2`,
-      `2.2.1${TAB}Level 3`,
+      'i Preface by Ada',
+      '1 Introduction',
+      '1.1 Readings',
+      '1.2 Grüße',
+      '2 Method',
+      `2.1 ${SEFER}`,
+      '2.2 Level 2',
+      '2.2.1 Level 3',
       'Notes',
-      `A${TAB}Tables of values`,
-      `A.1${TAB}Values`,
-      `B${TAB}Glossary`,
+      'A Tables of values',
+      'A.1 Values',
+      'B Glossary',
     ]);
     expect(entries.map(styleOf)).toEqual([
       'TOC1',
