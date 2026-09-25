@@ -1,0 +1,1 @@
+$out.compatibilityMode = $doc.CompatibilityMode
