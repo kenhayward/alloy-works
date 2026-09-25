@@ -127,6 +127,8 @@ interface Paragraph {
   readonly numbering?: string;
   readonly tabs?: string;
   readonly bidi?: boolean;
+  /** An appendix's heading where each starts a page, after the first, which its section starts. */
+  readonly pageBreakBefore?: boolean;
   /** The first paragraph of a section writes no space before, which Word keeps there (M16). */
   firstOfSection?: boolean;
 }
@@ -236,12 +238,13 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   for (const segment of segmentsOf(document.nodes)) {
     const paragraphs = opening();
     segment.nodes.forEach((node, index) => {
-      // Each later appendix starts a page where the layout says so (PUB-088), by a page break in a
-      // paragraph of its own, after which Word drops the heading's space before as the PDF does (M16).
-      if (index > 0 && segment.matter === 'appendix' && document.appendices.newPage) {
-        paragraphs.push(writer.paragraph(theme.places.text, '<w:r><w:br w:type="page"/></w:r>'));
-      }
-      paragraphs.push(...writer.node(node));
+      const [heading, ...rest] = writer.node(node);
+      // Each later appendix starts a page where the layout says so (PUB-088), by a page break before
+      // its heading, where Word drops the heading's space before as the PDF does (M16). Not a break in
+      // a paragraph of its own: that takes a line after the appendix before, which where it fills its
+      // last page flows onto a page the break leaves blank (the final review of Word 1, M2).
+      const breaks = index > 0 && segment.matter === 'appendix' && document.appendices.newPage;
+      paragraphs.push(breaks ? { ...heading!, pageBreakBefore: true } : heading!, ...rest);
     });
     sections.push({
       paragraphs,
@@ -690,6 +693,7 @@ function segmentsOf(
 function paragraphXml(paragraph: Paragraph, sectionProperties?: string): string {
   const properties =
     `<w:pStyle w:val="${paragraph.style}"/>` +
+    (paragraph.pageBreakBefore === true ? '<w:pageBreakBefore/>' : '') +
     (paragraph.numbering ?? '') +
     (paragraph.tabs ?? '') +
     (paragraph.bidi === true ? '<w:bidi/>' : '') +

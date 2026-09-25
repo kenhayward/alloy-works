@@ -741,18 +741,25 @@ describe('writeDocx: the page (ruling R8)', () => {
     expect(kids(pPr(paragraphSaying(plain.docx, 'Readings'))!, 'w:spacing')).toEqual([]);
   });
 
-  it('starts each later appendix on a page of its own where the layout says so, by a page break', () => {
+  it('starts each later appendix on a page of its own where the layout says so, by a page break before its heading', () => {
+    // Not a break in a paragraph of its own, which takes a line after the appendix before: where that
+    // appendix fills its last page, the line flows onto a page the break then leaves blank (measured in
+    // Word for the final review of Word 1, M2). Before its heading, Word drops the heading's space
+    // before at the top of the page, as the PDF does.
     const appendix = sections(plain.docx)[4]!.paragraphs;
-    const glossary = appendix.findIndex((each) => textOf(each) === 'Glossary');
-    const before = appendix[glossary - 1]!;
-    expect(all(before, 'w:br').map((each) => each.attrs['w:type'])).toEqual(['page']);
-    expect(textOf(before)).toBe('');
+    const glossary = appendix.find((each) => textOf(each) === 'Glossary')!;
+    expect(properties(glossary).slice(0, 3)).toEqual(['w:pStyle', 'w:pageBreakBefore', 'w:numPr']);
+    const body = first(plain.docx.xml('word/document.xml'), 'w:body')!;
+    expect(all(body, 'w:br')).toEqual([]);
+    expect(all(body, 'w:pageBreakBefore')).toHaveLength(1);
     const together = written({
       layout: layoutWith((layout) => {
         layout.matter.appendices.newPage = false;
       }),
     });
-    expect(all(first(together.docx.xml('word/document.xml'), 'w:body')!, 'w:br')).toEqual([]);
+    expect(
+      all(first(together.docx.xml('word/document.xml'), 'w:body')!, 'w:pageBreakBefore'),
+    ).toEqual([]);
   });
 
   it('opens the first section with the title and the notice sentence where the layout sets no cover', () => {
