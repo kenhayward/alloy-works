@@ -83,7 +83,9 @@ exactly when it matters.
 | **PUB-019** | Typefaces must be embedded, subject to the licence recorded with the theme (**STY-041**, **STY-042**)                                                                                                                                                                                              | T1         | Specified             |
 | **PUB-020** | PDF/A must be producible where a layout declares it, for archival and submission                                                                                                                                                                                                                   | T3         | Specified             |
 | **PUB-021** | The document outline must appear as PDF bookmarks                                                                                                                                                                                                                                                  | T1         | Specified             |
-| **PUB-022** | Cross-references and citations must be internal links                                                                                                                                                                                                                                              | T1         | Specified             |
+| **PUB-022** | Cross-references and citations must be internal links                                                                                                                                                                                                                                              | T1         | Superseded by PUB-096 |
+| **PUB-096** | A cross-reference in a paragraph's text - running text, a list, a quotation, a table's cell, a footnote's text - must be an internal link to its target                                                                                                                                            | T1         | Specified             |
+| **PUB-097** | A citation must be an internal link to its entry in the bibliography (**LIB**, **PUB-040**)                                                                                                                                                                                                        | T6         | Specified             |
 | **PUB-068** | Rendered output must be faithful to the composition that was paginated: line breaking, hyphenation, justification and glyph selection must be those the layout and theme declare (**STY**). A renderer must not re-break, re-hyphenate or choose a different glyph on its own                      | Constraint | Specified             |
 | **PUB-069** | Hyphenation and line breaking must follow the language of the passage (**CNT-140**), not one language declared for the whole document                                                                                                                                                              | T1         | Specified             |
 | **PUB-070** | Where a typeface is substituted because its licence forbids embedding (**STY-052**), the document must be composed again against the substitute and the substitution reported on the publication. A substitution must never leave a page whose lines differ from the composition that was approved | Constraint | Specified             |
@@ -430,5 +432,21 @@ the requirement Ken filed from the publishing design for the layout, and reworde
 | Counts           | Before                    | After                     |
 | ---------------- | ------------------------- | ------------------------- |
 | Requirements     | 94, of which 8 superseded | 95, of which 8 superseded |
+| Non-requirements | 4                         | 4                         |
+| Open questions   | 5                         | 5                         |
+
+### From the T1 audit against the code (2026-09-25)
+
+[The T1 audit](<../../reviews/T1 - Audit against the code.md>) read every T1 requirement against the code
+and against what T1 can deliver. A row moving tranche whole keeps its identifier, and only its tranche
+changes; a row split by tranche is superseded by its T1 half, and the rest becomes rows of their own.
+
+| What was found                                                       | Change                                                                                                                                                         |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A citation has no entry to link to until **LIB** gives it one, in T6 | **PUB-022 superseded by PUB-096** - a cross-reference in a paragraph's text a link to its target, T1 - with **PUB-097**, a citation a link to its entry, in T6 |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 95, of which 8 superseded | 97, of which 9 superseded |
 | Non-requirements | 4                         | 4                         |
 | Open questions   | 5                         | 5                         |

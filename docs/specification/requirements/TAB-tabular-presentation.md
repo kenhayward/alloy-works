@@ -154,7 +154,9 @@ answer with the number the source gave, not with the rounded, unit-converted thi
 | **TAB-034** | A table must carry a caption, and must be numbered by the outline (**STR-023**)                                                                                                                                                                                                                    | T1      | Specified             |
 | **TAB-039** | A caption must be programmatically associated with its table in every output, not merely placed beside it (**PUB-090**)                                                                                                                                                                            | T1      | Specified             |
 | **TAB-040** | Header rows repeated across a page break must be exposed to assistive technology as headers rather than as new rows of data (**PUB-031**, **PUB-032**)                                                                                                                                             | T1      | Specified             |
-| **TAB-041** | A table must carry its role and reading order into tagged output, and a table rotated, scaled or split by TAB-033 must remain one table to assistive technology rather than becoming two unrelated ones                                                                                            | T1      | Specified             |
+| **TAB-041** | A table must carry its role and reading order into tagged output, and a table rotated, scaled or split by TAB-033 must remain one table to assistive technology rather than becoming two unrelated ones                                                                                            | T1      | Superseded by TAB-050 |
+| **TAB-050** | A table must carry its role and reading order into tagged output, and a table broken across pages must remain one table to assistive technology rather than becoming two                                                                                                                           | T1      | Specified             |
+| **TAB-051** | A table rotated, scaled or split by TAB-033 must remain one table to assistive technology rather than becoming two unrelated ones                                                                                                                                                                  | T2      | Specified             |
 | **TAB-049** | A table's header rows must be associated with the cells they describe in every output. Its header columns must be associated wherever the output format can express a header column, and where a format cannot, the publication's report must say which tables lost that association (**PUB-032**) | T1      | Specified             |
 
 **TAB-039 to TAB-041 fill a gap that reads as under-covered rather than delegated.** TAB-030 cites
@@ -263,3 +265,19 @@ filed as issue #202.
 | What was found                                                                           | Change                                                                                                                                                                           |
 | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | TAB-031 asked for header cells associated in every output, and Word has no header column | **TAB-031 superseded by TAB-049**: header rows in every output, header columns wherever the format can express one, and the publication's report naming each table that lost one |
+
+### From the T1 audit against the code (2026-09-25)
+
+[The T1 audit](<../../reviews/T1 - Audit against the code.md>) read every T1 requirement against the code
+and against what T1 can deliver. A row moving tranche whole keeps its identifier, and only its tranche
+changes; a row split by tranche is superseded by its T1 half, and the rest becomes rows of their own.
+
+| What was found                                                         | Change                                                                                                                                                           |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rotating, scaling and splitting are TAB-033's strategies, which are T2 | **TAB-041 superseded by TAB-050** - role, reading order and one table across a page break, T1 - with **TAB-051**, one table when rotated, scaled or split, in T2 |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 49, of which 3 superseded | 51, of which 4 superseded |
+| Non-requirements | 4                         | 4                         |
+| Open questions   | 4                         | 4                         |

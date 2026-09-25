@@ -127,7 +127,7 @@ than implied by the word audit appearing elsewhere. **LIF** owns how long the re
 | **COL-023** | Accepting or rejecting must act on the whole suggestion in one operation, across every fragment of it (**CNT-005**)                                                                                                                  | Constraint | Specified |
 | **COL-024** | Accepting a suggestion must be audited, and must be attributable to the person who accepted it rather than to the person who proposed it                                                                                             | T3         | Specified |
 | **COL-025** | Suggestions must be visible against a locked component, so that review does not wait for an author to finish                                                                                                                         | T3         | Specified |
-| **COL-026** | An author must be able to see what they themselves changed in the current session, distinctly from what others have suggested (**CNT-113**)                                                                                          | T1         | Specified |
+| **COL-026** | An author must be able to see what they themselves changed in the current session, distinctly from what others have suggested (**CNT-113**)                                                                                          | T3         | Specified |
 | **COL-027** | Unresolved suggestions must be reportable, and a lifecycle gate must be able to require that there are none (**LIF**)                                                                                                                | T3         | Specified |
 | **COL-041** | Accepting or rejecting a suggestion writes to the component and is therefore an edit: the person doing it must hold the lock, claimed automatically where the component is free (COL-005)                                            | Constraint | Specified |
 | **COL-042** | Where another user holds the lock, accepting or rejecting must be refused, naming the holder and when the lock is expected to release (COL-007). The suggestion must stay pending                                                    | T3         | Specified |
@@ -300,3 +300,19 @@ A later review read all twenty-one documents against each other. Its sections ar
 | Review sections | Change                                                                                                                                                                                                                                                                                                  |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2.5             | **COL-060** makes notification channels tenant configuration, permissioned, audited and exportable. **COL-061** states the delivery guarantee, the de-duplication identifier and where a failing channel surfaces. **COL-062** gives the inbox a lifecycle and names it a second copy of tenant content |
+
+### From the T1 audit against the code (2026-09-25)
+
+[The T1 audit](<../../reviews/T1 - Audit against the code.md>) read every T1 requirement against the code
+and against what T1 can deliver. A row moving tranche whole keeps its identifier, and only its tranche
+changes; a row split by tranche is superseded by its T1 half, and the rest becomes rows of their own.
+
+| What was found                                                                                            | Change                  |
+| --------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Distinguishing an author's own changes from others' suggestions needs suggestions (COL-020), which are T3 | **COL-026 moved to T3** |
+
+| Counts           | Before | After |
+| ---------------- | ------ | ----- |
+| Requirements     | 62     | 62    |
+| Non-requirements | 7      | 7     |
+| Open questions   | 6      | 6     |
