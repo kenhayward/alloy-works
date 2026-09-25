@@ -2254,23 +2254,30 @@ describe('writeDocx: figures and images (Word 2, ruling R8)', () => {
   });
 
   it('numbers every drawing from 1 in the order the document holds them, each named, its picture by the same number', () => {
+    // A floated figure's text box before the image it holds.
     const numbered = drawings(document).map((each) => {
-      const docPr = first(each, 'wp:docPr')!.attrs;
-      return [docPr['id'], docPr['name'], first(each, 'pic:cNvPr')!.attrs['id']];
+      const docPr = kids(each, 'wp:docPr')[0]!.attrs;
+      const box = first(each, 'wps:wsp') !== undefined;
+      return [docPr['id'], docPr['name'], box ? null : first(each, 'pic:cNvPr')!.attrs['id']];
     });
     expect(numbered).toEqual([
       ['1', 'Picture 1', '1'],
       ['2', 'Picture 2', '2'],
-      ['3', 'Picture 3', '3'],
+      ['3', 'Text Box 3', null],
       ['4', 'Picture 4', '4'],
       ['5', 'Picture 5', '5'],
+      ['6', 'Picture 6', '6'],
     ]);
   });
 
-  it("floats a figure its style floats to the head of its page's text area, its image and its caption one frame the measure wide that the text stands clear of, as the PDF's band (WO-G, measured)", () => {
-    const caption = at('Figure 1.3 Blue on top');
-    const held = before(caption);
-    const frameOf = (paragraph: Element) => kids(pPr(paragraph)!, 'w:framePr')[0]?.attrs;
+  it("floats a figure its style floats to the head of its page's text area, its image and its caption in one text box the measure wide, which Word keeps clear of every other float and the text stands clear of, as the PDF's band (WO-G, measured)", () => {
+    // Anchored in an empty paragraph of its own, in the caption role, a tenth of a point high, where the
+    // figure stands in the flow.
+    const anchored = body.find((each) => all(each, 'wp:anchor').length > 0)!;
+    expect(textOf(before(anchored))).toBe('Figure 1.2 A border');
+    expect(styleOf(anchored)).toBe('caption');
+    expect(kids(anchored, 'w:r')).toHaveLength(1);
+    const [anchor] = all(anchored, 'wp:anchor');
     const page = sections(figured.docx).at(-1)!.properties;
     const size = first(page, 'w:pgSz')!.attrs;
     const margins = first(page, 'w:pgMar')!.attrs;
@@ -2279,38 +2286,76 @@ describe('writeDocx: figures and images (Word 2, ruling R8)', () => {
       Number(margins['w:left']) -
       Number(margins['w:right']) -
       Number(margins['w:gutter']);
-    // Word groups paragraphs of one frame: the image's and the caption's, so they stand together.
-    expect(frameOf(held)).toEqual({
-      'w:w': String(measure),
-      // The engine's clearance, an em and a half of the text, less the leading Word sets above the
-      // text's first line where the PDF sets none.
-      'w:vSpace': twips(16.5 - 3.35),
-      'w:wrap': 'notBeside',
-      'w:vAnchor': 'margin',
-      'w:hAnchor': 'margin',
-      'w:xAlign': 'center',
-      'w:yAlign': 'top',
+    // Word moves a float that may not overlap another off it: two on one page stand one above the
+    // other, where two frames had stood on each other (measured).
+    expect(anchor!.attrs).toMatchObject({
+      distT: '0',
+      distB: '0',
+      distL: '0',
+      distR: '0',
+      simplePos: '0',
+      behindDoc: '0',
+      locked: '0',
+      layoutInCell: '1',
+      allowOverlap: '0',
     });
-    expect(frameOf(caption)).toEqual(frameOf(held));
-    // In CT_PPr's order: after the style and the keep, before everything else.
-    expect(properties(held).slice(0, 3)).toEqual(['w:pStyle', 'w:keepNext', 'w:framePr']);
-    // The image inline in its paragraph, aligned across the frame as its style says; the caption after.
+    expect(kids(anchor!).map((each) => each.name)).toEqual([
+      'wp:simplePos',
+      'wp:positionH',
+      'wp:positionV',
+      'wp:extent',
+      'wp:effectExtent',
+      'wp:wrapTopAndBottom',
+      'wp:docPr',
+      'wp:cNvGraphicFramePr',
+      'a:graphic',
+    ]);
+    const placed = (name: string) => {
+      const position = first(anchor!, name)!;
+      return [position.attrs['relativeFrom'], textOf(first(position, 'wp:align')!)];
+    };
+    expect(placed('wp:positionH')).toEqual(['margin', '']);
+    expect(first(first(anchor!, 'wp:positionH')!, 'wp:align')!.children).toEqual(['center']);
+    expect(first(first(anchor!, 'wp:positionV')!, 'wp:align')!.children).toEqual(['top']);
+    expect(first(anchor!, 'wp:positionV')!.attrs['relativeFrom']).toBe('margin');
+    expect(extentOf(anchor!).cx).toBe(Math.round((measure / 20) * EMU));
+    const shape = first(anchor!, 'wps:wsp')!;
+    expect(first(shape, 'wps:cNvSpPr')!.attrs['txBox']).toBe('1');
+    // Word fits the box to what it holds; the text below it clear by the engine's clearance, an em and
+    // a half of the text, less the leading Word sets above the text's first line where the PDF sets
+    // none, inside the box at its foot, so that a box below it stands clear of it too.
+    const bodyPr = first(shape, 'wps:bodyPr')!;
+    expect(bodyPr.attrs).toMatchObject({
+      lIns: '0',
+      tIns: '0',
+      rIns: '0',
+      bIns: String(Math.round((16.5 - 3.35) * EMU)),
+    });
+    expect(kids(bodyPr).map((each) => each.name)).toEqual(['a:spAutoFit']);
+    // The image in a paragraph of its own, aligned across the box as its style says; the caption after.
+    const inside = kids(first(shape, 'w:txbxContent')!, 'w:p');
+    expect(inside).toHaveLength(2);
+    const [held, caption] = inside as [Element, Element];
     const [inline] = drawings(held);
     expect(inline!.name).toBe('wp:inline');
+    expect(styleOf(held)).toBe('caption');
     expect(kids(pPr(held)!, 'w:jc')[0]?.attrs).toEqual({ 'w:val': 'right' });
     expect(extentOf(inline!)).toEqual(sized(figureImageKey(node, 'f3')));
     expect(first(inline!, 'wp:docPr')!.attrs['descr']).toBe('A blue square');
+    expect(styleOf(caption)).toBe('caption');
+    expect(textOf(caption)).toBe('Figure 1.3 Blue on top');
     expect(fieldCodes(caption)).toEqual(['STYLEREF 1 \\s', 'SEQ Figure \\* arabic \\s 1']);
-    expect(textOf(before(held))).toBe('Figure 1.2 A border');
-    expect(all(document, 'wp:anchor')).toEqual([]);
+    expect(all(document, 'w:framePr')).toEqual([]);
   });
 
-  it("spaces a floated figure's frame as the PDF's band: the image at its head, the caption its style's space before below it, and nothing after it but the clearance", () => {
-    const caption = at('Figure 1.3 Blue on top');
+  it("spaces a floated figure's box as the PDF's band: the image at its head, the caption its style's space before below it, and its anchor taking no room in the flow", () => {
+    const anchored = body.find((each) => all(each, 'wp:anchor').length > 0)!;
+    const [held, caption] = kids(first(anchored, 'w:txbxContent')!, 'w:p') as [Element, Element];
     // The default caption has no space before, which the image keeps: the leading a block figure's
-    // image takes above it is the flow's, which the frame stands out of.
-    expect(spacing(before(caption))).toEqual({ 'w:after': '0' });
+    // image takes above it is the flow's, which the box stands out of.
+    expect(spacing(held)).toEqual({ 'w:after': '0' });
     expect(spacing(caption)).toEqual({ 'w:after': '0' });
+    expect(spacing(anchored)).toEqual({ 'w:after': '0', 'w:line': '2', 'w:lineRule': 'exact' });
   });
 
   it("sets an image in a line as a wp:inline in a run of its own, sized by assemble for the Word page, in a paragraph's text and in a table's cell", () => {
@@ -2346,7 +2391,8 @@ describe('writeDocx: figures and images (Word 2, ruling R8)', () => {
       `media/${BLUE_HASH}.jpg`,
     ]);
     // Every picture drawn from its own image's part, however often that image is placed.
-    const targets = drawings(document).map(
+    const pictures = drawings(document).filter((each) => each.name === 'wp:inline');
+    const targets = pictures.map(
       (each) => related.get(first(each, 'a:blip')!.attrs['r:embed']!)!['Target'],
     );
     expect(targets).toEqual([
@@ -2438,6 +2484,24 @@ describe('writeDocx: the lists after the contents (Word 2, M9)', () => {
     for (const entry of ['Figure 1.1 Shapes at rest', 'Figure 1.2 A blue one']) {
       expect(styleOf(at(entry))).toBe('TableofFigures');
     }
+  });
+
+  it('writes a list without its links where one of its figures floats, since Word lists a caption in a text box with no page under them (measured); the other lists keep them', () => {
+    const floated = writtenOf(
+      [
+        figure('f1', RED, 'Shapes at rest'),
+        readings({ style: 'table' }),
+        figure('f3', BLUE, 'Blue on top', { imageStyle: 'floated' }),
+      ],
+      { assets: IMAGES, theme: floatedTheme },
+    );
+    const [, lists] = sections(floated.docx);
+    const section: Element = { name: 'section', attrs: {}, children: lists!.paragraphs };
+    expect(fieldCodes(section)).toEqual([
+      `TOC ${BS}o "1-3" ${BS}h ${BS}z ${BS}u`,
+      `TOC ${BS}z ${BS}c "Figure"`,
+      `TOC ${BS}h ${BS}z ${BS}c "Table"`,
+    ]);
   });
 
   it("names the entries' style as Word names the one it rebuilds a list in, based on the list entry role's", () => {

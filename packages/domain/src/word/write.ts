@@ -139,15 +139,19 @@ const NAMESPACES = `xmlns:w="${W_NS}" xmlns:r="${R_NS}"`;
 const WP_NS = 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';
 const A_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main';
 const PIC_NS = 'http://schemas.openxmlformats.org/drawingml/2006/picture';
+/** A shape of Word's own, since Word 2010: a floated figure's text box (Word 2, ruling R8). */
+const WPS_NS = 'http://schemas.microsoft.com/office/word/2010/wordprocessingShape';
 /** The document part's: its text's, and its drawings' (Word 2, ruling R8). */
-const DOCUMENT_NAMESPACES = `${NAMESPACES} xmlns:wp="${WP_NS}" xmlns:a="${A_NS}" xmlns:pic="${PIC_NS}"`;
+const DOCUMENT_NAMESPACES =
+  `${NAMESPACES} xmlns:wp="${WP_NS}" xmlns:a="${A_NS}" xmlns:pic="${PIC_NS}"` +
+  ` xmlns:wps="${WPS_NS}"`;
 
 /** English Metric Units, which a drawing states its extent in, to the point. */
 const EMU_PER_POINT = 12_700;
 
 /**
  * How far text stands clear of a floated figure, in ems of the text: the pinned Typst's `place`
- * clearance, which template 13's figure takes as it is (`frame`).
+ * clearance, which template 13's figure takes as it is (`floatBox`).
  */
 const FLOAT_CLEARANCE = 1.5;
 
@@ -239,12 +243,17 @@ interface Paragraph {
    */
   readonly lead?: number;
   /**
-   * The spaces it is set with whatever the flow wants: a floated figure's frame's, which stands out of
-   * the flow as the PDF's band does, so that the flow's spaces reach neither (Word 2, ruling R8).
+   * The spaces it is set with whatever the flow wants: a floated figure's anchor's, and its box's
+   * paragraphs', which stand out of the flow as the PDF's band does, so that the flow's spaces reach
+   * none of them (Word 2, ruling R8).
    */
   readonly held?: { readonly before: number; readonly after: number };
-  /** Its frame, where it stands in one: a floated figure's image and caption (`frame`). */
-  readonly frame?: string;
+  /**
+   * The text box it anchors, where it is a floated figure's anchor (`floatBox`): the drawing around
+   * the box's paragraphs, which are written inside it. The paragraph itself holds nothing else and is a
+   * tenth of a point high, so that it takes no room in the flow.
+   */
+  readonly box?: FloatBox;
   /** What it states over its style for Word to space it so (`spacingOverrides`). */
   spacing?: SpacingOverride;
   /**
@@ -252,6 +261,16 @@ interface Paragraph {
    * properties or closes the body, since Word ends each with a paragraph (Word 2, ruling R7).
    */
   readonly closing?: boolean;
+}
+
+/**
+ * **A floated figure's text box before it is written** (Word 2, ruling R8): its image's paragraph and
+ * its caption's, and the drawing written either side of them, up to the box's content and after it.
+ */
+interface FloatBox {
+  readonly paragraphs: readonly Paragraph[];
+  readonly open: string;
+  readonly close: string;
 }
 
 /**
@@ -688,7 +707,12 @@ class Writer {
    * Each caption Word's fields number, in the order the text meets them, by its sequence's `SEQ`
    * name: what a list after the contents lists, and Word's update rebuilds it from (Word 2, M9).
    */
-  private readonly captioned: { sequence: string; words: string; passage: Passage }[] = [];
+  private readonly captioned: {
+    sequence: string;
+    words: string;
+    passage: Passage;
+    floated: boolean;
+  }[] = [];
   /** What the report says of each table, in the order the text meets them (Word 2, ruling R7). */
   readonly reported: OutputReportEntry[] = [];
   /** Each face file's advances, read once, by its hash. */
@@ -1322,9 +1346,15 @@ class Writer {
    * as `captionField` says (R1; measured, M3) - the label's word, then where the scheme prefixes the
    * number, `STYLEREF` and the separator, then `SEQ` - each prefilled with the numbering table's label,
    * so a reader who never updates them sees the PDF's number; then a space and the caption's own runs,
-   * as template 13 sets them. A caption the scheme gives no number has no field.
+   * as template 13 sets them. A caption the scheme gives no number has no field. `floated`, where it
+   * is a floated figure's, which stands in a text box.
    */
-  private captionRuns(captioned: Captioned, role: string, passage: Passage): string {
+  private captionRuns(
+    captioned: Captioned,
+    role: string,
+    passage: Passage,
+    floated = false,
+  ): string {
     const entry = this.numbers.numbering.entries.find(
       (each) => each.node === this.at && each.block === captioned.id,
     );
@@ -1337,7 +1367,12 @@ class Writer {
     }
     const rule = this.numbers.scheme.sequences[entry.sequence]![entry.matter];
     const counter = formatCounter(entry.value, rule.format[rule.format.length - 1]!);
-    this.captioned.push({ sequence: field.sequence, words: captionText(captioned), passage });
+    this.captioned.push({
+      sequence: field.sequence,
+      words: captionText(captioned),
+      passage,
+      floated,
+    });
     return (
       captionLabel(field, entry.number, counter, (text) => this.runs(text, passage)) +
       this.runs(' ', passage) +
@@ -1368,35 +1403,42 @@ class Writer {
    * as the PDF's figure is never parted from it; and its caption a paragraph below it in the caption
    * role's style, numbered by Word's fields (R1), the caption kept, number and all, where the image is
    * decorative (decision F-M). As a block, the image stands across what its place leaves of the
-   * measure. Floated, image and caption are one Word frame (`frame`) at the head of the text area of
-   * the page they fall on, the measure wide, as the PDF's band is: measured, Word keeps them together
-   * there, where an anchored image left its caption in the text.
+   * measure. Floated, image and caption are one text box (`floatBox`) at the head of the text area of
+   * the page it falls on, the measure wide, as the PDF's band is: measured, Word keeps them together
+   * there, where an anchored image left its caption in the text, and keeps two such boxes on one page
+   * apart, where two frames stood on each other.
    */
   private figure(figure: PublishedFigure, place: Place, passage: Passage): WrittenBlock {
     const role = this.theme.roles.caption;
     const size = this.imageSize(figureImageKey(this.at, figure.id));
     const properties = this.properties(role);
-    const drawn = `<w:r>${this.drawing(figure.path, size, figure.alternative)}</w:r>`;
     const common = { bidi: passage.rtl, justify: justification(figure.alignment) };
     if (figure.placement === 'float') {
-      const frame = this.frame();
+      // The box is numbered before the image it holds, as the document holds them.
+      const number = (this.drawings += 1);
+      const drawn = `<w:r>${this.drawing(figure.path, size, figure.alternative)}</w:r>`;
       const image = this.paragraph(role, drawn, {
         ...common,
-        keepNext: true,
-        frame,
         // The band's image at its head; its caption its style's space before below it, and nothing
-        // after it but the frame's clearance, measured against the PDF's band.
+        // after it but the box's clearance, measured against the PDF's band.
         held: { before: 0, after: 0 },
         ...this.across(role, TOP_LEVEL),
       });
-      const caption = this.paragraph(role, this.captionRuns(figure, role, passage), {
+      const caption = this.paragraph(role, this.captionRuns(figure, role, passage, true), {
         bidi: passage.rtl,
-        frame,
         held: { before: properties.spaceBefore, after: 0 },
         ...this.indented(role, TOP_LEVEL),
       });
-      return { body: [image, caption], top: role, bottom: role, container: true };
+      const height = size.height + properties.spaceBefore + properties.lineSpacing;
+      const box = this.floatBox(number, height, [image, caption]);
+      const anchor = this.paragraph(role, '', {
+        bidi: passage.rtl,
+        held: { before: 0, after: 0 },
+        box,
+      });
+      return { body: [anchor], top: role, bottom: role, container: true };
     }
+    const drawn = `<w:r>${this.drawing(figure.path, size, figure.alternative)}</w:r>`;
     const image = this.paragraph(role, drawn, {
       ...common,
       keepNext: true,
@@ -1428,21 +1470,44 @@ class Writer {
   }
 
   /**
-   * **A floated figure's frame** (Word 2, ruling R8; measured): the measure wide, at the head of the
-   * text area (`margin`, `top`) of the page its paragraphs fall on, the text above and below it and
-   * never beside it (`notBeside`), clear of it by the engine's clearance - `place`'s, an em and a half
-   * of the text - less the leading Word sets above the text's first line, where the PDF sets none.
-   * Word groups consecutive paragraphs of one frame into one, which keeps the image and its caption
-   * together as the PDF's band does.
+   * **A floated figure's text box** (Word 2, ruling R8; measured, I1 of Word 2's final review): the
+   * measure wide, at the head of the text area (`margin`, `top`) of the page its anchor falls on, the
+   * text above and below it and never beside it (`wrapTopAndBottom`), and never over another float
+   * (`allowOverlap="0"`), which Word honours by standing a second box on the page below the first.
+   * Its paragraphs are clear of its edges but at its foot, where the engine's clearance stands - an em
+   * and a half of the text, less the leading Word sets above the text's first line, where the PDF sets
+   * none - inside the box, so that a box below it stands clear of it as the text does. Word fits the
+   * box to what it holds (`spAutoFit`), so `height`, what the writer can know of it, is only where it
+   * starts. `number` is its drawing's.
    */
-  private frame(): string {
+  private floatBox(number: number, height: number, paragraphs: readonly Paragraph[]): FloatBox {
     const text = this.properties(this.theme.places.text);
     const clearance = FLOAT_CLEARANCE * text.size - leading(text);
-    return (
-      `<w:framePr w:w="${twips(textBlockWidth(this.numbers.format))}" ` +
-      `w:vSpace="${twips(clearance)}" w:wrap="notBeside" w:vAnchor="margin" ` +
-      'w:hAnchor="margin" w:xAlign="center" w:yAlign="top"/>'
-    );
+    const emu = (points: number) => Math.round(points * EMU_PER_POINT);
+    const cx = emu(twips(textBlockWidth(this.numbers.format)) / 20);
+    const cy = emu(height + clearance);
+    return {
+      paragraphs,
+      open:
+        '<w:drawing>' +
+        '<wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" ' +
+        `relativeHeight="${number}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="0">` +
+        '<wp:simplePos x="0" y="0"/>' +
+        '<wp:positionH relativeFrom="margin"><wp:align>center</wp:align></wp:positionH>' +
+        '<wp:positionV relativeFrom="margin"><wp:align>top</wp:align></wp:positionV>' +
+        `<wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>` +
+        '<wp:wrapTopAndBottom/>' +
+        `<wp:docPr id="${number}" name="Text Box ${number}"/><wp:cNvGraphicFramePr/>` +
+        `<a:graphic><a:graphicData uri="${WPS_NS}"><wps:wsp><wps:cNvSpPr txBox="1"/>` +
+        `<wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln>' +
+        '</wps:spPr><wps:txbx><w:txbxContent>',
+      close:
+        '</w:txbxContent></wps:txbx>' +
+        '<wps:bodyPr rot="0" vert="horz" wrap="square" lIns="0" tIns="0" rIns="0" ' +
+        `bIns="${emu(clearance)}" anchor="t" anchorCtr="0"><a:spAutoFit/></wps:bodyPr>` +
+        '</wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing>',
+    };
   }
 
   /** A paragraph's indents where its place moves it from its style's, as `indent` gives them. */
@@ -1574,8 +1639,11 @@ class Writer {
           pageBreakBefore: opened || paragraphs.length > 0,
         }),
       );
-      const code = ['TOC', 'h', 'z', `c "${name}"`].join(` ${BACKSLASH}`);
       const entries = this.captioned.filter((each) => each.sequence === name);
+      // Linked to each caption (`\h`), but where one of them stands in a floated figure's text box:
+      // Word then lists that one with no page (measured), and a page is what a list is for.
+      const linked = !entries.some((each) => each.floated);
+      const code = ['TOC', ...(linked ? ['h'] : []), 'z', `c "${name}"`].join(` ${BACKSLASH}`);
       const shown = entries.length === 0 ? [null] : entries;
       shown.forEach((entry, index) => {
         paragraphs.push(
@@ -1862,15 +1930,18 @@ function segmentsOf(
  */
 function paragraphRuns(body: readonly Body[]): Paragraph[][] {
   const runs: Paragraph[][] = [[]];
+  // A text box's paragraphs are a story of their own, each box's its own run.
+  const boxes: Paragraph[][] = [];
   for (const item of body) {
     if (isTable(item)) {
       for (const row of item.rows) for (const cell of row.cells) runs.push(cell.paragraphs);
       runs.push([]);
     } else {
       runs[runs.length - 1]!.push(item);
+      if (item.box !== undefined) boxes.push([...item.box.paragraphs]);
     }
   }
-  return runs.filter((run) => run.length > 0);
+  return [...runs, ...boxes].filter((run) => run.length > 0);
 }
 
 /** A table as Word reads it: its properties and grid, then each row's, then each cell's. */
@@ -1952,23 +2023,31 @@ function paragraphXml(paragraph: Paragraph, sectionProperties?: string): string 
     `<w:pStyle w:val="${paragraph.style}"/>` +
     (paragraph.keepNext === true ? '<w:keepNext/>' : '') +
     (paragraph.pageBreakBefore === true ? '<w:pageBreakBefore/>' : '') +
-    (paragraph.frame ?? '') +
     (paragraph.numbering ?? '') +
     (paragraph.tabs ?? '') +
     (paragraph.bidi === true ? '<w:bidi/>' : '') +
     (paragraph.closing === true
       ? '<w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/>'
-      : before === undefined && after === undefined
+      : before === undefined && after === undefined && paragraph.box === undefined
         ? ''
         : '<w:spacing' +
           (before === undefined ? '' : ` w:before="${twips(before)}"`) +
           (after === undefined ? '' : ` w:after="${twips(after)}"`) +
+          // A floated figure's anchor a tenth of a point high: measured, the text after it stands
+          // where it stood after a frame.
+          (paragraph.box === undefined ? '' : ' w:line="2" w:lineRule="exact"') +
           '/>') +
     (paragraph.indent === undefined ? '' : indentXml(paragraph.indent)) +
     (paragraph.spacing?.contextual === false ? '<w:contextualSpacing w:val="0"/>' : '') +
     (paragraph.justify === undefined ? '' : `<w:jc w:val="${paragraph.justify}"/>`) +
     (sectionProperties ?? '');
-  return `<w:p><w:pPr>${properties}</w:pPr>${paragraph.content}</w:p>`;
+  const box =
+    paragraph.box === undefined
+      ? ''
+      : `<w:r>${paragraph.box.open}` +
+        paragraph.box.paragraphs.map((each) => paragraphXml(each)).join('') +
+        `${paragraph.box.close}</w:r>`;
+  return `<w:p><w:pPr>${properties}</w:pPr>${box}${paragraph.content}</w:p>`;
 }
 
 /** A paragraph's indents as `w:ind`. */

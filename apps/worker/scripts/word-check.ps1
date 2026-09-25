@@ -16,7 +16,9 @@
 # after the update: each list after the contents (a table of figures) by its paragraphs; every table's
 # title and cells, each cell with its fill, whether its row is a header row Word repeats, and its page;
 # every image in a line, with its description, its decorative flag, its size and whether it stands in
-# a frame; and every frame, with what it holds and where it is placed from.
+# a floating text box; and every floating shape - a floated figure's text box - with what it holds,
+# where it is placed from and whether it may overlap another. A text box's paragraphs are read with
+# the text's, straight after the paragraph it is anchored in.
 #
 # Tracks the WINWORD process it started and stops only that one, if Quit leaves it running. Where
 # starting Word started no process of its own, it attached to one somebody else runs, and it closes
@@ -78,25 +80,38 @@ function ReadTables($doc) {
   return , $list
 }
 
-function ReadImages($doc) {
-  $list = @()
-  foreach ($s in $doc.InlineShapes) {
-    $r = $s.Range
-    $list += [ordered]@{
-      alternative = [string]$s.AlternativeText; decorative = [int]$s.Decorative
-      width = $s.Width; height = $s.Height; page = $r.Information($wdActiveEndPageNumber); framed = $r.Frames.Count
-    }
+function ReadImage($s, [bool]$boxed) {
+  return [ordered]@{
+    alternative = [string]$s.AlternativeText; decorative = [int]$s.Decorative
+    width = $s.Width; height = $s.Height; page = $s.Range.Information($wdActiveEndPageNumber); boxed = $boxed
   }
+}
+
+function ReadImages($doc) {
+  # The text's own, and each floating text box's, in the document's order: a box's by where it is
+  # anchored in the text.
+  $found = @()
+  foreach ($s in $doc.InlineShapes) { $found += [pscustomobject]@{ at = $s.Range.Start; n = $found.Count; read = (ReadImage $s $false) } }
+  foreach ($shape in $doc.Shapes) {
+    if (-not $shape.TextFrame.HasText) { continue }
+    $at = $shape.Anchor.Start
+    foreach ($s in $shape.TextFrame.TextRange.InlineShapes) { $found += [pscustomobject]@{ at = $at; n = $found.Count; read = (ReadImage $s $true) } }
+  }
+  $list = @()
+  foreach ($each in ($found | Sort-Object -Property at, n)) { $list += $each.read }
   return , $list
 }
 
-function ReadFrames($doc) {
+function ReadFloats($doc) {
   $list = @()
-  foreach ($f in $doc.Frames) {
-    $r = $f.Range
+  foreach ($s in $doc.Shapes) {
+    $held = $s.TextFrame.HasText
     $list += [ordered]@{
-      text = (Clean $r.Text); images = $r.InlineShapes.Count; page = $r.Information($wdActiveEndPageNumber)
-      vertical = $f.VerticalPosition; relativeVertical = $f.RelativeVerticalPosition
+      text = $(if ($held) { Clean $s.TextFrame.TextRange.Text } else { '' })
+      images = $(if ($held) { $s.TextFrame.TextRange.InlineShapes.Count } else { 0 })
+      page = $s.Anchor.Information($wdActiveEndPageNumber)
+      vertical = $s.Top; relativeVertical = $s.RelativeVerticalPosition
+      wrap = $s.WrapFormat.Type; allowOverlap = [int]$s.WrapFormat.AllowOverlap
     }
   }
   return , $list
@@ -120,14 +135,24 @@ function ReadSections($doc) {
   return , $list
 }
 
+function ReadParagraph($para, [bool]$boxed) {
+  $r = $para.Range
+  return [ordered]@{
+    text = (Clean $r.Text); style = [string]$para.Style.NameLocal; list = [string]$r.ListFormat.ListString
+    page = $r.Information($wdActiveEndPageNumber); section = $r.Information($wdActiveEndSectionNumber)
+    top = $r.Information($wdVerticalPositionRelativeToPage); images = $r.InlineShapes.Count
+    anchors = $(if ($boxed) { 0 } else { $r.ShapeRange.Count }); boxed = $boxed
+  }
+}
+
 function ReadParagraphs($doc) {
+  # The text's, each floating text box's straight after the paragraph it is anchored in.
   $list = @()
   foreach ($para in $doc.Paragraphs) {
-    $r = $para.Range
-    $list += [ordered]@{
-      text = (Clean $r.Text); style = [string]$para.Style.NameLocal; list = [string]$r.ListFormat.ListString
-      page = $r.Information($wdActiveEndPageNumber); section = $r.Information($wdActiveEndSectionNumber)
-      top = $r.Information($wdVerticalPositionRelativeToPage); images = $r.InlineShapes.Count
+    $list += (ReadParagraph $para $false)
+    foreach ($shape in $para.Range.ShapeRange) {
+      if (-not $shape.TextFrame.HasText) { continue }
+      foreach ($held in $shape.TextFrame.TextRange.Paragraphs) { $list += (ReadParagraph $held $true) }
     }
   }
   return , $list
@@ -187,7 +212,7 @@ try {
       $out.figureLists = (ReadFigureLists $doc)
       $out.tables = (ReadTables $doc)
       $out.images = (ReadImages $doc)
-      $out.frames = (ReadFrames $doc)
+      $out.floats = (ReadFloats $doc)
       # Each path cast to a plain string: Join-Path's answer reaches COM wrapped, and Word then waits
       # forever inside ExportAsFixedFormat or SaveAs2 rather than failing.
       $pdf = [string](Join-Path $Folder "$name.pdf")

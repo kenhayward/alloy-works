@@ -453,8 +453,8 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
       2,
     );
     // The three figures and the two images in a line, each a drawing in its line numbered in order -
-    // the floated one's in the frame it shares with its caption - described or flagged decorative,
-    // drawn from the two images' parts.
+    // the floated one's in the text box it shares with its caption, a drawing numbered before it -
+    // described or flagged decorative, drawn from the two images' parts.
     const document = strFromU8(parts['word/document.xml']!);
     expect([...document.matchAll(/<wp:docPr id="(\d+)"/g)].map((match) => match[1])).toEqual([
       '1',
@@ -462,12 +462,15 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
       '3',
       '4',
       '5',
+      '6',
     ]);
     expect(document.match(/<wp:inline /g)).toHaveLength(5);
-    expect(document.match(/<w:framePr /g)).toHaveLength(2);
-    // The lists after the contents, each a TOC field over its sequence's captions.
+    expect(document.match(/<wp:anchor [^>]* allowOverlap="0">/g)).toHaveLength(1);
+    expect(document).not.toContain('<w:framePr ');
+    // The lists after the contents, each a TOC field over its sequence's captions: the figures'
+    // without links, since one of them floats in a text box, which Word lists with no page under them.
     expect(document).toContain(
-      '<w:instrText xml:space="preserve"> TOC \\h \\z \\c &quot;Figure&quot; </w:instrText>',
+      '<w:instrText xml:space="preserve"> TOC \\z \\c &quot;Figure&quot; </w:instrText>',
     );
     expect(document).toContain(
       '<w:instrText xml:space="preserve"> TOC \\h \\z \\c &quot;Table&quot; </w:instrText>',
@@ -635,7 +638,11 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
       node.children.forEach(inOrder);
     };
     assembled.document.nodes.forEach(inOrder);
-    const described = [...body.matchAll(/<wp:docPr ([^>]*?)(\/>|>(.*?)<\/wp:docPr>)/g)].map((m) =>
+    // Each picture's drawing, in the line: a floated figure's text box is a drawing too, which holds
+    // no image of its own but its figure's picture and caption, read as it holds them.
+    const pictures = /<wp:inline [^>]*><wp:extent [^>]*\/><wp:effectExtent [^>]*\/>/.source;
+    const docPr = /<wp:docPr ([^>]*?)(\/>|>(.*?)<\/wp:docPr>)/.source;
+    const described = [...body.matchAll(new RegExp(pictures + docPr, 'g'))].map((m) =>
       m[3]?.includes('<adec:decorative ') && m[3].includes('val="1"')
         ? 'decorative'
         : (/descr="([^"]*)"/.exec(m[1]!)?.[1] ?? 'undescribed'),

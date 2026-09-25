@@ -490,8 +490,9 @@ const image = (asset: string) => ({
 });
 
 /**
- * Word 2's figures: one described by its image's alternative text, one decorative, one floated to the
- * head of its page, and images in a line, in a paragraph's text and in a table's cell.
+ * Word 2's figures: one described by its image's alternative text, one decorative, two floated to the
+ * head of one page a paragraph apart, and images in a line, in a paragraph's text and in a table's
+ * cell.
  */
 const SHAPES = component('Shapes', [
   paragraph('sa', text('The shapes Ada drew.')),
@@ -499,6 +500,8 @@ const SHAPES = component('Shapes', [
   figure('F2', TWO_BY_ONE!, 'A border', { alternative: { kind: 'decorative' } }),
   ...filler('s', 2),
   figure('F3', SQUARE!, 'Blue on top', { imageStyle: 'floated' }),
+  paragraph('se', text('Between the floats.')),
+  figure('F4', THREE_BY_ONE!, 'Yellow beneath', { imageStyle: 'floated' }),
   paragraph('sb', text('Press '), image(THREE_BY_ONE!), text(' to start.')),
   {
     type: 'table',
@@ -781,9 +784,9 @@ interface Opened {
   /** Each list after the contents - Word's table of figures - by its paragraphs, after the update. */
   readonly figureLists: readonly (readonly { readonly text: string; readonly style: string }[])[];
   readonly tables: readonly TableRead[];
-  /** Every image in a line, in the document's order, the ones in a frame included. */
+  /** Every image in a line, in the document's order, the ones in a floated figure's box included. */
   readonly images: readonly ImageRead[];
-  readonly frames: readonly FrameRead[];
+  readonly floats: readonly FloatRead[];
   readonly pdf: string;
   /** The copy Word saved, reopened: every paragraph, and its own settings. */
   readonly saved: {
@@ -815,6 +818,10 @@ interface ParagraphRead {
   readonly top: number;
   /** How many images stand in its lines; Word's text gives each as a slash. */
   readonly images: number;
+  /** How many floating shapes are anchored in it: a floated figure's anchor holds one. */
+  readonly anchors: number;
+  /** Whether it stands in a floating text box, read straight after the paragraph that anchors it. */
+  readonly boxed: boolean;
 }
 
 interface TableRead {
@@ -840,18 +847,23 @@ interface ImageRead {
   readonly width: number;
   readonly height: number;
   readonly page: number;
-  /** How many frames the image stands in. */
-  readonly framed: number;
+  /** Whether it stands in a floating text box: a floated figure's. */
+  readonly boxed: boolean;
 }
 
-interface FrameRead {
+interface FloatRead {
   readonly text: string;
   readonly images: number;
+  /** The page it is anchored on. */
   readonly page: number;
-  /** Word's `VerticalPosition`: -999999 is the top of what it is placed from. */
+  /** Word's `Top`: -999999 is the top of what it is placed from. */
   readonly vertical: number;
   /** Word's `RelativeVerticalPosition`: 0 is the margin. */
   readonly relativeVertical: number;
+  /** Word's `WdWrapType`: 4 is top and bottom. */
+  readonly wrap: number;
+  /** Whether Word may lay it over another float: 0 where it may not. */
+  readonly allowOverlap: number;
 }
 
 /** One page of Word's own PDF: its header's and footer's lines, each item joined by a space. */
@@ -1907,7 +1919,7 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
       for (const { fixture, word, captions } of checked) {
         expect(
           word.paragraphs
-            .filter((each) => each.style === 'Caption' && each.images === 0)
+            .filter((each) => each.style === 'Caption' && each.images === 0 && each.anchors === 0)
             .map((each) => each.text),
           fixture.name,
         ).toEqual(captions.map((each) => `${each.label} ${each.words}`));
@@ -1929,7 +1941,8 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
     it('sizes every image as the PDF does, within half a point, and describes it or flags it decorative', () => {
       for (const { fixture, word, images, compared } of checked) {
         if (compared === null) continue;
-        expect(images, fixture.name).toHaveLength(IMAGE_SHAPES.length);
+        // Every shape once, and the three by one twice, the second time floated.
+        expect(images, fixture.name).toHaveLength(IMAGE_SHAPES.length + 1);
         expect(
           word.images.map((each) => [each.alternative, each.decorative]),
           fixture.name,
@@ -1957,38 +1970,73 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
       }
     });
 
-    it('sets a floated figure and its caption together in one frame at the head of its page, where the PDF sets them', () => {
+    it('sets each floated figure and its caption together in a text box at the head of its page, where the PDF sets the first, two on one page one above the other and never over each other', () => {
       for (const { fixture, word, images, captions, compared } of checked) {
         if (compared === null) continue;
-        const float = images.find((each) => each.float)!;
-        const caption = captions.find((each) => each.words === 'Blue on top')!;
-        expect(word.frames, fixture.name).toEqual([
-          {
+        const floats = images.filter((each) => each.float);
+        const floated = ['Blue on top', 'Yellow beneath'].map((words) =>
+          captions.find((each) => each.words === words)!,
+        );
+        expect(floats, fixture.name).toHaveLength(2);
+        expect(word.floats, fixture.name).toEqual(
+          floated.map((caption) => ({
             // The image, which Word's text gives as a slash, and its caption beneath it.
             text: `/ ${caption.label} ${caption.words}`,
             images: 1,
             page: expect.any(Number),
             vertical: -999999,
             relativeVertical: 0,
-          },
-        ]);
-        const placed = (laid: LaidOut, top: number) => {
-          const box = laid.images.find(
+            wrap: 4,
+            allowOverlap: 0,
+          })),
+        );
+        // Both on one page, as the fixture means them to be: a paragraph apart.
+        expect(word.floats[0]!.page, fixture.name).toBe(word.floats[1]!.page);
+        const boxOf = (laid: LaidOut, float: Placed) =>
+          laid.images.find(
             (each) =>
               Math.abs(each.right - each.left - float.width) <= 0.5 &&
               Math.abs(each.bottom - each.top - float.height) <= 0.5,
           )!;
-          const under = laid.lines.find(
-            (line) =>
-              line.page === box.page &&
-              line.key === `${caption.label}${caption.words}`.replace(/\s+/g, ''),
-          )!;
+        const lineOf = (laid: LaidOut, caption: Caption) =>
+          laid.lines.find(
+            (line) => line.key === `${caption.label}${caption.words}`.replace(/\s+/g, ''),
+          );
+        // No two images painted over each other, in either PDF, and every floated caption read whole
+        // on a line of its own.
+        for (const laid of [compared.pdf, compared.word]) {
+          laid.images.forEach((one, at) =>
+            laid.images.slice(at + 1).forEach((other) => {
+              const apart =
+                one.page !== other.page ||
+                one.right <= other.left ||
+                other.right <= one.left ||
+                one.bottom <= other.top ||
+                other.bottom <= one.top;
+              expect(apart, `${fixture.name} ${JSON.stringify([one, other])}`).toBe(true);
+            }),
+          );
+          for (const caption of floated) {
+            expect(lineOf(laid, caption), `${fixture.name} ${caption.words}`).toBeDefined();
+          }
+        }
+        // The first at the head of its page in both, its caption as far below it; the second, in
+        // Word, below the first's caption on the same page, where the PDF stands it wherever the
+        // engine finds room.
+        const [first, second] = floats as [Placed, Placed];
+        const placed = (laid: LaidOut, top: number) => {
+          const box = boxOf(laid, first);
+          const under = lineOf(laid, floated[0]!)!;
+          expect(under.page, fixture.name).toBe(box.page);
           expect(Math.abs(box.top - top), fixture.name).toBeLessThanOrEqual(0.5);
           return under.top - box.bottom;
         };
         const inPdf = placed(compared.pdf, fixture.layout.formats.pdf.margins.top);
         const inWord = placed(compared.word, fixture.layout.formats.docx!.margins.top);
         expect(Math.abs(inWord - inPdf), fixture.name).toBeLessThanOrEqual(1);
+        const below = boxOf(compared.word, second);
+        expect(below.page, fixture.name).toBe(boxOf(compared.word, first).page);
+        expect(below.top, fixture.name).toBeGreaterThan(lineOf(compared.word, floated[0]!)!.top);
       }
     });
 
@@ -1996,7 +2044,7 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
       for (const { fixture, word, captions, pages, compared } of checked) {
         const labels = pages.map(labelOf);
         const shown = word.paragraphs.filter(
-          (each) => each.style === 'Caption' && each.images === 0,
+          (each) => each.style === 'Caption' && each.images === 0 && each.anchors === 0,
         );
         const entries = (sequence: string) =>
           captions.flatMap((each, at) =>
