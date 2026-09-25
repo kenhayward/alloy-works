@@ -1,5 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -128,5 +128,99 @@ describe('a publication at its own address', () => {
     expect(
       await screen.findByText('There is nothing here, or nothing you may read.'),
     ).toBeInTheDocument();
+  });
+
+  const WORD = 'http://store.example.test/t_acme/sha256/def?X-Amz-Signature=w';
+  const VIEW = 'http://store.example.test/t_acme/sha256/abc?X-Amz-Signature=v';
+  const pdfOutput = {
+    format: 'pdf',
+    bytes: 30_000,
+    sha256: 'a'.repeat(64),
+    standard: 'ua-1',
+    producer: 'typst',
+    producerVersion: '13',
+    report: [],
+    download: LINK,
+    view: VIEW,
+  };
+  const wordOutput = (report: unknown[]) => ({
+    format: 'docx',
+    bytes: 20_480,
+    sha256: 'b'.repeat(64),
+    standard: null,
+    producer: 'word',
+    producerVersion: 'word/1',
+    report,
+    download: WORD,
+    view: null,
+  });
+
+  it('offers each output to save, shows only the PDF in the page, and says what the Word document could not carry', async () => {
+    open(
+      json(200, {
+        ...record,
+        formats: ['pdf', 'docx'],
+        template: { name: 'publication', version: 13 },
+        pipeline: '13',
+        outputs: [
+          pdfOutput,
+          wordOutput([
+            { kind: 'face_substituted', family: 'STIX Two Math', wordFamily: 'Cambria Math' },
+            { kind: 'pages_cite_the_pdf' },
+          ]),
+        ],
+      }),
+    );
+    const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+    expect(within(aside).getByRole('link', { name: 'Download the PDF' })).toHaveAttribute(
+      'href',
+      LINK,
+    );
+    expect(within(aside).getByRole('link', { name: 'Download the Word document' })).toHaveAttribute(
+      'href',
+      WORD,
+    );
+    expect(aside).toHaveTextContent('Download the Word document (20 KB)');
+    // Shown in the page: the PDF, and only the PDF, whose view link is its alone.
+    expect(screen.getByTitle('The dosing report')).toHaveAttribute('src', VIEW);
+    expect(document.querySelectorAll('iframe')).toHaveLength(1);
+    expect(aside).toHaveTextContent('Made with Typst 0.15.1 and publication template 13.');
+    expect(aside).toHaveTextContent('The Word document was written by the Word writer word/1.');
+    // Each entry of its report, one sentence each.
+    const report = within(aside).getByRole('list', { name: 'About the Word document' });
+    expect([...report.querySelectorAll('li')].map((each) => each.textContent)).toEqual([
+      'The typeface STIX Two Math cannot be embedded in a Word document, so Word shows its text in Cambria Math.',
+      "Word lays out its own pages, so its page numbers can differ from the PDF's. A page number cited from this publication is the PDF's.",
+    ]);
+  });
+
+  it('reads a publication in Word alone, which no PDF engine or template made, and offers it to save', async () => {
+    open(
+      json(200, {
+        ...record,
+        formats: ['docx'],
+        engine: null,
+        template: null,
+        pipeline: '13',
+        outputs: [wordOutput([{ kind: 'no_page_cited_output' }, { kind: 'pages_cite_the_pdf' }])],
+      }),
+    );
+    expect(await screen.findByRole('heading', { name: 'The dosing report' })).toBeInTheDocument();
+    expect(screen.queryByText('The publication could not be opened.')).toBeNull();
+    expect(screen.getByText(/^Not approved\./)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Download the Word document' })).toHaveAttribute(
+      'href',
+      WORD,
+    );
+    expect(screen.queryByRole('link', { name: 'Download the PDF' })).toBeNull();
+    expect(document.querySelector('iframe')).toBeNull();
+    expect(
+      screen.getByText('A Word document is not shown in the page. Download it to open it in Word.'),
+    ).toBeInTheDocument();
+    const aside = screen.getByRole('complementary', { name: 'What it was made from' });
+    expect(aside).not.toHaveTextContent('Typst');
+    expect(within(aside).getByRole('list', { name: 'About the Word document' })).toHaveTextContent(
+      'This publication has no PDF, so nothing in it can be cited by page number.',
+    );
   });
 });

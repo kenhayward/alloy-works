@@ -11,7 +11,13 @@ const GUIDE = 'aaaaaaaa-0000-4000-8000-000000000002';
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
-const publication = (id: string, document: string, title: string, number: string) => ({
+const publication = (
+  id: string,
+  document: string,
+  title: string,
+  number: string,
+  formats: string[] = ['pdf'],
+) => ({
   id,
   document,
   version: { id: `v${number}`, number },
@@ -19,7 +25,7 @@ const publication = (id: string, document: string, title: string, number: string
   publisher: { id: 'p1', displayName: 'Grace' },
   publishedAt: new Date(2025, 8, 18, 10, 4).toISOString(),
   approval: 'none',
-  formats: ['pdf'],
+  formats,
 });
 
 function listed() {
@@ -28,8 +34,13 @@ function listed() {
     if (new URL(request.url).pathname !== '/v1/publications') return json(404, {});
     return json(200, {
       items: [
-        publication('ffffffff-0000-4000-8000-000000000003', MANUAL, 'Operator manual', '1.9'),
-        publication('ffffffff-0000-4000-8000-000000000002', GUIDE, 'Installation guide', '2.0'),
+        publication('ffffffff-0000-4000-8000-000000000003', MANUAL, 'Operator manual', '1.9', [
+          'pdf',
+          'docx',
+        ]),
+        publication('ffffffff-0000-4000-8000-000000000002', GUIDE, 'Installation guide', '2.0', [
+          'docx',
+        ]),
         publication('ffffffff-0000-4000-8000-000000000001', MANUAL, 'Operator manual', '1.8'),
       ],
     });
@@ -50,10 +61,19 @@ describe('the publications list', () => {
     expect(cells.map((cell) => cell.textContent)).toEqual([
       'Operator manual',
       '1.9',
+      'PDF and Word',
       '18 Sep 2025',
       'Grace',
       'Not approved',
     ]);
+    // What each was made in, in the words an author knows them by (Word 1, ruling R14).
+    const made = (name: string) =>
+      screen
+        .getAllByRole('link', { name })
+        .map((link) => within(link.closest('tr')!).getAllByRole('cell')[2]!.textContent);
+    expect(made('Operator manual')).toEqual(['PDF and Word', 'PDF']);
+    expect(made('Installation guide')).toEqual(['Word']);
+    expect(screen.getByRole('columnheader', { name: 'Formats' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Publications' })).toBeInTheDocument();
     expect(screen.getByText('3 publications you may read.')).toBeInTheDocument();
 

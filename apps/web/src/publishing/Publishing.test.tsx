@@ -60,7 +60,13 @@ function service(answers: Record<string, unknown[] | (() => unknown)>) {
   return { fetch, sent };
 }
 
-const open = (fetch: typeof globalThis.fetch, mayPublish = true, followMs = 0) =>
+const open = (
+  fetch: typeof globalThis.fetch,
+  mayPublish = true,
+  followMs = 0,
+  /** What the layout makes; the PDF alone unless a test says Word too. */
+  formats?: readonly string[],
+) =>
   render(
     <StrictMode>
       <Publishing
@@ -70,6 +76,7 @@ const open = (fetch: typeof globalThis.fetch, mayPublish = true, followMs = 0) =
         mayPublish={mayPublish}
         placeOf={(node) => (node === HIDDEN ? '1.2 A component' : '1.1 Calibration')}
         followMs={followMs}
+        {...(formats === undefined ? {} : { formats })}
       />
     </StrictMode>,
   );
@@ -1068,5 +1075,77 @@ describe('publishing from the document page', () => {
       await screen.findByRole('link', { name: /Version 0\.3, published by Ada/ }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Publish as PDF' })).toBeNull();
+  });
+
+  it('asks for PDF, Word or both where the layout makes Word, the PDF unless the author chooses otherwise, from the keyboard', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [queued()],
+      [`GET /v1/publication-requests/${REQUEST}`]: [queued()],
+    });
+    open(fake.fetch, true, 60_000, ['pdf', 'docx']);
+    const choice = await screen.findByRole('radiogroup', { name: 'Publish as' });
+    // Three, in this order.
+    expect(within(choice).getAllByRole('radio')).toEqual(
+      ['PDF', 'Word', 'PDF and Word'].map((name) => within(choice).getByRole('radio', { name })),
+    );
+    expect(within(choice).getByRole('radio', { name: 'PDF' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeInTheDocument();
+
+    // From the keyboard alone: into the choice, along it, and on to the button.
+    within(choice).getByRole('radio', { name: 'PDF' }).focus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(within(choice).getByRole('radio', { name: 'Word' })).toBeChecked();
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Publish as Word' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(fake.sent.filter((each) => each.method === 'POST').map((each) => each.body)).toEqual([
+        { version: VERSION, formats: ['docx'] },
+      ]),
+    );
+  });
+
+  it('asks for both formats, the PDF first, when both are chosen', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [queued()],
+      [`GET /v1/publication-requests/${REQUEST}`]: [queued()],
+    });
+    open(fake.fetch, true, 60_000, ['pdf', 'docx']);
+    await userEvent.click(await screen.findByRole('radio', { name: 'PDF and Word' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF and Word' }));
+    await waitFor(() =>
+      expect(fake.sent.find((each) => each.method === 'POST')?.body).toEqual({
+        version: VERSION,
+        formats: ['pdf', 'docx'],
+      }),
+    );
+  });
+
+  it('offers no choice where the layout makes the PDF alone', async () => {
+    const fake = service({ [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])] });
+    open(fake.fetch, true, 0, ['pdf']);
+    expect(await screen.findByRole('button', { name: 'Publish as PDF' })).toBeInTheDocument();
+    expect(screen.queryByRole('radiogroup')).toBeNull();
+  });
+
+  it('lists which formats each publication was made in', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [
+        listed([
+          { ...publication, id: 'p3', formats: ['docx'] },
+          { ...publication, id: 'p2', formats: ['pdf', 'docx'] },
+          publication,
+        ]),
+      ],
+    });
+    open(fake.fetch, false);
+    const items = await screen.findAllByRole('listitem');
+    expect(items.map((each) => each.textContent?.replace(/ on .*? \(/, ' ('))).toEqual([
+      'Version 0.3, published by Ada (Word, not approved)',
+      'Version 0.3, published by Ada (PDF and Word, not approved)',
+      'Version 0.3, published by Ada (PDF, not approved)',
+    ]);
   });
 });

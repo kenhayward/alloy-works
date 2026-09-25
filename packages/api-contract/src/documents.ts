@@ -84,6 +84,12 @@ export const DocumentView = z.object({
             "and `continued`, the words a continued table's label adds after its label, which a layout " +
             'read at schema 3 or before has none of (themes 2, ruling R2)',
         ),
+      formats: z
+        .array(z.string())
+        .describe(
+          'The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: ' +
+            'what a publish may ask for (Word 1, ruling R14)',
+        ),
     })
     .describe(
       "The environment's layout at its latest version, which is the version a publish requested " +

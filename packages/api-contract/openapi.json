@@ -3879,6 +3879,13 @@
                           },
                           "additionalProperties": {},
                           "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
+                        },
+                        "formats": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
                         }
                       },
                       "required": [
@@ -3886,7 +3893,8 @@
                         "version",
                         "language",
                         "scheme",
-                        "words"
+                        "words",
+                        "formats"
                       ],
                       "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                     }
@@ -6434,6 +6442,13 @@
                           },
                           "additionalProperties": {},
                           "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
+                        },
+                        "formats": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
                         }
                       },
                       "required": [
@@ -6441,7 +6456,8 @@
                         "version",
                         "language",
                         "scheme",
-                        "words"
+                        "words",
+                        "formats"
                       ],
                       "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                     }
@@ -6594,6 +6610,13 @@
                               },
                               "additionalProperties": {},
                               "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
+                            },
+                            "formats": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
                             }
                           },
                           "required": [
@@ -6601,7 +6624,8 @@
                             "version",
                             "language",
                             "scheme",
-                            "words"
+                            "words",
+                            "formats"
                           ],
                           "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                         }
@@ -6864,6 +6888,13 @@
                               },
                               "additionalProperties": {},
                               "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
+                            },
+                            "formats": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
                             }
                           },
                           "required": [
@@ -6871,7 +6902,8 @@
                             "version",
                             "language",
                             "scheme",
-                            "words"
+                            "words",
+                            "formats"
                           ],
                           "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                         }
@@ -13302,6 +13334,13 @@
                           },
                           "additionalProperties": {},
                           "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
+                        },
+                        "formats": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
                         }
                       },
                       "required": [
@@ -13309,7 +13348,8 @@
                         "version",
                         "language",
                         "scheme",
-                        "words"
+                        "words",
+                        "formats"
                       ],
                       "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                     }

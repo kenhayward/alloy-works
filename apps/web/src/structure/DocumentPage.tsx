@@ -69,6 +69,11 @@ interface Opened {
    * the editor falls back to the English literal, as `printed` does without this.
    */
   readonly words: { readonly above: string; readonly below: string } | null;
+  /**
+   * The formats that layout makes, which a publish may ask for (Word 1, ruling R14): the PDF alone
+   * where the view names none, as a view from before Word did not.
+   */
+  readonly formats: readonly string[];
 }
 
 type Read = Opened | 'unreadable' | undefined;
@@ -117,6 +122,10 @@ function documentIn(data: unknown): Read {
     mayPublish,
     scheme: scheme?.success ? scheme.data : null,
     words: relativeWords,
+    formats:
+      isRecord(layout) && Array.isArray(layout.formats)
+        ? layout.formats.filter((format): format is string => typeof format === 'string')
+        : ['pdf'],
   };
 }
 
@@ -782,6 +791,7 @@ export function DocumentPage({
             mayPublish={document.mayPublish}
             placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
             followMs={followMs}
+            formats={document.formats}
           />
         </div>
       </div>

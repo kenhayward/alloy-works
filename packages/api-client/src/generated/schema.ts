@@ -2479,6 +2479,8 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
+                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            formats: string[];
                         };
                     };
                 };
@@ -3221,6 +3223,8 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
+                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            formats: string[];
                         };
                     };
                 };
@@ -3280,6 +3284,8 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
+                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                formats: string[];
                             };
                         };
                         /** @description outline_invalid: why the operation does not apply */
@@ -3396,6 +3402,8 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
+                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                formats: string[];
                             };
                         };
                         /** @description outline_invalid: why the operation does not apply */
@@ -6322,6 +6330,8 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
+                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            formats: string[];
                         };
                     };
                 };

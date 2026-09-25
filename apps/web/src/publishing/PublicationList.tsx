@@ -7,6 +7,7 @@ import { Empty } from '../states/Empty.js';
 import { Lozenge } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
+import { formatsWords } from './formats.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Item = Listing['items'][number];
@@ -135,6 +136,7 @@ export function PublicationList({ client }: { client: Client }) {
                 <tr>
                   <th scope="col">Title</th>
                   <th scope="col">Version</th>
+                  <th scope="col">Formats</th>
                   <th scope="col">Published</th>
                   <th scope="col">By</th>
                   <th scope="col">Approval</th>
@@ -149,6 +151,7 @@ export function PublicationList({ client }: { client: Client }) {
                       </a>
                     </td>
                     <td>{item.version.number}</td>
+                    <td>{formatsWords(item.formats)}</td>
                     <td className={styles['muted']}>
                       <time dateTime={item.publishedAt}>{whenChanged(item.publishedAt)}</time>
                     </td>
