@@ -271,14 +271,16 @@ change meets it.
 
 Passing the validator says Word will open a file, not what it will show. **The Word check opens the
 writer's fixtures in Word itself**, as a standing practice (PUB-029): `apps/worker/src/word-check.test.ts`
-makes five documents through the worker's own path - `assemble` under the default theme and layout
+makes seven documents through the worker's own path - `assemble` under the default theme and layout
 with the worker's own face files, then `writeDocx` - and `apps/worker/scripts/word-check.ps1` opens
 each in a hidden Word through COM, updates its contents and fields, reads every section, paragraph,
-list string and field back, has Word export it to PDF, and saves it again. The test then checks nine
-things: each opens without an error; each heading's list string is the numbering table's number and
-its text holds none; the updated contents lists every heading to the layout's depth with its number
-and page, and keeps its section; **Not approved** heads every page, the cover's included; each running
-head names the level-one heading the page is in; the page labels run per matter; the foot carries the
+list string and field back, has Word export it to PDF, and saves it again. The test then checks ten
+things: each opens without an error; each heading's list string is the numbering table's number, its
+style Word's heading style for its depth, and its text holds no number; the updated contents lists
+every heading to the layout's depth with its number and page, and keeps its section; **Not approved**
+heads every page, the cover's included; each running head names the level-one heading the page is in,
+by its title alone where it has no number, and in reading order in a right-to-left document; no page
+is left blank, where an appendix fills its last page to the foot; the page labels run per matter; the foot carries the
 revision on every page but the cover, right to left too; the Liberation faces are embedded and every
 visible character is set in them, never Times New Roman, with one exception Word makes and the test
 pins (digits alone in a right-to-left heading); and saving again changes no paragraph's text, style or
@@ -292,7 +294,10 @@ number.
   `pnpm --filter @alloy-works/domain build` if the writer changed, since the worker reads the domain's
   `dist/`. It takes about half a minute. It leaves the fixtures, Word's PDFs, the copies Word saved and
   `record.json`, everything Word reported, in `alloy-works-word-check` under the system's temporary
-  folder, for a person to read and to summarise in the pull request.
+  folder, for a person to read and to summarise in the pull request. **Run alone like this, it
+  rewrites `.trace-results/worker.json` with that one file's results**, so run the whole worker suite
+  (`pnpm --filter @alloy-works/worker test`) after it and before `pnpm trace verify`, which reads that
+  file.
 - **What CI does with it.** It is skipped: `describe.runIf` runs it only on Windows with the variable
   set, and CI runs Linux and has no Word. So **PUB-029, which it cites, is Covered by the citation and
   Verified only by a local run**; the report CI writes records it as skipped. It cites nothing else,

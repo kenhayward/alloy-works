@@ -95,6 +95,16 @@ conformance suite.
 **STY-075 is not claimed**: the scripts the supported locales admit have no list until LOC-038
 declares one, and which faces answer it is decided then. STY-074, its T1 half, is claimed.
 
+**PUB-027's claim has a cost the Word writer pays** (the final review of Word 1, M5). Every style is a
+real Word style, and a run names a mark's character style rather than carrying its formatting, but
+`wordRun` pins two things on the run itself: a mark's `scale`, since a character style states no size
+and Word has none relative to the text around it, so every inline code run carries its own `w:sz`;
+and what a second mark sets, since a run names one character style, so a subscript in inline code
+names the subscript's style and carries Liberation Mono as its own `w:rFonts`. **Restyling Inline code's size or
+face in Word therefore reaches no run.** The claim stands on the projection, which
+`theme/ooxml.test.ts` shows; the restyling half, for those two values, waits for a character style
+per scaled mark and per pair of marks, which no slice has planned.
+
 Citation styles (STY-020 to STY-023) are bound by a theme but rendered by a citation processor, and
 belong to the design that covers citations and references. How numbering looks - heading numbers,
 figure numbers - belongs with the layout (PUB-011) and structure (STR), which this design supplies
@@ -243,9 +253,11 @@ and half below, and drifted by 1.1pt at every change of line spacing. So the can
 
 **Space at the top of a page.** Typst drops space before a block that starts a page; the editor has no
 pages; Word's behaviour depends on the kind of break and a compatibility setting. The canonical rule
-is that space before is suppressed at the top of a page. What the Word projection must set to match
-is to be confirmed by opening the output in Word, as PUB-029 requires for every material change to
-the Word emitter - it is the one row in this design not yet verified.
+is that space before is suppressed at the top of a page. **In Word, measured** (M16 in
+[the Word measurements](../../spikes/word-measure/measurements.md)): Word drops a paragraph's
+space before at the top of a page a page break began, and keeps it at the top of a page a section
+began, so the Word writer writes `w:spacing w:before="0"` on each section's first paragraph and
+starts a later appendix's page by `w:pageBreakBefore` on its heading.
 
 **Line breaks and page breaks never agree**, and are not part of agreement. Preview shows them.
 
@@ -496,8 +508,9 @@ seeded. Building it changed these things here:
 - **Two properties joined TH-D's set.** A character style's **`scale`**, a fraction of the size of
   the text the mark stands in, so inline code is set at 0.8 of it as template 11 set it; and a
   paragraph style's **`padding`**, the room between its fill and its text on every side, drawn only
-  where it has a `background`, so preformatted text's panel is inset 6pt from the theme. The CSS and
-  Word projections do not yet project either.
+  where it has a `background`, so preformatted text's panel is inset 6pt from the theme. The CSS
+  projection does not yet project either; Word's does since Word 1, `scale` as each run's size and
+  `padding` as borders in the fill's colour and indents.
 - **The default's numbers are template 11's, measured where the engine chose them**, by ADR-0014's rule
   from template 11's own distances: the body 11pt with 2.75pt after and a 14.35pt line, headings
   16pt, 13pt and 11pt bold, a footnote 9.35pt, text in black on white. Its table cells are set in a
@@ -546,6 +559,9 @@ seeded. Building it changed these things here:
 - **`spikes/theme-conformance/` no longer runs against the model**: it calls the prototype's
   `resolveTheme`, `exampleTheme` and `resolveStyle`, which the model replaced. It stays the record of
   what ADR-0014 measured, above; the conformance suite STY-053 asks for is still to be built.
+
+**The Word projection is built**, by Word 1: what it writes and what Word showed of it are in
+[the Word output design's "What was built"](word-output.md#what-was-built).
 
 **TH-I and TH-J are built**, by [themes 2](../plans/2026-09-24-themes-02-table-and-image-styles.md):
 `catalogue/2`, which gives the table and image catalogues their properties and a paragraph style
@@ -632,4 +648,3 @@ labels, and each is emitted as a value, never interpolated into code.
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **STY-Q01** | Tenant-wide or per-space catalogues. Nothing here depends on the answer: a theme references catalogue versions, wherever they live                     |
 | **STY-Q02** | Whether the fixed property set survives a real house style. The answer, when it comes, is a wider set, each addition with its projections and fixtures |
-| New         | What the Word projection sets to suppress space before at the top of a page. To be confirmed in Word                                                   |

@@ -1275,10 +1275,14 @@ faces })`, pure and deterministic - a fixed zip time, the parts in a fixed order
   15 with paragraph spaces that add, faces embedded, the maths face's Word face, the language),
   `fontTable.xml` and the embedded faces, obfuscated as ECMA-376 says, and the headers and footers.
   A heading's number is one of three numbering definitions, the body's linked from the heading
-  styles, front matter's and appendices' given by `w:numPr`; the cover, the contents and each run of
+  styles, front matter's and appendices' given by `w:numPr`; a heading is in the style Word names for
+  its depth, since Word takes a heading's outline level from that name - the role's, or the writer's
+  own `heading 7` to `heading 9` based on the sixth's; a later appendix starts its page by
+  `w:pageBreakBefore`; the cover, the contents and each run of
   one matter are sections, each numbered by the layout's Word page; the contents is a `TOC` field
   prefilled with its entries and no pages; every header carries **Not approved** and the running
-  slots, with `PAGE`, `NUMPAGES` and `STYLEREF "Heading 1"` fields; each paragraph names its style,
+  slots, with `PAGE`, `NUMPAGES` and `STYLEREF "Heading 1"` fields, the section's number inside an `IF`
+  that prints nothing for a heading with none; each paragraph names its style,
   each run its character style by `wordRun`, a link is a `w:hyperlink` and a passage in another
   language `w:lang`, right to left with `w:bidi` and `w:rtl`. It answers the bytes and the output's
   report. [`design/word-output.md`](design/word-output.md#what-was-built) says what Word 1 built and

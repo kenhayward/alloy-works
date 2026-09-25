@@ -394,10 +394,25 @@ does not write yet it refuses by name, below. Building it changed these things h
   no indent of its own, as the PDF prints it; three numbering definitions, the body's linked from the
   heading styles and front matter's and appendices' given by direct `w:numPr`. The contents stands in
   a section of its own, so its running head can leave out the section, which before any level-1 heading
-  Word would print as an error. The section field is `STYLEREF "Heading 1" \n`, a space, and `STYLEREF
-"Heading 1"`, the heading's number and title. A header and a footer stand half their margin from the
-  edge, since the layout says nothing. A matter entered a second time continues the page numbers
-  before it, since Word cannot resume a chain; the PDF resumes.
+  Word would print as an error. The section is the heading's number, a space and its title: `IF
+"{STYLEREF "Heading 1" \n}" = "0" "" "{STYLEREF "Heading 1" \n} "` and `STYLEREF "Heading 1"`. Word's
+  number for a heading with none is 0, which the PDF does not print, so the `IF` prints neither it nor
+  its space; a section's number is never 0 (the final review, I1). In a right-to-left document the
+  number and its space are a right-to-left embedding, U+202B to U+202C, inside the `IF` (M1). **A
+  heading is written in the style Word names for its depth** (I2): Word takes a style named _heading
+  N_ as its built-in Heading N and **ignores a paragraph's own `w:outlineLvl` there**, so a heading at
+  depth 7 in Heading 6 with an outline level of its own was a Heading 6 to Word. Each depth to the
+  ninth has one: the heading role's style where the projection names it Heading N at that depth, and
+  otherwise one of the writer's own, `Heading7` named _heading 7_ and so on - at the seventh to ninth
+  depths, and at a depth whose role shares a shallower role's style - based on the role's style, and
+  stating only its place on the body's list, which the list links back to, and the outline level its
+  name gives. A recipient who sets a paragraph in Heading 7 gets a seventh-level number, measured. **A
+  later appendix starts its page by `w:pageBreakBefore` on its heading** (M2), where Word drops the
+  heading's space before as the PDF does; a break in a paragraph of its own took a line after the
+  appendix before, which where that appendix filled its last page flowed on and left a page blank. A
+  header and a footer stand half their margin from the edge, since the layout says nothing. A matter
+  entered a second time continues the page numbers before it, since Word cannot resume a chain; the
+  PDF resumes.
 - **M1 d8 is not written, and is Word 2's.** No two same-style paragraphs of different containers face
   each other in Word 1: each component's paragraphs follow its own heading, and template 13 sets the
   top level as one flow, which Word's own contextual spacing already matches. Writing d8 there would
@@ -414,13 +429,17 @@ does not write yet it refuses by name, below. Building it changed these things h
   .NET 8 image built from digest-pinned images and a NuGet lock file, tagged by its sources' hash and
   built by `fetch-ooxml-check`, in CI beside veraPDF; every worker test that makes a `.docx` asserts it
   finds nothing. The Word check is a worker test, `src/word-check.test.ts`, skipped unless it runs on
-  Windows with `ALLOY_WORD_CHECK=1`, driving `scripts/word-check.ps1` through COM over five fixtures -
-  the full document, one without a cover, one without a contents, one for Word alone, and a
-  right-to-left one - and checking nine things: each opens without an error; the headings' list
-  strings are the numbering table's; the updated contents lists every heading to the layout's depth
-  with its number and page and keeps its section; **Not approved** heads every page; each running head,
-  page label and foot; the Liberation faces embedded and every visible character set in them; and a
-  save changes no paragraph. [`docs/testing.md`](../testing.md#the-word-check) says how it is run.
+  Windows with `ALLOY_WORD_CHECK=1`, driving `scripts/word-check.ps1` through COM over seven fixtures:
+  the full document, opening with a front-matter section with no number, one without a cover, one
+  without a contents, one for Word alone, a right-to-left one, one with headings to the ninth level
+  under a contents of depth six, and one whose first appendix fills its page to the foot. It checks
+  ten things: each opens without an error; the headings' list strings are the numbering
+  table's, each in Word's heading style for its depth; the updated contents lists every heading to the
+  layout's depth with its number and page and keeps its section; **Not approved** heads every page;
+  each running head, a heading with no number named by its title alone and a right-to-left one read in
+  its own direction; no page left blank; each page label and foot; the Liberation faces embedded and
+  every visible character set in them; and a save changes no paragraph.
+  [`docs/testing.md`](../testing.md#the-word-check) says how it is run.
 - **What Word showed that the design did not foresee.** In a right-to-left document the foot read
   "0.7Revision": the revision carried `w:rtl`, which forces digits right to left where Typst's bidi
   places them by their characters; it is now written in no direction, as the page number is, and reads
@@ -430,25 +449,36 @@ does not write yet it refuses by name, below. Building it changed these things h
   the check pins it exactly so a change either way shows. And **Word hidden, with its alerts off,
   updated the contents and fields on opening by itself**, taking the prompt's default: the prefilled
   contents, which a reader who declines the prompt would see, was never seen. Word rebuilds an entry
-  as number, space, title, tab and page, where the writer prefills number, tab, title; the field's end
+  as number, space, title, tab and page, and the writer now prefills number, space, title (the final
+  review, M3), where it first put a tab, which the contents styles give no stop; the field's end
   moves to an empty paragraph after the last entry, which now carries the section break. Saving adds
   Word's own theme, `Normal`, `Hyperlink` and Aptos beside the Liberation faces, and renames style
   identifiers, keeping every paragraph's text, style and number.
+- **What the final review found in Word, and the fixes measured there.** `STYLEREF "Heading 1" \n`
+  answers 0 for a heading with no number, so a Foreword's pages were headed "0 Foreword" (I1). A
+  heading past the sixth level took Heading 6's outline level whatever the paragraph stated, so a
+  contents of depth six listed depths seven and eight in Word and not in the PDF (I2). A right-to-left
+  running head set its number after the title in reading order (M1): `w:rtl` on the fields' runs
+  placed it, but Word then drew the number and the title in Times New Roman, not the embedded face; a
+  right-to-left mark before the number placed digits and not an appendix's letter; the embedding
+  places both, to the PDF's point, in the embedded face. And an appendix ending at a page's foot was
+  followed by a blank page (M2). The Word check holds a fixture for each, and each of its new
+  assertions failed against the writer before the fixes.
 
 **What each claim now stands on.** The chain for each requirement Word 1 touched, as `pnpm trace show`
 reports it:
 
-| ID          | Claimed by    | Cited                                                                                                                                                                                                                                                    |
-| ----------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **PUB-012** | publishing.md | `layout.test.ts`: a Word page apart from its PDF page, each read back as its own                                                                                                                                                                         |
-| **PUB-024** | this document | `word/write.test.ts`: three numbering definitions, headings referring to them by style or `w:numPr`, no number in a heading's text. **Moved from Word 3 to Word 1**, since a heading cannot be written without its number                                |
-| **PUB-027** | themes.md     | `theme/ooxml.test.ts`, every style a Word style, every property stated; that runs name them rather than carrying direct formatting is the writer's use of `wordRun`                                                                                      |
-| **PUB-034** | publishing.md | `word/write.test.ts`'s languages test, the document's, a component's and a mark's, beside the PDF's in `marks.test.ts`                                                                                                                                   |
-| **CNT-084** | publishing.md | The same test                                                                                                                                                                                                                                            |
-| **CNT-128** | this document | `word/write.test.ts`'s link test, beside the PDF's in `marks.test.ts`                                                                                                                                                                                    |
-| **STY-052** | themes.md     | `theme/ooxml.test.ts`, the Word face declared and used, and `word/write.test.ts`, the substitution reported                                                                                                                                              |
-| **PUB-074** | publishing.md | `publish.test.ts`: a Word-only request of a document citing a page refused, and one citing none recording `no_page_cited_output`                                                                                                                         |
-| **PUB-029** | this document | `word-check.test.ts`, so Covered; **Verified only by a local run**, since CI skips it and a skipped test verifies nothing. The Word check carries no PUB-024 citation for the same reason: a skipped citation would demote a requirement shown elsewhere |
+| ID          | Claimed by    | Cited                                                                                                                                                                                                                                                                       |
+| ----------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PUB-012** | publishing.md | `layout.test.ts`: a Word page apart from its PDF page, each read back as its own                                                                                                                                                                                            |
+| **PUB-024** | this document | `word/write.test.ts`: three numbering definitions, headings referring to them by style or `w:numPr`, no number in a heading's text. **Moved from Word 3 to Word 1**, since a heading cannot be written without its number                                                   |
+| **PUB-027** | themes.md     | `theme/ooxml.test.ts`, every style a Word style, every property stated; that runs name them rather than carrying direct formatting is the writer's use of `wordRun`, less a scaled mark's size and a second mark's face, which it pins on the run: themes.md names the cost |
+| **PUB-034** | publishing.md | `word/write.test.ts`'s languages test, the document's, a component's and a mark's, beside the PDF's in `marks.test.ts`                                                                                                                                                      |
+| **CNT-084** | publishing.md | The same test                                                                                                                                                                                                                                                               |
+| **CNT-128** | this document | `word/write.test.ts`'s link test, beside the PDF's in `marks.test.ts`                                                                                                                                                                                                       |
+| **STY-052** | themes.md     | `theme/ooxml.test.ts`, the Word face declared and used, and `word/write.test.ts`, the substitution reported                                                                                                                                                                 |
+| **PUB-074** | publishing.md | `publish.test.ts`: a Word-only request of a document citing a page refused, and one citing none recording `no_page_cited_output`                                                                                                                                            |
+| **PUB-029** | this document | `word-check.test.ts`, so Covered; **Verified only by a local run**, since CI skips it and a skipped test verifies nothing. The Word check carries no PUB-024 citation for the same reason: a skipped citation would demote a requirement shown elsewhere                    |
 
 **Not cited, and why.** PUB-092: the Word styles carry `w:keepNext`, `w:keepLines` and
 `w:widowControl`, but it asks for the regression corpus to show them holding, and nothing measures
@@ -462,15 +492,21 @@ style properties.
 off `word_not_yet`, each with the trap above undone for it; M1 d8 in its containers; `WordInput.images`,
 whose key is left for the first figure; the report's table entries (TAB-049's header columns,
 unrepeated headers and omitted labels); TAB-039's and TAB-049's Word halves, and PUB-035; and a
-full-measure preformatted line in the Word check. Word 3: footnotes, captions, cross-references and
+full-measure preformatted line in the Word check; and **a theme's background panel, which Word joins
+across paragraphs the PDF keeps apart** (the final review, M4): Word sets one panel around consecutive
+paragraphs of one style with the same borders, and around Heading 1 and Heading 2, which is based on
+it, and around a header's notice and running line, both based on the body's style, where the PDF sets
+a panel per paragraph and the notice's alone. Unreachable in Word 1, since the default theme fills
+only preformatted text, but **Word 2's two consecutive preformatted blocks meet it with the default
+theme**: the PDF sets two panels and Word will join them, unless `w:pBdr`'s `w:between` or a spacing
+that differs decides it, to be measured. Word 3: footnotes, captions, cross-references and
 the lists after the contents, with bookmarks named Word's way and `numbering_not_in_word` extended to
 their sequences; PUB-025, PUB-026, PUB-065 and PUB-066. Word 4: equations, deciding which of the maths
 tree's refusals Word sets, and reporting the maths face's substitution; PUB-067 and CNT-045, then
-PUB-023. Open for any of them: whether to prefill a contents entry as Word rebuilds it, number and
-title with a space, so a reader who declines the update sees what Word would build; how a reader who
-declines the prompt sees the contents; a cover running to a second page, and a matter entered twice,
-which the check has not looked at; and `typeface_not_embeddable`'s sentence, which names the PDF also
-where Word refused it.
+PUB-023. Open for any of them: how a reader who declines the prompt sees the contents; and a cover
+running to a second page, and a matter entered twice, which the check has not looked at.
+`typeface_not_embeddable` now names a Word document where Word refused the face, its `detail` the
+family and `: docx` (the final review, M6).
 
 ## Open questions
 
