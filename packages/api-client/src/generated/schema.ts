@@ -5045,6 +5045,24 @@ export interface operations {
                             } | {
                                 /** @constant */
                                 kind: "pages_cite_the_pdf";
+                            } | {
+                                /** @constant */
+                                kind: "header_column_lost";
+                                node: string;
+                                block: string;
+                                label: string | null;
+                            } | {
+                                /** @constant */
+                                kind: "header_repeated";
+                                node: string;
+                                block: string;
+                                label: string | null;
+                            } | {
+                                /** @constant */
+                                kind: "continuation_label_omitted";
+                                node: string;
+                                block: string;
+                                label: string | null;
                             })[];
                             /** @description A link to the bytes, valid for five minutes, named by the publication id and format */
                             download: string;

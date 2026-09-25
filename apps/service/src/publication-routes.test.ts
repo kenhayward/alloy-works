@@ -34,6 +34,8 @@ import { signIn } from './test/sign-in.js';
 const HOST = 'acme.alloy.test';
 type Json = Record<string, unknown>;
 const UNKNOWN = '11111111-1111-4111-8111-111111111111';
+/** A table a stand-in Word output's report names (Word 2, ruling R7): its place and its label. */
+const READINGS = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1', label: 'Table 1.1' };
 
 describe('publishing a document through the service', () => {
   let db: TestDatabase;
@@ -171,7 +173,11 @@ describe('publishing a document through the service', () => {
         outputs.push({
           format: 'docx' as const,
           writerVersion: 'word/1',
-          report: [{ kind: 'pages_cite_the_pdf' as const }],
+          // What the writer says of a table (Word 2), beside what it says of every Word output.
+          report: [
+            { kind: 'header_column_lost' as const, ...READINGS },
+            { kind: 'pages_cite_the_pdf' as const },
+          ],
           key: stored.key,
           sha256: stored.sha256,
           bytes: stored.size,
@@ -699,7 +705,7 @@ describe('publishing a document through the service', () => {
         standard: null,
         producer: 'word',
         producerVersion: 'word/1',
-        report: [{ kind: 'pages_cite_the_pdf' }],
+        report: [{ kind: 'header_column_lost', ...READINGS }, { kind: 'pages_cite_the_pdf' }],
         download: expect.any(String),
         view: null,
       },

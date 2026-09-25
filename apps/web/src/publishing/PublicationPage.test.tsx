@@ -197,6 +197,40 @@ describe('a publication at its own address', () => {
     ]);
   });
 
+  it('says what Word could not carry of each table, naming it by its label, or as a table with no number where it has none (Word 2)', async () => {
+    const readings = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1', label: 'Table 1.1' };
+    const unnumbered = { node: 'prefaceaaaaaaaaaaaaaaaaaaa', block: 't2', label: null };
+    open(
+      json(200, {
+        ...record,
+        formats: ['pdf', 'docx'],
+        template: { name: 'publication', version: 13 },
+        pipeline: '13',
+        outputs: [
+          pdfOutput,
+          wordOutput([
+            { kind: 'header_column_lost', ...unnumbered },
+            { kind: 'header_column_lost', ...readings },
+            { kind: 'header_repeated', ...readings },
+            { kind: 'continuation_label_omitted', ...readings },
+            // One that names no table is left out rather than said wrongly.
+            { kind: 'header_repeated', label: 'Table 9.9' },
+            { kind: 'pages_cite_the_pdf' },
+          ]),
+        ],
+      }),
+    );
+    const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+    const report = within(aside).getByRole('list', { name: 'About the Word document' });
+    expect([...report.querySelectorAll('li')].map((each) => each.textContent)).toEqual([
+      'A table with no number has a header column, which a Word document cannot mark as one, so in Word its cells are read as ordinary cells.',
+      'Table 1.1 has a header column, which a Word document cannot mark as one, so in Word its cells are read as ordinary cells.',
+      'Table 1.1 repeats its header rows on every page it reaches in Word, though its table style does not: Word marks header rows only by repeating them.',
+      'Table 1.1 has no continuation label in Word on the pages it continues on, since Word cannot set one.',
+      "Word lays out its own pages, so its page numbers can differ from the PDF's. A page number cited from this publication is the PDF's.",
+    ]);
+  });
+
   it('reads a publication in Word alone, which no PDF engine or template made, and offers it to save', async () => {
     open(
       json(200, {
