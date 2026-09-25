@@ -16502,6 +16502,14 @@
         {
           "id": "PUB-067",
           "howItIsMet": "Equations are OMML, built from the same maths tree as the PDF"
+        },
+        {
+          "id": "CNT-045",
+          "howItIsMet": "One MathML: drawn natively in the editor, and converted once to the maths tree, which the PDF sets and this writer makes OMML from"
+        },
+        {
+          "id": "CNT-128",
+          "howItIsMet": "A hyperlink is a PDF link (publishing.md) and a `w:hyperlink` here; every T1 format has links, so no theme rendering stands in"
         }
       ]
     }

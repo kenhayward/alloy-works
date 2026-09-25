@@ -70,6 +70,8 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1449);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 436, from 434: the Word output design measured in Word claims CNT-045, one MathML drawn in the
+    // editor and set by both writers from one maths tree, and CNT-128, a link in the PDF and in Word.
     // 434, from 429: the T1 audit's review. Designs that already answered a split row's T1 half in
     // their own words claim it: structure.md STR-068 and STR-065, component-editor.md CNT-164,
     // metadata.md MET-038 and publishing.md TAB-050.
@@ -171,7 +173,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(434);
+    ).toBe(436);
   });
 });
 

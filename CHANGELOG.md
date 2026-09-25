@@ -3,6 +3,20 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.69.2 - 2026-09-25 (PR #230)
+
+### Changed
+
+- **Word output is designed, measured in Word itself.** Nothing changes in the product yet. The design
+  says how a publication will become a Word document that Word treats as its own: real styles, headings
+  numbered by Word, footnotes, cross-references and contents Word can update, native equations, and the
+  fonts embedded. Thirteen probes, opened in Word on a machine without the product's fonts, found four
+  things the earlier design had wrong, among them that Word sets the larger of two paragraph spaces
+  rather than their sum unless told otherwise, and that the PDF's maths font cannot travel in a Word
+  file. Thirteen decisions are for Ken to take before the build starts.
+- **The plan for the rest of T1 is agreed**, with Word output started first and three changes to how
+  continuous integration runs the tests added to the test-debt work.
+
 ## 0.69.1 - 2026-09-25 (PR #229)
 
 ### Changed

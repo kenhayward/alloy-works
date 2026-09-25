@@ -27,6 +27,11 @@ export default tseslint.config(
       globals: { ...globals.node, ...globals.browser },
     },
   },
+  {
+    // The Word measurements' probes: throwaway, outside CI, node programs run by hand on Windows.
+    files: ['spikes/word-measure/**/*.mjs'],
+    languageOptions: { ecmaVersion: 2023, sourceType: 'module', globals: { ...globals.node } },
+  },
   ...tseslint.configs.recommended,
   {
     files: ['**/*.{js,ts,tsx}'],
