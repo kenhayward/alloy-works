@@ -15,9 +15,9 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   audit is in
   [docs/reviews](docs/reviews/T1%20-%20Audit%20against%20the%20code.md), and the plan for the rest of
   T1 is [docs/plans/2026-09-25-t1-remainder.md](docs/plans/2026-09-25-t1-remainder.md).
-- **Ten requirements already met are now counted as met**, among them inline equations, a footnote
-  anchored to a table's cell, a cross-reference in running text linking to its target, signing in
-  through an organisation's own provider or by Google, and signing out.
+- **Nine requirements already met are now counted as met**, among them inline equations, a footnote
+  anchored to a table's cell, a cross-reference in running text linking to its target, and signing
+  in through an organisation's own provider or by Google.
 
 ## 0.69.0 - 2026-09-24 (PR #228)
 

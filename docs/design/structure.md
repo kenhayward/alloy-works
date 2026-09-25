@@ -818,9 +818,9 @@ mark carries none, and deleting it deletes the reference.
 
 #### Where a reference is a link (XR-D)
 
-**In a paragraph's text** - running text, a list, a quotation, a table's cell, a footnote's text - a
-reference is an internal link to its target (PUB-022's half that does not wait for citations). **In a
-caption, a section's title, a term or an attribution it is set as text**: a title is set again in the
+**In a paragraph's text** - running text, a list, a quotation, a table's body cell, a footnote's text -
+a reference is an internal link to its target (PUB-096). **In a caption, a section's title, a term, an
+attribution, a table's header row or its note it is set as text**: a title is set again in the
 running heads, where a link refuses the compile, and a caption and a title are set again in the lists
 and the contents, where a link nests inside the entry's own.
 
