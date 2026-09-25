@@ -1645,3 +1645,397 @@ describe('writeDocx: preformatted text (Word 2, ruling R5)', () => {
     expect(indents(at('two'))).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------------------------------
+// Word 2: tables.
+// ---------------------------------------------------------------------------------------------------
+
+/** The body's paragraphs and tables, in order, and nothing else. */
+const blocksOf = (docx: Package) =>
+  kids(first(docx.xml('word/document.xml'), 'w:body')!).filter(
+    (child) => child.name === 'w:p' || child.name === 'w:tbl',
+  );
+/** A table's rows, each its cells. */
+const rowsOf = (table: Element) => kids(table, 'w:tr').map((row) => kids(row, 'w:tc'));
+/** A cell's or a table's properties, as attributes by element, where it states each. */
+const stated = (element: Element, group: string) => {
+  const found = kids(element, group)[0];
+  return found === undefined
+    ? {}
+    : Object.fromEntries(kids(found).map((each) => [each.name, each.attrs]));
+};
+/** Whether every run of a paragraph is set bold on the run itself. */
+const pinnedBold = (paragraph: Element) =>
+  all(paragraph, 'w:r').every((run) => first(run, 'w:b')?.attrs['w:val'] === '1');
+
+const cell = (
+  name: string,
+  value: string | null,
+  spans: { colspan?: number; rowspan?: number } = {},
+) => ({
+  content: [value === null ? paragraph(name) : paragraph(name, text(value))],
+  colspan: spans.colspan ?? 1,
+  rowspan: spans.rowspan ?? 1,
+});
+
+/**
+ * A table style asking for all of it: a filled, bold, ruled header row and header column, a band,
+ * rules of their own widths and colours, no vertical rules, a wide padding, the header not repeated,
+ * rows kept whole and a continuation label.
+ */
+const RULED = {
+  id: 'ruled',
+  name: 'Ruled',
+  appliesTo: ['table' as const],
+  headerRow: { fill: '#d9e2f3', bold: true, rule: { width: 2, colour: '#c00000' } },
+  headerColumn: { fill: '#e2efd9', bold: true, rule: { width: 1.5, colour: '#00aa00' } },
+  banding: { fill: '#fff2cc' },
+  rules: {
+    outer: { width: 0.5, colour: '#1f4e79' },
+    horizontal: { width: 0.5, colour: '#808080' },
+    vertical: 'none' as const,
+  },
+  padding: 6,
+  breaks: { repeatHeader: false, keepRowsWhole: true, continuationLabel: true },
+};
+const ruledTheme = themeWith((inputs) => {
+  inputs.catalogues.table.styles.push(RULED);
+});
+
+/** The default layout with no list after the contents, which Word 3 writes and Word refuses till then. */
+const UNLISTED = layoutWith((layout) => {
+  layout.matter.lists = [];
+});
+const tabledOf = (content: unknown[], over: Parameters<typeof written>[0] = {}) =>
+  writtenOf(content, { layout: UNLISTED, ...over });
+
+/**
+ * Two header rows, the first's "Site" spanning both and "Values" two columns; a header column, its
+ * "York" spanning two body rows; a cell with nothing in it; a caption with a mark; a note.
+ */
+const readings = (over: object = {}) => ({
+  type: 'table',
+  id: 't1',
+  style: 'ruled',
+  caption: [text('Readings '), text('at noon', { type: 'emphasis', id: 'e1' })],
+  headerRows: 2,
+  headerColumns: 1,
+  note: [text('Measured by Grace.')],
+  rows: [
+    { cells: [cell('c1', 'Site', { rowspan: 2 }), cell('c2', 'Values', { colspan: 2 })] },
+    { cells: [cell('c3', 'Morning'), cell('c4', 'Evening')] },
+    { cells: [cell('c5', 'York', { rowspan: 2 }), cell('c6', '1'), cell('c7', '2')] },
+    { cells: [cell('c8', '3'), cell('c9', null)] },
+    { cells: [cell('c10', 'Leeds'), cell('c11', '5'), cell('c12', '6')] },
+  ],
+  ...over,
+});
+
+describe('writeDocx: tables (Word 2, ruling R7)', () => {
+  const tabled = tabledOf([said('before'), readings(), said('after')], { theme: ruledTheme });
+  const { at } = bodyOf(tabled.docx);
+  const blocks = blocksOf(tabled.docx);
+  const table = blocks.find((each) => each.name === 'w:tbl')!;
+  const rows = rowsOf(table);
+  const caption = blocks[blocks.indexOf(table) - 1]!;
+  /** A cell's paragraphs. */
+  const paragraphsOf = (row: number, column: number) => kids(rows[row]![column]!, 'w:p');
+
+  it('sets a table between its caption, above it in the caption role and kept with it, and its note, after it in the table note role', () => {
+    const shown = blocks.map((each) => (each.name === 'w:tbl' ? 'table' : textOf(each)));
+    expect(shown.slice(shown.indexOf('Blocks'))).toEqual([
+      'Blocks',
+      'before',
+      'Table 1.1 Readings at noon',
+      'table',
+      'Measured by Grace.',
+      'after',
+    ]);
+    expect(styleOf(caption)).toBe('caption');
+    expect(properties(caption).slice(0, 2)).toEqual(['w:pStyle', 'w:keepNext']);
+    expect(styleOf(at('Measured by Grace.'))).toBe('table-note');
+  });
+
+  it("numbers its caption by Word's fields, as captionField says, each prefilled with the numbering table's label (R1, M3)", () => {
+    expect(fieldCodes(caption)).toEqual(['STYLEREF 1 \\s', 'SEQ Table \\* arabic \\s 1']);
+    // Each field's result as the numbering table has it, so a reader who never updates them sees the
+    // PDF's number.
+    expect(textOf(caption)).toBe('Table 1.1 Readings at noon');
+    const emphasised = all(caption, 'w:r').find((run) => textOf(run) === 'at noon')!;
+    expect(first(emphasised, 'w:rStyle')?.attrs['w:val']).toBe('mark-emphasis');
+  });
+
+  it("names the table by its caption's words, which Word reads as the table's title", () => {
+    expect(stated(table, 'w:tblPr')['w:tblCaption']).toEqual({
+      'w:val': 'Table 1.1 Readings at noon',
+    });
+  });
+
+  it("sets the table in its table style, the measure wide, its columns equal and fixed, and turns on the style's conditions as the table has header rows, a header column and a band", () => {
+    const own = stated(table, 'w:tblPr');
+    expect(kids(kids(table, 'w:tblPr')[0]!).map((each) => each.name)).toEqual([
+      'w:tblStyle',
+      'w:tblW',
+      'w:tblLayout',
+      'w:tblCellMar',
+      'w:tblLook',
+      'w:tblCaption',
+    ]);
+    expect(own['w:tblStyle']).toEqual({ 'w:val': 'Table-ruled' });
+    expect(own['w:tblW']).toEqual({ 'w:w': '5000', 'w:type': 'pct' });
+    expect(own['w:tblLayout']).toEqual({ 'w:type': 'fixed' });
+    expect(own['w:tblLook']).toEqual({
+      'w:val': '04A0',
+      'w:firstRow': '1',
+      'w:lastRow': '0',
+      'w:firstColumn': '1',
+      'w:lastColumn': '0',
+      'w:noHBand': '0',
+      'w:noVBand': '1',
+    });
+    const page = sections(tabled.docx).at(-1)!.properties;
+    const size = first(page, 'w:pgSz')!.attrs;
+    const margins = first(page, 'w:pgMar')!.attrs;
+    const measure =
+      Number(size['w:w']) -
+      Number(margins['w:left']) -
+      Number(margins['w:right']) -
+      Number(margins['w:gutter']);
+    const columns = all(kids(table, 'w:tblGrid')[0]!, 'w:gridCol').map((each) =>
+      Number(each.attrs['w:w']),
+    );
+    expect(columns).toHaveLength(3);
+    expect(new Set(columns).size).toBe(1);
+    expect(Math.abs(columns[0]! * 3 - measure)).toBeLessThan(3);
+  });
+
+  it("pads its cells by the style's padding, less the leading Word sets above a cell's first line where the PDF sets none, which its caption's space after takes instead (measured)", () => {
+    // Word sets the cell style's 14.35 line whole, its 3.35 more than the text's 11pt above the text;
+    // the PDF sets a cell's first line at its padding, and that leading above the table (`apart`).
+    const margins = Object.fromEntries(
+      kids(first(kids(table, 'w:tblPr')[0]!, 'w:tblCellMar')!).map((each) => [
+        each.name,
+        each.attrs['w:w'],
+      ]),
+    );
+    expect(margins).toEqual({
+      'w:top': twips(6 - 3.35),
+      'w:left': twips(6),
+      'w:bottom': twips(6),
+      'w:right': twips(6),
+    });
+    expect(spacing(caption)).toEqual({ 'w:after': twips(2.75 + 3.35) });
+  });
+
+  it('merges cells as the table spans them: across by gridSpan, down by vMerge from the cell that starts it', () => {
+    const merge = (row: number, column: number) => stated(rows[row]![column]!, 'w:tcPr');
+    expect(rows.map((row) => row.length)).toEqual([2, 3, 3, 3, 3]);
+    expect(merge(0, 0)['w:vMerge']).toEqual({ 'w:val': 'restart' });
+    expect(merge(0, 1)['w:gridSpan']).toEqual({ 'w:val': '2' });
+    expect(merge(1, 0)['w:vMerge']).toEqual({});
+    expect(merge(2, 0)['w:vMerge']).toEqual({ 'w:val': 'restart' });
+    expect(merge(3, 0)['w:vMerge']).toEqual({});
+    expect(merge(3, 1)['w:vMerge']).toBeUndefined();
+    // Each cell as wide as the columns it covers.
+    const width = Number(merge(4, 0)['w:tcW']!['w:w']);
+    expect(merge(0, 1)['w:tcW']).toEqual({ 'w:w': String(width * 2), 'w:type': 'dxa' });
+    // What a merge continues holds nothing of its own.
+    expect(paragraphsOf(1, 0).map(textOf)).toEqual(['']);
+    expect(rows.map((row) => row.map((each) => textOf(each)))).toEqual([
+      ['Site', 'Values'],
+      ['', 'Morning', 'Evening'],
+      ['York', '1', '2'],
+      ['', '3', ''],
+      ['Leeds', '5', '6'],
+    ]);
+  });
+
+  it('marks every header row as one, which Word repeats, and keeps each body row whole where the style keeps rows whole', () => {
+    const trPr = (row: number) => Object.keys(stated(kids(table, 'w:tr')[row]!, 'w:trPr')).sort();
+    expect([0, 1, 2, 3, 4].map(trPr)).toEqual([
+      ['w:tblHeader'],
+      ['w:tblHeader'],
+      ['w:cantSplit'],
+      ['w:cantSplit'],
+      ['w:cantSplit'],
+    ]);
+    const kept = tabledOf([readings({ style: 'table' })]);
+    const plain = blocksOf(kept.docx).find((each) => each.name === 'w:tbl')!;
+    expect(kids(plain, 'w:tr').map((row) => Object.keys(stated(row, 'w:trPr')))).toEqual([
+      ['w:tblHeader'],
+      ['w:tblHeader'],
+      [],
+      [],
+      [],
+    ]);
+  });
+
+  it("sets a cell's paragraphs in the table cell place's style, and an empty cell as an empty paragraph, which Word needs", () => {
+    expect(paragraphsOf(2, 1).map(styleOf)).toEqual(['table-cell']);
+    expect(paragraphsOf(3, 2).map(textOf)).toEqual(['']);
+    expect(paragraphsOf(3, 2).map(styleOf)).toEqual(['table-cell']);
+  });
+
+  it("sets a bold header's text bold on its runs, as template 13 sets it over whatever its style says, since Word's toggle rule would set a bold cell style's regular", () => {
+    expect(pinnedBold(paragraphsOf(0, 0)[0]!)).toBe(true);
+    expect(pinnedBold(paragraphsOf(1, 1)[0]!)).toBe(true);
+    // The header column's too, and nothing else.
+    expect(pinnedBold(paragraphsOf(2, 0)[0]!)).toBe(true);
+    expect(all(paragraphsOf(2, 1)[0]!, 'w:b')).toEqual([]);
+    const regular = tabledOf([readings({ style: 'table' })]);
+    const plain = rowsOf(blocksOf(regular.docx).find((each) => each.name === 'w:tbl')!);
+    expect(all(plain[0]![0]!, 'w:b')).toEqual([]);
+  });
+
+  it("R6 sets a cell's blocks apart from the cell's edges by nothing but its padding, and spaces its caption and note from the table as the PDF does", () => {
+    const listed = tabledOf(
+      [
+        readings({
+          rows: [
+            {
+              cells: [
+                {
+                  content: [
+                    paragraph('x1', text('first')),
+                    paragraph('x2', text('second')),
+                    { type: 'list', id: 'XL', kind: 'ordered', items: [item(said('listed'))] },
+                  ],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+                cell('x3', 'alone'),
+              ],
+            },
+          ],
+          headerRows: 0,
+          headerColumns: 0,
+          style: 'table',
+        }),
+        said('after'),
+      ],
+      { theme: ruledTheme },
+    );
+    const { at: cellAt } = bodyOf(listed.docx);
+    const inCell = (name: string) =>
+      all(first(listed.docx.xml('word/document.xml'), 'w:tbl')!, 'w:p').find(
+        (each) => textOf(each) === name,
+      )!;
+    // The style's own between a cell's paragraphs - none before, 2.75 after - but none at its foot.
+    expect(spacing(inCell('first'))).toBeUndefined();
+    expect(spacing(inCell('listed'))).toMatchObject({ 'w:after': '0' });
+    expect(spacing(inCell('alone'))).toEqual({ 'w:after': '0' });
+    // A list in a cell, numbered from its first level by a definition of its own.
+    expect(numbered(inCell('listed'))).toEqual({ ilvl: '0', numId: expect.any(String) });
+    // The note stands apart from the cells by their space after and its own space before.
+    const note = spacing(cellAt('Measured by Grace.'));
+    expect(note).toEqual({ 'w:before': twips(2.75) });
+  });
+
+  it("R6 puts the space the PDF puts below a table with no note on the paragraph after it, which is the first Word's own reading would space from it", () => {
+    const bare = tabledOf([readings({ note: undefined, style: 'table' }), said('after')]);
+    const { at: bareAt } = bodyOf(bare.docx);
+    // The cells' 2.75 after, and the body's own none before.
+    expect(spacing(bareAt('after'))).toEqual({ 'w:before': twips(2.75) });
+  });
+
+  it('never ends a section in a table: an empty paragraph a point high follows, to carry the section or close the body', () => {
+    const last = tabledOf([readings({ note: undefined, style: 'table' })]);
+    const body = blocksOf(last.docx);
+    const tail = body[body.length - 1]!;
+    expect(tail.name).toBe('w:p');
+    expect(body[body.length - 2]!.name).toBe('w:tbl');
+    expect(textOf(tail)).toBe('');
+    expect(spacing(tail)).toMatchObject({ 'w:line': '20', 'w:lineRule': 'exact' });
+  });
+
+  it('R7 reports each table Word could not set as its style asks: a header column lost, a header its style does not repeat repeated, a continuation label left out, each by its place and label', () => {
+    const place = { node: id('blocks'), block: 't1', label: 'Table 1.1' };
+    expect(tabled.report).toEqual([
+      { kind: 'header_column_lost', ...place },
+      { kind: 'header_repeated', ...place },
+      { kind: 'continuation_label_omitted', ...place },
+      { kind: 'no_page_cited_output' },
+      { kind: 'pages_cite_the_pdf' },
+    ]);
+    // Under the default's style, repeated and unlabelled, only the header column; with none, nothing.
+    expect(tabledOf([readings({ style: 'table' })]).report).toEqual([
+      { kind: 'header_column_lost', ...place },
+      { kind: 'no_page_cited_output' },
+      { kind: 'pages_cite_the_pdf' },
+    ]);
+    expect(tabledOf([readings({ style: 'table', headerColumns: 0 })]).report).toEqual([
+      { kind: 'no_page_cited_output' },
+      { kind: 'pages_cite_the_pdf' },
+    ]);
+  });
+
+  it('writes a caption the scheme gives no number with no field, and one before its first chapter with its counter alone (captionField)', () => {
+    const unnumbered = written({
+      theme: ruledTheme,
+      layout: UNLISTED,
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        nodes: [
+          reference('front', 9, { matter: 'front', numbered: false }),
+          reference('body', 8, { numbered: false }),
+        ],
+      }),
+      occurrences: new Map([
+        [id('front'), component('Front', [readings({ id: 'f1' })])],
+        [id('body'), component('Body', [readings({ id: 'b1' })])],
+      ]),
+    });
+    const captions = paragraphs(unnumbered.docx).filter((each) => styleOf(each) === 'caption');
+    expect(captions.map(textOf)).toEqual(['Readings at noon', 'Table 1 Readings at noon']);
+    expect(captions.map(fieldCodes)).toEqual([[], ['SEQ Table \\* arabic \\s 1']]);
+    expect(unnumbered.report[0]).toEqual({
+      kind: 'header_column_lost',
+      node: id('front'),
+      block: 'f1',
+      label: null,
+    });
+  });
+
+  it('draws what the style cannot of a second header column on its cells: its fill, and its rule after the last of them alone', () => {
+    const two = tabledOf([readings({ headerColumns: 2 })], { theme: ruledTheme });
+    const wide = blocksOf(two.docx).find((each) => each.name === 'w:tbl')!;
+    const grid = rowsOf(wide);
+    // Word's first column is one column: the table's header columns are the writer's to draw.
+    expect(stated(wide, 'w:tblPr')['w:tblLook']).toMatchObject({ 'w:firstColumn': '0' });
+    const own = (row: number, column: number) => stated(grid[row]![column]!, 'w:tcPr');
+    // Body rows: both header columns filled; the rule after the second.
+    expect(own(4, 0)['w:shd']).toMatchObject({ 'w:fill': 'E2EFD9' });
+    expect(own(4, 1)['w:shd']).toMatchObject({ 'w:fill': 'E2EFD9' });
+    expect(own(4, 2)['w:shd']).toBeUndefined();
+    const borders = (row: number, column: number) => {
+      const found = first(kids(grid[row]![column]!, 'w:tcPr')[0]!, 'w:tcBorders');
+      return found === undefined
+        ? {}
+        : Object.fromEntries(kids(found).map((each) => [each.name, each.attrs]));
+    };
+    expect(borders(4, 1)['w:right']).toMatchObject({ 'w:sz': '12', 'w:color': '00AA00' });
+    expect(borders(4, 0)['w:right']).toBeUndefined();
+    // Through the header rows too, where the header row's fill is the style's.
+    expect(borders(1, 0)['w:right']).toBeUndefined();
+    expect(own(1, 0)['w:shd']).toBeUndefined();
+    // Both header columns' text bold.
+    expect(pinnedBold(kids(grid[4]![1]!, 'w:p')[0]!)).toBe(true);
+  });
+
+  it('stands a table in a quotation in by the quotation, as wide as what is left of the measure', () => {
+    const quoted = tabledOf([
+      { type: 'blockquote', id: 'Q1', content: [readings({ style: 'table' })] },
+    ]);
+    const inQuote = blocksOf(quoted.docx).find((each) => each.name === 'w:tbl')!;
+    const own = stated(inQuote, 'w:tblPr');
+    expect(own['w:tblInd']).toEqual({ 'w:w': twips(11), 'w:type': 'dxa' });
+    expect(own['w:tblW']!['w:type']).toBe('dxa');
+    const columns = all(kids(inQuote, 'w:tblGrid')[0]!, 'w:gridCol').map((each) =>
+      Number(each.attrs['w:w']),
+    );
+    expect(Math.abs(columns[0]! * 3 - Number(own['w:tblW']!['w:w']))).toBeLessThan(3);
+  });
+});

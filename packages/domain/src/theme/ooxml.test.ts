@@ -121,6 +121,8 @@ describe('projectStylesXml', () => {
     expect(styles.map((e) => [e.attrs['w:type'], e.attrs['w:styleId']])).toEqual([
       ...[...theme.paragraphStyles.keys()].map((id) => ['paragraph', id]),
       ...STYLED_MARKS.map((mark) => ['character', `mark-${mark}`]),
+      // And each table style after them (Word 2), below.
+      ...[...theme.tableStyles.keys()].map((id) => ['table', `Table-${id}`]),
     ]);
     for (const style of theme.paragraphStyles.values()) {
       expect(attrs(style.id, 'w:name'), style.id).toBeDefined();
@@ -505,5 +507,154 @@ describe('projectStylesXml, character styles', () => {
     expect(attrs('mark-hyperlink', 'w:b', from)).toEqual({ 'w:val': '0' });
     expect(attrs('mark-hyperlink', 'w:color', from)).toEqual({ 'w:val': '1F4E79' });
     expect(attrs('mark-hyperlink', 'w:u', from)).toEqual({ 'w:val': 'none' });
+  });
+});
+
+describe('projectStylesXml, table styles (Word 2, ruling R7)', () => {
+  /** The elements inside one of a table style's conditions, in document order, or none. */
+  const condition = (id: string, type: string, from = xml): XmlElementEvent[] | undefined => {
+    const events = scanXml(from);
+    const style = events.findIndex(
+      (e) =>
+        e.kind !== 'text' &&
+        e.kind !== 'close' &&
+        e.name === 'w:style' &&
+        e.attrs['w:styleId'] === id,
+    );
+    const found: XmlElementEvent[] = [];
+    let open = false;
+    for (const event of events.slice(style + 1)) {
+      if (event.kind === 'close' && event.name === 'w:style') break;
+      if (event.kind === 'open' && event.name === 'w:tblStylePr') {
+        open = event.attrs['w:type'] === type;
+      } else if (event.kind === 'close' && event.name === 'w:tblStylePr') {
+        if (open) return found;
+      } else if (open && (event.kind === 'open' || event.kind === 'self')) {
+        found.push(event);
+      }
+    }
+    return undefined;
+  };
+  const names = (events: readonly XmlElementEvent[] | undefined) => events?.map((e) => e.name);
+  /** A table style's cells' padding, each side's element and its attributes. */
+  const padding = (id: string, from = xml) =>
+    inside(
+      from.slice(from.indexOf(`w:styleId="${id}"`)),
+      (e) => e.name === 'w:tblCellMar',
+      'the padding',
+    ).map((e): [string, Readonly<Record<string, string>>] => [e.name, e.attrs]);
+  const rule = (width: number, colour: string) => ({
+    'w:val': 'single',
+    'w:sz': String(width),
+    'w:space': '0',
+    'w:color': colour,
+  });
+
+  it("writes each table style of the theme as a Word table style under an identifier of the writer's own, named as the catalogue names it", () => {
+    const style = scanXml(xml).find(
+      (e) => e.kind !== 'text' && e.kind !== 'close' && e.attrs['w:styleId'] === 'Table-table',
+    ) as XmlElementEvent;
+    expect(style.attrs['w:type']).toBe('table');
+    expect(attrs('Table-table', 'w:name')).toEqual({ 'w:val': 'Table' });
+    // After the paragraph and character styles, and before the writer's own.
+    expect(xml.indexOf('w:styleId="Table-table"')).toBeGreaterThan(xml.indexOf('mark-'));
+  });
+
+  it("states the default's rules, padding and banding - every rule 1pt black, cells padded 5pt, bands of one row - and a header neither filled nor bold as not bold, and nothing more", () => {
+    expect(names(styleElements('Table-table'))!.slice(0, 11)).toEqual([
+      'w:name',
+      'w:tblPr',
+      'w:tblStyleRowBandSize',
+      'w:tblBorders',
+      'w:top',
+      'w:left',
+      'w:bottom',
+      'w:right',
+      'w:insideH',
+      'w:insideV',
+      'w:tblCellMar',
+    ]);
+    expect(attrs('Table-table', 'w:tblStyleRowBandSize')).toEqual({ 'w:val': '1' });
+    for (const side of ['w:top', 'w:left', 'w:bottom', 'w:right', 'w:insideH', 'w:insideV']) {
+      expect(attrs('Table-table', side), side).toEqual(rule(8, '000000'));
+    }
+    expect(padding('Table-table')).toEqual(
+      ['w:top', 'w:left', 'w:bottom', 'w:right'].map((side) => [
+        side,
+        { 'w:w': '100', 'w:type': 'dxa' },
+      ]),
+    );
+    // Not bold, stated: measured, a bold cell style's text stays bold under it and a regular one
+    // regular. No fill and no rule of its own, and no band.
+    for (const type of ['firstRow', 'firstCol']) {
+      expect(names(condition('Table-table', type)), type).toEqual(['w:rPr', 'w:b', 'w:bCs']);
+      expect(condition('Table-table', type)![1]!.attrs, type).toEqual({ 'w:val': '0' });
+    }
+    expect(condition('Table-table', 'band1Horz')).toBeUndefined();
+  });
+
+  it("states a header row's and a header column's fill, weight and rule, and the band behind every other body row from the first, which Word's band1Horz counts after the header rows (measured)", () => {
+    const inputs = defaultInputs();
+    inputs.catalogues.table.styles.push({
+      id: 'ruled',
+      name: 'Ruled',
+      appliesTo: ['table'],
+      headerRow: { fill: '#d9e2f3', bold: true, rule: { width: 2, colour: '#c00000' } },
+      headerColumn: { fill: '#e2efd9', bold: true, rule: { width: 1.5, colour: '#00aa00' } },
+      banding: { fill: '#fff2cc' },
+      rules: {
+        outer: { width: 0.5, colour: '#1f4e79' },
+        horizontal: { width: 0.3, colour: '#808080' },
+        vertical: 'none',
+      },
+      padding: 6.2,
+      breaks: { repeatHeader: false, keepRowsWhole: true, continuationLabel: false },
+    });
+    const from = projectStylesXml(resolved(inputs), BRITISH);
+    for (const side of ['w:top', 'w:left', 'w:bottom', 'w:right']) {
+      expect(attrs('Table-ruled', side, from), side).toEqual(rule(4, '1F4E79'));
+    }
+    // In eighths of a point, and none where there is none.
+    expect(attrs('Table-ruled', 'w:insideH', from)).toEqual(rule(2, '808080'));
+    expect(attrs('Table-ruled', 'w:insideV', from)).toEqual({ 'w:val': 'nil' });
+    expect(padding('Table-ruled', from).every(([, each]) => each['w:w'] === '124')).toBe(true);
+
+    const firstRow = condition('Table-ruled', 'firstRow', from)!;
+    expect(names(firstRow)).toEqual([
+      'w:rPr',
+      'w:b',
+      'w:bCs',
+      'w:tcPr',
+      'w:tcBorders',
+      'w:bottom',
+      'w:shd',
+    ]);
+    expect(firstRow[1]!.attrs).toEqual({ 'w:val': '1' });
+    expect(firstRow[5]!.attrs).toEqual(rule(16, 'C00000'));
+    expect(firstRow[6]!.attrs).toEqual({ 'w:val': 'clear', 'w:color': 'auto', 'w:fill': 'D9E2F3' });
+    const firstCol = condition('Table-ruled', 'firstCol', from)!;
+    expect(names(firstCol)).toEqual([
+      'w:rPr',
+      'w:b',
+      'w:bCs',
+      'w:tcPr',
+      'w:tcBorders',
+      'w:right',
+      'w:shd',
+    ]);
+    expect(firstCol[5]!.attrs).toEqual(rule(12, '00AA00'));
+    expect(firstCol[6]!.attrs).toMatchObject({ 'w:fill': 'E2EFD9' });
+    expect(names(condition('Table-ruled', 'band1Horz', from))).toEqual(['w:tcPr', 'w:shd']);
+    expect(condition('Table-ruled', 'band1Horz', from)![1]!.attrs).toMatchObject({
+      'w:fill': 'FFF2CC',
+    });
+    expect(condition('Table-ruled', 'band2Horz', from)).toBeUndefined();
+  });
+
+  it('names a table style apart from a paragraph style of the same name, which Word would take for one style', () => {
+    const inputs = defaultInputs();
+    inputs.catalogues.table.styles[0] = { ...inputs.catalogues.table.styles[0]!, name: 'Caption' };
+    const from = projectStylesXml(resolved(inputs), BRITISH);
+    expect(attrs('Table-table', 'w:name', from)).toEqual({ 'w:val': 'Caption (table)' });
   });
 });

@@ -16668,13 +16668,13 @@
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 560,
+      "line": 566,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 502,
+      "line": 508,
       "kind": "title"
     },
     {
@@ -17122,6 +17122,18 @@
       "kind": "title"
     },
     {
+      "id": "TAB-039",
+      "file": "apps/worker/src/word.test.ts",
+      "line": 339,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-049",
+      "file": "apps/worker/src/word.test.ts",
+      "line": 339,
+      "kind": "title"
+    },
+    {
       "id": "IAM-014",
       "file": "packages/db/src/access-facts.test.ts",
       "line": 220,
@@ -17220,7 +17232,7 @@
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 925,
+      "line": 932,
       "kind": "title"
     },
     {
@@ -17232,7 +17244,7 @@
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 791,
+      "line": 798,
       "kind": "title"
     },
     {
@@ -18240,7 +18252,7 @@
     {
       "id": "STY-052",
       "file": "packages/domain/src/theme/ooxml.test.ts",
-      "line": 140,
+      "line": 142,
       "kind": "title"
     },
     {

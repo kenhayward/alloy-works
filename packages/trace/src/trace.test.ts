@@ -479,8 +479,12 @@ describe('the citations in the committed model', () => {
   // 325, from 324 (2026-09-25): Word 1's Word check cites PUB-029 in apps/worker's
   // word-check.test.ts, which opens the writer's fixtures in Word itself, updates their fields and
   // reads back what Word shows; it runs only on Windows with ALLOY_WORD_CHECK=1, so CI skips it.
+  // 327, from 325 (2026-09-25): Word 2's tables cite TAB-039 and TAB-049 in apps/worker's
+  // word.test.ts, where one publication's PDF and Word document are read together - each output's
+  // caption associated with its table, its header rows marked, the header column a TH in the PDF and
+  // named in the Word document's report - the whole of each "in every output" in one test.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(325);
+    expect(model.citations).toHaveLength(327);
   });
 
   it('cites no identifier the corpus does not hold', () => {

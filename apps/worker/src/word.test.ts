@@ -1,21 +1,32 @@
 import {
   assemble,
+  DEFAULT_CATALOGUES,
+  DEFAULT_CATALOGUES_BY_VERSION,
+  DEFAULT_THEME,
   defaultLayout,
   OUTLINE_SCHEMA_VERSION,
   parseContentDocument,
+  parseLayout,
   parseOutlineDocument,
+  readTheme,
   writeDocx,
   type AssembleInput,
   type Layout,
   type ContentDocument,
+  type ResolvedTheme,
+  type TableCatalogue,
 } from '@alloy-works/domain';
 import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
+import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { checkOoxml } from './testing/ooxml.js';
-import { defaultTheme } from './testing/theme.js';
+import { readPdf } from './testing/pdf.js';
+import { checkPdfUa1 } from './testing/verapdf.js';
+import { createTypst, typstBinaryPath } from './typst.js';
 
 const fonts = await loadPinnedFonts();
+const typst = createTypst({ binary: typstBinaryPath(), fonts });
 /** The worker's own face files, by the hash the theme names each by: what the job hands the writer. */
 const faces = await pinnedFacesByHash(FONT_DIRECTORY);
 
@@ -138,10 +149,81 @@ const LISTED = component('Steps', [
   { type: 'preformatted', id: 'C2', text: 'tray closed' },
 ]);
 
+const cell = (value: string, spans: { colspan?: number; rowspan?: number } = {}) => ({
+  content: [paragraph(`c-${value}`, text(value))],
+  colspan: spans.colspan ?? 1,
+  rowspan: spans.rowspan ?? 1,
+});
+
+/** Fifty rows under the ones that span: long enough that the table crosses a page. */
+const BODY_ROWS = 50;
+
+/**
+ * What Word 2's third task writes: a table of two header rows, the first's corner spanning both and
+ * its second cell two columns; a header column, its first body cell spanning two rows; a caption with
+ * a mark, a note, and a body long enough to cross a page - in a style that bands, fills, rules, keeps
+ * its rows whole, does not repeat its header and asks for a continuation label, so that Word's report
+ * says all three things it says of a table.
+ */
+const READINGS = component('Readings', [
+  {
+    type: 'table',
+    id: 't1',
+    style: 'banded',
+    caption: [text('Readings '), text('at noon', { type: 'emphasis', id: 'e1' })],
+    headerRows: 2,
+    headerColumns: 1,
+    note: [text('Measured by Grace.')],
+    rows: [
+      { cells: [cell('Station', { rowspan: 2 }), cell('Readings', { colspan: 2 })] },
+      { cells: [cell('Morning'), cell('Evening')] },
+      { cells: [cell('York', { rowspan: 2 }), cell('y1'), cell('y2')] },
+      { cells: [cell('y3'), cell('y4')] },
+      ...Array.from({ length: BODY_ROWS }, (_, at) => ({
+        cells: [cell(`Site ${at}`), cell(`a${at}`), cell(`b${at}`)],
+      })),
+    ],
+  },
+]);
+
+/** The default theme with a table style beside its own that uses every property a table style has. */
+const TABLES = '7a0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c01';
+const theme: ResolvedTheme = (() => {
+  const tables: TableCatalogue = {
+    ...DEFAULT_CATALOGUES.table,
+    styles: [
+      ...DEFAULT_CATALOGUES.table.styles,
+      {
+        id: 'banded',
+        name: 'Banded',
+        appliesTo: ['table'],
+        headerRow: { fill: '#dde4ee', bold: true, rule: { width: 2, colour: '#1f3a5f' } },
+        headerColumn: { fill: '#eef2e6', bold: true, rule: { width: 1.5, colour: '#2e5e2e' } },
+        banding: { fill: '#f4f4f4' },
+        rules: {
+          outer: { width: 1, colour: '#5b1a1a' },
+          horizontal: { width: 0.5, colour: '#777777' },
+          vertical: { width: 0.75, colour: '#444444' },
+        },
+        padding: 5,
+        breaks: { repeatHeader: false, keepRowsWhole: true, continuationLabel: true },
+      },
+    ],
+  };
+  const read = readTheme(
+    { ...DEFAULT_THEME, catalogues: { ...DEFAULT_THEME.catalogues, table: TABLES } },
+    new Map([...DEFAULT_CATALOGUES_BY_VERSION, [TABLES, tables]]),
+  );
+  if (!read.ok) throw new Error(read.refusals.map((each) => each.message).join('\n'));
+  return read.theme;
+})();
+
 /**
  * Everything Word 1 writes, under the default layout's 0.6 and the default theme: a cover, a contents,
  * front matter, a body two levels deep, an appendix, every mark, a link, a German passage and a Hebrew
- * one set right to left - and Word 2's lists, quotations and preformatted text.
+ * one set right to left - and Word 2's lists, quotations, preformatted text and a table, in a table
+ * style of its own. The layout lists nothing after the contents, which Word 3 writes and Word refuses
+ * until then (`word_not_yet`).
  */
 const input: AssembleInput & { readonly layout: Layout } = {
   formats: ['pdf', 'docx'],
@@ -153,7 +235,11 @@ const input: AssembleInput & { readonly layout: Layout } = {
     nodes: [
       reference('preface', 1, { matter: 'front' }),
       section('fitting', 'Fitting', [reference('marked', 2), reference('german', 3)]),
-      section('reading', 'Reading', [reference('hebrew', 4), reference('steps', 6)]),
+      section('reading', 'Reading', [
+        reference('hebrew', 4),
+        reference('steps', 6),
+        reference('readings', 7),
+      ]),
       section('tables', 'Tables of values', [reference('values', 5)], { matter: 'appendix' }),
     ],
   }),
@@ -204,10 +290,11 @@ const input: AssembleInput & { readonly layout: Layout } = {
     ],
     [id('values'), component('Values', [paragraph('v1', text('The values Grace measured.'))])],
     [id('steps'), LISTED],
+    [id('readings'), READINGS],
   ]),
   refused: [],
-  layout: defaultLayout,
-  theme: defaultTheme,
+  layout: parseLayout({ ...defaultLayout, matter: { ...defaultLayout.matter, lists: [] } }),
+  theme,
   revision: '0.7',
   covers: fonts.covers,
   assets: new Map(),
@@ -226,7 +313,13 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
     });
 
     expect(await checkOoxml(bytes)).toEqual([]);
-    expect(report).toEqual([{ kind: 'pages_cite_the_pdf' }]);
+    const readings = { node: id('readings'), block: 't1', label: 'Table 2.1' };
+    expect(report).toEqual([
+      { kind: 'header_column_lost', ...readings },
+      { kind: 'header_repeated', ...readings },
+      { kind: 'continuation_label_omitted', ...readings },
+      { kind: 'pages_cite_the_pdf' },
+    ]);
     // The worker's own serif, embedded: a TrueType file under its obfuscation, and nothing of STIX
     // Two Math, whose outlines Word does not embed (M10).
     const parts = unzipSync(bytes);
@@ -242,4 +335,63 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
     expect(numbering.match(/<w:abstractNum /g)).toHaveLength(9);
     expect(numbering).toContain('<w:start w:val="0"/><w:numFmt w:val="decimal"/>');
   });
+
+  it("TAB-039 TAB-049 associates a table's caption and its header rows with it in both outputs of one publication, its header column in the PDF, and names the table whose header column Word cannot mark", async () => {
+    const assembled = assemble(input);
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+
+    // The PDF: the caption the table's first child, and every header cell a TH - the header rows'
+    // cells column headers and the header column's row headers, the scope each carries checked by
+    // veraPDF (PDF/UA-1, 7.5) - one row to a reader however many pages the table crosses.
+    const pdf = await typst.compile(
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[assembled.document.schema]].file,
+      JSON.stringify(assembled.document),
+      new Date('2026-09-25T00:00:00Z'),
+    );
+    expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+    const read = await readPdf(pdf);
+    // A row and a header cell more than the table's: the continuation label's, an empty header cell
+    // on the first page, the cost the default theme declines a label for (themes 2).
+    expect(read.elements).toMatchObject({ Table: 1, Caption: 1, TR: 1 + 4 + BODY_ROWS });
+    expect(read.roles[read.roles.indexOf('Table') + 1]).toBe('Caption');
+    expect(read.elements).toMatchObject({
+      TH: 1 + 2 + 2 + 1 + BODY_ROWS,
+      TD: 4 + 2 * BODY_ROWS,
+    });
+
+    // Word: the caption a paragraph straight above the table, whose title is the caption's words;
+    // both header rows marked header rows, which is all Word has to associate them; and the header
+    // column, which Word cannot mark, named in the report.
+    const { bytes, report } = writeDocx({
+      document: assembled.document,
+      numbering: assembled.numbering,
+      word: assembled.word!,
+      formats: input.formats,
+      faces,
+    });
+    const xml = strFromU8(unzipSync(bytes)['word/document.xml']!);
+    const table = xml.slice(xml.indexOf('<w:tbl>'), xml.indexOf('</w:tbl>'));
+    const caption = xml.slice(
+      xml.lastIndexOf('<w:p>', xml.indexOf('<w:tbl>')),
+      xml.indexOf('<w:tbl>'),
+    );
+    expect(caption).toContain('<w:pStyle w:val="caption"/><w:keepNext/>');
+    const words = [...caption.matchAll(/<w:t xml:space="preserve">([^<]*)<\/w:t>/g)]
+      .map((match) => match[1])
+      .join('');
+    expect(words).toBe('Table 2.1 Readings at noon');
+    expect(table).toContain('<w:tblCaption w:val="Table 2.1 Readings at noon"/>');
+    const rows = table.split('<w:tr>').slice(1);
+    expect(rows.map((row) => row.includes('<w:tblHeader/>'))).toEqual([
+      true,
+      true,
+      ...Array.from({ length: 2 + BODY_ROWS }, () => false),
+    ]);
+    expect(report).toContainEqual({
+      kind: 'header_column_lost',
+      node: id('readings'),
+      block: 't1',
+      label: 'Table 2.1',
+    });
+  }, 120_000);
 });
