@@ -1301,7 +1301,8 @@ faces, images })`, pure and deterministic - a fixed zip time, the parts in a fix
   Word would wrap set closer; a table in a Word table style projected by `projectStylesXml`, banded
   by `band1Horz`, its header rows `w:tblHeader`, its caption above as Word's `STYLEREF` and `SEQ`
   fields and its `w:tblCaption`, its note after; a figure's image a `wp:inline` described or flagged
-  decorative with its caption below, a floated one one `w:framePr` with its caption; an image in a
+  decorative with its caption below, a floated one a text box (`wps:wsp`) holding it and its caption,
+  anchored at the head of the text area where no other float may overlap it; an image in a
   line a `wp:inline` in its run; each image once in `word/media/` by its hash; and the lists of
   figures and of tables after the contents as `TOC \c` fields. It answers the bytes and the output's
   report, which names each table's lost header column, repeated header and omitted label.

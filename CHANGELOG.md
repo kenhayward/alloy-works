@@ -19,8 +19,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
     header rows marked so a screen reader reads them as headers, its caption above it and its note
     beneath;
   - a figure is its image, sized for the page, with its description or marked decorative, and its
-    caption below; a floated figure stands at the head of its page with its caption; an image in a
-    line of text or a table's cell stays in its line.
+    caption below; a floated figure stands at the head of its page with its caption, and two on one
+    page stand one above the other; an image in a line of text or a table's cell stays in its line.
 - **Word numbers figures and tables itself**, as it numbers headings, so moving one in Word renumbers
   the rest. The lists of figures and of tables follow the contents, and Word fills in their pages as
   it does the contents'.

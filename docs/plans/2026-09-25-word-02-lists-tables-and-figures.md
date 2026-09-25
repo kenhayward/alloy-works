@@ -133,6 +133,13 @@ beneath its decisions table; what follows is where the build departed from the r
   anchored image at the head of its page and left its caption in the text where the figure stood,
   226pt below; the image's paragraph and the caption's now share one `w:framePr` at the head of the
   text area, within 0.06pt of the PDF's band, and the anchor's code is gone.
+- **...and then a text box holding both, after the final review (I1).** Two frames on one page stood
+  at the same place, image on image and caption on caption. Measured against a frame placed from its
+  paragraph, a second frame at the foot and a second float written as a block, a text box holding the
+  image and the caption, anchored `allowOverlap="0"` and `wrapTopAndBottom` at the head of the text
+  area, is the one that keeps every float at the head of its page and never over another: Word stands
+  a second box below the first. A list with a floated figure in it is written without `\h`, since
+  Word lists a caption in a text box with no page under it. word-output.md has the numbers.
 - **Banding is `band1Horz`, not R7's `band2Horz`.** Template 13 bands the first body row and every
   other one after it; M14's measurement was right and its reading of the template was not. Measured
   against the PDF's own fills.
@@ -184,14 +191,18 @@ so no migration.
 
 **Figures and images (R8).** The image's paragraph is in the caption's style, which template 13 gives
 a figure's top and bottom; the PDF's leading above a figure goes on its space before, since Word sets
-none above a line an image fills. Media parts are named by the image's hash and related as
+none above a line an image fills. A caption's label - its word, its fields' results and its separator -
+is the layout's words, left to right in the layout's language, since in a right-to-left caption Word
+had printed it after the caption's words (the final review, M2). Media parts are named by the image's hash and related as
 `rIdImage<n>` after the other parts, so a document with no image is byte for byte what it was.
 
 **The Word check (R9).** It found one defect, and the writer fixed it: **a preformatted line as wide
 as the PDF's measure holds wrapped in Word** (Word held 80 columns where the PDF holds 83). The writer
 sets such a block the least whole twentieths of a point closer that fit it, every line alike. The
 check's later chapters are appendices, since the outline's `pageBreak` is not published, in the PDF
-or in Word - a finding for publishing, outside this slice.
+or in Word - a finding for publishing, outside this slice, filed as issue #234. The final review
+added two floats on one page and a right-to-left numbered table to its fixtures, and a block ending
+in a line feed is written a line shorter, as the engine sets it (M3).
 
 **Citations.** TAB-039 and TAB-049 by one worker test reading one publication's two outputs together;
 PUB-035 by one test over the whole Word 2 document, whole only while equations, footnotes and

@@ -329,6 +329,29 @@ stands as it was agreed; three of its lines are no longer what was built, and
   where the figure stood, 226pt below it in the measuring document, where the PDF sets the two as one
   band; one `w:framePr` shared by the image's paragraph and the caption's keeps them together, within
   0.06pt of the PDF's band.
+- **...and then a text box, not a frame (Word 2's final review, I1).** Two floats on one page were two
+  frames at one place, image on image and caption on caption: Word does not move a frame off another.
+  Five forms were measured in Word 16 on the review's document, a square and a one by three floated a
+  paragraph apart, both falling on page 6. **The frame**: both images at y 72, both captions at 293.33
+  on one line. **A frame placed from its paragraph** (`w:vAnchor="text"`, `w:y="0"`): apart, the first
+  at 72 only because its paragraph opened the page, the second in the flow at 326.10, and the text
+  between them set below the second. **The second frame at the foot** (`w:yAlign="bottom"`): apart,
+  546.00 and its caption 757.20, but a third float on the page would stand on the first again. **The
+  second a block figure**: in the flow at 326.10, the head of the page for the first alone, and a
+  report entry wanted to say so. **A text box holding image and caption**, `wp:anchor` with
+  `allowOverlap="0"` and `wrapTopAndBottom`, at the head of the text area: Word stood the second box
+  below the first on the same page, its image 15.52 below the first caption's baseline, the text after
+  both 27.60 below the second caption as it stood after the frame, each caption with its image, and
+  each image's description and decorative flag read through COM inside its box; with
+  `allowOverlap="1"` the two stood on each other again. **The text box is taken.** Its costs, each
+  measured: Word lists a caption in a text box with no page where the list links its entries
+  (`\h`), and with its page where it does not, so a list with a floated figure in it is written
+  without links; the box is anchored in an empty paragraph of its own a tenth of a point high, since
+  one a point high moved the text below it 0.96; Word fits the box to what it holds
+  (`spAutoFit`, a box written 20pt high came up 223.70), so its written height is only a start; and
+  the fields in a box number in the order of their anchors, prefilled wrong and updated. The PDF set
+  the second float at the foot of the page in both documents measured, where it had room; Word has no
+  choice of head or foot (WO-G) and stacks it at the head.
 - **WO-M's second and third slices moved.** Captions as fields came into Word 2 (its ruling R1), since
   tables and figures arrive there and M3 had measured the fields; so did the lists of figures and of
   tables after the contents, since the default layout lists both and without them no document holding
@@ -562,7 +585,8 @@ contents where the layout lists them. The writer is `word/2`. Building it change
   cannot hold, letters from the 28th (Word _bb_, the PDF _ab_) and roman past 3999. The default
   scheme passes. A problem now names its block, so the author is sent to the caption.
 - **The lists of figures and of tables are this slice's.** Each is one `TOC \h \z \c "<SEQ name>"`
-  field after the contents, in its section, its title in the `list` role and on a page of its own,
+  field after the contents - without `\h` where one of its figures floats, the notes above say why -
+  in its section, its title in the `list` role and on a page of its own,
   prefilled with the captions the writer wrote a field for and no page, its entries in the writer's
   `TableofFigures` style, which is the one Word rebuilds them in (M9). Without a contents they stand in
   a front section of their own. Measured, Word's pages for every entry are the PDF's.
@@ -601,7 +625,10 @@ contents where the layout lists them. The writer is `word/2`. Building it change
   4pt narrower, so Word held 80 columns where the PDF holds 83. The writer sets every line of such a
   block the least whole twentieths of a point closer that fit it (4, at the default), and none where
   the line fits or where more than the next half point down's narrowing would be needed; the Word
-  check found it, the line wrapping before the fix and not after.
+  check found it, the line wrapping before the fix and not after. **A block whose text ends in a line
+  feed** is written without the empty line after it, since the engine drops one line feed that ends
+  raw text (measured, the pinned Typst: `x\n` as tall as `x`, `\n` one empty line, `\n\n` two), where
+  Word had stood 11.7pt taller (the final review, M3).
 - **Tables** (R7, WO-F): a Word table style per theme table style, `Table-<id>`, its rules, padding,
   header row and header column conditions and **banding by `band1Horz`**, the note beneath the
   decisions table says why; equal fixed columns; merged cells by `w:gridSpan` and `w:vMerge`; header
@@ -614,8 +641,11 @@ contents where the layout lists them. The writer is `word/2`. Building it change
 - **Figures and images** (R8, WO-G): a figure's image in a paragraph of its own in the caption's style,
   aligned by its image style, as a `wp:inline`, described in `descr` or flagged decorative by M7's
   extension, its caption below; the space above it the PDF's leading, which Word does not set above a
-  line an image fills. A floated figure is a frame, the note above says why. An image in a line is a
-  `wp:inline` in its run, in a cell too.
+  line an image fills. A floated figure is a text box holding its image and its caption, the notes
+  above say why. An image in a line is a `wp:inline` in its run, in a cell too. **A caption's label**
+  - its word, its fields' results and its separator - is the layout's words, set left to right in the
+    layout's language as the running head is, whatever its caption's direction, and the list after the
+    contents is prefilled so (the final review, M2).
 - **The report's table entries**, closed shapes stored and served as Word 1's are, each a sentence on
   the publication's page: `header_column_lost`, `header_repeated` for a table whose style does not
   repeat its header, since Word repeats every marked header, and `continuation_label_omitted` for one
@@ -623,10 +653,11 @@ contents where the layout lists them. The writer is `word/2`. Building it change
   know where Word breaks the page. An unnumbered table is said as _A table with no number_.
 - **The Word check holds Word to the PDF.** Two fixtures join Word 1's seven: every construct above,
   compiled through template 13 beside it with the same image bytes, and captions prefixed and
-  restarted at the third and the ninth levels, every caption field prefilled wrong. It checks nine
-  things more, [`docs/testing.md`](../testing.md#the-word-check) lists them, and each ran green in
+  restarted at the third and the ninth levels, every caption field prefilled wrong; since the final
+  review, two floats a paragraph apart and a right-to-left numbered table. It checks ten things more, [`docs/testing.md`](../testing.md#the-word-check) lists them, and each ran green in
   Word 16; its bite was checked by rebuilding the writer with `band2Horz`, no panel parting and the
-  frame at the foot, and four of them failed.
+  frame at the foot, and four of them failed; the final review's two checks each failed on the writer
+  before its fix, the floats' with two frames at y 72, the caption's reading "1.1 Table".
 
 **What Word showed that the design did not foresee**, measured against the PDF of the same document:
 
@@ -647,9 +678,29 @@ contents where the layout lists them. The writer is `word/2`. Building it change
   margin of 1.65pt where the style says 5.
 - **Preformatted text is narrowed where its widest line would wrap**, above: 0.2pt a character at the
   default, still wider a glyph than the PDF's.
-- **The frame**: the anchor left the caption behind, the frame keeps it, its space below the engine's
-  clearance less the text's leading (13.15pt), the caption's baseline 309.65 against the PDF's 309.61
-  and the text below 337.13 against 337.11.
+- **The float**: the anchor left the caption behind, the frame kept it and stood two on each other,
+  the text box keeps it and stands two apart; its space below the engine's clearance less the text's
+  leading (13.15pt), inside the box at its foot, the first caption's baseline 309.65 against the PDF's
+  309.61, as the frame's was.
+- **A float that does not fit on the page its anchor falls on takes the text after it to the next
+  page**, leaving the foot of the page empty: Word sets a float on its anchor's page and cannot hold
+  it back while the text after it runs on, as the engine does. In the review's document page 5 ended
+  at 667.18 of a text area reaching 770, where the PDF kept three paragraphs more on it. The frame did
+  the same, as does every form measured above. Pages differ between the outputs by design (PUB-065);
+  left, and said here.
+- **A table style whose padding is less than its cell's leading leaves Word's rows taller**, by up to
+  the leading: the table's top cell margin gives up the leading only as far as the padding goes. The
+  review's bare style, padding 0, stepped its rows 14.40 in Word (204.9 to 219.3) against about 11.4
+  in the PDF, 3pt a row. An exact line height on a cell's first paragraph was not tried: it would set
+  that line on a height the writer cannot know for a cell holding an image in a line or a list. Left.
+- **A caption's label is tagged in the layout's language in Word, and in its caption's in the PDF**,
+  which sets it inside the caption: the label is the layout's words, and in a right-to-left caption
+  Word printed it after the caption's words, right to left in the component's language, each field's
+  result an island of its own ("ספר 1.1 Table" where the PDF prints "ספר Table 1.1"). Left to right in
+  the layout's language it prints as the PDF's. In a left-to-right document the label is tagged `en`
+  under the default layout where its caption is `en-GB`.
+- **An empty preformatted block is a line high in Word** and only its panel's padding in the PDF:
+  the engine sets no line for empty raw text, and a Word panel needs a paragraph. Not measured.
 - **A line holding an image in a line stands 3.44pt nearer the line above** (18.24 against 21.68):
   Word grows the line to the image and adds no leading above it, where the PDF adds its leading above
   the image. It is per line, so no paragraph property fixes it without moving every line; in a cell,
@@ -659,8 +710,8 @@ contents where the layout lists them. The writer is `word/2`. Building it change
   1.1.1.1 after the update, from "9" prefilled. Rules take room in Word where the PDF's do not, and
   a width Word lacks is drawn at its nearest (2pt as 2.25).
 - **The outline's page break is not published**, found by the check's fixture: a reference with
-  `pageBreak: 'page'` ran on in the PDF as in Word. Outside Word's scope, and recorded here for
-  publishing to look at.
+  `pageBreak: 'page'` ran on in the PDF as in Word. Outside Word's scope; filed as
+  [issue #234](https://github.com/kenhayward/alloy-works/issues/234), and publishing.md says so.
 
 **What each claim now stands on**, as `pnpm trace show` reports it; the citations pin moved from 325
 to 328:
@@ -693,8 +744,8 @@ leave `word_not_yet`. Word 4: equations and the list of equations, which alone o
 the contents is still refused, deciding which of the maths tree's refusals Word sets and undoing the
 trap for the rest, reporting the maths face's substitution; PUB-067 and CNT-045, then PUB-023. Both
 extend PUB-035's test. **Not measured in Word**, each tested for its XML only: a right-to-left list
-(a right-aligned number in a `w:bidi` paragraph), a table (`w:bidiVisual`) and a figure in a
-right-to-left passage; a style with a first-line indent on an item's first paragraph, which the
+(a right-aligned number in a `w:bidi` paragraph), a table's cells (`w:bidiVisual`), whose caption
+the check now reads, and a figure in a right-to-left passage; a style with a first-line indent on an item's first paragraph, which the
 hanging indent replaces; a table, a figure or a frame in a list item or a quotation; preformatted
 text narrowed inside one; and a header cell spanning into the body, which the PDF refuses and Word
 merges. **Known and left**: a kept row taller than a page splits in Word and loses its header on

@@ -323,7 +323,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
   Its outline is a tree: add a section, put a component in it, move one under another with the mouse
   or with `Alt` and the arrow keys, rename a section, mark one to start on a new page or a new
-  right-hand page, and remove one with everything under it. Every act is its own version, so the
+  right-hand page - though no publication honours that mark yet, in the PDF or in Word, so a marked
+  section runs on ([#234](https://github.com/kenhayward/alloy-works/issues/234)) - and remove one
+  with everything under it. Every act is its own version, so the
   history reads as what somebody did rather than as keystrokes, and `Ctrl+Z` or **Undo** takes the
   last one back - except a removal, which cannot be undone, so the page asks first. The same component
   can appear in one outline more than once. Nobody locks a document: if somebody else changes the
