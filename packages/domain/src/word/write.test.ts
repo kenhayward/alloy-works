@@ -108,6 +108,9 @@ function fieldCodes(element: Element): string[] {
 
 const styleOf = (paragraph: Element) => first(paragraph, 'w:pStyle')?.attrs['w:val'];
 
+/** Whether a paragraph is in a heading's style: a heading role's, or one of the writer's own. */
+const isHeading = (paragraph: Element) => /^(heading-|Heading)/.test(styleOf(paragraph) ?? '');
+
 /** A paragraph's own properties, not a run's. */
 const pPr = (paragraph: Element) => kids(paragraph, 'w:pPr')[0];
 
@@ -558,7 +561,7 @@ describe('writeDocx: styles and heading numbers (ruling R7)', () => {
     // Each heading's text is its title alone: its number is the list's.
     const heading = (title: string) => {
       const found = paragraphs(plain.docx).find(
-        (each) => styleOf(each)?.startsWith('heading-') === true && textOf(each) === title,
+        (each) => isHeading(each) && textOf(each) === title,
       );
       if (found === undefined) throw new Error(`no heading ${title}`);
       return found;
@@ -574,15 +577,98 @@ describe('writeDocx: styles and heading numbers (ruling R7)', () => {
     expect(numPr(pPr(heading('Values'))!)).toEqual({ ilvl: '1', numId: '3' });
     // An unnumbered heading is taken off the list, and consumes nothing of it.
     expect(numPr(pPr(heading('Notes'))!)).toEqual({ ilvl: '0', numId: '0' });
-    // Past the sixth level, Heading 6's style, numbered at its own level and at its own outline level.
-    const seventh = heading('Level 7');
-    expect(styleOf(seventh)).toBe('heading-6');
-    expect(numPr(pPr(seventh)!)).toEqual({ ilvl: '6', numId: '1' });
-    expect(first(pPr(seventh)!, 'w:outlineLvl')!.attrs['w:val']).toBe('6');
+    // Past the sixth level too: a style of the writer's own, linked at its depth.
+    expect(numPr(pPr(heading('Level 7'))!)).toBeUndefined();
     expect(numPr(pPr(heading('Level 6'))!)).toBeUndefined();
     // No number printed as text anywhere a heading stands.
-    for (const each of paragraphs(plain.docx).filter((p) => styleOf(p)?.startsWith('heading-'))) {
+    for (const each of paragraphs(plain.docx).filter(isHeading)) {
       expect(textOf(each)).not.toMatch(/^([0-9ivxA-Z]+(\.[0-9]+)*)\s/);
+    }
+  });
+
+  /**
+   * What Word makes of a heading paragraph (measured in Word for the final review of Word 1, I2): a
+   * style Word names "heading N" is its built-in Heading N, whose outline level is N whatever the
+   * paragraph or the style states - a paragraph's own `w:outlineLvl` is ignored there - and any other
+   * style's is the paragraph's own, else its style's, else body text. And the number its style is
+   * linked to, where the paragraph states none of its own.
+   */
+  const wordReads = (docx: Package, paragraph: Element) => {
+    const styles = docx.xml('word/styles.xml');
+    const byId = (id: string | undefined) =>
+      all(styles, 'w:style').find((each) => each.attrs['w:styleId'] === id);
+    const style = byId(styleOf(paragraph))!;
+    const name = first(style, 'w:name')!.attrs['w:val']!;
+    const builtIn = /^heading ([1-9])$/i.exec(name);
+    let level: number | undefined = builtIn === null ? undefined : Number(builtIn[1]);
+    const stated = (element: Element | undefined) =>
+      element === undefined
+        ? undefined
+        : kids(kids(element, 'w:pPr')[0] ?? element, 'w:outlineLvl')[0];
+    for (let at: Element | undefined = style; level === undefined && at !== undefined;) {
+      const own = stated(at);
+      if (own !== undefined) level = Number(own.attrs['w:val']) + 1;
+      at = byId(first(at, 'w:basedOn')?.attrs['w:val']);
+    }
+    const own = stated(paragraph);
+    if (builtIn === null && own !== undefined) level = Number(own.attrs['w:val']) + 1;
+    return { name, level: level ?? 10, style };
+  };
+
+  it("sets every heading in a style Word names for its depth, since Word takes a heading's outline level from its style's name and ignores the paragraph's own (I2)", () => {
+    const shared = written({
+      theme: themeWith((inputs) => {
+        inputs.catalogues.paragraph.styles = inputs.catalogues.paragraph.styles.map((each) =>
+          each.id === 'heading-5' ? { ...each, appliesTo: ['heading5', 'heading6'] } : each,
+        );
+        inputs.theme.roles.heading6 = 'heading-5';
+      }),
+    });
+    for (const { docx, document } of [plain, shared]) {
+      const depths = new Map<string, number>();
+      const walk = (nodes: PublishedDocument['nodes']) =>
+        nodes.forEach((node) => {
+          depths.set(node.title.map((run) => ('text' in run ? run.text : '')).join(''), node.depth);
+          walk(node.children);
+        });
+      walk(document.nodes);
+      const headings = paragraphs(docx).filter(isHeading);
+      expect(headings.map(textOf).sort()).toEqual([...depths.keys()].sort());
+      for (const each of headings) {
+        const depth = depths.get(textOf(each))!;
+        const read = wordReads(docx, each);
+        expect([textOf(each), read.name.toLowerCase(), read.level]).toEqual([
+          textOf(each),
+          `heading ${depth}`,
+          depth,
+        ]);
+      }
+    }
+    // Past the sixth level, and at the sixth where its role shares the fifth's style: Word's own
+    // "heading N", based on the role's style and adding only its place on the body's list, which the
+    // list links back to, so that a heading a recipient sets in it is numbered at its depth too.
+    const styles = plain.docx.xml('word/styles.xml');
+    const numbering = plain.docx.xml('word/numbering.xml');
+    const body = all(numbering, 'w:abstractNum')[0]!;
+    for (const depth of [7, 8, 9]) {
+      const style = all(styles, 'w:style').find(
+        (each) => each.attrs['w:styleId'] === `Heading${depth}`,
+      )!;
+      expect(first(style, 'w:basedOn')!.attrs['w:val']).toBe('heading-6');
+      expect(first(style, 'w:ilvl')!.attrs['w:val']).toBe(String(depth - 1));
+      expect(first(style, 'w:numId')!.attrs['w:val']).toBe('1');
+      expect(first(style, 'w:outlineLvl')!.attrs['w:val']).toBe(String(depth - 1));
+      const level = kids(body, 'w:lvl')[depth - 1]!;
+      expect(first(level, 'w:pStyle')!.attrs['w:val']).toBe(`Heading${depth}`);
+    }
+    const sharedStyles = shared.docx.xml('word/styles.xml');
+    const sixth = all(sharedStyles, 'w:style').find(
+      (each) => each.attrs['w:styleId'] === 'Heading6',
+    )!;
+    expect(first(sixth, 'w:basedOn')!.attrs['w:val']).toBe('heading-5');
+    // No paragraph states an outline level: Word would not read it.
+    for (const { docx } of [plain, shared]) {
+      expect(paragraphs(docx).filter((each) => first(pPr(each)!, 'w:outlineLvl'))).toEqual([]);
     }
   });
 });

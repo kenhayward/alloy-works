@@ -97,7 +97,7 @@ const ZIP_TIME = new Date(1980, 0, 1, 0, 0, 0);
  */
 const LEVEL_ONE = 'Heading 1';
 
-/** The heading roles, the first level's first: a node deeper than the sixth takes the sixth's. */
+/** The heading roles, the first level's first: a node deeper than the sixth is set as the sixth's. */
 const HEADINGS = [
   'heading1',
   'heading2',
@@ -127,7 +127,6 @@ interface Paragraph {
   readonly numbering?: string;
   readonly tabs?: string;
   readonly bidi?: boolean;
-  readonly outlineLevel?: number;
   /** The first paragraph of a section writes no space before, which Word keeps there (M16). */
   firstOfSection?: boolean;
 }
@@ -330,7 +329,10 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       { language: document.language, direction: document.direction },
       {
         headingList: HEADING_LISTS.body,
-        extraStyles: contents === null ? [] : contentsStyles(theme, contents.depth),
+        extraStyles: [
+          ...ownHeadingStyles(theme),
+          ...(contents === null ? [] : contentsStyles(theme, contents.depth)),
+        ],
       },
     ),
   );
@@ -372,7 +374,7 @@ class Writer {
   readonly links = new Map<string, string>();
   readonly document: Passage;
   readonly words: Passage;
-  private readonly headingDepths: ReadonlyMap<string, number>;
+  private readonly headings: ReadonlyMap<number, HeadingStyle>;
 
   constructor(
     private readonly published: PublishedDocument,
@@ -385,18 +387,23 @@ class Writer {
     // The layout's words are set left to right in the layout's language, as the PDF's `words` sets
     // them, whatever the document's direction.
     this.words = { tag: wordLanguage(published.words.language), rtl: false };
-    this.headingDepths = headingDepths(theme);
+    this.headings = headingStyles(theme);
   }
 
-  /** A paragraph in a style, by its identifier; the style's face is set, if only by its mark. */
+  /**
+   * A paragraph in a style of the theme's, by its identifier; the style's face is set, if only by its
+   * mark. `wordStyle` is the Word style it is written in where that is not the theme's own: a heading's
+   * of the writer's, based on it.
+   */
   paragraph(
     styleId: string,
     content: string,
     stated: Omit<Paragraph, 'style' | 'content'> = {},
+    wordStyle: string = styleId,
   ): Paragraph & { readonly xml: string } {
     const style = this.style(styleId);
     this.use(style.typeface, style.properties.bold, style.properties.italic);
-    const paragraph = { style: styleId, content, ...stated };
+    const paragraph = { style: wordStyle, content, ...stated };
     return { ...paragraph, xml: paragraphXml(paragraph) };
   }
 
@@ -409,27 +416,27 @@ class Writer {
   node(node: PublishedNode): Paragraph[] {
     const passage = this.passageOf(node);
     const depth = node.depth;
-    const styleId = this.theme.roles[HEADINGS[Math.min(depth, HEADINGS.length) - 1]!];
-    const linked = this.headingDepths.get(styleId);
+    // In the style Word names for its depth, whose outline level places it in the contents and the
+    // navigation where the PDF's outline does; Word's deepest is the ninth.
+    const style = this.headings.get(Math.min(depth, WORD_LEVELS))!;
     let numbering: string | undefined;
     if (node.number === null) {
       numbering = NO_NUMBER;
-    } else if (node.matter !== 'body' || linked !== depth) {
-      // Front matter and appendices number from lists of their own (M2), and a heading its style
-      // does not number at its depth - deeper than six, or in a style two roles share - is numbered
-      // where it stands. `assemble` refuses a number past the ninth level (`numbering_not_in_word`).
-      if (depth > WORD_LEVELS) throw new Error(`A heading numbered at depth ${depth}`);
+    } else if (depth > WORD_LEVELS) {
+      // `assemble` refuses a number past the ninth level (`numbering_not_in_word`).
+      throw new Error(`A heading numbered at depth ${depth}`);
+    } else if (node.matter !== 'body') {
+      // Front matter and appendices number from lists of their own (M2); the body's is its style's.
       numbering =
         `<w:numPr><w:ilvl w:val="${depth - 1}"/>` +
         `<w:numId w:val="${HEADING_LISTS[node.matter]}"/></w:numPr>`;
     }
-    const heading = this.paragraph(styleId, this.titleRuns(node.title, styleId, passage), {
-      ...(numbering === undefined ? {} : { numbering }),
-      bidi: passage.rtl,
-      // Its own outline level where its style's is not its depth, so the contents and the navigation
-      // place it where the PDF's outline does; Word's deepest is the ninth.
-      ...(linked === depth ? {} : { outlineLevel: Math.min(depth, WORD_LEVELS) - 1 }),
-    });
+    const heading = this.paragraph(
+      style.theme,
+      this.titleRuns(node.title, style.theme, passage),
+      { ...(numbering === undefined ? {} : { numbering }), bidi: passage.rtl },
+      style.id,
+    );
     const blocks = node.blocks.map((block) => {
       if (block.type !== 'paragraph') {
         throw new Error(`Word 1 does not write a ${block.type}, which assemble refuses for Word`);
@@ -687,9 +694,6 @@ function paragraphXml(paragraph: Paragraph, sectionProperties?: string): string 
     (paragraph.tabs ?? '') +
     (paragraph.bidi === true ? '<w:bidi/>' : '') +
     (paragraph.firstOfSection === true ? '<w:spacing w:before="0"/>' : '') +
-    (paragraph.outlineLevel === undefined
-      ? ''
-      : `<w:outlineLvl w:val="${paragraph.outlineLevel}"/>`) +
     (sectionProperties ?? '');
   return `<w:p><w:pPr>${properties}</w:pPr>${paragraph.content}</w:p>`;
 }
@@ -890,18 +894,56 @@ function relationshipsXml(relationships: readonly string[]): string {
   );
 }
 
+/** The style a heading at a depth is written in, and the theme's style it is set in. */
+interface HeadingStyle {
+  readonly id: string;
+  readonly theme: string;
+}
+
 /**
- * The style each heading depth's list level is linked from: the heading role's at that depth, where
- * that style is numbered at that depth - a style two roles share is linked from the shallower alone.
+ * The style a heading at each depth Word numbers is written in (measured in Word for the final review
+ * of Word 1, I2). Word takes a style named "heading N" as its own Heading N, with outline level N
+ * whatever the style or the paragraph states - a paragraph's own `w:outlineLvl` is ignored there - so
+ * a heading is written in the style Word names for its depth, or its outline level is another's: the
+ * heading role's style where the projection names it Heading N at its depth, and otherwise one of the
+ * writer's own named Word's way and based on it - at the seventh to ninth depths, which no role has,
+ * and at a depth whose role shares a shallower role's style.
  */
-function headingLinks(theme: ResolvedTheme): Map<number, string> {
+function headingStyles(theme: ResolvedTheme): Map<number, HeadingStyle> {
   const depths = headingDepths(theme);
-  const links = new Map<number, string>();
-  HEADINGS.forEach((role, index) => {
-    const style = theme.roles[role];
-    if (depths.get(style) === index + 1) links.set(index + 1, style);
-  });
-  return links;
+  const styles = new Map<number, HeadingStyle>();
+  for (let depth = 1; depth <= WORD_LEVELS; depth += 1) {
+    const role = theme.roles[HEADINGS[Math.min(depth, HEADINGS.length) - 1]!];
+    styles.set(depth, {
+      id: depths.get(role) === depth ? role : `Heading${depth}`,
+      theme: role,
+    });
+  }
+  return styles;
+}
+
+/** The style each heading depth's list level is linked from: every depth's heading style. */
+function headingLinks(theme: ResolvedTheme): Map<number, string> {
+  return new Map([...headingStyles(theme)].map(([depth, style]) => [depth, style.id]));
+}
+
+/**
+ * The writer's own heading styles: each named as Word names its built-in heading at that depth, based
+ * on the role's style, and adding only its place on the body's list - which the list links back to,
+ * so that a heading a recipient sets in it is numbered at its depth too - and the outline level its
+ * name gives it.
+ */
+function ownHeadingStyles(theme: ResolvedTheme): string[] {
+  return [...headingStyles(theme)]
+    .filter(([, style]) => style.id !== style.theme)
+    .map(
+      ([depth, style]) =>
+        `<w:style w:type="paragraph" w:styleId="${style.id}">` +
+        `<w:name w:val="heading ${depth}"/><w:basedOn w:val="${style.theme}"/><w:qFormat/>` +
+        `<w:pPr><w:numPr><w:ilvl w:val="${depth - 1}"/>` +
+        `<w:numId w:val="${HEADING_LISTS.body}"/></w:numPr>` +
+        `<w:outlineLvl w:val="${depth - 1}"/></w:pPr></w:style>`,
+    );
 }
 
 /**
