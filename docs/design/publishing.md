@@ -87,7 +87,7 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **PUB-095** | A layout's `language` is a BCP 47 tag, taken as a language range and matched to the document's language by RFC 4647 basic filtering (the second publishing plan's decision G): `en` takes `en-GB`. A document outside it is refused `layout_language` at the request, naming both tags, before anything is queued                                                                     |
 | **PUB-016** | A footnote is set as a Typst footnote at its anchor; a cell-anchored footnote sits in its cell, a table-anchored one at the caption. The regression corpus holds the spike's footnote cases                                                                                                                                                                                           |
 | **PUB-021** | Headings come from outline nodes alone and are bookmarked, so the PDF's bookmarks are the outline with its numbers                                                                                                                                                                                                                                                                    |
-| **PUB-096** | A cross-reference in a paragraph's text - running text, a list's item, a quotation, a table's cell, a footnote's text - is an internal link to its target, and one in a caption, a title, a term, an attribution, a table's note or a header row is text (structure.md, XR-D). Built by cross-references 2 and read back from the PDF                                                 |
+| **PUB-096** | A cross-reference in a paragraph's text - running text, a list's item, a quotation, a table's body cell, a footnote's text - is an internal link to its target, and one in a caption, a title, a term, an attribution, a table's note or a header row is text (structure.md, XR-D). Built by cross-references 2 and read back from the PDF                                            |
 | **PUB-032** | A header row is one `table.header` and a header column's cells are `pdf.header-cell(scope: "row")` under `--features a11y-extras`, each a `TH` whose scope veraPDF checks - measured under [Tables](#tables)                                                                                                                                                                          |
 | **PUB-033** | Compose resolves each figure's alternative text - its own, decorative, or inherited from the asset version's default - and a figure with none fails `alternative_missing`, naming the occurrence and block                                                                                                                                                                            |
 | **PUB-034** | The published document carries the document's language, each occurrence's base language where it differs and each `language` mark; the template sets `text(lang)` for each, and the Word writer sets `w:lang` ([word-output.md](word-output.md))                                                                                                                                      |
@@ -124,6 +124,7 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **TAB-040** | Header rows are one `table.header(repeat: true)`: they repeat on every page the table reaches and stay one header row in the structure tree - measured; Word's `w:tblHeader` both repeats and marks them                                                                                                                                                                              |
 | **AST-014** | `assemble` resolves a figure's alternative text before the engine runs: `inherited` reads the asset version's default, and a figure whose asset version has none, and which neither carries its own nor is decorative, fails `alternative_missing`, naming it - measured, the engine would refuse the document without saying which figure                                            |
 | **TAB-049** | Header rows are `TH`s of a column in the PDF and `w:tblHeader` rows in Word; a header column's cells are `pdf.header-cell(scope: "row")` `TH`s in the PDF - measured - and in Word, which has no header column, the publication's report names each table whose header column it could not mark (word-output.md)                                                                      |
+| **TAB-050** | A table is one `Table` in the structure tree, a `TR` for each row in order and `TH`s for its headers, and set with `breakable: true` it breaks across pages as that one `Table` - measured under [Tables](#tables)                                                                                                                                                                    |
 
 **PUB-090 is not claimed. Measured, in the worker's suite (the first publishing plan's task 1):** the
 nine-level regression case passes every veraPDF PDF/UA-1 machine rule - 106 rules, 0 failed - and the
@@ -147,7 +148,7 @@ described under [Verification](#verification).
 
 ## What this document does not own
 
-Fifty-three claims. What is left out is either answered only in part, answered with another design,
+Fifty-four claims. What is left out is either answered only in part, answered with another design,
 or not T1's.
 
 | Left unclaimed                       | Why                                                                                                                                                                                                                                                    |
@@ -437,7 +438,7 @@ and sixty body rows - long enough to cross a page.
 | The table in a `figure` with a caption                                           | **A `Caption` inside the `Table`**, its first child, which is what makes the caption programmatic (TAB-039)              |
 | The caption set above the table, `figure.caption(position: top)`                 | The same: still the `Table`'s first child. veraPDF passes                                                                |
 | A table in a `figure`, by default                                                | **Never breaks**: a figure is unbreakable, so the whole table moved to the next page, and a longer one would overflow it |
-| The same with `show figure.where(kind: table): set block(breakable: true)`       | Breaks across pages, one `Table` in the tree (TAB-041)                                                                   |
+| The same with `show figure.where(kind: table): set block(breakable: true)`       | Breaks across pages, one `Table` in the tree (TAB-050)                                                                   |
 
 Three of those change what the template must do, and one changes what the engine is run with:
 
@@ -500,18 +501,18 @@ no way to mark a header column**, which is why TAB-031 was challenged and supers
 ### What the TAB claims rest on
 
 TAB-039, TAB-040 and TAB-049 are claimed above for the PDF, as measured here, and for Word as
-word-output.md designs it. PUB-032 - header cells associated with what they describe - is claimed for
+word-output.md designs it. TAB-050 is claimed above for the tagged PDF, as measured here. PUB-032 - header cells associated with what they describe - is claimed for
 the PDF, where both header rows and header columns are `TH`s with a scope veraPDF checks.
 
 Not claimed, and why:
 
-| Requirement | Why                                                                                                                                                                                                                                                   |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TAB-031     | Superseded by TAB-049 (decision T-G): it asked for header cells associated "in every output", and Word cannot mark a header column. TAB-049 is claimed above                                                                                          |
-| TAB-032     | How a table breaks follows its table style (STY-013), which themes.md claims with it; since themes 2 a table repeats its header, keeps its rows whole and labels each page it continues onto as its style says, and themes 2's worker test cites it   |
-| TAB-034     | A caption is required at publish, as above. But "numbered by the outline" is STR-023's, which issue #129 reopens for an explicitly unnumbered table, so TAB-034 is claimed only once #129 is decided                                                  |
-| TAB-041     | Its first half - a table's role and reading order in tagged output, and one table across a page break - is measured above. Its second is about a table "rotated, scaled or split by TAB-033", which is T2's and undesigned, so the claim waits for it |
-| PUB-017     | The same as TAB-032, from publishing's side                                                                                                                                                                                                           |
+| Requirement | Why                                                                                                                                                                                                                                                                                 |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TAB-031     | Superseded by TAB-049 (decision T-G): it asked for header cells associated "in every output", and Word cannot mark a header column. TAB-049 is claimed above                                                                                                                        |
+| TAB-032     | How a table breaks follows its table style (STY-013), which themes.md claims with it; since themes 2 a table repeats its header, keeps its rows whole and labels each page it continues onto as its style says, and themes 2's worker test cites it                                 |
+| TAB-034     | A caption is required at publish, as above. But "numbered by the outline" is STR-023's, which issue #129 reopens for an explicitly unnumbered table, so TAB-034 is claimed only once #129 is decided                                                                                |
+| TAB-051     | TAB-041 was split: its first half, TAB-050 - a table's role and reading order in tagged output, and one table across a page break - is measured above and claimed. TAB-051, one table when "rotated, scaled or split by TAB-033", is T2's and undesigned, so its claim waits for it |
+| PUB-017     | The same as TAB-032, from publishing's side                                                                                                                                                                                                                                         |
 
 ### Decisions for Ken
 

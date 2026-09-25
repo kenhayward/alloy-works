@@ -70,6 +70,9 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1449);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 434, from 429: the T1 audit's review. Designs that already answered a split row's T1 half in
+    // their own words claim it: structure.md STR-068 and STR-065, component-editor.md CNT-164,
+    // metadata.md MET-038 and publishing.md TAB-050.
     // 429, from 430: the T1 audit against the code. content-model.md stops claiming CNT-055 and
     // CNT-060, whose T1 halves, CNT-166 and CNT-167, it answers only in part (the editor's display and
     // the publish failing; Word's footnotes), and names both beside its table; publishing.md claims
@@ -168,7 +171,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(429);
+    ).toBe(434);
   });
 });
 
@@ -452,10 +455,12 @@ describe('the citations in the committed model', () => {
   // 317, from 307 (2026-09-25): the T1 audit against the code cites CNT-125, CNT-025, CNT-028,
   // CNT-037, AST-012, IAM-007, IAM-041 and IAM-039 on tests that already demonstrated them, PUB-096 on
   // apps/worker's references.test.ts, where a reference in running text, a list's item, a quotation, a
-  // table's cell and a footnote's text is read back as a link, and STR-067 beside STR-003 in
+  // table's body cell and a footnote's text is read back as a link, and STR-067 beside STR-003 in
   // packages/db's documents.test.ts.
+  // 316, from 317 (2026-09-25): the T1 audit's review takes IAM-039 off apps/service's
+  // session-routes.test.ts until its wording is ruled on.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(317);
+    expect(model.citations).toHaveLength(316);
   });
 
   it('cites no identifier the corpus does not hold', () => {

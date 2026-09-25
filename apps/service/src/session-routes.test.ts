@@ -79,7 +79,7 @@ describe('a session', () => {
     expect(me.json()).toMatchObject({ code: 'unauthenticated' });
   });
 
-  it('IAM-039 ends on signing out, and the same cookie is refused from then on', async () => {
+  it('ends on signing out, and the same cookie is refused from then on', async () => {
     const cookie = await signIn(app, HOST, 'grace', idp.issuer);
     const out = await app.inject({
       method: 'POST',

@@ -1227,7 +1227,7 @@
     {
       "id": "AST-016",
       "area": "AST",
-      "statement": "Replacing an asset must create a new version rather than overwriting it (**VER-011**)",
+      "statement": "Replacing an asset must create a new version rather than overwriting it (**VER-056**)",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
@@ -2973,7 +2973,7 @@
     {
       "id": "COL-002",
       "area": "COL",
-      "statement": "Presence must show what each person is doing: reading, reviewing or editing (**CNT-104**)",
+      "statement": "Presence must show what each person is doing: reading, reviewing or editing (**CNT-154**, **CNT-155**)",
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
@@ -4791,7 +4791,7 @@
     {
       "id": "IAM-066",
       "area": "IAM",
-      "statement": "IAM-005's list must be read as examples of one rule: every second copy, derived representation or outbound payload of tenant content must be tenant-scoped and permissioned like the content it derives from. That includes search indexes, caches, embeddings and vectors, asset derivatives, export artifacts, notification messages and digests, webhook payloads, audit exports and backups, and every path must be covered by a test like IAM-004's",
+      "statement": "The lists in IAM-075, IAM-076 and IAM-077 must be read as examples of one rule: every second copy, derived representation or outbound payload of tenant content must be tenant-scoped and permissioned like the content it derives from. That includes search indexes, caches, embeddings and vectors, asset derivatives, export artifacts, notification messages and digests, webhook payloads, audit exports and backups, and every path must be covered by a test like IAM-004's",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
@@ -5007,7 +5007,7 @@
     {
       "id": "IAM-068",
       "area": "IAM",
-      "statement": "An organisation (IAM-052) must have administrators of its own, and organisation-level acts - creating a tenant, suspending one, changing the identity-provider configuration the organisation shares - must be permissioned through roles and audited into both the organisation's record and the affected tenant's own log",
+      "statement": "An organisation (IAM-078) must have administrators of its own, and organisation-level acts - creating a tenant, suspending one, changing the identity-provider configuration the organisation shares - must be permissioned through roles and audited into both the organisation's record and the affected tenant's own log",
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
@@ -5160,7 +5160,7 @@
     {
       "id": "IAM-023",
       "area": "IAM",
-      "statement": "The modes of access in CNT-104 must derive from these permissions, so that a mode a user cannot have is a mode they are never offered",
+      "statement": "The modes of access in CNT-154 and CNT-155 must derive from these permissions, so that a mode a user cannot have is a mode they are never offered",
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
@@ -5808,7 +5808,7 @@
     {
       "id": "IMP-044",
       "area": "IMP",
-      "statement": "An export artifact must itself be tenant-scoped and permissioned as the tenant's content, must be expirable or deletable, and its download must be audited (**IAM-005**, **ADM**)",
+      "statement": "An export artifact must itself be tenant-scoped and permissioned as the tenant's content, must be expirable or deletable, and its download must be audited (**IAM-075**, **ADM**)",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
@@ -5889,7 +5889,7 @@
     {
       "id": "LIB-004",
       "area": "LIB",
-      "statement": "Records must be versioned (**VER-011**), and a baseline must pin the versions it used",
+      "statement": "Records must be versioned (**VER-056**), and a baseline must pin the versions it used",
       "tranche": "T3",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
@@ -6609,7 +6609,7 @@
     {
       "id": "LIF-038",
       "area": "LIF",
-      "statement": "Passing a component's gate must designate a component revision (LIF-013), and a document must be able to reference a component at **its latest approved revision** as well as pinned or floating at latest (**REU-050**, **STR-058**, **CNT-141**)",
+      "statement": "Passing a component's gate must designate a component revision (LIF-013), and a document must be able to reference a component at **its latest approved revision** as well as pinned or floating at latest (**REU-050**, **STR-058**, **CNT-162**, **CNT-163**)",
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
@@ -6636,7 +6636,7 @@
     {
       "id": "LIF-041",
       "area": "LIF",
-      "statement": "Where a newer revision of a component is approved, every document referencing its latest approved revision must be able to see that the reference has moved before a publish carries it (**CNT-108**, **CNT-109**, **CNT-141**)",
+      "statement": "Where a newer revision of a component is approved, every document referencing its latest approved revision must be able to see that the reference has moved before a publish carries it (**CNT-159**, **CNT-161**, **CNT-163**)",
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
@@ -6861,7 +6861,7 @@
     {
       "id": "LIF-031",
       "area": "LIF",
-      "statement": "Audit entries must be tenant-scoped like everything else (**IAM-005**)",
+      "statement": "Audit entries must be tenant-scoped like everything else (**IAM-077**)",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
@@ -7131,7 +7131,7 @@
     {
       "id": "LOC-012",
       "area": "LOC",
-      "statement": "A variant must be versioned like any other content (**VER-011**)",
+      "statement": "A variant must be versioned like any other content (**VER-056**)",
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
@@ -8004,7 +8004,7 @@
     {
       "id": "PUB-096",
       "area": "PUB",
-      "statement": "A cross-reference in a paragraph's text - running text, a list, a quotation, a table's cell, a footnote's text - must be an internal link to its target",
+      "statement": "A cross-reference in a paragraph's text - running text, a list, a quotation, a table's body cell, a footnote's text - must be an internal link to its target",
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
@@ -9696,7 +9696,7 @@
     {
       "id": "SCH-008",
       "area": "SCH",
-      "statement": "An index must be tenant-scoped (**IAM-005**), and a query must be incapable of addressing another tenant's index",
+      "statement": "An index must be tenant-scoped (**IAM-075**), and a query must be incapable of addressing another tenant's index",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
@@ -10164,7 +10164,7 @@
     {
       "id": "SCH-067",
       "area": "SCH",
-      "statement": "New and changed content must become findable by meaning (**SCH-013**) within a stated interval, as a budget rather than a hope",
+      "statement": "New and changed content must become findable by meaning (**SCH-013**) within a stated interval - provisionally p95 within 60 seconds, never above five minutes - as a budget rather than a hope",
       "tranche": "T5",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
@@ -12054,7 +12054,7 @@
     {
       "id": "TPL-046",
       "area": "TPL",
-      "statement": "Where a template needs no prompt library or no query set, it must bind a declared empty default rather than nothing, so that TPL-052 holds and TPL-004 always has something to resolve (**TPL-Q01**)",
+      "statement": "Where a template needs no prompt library or no query set, it must bind a declared empty default rather than nothing, so that TPL-060 and TPL-061 hold and TPL-004 always has something to resolve (**TPL-Q01**)",
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
@@ -12486,7 +12486,7 @@
     {
       "id": "TPL-056",
       "area": "TPL",
-      "statement": "Instantiation must record on the document the version of each metadata schema and field it was created against. An assignment takes a schema's latest version (**MET-035**), so the template version TPL-025 records no longer decides which fields apply",
+      "statement": "Instantiation must record on the document the version of each metadata schema and field it was created against. An assignment takes a schema's latest version (**MET-040**), so the template version TPL-025 records no longer decides which fields apply",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
@@ -14920,6 +14920,10 @@
           "howItIsMet": "Every command is in a keymap and in the toolbar; the toolbar is a single tab stop with arrow-key movement, and `F6` moves between the regions of the view"
         },
         {
+          "id": "CNT-164",
+          "howItIsMet": "Emphasis, strong, underline, subscript, superscript, inline code and a quoted phrase are each applied and removed from the toolbar and by a shortcut in the keymap ([What an author can do with each thing in the model](#what-an-author-can-do-with-each-thing-in-the-model)); nothing on the surface chooses a typeface, a size or a colour, and the model has no member to hold one (content-model.md, CNT-008)"
+        },
+        {
           "id": "CNT-048",
           "howItIsMet": "An equation's alternative is generated from its MathML wherever a generator is available - when an equation is made or changed, in the component's language where the generator speaks it (publishing.md, EQ-D) - stored as `alttext`, and always editable"
         },
@@ -15332,6 +15336,10 @@
         {
           "id": "MET-022",
           "howItIsMet": "Every failure is `{ code, field, rule, schemas, detail }`, with a stable `code`; the caller adds the artifact. A rule a schema imposed - required, fixed - lists every schema that imposed it, since more than one can. A requirement an assignment imposed names the schema assigned"
+        },
+        {
+          "id": "MET-038",
+          "howItIsMet": "`checkUserValues` checks that every `user` value names a principal of this tenant, over a tenant-scoped lookup of its directory, and the service runs it on every iteration it accepts and refuses on a failure, `metadata.user` ([User values](#user-values))"
         }
       ]
     },
@@ -15404,7 +15412,7 @@
         },
         {
           "id": "PUB-096",
-          "howItIsMet": "A cross-reference in a paragraph's text - running text, a list's item, a quotation, a table's cell, a footnote's text - is an internal link to its target, and one in a caption, a title, a term, an attribution, a table's note or a header row is text (structure.md, XR-D). Built by cross-references 2 and read back from the PDF"
+          "howItIsMet": "A cross-reference in a paragraph's text - running text, a list's item, a quotation, a table's body cell, a footnote's text - is an internal link to its target, and one in a caption, a title, a term, an attribution, a table's note or a header row is text (structure.md, XR-D). Built by cross-references 2 and read back from the PDF"
         },
         {
           "id": "PUB-032",
@@ -15549,6 +15557,10 @@
         {
           "id": "TAB-049",
           "howItIsMet": "Header rows are `TH`s of a column in the PDF and `w:tblHeader` rows in Word; a header column's cells are `pdf.header-cell(scope: \"row\")` `TH`s in the PDF - measured - and in Word, which has no header column, the publication's report names each table whose header column it could not mark (word-output.md)"
+        },
+        {
+          "id": "TAB-050",
+          "howItIsMet": "A table is one `Table` in the structure tree, a `TR` for each row in order and `TH`s for its headers, and set with `breakable: true` it breaks across pages as that one `Table` - measured under [Tables](#tables)"
         }
       ]
     },
@@ -16175,6 +16187,14 @@
         {
           "id": "IAM-073",
           "howItIsMet": "Numbering never reads a component the reader may not read (`numberingInputs`), so its occurrence is unknown and `number` answers `null` for each number it could have moved: every counter in its matter, until that counter next restarts, whatever it holds ([Who is shown what](#who-is-shown-what)). A section number depends on the outline alone"
+        },
+        {
+          "id": "STR-068",
+          "howItIsMet": "A reference's target is a closed union - `node` for an outline node, `block` and `component` for a caption-bearing block or a footnote - each naming its target by identifier, never by number or position; a component may hold a `node` target (XR-B), so body text can point at a section"
+        },
+        {
+          "id": "STR-065",
+          "howItIsMet": "The contents panel is the outline, rendered: it renders the outline every operation returns rather than a copy of one, so it updates with every act the author makes, and clicking a node takes the reader to it ([Navigation](#navigation))"
         }
       ]
     },
@@ -16647,12 +16667,6 @@
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
       "line": 416,
-      "kind": "title"
-    },
-    {
-      "id": "IAM-039",
-      "file": "apps/service/src/session-routes.test.ts",
-      "line": 82,
       "kind": "title"
     },
     {

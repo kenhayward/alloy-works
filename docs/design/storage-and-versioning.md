@@ -67,6 +67,9 @@ designation applied to a row in that chain rather than a second history beside i
 | **MET-016** | Values are held in their own column beside `content`, and the content document's closed root (CNT-146) refuses a member that is not its own                                                                                                                                        |
 | **VER-042** | Every version row records a version digest - SHA-256 over the canonical serialisation of the version's substance - which anybody holding the row can recompute (ADR-0024)                                                                                                          |
 
+**VER-057, query definitions, is met by the same mechanism** - one more `artifact_kind` beside those
+VER-056 names - and is claimed when DAT's T2 design lands, which says what a query definition holds.
+
 **A gap beside VER-008 and VER-042: a definition can be recorded against a version already cut.**
 `version_definition` takes inserts only, on the same terms as the version row, but an insert naming a
 `version_id` that an earlier transaction committed is not refused, so what an old version records can
