@@ -5,10 +5,14 @@ import type { WordInput } from '../publishing/assemble.js';
 import type { PageFormat, PublishingFormat, SlotPart } from '../publishing/layout.js';
 import { parseOutputReport, type OutputReport } from '../publishing/outputs.js';
 import type {
+  PublishedBlock,
   PublishedDocument,
   PublishedInline,
   PublishedLanguage,
+  PublishedList,
   PublishedNode,
+  PublishedPreformatted,
+  PublishedQuotation,
   PublishedTitleRun,
 } from '../publishing/published.js';
 import { sectionNumbers, type NumberingTable } from '../structure/numbering.js';
@@ -17,6 +21,7 @@ import {
   headingDepths,
   hex,
   markStyleId,
+  panelInset,
   projectStylesXml,
   rFonts,
   size,
@@ -28,8 +33,19 @@ import type { ResolvedParagraphStyle, ResolvedTheme } from '../theme/read.js';
 import { runFormat, wordRun, type WordRun } from '../theme/runs.js';
 import type { Role, StyledMark, Typeface } from '../theme/schema.js';
 
+import { faceAdvances, type FaceAdvances } from './advances.js';
 import { fontKey, obfuscateFont } from './fonts.js';
+import {
+  BODY_INDENT,
+  DEFINITION_HANG,
+  LIST_INDENT,
+  listNumberingXml,
+  markerWidth,
+  type WordList,
+} from './lists.js';
 import { HEADING_LISTS, numberingXml, WORD_FORMATS, WORD_LEVELS } from './numbering.js';
+import { panelsApart } from './panels.js';
+import { spacingOverrides, type SpacingOverride } from './spacing.js';
 
 /**
  * **The Word writer** (Word 1, rulings R6 to R10 and R13; docs/design/word-output.md, "How a
@@ -43,11 +59,12 @@ import { HEADING_LISTS, numberingXml, WORD_FORMATS, WORD_LEVELS } from './number
  * time on every zip entry, the parts in a fixed order, relationships numbered in the order they are
  * met, and each embedded face's key taken from its own hash (`fontKey`).
  *
- * This slice writes paragraphs, headings, marks, links and languages, and the page around them: the
- * cover, the notice, the contents and the running heads and feet. `assemble` refuses equations,
- * footnotes and cross-references by name for Word (`word_not_yet`); lists, quotations, preformatted
- * text, tables, figures and images reach it from Word 2's first task, and are written by the tasks
- * after it, so until then meeting one here throws, as meeting anything else does.
+ * Word 1 wrote paragraphs, headings, marks, links and languages, and the page around them: the
+ * cover, the notice, the contents and the running heads and feet. Word 2 writes lists, quotations and
+ * preformatted text, each stood in and spaced as the PDF sets it (rulings R4 to R6). `assemble`
+ * refuses equations, footnotes and cross-references by name for Word (`word_not_yet`); tables,
+ * figures and images reach it from Word 2's first task, and are written by the tasks after this one,
+ * so until then meeting one here throws, as meeting anything else does.
  */
 
 /** What the job records as the output's producer version (R12). */
@@ -127,15 +144,75 @@ interface Passage {
 /** A paragraph before it is written: its style, what it holds, and what is stated on it directly. */
 interface Paragraph {
   readonly style: string;
+  /** The theme's style its spaces are read from: its own, or the one a style of the writer's is based on. */
+  readonly theme: string;
   readonly content: string;
-  readonly numbering?: string;
+  /** Its list and level, where it carries a heading's or an item's number (Word 2, ruling R4). */
+  numbering?: string;
   readonly tabs?: string;
   readonly bidi?: boolean;
+  /** Its indents, where a container stands it in from its style's or a panel is kept apart (Word 2). */
+  indent?: Indent;
+  /** The panel it belongs to, where its lines are one block's (Word 2, ruling R5): else its own. */
+  readonly panel?: object;
   /** An appendix's heading where each starts a page, after the first, which its section starts. */
   readonly pageBreakBefore?: boolean;
   /** The first paragraph of a section writes no space before, which Word keeps there (M16). */
   firstOfSection?: boolean;
+  /** The space the PDF puts on each side of it, where a container decides it (Word 2, ruling R6). */
+  wanted?: { before?: number; after?: number };
+  /** What it states over its style for Word to space it so (`spacingOverrides`). */
+  spacing?: SpacingOverride;
 }
+
+/**
+ * Where blocks stand (Word 2): the place template 13 sets them in - running text, a list's item or a
+ * quotation - how far in from the text block's start and end edges their containers stand them, in
+ * points, and how many lists, and unordered lists, they stand in.
+ */
+interface Place {
+  readonly at: 'text' | 'listItem' | 'quotation';
+  readonly start: number;
+  readonly end: number;
+  readonly lists: number;
+  readonly bullets: number;
+}
+
+const TOP_LEVEL: Place = { at: 'text', start: 0, end: 0, lists: 0, bullets: 0 };
+
+/**
+ * A block as Word paragraphs, and how it meets its neighbours, as template 13's `ends` and `container`
+ * say: the theme's style whose space before its top takes and whose space after its foot gives, and
+ * whether it holds blocks of its own - a list or a quotation - across whose edge contextual spacing
+ * never reaches.
+ */
+interface WrittenBlock {
+  readonly paragraphs: Paragraph[];
+  readonly top: string;
+  readonly bottom: string;
+  readonly container: boolean;
+}
+
+/** The last block a flow wrote - or what it follows, before it writes any - which the next is spaced from. */
+interface Last {
+  readonly paragraph: Paragraph;
+  readonly style: string;
+  readonly container: boolean;
+}
+
+/**
+ * A paragraph's `w:ind`, in twips: its start and end, and either how far its first line hangs - an
+ * item's, from its number - or how far it stands in.
+ */
+interface Indent {
+  readonly left: number;
+  readonly right: number;
+  readonly hanging?: number;
+  readonly firstLine?: number;
+}
+
+/** The first `w:numId` a list takes: after the headings' (Word 2, ruling R4). */
+const FIRST_LIST = Math.max(...Object.values(HEADING_LISTS)) + 1;
 
 /** Which of a section's pages its header and footer parts are for. */
 interface Furniture {
@@ -156,7 +233,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   const { document, word } = input;
   const theme = word.theme;
   const format = word.format;
-  const writer = new Writer(document, theme);
+  const writer = new Writer(document, theme, input.faces);
 
   // The page's furniture: the cover's header and footer, the running ones, and the contents' where its
   // pages must leave the section out, each part named in the order it is made.
@@ -266,6 +343,41 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   const partIds = new Map(
     headerParts.parts.map((part) => [part.name, relationships.add(part.kind, part.name)]),
   );
+  // The spaces a container decides, stated over the styles where Word would read them otherwise
+  // (Word 2, ruling R6): over the whole body in order, since Word asks a paragraph's neighbours across
+  // a section's break as it does within one.
+  const inOrder = sections.flatMap((section) => section.paragraphs);
+  spacingOverrides(
+    inOrder.map((paragraph) => {
+      const own = writer.properties(paragraph.theme);
+      return {
+        style: paragraph.style,
+        own: { before: own.spaceBefore, after: own.spaceAfter, contextual: own.contextualSpacing },
+        wanted: paragraph.wanted ?? {},
+      };
+    }),
+  ).forEach((override, index) => {
+    inOrder[index]!.spacing = override;
+  });
+  // Each panel its own, as the PDF's are (Word 2, ruling R5): Word joins paragraphs of one border
+  // and one indent into one panel.
+  panelsApart(
+    inOrder.map((paragraph) => {
+      const own = writer.properties(paragraph.theme);
+      const indent = paragraph.indent ?? writer.ownIndent(paragraph.theme);
+      return {
+        look: own.background === 'none' ? null : `${own.background} ${own.padding}`,
+        left: indent.left,
+        right: indent.right,
+        panel: paragraph.panel ?? paragraph,
+      };
+    }),
+  ).forEach((moved, index) => {
+    const paragraph = inOrder[index]!;
+    if (!moved) return;
+    const indent = paragraph.indent ?? writer.ownIndent(paragraph.theme);
+    paragraph.indent = { ...indent, left: indent.left + 1, right: indent.right + 1 };
+  });
   const body = sections
     .map((section, index) => {
       const properties = sectionProperties(section, format, partIds);
@@ -343,7 +455,10 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       },
     ),
   );
-  put('word/numbering.xml', numberingXml(word.scheme, headingLinks(theme)));
+  put(
+    'word/numbering.xml',
+    numberingXml(word.scheme, headingLinks(theme), writer.lists.map(listNumberingXml)),
+  );
   put('word/settings.xml', settingsXml(document, theme, format));
   put('word/fontTable.xml', fonts.table);
   if (fonts.files.length > 0) {
@@ -379,13 +494,18 @@ class Writer {
   readonly used = new Map<string, Set<string>>();
   /** Each link's target, with its relationship's identifier, in the order the text meets them. */
   readonly links = new Map<string, string>();
+  /** Each list Word numbers, in the order the text meets them (Word 2, ruling R4). */
+  readonly lists: WordList[] = [];
   readonly document: Passage;
   readonly words: Passage;
   private readonly headings: ReadonlyMap<number, HeadingStyle>;
+  /** Each face file's advances, read once, by its hash. */
+  private readonly advances = new Map<string, FaceAdvances>();
 
   constructor(
     private readonly published: PublishedDocument,
     private readonly theme: ResolvedTheme,
+    private readonly faces: ReadonlyMap<string, Uint8Array>,
   ) {
     this.document = {
       tag: wordLanguage(published.language),
@@ -405,13 +525,18 @@ class Writer {
   paragraph(
     styleId: string,
     content: string,
-    stated: Omit<Paragraph, 'style' | 'content'> = {},
+    stated: Omit<Paragraph, 'style' | 'theme' | 'content'> = {},
     wordStyle: string = styleId,
   ): Paragraph & { readonly xml: string } {
     const style = this.style(styleId);
     this.use(style.typeface, style.properties.bold, style.properties.italic);
-    const paragraph = { style: wordStyle, content, ...stated };
+    const paragraph = { style: wordStyle, theme: styleId, content, ...stated };
     return { ...paragraph, xml: paragraphXml(paragraph) };
+  }
+
+  /** A theme's paragraph style's properties, by its identifier. */
+  properties(styleId: string): ResolvedParagraphStyle['properties'] {
+    return this.style(styleId).properties;
   }
 
   /** Plain words as one run, in the paragraph's style, where they are set. */
@@ -444,15 +569,340 @@ class Writer {
       { ...(numbering === undefined ? {} : { numbering }), bidi: passage.rtl },
       style.id,
     );
-    const blocks = node.blocks.map((block) => {
-      if (block.type !== 'paragraph') {
-        throw new Error(`Word 1 does not write a ${block.type}, which assemble refuses for Word`);
-      }
-      return this.paragraph(block.style, this.inlineRuns(block.runs, block.style, passage), {
-        bidi: passage.rtl,
-      });
+    const blocks = this.flow(node.blocks, TOP_LEVEL, passage, {
+      paragraph: heading,
+      style: style.theme,
+      container: false,
     });
-    return [heading, ...blocks, ...node.children.flatMap((child) => this.node(child))];
+    // What follows is a heading, spaced from the style the last block ends in, as template 13's
+    // `node` spaces it from `last-of`: an attribution's, a list item's.
+    const last = blocks[blocks.length - 1];
+    if (last !== undefined) {
+      last.paragraph.wanted = {
+        ...last.paragraph.wanted,
+        after: this.properties(last.style).spaceAfter,
+      };
+    }
+    return [
+      heading,
+      ...blocks.flatMap((block) => block.paragraphs),
+      ...node.children.flatMap((child) => this.node(child)),
+    ];
+  }
+
+  /**
+   * **Blocks one after another, as template 13's `block-of` sets a flow** (Word 2, ruling R6): each
+   * spaced from the one before - or from `above`, the heading they follow - by what the PDF puts
+   * between them, which `spacingOverrides` then holds Word to. Two paragraphs of one flow stand as
+   * their styles say, contextual spacing and all; a container, or anything beside one, stands apart by
+   * both spaces, whatever the styles ask. Each block written, with its last paragraph.
+   */
+  private flow(
+    blocks: readonly PublishedBlock[],
+    place: Place,
+    passage: Passage,
+    above: Last | null = null,
+  ): (WrittenBlock & Last)[] {
+    const written: (WrittenBlock & Last)[] = [];
+    let last = above;
+    for (const block of blocks) {
+      const each = this.block(block, place, passage);
+      const top = each.paragraphs[0];
+      if (top === undefined) continue;
+      if (last !== null) {
+        this.space(last.paragraph, last.style, top, each.top, !last.container && !each.container);
+      }
+      last = {
+        paragraph: each.paragraphs[each.paragraphs.length - 1]!,
+        style: each.bottom,
+        container: each.container,
+      };
+      written.push({ ...each, ...last });
+    }
+    return written;
+  }
+
+  /**
+   * The space between two blocks, template 13's `gap`: the first's style's space after and the
+   * second's space before, or neither where both are one style asking for contextual spacing within
+   * one flow (`between`).
+   */
+  private space(
+    above: Paragraph,
+    aboveStyle: string,
+    below: Paragraph,
+    belowStyle: string,
+    within: boolean,
+  ) {
+    const a = this.properties(aboveStyle);
+    const b = this.properties(belowStyle);
+    const close = within && aboveStyle === belowStyle && a.contextualSpacing && b.contextualSpacing;
+    above.wanted = { ...above.wanted, after: close ? 0 : a.spaceAfter };
+    below.wanted = { ...below.wanted, before: close ? 0 : b.spaceBefore };
+  }
+
+  /** Two paragraphs the PDF sets a line apart and no more: two items, two lines of one block. */
+  private adjoin(above: Paragraph, below: Paragraph) {
+    above.wanted = { ...above.wanted, after: 0 };
+    below.wanted = { ...below.wanted, before: 0 };
+  }
+
+  private block(block: PublishedBlock, place: Place, passage: Passage): WrittenBlock {
+    switch (block.type) {
+      case 'paragraph':
+        return {
+          paragraphs: [
+            this.paragraph(block.style, this.inlineRuns(block.runs, block.style, passage), {
+              bidi: passage.rtl,
+              ...this.indented(block.style, place),
+            }),
+          ],
+          top: block.style,
+          bottom: block.style,
+          container: false,
+        };
+      case 'list':
+        return this.list(block, place, passage);
+      case 'blockquote':
+        return this.quotation(block, place, passage);
+      case 'preformatted':
+        return this.preformatted(block, place, passage);
+      default:
+        // A table and a figure are Word 2's later tasks'; a block equation Word 4's and a marker, which
+        // only a cross-reference makes, Word 3's: `assemble` refuses each for Word until then.
+        throw new Error(`The Word writer does not write a ${block.type} yet`);
+    }
+  }
+
+  /**
+   * **A list** (Word 2, ruling R4; `lists.ts`): an ordered or unordered one numbered by a definition
+   * of its own, at the level of how many lists it stands in; each item's first paragraph carrying its
+   * number, standing where the PDF's engine puts the item, its number ending where the engine ends its
+   * marker, and its later paragraphs standing where the first does. An item that opens with anything
+   * but a paragraph - a nested list, a quotation, preformatted text - or holds nothing carries its
+   * number on an empty paragraph of its own, since a Word paragraph carries one number and a panel
+   * would take it inside: where the PDF sets two markers on one line, or a marker beside a panel, Word
+   * takes a line more. A definition list is each item's term, in the list item's style and bold as
+   * the engine sets a term, and its definitions hung beneath it; an item with no term yet has none, as
+   * the engine prints none. Items stand a line apart, as the engine stands them, whatever the style
+   * would put between them, and a term a line above its definition, where the engine sets it an em.
+   */
+  private list(list: PublishedList, place: Place, passage: Passage): WrittenBlock {
+    if (place.lists >= WORD_LEVELS) {
+      // `assemble` refuses a list nested past Word's ninth level for Word (`list_too_deep`).
+      throw new Error('A list nested past the ninth level');
+    }
+    const itemStyle = this.theme.places.listItem;
+    const item = this.style(itemStyle);
+    const { bold, italic, colour } = item.properties;
+    const points = item.properties.size;
+    const inner = (start: number, unordered: boolean): Place => ({
+      at: 'listItem',
+      start,
+      end: place.end,
+      lists: place.lists + 1,
+      bullets: place.bullets + (unordered ? 1 : 0),
+    });
+    let numbered: WordList | null = null;
+    let within: Place;
+    if (list.kind === 'definition') {
+      within = inner(place.start + DEFINITION_HANG * points, false);
+    } else {
+      const width = markerWidth(list, place.bullets, this.advancesOf(item), points);
+      const gap = BODY_INDENT * points;
+      this.use(item.typeface, bold, italic);
+      numbered = {
+        id: FIRST_LIST + this.lists.length,
+        level: place.lists,
+        kind: list.kind,
+        format: list.format ?? 'decimal',
+        start: list.start ?? 1,
+        bullets: place.bullets,
+        marker: place.start + LIST_INDENT + width,
+        step: LIST_INDENT + width + gap,
+        gap,
+        markerProperties:
+          rFonts(item.typeface) +
+          toggle('b', bold) +
+          toggle('i', italic) +
+          `<w:color w:val="${hex(colour)}"/>` +
+          size(points),
+      };
+      this.lists.push(numbered);
+      within = inner(numbered.marker + gap, list.kind === 'unordered');
+    }
+    const paragraphs: Paragraph[] = [];
+    for (const each of list.items) {
+      const own: Paragraph[] = [];
+      if (each.term !== null) {
+        own.push(
+          this.paragraph(itemStyle, this.inlineRuns(each.term, itemStyle, passage, true), {
+            bidi: passage.rtl,
+            ...this.indented(itemStyle, place),
+          }),
+        );
+      }
+      const body = this.flow(each.blocks, within, passage).flatMap((block) => block.paragraphs);
+      const opening = body[0];
+      if (numbered !== null) {
+        const numbering =
+          `<w:numPr><w:ilvl w:val="${numbered.level}"/>` +
+          `<w:numId w:val="${numbered.id}"/></w:numPr>`;
+        const first = each.blocks[0];
+        if (opening !== undefined && first?.type === 'paragraph') {
+          opening.numbering = numbering;
+          opening.indent = this.indent(first.style, within, numbered.marker);
+        } else {
+          own.push(
+            this.paragraph(itemStyle, '', {
+              bidi: passage.rtl,
+              numbering,
+              indent: this.indent(itemStyle, within, numbered.marker),
+            }),
+          );
+        }
+      } else if (own.length === 0 && opening === undefined) {
+        // An item with neither a term nor a definition yet, kept as the engine keeps it.
+        own.push(
+          this.paragraph(itemStyle, '', { bidi: passage.rtl, ...this.indented(itemStyle, within) }),
+        );
+      }
+      // A term, or the empty paragraph carrying a number, stands a line above what follows it.
+      if (own.length > 0 && opening !== undefined) this.adjoin(own[own.length - 1]!, opening);
+      own.push(...body);
+      const previous = paragraphs[paragraphs.length - 1];
+      if (previous !== undefined) this.adjoin(previous, own[0]!);
+      paragraphs.push(...own);
+    }
+    return { paragraphs, top: itemStyle, bottom: itemStyle, container: true };
+  }
+
+  /**
+   * **A quotation** (Word 2, ruling R5): its blocks in the flow of a quotation - stood in by the
+   * quotation style's indents, which its own paragraphs, in that style, state already - and its
+   * attribution a paragraph after them in the attribution role's style, stood in as they are.
+   */
+  private quotation(quotation: PublishedQuotation, place: Place, passage: Passage): WrittenBlock {
+    const quoted = this.theme.places.quotation;
+    const { startIndent, endIndent } = this.properties(quoted);
+    const within: Place = {
+      ...place,
+      at: 'quotation',
+      start: place.start + startIndent,
+      end: place.end + endIndent,
+    };
+    const body = this.flow(quotation.blocks, within, passage);
+    const paragraphs = body.flatMap((block) => block.paragraphs);
+    if (quotation.attribution === null) {
+      return { paragraphs, top: quoted, bottom: quoted, container: true };
+    }
+    const role = this.theme.roles.attribution;
+    const attribution = this.paragraph(
+      role,
+      this.inlineRuns(quotation.attribution, role, passage),
+      { bidi: passage.rtl, ...this.indented(role, within) },
+    );
+    const last = body[body.length - 1];
+    if (last !== undefined) {
+      this.space(last.paragraph, last.style, attribution, role, !last.container);
+    }
+    return { paragraphs: [...paragraphs, attribution], top: quoted, bottom: role, container: true };
+  }
+
+  /**
+   * **Preformatted text** (Word 2, ruling R5): its label, where it has one, in the preformatted label
+   * role's style; then each line a paragraph of the preformatted role's, its spaces kept exactly -
+   * `assemble` has expanded its tabs - and the lines a line apart, as the PDF sets them in one
+   * paragraph, on the role's panel.
+   */
+  private preformatted(block: PublishedPreformatted, place: Place, passage: Passage): WrittenBlock {
+    const role = this.theme.roles.preformatted;
+    // One panel, however many lines: `panelsApart` keeps it apart from a panel beside it.
+    const panel = {};
+    const lines = block.lines.map((line) =>
+      this.paragraph(role, this.textRun(line, [], role, passage, null), {
+        bidi: passage.rtl,
+        panel,
+        ...this.indented(role, place),
+      }),
+    );
+    lines.forEach((line, index) => {
+      if (index > 0) this.adjoin(lines[index - 1]!, line);
+    });
+    if (block.label === null) {
+      return { paragraphs: lines, top: role, bottom: role, container: false };
+    }
+    const labelRole = this.theme.roles.preformattedLabel;
+    const label = this.paragraph(labelRole, this.runs(block.label, passage), {
+      bidi: passage.rtl,
+      ...this.indented(labelRole, place),
+    });
+    this.space(label, labelRole, lines[0]!, role, true);
+    return { paragraphs: [label, ...lines], top: labelRole, bottom: role, container: false };
+  }
+
+  /** A paragraph's indents where its place moves it from its style's, as `indent` gives them. */
+  private indented(styleId: string, place: Place): { indent?: Indent } {
+    const indent = this.indent(styleId, place);
+    const own = this.ownIndent(styleId);
+    return indent.left === own.left && indent.right === own.right ? {} : { indent };
+  }
+
+  /**
+   * **Where a paragraph stands** (Word 2), as template 13's `styled` stands it: its style's indents
+   * inside what its place already stands in - a quotation's own paragraphs are not given the
+   * quotation's indents twice - and a panel's padding inside those, as the projection writes it
+   * (`panelInset`). `marker`, for an item's first paragraph, is where its number ends: it hangs from
+   * there to the paragraph's start.
+   */
+  private indent(styleId: string, place: Place, marker?: number): Indent {
+    const own = this.properties(styleId);
+    const inset = panelInset(own);
+    const quotation = this.properties(this.theme.places.quotation);
+    const [startWithin, endWithin] =
+      place.at === 'quotation' ? [quotation.startIndent, quotation.endIndent] : [0, 0];
+    const start = place.start + Math.max(0, own.startIndent - startWithin) + inset;
+    const end = place.end + Math.max(0, own.endIndent - endWithin) + inset;
+    return {
+      left: twips(start),
+      right: twips(end),
+      ...(marker === undefined
+        ? { firstLine: twips(own.firstLineIndent) }
+        : { hanging: twips(start - marker) }),
+    };
+  }
+
+  /** The indents a style states, as the projection writes them. */
+  ownIndent(styleId: string): Indent {
+    const own = this.properties(styleId);
+    const inset = panelInset(own);
+    return {
+      left: twips(own.startIndent + inset),
+      right: twips(own.endIndent + inset),
+      firstLine: twips(own.firstLineIndent),
+    };
+  }
+
+  /** How a style's face sets its characters, read from the file its weight and posture are set in. */
+  private advancesOf(style: ResolvedParagraphStyle): FaceAdvances {
+    const { typeface } = style;
+    const key = fileKey(
+      style.properties.bold ? 'bold' : 'regular',
+      style.properties.italic ? 'italic' : 'normal',
+    );
+    const file =
+      typeface.files.find((each) => fileKey(each.weight, each.posture) === key) ??
+      typeface.files.find((each) => each.weight === 'regular' && each.posture === 'normal') ??
+      typeface.files[0]!;
+    let advances = this.advances.get(file.sha256);
+    if (advances === undefined) {
+      const bytes = this.faces.get(file.sha256);
+      const read = bytes === undefined ? null : faceAdvances(bytes);
+      if (read === null) throw new Error(`The face file ${file.sha256} cannot be read`);
+      advances = read;
+      this.advances.set(file.sha256, advances);
+    }
+    return advances;
   }
 
   /**
@@ -490,6 +940,7 @@ class Writer {
       this.use(style.typeface, style.properties.bold, style.properties.italic);
       const paragraph: Paragraph = {
         style: `TOC${Math.min(node.depth, WORD_LEVELS)}`,
+        theme: entryStyle,
         content,
         bidi: passage.rtl,
       };
@@ -566,7 +1017,12 @@ class Writer {
    * `w:hyperlink` to an external relationship. A quoted phrase adds nothing but its style: its text is
    * what the author wrote, marks and all.
    */
-  private inlineRuns(runs: readonly PublishedInline[], styleId: string, passage: Passage): string {
+  private inlineRuns(
+    runs: readonly PublishedInline[],
+    styleId: string,
+    passage: Passage,
+    strong = false,
+  ): string {
     let xml = '';
     let linking: string | null = null;
     for (const run of runs) {
@@ -585,7 +1041,7 @@ class Writer {
         linking = href;
       }
       const kinds = run.marks.map((mark) => mark.kind);
-      xml += this.textRun(run.text, kinds, styleId, passage, language);
+      xml += this.textRun(run.text, kinds, styleId, passage, language, strong);
     }
     if (linking !== null) xml += '</w:hyperlink>';
     return xml;
@@ -597,13 +1053,16 @@ class Writer {
     styleId: string,
     passage: Passage,
     language: PublishedLanguage | null,
+    strong = false,
   ): string {
     const style = this.style(styleId);
     const rendered = runFormat(this.theme, style, marks);
-    this.use(rendered.typeface, rendered.bold, rendered.italic);
+    this.use(rendered.typeface, rendered.bold || strong, rendered.italic);
+    // A definition list's term, which the engine sets bold whatever its style and marks say.
+    const run = wordRun(this.theme, style, marks);
     return runXml(
       text,
-      pinned(wordRun(this.theme, style, marks)) +
+      pinned(strong ? { ...run, pins: { ...run.pins, bold: true } } : run) +
         languageProperties(
           passage,
           language === null ? null : wordLanguage(language),
@@ -697,15 +1156,34 @@ function segmentsOf(
 
 /** A paragraph as Word reads it, its properties in the order CT_PPr requires. */
 function paragraphXml(paragraph: Paragraph, sectionProperties?: string): string {
+  const before = paragraph.firstOfSection === true ? 0 : paragraph.spacing?.before;
+  const after = paragraph.spacing?.after;
   const properties =
     `<w:pStyle w:val="${paragraph.style}"/>` +
     (paragraph.pageBreakBefore === true ? '<w:pageBreakBefore/>' : '') +
     (paragraph.numbering ?? '') +
     (paragraph.tabs ?? '') +
     (paragraph.bidi === true ? '<w:bidi/>' : '') +
-    (paragraph.firstOfSection === true ? '<w:spacing w:before="0"/>' : '') +
+    (before === undefined && after === undefined
+      ? ''
+      : '<w:spacing' +
+        (before === undefined ? '' : ` w:before="${twips(before)}"`) +
+        (after === undefined ? '' : ` w:after="${twips(after)}"`) +
+        '/>') +
+    (paragraph.indent === undefined ? '' : indentXml(paragraph.indent)) +
+    (paragraph.spacing?.contextual === false ? '<w:contextualSpacing w:val="0"/>' : '') +
     (sectionProperties ?? '');
   return `<w:p><w:pPr>${properties}</w:pPr>${paragraph.content}</w:p>`;
+}
+
+/** A paragraph's indents as `w:ind`. */
+function indentXml(indent: Indent): string {
+  return (
+    `<w:ind w:left="${indent.left}" w:right="${indent.right}"` +
+    (indent.hanging === undefined ? '' : ` w:hanging="${indent.hanging}"`) +
+    (indent.firstLine === undefined ? '' : ` w:firstLine="${indent.firstLine}"`) +
+    '/>'
+  );
 }
 
 /**

@@ -12,6 +12,7 @@ import type { ResolvedTheme } from '../theme/read.js';
 import type { Typeface } from '../theme/schema.js';
 import { defaultInputs, resolved, type ThemeInputs } from '../theme/theme.fixture.js';
 
+import { syntheticFace } from './face.fixture.js';
 import { fontKey, obfuscateFont } from './fonts.js';
 import { writeDocx, WORD_WRITER_VERSION } from './write.js';
 
@@ -290,17 +291,34 @@ const OCCURRENCES = new Map([
 
 const DEFAULT_THEME = resolved();
 
-/** Every file the theme names, by its hash: invented bytes, each file its own, for the writer to embed. */
+/**
+ * The advances every invented face sets its characters at, in 2048ths of an em: Liberation Serif's for
+ * the characters a list's markers are made of - a figure half an em, a full stop a quarter, a disc
+ * 0.35 - and none of its own for anything else, which takes the missing glyph's half an em.
+ */
+const ADVANCES = new Map<number, number>([
+  ...[...'0123456789'].map((digit): [number, number] => [digit.codePointAt(0)!, 1024]),
+  [0x2e, 512],
+  [0x61, 909],
+  [0x63, 909],
+  [0x64, 1024],
+  [0x69, 569],
+  [0x76, 1024],
+  [0x2022, 717],
+  [0x25e6, 727],
+  [0x25aa, 727],
+]);
+
+/**
+ * Every file the theme names, by its hash: an invented face, each file its own, for the writer to
+ * embed and to read its markers' widths from.
+ */
 function facesOf(theme: ResolvedTheme): Map<string, Uint8Array> {
   const faces = new Map<string, Uint8Array>();
   let seed = 1;
   for (const face of theme.typefaces.values()) {
     for (const file of face.files) {
-      const at = seed++;
-      faces.set(
-        file.sha256,
-        Uint8Array.from({ length: 96 }, (_, index) => (index * 31 + at * 17) % 256),
-      );
+      faces.set(file.sha256, syntheticFace(ADVANCES, { seed: seed++ }));
     }
   }
   return faces;
@@ -1209,5 +1227,421 @@ describe('writeDocx: the report (ruling R13)', () => {
 
   it('reports no substitution for a face the text is not set in: the maths face sets nothing in Word 1', () => {
     expect(plain.report.some((each) => each.kind === 'face_substituted')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------
+// Word 2: lists, quotations and preformatted text.
+// ---------------------------------------------------------------------------------------------------
+
+/**
+ * A document's body paragraphs, read once, and the first saying exactly this: each read of a part makes
+ * new elements, so a paragraph is found among the ones its neighbours are counted in.
+ */
+function bodyOf(docx: Package): { body: Element[]; at: (text: string) => Element } {
+  const body = paragraphs(docx);
+  return {
+    body,
+    at(text) {
+      const found = body.find((each) => textOf(each) === text);
+      if (found === undefined) throw new Error(`no paragraph says ${JSON.stringify(text)}`);
+      return found;
+    },
+  };
+}
+
+/** One component under one section, written for Word: what each block's test reads. */
+const writtenOf = (content: unknown[], over: Parameters<typeof written>[0] = {}): Written =>
+  written({
+    ...over,
+    outline: parseOutlineDocument({
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
+      title: 'The dosing report',
+      language: 'en-GB',
+      direction: 'ltr',
+      nodes: [reference('blocks', 9)],
+    }),
+    occurrences: new Map([[id('blocks'), component('Blocks', content)]]),
+  });
+
+const list = (name: string, kind: string, items: unknown[], over: object = {}) => ({
+  type: 'list',
+  id: name,
+  kind,
+  items,
+  ...over,
+});
+/** An item holding these blocks. */
+const item = (...blocks: unknown[]) => ({ content: blocks });
+/** A paragraph saying its own name. */
+const said = (name: string) => paragraph(name, text(name));
+
+/** Twentieths of a point, as Word states a length. */
+const twips = (points: number) => String(Math.round(points * 20));
+/** How wide the invented faces set these characters, at the default list item's 11pt. */
+const wide = (...codePoints: number[]) =>
+  (codePoints.reduce((sum, each) => sum + ADVANCES.get(each)!, 0) / 2048) * 11;
+const [DISC, CIRCLE, SQUARE] = [0x2022, 0x25e6, 0x25aa];
+/** Half an em of the list item's 11pt between a marker and its item (Typst's `body-indent`). */
+const GAP = 5.5;
+
+/** A paragraph's numbering: its level and its definition, or undefined where it has none. */
+const numbered = (element: Element) => {
+  const found = first(pPr(element) ?? element, 'w:numPr');
+  return found === undefined
+    ? undefined
+    : {
+        ilvl: first(found, 'w:ilvl')!.attrs['w:val'],
+        numId: first(found, 'w:numId')!.attrs['w:val'],
+      };
+};
+/** A paragraph's own indents, or undefined where its style's stand. */
+const indents = (element: Element) => kids(pPr(element)!, 'w:ind')[0]?.attrs;
+/** A paragraph's own spacing, or undefined where its style's stands. */
+const spacing = (element: Element) => kids(pPr(element)!, 'w:spacing')[0]?.attrs;
+/** A paragraph's own contextual spacing, or undefined where its style's stands. */
+const contextual = (element: Element) =>
+  kids(pPr(element)!, 'w:contextualSpacing')[0]?.attrs['w:val'];
+
+/** A numbering definition's level, by the `w:num` that names it and the level's index. */
+function level(docx: Package, numId: string, ilvl: string): Element {
+  const numbering = docx.xml('word/numbering.xml');
+  const num = all(numbering, 'w:num').find((each) => each.attrs['w:numId'] === numId)!;
+  const abstractId = first(num, 'w:abstractNumId')!.attrs['w:val'];
+  const abstract = all(numbering, 'w:abstractNum').find(
+    (each) => each.attrs['w:abstractNumId'] === abstractId,
+  )!;
+  return kids(abstract, 'w:lvl').find((each) => each.attrs['w:ilvl'] === ilvl)!;
+}
+/** What a level prints and from what, as Word reads it. */
+const printing = (lvl: Element) => ({
+  start: first(lvl, 'w:start')?.attrs['w:val'],
+  format: first(lvl, 'w:numFmt')!.attrs['w:val'],
+  text: first(lvl, 'w:lvlText')!.attrs['w:val'],
+  justified: first(lvl, 'w:lvlJc')!.attrs['w:val'],
+  indent: first(lvl, 'w:ind')!.attrs,
+});
+
+describe('writeDocx: lists (Word 2, ruling R4)', () => {
+  const listed = writtenOf([
+    said('before'),
+    list('B1', 'unordered', [
+      item(
+        said('disc first'),
+        said('disc second'),
+        list('B2', 'unordered', [
+          item(said('circle'), list('B3', 'unordered', [item(said('square'))])),
+        ]),
+      ),
+      item(said('disc again')),
+    ]),
+    list(
+      'N1',
+      'ordered',
+      [item(said('nine')), item(said('ten')), item(paragraph('empty')), item(said('twelve'))],
+      { start: 9 },
+    ),
+    list('A1', 'ordered', [item(said('letter c'))], { start: 3, format: 'alphabetic' }),
+    list('R1', 'ordered', [item(said('roman iv'))], { start: 4, format: 'roman' }),
+    list('M1', 'unordered', [
+      item(
+        said('mixed disc'),
+        list('M2', 'ordered', [
+          item(said('mixed one'), list('M3', 'unordered', [item(said('mixed circle'))])),
+        ]),
+      ),
+      item(list('M4', 'unordered', [item(said('starts nested'))])),
+    ]),
+    said('after'),
+  ]);
+  const { body, at } = bodyOf(listed.docx);
+
+  it("gives each list a numbering definition of its own, after the headings' three, each nested list at the next level of its own", () => {
+    const numbering = listed.docx.xml('word/numbering.xml');
+    // B1 to B3, N1, A1, R1 and M1 to M4: ten lists, each its own.
+    expect(all(numbering, 'w:abstractNum')).toHaveLength(13);
+    expect(all(numbering, 'w:num')).toHaveLength(13);
+    expect(numbered(at('disc first'))).toEqual({ ilvl: '0', numId: '4' });
+    expect(numbered(at('circle'))).toEqual({ ilvl: '1', numId: '5' });
+    expect(numbered(at('square'))).toEqual({ ilvl: '2', numId: '6' });
+    expect(numbered(at('disc again'))).toEqual({ ilvl: '0', numId: '4' });
+    expect(numbered(at('nine'))).toEqual({ ilvl: '0', numId: '7' });
+    expect(numbered(at('mixed circle'))).toEqual({ ilvl: '2', numId: '12' });
+    // Every definition has Word's nine levels, so a recipient can nest an item further.
+    for (const abstract of all(numbering, 'w:abstractNum').slice(3)) {
+      expect(kids(abstract, 'w:lvl')).toHaveLength(9);
+    }
+  });
+
+  it("numbers an ordered list in its format from its start, and bullets an unordered one by how many unordered lists it stands in, template 13's disc, circle and square", () => {
+    expect(printing(level(listed.docx, '7', '0'))).toMatchObject({
+      start: '9',
+      format: 'decimal',
+      text: '%1.',
+    });
+    expect(printing(level(listed.docx, '8', '0'))).toMatchObject({
+      start: '3',
+      format: 'lowerLetter',
+      text: '%1.',
+    });
+    expect(printing(level(listed.docx, '9', '0'))).toMatchObject({
+      start: '4',
+      format: 'lowerRoman',
+    });
+    const bullet = (numId: string, ilvl: string) => printing(level(listed.docx, numId, ilvl));
+    expect(bullet('4', '0')).toMatchObject({ format: 'bullet', text: String.fromCodePoint(DISC) });
+    expect(bullet('5', '1')).toMatchObject({ text: String.fromCodePoint(CIRCLE) });
+    expect(bullet('6', '2')).toMatchObject({ text: String.fromCodePoint(SQUARE) });
+    // An ordered list between does not count: the engine cycles its markers by unordered lists alone.
+    expect(bullet('12', '2')).toMatchObject({ text: String.fromCodePoint(CIRCLE) });
+    // Past a list's own level, the next marker; the levels a recipient adds carry the list's kind on.
+    expect(bullet('4', '1')).toMatchObject({ text: String.fromCodePoint(CIRCLE) });
+    expect(printing(level(listed.docx, '7', '1'))).toMatchObject({ start: '1', text: '%2.' });
+  });
+
+  it("stands each marker where the PDF's engine does, ended at the widest marker of its list as its face sets it, and each item half an em after it", () => {
+    // A disc from the text block's edge, then its items; the circle's list from where they stand.
+    const disc = wide(DISC) + GAP;
+    expect(indents(at('disc first'))).toEqual({
+      'w:left': twips(disc),
+      'w:right': '0',
+      'w:hanging': twips(GAP),
+    });
+    const circle = disc + wide(CIRCLE) + GAP;
+    expect(indents(at('circle'))).toMatchObject({ 'w:left': twips(circle) });
+    expect(indents(at('square'))).toMatchObject({ 'w:left': twips(circle + wide(SQUARE) + GAP) });
+    // Right-aligned, as the engine aligns its numbers: "9." ends where "12." does.
+    const numbers = wide(0x31, 0x32, 0x2e) + GAP;
+    expect(indents(at('nine'))).toEqual({
+      'w:left': twips(numbers),
+      'w:right': '0',
+      'w:hanging': twips(GAP),
+    });
+    expect(printing(level(listed.docx, '7', '0'))).toMatchObject({
+      justified: 'right',
+      indent: { 'w:left': twips(numbers), 'w:hanging': twips(GAP) },
+    });
+    expect(indents(at('letter c'))).toMatchObject({ 'w:left': twips(wide(0x63, 0x2e) + GAP) });
+    expect(indents(at('roman iv'))).toMatchObject({
+      'w:left': twips(wide(0x69, 0x76, 0x2e) + GAP),
+    });
+  });
+
+  it("stands an item's later paragraphs where its first stands, with no number", () => {
+    expect(numbered(at('disc second'))).toBeUndefined();
+    expect(indents(at('disc second'))).toEqual({
+      'w:left': twips(wide(DISC) + GAP),
+      'w:right': '0',
+      'w:firstLine': '0',
+    });
+  });
+
+  it("keeps an empty item as an empty numbered paragraph, so the numbers after it stay the author's", () => {
+    const ten = body.indexOf(at('ten'));
+    expect(textOf(body[ten + 1]!)).toBe('');
+    expect(numbered(body[ten + 1]!)).toEqual({ ilvl: '0', numId: '7' });
+    expect(numbered(at('twelve'))).toEqual({ ilvl: '0', numId: '7' });
+  });
+
+  it('puts the number of an item that opens with anything but a paragraph on an empty paragraph of its own before it', () => {
+    const nested = body.indexOf(at('starts nested'));
+    expect(textOf(body[nested - 1]!)).toBe('');
+    expect(numbered(body[nested - 1]!)).toEqual({ ilvl: '0', numId: '10' });
+    expect(numbered(at('starts nested'))).toEqual({ ilvl: '1', numId: '13' });
+  });
+
+  it("sets each item's paragraphs in the list item's style, and the markers in its face", () => {
+    for (const text of ['disc first', 'disc second', 'nine', 'square']) {
+      expect(styleOf(at(text))).toBe('body');
+    }
+    const fonts = first(first(level(listed.docx, '4', '0'), 'w:rPr')!, 'w:rFonts')!;
+    expect(fonts.attrs['w:ascii']).toBe('Liberation Serif');
+  });
+
+  it('R6 stands items a line apart as the PDF does, dropping the space after an item that the style would put before the next, and spaces the list as a whole by the style', () => {
+    // The body style: 2.75 after, none before, no contextual spacing.
+    expect(spacing(at('before'))).toBeUndefined();
+    expect(spacing(at('disc first'))).toBeUndefined();
+    expect(spacing(at('square'))).toEqual({ 'w:after': '0' });
+    expect(spacing(at('nine'))).toEqual({ 'w:after': '0' });
+    expect(spacing(at('twelve'))).toBeUndefined();
+    expect(spacing(at('disc again'))).toBeUndefined();
+    expect(spacing(at('after'))).toBeUndefined();
+    for (const each of body) expect(contextual(each)).toBeUndefined();
+  });
+});
+
+describe('writeDocx: definition lists (Word 2, ruling R4)', () => {
+  const defined = writtenOf([
+    list('D1', 'definition', [
+      { term: [text('Creep')], content: [said('slow strain'), said('under load')] },
+      { content: [said('no term yet')] },
+      {
+        term: [text('Tensile '), text('strength', { type: 'emphasis', id: 'k1' })],
+        content: [said('the most')],
+      },
+    ]),
+  ]);
+  const { body, at } = bodyOf(defined.docx);
+
+  it('sets a term as template 13 does, in the list item style and bold, and no term where the author has typed none', () => {
+    const term = at('Creep');
+    expect(styleOf(term)).toBe('body');
+    expect(numbered(term)).toBeUndefined();
+    const marked = at('Tensile strength');
+    for (const run of [...all(term, 'w:r'), ...all(marked, 'w:r')]) {
+      expect(first(run, 'w:b')).toBeDefined();
+    }
+    expect(textOf(body[body.indexOf(at('no term yet')) - 1]!)).toBe('under load');
+  });
+
+  it('indents its definitions two ems of the list item, with no number', () => {
+    for (const text of ['slow strain', 'under load', 'no term yet']) {
+      expect(numbered(at(text))).toBeUndefined();
+      expect(indents(at(text))).toEqual({
+        'w:left': twips(22),
+        'w:right': '0',
+        'w:firstLine': '0',
+      });
+    }
+    expect(indents(at('Creep'))).toBeUndefined();
+  });
+
+  it('R6 stands a term a line above its definition, the nearest Word comes to the PDF, and an item a line below the one before', () => {
+    // The engine sets a definition an em below its term, closer than a line, which Word cannot.
+    expect(spacing(at('Creep'))).toEqual({ 'w:after': '0' });
+    expect(spacing(at('slow strain'))).toBeUndefined();
+    expect(spacing(at('under load'))).toEqual({ 'w:after': '0' });
+    expect(spacing(at('no term yet'))).toEqual({ 'w:after': '0' });
+  });
+});
+
+describe('writeDocx: quotations (Word 2, ruling R5)', () => {
+  const quote = (name: string, blocks: unknown[], attribution?: string) => ({
+    type: 'blockquote',
+    id: name,
+    content: blocks,
+    ...(attribution === undefined ? {} : { attribution: [text(attribution)] }),
+  });
+  const quoted = writtenOf([
+    said('into'),
+    quote('Q1', [said('one a'), said('one b')], 'Ada'),
+    quote('Q2', [said('two a'), said('two b')], 'Grace'),
+    said('between'),
+    quote('Q3', [said('three a'), said('three b')]),
+    quote('Q4', [said('four a'), said('four b')]),
+    said('out'),
+    quote('Q5', [said('five a'), list('QL', 'ordered', [item(said('quoted item'))])], 'Alice'),
+  ]);
+  const { body, at } = bodyOf(quoted.docx);
+
+  it("sets a quotation's blocks in the quotation style, its attribution a paragraph after them in the attribution role's, standing in as far as the quotation does", () => {
+    expect(styleOf(at('one a'))).toBe('quotation');
+    expect(indents(at('one a'))).toBeUndefined();
+    const ada = at('Ada');
+    expect(styleOf(ada)).toBe('attribution');
+    expect(indents(ada)).toEqual({
+      'w:left': twips(11),
+      'w:right': twips(11),
+      'w:firstLine': '0',
+    });
+    expect(body.indexOf(ada)).toBe(body.indexOf(at('one b')) + 1);
+  });
+
+  it('stands a list in a quotation in by the quotation, its number from there', () => {
+    expect(indents(at('quoted item'))).toMatchObject({
+      'w:left': twips(11 + wide(0x31, 0x2e) + GAP),
+      'w:right': twips(11),
+    });
+  });
+
+  it("R6 writes M1's d8 where two quotations meet with no attribution between: contextual spacing off on the pair, and the spaces the PDF drops dropped", () => {
+    expect(spacing(at('three b'))).toEqual({ 'w:before': '0' });
+    expect(contextual(at('three b'))).toBe('0');
+    expect(spacing(at('four a'))).toEqual({ 'w:after': '0' });
+    expect(contextual(at('four a'))).toBe('0');
+    // Word's own contextual spacing everywhere else: within each quotation, and where an attribution
+    // or a paragraph of another style stands between.
+    for (const text of ['one a', 'one b', 'two a', 'two b', 'three a', 'four b', 'Ada', 'Grace']) {
+      expect(spacing(at(text))).toBeUndefined();
+      expect(contextual(at(text))).toBeUndefined();
+    }
+  });
+
+  it('R6 spaces a list in a quotation from the paragraph before it by both spaces, which the quotation style gives without help', () => {
+    expect(spacing(at('five a'))).toBeUndefined();
+    expect(contextual(at('five a'))).toBeUndefined();
+  });
+});
+
+describe('writeDocx: preformatted text (Word 2, ruling R5)', () => {
+  const code = (name: string, value: string, label?: string) => ({
+    type: 'preformatted',
+    id: name,
+    text: value,
+    ...(label === undefined ? {} : { language: label }),
+  });
+  const coded = writtenOf([
+    said('before'),
+    code('C1', 'first  line\n  second\n\nfourth', 'shell'),
+    code('C2', 'one line'),
+    said('after'),
+  ]);
+  const { body, at } = bodyOf(coded.docx);
+  const lines = body.slice(body.indexOf(at('first  line')), body.indexOf(at('one line')) + 1);
+
+  it('sets its label in the preformatted label role, then each line a paragraph of the preformatted role, its spaces kept exactly', () => {
+    expect(styleOf(at('shell'))).toBe('preformatted-label');
+    expect(body.indexOf(at('shell'))).toBe(body.indexOf(at('first  line')) - 1);
+    expect(lines.map(textOf)).toEqual(['first  line', '  second', '', 'fourth', 'one line']);
+    for (const line of lines) expect(styleOf(line)).toBe('preformatted');
+    const kept = first(at('  second'), 'w:t')!;
+    expect(kept.attrs['xml:space']).toBe('preserve');
+    expect(kept.children.join('')).toBe('  second');
+  });
+
+  it("R6 sets a block's lines a line apart, as the PDF sets them in one paragraph, and the block apart from what is around it by its style", () => {
+    expect(lines.slice(0, 4).map(spacing)).toEqual([
+      { 'w:after': '0' },
+      { 'w:before': '0', 'w:after': '0' },
+      { 'w:before': '0', 'w:after': '0' },
+      { 'w:before': '0' },
+    ]);
+  });
+
+  it('keeps two blocks one after another two panels, as the PDF sets them: the second stood a twentieth of a point further in, where Word joins paragraphs of one border and indent into one panel', () => {
+    // Measured in Word 16: the two blocks' lines in one panel, 15.60pt from the first's last line to the
+    // second's first where the PDF has 27.70; with the second's indents a twip more, two panels, 28.56.
+    const panels = writtenOf([
+      code('P1', 'one'),
+      code('P2', 'two a\ntwo b'),
+      code('P3', 'three'),
+      said('between'),
+      code('P4', 'four'),
+    ]);
+    const { at } = bodyOf(panels.docx);
+    // The style's own: its padding and Word's reach past it, 8pt, each side.
+    const moved = { 'w:left': '161', 'w:right': '161', 'w:firstLine': '0' };
+    expect(indents(at('one'))).toBeUndefined();
+    expect(indents(at('two a'))).toEqual(moved);
+    expect(indents(at('two b'))).toEqual(moved);
+    expect(indents(at('three'))).toBeUndefined();
+    expect(indents(at('four'))).toBeUndefined();
+  });
+
+  it('keeps a panel apart from a paragraph of another style with the same panel, which Word would join to it too', () => {
+    const labelled = writtenOf([code('P1', 'one'), code('P2', 'two', 'shell')], {
+      theme: themeWith((inputs) => {
+        inputs.catalogues.paragraph.styles = inputs.catalogues.paragraph.styles.map((each) =>
+          each.id === 'preformatted-label'
+            ? { ...each, properties: { ...each.properties, background: '#f0f0f0', padding: 6 } }
+            : each,
+        );
+      }),
+    });
+    const { at } = bodyOf(labelled.docx);
+    expect(indents(at('one'))).toBeUndefined();
+    expect(indents(at('shell'))).toEqual({ 'w:left': '161', 'w:right': '161', 'w:firstLine': '0' });
+    expect(indents(at('two'))).toBeUndefined();
   });
 });

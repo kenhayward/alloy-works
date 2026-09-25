@@ -97,6 +97,16 @@ function notInWord(detail: string | null): string {
 }
 
 /**
+ * What `list_not_in_word` names (Word 2, ruling R4): `detail` is why Word would print the list
+ * otherwise than the PDF does. The list is the author's to change, and the PDF can be made.
+ */
+const LIST_NOT_IN_WORD: Readonly<Record<string, string>> = {
+  depth: 'is nested more than nine levels deep, and Word nests nine',
+  letters: 'is numbered in letters past the 27th, which Word writes differently',
+  roman: 'is numbered in roman numerals past 3999, which Word writes differently',
+};
+
+/**
  * What `equation_unrenderable` names of the construct an equation held that the converter refused
  * (`REFUSAL_NAMES`, `assemble.ts`), in words - never the equation's text, its values or its elements,
  * which `detail` never carries either (R5). `mathvariant`, `element` and `attribute` each name part of
@@ -321,6 +331,9 @@ export function failureWords(failure: Failure): string {
     // it would print differently from the PDF's.
     case 'numbering_not_in_word':
       return notInWord(failure.detail);
+    // Word 2's ruling R4: nothing else in the document is wrong, and the PDF can be made of it.
+    case 'list_not_in_word':
+      return `A list here ${LIST_NOT_IN_WORD[failure.detail ?? ''] ?? 'cannot be printed by Word as the PDF prints it'}. Publish this document as a PDF only, or change the list.`;
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

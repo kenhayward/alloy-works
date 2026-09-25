@@ -142,6 +142,15 @@ function wordStyleName(style: ResolvedParagraphStyle, depth: number | undefined)
  */
 const PANEL_REACH = 2;
 
+/**
+ * How far in from a style's own indents its text stands in Word: where it has a background, its
+ * padding and `PANEL_REACH`, which the projection adds to its indents; otherwise nothing. The Word
+ * writer asks it where a container moves a paragraph in from its style's indents (Word 2).
+ */
+export function panelInset(properties: ResolvedParagraphStyle['properties']): number {
+  return properties.background === 'none' ? 0 : properties.padding + PANEL_REACH;
+}
+
 /** A border's width in eighths of a point: a half point, as the measurement was made with. */
 const PANEL_BORDER = 4;
 
@@ -162,7 +171,7 @@ function paragraphStyle(
 ): string {
   const p = style.properties;
   const filled = p.background !== 'none';
-  const inset = filled ? p.padding + PANEL_REACH : 0;
+  const inset = panelInset(p);
   const fill = filled ? hex(p.background) : '';
   const border = (side: string) =>
     filled

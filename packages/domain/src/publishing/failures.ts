@@ -124,6 +124,12 @@ export const publishFailureCodes = [
   // prefix or a count Word's fields reach otherwise, letters past z, or a roman numeral past 3999. The
   // PDF is unaffected.
   'numbering_not_in_word',
+  // compose, from Word 2 (ruling R4): where Word is asked for, a list Word would not print as the PDF
+  // does, naming it - `detail` `depth` for one nested past Word's ninth level, counted through items
+  // and quotations and afresh in a table's cell (WO-I); `letters` for one numbered in letters past
+  // the 27th, where Word writes bb and the PDF ab; `roman` for one numbered past 3999. The PDF is
+  // unaffected.
+  'list_not_in_word',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

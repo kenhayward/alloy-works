@@ -5260,6 +5260,57 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     });
   });
 
+  it('refuses a list Word would not print as the PDF does only where Word is asked for, naming the list: nested past the ninth level, counted afresh in a cell, or numbered past z or 3999 (Word 2, ruling R4; WO-I)', () => {
+    /** Lists nested `levels` deep, `name1` outermost, and `inner` in the deepest's item. */
+    const nested = (name: string, levels: number, ...inner: unknown[]): unknown =>
+      Array.from({ length: levels }, (_, index) => levels - index).reduce<unknown[]>(
+        (content, level) => [
+          {
+            type: 'list',
+            id: `${name}${level}`,
+            kind: level % 2 === 0 ? 'ordered' : 'unordered',
+            items: [{ content: [paragraph(`${name}p${level}`, text('Deeper')), ...content] }],
+          },
+        ],
+        inner,
+      )[0];
+    const refused = (block: string, detail: string) => failed('list_not_in_word', block, detail);
+    expect(failuresFor(holding(nested('n', 9)))).toEqual({ pdf: [], docx: [], both: [] });
+    // A quotation between two levels is no level; the list at the tenth is named, once.
+    const deep = holding(nested('d', 2, quotation('q1', nested('e', 7, nested('f', 2)) as object)));
+    expect(failuresFor(deep)).toEqual({
+      pdf: [],
+      docx: [refused('f1', 'depth')],
+      both: [refused('f1', 'depth')],
+    });
+    // A table's cell is a place of its own, whose lists Word numbers from its first level again.
+    const celled = {
+      ...holding(nested('g', 5, table('t1', {}, nested('h', 9) as object))),
+      layout: listless,
+    };
+    expect(failuresFor(celled)).toEqual({ pdf: [], docx: [], both: [] });
+    // Word writes the 28th letter bb where the PDF writes ab, and has no roman numeral past 3999.
+    const counted = (id: string, format: string, start: number, items: number) => ({
+      type: 'list',
+      id,
+      kind: 'ordered',
+      format,
+      start,
+      items: Array.from({ length: items }, (_, index) => ({
+        content: [paragraph(`${id}p${index}`, text('Counted'))],
+      })),
+    });
+    expect(
+      failuresFor(holding(counted('a1', 'alphabetic', 26, 2), counted('r1', 'roman', 3998, 2))),
+    ).toEqual({ pdf: [], docx: [], both: [] });
+    const past = holding(counted('a2', 'alphabetic', 27, 2), counted('r2', 'roman', 3999, 2));
+    expect(failuresFor(past)).toEqual({
+      pdf: [],
+      docx: [refused('a2', 'letters'), refused('r2', 'roman')],
+      both: [refused('a2', 'letters'), refused('r2', 'roman')],
+    });
+  });
+
   it('refuses a section rule Word cannot compute only where Word is asked for, naming the rule, and passes the default scheme', () => {
     // The default layout's scheme numbers what Word numbers (ruling R7): front, body and appendix,
     // three levels deep, publish for Word.

@@ -18294,31 +18294,31 @@
     {
       "id": "CNT-084",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1045,
+      "line": 1063,
       "kind": "title"
     },
     {
       "id": "CNT-128",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1027,
+      "line": 1045,
       "kind": "title"
     },
     {
       "id": "PUB-024",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 558,
+      "line": 576,
       "kind": "title"
     },
     {
       "id": "PUB-034",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1045,
+      "line": 1063,
       "kind": "title"
     },
     {
       "id": "STY-052",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1126,
+      "line": 1144,
       "kind": "title"
     },
     {

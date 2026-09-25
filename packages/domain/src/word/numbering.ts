@@ -41,7 +41,8 @@ export const WORD_FORMATS: Readonly<Record<NumberFormat, string>> = {
 };
 
 /**
- * `word/numbering.xml` for the headings. `links` names, by depth, the heading style the body's list is
+ * `word/numbering.xml` for the headings, and after them the document's lists (Word 2, ruling R4),
+ * each a definition and a `w:num` of its own (`listNumberingXml`). `links` names, by depth, the heading style the body's list is
  * linked from at that level - a style two depths share is linked from the shallower alone, since a
  * level names one style and a style one level - and a depth it does not name has no style, its
  * headings numbered by a direct `w:numPr`.
@@ -50,7 +51,11 @@ export const WORD_FORMATS: Readonly<Record<NumberFormat, string>> = {
  * place, the last format repeating, joined by the separator, then a space before the title, as the
  * PDF sets "1 Introduction". No indents: the heading style's stand.
  */
-export function numberingXml(scheme: NumberingScheme, links: ReadonlyMap<number, string>): string {
+export function numberingXml(
+  scheme: NumberingScheme,
+  links: ReadonlyMap<number, string>,
+  lists: readonly { readonly abstract: string; readonly num: string }[] = [],
+): string {
   const abstracts = MATTERS.map((matter) => {
     const rule = scheme.sequences['section']![matter];
     const levels = Array.from({ length: WORD_LEVELS }, (_, ilvl) => {
@@ -80,7 +85,11 @@ export function numberingXml(scheme: NumberingScheme, links: ReadonlyMap<number,
   return (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
     '<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
-    `${abstracts.join('')}${nums.join('')}</w:numbering>`
+    abstracts.join('') +
+    lists.map((list) => list.abstract).join('') +
+    nums.join('') +
+    lists.map((list) => list.num).join('') +
+    '</w:numbering>'
   );
 }
 
@@ -154,12 +163,12 @@ export function numberingNotInWord(
 }
 
 /** Whether a counter in letters is one Word writes otherwise: past `z`, where it doubles the letter. */
-const lettersPart = (format: NumberFormat, value: number) =>
+export const lettersPart = (format: NumberFormat, value: number) =>
   (format === 'lowerAlpha' || format === 'upperAlpha') &&
   wordLetters(value) !== formatCounter(value, 'lowerAlpha');
 
 /** Whether a counter in roman numerals is past 3999, which the scheme writes in decimal. */
-const romanPart = (format: NumberFormat, value: number) =>
+export const romanPart = (format: NumberFormat, value: number) =>
   (format === 'lowerRoman' || format === 'upperRoman') && value > 3999;
 
 /** The sequences whose captions Word numbers by fields (Word 2, ruling R1). */

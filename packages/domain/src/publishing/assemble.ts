@@ -36,6 +36,7 @@ import {
 import type { ResolvedParagraphStyle, ResolvedTheme } from '../theme/read.js';
 import type { ImageStyle, Place, Role, Typeface } from '../theme/schema.js';
 import { projectTypst } from '../theme/typst.js';
+import { listsNotInWord } from '../word/lists.js';
 import { numberingNotInWord } from '../word/numbering.js';
 
 import type { PublishFailure } from './failures.js';
@@ -1650,6 +1651,16 @@ export function assemble(input: AssembleInput): Assembled {
       failures.push(failure('compose', 'language_not_publishable', node.id, null, own));
     }
     const blocks = content.content.flatMap((block) => publishable(block, node.id, 'text'));
+    // Where Word is asked for, a list it would not print as the PDF does - nested past its ninth
+    // level, or numbered past what it writes as the PDF writes it - is refused by name (Word 2,
+    // ruling R4; WO-I), of the lists that publish, where a list with nothing in it is none.
+    if (docx && layout !== null) {
+      for (const problem of listsNotInWord(blocks)) {
+        failures.push(
+          failure('compose', 'list_not_in_word', node.id, problem.block, problem.detail),
+        );
+      }
+    }
     const children = node.children.map((child) => project(child, depth + 1, matter));
     return {
       ...shell,

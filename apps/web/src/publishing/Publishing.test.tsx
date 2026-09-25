@@ -505,6 +505,31 @@ describe('publishing from the document page', () => {
     }
   });
 
+  it('names a list Word would not print as the PDF does, and why, pointing at the PDF', async () => {
+    // Word 2's ruling R4: `detail` is `depth`, `letters` or `roman`, and the list is the author's to
+    // change, not the layout.
+    const refused = (detail: string) => ({
+      stage: 'compose' as const,
+      code: 'list_not_in_word' as const,
+      node: null,
+      block: 'L1',
+      detail,
+    });
+    const fake = failing([refused('depth'), refused('letters'), refused('roman')]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    const pdf = 'Publish this document as a PDF only, or change the list.';
+    for (const said of [
+      'A list here is nested more than nine levels deep, and Word nests nine.',
+      'A list here is numbered in letters past the 27th, which Word writes differently.',
+      'A list here is numbered in roman numerals past 3999, which Word writes differently.',
+    ]) {
+      expect(why).toHaveTextContent(`${said} ${pdf}`);
+    }
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
   it('says what a figure needs before it can be published, and names nothing of an image it may not read', async () => {
     const fake = failing([
       { stage: 'compose', code: 'figure_without_caption', node: null, block: 'f1', detail: null },

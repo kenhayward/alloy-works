@@ -60,10 +60,88 @@ const reference = (name: string, n: number, over: object = {}) => ({
 const SHALOM = String.fromCodePoint(0x05e9, 0x05dc, 0x05d5, 0x05dd);
 const SEFER = String.fromCodePoint(0x05e1, 0x05e4, 0x05e8);
 
+/** A list of one kind, its items each a paragraph and whatever is nested in it. */
+const list = (name: string, kind: string, items: unknown[][], over: object = {}) => ({
+  type: 'list',
+  id: name,
+  kind,
+  items: items.map((content) => ({ content })),
+  ...over,
+});
+const quotation = (name: string, attribution: string, ...content: unknown[]) => ({
+  type: 'blockquote',
+  id: name,
+  content,
+  attribution: [text(attribution)],
+});
+
+/**
+ * What Word 2's second task writes: lists of each kind nested three deep, each with a start and a
+ * format where it is ordered, their items of more than one paragraph; a definition list; two
+ * quotations in a row, each attributed; and two blocks of preformatted text in a row.
+ */
+const LISTED = component('Steps', [
+  list(
+    'L1',
+    'ordered',
+    [
+      [
+        paragraph('l1', text('Open the tray.')),
+        paragraph('l2', text('Lift the guide.')),
+        list('L2', 'unordered', [
+          [
+            paragraph('l3', text('Wipe the platen.')),
+            list('L3', 'ordered', [[paragraph('l4', text('Left side.'))]], {
+              start: 4,
+              format: 'roman',
+            }),
+          ],
+        ]),
+      ],
+      [paragraph('l5', text('Close the tray.'))],
+    ],
+    { start: 3, format: 'alphabetic' },
+  ),
+  list('L4', 'unordered', [
+    [
+      paragraph('l6', text('Ada checks.')),
+      list(
+        'L5',
+        'ordered',
+        [
+          [
+            paragraph('l7', text('Grace confirms.')),
+            list('L6', 'unordered', [[paragraph('l8', text('Alice signs.'))]]),
+          ],
+        ],
+        { start: 0 },
+      ),
+    ],
+  ]),
+  {
+    type: 'list',
+    id: 'D1',
+    kind: 'definition',
+    items: [
+      { term: [text('Platen')], content: [paragraph('d1', text('The roller the paper wraps.'))] },
+      { term: [text('Guide')], content: [paragraph('d2', text('What keeps the sheet straight.'))] },
+    ],
+  },
+  quotation(
+    'Q1',
+    'Ada',
+    paragraph('q1', text('Measure twice.')),
+    paragraph('q2', text('Cut once.')),
+  ),
+  quotation('Q2', 'Grace', paragraph('q3', text('Then measure again.'))),
+  { type: 'preformatted', id: 'C1', language: 'shell', text: 'tray open\n  guide up' },
+  { type: 'preformatted', id: 'C2', text: 'tray closed' },
+]);
+
 /**
  * Everything Word 1 writes, under the default layout's 0.6 and the default theme: a cover, a contents,
  * front matter, a body two levels deep, an appendix, every mark, a link, a German passage and a Hebrew
- * one set right to left.
+ * one set right to left - and Word 2's lists, quotations and preformatted text.
  */
 const input: AssembleInput & { readonly layout: Layout } = {
   formats: ['pdf', 'docx'],
@@ -75,7 +153,7 @@ const input: AssembleInput & { readonly layout: Layout } = {
     nodes: [
       reference('preface', 1, { matter: 'front' }),
       section('fitting', 'Fitting', [reference('marked', 2), reference('german', 3)]),
-      section('reading', 'Reading', [reference('hebrew', 4)]),
+      section('reading', 'Reading', [reference('hebrew', 4), reference('steps', 6)]),
       section('tables', 'Tables of values', [reference('values', 5)], { matter: 'appendix' }),
     ],
   }),
@@ -125,6 +203,7 @@ const input: AssembleInput & { readonly layout: Layout } = {
       }),
     ],
     [id('values'), component('Values', [paragraph('v1', text('The values Grace measured.'))])],
+    [id('steps'), LISTED],
   ]),
   refused: [],
   layout: defaultLayout,
@@ -134,7 +213,7 @@ const input: AssembleInput & { readonly layout: Layout } = {
   assets: new Map(),
 };
 
-describe("a publication in Word, written from the worker's own faces (Word 1)", () => {
+describe("a publication in Word, written from the worker's own faces (Word 1, Word 2)", () => {
   it('writes a document the Open XML SDK finds nothing wrong with', async () => {
     const assembled = assemble(input);
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
@@ -157,5 +236,10 @@ describe("a publication in Word, written from the worker's own faces (Word 1)", 
     expect(table).toContain('w:name="Liberation Serif"');
     expect(table).toContain('w:name="Cambria Math"');
     expect(table).not.toContain('STIX');
+    // Each of the six lists that numbers or bullets its items a definition of its own, after the
+    // headings' three, its markers' places read from the worker's own serif.
+    const numbering = strFromU8(parts['word/numbering.xml']!);
+    expect(numbering.match(/<w:abstractNum /g)).toHaveLength(9);
+    expect(numbering).toContain('<w:start w:val="0"/><w:numFmt w:val="decimal"/>');
   });
 });
