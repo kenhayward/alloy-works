@@ -17118,7 +17118,7 @@
     {
       "id": "PUB-029",
       "file": "apps/worker/src/word-check.test.ts",
-      "line": 483,
+      "line": 564,
       "kind": "title"
     },
     {
@@ -18294,31 +18294,31 @@
     {
       "id": "CNT-084",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 895,
+      "line": 1045,
       "kind": "title"
     },
     {
       "id": "CNT-128",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 877,
+      "line": 1027,
       "kind": "title"
     },
     {
       "id": "PUB-024",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 531,
+      "line": 558,
       "kind": "title"
     },
     {
       "id": "PUB-034",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 895,
+      "line": 1045,
       "kind": "title"
     },
     {
       "id": "STY-052",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 976,
+      "line": 1126,
       "kind": "title"
     },
     {
