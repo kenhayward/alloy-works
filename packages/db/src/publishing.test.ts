@@ -765,7 +765,9 @@ describe('requesting and recording a publication', () => {
   });
   /**
    * A Word document made by the writer's second version, with what it could not carry: a face, and a
-   * table's header column, its header its style does not repeat, and its label (Word 2, ruling R7).
+   * table's header column, its header its style does not repeat, and its label (Word 2, ruling R7);
+   * and a heading and a caption holding an equation Word's rebuilt entries flatten (the final review
+   * of Word 4, I2), a heading's naming no block.
    */
   const readings = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1', label: 'Table 1.1' };
   const docxOutput = (fill = 'd') => ({
@@ -776,6 +778,8 @@ describe('requesting and recording a publication', () => {
       { kind: 'header_column_lost' as const, ...readings },
       { kind: 'header_repeated' as const, ...readings },
       { kind: 'continuation_label_omitted' as const, ...readings, label: null },
+      { kind: 'equation_flattened' as const, ...readings, block: null, label: '1' },
+      { kind: 'equation_flattened' as const, ...readings },
       { kind: 'pages_cite_the_pdf' as const },
     ],
     key: `${production.role}/sha256/${fill.repeat(64)}`,

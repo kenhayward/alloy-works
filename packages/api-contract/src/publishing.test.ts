@@ -76,6 +76,21 @@ describe('the publishing contract (Word 1)', () => {
     ).toBe(false);
   });
 
+  it("serves a report's flattened equations, each naming its heading's or caption's place, a heading's no block, and its number or label or none (the final review of Word 4, I2)", () => {
+    const report = [
+      { kind: 'equation_flattened', node: 'rateaaaaaaaaaaaaaaaaaaaaaa', block: null, label: '3' },
+      { kind: 'equation_flattened', node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1', label: null },
+    ];
+    expect(PublicationView.parse(viewWith([{ ...docx, report }])).outputs[0]!.report).toEqual(
+      report,
+    );
+    expect(
+      PublicationView.safeParse(
+        viewWith([{ ...docx, report: [{ kind: 'equation_flattened', label: '3' }] }]),
+      ).success,
+    ).toBe(false);
+  });
+
   it('shows each output with its format, standard, producer and report, and a view link for the PDF alone', () => {
     const both = PublicationView.parse(viewWith([pdf, docx]));
     expect(both.outputs).toEqual([pdf, docx]);

@@ -107,11 +107,20 @@ afterEach(() => {
 });
 
 describe('an equation on the surface (equations 1, ruling R5)', () => {
-  it('draws an inline equation as MathML elements carrying its alternative, never as HTML', () => {
+  it('CNT-045 draws an inline equation as its stored MathML, element for element, carrying its alternative, never as HTML', () => {
     const { view } = mount([para('b1', text('Where '), inline(), text(' grows.'))]);
     const holder = view.dom.querySelector<HTMLElement>('.aw-equation')!;
     const math = holder.querySelector('math')!;
     expect(math).not.toBeNull();
+    // The one representation drawn whole: what is on the screen is the stored MathML, every element
+    // and attribute of it, with nothing but the name the view gives it beside - the MathML the PDF's
+    // and Word's maths tree is read from (the worker's CNT-045 test).
+    const drawn = math.cloneNode(true) as Element;
+    drawn.removeAttribute('aria-label');
+    const serialised = (element: Element) => new XMLSerializer().serializeToString(element);
+    expect(serialised(drawn)).toBe(
+      serialised(new DOMParser().parseFromString(SQUARED, 'application/xml').documentElement),
+    );
     expect(math.namespaceURI).toBe(NS);
     expect(math.querySelector('msup')!.namespaceURI).toBe(NS);
     expect(math.querySelector('mi')!.namespaceURI).toBe(NS);

@@ -4913,10 +4913,6 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     block,
     detail,
   });
-  /** What Word 1 does not write, named where it stands. */
-  const notYet = (block: string | null, detail: string) => failed('word_not_yet', block, detail);
-  /** A list after the contents, which stands in no node. */
-  const listNotYet = (sequence: string) => ({ ...notYet(null, `listOf:${sequence}`), node: null });
   /** The same input assembled for a PDF, for Word, and for both. */
   const assembledFor = (over: UnderALayout) => ({
     pdf: assemble({ ...over, formats: ['pdf'] }),
@@ -4985,40 +4981,46 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(failuresOf(assemble({ ...before, formats: ['docx'] }))).toEqual([unsupported]);
   });
 
-  it('refuses what Word does not write yet - an equation, a reference to one and the list of equations - by name where it stands, and still publishes the PDF', () => {
-    const over = holding(
-      list('L1', paragraph('i1', text('An item.'))),
-      quotation('q1', paragraph('q1p', text('Quoted.'))),
-      { type: 'preformatted', id: 'pre1', text: 'SELECT 1;' },
-      table('t1'),
-      figure('f1'),
-      equation('e1'),
-      paragraph('p1', text('A logo '), image),
-      paragraph('p2', text('Let '), inlineEquation),
-      paragraph('p3', text('Noted'), footnote('n1', paragraph('n1p', text('A note.')))),
-      paragraph('p4', text('See '), xref('x1', toBlock('t1'))),
-      // A reference to an equation is Word 4's, as the equation is (Word 3, ruling R1).
-      paragraph('p5', text('See '), xref('x2', toBlock('e1'), 'relative')),
-    );
-    const { pdf, docx, both } = failuresFor(over);
-    expect(pdf).toEqual([]);
-    const refused = [
-      notYet('e1', 'equation'),
-      notYet('p2', 'equation'),
-      notYet('p5', 'crossReference'),
-    ];
-    expect(docx).toEqual(refused);
-    expect(both).toEqual(refused);
-    // The lists of figures and of tables are Word's since Word 2's fourth task; the list of equations
-    // is Word 4's. It lists numbered equations alone, so it stands only beside one, itself refused.
+  it('publishes an equation for Word - as a block, numbered or not, in a line, a reference to one and the list of equations - in the document the PDF is made from (Word 4, ruling R1)', () => {
+    // The list of equations, which the default layout does not declare, after the other two.
     const equations = layoutWith((layout) => {
       layout.matter.lists = [...layout.matter.lists, { sequence: 'equation', title: 'Equations' }];
     });
-    expect(failuresFor({ ...over, layout: equations }).docx).toEqual(refused);
-    const numbered = { ...holding({ ...equation('e2'), numbered: true }), layout: equations };
-    const listed = [notYet('e2', 'equation'), listNotYet('equation')];
-    expect(failuresFor(numbered).docx).toEqual(listed);
-    expect(failuresFor(numbered).both).toEqual(listed);
+    const over = {
+      ...holding(
+        { ...equation('e1'), numbered: true },
+        equation('e2'),
+        paragraph('p2', text('Let '), inlineEquation),
+        paragraph(
+          'p5',
+          text('See '),
+          xref('x1', toBlock('e1')),
+          text(', '),
+          xref('x2', toBlock('e1'), 'page'),
+          text(' and '),
+          xref('x3', toBlock('e2'), 'relative'),
+        ),
+      ),
+      layout: equations,
+    };
+    expect(failuresFor(over)).toEqual({ pdf: [], docx: [], both: [] });
+    const { pdf, docx, both } = assembledFor(over);
+    if (!pdf.ok || !docx.ok || !both.ok) throw new Error('refused');
+    expect(blocksOf(docx).map((block) => [block.type, 'id' in block ? block.id : null])).toEqual([
+      ['equation', 'e1'],
+      ['equation', 'e2'],
+      ['paragraph', 'p2'],
+      ['paragraph', 'p5'],
+    ]);
+    expect(docx.document.front.lists.map((each) => each.sequence)).toContain('equation');
+    // Each reference's form, kept for Word as any other's is (Word 3, ruling R4).
+    expect([...docx.word!.references.values()]).toEqual([
+      { display: 'number', label: 'Equation 1', title: null },
+      { display: 'page', label: 'Equation 1', title: null },
+      { display: 'relative', label: null, title: null },
+    ]);
+    expect(JSON.stringify(docx.document)).toBe(JSON.stringify(pdf.document));
+    expect(JSON.stringify(both.document)).toBe(JSON.stringify(pdf.document));
   });
 
   it('publishes the lists of figures and of tables after the contents for Word, as the PDF does', () => {
@@ -5086,13 +5088,17 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(JSON.stringify(both.document)).toBe(JSON.stringify(pdf.document));
   });
 
-  it("refuses an equation wherever it stands - nested, in a caption, or in a section's title - and not a reference in a title, which Word writes as a field (Word 3, task 3)", () => {
-    const inner = holding(
-      quotation('q1', list('L1', paragraph('i1', text('One '), inlineEquation))),
-      table('t1', { caption: [text('Readings '), inlineEquation] }),
-    );
-    expect(failuresFor(inner).docx).toEqual([notYet('i1', 'equation'), notYet('t1', 'equation')]);
-    // A section's title may hold an equation and a reference, and is named by its node alone.
+  it("publishes an equation for Word wherever the PDF carries one - nested, in a caption, in a section's title - and carries a title holding one and a reference with the equation in its place (Word 4, ruling R1)", () => {
+    const inner = {
+      ...holding(
+        quotation('q1', list('L1', paragraph('i1', text('One '), inlineEquation))),
+        table('t1', { caption: [text('Readings '), inlineEquation] }),
+      ),
+      layout: listless,
+    };
+    expect(failuresFor(inner)).toEqual({ pdf: [], docx: [], both: [] });
+    // A section's title may hold an equation and a reference: Word is given the title as runs, the
+    // reference a run of its own to write as a field, and the equation where it stands.
     const titled = {
       ...section('results', 'Results'),
       title: [
@@ -5103,9 +5109,27 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       ],
     };
     const inTitle = input({ outline: outline([section('methods', 'Methods'), titled]) });
-    const { pdf, docx } = failuresFor(inTitle);
-    expect(pdf).toEqual([]);
-    expect(docx).toEqual([{ ...notYet(null, 'equation'), node: id('results') }]);
+    expect(failuresFor(inTitle)).toEqual({ pdf: [], docx: [], both: [] });
+    const { pdf, docx } = assembledFor(inTitle);
+    if (!pdf.ok || !docx.ok) throw new Error('refused');
+    const published = docx.document.nodes[1]!.title;
+    const equationRun = published.find((run) => 'equation' in run);
+    expect(equationRun).toBeDefined();
+    expect(docx.word!.titles.get(id('results'))).toEqual([
+      { text: 'Results of ', marks: [] },
+      equationRun,
+      { text: ' in ', marks: [] },
+      {
+        reference: {
+          anchor: `n-${id('methods')}`,
+          text: '1',
+          page: false,
+          relative: false,
+          link: false,
+        },
+      },
+    ]);
+    expect(JSON.stringify(docx.document)).toBe(JSON.stringify(pdf.document));
   });
 
   it("refuses for Word by name the two references Word cannot print - above or below between a footnote's text and the text outside it, and a caption's words named in that caption - and publishes both for the PDF (Word 3, ruling R5; measured)", () => {
@@ -5466,29 +5490,65 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     });
   });
 
-  it("reports an equation the PDF's engine cannot set only where the PDF is asked for, and MathML nothing can read for every format", () => {
-    const rtl = equation(
-      'e1',
-      '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x" dir="rtl"><mi>x</mi></math>',
-    );
-    expect(failuresFor(holding(rtl))).toEqual({
-      pdf: [failed('equation_unrenderable', 'e1', 'rtl')],
-      docx: [notYet('e1', 'equation')],
-      both: [notYet('e1', 'equation'), failed('equation_unrenderable', 'e1', 'rtl')],
-    });
-    // MathML that cannot be read is the equation's own fault, whatever sets it. The stored shape
-    // refuses it, so it is broken past the parse, as a build reading newer content might meet it.
-    const readable = holding(equation('e2'));
+  it('R2 refuses an equation the maths tree cannot set for Word alone, the PDF alone and both, by the construct: none leaves a tree for Word to write, and none is dropped from a Word document in silence (Word 4)', () => {
+    const math = (inner: string, attributes = '') =>
+      `<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"${attributes}>${inner}</math>`;
+    // Every reason the maths tree gives, by the detail `equation_unrenderable` names it with. The
+    // stored shape refuses some of these, so each is written past the parse, as a build reading newer
+    // content might meet it.
+    const refusals: readonly (readonly [string, string])[] = [
+      ['<math><mi>', 'unreadable'],
+      [math('<merror><mtext>bad</mtext></merror>'), 'merror'],
+      [math('<mi>x</mi>', ' dir="rtl"'), 'rtl'],
+      [
+        math('<mmultiscripts><mi>X</mi><mi>a</mi><mi>b</mi><mi>c</mi><mi>d</mi></mmultiscripts>'),
+        'multiscripts',
+      ],
+      [math('<mpadded voffset="0.5em"><mi>x</mi></mpadded>'), 'voffset'],
+      [
+        math(
+          '<mtable><mtr><mtd columnspan="2"><mi>a</mi></mtd><mtd><mi>b</mi></mtd></mtr></mtable>',
+        ),
+        'spanningCell',
+      ],
+      [math('<mi mathvariant="bold-fraktur">x</mi>'), 'mathvariant'],
+      [math('<mfrac><mi>a</mi></mfrac>'), 'element'],
+      [math('<mstyle scriptlevel="3"><mi>a</mi></mstyle>'), 'attribute'],
+      [math('<mrow>x<mi>y</mi></mrow>'), 'text'],
+      [math('<mrow><mi>a</mi><mspace width="30em"/><mi>b</mi></mrow>'), 'space'],
+      [math('<mover accent="true"><mi>y</mi><mo>x&#x302;</mo></mover>'), 'accent'],
+      [math('<mrow></mrow>'), 'empty'],
+    ];
+    const readable = holding(equation('e1'), paragraph('p1', text('Let '), inlineEquation));
     const content = readable.occurrences.get(id('calib'))!;
-    const unreadable = { ...content.content[0]!, mathml: '<math><mi>' } as BlockNode;
-    const broken = {
-      ...readable,
-      occurrences: new Map([[id('calib'), { ...content, content: [unreadable] }]]),
+    const [block, line] = content.content as [BlockNode, BlockNode];
+    const pastTheParse = (mathml: string, inline: boolean) => {
+      const changed = inline
+        ? [
+            block,
+            {
+              ...line,
+              content: [text('Let '), { type: 'equation', mathml }],
+            } as unknown as BlockNode,
+          ]
+        : [{ ...block, mathml } as BlockNode, line];
+      return {
+        ...readable,
+        occurrences: new Map([[id('calib'), { ...content, content: changed }]]),
+      };
     };
-    expect(failuresFor(broken).docx).toEqual([
-      notYet('e2', 'equation'),
-      failed('equation_unrenderable', 'e2', 'unreadable'),
-    ]);
+    for (const [mathml, detail] of refusals) {
+      for (const inline of [false, true]) {
+        const refused = [failed('equation_unrenderable', inline ? 'p1' : 'e1', detail)];
+        expect(failuresFor(pastTheParse(mathml, inline)), `${detail}, inline ${inline}`).toEqual({
+          pdf: refused,
+          docx: refused,
+          both: refused,
+        });
+      }
+    }
+    // The detail is from a fixed list, one for each reason the tree gives.
+    expect(new Set(refusals.map(([, detail]) => detail)).size).toBe(13);
   });
 
   it("reports a table style's continuation label under a layout with no words for it only where the PDF is asked for, and publishes the table for Word", () => {
@@ -5541,6 +5601,40 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       docx: [refused('prefix'), refused('restart')],
       both: [refused('prefix'), refused('restart')],
     });
+  });
+
+  it("refuses an equation's number Word cannot compute only where Word is asked for, and passes the default scheme's in every matter (Word 4)", () => {
+    const numbered = (name: string) => ({ ...equation(name), numbered: true });
+    const nodes = [
+      inMatter('front', reference('preface')),
+      reference('calib'),
+      inMatter('appendix', reference('values')),
+    ];
+    const occurrences = new Map([
+      [id('preface'), component([numbered('e0')])],
+      [id('calib'), component([numbered('e1')])],
+      [id('values'), component([numbered('e2'), numbered('e2b')])],
+    ]);
+    // Equation i, then Equation 1, and Equation A.1 and A.2: each matter counting on its own.
+    const over = { ...input({ outline: outline(nodes), occurrences }), layout: listless };
+    expect(failuresFor(over)).toEqual({ pdf: [], docx: [], both: [] });
+    // The body entered again after an appendix carries on its count, 2, where Word's one sequence
+    // carries on the appendix's, 3.
+    const again = {
+      ...input({
+        outline: outline([...nodes, reference('later')]),
+        occurrences: new Map([...occurrences, [id('later'), component([numbered('e3')])]]),
+      }),
+      layout: listless,
+    };
+    const refused = {
+      stage: 'compose',
+      code: 'numbering_not_in_word',
+      node: id('later'),
+      block: 'e3',
+      detail: 'equation:body:restart',
+    };
+    expect(failuresFor(again)).toEqual({ pdf: [], docx: [refused], both: [refused] });
   });
 
   it('refuses a list Word would not print as the PDF does only where Word is asked for, naming the list: nested past the ninth level, counted afresh in a cell, or numbered past the 27th letter or 3999 (Word 2, ruling R4; WO-I)', () => {

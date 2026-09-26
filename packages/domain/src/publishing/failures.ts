@@ -106,11 +106,11 @@ export const publishFailureCodes = [
   // and the style. The label would otherwise be a table's number with nothing after it.
   'continuation_words_missing',
   // compose, from Word 1 (ruling R3): where Word is asked for, a block or an inline the Word writer
-  // does not write yet - an equation, a footnote or a cross-reference, since Word 2 took lists,
-  // quotations, preformatted text, tables, figures and images off it - naming where it stands and, in
-  // `detail`, what it is, by its stored type; and a list after the contents, naming no place and its
-  // sequence as `listOf:<sequence>`. Each later slice of Word output takes its constructs off the list.
-  // A publication refused for one before Word 2 still reads it back by name. And a
+  // did not write yet, naming where it stands and, in `detail`, what it is, by its stored type; and a
+  // list after the contents, naming no place and its sequence as `listOf:<sequence>`. Words 2 to 4
+  // took every construct off it, the last - equations, a reference to one and the list of equations -
+  // in Word 4 (ruling R1), so `assemble` no longer says it; it is kept because a request refused for
+  // one before then still holds it, and reads it back by name. And a
   // request for a format its layout has no page for, `detail` the format: refused when the request is
   // made (PUB-014), so met here only by a request built past that check, and said rather than thrown.
   'word_not_yet',
@@ -121,8 +121,9 @@ export const publishFailureCodes = [
   // ninth level (the first heading that meets it). From Word 2 (ruling R1), a figure's or a table's
   // number Word's caption fields would compute differently - `figure:<matter>:<why>` or
   // `table:<matter>:<why>`, naming the first caption that meets it: a separator a run cannot carry, a
-  // prefix or a count Word's fields reach otherwise, letters past z, or a roman numeral past 3999. The
-  // PDF is unaffected.
+  // prefix or a count Word's fields reach otherwise, letters past z, or a roman numeral past 3999. From
+  // Word 4, a numbered equation's, `equation:<matter>:<why>`, for the same reasons. The PDF is
+  // unaffected.
   'numbering_not_in_word',
   // compose, from Word 2 (ruling R4): where Word is asked for, a list Word would not print as the PDF
   // does, naming it - `detail` `depth` for one nested past Word's ninth level, counted through items

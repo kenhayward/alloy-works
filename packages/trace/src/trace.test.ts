@@ -70,6 +70,10 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1449);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 434, from 436 (2026-09-26): word-output.md stopped claiming PUB-023 and PUB-035, which Word 4's
+    // final review found claimed for more than the design gives - PUB-023's first-class kept by
+    // STY-053's suite, not built, and PUB-035's same terms asking for structures Word does not carry
+    // here - each named in prose beside the table rather than repointed.
     // 436, from 434: the Word output design measured in Word claims CNT-045, one MathML drawn in the
     // editor and set by both writers from one maths tree, and CNT-128, a link in the PDF and in Word.
     // 434, from 429: the T1 audit's review. Designs that already answered a split row's T1 half in
@@ -173,7 +177,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(436);
+    ).toBe(434);
   });
 });
 
@@ -497,8 +501,29 @@ describe('the citations in the committed model', () => {
   // word.test.ts, where the contents, the lists of figures and of tables and every page reference are
   // fields updated as the document opens, and none holds a page. Word 16 updated every field to what
   // the PDF prints and every page to the page it laid the target on, measured by hand for this slice.
+  // 332, from 331 (2026-09-26): Word 4's converter cites PUB-067 in packages/domain's
+  // word/omml.test.ts, where an equation holding every kind of maths node, read by mathsTree from one
+  // stored MathML, is written as OMML objects alone - no image, no second reading of the MathML -
+  // inline and displayed; Word 16 opened it as two OMaths in Cambria Math, measured by hand.
+  // 334, from 332 (2026-09-26): Word 4's writer cites PUB-067 in packages/domain's word/write.test.ts,
+  // where every equation is the converter's OMML of the published tree, in a line an m:oMath and
+  // displayed an m:oMathPara, never an image or the MathML; and CNT-045 in apps/worker's word.test.ts,
+  // where one publication sets each stored MathML's one maths tree in the PDF, a Formula saying its
+  // words, and in Word as that tree's OMML - the editor's own tests drawing it on screen. Word 16 set
+  // every placement in Cambria Math, measured by hand for this task.
+  // 337, from 334 (2026-09-26): Word 4's last citations. CNT-045 in apps/web's editor/equationView.test.ts,
+  // where the editor draws the stored MathML whole, element for element, beside the worker's test of
+  // the PDF and Word from its one tree; PUB-065 in apps/worker's publish.test.ts, where one job carries
+  // a document's content, numbers and cross-references into Word as fields, breaks no page the layout
+  // does not declare and records that a page cites the PDF; and PUB-023 in apps/worker's word.test.ts,
+  // where one document holding every construct a T1 document can hold is written as Word's own
+  // structures, flattened nowhere and dropped nowhere unsaid. The Word check measured them in Word.
+  // 335, from 337 (2026-09-26): Word 4's final review dropped PUB-023's citation on apps/worker's
+  // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
+  // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
+  // stay, retitled, as the record of what Word carries.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(331);
+    expect(model.citations).toHaveLength(335);
   });
 
   it('cites no identifier the corpus does not hold', () => {

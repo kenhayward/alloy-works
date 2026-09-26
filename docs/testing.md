@@ -271,7 +271,7 @@ change meets it.
 
 Passing the validator says Word will open a file, not what it will show. **The Word check opens the
 writer's fixtures in Word itself**, as a standing practice (PUB-029):
-`apps/worker/src/word-check.test.ts` makes eleven documents through the worker's own path - `assemble`
+`apps/worker/src/word-check.test.ts` makes twelve documents through the worker's own path - `assemble`
 with the worker's own face files, under the default theme and layout but where a fixture says
 otherwise, then `writeDocx` - and `apps/worker/scripts/word-check.ps1` opens each in a hidden Word
 through COM, updates its contents and fields, reads every section, paragraph, list string and field
@@ -327,6 +327,28 @@ below in another language, recorded in the test as measured (`oben` and `unten` 
 English ones in Hebrew) - and every page the page Word sets its target on, by the page's own foot;
 and every bookmark the writer wrote is `_Ref` and nine digits, hidden, and kept whole by Word, beside
 the `_Toc` ones Word makes as it updates the contents.
+
+Since Word 4 it holds Word's equations to the PDF. One fixture, compiled through template 13 beside
+it, carries an equation holding every kind of node the maths tree has, in a line and displayed, and
+equations in a line in a paragraph, a table's caption, header row and cells - one alone in its cell -
+a table's note, a figure's caption, a footnote and a level-one section's title; numbered ones in
+front matter, the body and an appendix, one of them too wide for its line; references to them in
+every form an equation offers; and the list of equations. Every number's result is prefilled "9"
+before Word opens it. The earlier checks take the fixture in: they read an equation in Word's text
+as a placeholder - in a heading, a running head, the contents and the lists - allow Cambria Math
+exactly where equations are set, and save it again, which found a heading's equation turned bold by
+Word's save. The test then checks two things more: every equation is one
+of Word's own, displayed or in its line as the published document sets it and in Cambria Math, again
+where Word rebuilds the contents and the lists from a heading or a caption holding one, there as its
+runs alone; and every
+equation's number is the numbering table's after the update - _Equation i_, _1_, _A.1_ - starting
+within a point of where the PDF starts it across the page, on the line its equation stands on, and
+the too-wide one broken over lines inside its cell with its number beside it. Word 4's final review
+added two cases and a check: references forward, number and relative, to the body's second numbered
+equation and to the appendix's, with front matter numbering one, which Word numbered one higher before
+front matter's equations counted under a name of their own; and a fraction holding a script in a
+chapter's title and a listed caption, which the writer reports and which the copy Word saved holds as
+a fraction where the heading and the caption stand and as its runs alone in the entries Word rebuilt.
 
 - **Who and when.** Whoever changes the Word writer - `packages/domain/src/word/`, the theme's Word
   projection or `wordRun` - runs it before the change lands, on Windows with Word installed. **A pull

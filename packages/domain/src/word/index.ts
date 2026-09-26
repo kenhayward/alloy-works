@@ -4,3 +4,6 @@
  */
 export { writeDocx, WORD_WRITER_VERSION } from './write.js';
 export type { WordWriting, WrittenDocx } from './write.js';
+// The maths tree as OMML (Word 4, ruling R3): exported for the worker's check of it in Word's schema.
+export { omml } from './omml.js';
+export type { OmmlOptions } from './omml.js';

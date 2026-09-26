@@ -46,10 +46,14 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 > [word-output.md](word-output.md#what-was-built)), and the second carried lists, quotations,
 > preformatted text, tables, figures and images into Word, with the lists of figures and of tables
 > ([Word 2](../plans/2026-09-25-word-02-lists-tables-and-figures.md)), and the third carried footnotes
-> and cross-references ([Word 3](../plans/2026-09-26-word-03-footnotes-and-cross-references.md)); a
-> document holding an equation is refused for Word by name. The defined
+> and cross-references ([Word 3](../plans/2026-09-26-word-03-footnotes-and-cross-references.md)),
+> and the fourth equations ([Word 4](../plans/2026-09-26-word-04-equations.md)), so a Word
+> publication carries everything a document holds but a number or a reference Word's fields would
+> print otherwise than the PDF, refused by name; a heading's or a listed caption's equation, which
+> Word's rebuilt contents, lists and running heads set as its runs alone, is reported, and a maths
+> character Cambria Math lacks is drawn from another face unreported. The defined
 > term, condition, suggestion and comment marks, a citation, a variable and a binding,
-> veraPDF on every publication, preview and the rest of Word are later slices'
+> veraPDF on every publication, preview and review in Word are later slices'
 > ([Build order](#build-order)); a block equation wider than its
 > line is still set past the page's edge ([Equations](#equations), its open item); and nothing
 > chooses or edits a layout or a theme yet. [`../architecture.md`](../architecture.md) describes what is built, and
@@ -1236,22 +1240,25 @@ and a preview worker holds a handful. The slice sizes them and evicts the least 
 The Word writer ([word-output.md](word-output.md)) reads the same `PublishedDocument` and owns
 everything about its parts. This design gives it four things, each built by
 [Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md), a fifth built by
-[Word 2](../plans/2026-09-25-word-02-lists-tables-and-figures.md), and a sixth built by
-[Word 3](../plans/2026-09-26-word-03-footnotes-and-cross-references.md):
+[Word 2](../plans/2026-09-25-word-02-lists-tables-and-figures.md), a sixth built by
+[Word 3](../plans/2026-09-26-word-03-footnotes-and-cross-references.md), and a seventh built by
+[Word 4](../plans/2026-09-26-word-04-equations.md), with which a Word publication carries everything a
+document holds but a number or a reference Word's fields would print otherwise than the PDF:
 
 - **One `assemble`, told the formats.** A request names `pdf`, `docx` or both, where the layout has a
   page for each; the job calls `assemble` once with them, which says the PDF engine's own refusals only
-  where a PDF is asked for, refuses what the writer does not write yet by name (`word_not_yet`) and a
-  heading's, a caption's or a footnote's number Word would compute differently
-  (`numbering_not_in_word`), and returns what the writer needs beside the document - the layout's Word
+  where a PDF is asked for, refuses by name a heading's, a caption's, an equation's or a footnote's
+  number Word would compute differently (`numbering_not_in_word`) - and until Word 4 wrote the last
+  of them, what the writer did not write yet (`word_not_yet`, which names nothing now and stays for
+  the failures stored under it) - and returns what the writer needs beside the document - the layout's Word
   page, the resolved theme and the scheme - so the published document is still `publishing/13` and a
   PDF made beside Word is byte for byte the PDF made alone.
 - **The job makes every output asked for or none.** It compiles the PDF with Typst and writes the
   `.docx` with the writer, reading the pinned face files by hash for it to embed, keeps each in the
   store by its hash, and records all of them in one transaction.
 - **One `publication_output` row per format**, each saying what made it - `typst` and the template's
-  version, or `word` and the writer's, `word/1` as Word 1 built it, `word/2` since Word 2 and
-  `word/3` since Word 3 - with
+  version, or `word` and the writer's, `word/1` as Word 1 built it, `word/2` since Word 2,
+  `word/3` since Word 3 and `word/4` since Word 4 - with
   its own report, which is empty for a PDF and for Word says which faces Word set in another face
   (STY-052), that no PDF stands beside it where none does (PUB-074), that a page number cited from the
   publication is the PDF's (PUB-065), and, since Word 2, which tables lost their header column, had
@@ -1270,8 +1277,14 @@ everything about its parts. This design gives it four things, each built by
   reference a field Word updates at a hidden bookmark on its target. Where Word's field would print
   otherwise than the PDF - above or below across a footnote's boundary, or a caption's words named in
   a way Word reads differently - `assemble` refuses the Word output by name,
-  `cross_reference_not_in_word`, and the PDF is unaffected. A document holding an equation, a
-  reference to one or a list of equations is still refused for Word, `word_not_yet`, until Word 4.
+  `cross_reference_not_in_word`, and the PDF is unaffected.
+- **Equations reach Word as Word's own** (Word 4). The writer makes each equation OMML from the maths
+  tree the published document carries, the one the PDF sets - never an image, never a second
+  conversion of its MathML (PUB-067) - in a line where the PDF sets it in a line, displayed where it
+  is displayed, a numbered one beside a `SEQ` field Word numbers, a reference to one a field and the
+  list of equations a `TOC` field. An equation the maths tree refuses (`equation_unrenderable`) is
+  refused for every format, since it leaves no tree for either to set. Word sets equations in the
+  maths face's Word face, Cambria Math under the default theme, and the report says so (STY-052).
 
 ## Stores
 

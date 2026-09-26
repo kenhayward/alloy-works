@@ -20,6 +20,7 @@ import {
   publishedImagePath,
   readTheme,
   sectionNumbers,
+  withAlternative,
   writeDocx,
   type AssembleInput,
   type ContentDocument,
@@ -28,6 +29,7 @@ import {
   type NumberingEntry,
   type OutlineDocument,
   type OutlineMatter,
+  type OutputReport,
   type PublishedBlock,
   type PublishedInline,
   type PublishedNode,
@@ -41,12 +43,15 @@ import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import sharp from 'sharp';
 import { beforeAll, describe, expect, it } from 'vitest';
 
+// The converter's fixture, read as the Temml fixtures are: nothing but a test imports it.
+import { EVERY_KIND_MATHML } from '../../../packages/domain/src/word/omml.fixture.js';
 import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { defaultTheme } from './testing/theme.js';
 import {
   askedOf,
   blocksOf,
+  fieldOf,
   walk,
   wordsOf,
   type Asked,
@@ -1038,6 +1043,161 @@ const headedOccurrences = new Map<string, ContentDocument>([
   ],
 ]);
 
+/**
+ * Stored MathML as the editor stores it, with its alternative (Word 4); `x` plus a number of its own,
+ * so that each equation gives Word text no other gives.
+ */
+const stored = (alternative: string, source: string) => {
+  const written = withAlternative(source, alternative);
+  if (written === null) throw new Error(`Not storable: ${alternative}`);
+  return written;
+};
+const plus = (n: number) =>
+  stored(
+    `x plus ${n}`,
+    `<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi><mo>+</mo><mn>${n}</mn></math>`,
+  );
+/**
+ * x squared over a number of its own: a fraction holding a script, which Word's rebuilt contents, lists
+ * and running heads set as its characters in a row (the final review of Word 4, I2).
+ */
+const squaredOver = (n: number) =>
+  stored(
+    `x squared over ${n}`,
+    '<math xmlns="http://www.w3.org/1998/Math/MathML"><mfrac>' +
+      `<msup><mi>x</mi><mn>2</mn></msup><mn>${n}</mn></mfrac></math>`,
+  );
+/** An equation in a line. */
+const inLine = (mathml: string) => ({ type: 'equation', mathml });
+/** An equation standing on its own, numbered unless told. */
+const standing = (name: string, mathml: string, numbered = true) => ({
+  type: 'equation',
+  id: name,
+  mathml,
+  numbered,
+});
+/** Task 2's equation holding every kind of maths node, in a line and displayed. */
+const EVERY_KIND_INLINE = stored(
+  'Every kind in a line',
+  EVERY_KIND_MATHML.replace(' display="block"', ''),
+);
+const EVERY_KIND_SHOWN = stored('Every kind displayed', EVERY_KIND_MATHML);
+/**
+ * A sum of twenty-four terms, too wide for any measure: Word breaks it inside its cell, with its number
+ * beside it at the right, where the PDF sets it on one line and its number below (M17).
+ */
+const WIDEST = stored(
+  'A long sum',
+  '<math xmlns="http://www.w3.org/1998/Math/MathML">' +
+    Array.from({ length: 24 }, (_, n) => `<msub><mi>a</mi><mn>${n + 1}</mn></msub>`).join(
+      '<mo>+</mo>',
+    ) +
+    '</math>',
+);
+
+/**
+ * Word 4's document (ruling R6): an equation holding every kind of maths node, in a line and
+ * displayed; equations in a line in a paragraph's text, a table's caption, header row, cell - one
+ * alone in its cell - and note, a figure's caption, a footnote and a chapter's title; numbered ones in
+ * front matter, the body and an appendix, the default scheme's i, 1 and A.1, one too wide for its
+ * line; every form of reference to a numbered one and to one with no number; and the list of equations
+ * after the contents. And the final review's two: references forward, to the body's second numbered
+ * equation and to the appendix's, where front matter numbers one (I1), and a fraction holding a script
+ * in the chapter's title and in the table's caption, which the contents, the list of tables and the
+ * running heads hold (I2).
+ */
+const equationsOutline = parseOutlineDocument({
+  schemaVersion: OUTLINE_SCHEMA_VERSION,
+  title: 'The solved notes',
+  language: 'en-GB',
+  direction: 'ltr',
+  nodes: [
+    reference('eqfront', 30, { matter: 'front' }),
+    section('eqbody', 'Solving', [reference('eqtext', 31)]),
+    {
+      ...section('eqrated', 'Rated', [reference('eqrate', 32)]),
+      title: [text('Rate '), inLine(plus(10)), text(' over '), inLine(squaredOver(12))],
+    },
+    section('eqannex', 'Derived', [reference('eqderived', 33)], { matter: 'appendix' }),
+  ],
+});
+const equationsOccurrences = new Map<string, ContentDocument>([
+  [
+    id('eqfront'),
+    component('Preface by Grace', [
+      paragraph('ef0', text('Grace solved it first.')),
+      standing('ef', plus(1)),
+      paragraph(
+        'ef1',
+        text('Of it: '),
+        ...inEach('fa', toBlock('ef'), ['number', 'relative', 'page']),
+      ),
+    ]),
+  ],
+  [
+    id('eqtext'),
+    component('Every place', [
+      paragraph('e0', text('In a line, '), inLine(EVERY_KIND_INLINE), text(', and on.')),
+      standing('ed', EVERY_KIND_SHOWN, false),
+      paragraph(
+        'ew',
+        text('Ahead: '),
+        ...inEach('ew', toBlock('en2'), ['number', 'relative']),
+        text(' and '),
+        ...inEach('ex', { kind: 'component', component: uuid(33), block: 'ea1' }, [
+          'number',
+          'relative',
+        ]),
+      ),
+      paragraph('e1', text('Before the first.')),
+      standing('en1', plus(2)),
+      paragraph('e2', text('Before the widest.')),
+      standing('en2', WIDEST),
+      paragraph('e3', text('After the widest.')),
+      {
+        type: 'table',
+        id: 'et',
+        style: 'table',
+        caption: [text('Values of '), inLine(plus(3)), text(' and '), inLine(squaredOver(13))],
+        headerRows: 1,
+        headerColumns: 0,
+        note: [text('Where '), inLine(plus(4))],
+        rows: [
+          { cells: [cellOf('eth', text('Head '), inLine(plus(5))), cell('Value')] },
+          {
+            cells: [cellOf('etc', text('Cell '), inLine(plus(6))), cellOf('eta', inLine(plus(7)))],
+          },
+        ],
+      },
+      figure('eg', FOUR_BY_THREE!, '', { caption: [text('Area of '), inLine(plus(8))] }),
+      paragraph(
+        'e4',
+        text('Noted.'),
+        footnote('en', paragraph('ena', text('As '), inLine(plus(9)))),
+      ),
+      paragraph(
+        'e5',
+        text('First: '),
+        ...inEach('ea', toBlock('en1'), ['number', 'relative', 'page']),
+      ),
+      paragraph('e6', text('Widest: '), ...inEach('eb', toBlock('en2'), ['number', 'relative'])),
+      paragraph('e7', text('Shown: '), ...inEach('ec', toBlock('ed'), ['relative', 'page'])),
+    ]),
+  ],
+  [id('eqrate'), component('Rate', [paragraph('rr', text('The rate Alice set.'))])],
+  [
+    id('eqderived'),
+    component('Derivation', [
+      standing('ea1', plus(11)),
+      paragraph(
+        'ez',
+        text('Of it: '),
+        ...inEach('za', toBlock('ea1'), ['number', 'relative', 'page']),
+      ),
+    ]),
+  ],
+]);
+
 /** The kinds of Word section a fixture is written as, in order: what its pages are numbered by. */
 type Kind = 'cover' | 'contents' | OutlineMatter;
 
@@ -1061,6 +1221,12 @@ interface Fixture {
    * that what Word sets is measured against what the PDF sets.
    */
   readonly compared?: boolean;
+  /**
+   * Word 4's (ruling R6): its PDF compiled beside it through template 13 too, for where each numbered
+   * equation's number stands and for a person to look at the equations in both, without the
+   * constructs' measurements a compared fixture is held to.
+   */
+  readonly beside?: boolean;
 }
 
 const withMatter = (matter: Partial<Layout['matter']>): Layout => ({
@@ -1163,6 +1329,18 @@ const FIXTURES: readonly Fixture[] = [
     occurrences: headedOccurrences,
     serifOnly: true,
   },
+  {
+    name: 'equations',
+    layout: withMatter({
+      lists: [...defaultLayout.matter.lists, { sequence: 'equation', title: 'Equations' }],
+    }),
+    formats: ['pdf', 'docx'],
+    sections: ['cover', 'contents', 'front', 'body', 'appendix'],
+    outline: equationsOutline,
+    occurrences: equationsOccurrences,
+    serifOnly: true,
+    beside: true,
+  },
 ];
 
 /** What `word-check.ps1` reads of one document through COM. */
@@ -1180,10 +1358,10 @@ interface Opened {
   /** Every paragraph after the update. */
   readonly paragraphs: readonly ParagraphRead[];
   /** The contents' paragraphs as opened, and after the update, tabs kept. */
-  readonly contentsBefore: readonly { readonly text: string; readonly style: string }[];
-  readonly contents: readonly { readonly text: string; readonly style: string }[];
+  readonly contentsBefore: readonly Entry[];
+  readonly contents: readonly Entry[];
   /** Each list after the contents - Word's table of figures - by its paragraphs, after the update. */
-  readonly figureLists: readonly (readonly { readonly text: string; readonly style: string }[])[];
+  readonly figureLists: readonly (readonly Entry[])[];
   readonly tables: readonly TableRead[];
   /** Every image in a line, in the document's order, the ones in a floated figure's box included. */
   readonly images: readonly ImageRead[];
@@ -1198,6 +1376,8 @@ interface Opened {
   readonly visibleBookmarks: number;
   /** Every footnote, in the document's order, after the update. */
   readonly notes: readonly NoteRead[];
+  /** Word 4's (ruling R6): every equation in the text, then every one in the notes, after the update. */
+  readonly equations: readonly EquationRead[];
   readonly pdf: string;
   /**
    * The copy Word saved, reopened: every paragraph, and its own settings; and each footnote's number,
@@ -1209,6 +1389,28 @@ interface Opened {
     readonly paragraphs: readonly ParagraphRead[];
     readonly numbers: readonly string[];
   };
+}
+
+/** A paragraph of the contents or of a list after it. */
+interface Entry {
+  readonly text: string;
+  readonly style: string;
+  /** The text each equation in it gives, in order (Word 4). */
+  readonly maths: readonly string[];
+}
+
+interface EquationRead {
+  readonly story: 'text' | 'footnotes';
+  /** Word's `WdOMathType`: 0 displayed, 1 in its line. */
+  readonly type: number;
+  readonly font: string;
+  readonly text: string;
+  readonly page: number;
+  /** Where its start and its end stand, in points from the top of the page. */
+  readonly top: number;
+  readonly bottom: number;
+  /** Whether it stands in the contents or a list after it, made again from a heading or a caption. */
+  readonly listed: boolean;
 }
 
 interface FieldRead {
@@ -1257,6 +1459,8 @@ interface ParagraphRead {
   readonly anchors: number;
   /** Whether it stands in a floating text box, read straight after the paragraph that anchors it. */
   readonly boxed: boolean;
+  /** The text each equation in it gives, in order (Word 4). */
+  readonly maths: readonly string[];
 }
 
 interface TableRead {
@@ -1340,6 +1544,35 @@ interface Checked {
   readonly targets: Readonly<Record<string, Target>>;
   /** Every bookmark the writer wrote, by its name. */
   readonly written: readonly string[];
+  /** Word 4's: every equation the document sets, in the order Word meets them, the text's then the notes'. */
+  readonly equations: readonly Equated[];
+  /** How many equations the contents and the lists after it hold: a title's and a listed caption's. */
+  readonly listedEquations: number;
+  /** Each `SEQ` and `STYLEREF` field's result in the document as Word was handed it. */
+  readonly prefilled: readonly string[];
+  /** The PDF, and Word's own PDF, each as laid out, where the fixture's PDF is compiled beside it. */
+  readonly beside: { readonly pdf: LaidOut; readonly word: LaidOut } | null;
+  /** What the writer reported of the document. */
+  readonly report: OutputReport;
+  /**
+   * Every equation in the copy Word saved, by the style of the paragraph it stands in, in the text and
+   * in the headers: what Word's rebuilt contents, lists and running heads hold (the final review of
+   * Word 4, I2).
+   */
+  readonly rebuilt: {
+    readonly document: readonly SavedEquation[];
+    readonly heads: readonly SavedEquation[];
+  };
+}
+
+interface Equated {
+  readonly story: 'text' | 'footnotes';
+  readonly display: boolean;
+  /** The numbering table's label, or null where it has none. */
+  readonly label: string | null;
+  readonly alternative: string;
+  /** Whether it stands in front matter, whose numbered ones Word counts by a name of their own. */
+  readonly front: boolean;
 }
 
 interface Caption {
@@ -1685,8 +1918,122 @@ function panels(fills: LaidOut['fills'], fill: string, within: (box: Painted) =>
   return found;
 }
 
-const titleOf = (node: PublishedNode) =>
-  node.title.map((run) => ('text' in run ? run.text : '')).join('');
+/**
+ * What a test reads an equation as, in the published document's runs and in Word's text alike (Word 4):
+ * Word's text for one is its maths, neither its source nor what it says, so each side is read with it
+ * in this one's place.
+ */
+const MATHS = '[maths]';
+const ZERO_WIDTH_SPACE = String.fromCharCode(0x200b);
+
+/**
+ * A paragraph's or an entry's text as Word gives it, each equation in it read as `MATHS`, and without
+ * the zero-width space the writer puts before an equation alone in its paragraph (Word 4, task 3).
+ */
+function textOf(read: { readonly text: string; readonly maths: readonly string[] }): string {
+  let rest = read.text;
+  let done = '';
+  for (const each of read.maths) {
+    if (each.trim() === '') continue;
+    // As it stands in the text, the marks of its structure read as spaces with it; or trimmed at an
+    // end of the text, which is trimmed.
+    const found = [each, each.trimEnd(), each.trimStart(), each.trim()].find((one) =>
+      rest.includes(one),
+    );
+    if (found === undefined) return `${read.text} (no ${each} in it)`;
+    const at = rest.indexOf(found);
+    done += `${rest.slice(0, at)}${MATHS}`;
+    rest = rest.slice(at + found.length);
+  }
+  return `${done}${rest}`.replaceAll(ZERO_WIDTH_SPACE, '');
+}
+
+/** Runs' words as the PDF prints them, each equation read as `MATHS`. */
+const shownWords = (runs: readonly PublishedInline[]) =>
+  runs.map((run) => ('equation' in run ? MATHS : wordsOf([run]))).join('');
+
+const titleOf = (node: PublishedNode) => shownWords(node.title);
+
+/**
+ * Every equation a published document sets, in the order Word meets them (Word 4): a node's title, then
+ * its blocks - a table's caption before its cells and its note after them, a figure's caption after its
+ * image - in the text; then each footnote's, in the notes.
+ */
+function equationsIn(nodes: readonly PublishedNode[]): Equated[] {
+  const text: Equated[] = [];
+  const notes: Equated[] = [];
+  let front = false;
+  const runs = (inlines: readonly PublishedInline[], into: Equated[]) => {
+    for (const run of inlines) {
+      if ('equation' in run) {
+        into.push({
+          story: into === text ? 'text' : 'footnotes',
+          display: false,
+          label: null,
+          alternative: run.equation.alternative.text,
+          front,
+        });
+      }
+      if ('footnote' in run) for (const each of run.footnote.paragraphs) runs(each.runs, notes);
+    }
+  };
+  const blocks = (list: readonly PublishedBlock[]) => {
+    for (const block of list) {
+      switch (block.type) {
+        case 'paragraph':
+          runs(block.runs, text);
+          break;
+        case 'list':
+          for (const item of block.items) {
+            if (item.term !== null) runs(item.term, text);
+            blocks(item.blocks);
+          }
+          break;
+        case 'blockquote':
+          blocks(block.blocks);
+          if (block.attribution !== null) runs(block.attribution, text);
+          break;
+        case 'table':
+          runs(block.caption, text);
+          for (const row of block.rows) for (const each of row.cells) blocks(each.blocks);
+          if (block.note !== null) runs(block.note, text);
+          break;
+        case 'figure':
+          runs(block.caption, text);
+          break;
+        case 'equation':
+          text.push({
+            story: 'text',
+            display: true,
+            label: block.label,
+            alternative: block.alternative.text,
+            front,
+          });
+          break;
+        default:
+          break;
+      }
+    }
+  };
+  for (const node of walk(nodes)) {
+    front = node.matter === 'front';
+    runs(node.title, text);
+    blocks(node.blocks);
+  }
+  return [...text, ...notes];
+}
+
+/** Every equation Word displays in the text, in its order: the published document's that stand on their own. */
+const displayedOf = (word: Opened) =>
+  word.equations.filter((each) => each.story === 'text' && !each.listed && each.type === 0);
+
+/** Every numbered equation's number as Word shows it: a paragraph of its label alone, in its row's cell. */
+const numbersOf = (word: Opened, labels: readonly string[]) => {
+  const words = new Set(labels.map((label) => label.split(' ')[0]!));
+  return word.paragraphs.filter((each) =>
+    [...words].some((one) => new RegExp(`^${one} \\S+$`).test(each.text)),
+  );
+};
 
 /**
  * The page's label as its foot prints it after the layout's word "Page", or null where the page has no
@@ -1813,6 +2160,48 @@ function wrongFilled(bytes: Uint8Array): Uint8Array {
   return zipSync(parts);
 }
 
+/**
+ * Each `SEQ` and `STYLEREF` field's result in the text, in order: a caption's and a numbered
+ * equation's number, and its prefix.
+ */
+function prefilledOf(bytes: Uint8Array): string[] {
+  const xml = strFromU8(unzipSync(bytes)['word/document.xml']!);
+  return [
+    ...xml.matchAll(
+      /<w:instrText xml:space="preserve"> (?:SEQ|STYLEREF \d) [^<]*<\/w:instrText>((?:(?!fldCharType="end").)*)/g,
+    ),
+  ].map(([, rest]) =>
+    [
+      ...rest!
+        .split('fldCharType="separate"')[1]!
+        .matchAll(/<w:t xml:space="preserve">([^<]*)<\/w:t>/g),
+    ]
+      .map((match) => match[1])
+      .join(''),
+  );
+}
+
+/** An equation as Word saved it: the style of its paragraph, its characters, and its structure. */
+interface SavedEquation {
+  readonly style: string;
+  readonly text: string;
+  /** Whether it is a row of runs alone, no fraction, script or any other of Word's maths objects. */
+  readonly runs: boolean;
+}
+
+/** Every equation in a part Word saved, in its order, by the style of the paragraph it stands in. */
+function savedEquations(xml: string): SavedEquation[] {
+  const RUNS = new Set(['m:oMath', 'm:r', 'm:rPr', 'm:sty', 'm:nor', 'm:t']);
+  return [...xml.matchAll(/<w:p[ >](?:(?!<\/w:p>).)*<\/w:p>/gs)].flatMap(([paragraph]) => {
+    const style = /<w:pStyle w:val="([^"]+)"/.exec(paragraph)?.[1] ?? '';
+    return [...paragraph.matchAll(/<m:oMath>(.*?)<\/m:oMath>/gs)].map(([, maths]) => ({
+      style,
+      text: [...maths!.matchAll(/<m:t(?: [^>]*)?>([^<]*)<\/m:t>/g)].map((m) => m[1]).join(''),
+      runs: [...maths!.matchAll(/<(m:\w+)/g)].every(([, name]) => RUNS.has(name!)),
+    }));
+  });
+}
+
 /** Every bookmark the writer wrote, by its name, in the text and in the notes. */
 function bookmarkNames(bytes: Uint8Array): string[] {
   const parts = unzipSync(bytes);
@@ -1835,7 +2224,7 @@ function captionsOf(
       if (block.type !== 'figure' && block.type !== 'table') return [];
       const entry = entries.find((each) => each.node === node.id && each.block === block.id);
       if (entry?.label == null) return [];
-      return [{ sequence: entry.sequence, label: entry.label, words: wordsOf(block.caption) }];
+      return [{ sequence: entry.sequence, label: entry.label, words: shownWords(block.caption) }];
     }),
   );
 }
@@ -1937,7 +2326,7 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           occurrences: typeof own === 'function' ? own(widest) : own,
         });
         if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-        const { bytes } = writeDocx({
+        const { bytes, report } = writeDocx({
           document: assembled.document,
           numbering: assembled.numbering,
           word: assembled.word!,
@@ -1947,32 +2336,51 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
         });
         // Every caption's number prefilled wrong, so that the number Word shows is the one its fields
         // compute, not the one the writer wrote (task 4 did the same by hand).
-        await writeFile(join(FOLDER, `${fixture.name}.docx`), wrongFilled(bytes));
-        const pdf = fixture.compared
-          ? await typst.compile(
-              PUBLICATION_TEMPLATE[TEMPLATE_READING[assembled.document.schema]].file,
-              JSON.stringify(assembled.document),
-              new Date('2026-09-25T00:00:00Z'),
-              [...images].map(([path, each]) => ({ path, bytes: each })),
-            )
-          : null;
+        const filled = wrongFilled(bytes);
+        await writeFile(join(FOLDER, `${fixture.name}.docx`), filled);
+        const pdf =
+          fixture.compared || fixture.beside
+            ? await typst.compile(
+                PUBLICATION_TEMPLATE[TEMPLATE_READING[assembled.document.schema]].file,
+                JSON.stringify(assembled.document),
+                new Date('2026-09-25T00:00:00Z'),
+                [...images].map(([path, each]) => ({ path, bytes: each })),
+              )
+            : null;
         if (pdf !== null) await writeFile(join(FOLDER, `${fixture.name}-typst.pdf`), pdf);
         const numbers = sectionNumbers(assembled.numbering);
+        const depth = assembled.document.front.contents?.depth ?? null;
+        const captions = captionsOf(assembled.document.nodes, assembled.numbering.entries);
+        const listed = new Set(fixture.layout.matter.lists.map((list) => list.sequence));
+        const expected = walk(assembled.document.nodes).map((node) => ({
+          number: numbers.get(node.id) ?? '',
+          title: titleOf(node),
+          depth: node.depth,
+        }));
+        const count = (words: string) => words.split(MATHS).length - 1;
         made.push({
           fixture,
           title: assembled.document.title,
-          depth: assembled.document.front.contents?.depth ?? null,
-          expected: walk(assembled.document.nodes).map((node) => ({
-            number: numbers.get(node.id) ?? '',
-            title: titleOf(node),
-            depth: node.depth,
-          })),
-          captions: captionsOf(assembled.document.nodes, assembled.numbering.entries),
+          depth,
+          expected,
+          captions,
           images: placedOf(assembled.document.nodes),
           widest,
           typst: pdf,
           ...askedOf(assembled.document, assembled.word!, assembled.numbering.entries),
           written: bookmarkNames(bytes),
+          equations: equationsIn(assembled.document.nodes),
+          // Word makes the contents' entries and the lists' again from the headings and the captions,
+          // each equation in them with it.
+          listedEquations:
+            expected
+              .filter((node) => depth !== null && node.depth <= depth)
+              .reduce((sum, node) => sum + count(node.title), 0) +
+            captions
+              .filter((caption) => listed.has(caption.sequence as never))
+              .reduce((sum, caption) => sum + count(caption.words), 0),
+          prefilled: prefilledOf(filled),
+          report,
         });
       }
 
@@ -1991,25 +2399,38 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
         const read =
           pdf === null ? { pages: [], faces: [], foreign: [] } : await readWordPdf(pdf, margins);
         const saved = word.opened ? unzipSync(new Uint8Array(await readFile(word.saved.path))) : {};
+        const both =
+          compiled === null || pdf === null
+            ? null
+            : {
+                pdf: await laidOut(compiled, each.fixture.layout.formats.pdf.margins),
+                word: await laidOut(pdf, margins),
+              };
         checked.push({
           ...each,
           word,
           ...read,
           programs: pdf === null ? {} : fontPrograms(pdf),
           savedFonts: Object.keys(saved).filter((name) => name.startsWith('word/fonts/')).length,
-          compared:
-            compiled === null || pdf === null
-              ? null
-              : {
-                  pdf: await laidOut(compiled, each.fixture.layout.formats.pdf.margins),
-                  word: await laidOut(pdf, margins),
-                },
+          rebuilt: {
+            document: savedEquations(
+              saved['word/document.xml'] === undefined ? '' : strFromU8(saved['word/document.xml']),
+            ),
+            heads: savedEquations(
+              Object.keys(saved)
+                .filter((name) => /^word\/header\d+\.xml$/.test(name))
+                .map((name) => strFromU8(saved[name]!))
+                .join(''),
+            ),
+          },
+          compared: each.fixture.compared ? both : null,
+          beside: each.fixture.beside ? both : null,
         });
       }
       // The record a pull request pastes: what Word showed of every fixture, beside what was asked -
       // and, where a fixture is compared, each step between two lines both PDFs set, which the tests
       // below hold within a point.
-      const record = checked.map(({ compared, ...each }) => ({
+      const record = checked.map(({ compared, beside: _, ...each }) => ({
         ...each,
         fixture: each.fixture.name,
         steps: compared === null ? null : measuredSteps(compared),
@@ -2027,7 +2448,7 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
       for (const { fixture, word, expected, compared } of checked) {
         const headings = word.paragraphs
           .filter((each) => each.style.startsWith('Heading '))
-          .map((each) => ({ list: each.list, text: each.text, style: each.style }));
+          .map((each) => ({ list: each.list, text: textOf(each), style: each.style }));
         // Each in Word's own heading style for its depth, which gives it its outline level: past the
         // sixth as well (the final review of Word 1, I2).
         expect(headings, fixture.name).toEqual(
@@ -2073,7 +2494,7 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
         // Then an empty paragraph, which is Word's own form: the field's end in a paragraph after the
         // last entry, which the section's break stands on.
         expect(
-          word.contents.map((entry) => entry.text),
+          word.contents.map((entry) => textOf(entry)),
           fixture.name,
         ).toEqual([...shown, '']);
       }
@@ -2089,15 +2510,22 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
       }
     });
 
-    it('names the level-one heading a page is in, in its running head: the first on it, else the last before it, by its title alone where it has no number', () => {
+    it('names the level-one heading a page is in, in its running head: the first on it, else the last before it, by its title alone where it has no number, an equation in it among its words', () => {
       for (const { fixture, word, expected, pages, title } of checked) {
         const headings = word.paragraphs.filter((each) => each.style.startsWith('Heading '));
+        // A title holding an equation is read as Word gives the heading's text, its maths included,
+        // which the headings' test holds to the title (Word 4): the PDF's items split maths where Word
+        // spaces nothing, so such a line is read without its spaces.
         const chapters = expected.flatMap((node, index) =>
           node.depth === 1
             ? [
                 {
-                  parts: [node.number, node.title].filter((part) => part !== ''),
+                  parts: [
+                    node.number,
+                    node.title.includes(MATHS) ? headings[index]!.text : node.title,
+                  ].filter((part) => part !== ''),
                   page: headings[index]!.page,
+                  maths: node.title.includes(MATHS),
                 },
               ]
             : [],
@@ -2108,6 +2536,8 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
         // sets it (the final review of Word 1, M1).
         const line = (parts: readonly string[]) =>
           (fixture.rtl ? [...parts].reverse() : parts).join(' ');
+        const squeezed = (words: string, maths: boolean) =>
+          maths ? words.replace(/\s+/g, '') : words;
         const heads = pages.map((_, index) => {
           const kind =
             fixture.sections[word.sectionsAfter.findLastIndex((each) => each.page <= index + 1)];
@@ -2115,10 +2545,17 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           if (kind === 'contents') return [title];
           const on = chapters.find((chapter) => chapter.page === index + 1);
           const before = chapters.findLast((chapter) => chapter.page < index + 1);
-          return [line([title, ...(on ?? before)!.parts])];
+          const chapter = (on ?? before)!;
+          return [squeezed(line([title, ...chapter.parts]), chapter.maths)];
+        });
+        const inMaths = pages.map((_, index) => {
+          const on = chapters.find((chapter) => chapter.page === index + 1);
+          return (on ?? chapters.findLast((chapter) => chapter.page < index + 1))?.maths ?? false;
         });
         expect(
-          pages.map((page) => page.header.slice(1)),
+          pages.map((page, index) =>
+            page.header.slice(1).map((each) => squeezed(each, inMaths[index]!)),
+          ),
           fixture.name,
         ).toEqual(heads);
       }
@@ -2165,8 +2602,17 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
       }
     });
 
-    it('embeds the Liberation faces and sets every visible character in them, never in Times New Roman', () => {
-      for (const { fixture, word, expected, faces, foreign, programs, savedFonts } of checked) {
+    it('embeds the Liberation faces and sets every visible character in them, never in Times New Roman, but the maths, in Cambria Math', () => {
+      for (const {
+        fixture,
+        word,
+        expected,
+        faces,
+        foreign,
+        programs,
+        savedFonts,
+        equations,
+      } of checked) {
         expect(word.embedTrueTypeFonts, fixture.name).toBe(true);
         expect(faces.length, fixture.name).toBeGreaterThan(0);
         // Every face the text is drawn in is one Word set from the document's own files, and each of
@@ -2191,10 +2637,18 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
         const digitsAlone = fixture.rtl
           ? expected.filter((node) => /^[\d.]+$/.test(node.number)).map((node) => node.number)
           : [];
+        // And the maths, which Word sets in the face it names for the maths face, Cambria Math (Word
+        // 4, R5), from its own copy: the writer embeds no maths face - STIX Two Math's outlines Word
+        // does not embed (M10) - and Word's PDF embeds the subset of Cambria Math it drew.
+        const maths = (face: string) => /^[A-Z]{6}\+CambriaMath$/.test(face);
         expect(
-          foreign.map((each) => each.text),
+          foreign.filter((each) => !maths(each.face)).map((each) => each.text),
           fixture.name,
         ).toEqual(digitsAlone);
+        expect(
+          foreign.some((each) => maths(each.face)),
+          fixture.name,
+        ).toBe(equations.length > 0);
         expect(
           Object.values(programs).filter((name) => name.startsWith('TimesNewRoman')),
           fixture.name,
@@ -2378,7 +2832,7 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
         expect(
           word.paragraphs
             .filter((each) => each.style === 'Caption' && each.images === 0 && each.anchors === 0)
-            .map((each) => each.text),
+            .map((each) => textOf(each)),
           fixture.name,
         ).toEqual(captions.map((each) => `${each.label} ${each.words}`));
       }
@@ -2517,26 +2971,45 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
       }
     });
 
-    it('lists every figure and every table after the contents, each by its label, its caption and the page Word sets it on, which is the page the PDF lists', () => {
-      for (const { fixture, word, captions, pages, compared } of checked) {
+    it('lists every figure, every table and every numbered equation after the contents, each by its label, its caption and the page Word sets it on, which is the page the PDF lists', () => {
+      for (const { fixture, word, captions, pages, compared, equations } of checked) {
         const labels = pages.map(labelOf);
         const shown = word.paragraphs.filter(
           (each) => each.style === 'Caption' && each.images === 0 && each.anchors === 0,
         );
+        // An equation's entry is its label alone, on the page its number stands on (Word 4).
+        const numbered = equations.flatMap((each) => (each.label === null ? [] : [each.label]));
+        const numbers = numbersOf(word, numbered);
         const entries = (sequence: string) =>
-          captions.flatMap((each, at) =>
-            each.sequence === sequence
-              ? [`${each.label} ${each.words}\t${labels[shown[at]!.page - 1]}`]
-              : [],
-          );
+          sequence === 'equation'
+            ? numbered.map((label, at) => `${label}\t${labels[numbers[at]!.page - 1]}`)
+            : captions.flatMap((each, at) =>
+                each.sequence === sequence
+                  ? [`${each.label} ${each.words}\t${labels[shown[at]!.page - 1]}`]
+                  : [],
+              );
         const lists = fixture.layout.matter.lists.filter((list) =>
-          captions.some((each) => each.sequence === list.sequence),
+          list.sequence === 'equation'
+            ? numbered.length > 0
+            : captions.some((each) => each.sequence === list.sequence),
         );
-        // Each then an empty paragraph, Word's own form, as the contents' is (M9).
+        // Each then an empty paragraph, Word's own form, as the contents' is (M9). But the list of
+        // equations where front matter numbers one, which is two fields (the final review of Word 4,
+        // I1): front matter's entries, then the body's; the first ends in the paragraph whose mark is
+        // hidden, which Word reads as one with the body's first entry, so no empty entry stands
+        // between them.
+        const fronted = equations.filter((each) => each.front && each.label !== null).length;
         expect(
-          word.figureLists.map((list) => list.map((entry) => entry.text)),
+          word.figureLists.map((list) => list.map((entry) => textOf(entry))),
           fixture.name,
-        ).toEqual(lists.map((list) => [...entries(list.sequence), '']));
+        ).toEqual(
+          lists.flatMap((list) => {
+            const all = entries(list.sequence);
+            return list.sequence === 'equation' && fronted > 0 && fronted < all.length
+              ? [all.slice(0, fronted + 1), [...all.slice(fronted), '']]
+              : [[...all, '']];
+          }),
+        );
         if (compared === null) continue;
         // The PDF's lists name the same pages: its entry's words, its leader, and its page.
         const printed = (sequence: string) =>
@@ -2618,6 +3091,8 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
               return word.notes[target.index]!.mark;
             case 'note':
               return word.notes[target.index]!.note;
+            case 'equation':
+              return displayedOf(word)[target.index]!.page;
             case 'paragraph': {
               const found = word.paragraphs.filter((each) => each.text === target.text);
               expect(found, `${fixture.name} ${target.text}`).toHaveLength(1);
@@ -2636,10 +3111,8 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           return [each.story, each.field, each.link, text];
         });
         const got = word.references.map((each) => {
-          const [name, , ...switches] = each.code.split(' ');
-          const own = switches.map((one) => one.slice(1));
-          const field = [name, ...own.filter((one) => one !== 'h')].join(' ');
-          return [each.story, field, own.includes('h'), each.result];
+          const { field, link } = fieldOf(each.code);
+          return [each.story, field, link, each.result];
         });
         const inOrder = (list: unknown[][]) =>
           (['text', 'footnotes', 'box'] as const).flatMap((story) =>
@@ -2658,6 +3131,9 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           'caption PAGEREF',
           'caption REF',
           'caption REF p',
+          'equation PAGEREF',
+          'equation REF',
+          'equation REF p',
           'footnote NOTEREF',
           'footnote PAGEREF',
           'footnote REF p',
@@ -2691,6 +3167,144 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
         expect(word.visibleBookmarks, fixture.name).toBe(0);
       }
       expect(checked.some((each) => each.written.length > 0)).toBe(true);
+    });
+
+    // Word 4 (ruling R6): equations, set by Word.
+
+    it("sets every equation as Word's own maths, displayed where the PDF displays it and in its line where the PDF sets it in one, each in Cambria Math - in the text, a note, a heading, the contents and the lists after it", () => {
+      for (const { fixture, word, equations, listedEquations } of checked) {
+        // Every one the document sets, in Word's order, its type the published document's.
+        expect(
+          word.equations
+            .filter((each) => !each.listed)
+            .map((each) => [each.story, each.type === 0 ? 'displayed' : 'in a line']),
+          fixture.name,
+        ).toEqual(equations.map((each) => [each.story, each.display ? 'displayed' : 'in a line']));
+        // And again where Word made the contents and the lists from a heading or a caption holding one.
+        expect(
+          word.equations.filter((each) => each.listed),
+          fixture.name,
+        ).toHaveLength(listedEquations);
+        expect(
+          word.equations.filter((each) => each.font !== 'Cambria Math'),
+          fixture.name,
+        ).toEqual([]);
+      }
+      // The fixture holds what it is for: displayed and in a line, in the notes, and listed.
+      const all = checked.flatMap((each) => each.equations);
+      expect(new Set(all.map((each) => `${each.story} ${each.display}`))).toEqual(
+        new Set(['text true', 'text false', 'footnotes false']),
+      );
+      expect(checked.some((each) => each.listedEquations > 0)).toBe(true);
+    });
+
+    it("reports each heading and each listed caption holding an equation Word's rebuilt entries set as its characters in a row, and Word's rebuilt contents, list and running heads hold it so, where the heading and the caption keep its fraction and its script (the final review of Word 4, I2)", () => {
+      for (const { fixture, report, rebuilt } of checked) {
+        const said = report.filter((each) => each.kind === 'equation_flattened');
+        if (fixture.name !== 'equations') {
+          expect(said, fixture.name).toEqual([]);
+          continue;
+        }
+        // The table's caption, which the list of tables holds, then the chapter the contents and the
+        // running heads hold, in the order the text meets them.
+        expect(said).toEqual([
+          { kind: 'equation_flattened', node: id('eqtext'), block: 'et', label: 'Table 1.1' },
+          { kind: 'equation_flattened', node: id('eqrated'), block: null, label: '2' },
+        ]);
+        // Recorded, as Word 16 shows it: x squared over 12 and over 13 keep their fraction and their
+        // script where the heading and the caption stand, and are their characters in a row of runs
+        // where Word rebuilt the contents' entry and the list's.
+        const where = (text: string) =>
+          rebuilt.document
+            .filter((each) => each.text === text)
+            .map((each) => [each.style, each.runs]);
+        expect(where('x212')).toEqual([
+          ['TOC1', true],
+          ['Heading1', false],
+        ]);
+        expect(where('x213')).toEqual([
+          ['TableofFigures', true],
+          ['Caption', false],
+        ]);
+        // And in the running heads, where Word saved one, a row of runs.
+        expect(rebuilt.heads.filter((each) => !each.runs)).toEqual([]);
+      }
+    });
+
+    it("numbers every equation by Word's own field, each prefilled wrong, as the numbering table does - i in front matter, 1 in the body, A.1 in an appendix - at the right where the PDF sets its number, and one too wide broken in its cell beside it", () => {
+      for (const { fixture, word, equations, prefilled, beside } of checked) {
+        // Each number and each prefix handed to Word wrong, so that what it shows is its own count.
+        expect(
+          prefilled.filter((result) => result !== '9'),
+          fixture.name,
+        ).toEqual([]);
+        const labels = equations.flatMap((each) => (each.label === null ? [] : [each.label]));
+        const numbers = numbersOf(word, labels);
+        // Word's own count, after the references forward to the body's second and to the appendix's
+        // first, which front matter's numbered equation made one higher before it counted under a name
+        // of its own (the final review of Word 4, I1).
+        expect(
+          numbers.map((each) => each.text),
+          fixture.name,
+        ).toEqual(labels);
+        if (beside === null) continue;
+        // Where each number starts across the page, in Word's PDF and in the PDF: at the right, in the
+        // equation's row or, in the PDF, below one too wide for it. COM's own reading of where a line
+        // starts is Word's layout grid, not where it draws the text, so both are read from a PDF.
+        const starts = (laid: LaidOut) =>
+          laid.lines.flatMap((line) =>
+            line.items
+              .filter(
+                (item) =>
+                  item.x > 400 &&
+                  item.text.trim() !== '' &&
+                  labels.some((label) => label.startsWith(item.text.trim())),
+              )
+              .map((item) => item.x),
+          );
+        const [inPdf, inWord] = [starts(beside.pdf), starts(beside.word)];
+        expect(inPdf, fixture.name).toHaveLength(labels.length);
+        expect(inWord, fixture.name).toHaveLength(labels.length);
+        labels.forEach((label, at) =>
+          expect(Math.abs(inWord[at]! - inPdf[at]!), `${fixture.name} ${label}`).toBeLessThan(1),
+        );
+        // Each on one line but the one too wide, which Word breaks inside its cell, its number beside
+        // it on the same page: on a line the equation stands on.
+        const displayed = displayedOf(word);
+        const standing = equations.filter((each) => each.display);
+        standing.forEach((each, at) => {
+          if (each.label === null) return;
+          const set = displayed[at]!;
+          const number = numbers[labels.indexOf(each.label)]!;
+          expect(number.page, `${fixture.name} ${each.label}`).toBe(set.page);
+          if (each.alternative === 'A long sum') {
+            expect(set.bottom - set.top, each.label).toBeGreaterThan(10);
+            expect(number.top, each.label).toBeGreaterThanOrEqual(set.top);
+            expect(number.top, each.label).toBeLessThanOrEqual(set.bottom);
+          } else {
+            expect(set.bottom, `${fixture.name} ${each.label}`).toBe(set.top);
+          }
+        });
+      }
+      // The fixture holds what it is for: a number in each matter, and one too wide; and a reference
+      // forward to a numbered equation where front matter numbers one.
+      const labels = checked.flatMap((each) => each.equations.map((equation) => equation.label));
+      expect(labels).toEqual(expect.arrayContaining(['Equation i', 'Equation 1', 'Equation A.1']));
+      expect(
+        checked.some(
+          (each) =>
+            each.equations.some((equation) => equation.front && equation.label !== null) &&
+            each.word.paragraphs.some(
+              (paragraph) =>
+                paragraph.text.startsWith('Ahead: ') && paragraph.text.includes('below'),
+            ),
+        ),
+      ).toBe(true);
+      expect(
+        checked.some((each) =>
+          each.equations.some((equation) => equation.alternative === 'A long sum'),
+        ),
+      ).toBe(true);
     });
   });
 });

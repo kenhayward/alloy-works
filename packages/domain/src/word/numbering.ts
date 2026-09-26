@@ -101,18 +101,18 @@ export interface WordNumberingProblem {
   readonly block: string | null;
   /**
    * `<sequence>:<matter>:<why>`: for `section`, `separator`, `letters`, `roman` or `depth`; for
-   * `figure` and `table`, `separator`, `prefix`, `restart`, `letters` or `roman`; for `footnote`,
-   * `label`, `prefix`, `restart`, `letters` or `roman`.
+   * `figure`, `table` and `equation`, `separator`, `prefix`, `restart`, `letters` or `roman`; for
+   * `footnote`, `label`, `prefix`, `restart`, `letters` or `roman`.
    */
   readonly detail: string;
 }
 
 /**
  * **What Word cannot number as the layout's scheme does** (Word 1, ruling R7; Word 2, ruling R1; Word
- * 3, ruling R2): `numbering_not_in_word`, said before anything is written, rather than a number Word
- * prints differently from the PDF's. The section sequence, the figure and table sequences and the
- * footnote sequence reach Word - an equation's number arrives with the slice that writes it, and is
- * asked of then - and of the section rules, four things:
+ * 3, ruling R2; Word 4): `numbering_not_in_word`, said before anything is written, rather than a number
+ * Word prints differently from the PDF's. Every sequence the scheme must have reaches Word - the
+ * section sequence, the figure, table and equation sequences and the footnote sequence - and of the
+ * section rules, four things:
  *
  * - **a separator holding `%`**, which a level's text reads as a number to come (`%1`); asked of every
  *   matter, whether or not it numbers anything here, since each definition is written all the same;
@@ -270,8 +270,11 @@ export const lettersPart = (format: NumberFormat, value: number) =>
 export const romanPart = (format: NumberFormat, value: number) =>
   (format === 'lowerRoman' || format === 'upperRoman') && value > 3999;
 
-/** The sequences whose captions Word numbers by fields (Word 2, ruling R1). */
-const CAPTIONED = ['figure', 'table'] as const;
+/**
+ * The sequences whose captions Word numbers by fields (Word 2, ruling R1): a figure's and a table's,
+ * and a numbered equation's (Word 4), whose number the PDF sets as its figure's caption too.
+ */
+const CAPTIONED = ['figure', 'table', 'equation'] as const;
 type Captioned = (typeof CAPTIONED)[number];
 const isCaptioned = (sequence: string): sequence is Captioned =>
   (CAPTIONED as readonly string[]).includes(sequence);
@@ -279,16 +282,39 @@ const isCaptioned = (sequence: string): sequence is Captioned =>
 /**
  * Each captioned sequence's `SEQ` identifier: one per sequence, whatever the matter, since a list of
  * figures' `TOC \c` field names one; and not the label's word, which a layout may leave empty or write
- * in another language.
+ * in another language. But front matter's equations, `FRONT_EQUATIONS`.
  */
-const SEQUENCE_NAMES: Readonly<Record<Captioned, string>> = { figure: 'Figure', table: 'Table' };
+const SEQUENCE_NAMES: Readonly<Record<Captioned, string>> = {
+  figure: 'Figure',
+  table: 'Table',
+  equation: 'Equation',
+};
 
 /**
- * A sequence's `SEQ` name, which its captions' fields count and a list after the contents collects them
- * by (`TOC \c`); null for a sequence Word does not number by fields.
+ * **Front matter's equations' `SEQ` identifier** (the final review's I1; measured): a name of their
+ * own, so that the body's `SEQ Equation` counted from the document's start is the body's own count.
+ * Word counts it so after a `REF` to an equation standing later (`captionsNotInWord`), and with front
+ * matter's equations under the one name, every body equation after such a reference printed one higher
+ * per front matter equation. Front matter stands first (STR-064), so a list of equations collects its
+ * name first and the body's after, in the document's order.
  */
-export function sequenceName(sequence: string): string | null {
-  return isCaptioned(sequence) ? SEQUENCE_NAMES[sequence] : null;
+const FRONT_EQUATIONS = 'EquationFront';
+
+/** The `SEQ` identifier a caption of this sequence in this matter is counted by. */
+function sequenceOf(sequence: Captioned, matter: OutlineMatter): string {
+  return sequence === 'equation' && matter === 'front' ? FRONT_EQUATIONS : SEQUENCE_NAMES[sequence];
+}
+
+/**
+ * A sequence's `SEQ` names, which its captions' fields count and a list after the contents collects them
+ * by (`TOC \c`), in the order they stand in the document: an equation's two, front matter's first; none
+ * for a sequence Word does not number by fields.
+ */
+export function sequenceNames(sequence: string): readonly string[] {
+  if (!isCaptioned(sequence)) return [];
+  return sequence === 'equation'
+    ? [FRONT_EQUATIONS, SEQUENCE_NAMES.equation]
+    : [SEQUENCE_NAMES[sequence]];
 }
 
 /** Each number format as a field's `\*` switch names it, by name, never by position. */
@@ -313,6 +339,14 @@ const FIELD_FORMATS: Readonly<Record<NumberFormat, string>> = {
  * entry is not a figure's or a table's, and where the scheme gives it no number - a chapter-hungry rule
  * outside the body before its first chapter (`number`) - which is written with no field, so that
  * Word's count, like the scheme's, spends nothing on it.
+ *
+ * **An equation's number is a caption's** (Word 4), `SEQ Equation` - front matter's `SEQ
+ * EquationFront`, `FRONT_EQUATIONS` - but for one thing: where its rule never restarts, its matter's
+ * first carries `\s 1`. The scheme counts each matter on counters of its own, where Word's one `SEQ`
+ * identifier counts through every matter - the body on from 1, and each appendix's `A.1` after it -
+ * and the first of a matter always stands after that matter's first top-level node, a heading at the
+ * first level, so Word counts from 1 again there and on from it after. A figure's and a table's rules,
+ * which the default restarts at each chapter, are left as Word 2 wrote them.
  */
 export interface CaptionField {
   /** The label's word, `Figure`; empty where the layout gives none. */
@@ -340,15 +374,15 @@ export function captionField(scheme: NumberingScheme, entry: NumberingEntry): Ca
     word: rule.label,
     prefix: prefixed ? rule.prefix : null,
     separator: rule.separator,
-    sequence: SEQUENCE_NAMES[entry.sequence],
+    sequence: sequenceOf(entry.sequence, entry.matter),
     format: FIELD_FORMATS[rule.format[rule.format.length - 1]!],
-    restart: rule.restartAt,
+    restart: rule.restartAt ?? (entry.sequence === 'equation' && entry.value === 1 ? 1 : null),
   };
 }
 
 /**
  * **What Word's caption fields compute, followed through the document as Word reads it** (Word 2,
- * ruling R1), held to what the scheme wrote. Word's reading, measured in Word 16 - M3 at the first
+ * ruling R1; an equation's since Word 4), held to what the scheme wrote. Word's reading, measured in Word 16 - M3 at the first
  * level, and for this slice at the second, after a heading with no number, and before any heading:
  *
  * - every node is a heading in the style for its depth, the ninth's for any deeper, numbered or not;
@@ -356,7 +390,14 @@ export function captionField(scheme: NumberingScheme, entry: NumberingEntry): Ca
  *   heading since does not clear it - and 0 for a heading with no number;
  * - `SEQ x \s n` counts from 1 again where a heading at level `n` or above, numbered or not, stands
  *   between it and the last `SEQ x`, and `SEQ x` alone carries on; one identifier counts through every
- *   matter.
+ *   matter;
+ * - but once a `REF` or `REF \p` has computed a `SEQ x` standing later in the document - a reference
+ *   forward, which Word evaluates by the field inside the bookmark it names - `SEQ x` alone counts every
+ *   `SEQ x` before it from the document's start, whatever restarted between (the final review's I1,
+ *   measured in Word 16: front matter's equation and a reference forward in the body's first chapter,
+ *   and the body's later equations printed one higher, two of them the same number). A `SEQ x \s n`
+ *   was computed right. Which references stand forward is not asked: a count with no `\s` is held to
+ *   both readings, so a rule is refused where either is not the scheme's.
  *
  * So a caption is refused, `<sequence>:<matter>:<why>`, once per matter and naming the first caption
  * that meets it, where:
@@ -365,7 +406,8 @@ export function captionField(scheme: NumberingScheme, entry: NumberingEntry): Ca
  * - `prefix`: the heading `STYLEREF` finds is not the one whose number the scheme wrote - one with no
  *   number, one in another matter, one from an earlier chapter, or none, as past the ninth level;
  * - `restart`: the rule restarts past the ninth level, where no heading style is, or Word's count is
- *   not the scheme's - after a heading with no number, or across matters the scheme counts apart;
+ *   not the scheme's - after a heading with no number, or across matters the scheme counts apart, or
+ *   from the document's start where the caption carries no `\s`;
  * - `letters` and `roman`: its counter, as a heading's is judged.
  */
 function captionsNotInWord(
@@ -391,8 +433,11 @@ function captionsNotInWord(
   };
   /** The last heading Word has met at each level: its section entry, or null where it has no number. */
   const last = new Map<number, NumberingEntry | null>();
-  /** Each `SEQ` identifier's last count, and the shallowest heading level met since. */
-  const counts = new Map<string, { value: number; since: number }>();
+  /**
+   * Each `SEQ` identifier's last count, the shallowest heading level met since, and how many of its
+   * fields stand before, from the document's start.
+   */
+  const counts = new Map<string, { value: number; since: number; fields: number }>();
   // A node's heading, then its occurrence's captions, then its children: the order `number` walks in.
   walkOutline(outline.nodes, (node, depth) => {
     const level = Math.min(depth, WORD_LEVELS);
@@ -416,8 +461,13 @@ function captionsNotInWord(
         previous === undefined || (field.restart !== null && previous.since <= field.restart)
           ? 1
           : previous.value + 1;
-      counts.set(field.sequence, { value, since: Infinity });
-      if ((field.restart !== null && field.restart > WORD_LEVELS) || value !== entry.value) {
+      const fields = (previous?.fields ?? 0) + 1;
+      counts.set(field.sequence, { value, since: Infinity, fields });
+      if (
+        (field.restart !== null && field.restart > WORD_LEVELS) ||
+        value !== entry.value ||
+        (field.restart === null && fields !== entry.value)
+      ) {
         say(entry, 'restart');
       }
       const rule = scheme.sequences[entry.sequence]![entry.matter];

@@ -23,6 +23,7 @@ import {
   footnoteSections,
   numberingNotInWord,
   numberingXml,
+  sequenceNames,
 } from './numbering.js';
 
 /** A numbered section node, and the nodes beneath it. */
@@ -371,6 +372,27 @@ describe('a caption rule Word cannot compute (Word 2, ruling R1)', () => {
     ]);
   });
 
+  it("refuses a count with no restart that Word would take from the document's start, as it does after a reference forward to a caption", () => {
+    // Measured in Word 16 (the final review's I1): once a REF has computed a SEQ standing later in
+    // the document, every later SEQ with no `\s` counts every field of its name before it, from the
+    // document's start, whatever restarted between. The body's count carries on past the appendix's
+    // Figure A.1 to 2, as the scheme's does; from the start it is 3.
+    const scheme = withRules('figure', (rules) => {
+      rules.body = continuous(rules.body);
+    });
+    const reentered = [
+      holding('intro', 'body', ['f1']),
+      holding('tables', 'appendix', ['fa']),
+      holding('later', 'body', ['f2']),
+    ];
+    expect(captioned(reentered, scheme).table.entries.find((e) => e.block === 'f2')?.label).toBe(
+      'Figure 2',
+    );
+    expect(captioned(reentered, scheme).problems).toEqual([
+      problem('later', 'f2', 'figure:body:restart'),
+    ]);
+  });
+
   it('refuses a prefix or a restart past the ninth level, where Word has no heading style', () => {
     const scheme = withRules('table', (rules) => {
       rules.body = { ...rules.body, prefix: 10, restartAt: 10 };
@@ -422,16 +444,107 @@ describe('a caption rule Word cannot compute (Word 2, ruling R1)', () => {
       problem('intro', 'f4000', 'figure:body:roman'),
     ]);
   });
+});
 
-  it('asks nothing of equations, which Word does not number yet', () => {
+describe('an equation rule Word cannot compute (Word 4)', () => {
+  it("finds nothing in the default scheme: front matter's in roman, the body's on through its chapters, and each appendix's by its letter, each matter counting on its own", () => {
+    const { table, problems } = captioned([
+      holding('preface', 'front', ['e0', 'e0b']),
+      holding('opening', 'body', ['eo'], [], false),
+      holding('intro', 'body', ['e1'], [holding('scope', 'body', ['e2'])]),
+      holding('method', 'body', ['e3']),
+      holding('tables', 'appendix', ['ea'], [holding('values', 'appendix', ['eb'])]),
+      holding('glossary', 'appendix', ['ec']),
+    ]);
+    expect(problems).toEqual([]);
+    const equations = table.entries.filter((entry) => entry.sequence === 'equation');
+    expect(equations.map((entry) => [entry.block, entry.label])).toEqual([
+      ['e0', 'Equation i'],
+      ['e0b', 'Equation ii'],
+      ['eo', 'Equation 1'],
+      ['e1', 'Equation 2'],
+      ['e2', 'Equation 3'],
+      ['e3', 'Equation 4'],
+      ['ea', 'Equation A.1'],
+      ['eb', 'Equation A.2'],
+      ['ec', 'Equation B.1'],
+    ]);
+  });
+
+  it("refuses a matter entered a second time whose count carries on, where Word's one sequence counts the matter between too", () => {
+    // The body's second is 2 to the scheme, and 3 to Word, after the appendix's two.
+    const outline = [
+      holding('intro', 'body', ['e1']),
+      holding('tables', 'appendix', ['ea', 'eb']),
+      holding('later', 'body', ['e2']),
+    ];
+    expect(captioned(outline).problems).toEqual([problem('later', 'e2', 'equation:body:restart')]);
+    // Where the body held none before the appendix, its first is its matter's first, and Word's count
+    // starts again there as the scheme's does.
+    const first = [holding('tables', 'appendix', ['ea']), holding('later', 'body', ['e2'])];
+    expect(captioned(first).problems).toEqual([]);
+  });
+
+  it("counts front matter's equations apart, and refuses a count with no restart that Word would take from the document's start after a reference forward", () => {
+    // The default: front matter's EquationFront, so the body's Equation from the start is its own.
+    const preface = [
+      holding('preface', 'front', ['e0', 'e0b']),
+      holding('intro', 'body', ['e1', 'e2']),
+      holding('method', 'body', ['e3']),
+    ];
+    expect(captioned(preface).problems).toEqual([]);
+    // An appendix counting on through its matter: its first counts from 1 again by its `\s 1`, and
+    // the rest on from it, as the scheme's do; from the start, Word would count the body's too.
+    const scheme = withRules('equation', (rules) => {
+      rules.appendix = continuous(rules.appendix);
+    });
+    const annexed = [
+      holding('intro', 'body', ['e1', 'e2']),
+      holding('tables', 'appendix', ['ea', 'eb']),
+    ];
+    expect(captioned(annexed, scheme).problems).toEqual([
+      problem('tables', 'eb', 'equation:appendix:restart'),
+    ]);
+    // With no body equation before it, the start's count is the appendix's own.
+    expect(captioned([holding('tables', 'appendix', ['ea', 'eb'])], scheme).problems).toEqual([]);
+  });
+
+  it('refuses an equation after a heading with no number, where the rule prefixes and restarts with the chapter', () => {
+    const scheme = withRules('equation', (rules) => {
+      rules.body = { ...rules.body, prefix: 1, restartAt: 1 };
+    });
+    const { table, problems } = captioned(
+      [
+        holding('intro', 'body', ['e1']),
+        holding('interlude', 'body', ['e2'], [], false),
+        holding('method', 'body', ['e3']),
+      ],
+      scheme,
+    );
+    expect(table.entries.find((entry) => entry.block === 'e2')?.label).toBe('Equation 1.2');
+    expect(problems).toEqual([
+      problem('interlude', 'e2', 'equation:body:prefix'),
+      problem('interlude', 'e2', 'equation:body:restart'),
+    ]);
+  });
+
+  it('refuses a prefix or a restart past the ninth level, where Word has no heading style', () => {
     const scheme = withRules('equation', (rules) => {
       rules.body = { ...rules.body, prefix: 12, restartAt: 12 };
     });
-    const outline = [
-      holding('intro', 'body', ['e1', 'n1']),
-      holding('interlude', 'body', ['e2', 'n2'], [], false),
-    ];
-    expect(captioned(outline, scheme).problems).toEqual([]);
+    expect(captioned([holding('intro', 'body', ['e1', 'e2'])], scheme).problems).toEqual([
+      problem('intro', 'e1', 'equation:body:prefix'),
+      problem('intro', 'e1', 'equation:body:restart'),
+    ]);
+  });
+
+  it('refuses a roman numeral past 3999, which the scheme writes in decimal and Word does not', () => {
+    const equations = (count: number) =>
+      Array.from({ length: count }, (_, index) => `e${index + 1}`);
+    expect(captioned([holding('preface', 'front', equations(3999))]).problems).toEqual([]);
+    expect(captioned([holding('preface', 'front', equations(4001))]).problems).toEqual([
+      problem('preface', 'e4000', 'equation:front:roman'),
+    ]);
   });
 });
 
@@ -588,6 +701,31 @@ describe("the fields a caption's number is written with (Word 2, ruling R1)", ()
     expect(captionField(defaultNumberingScheme, entry('ff'))).toBeNull();
     const heading = table.entries.find((each) => each.sequence === 'section')!;
     expect(captionField(defaultNumberingScheme, heading)).toBeNull();
+  });
+
+  it("writes an equation's number as a caption's, the SEQ named Equation and front matter's EquationFront, counting from 1 again at its matter's first where its rule never restarts (Word 4)", () => {
+    const { table } = captioned([
+      holding('preface', 'front', ['e0', 'e0b']),
+      holding('intro', 'body', ['e1', 'e2']),
+      holding('tables', 'appendix', ['ea']),
+    ]);
+    const entry = (block: string) => table.entries.find((each) => each.block === block)!;
+    const field = (block: string) => captionField(defaultNumberingScheme, entry(block));
+    const continuous = { word: 'Equation', prefix: null, separator: '.', sequence: 'Equation' };
+    // Front matter's under a name of its own, so that the body's count from the document's start is
+    // the body's alone, which Word takes it as after a reference forward (the final review's I1).
+    const front = { ...continuous, sequence: 'EquationFront' };
+    expect(field('e0')).toEqual({ ...front, format: 'roman', restart: 1 });
+    expect(field('e0b')).toEqual({ ...front, format: 'roman', restart: null });
+    // The body's first counts from 1 again at its chapter, since the body's count is its own; the
+    // rest carry on through every chapter.
+    expect(field('e1')).toEqual({ ...continuous, format: 'arabic', restart: 1 });
+    expect(field('e2')).toEqual({ ...continuous, format: 'arabic', restart: null });
+    expect(field('ea')).toEqual({ ...continuous, prefix: 1, format: 'arabic', restart: 1 });
+    // A list of equations collects both, front matter's first, as front matter stands first.
+    expect(sequenceNames('equation')).toEqual(['EquationFront', 'Equation']);
+    expect(sequenceNames('figure')).toEqual(['Figure']);
+    expect(sequenceNames('footnote')).toEqual([]);
   });
 
   it("writes each format as Word's field format switch names it", () => {

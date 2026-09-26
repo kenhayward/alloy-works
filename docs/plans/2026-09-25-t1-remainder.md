@@ -78,8 +78,9 @@ A working day here has been one design and its first slice, or two or three buil
 through its review. So a week holds about 20 pull requests, not 50. This is the week's share; the
 rest is the second week's.
 
-**As run:** Word output (W3) started first, on Ken's word of 2026-09-25; the test debt and the small
-fixes (W1, W2) follow it.
+**As run:** Word output (W3) started first, on Ken's word of 2026-09-25, and was built in four pull
+requests by 2026-09-26, word-output.md's four slices; the test debt and the small fixes (W1, W2)
+follow it.
 
 | Day | Work                                                                                                                                  | PRs |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------- | --: |
@@ -110,19 +111,19 @@ undone, since the code already exists.
 
 This table is updated as each workstream lands.
 
-| #   | Workstream                         | Status      |
-| --- | ---------------------------------- | ----------- |
-| W1  | Test debt                          | Not started |
-| W2  | Small fixes                        | Not started |
-| W3  | Word output                        | In progress |
-| W4  | Templates                          | Not started |
-| W5  | Definitions and the metadata panel | Not started |
-| W6  | Search                             | Not started |
-| W7  | Listings and the API               | Not started |
-| W8  | The theme in the editor            | Not started |
-| W9  | The document view                  | Not started |
-| W10 | Preview                            | Not started |
-| W11 | Recovery                           | Not started |
-| W12 | Identity                           | Not started |
-| W13 | A browser suite                    | Not started |
-| W14 | Publishing, finished               | Not started |
+| #   | Workstream                         | Status                             |
+| --- | ---------------------------------- | ---------------------------------- |
+| W1  | Test debt                          | Not started                        |
+| W2  | Small fixes                        | Not started                        |
+| W3  | Word output                        | Built (PRs #231, #236, #237, #238) |
+| W4  | Templates                          | Not started                        |
+| W5  | Definitions and the metadata panel | Not started                        |
+| W6  | Search                             | Not started                        |
+| W7  | Listings and the API               | Not started                        |
+| W8  | The theme in the editor            | Not started                        |
+| W9  | The document view                  | Not started                        |
+| W10 | Preview                            | Not started                        |
+| W11 | Recovery                           | Not started                        |
+| W12 | Identity                           | Not started                        |
+| W13 | A browser suite                    | Not started                        |
+| W14 | Publishing, finished               | Not started                        |

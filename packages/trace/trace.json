@@ -16464,10 +16464,6 @@
       "document": "word-output.md",
       "owns": [
         {
-          "id": "PUB-023",
-          "howItIsMet": "Every construct below is a native Word construct; nothing is flattened to formatted text"
-        },
-        {
           "id": "PUB-024",
           "howItIsMet": "Heading numbering is a `numbering.xml` definition linked from each heading style, in the scheme the layout declares (PUB-011)"
         },
@@ -16486,10 +16482,6 @@
         {
           "id": "PUB-029",
           "howItIsMet": "The writer's output is opened in Word before any change to it lands, and the conformance harness renders and schema-checks it"
-        },
-        {
-          "id": "PUB-035",
-          "howItIsMet": "Headings carry outline levels, images carry alternative text, header rows repeat and are marked, and every run carries its language"
         },
         {
           "id": "PUB-065",
@@ -16804,6 +16796,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-045",
+      "file": "apps/web/src/editor/equationView.test.ts",
+      "line": 110,
+      "kind": "title"
+    },
+    {
       "id": "CNT-066",
       "file": "apps/web/src/editor/session.test.ts",
       "line": 222,
@@ -16968,55 +16966,61 @@
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 348,
+      "line": 349,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 558,
+      "line": 559,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 376,
+      "line": 377,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 392,
+      "line": 393,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 397,
+      "line": 398,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-065",
+      "file": "apps/worker/src/publish.test.ts",
+      "line": 1057,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 975,
+      "line": 976,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 576,
+      "line": 577,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 362,
+      "line": 363,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 503,
+      "line": 504,
       "kind": "title"
     },
     {
@@ -17118,31 +17122,31 @@
     {
       "id": "PUB-029",
       "file": "apps/worker/src/word-check.test.ts",
-      "line": 1911,
+      "line": 2300,
       "kind": "title"
     },
     {
-      "id": "PUB-035",
+      "id": "CNT-045",
       "file": "apps/worker/src/word.test.ts",
-      "line": 880,
+      "line": 1481,
       "kind": "title"
     },
     {
       "id": "PUB-066",
       "file": "apps/worker/src/word.test.ts",
-      "line": 774,
+      "line": 1025,
       "kind": "title"
     },
     {
       "id": "TAB-039",
       "file": "apps/worker/src/word.test.ts",
-      "line": 813,
+      "line": 1064,
       "kind": "title"
     },
     {
       "id": "TAB-049",
       "file": "apps/worker/src/word.test.ts",
-      "line": 813,
+      "line": 1064,
       "kind": "title"
     },
     {
@@ -17244,7 +17248,7 @@
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 932,
+      "line": 936,
       "kind": "title"
     },
     {
@@ -17256,7 +17260,7 @@
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 798,
+      "line": 802,
       "kind": "title"
     },
     {
@@ -17718,7 +17722,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 279,
+      "line": 282,
       "kind": "title"
     },
     {
@@ -18316,45 +18320,57 @@
       "kind": "title"
     },
     {
+      "id": "PUB-067",
+      "file": "packages/domain/src/word/omml.test.ts",
+      "line": 775,
+      "kind": "title"
+    },
+    {
       "id": "CNT-084",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1099,
+      "line": 1101,
       "kind": "title"
     },
     {
       "id": "CNT-128",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1081,
+      "line": 1083,
       "kind": "title"
     },
     {
       "id": "PUB-024",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 612,
+      "line": 614,
       "kind": "title"
     },
     {
       "id": "PUB-025",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2724,
+      "line": 2726,
       "kind": "title"
     },
     {
       "id": "PUB-026",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3136,
+      "line": 3143,
       "kind": "title"
     },
     {
       "id": "PUB-034",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1099,
+      "line": 1101,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-067",
+      "file": "packages/domain/src/word/write.test.ts",
+      "line": 3661,
       "kind": "title"
     },
     {
       "id": "STY-052",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1180,
+      "line": 1182,
       "kind": "title"
     },
     {
