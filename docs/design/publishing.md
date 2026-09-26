@@ -49,7 +49,9 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 > and cross-references ([Word 3](../plans/2026-09-26-word-03-footnotes-and-cross-references.md)),
 > and the fourth equations ([Word 4](../plans/2026-09-26-word-04-equations.md)), so a Word
 > publication carries everything a document holds but a number or a reference Word's fields would
-> print otherwise than the PDF, refused by name. The defined
+> print otherwise than the PDF, refused by name; a heading's or a listed caption's equation, which
+> Word's rebuilt contents, lists and running heads set as its runs alone, is reported, and a maths
+> character Cambria Math lacks is drawn from another face unreported. The defined
 > term, condition, suggestion and comment marks, a citation, a variable and a binding,
 > veraPDF on every publication, preview and review in Word are later slices'
 > ([Build order](#build-order)); a block equation wider than its

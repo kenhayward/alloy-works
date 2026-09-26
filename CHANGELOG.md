@@ -15,13 +15,17 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   block equation stands in its own paragraph, centred, and a numbered one has its number at the
   right, in a row of two cells with no borders.
 - **Word numbers equations itself**, _Equation i_ in front matter, from 1 in the body and _Equation
-  A.1_ in an appendix under the default layout, so moving one in Word renumbers the rest. A
-  cross-reference to an equation is a field Word updates, and a layout's list of equations follows
-  the contents as the lists of figures and tables do.
-- **Everything a document holds now reaches Word.** Word publishing refuses, by name, only what Word
-  would print otherwise than the PDF - numbering Word would count differently, _above_ or _below_
-  across a footnote's or a floated figure's edge, and a caption's words named where Word reads them
-  otherwise - and the PDF still publishes.
+  A.1_ in an appendix under the default layout, so moving one in Word renumbers the rest, and a
+  reference to an equation further on leaves every number as the PDF prints it. A cross-reference to
+  an equation is a field Word updates, and a layout's list of equations follows the contents as the
+  lists of figures and tables do.
+- **Everything a document holds now reaches Word.** Word publishing refuses, by name, what Word would
+  number or refer to otherwise than the PDF - numbering Word would count differently, _above_ or
+  _below_ across a footnote's or a floated figure's edge, and a caption's words named where Word reads
+  them otherwise - and the PDF still publishes. Where Word would show a heading's or a caption's
+  equation as plain characters in the contents, a list or a running head, the publication's page says
+  so, naming it. One thing is neither refused nor said: a mathematical character Word's maths
+  typeface lacks, which Word draws from another typeface.
 
 ### Changed
 
@@ -32,10 +36,16 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   it rather than above and below; a numbered equation too wide for its line breaks over lines beside
   its number, where the PDF runs it past the margin with its number below; two numbered equations in
   a row are read to a screen reader as one table; lines aligned together in a line of text are
-  centred on it; and a running head naming a section whose title holds an equation shows it as
-  plain text.
+  centred on it; and where Word makes the contents, the lists after it and the running heads again, an
+  equation in a section's title or a caption becomes its characters in a row, _x²_ reading _x2_.
 - **A Word document is now written by the Word writer's version 4**, which the publication's page
   names. Word documents already published keep the version that wrote them.
+
+### Fixed
+
+- **A cross-reference to a table's or a figure's number keeps the look of the words around it in
+  Word.** In bold words it printed the number in the table's or figure's own label style once Word
+  updated it, the rest of the words bold; now the whole passage stays as the PDF prints it.
 
 ## 0.72.0 - 2026-09-26 (PR #237)
 

@@ -70,6 +70,10 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1449);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 434, from 436 (2026-09-26): word-output.md stopped claiming PUB-023 and PUB-035, which Word 4's
+    // final review found claimed for more than the design gives - PUB-023's first-class kept by
+    // STY-053's suite, not built, and PUB-035's same terms asking for structures Word does not carry
+    // here - each named in prose beside the table rather than repointed.
     // 436, from 434: the Word output design measured in Word claims CNT-045, one MathML drawn in the
     // editor and set by both writers from one maths tree, and CNT-128, a link in the PDF and in Word.
     // 434, from 429: the T1 audit's review. Designs that already answered a split row's T1 half in
@@ -173,7 +177,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(436);
+    ).toBe(434);
   });
 });
 
@@ -514,8 +518,12 @@ describe('the citations in the committed model', () => {
   // does not declare and records that a page cites the PDF; and PUB-023 in apps/worker's word.test.ts,
   // where one document holding every construct a T1 document can hold is written as Word's own
   // structures, flattened nowhere and dropped nowhere unsaid. The Word check measured them in Word.
+  // 335, from 337 (2026-09-26): Word 4's final review dropped PUB-023's citation on apps/worker's
+  // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
+  // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
+  // stay, retitled, as the record of what Word carries.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(337);
+    expect(model.citations).toHaveLength(335);
   });
 
   it('cites no identifier the corpus does not hold', () => {

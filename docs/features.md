@@ -521,8 +521,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Equations reach Word** as Word's own equations, which a recipient can edit in Word's equation
   editor, made from the same mathematics the PDF prints - never a picture of it. One in a line of
   text stays in its line, wherever the PDF prints one: running text, a list, a quotation, a term, an
-  attribution, a table's cell, header rows and note, a caption, a footnote and a section's title,
-  its heading and the contents. A block equation stands in its own paragraph, centred. A numbered one
+  attribution, a table's cell, header rows and note, a caption, a footnote and a section's title. A
+  block equation stands in its own paragraph, centred. A numbered one
   has its number at the right, beside it in a row of two cells with no borders, numbered by Word -
   _Equation i_ in front matter, from 1 in the body and _Equation A.1_ in an appendix under the default
   layout - so moving one renumbers the rest; a cross-reference to it is a field Word updates, and a
@@ -534,9 +534,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   too wide for its line breaks over lines beside its number in Word, where the PDF runs it past the
   margin with its number below; two numbered equations in a row read to a screen reader as one table
   of two rows, since a numbered equation is a row of a table in Word; lines aligned together in a
-  line of text are centred on it in Word; and a running head naming a section whose title holds an
-  equation shows it as plain text. An equation the typesetter cannot set is refused for Word as for
-  the PDF.
+  line of text are centred on it in Word; and where Word makes the contents, the lists after it and
+  the running heads again from a section's title or a caption, an equation in it becomes its
+  characters in a row - _x²_ reads _x2_, and a fraction its top then its bottom - which the
+  publication's page says of each heading and caption it happens to. A mathematical character Word's
+  maths typeface lacks is drawn from another typeface, without a word said. An equation the
+  typesetter cannot set is refused for Word as for the PDF.
 
   **Everything a document holds now reaches Word.** What is refused for Word is refused by name, can
   still be published as a PDF alone, and is of three kinds, each something Word would print
@@ -545,7 +548,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   that comes back after an appendix, and a list nested past the ninth level or numbered in letters
   past _aa_; _above_ or _below_ across a footnote's or a floated figure's boundary; and a caption's
   words named as a title inside that caption, or where they hold a reference printing anything but a
-  number. The default layout's numbering is inside what Word counts. The Word documents the
+  number. The default layout's numbering is inside what Word counts, a reference to an equation
+  further on included. The Word documents the
   product's tests make are checked against the file format's own rules, and opened in Word itself
   before any change to how Word documents are written lands.
 

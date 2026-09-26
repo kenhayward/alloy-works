@@ -339,10 +339,16 @@ as a placeholder - in a heading, a running head, the contents and the lists - al
 exactly where equations are set, and save it again, which found a heading's equation turned bold by
 Word's save. The test then checks two things more: every equation is one
 of Word's own, displayed or in its line as the published document sets it and in Cambria Math, again
-where Word rebuilds the contents and the lists from a heading or a caption holding one; and every
+where Word rebuilds the contents and the lists from a heading or a caption holding one, there as its
+runs alone; and every
 equation's number is the numbering table's after the update - _Equation i_, _1_, _A.1_ - starting
 within a point of where the PDF starts it across the page, on the line its equation stands on, and
-the too-wide one broken over lines inside its cell with its number beside it.
+the too-wide one broken over lines inside its cell with its number beside it. Word 4's final review
+added two cases and a check: references forward, number and relative, to the body's second numbered
+equation and to the appendix's, with front matter numbering one, which Word numbered one higher before
+front matter's equations counted under a name of their own; and a fraction holding a script in a
+chapter's title and a listed caption, which the writer reports and which the copy Word saved holds as
+a fraction where the heading and the caption stand and as its runs alone in the entries Word rebuilt.
 
 - **Who and when.** Whoever changes the Word writer - `packages/domain/src/word/`, the theme's Word
   projection or `wordRun` - runs it before the change lands, on Windows with Word installed. **A pull
