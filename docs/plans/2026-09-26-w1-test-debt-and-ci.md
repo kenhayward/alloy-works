@@ -10,11 +10,11 @@ spending most of its time starting Java.
 
 **Three pull requests**, in this order, because the first makes the other two cheaper to run:
 
-| PR   | Holds                                                                                                  | Version |
-| ---- | ------------------------------------------------------------------------------------------------------ | ------- |
-| W1.1 | CI: Turbo's logs streamed, one warm veraPDF for the worker's run, the worker's files in parallel       | 0.73.1  |
-| W1.2 | Tests for seventeen built requirements whose design already claims them, and CNT-124's second sentence | 0.73.2  |
-| W1.3 | Design claims, then tests, for PUB-069, PUB-031, CNT-160 and CNT-166                                   | 0.73.3  |
+| PR   | Holds                                                                                                                      | Version |
+| ---- | -------------------------------------------------------------------------------------------------------------------------- | ------- |
+| W1.1 | CI: Turbo's logs streamed, one warm veraPDF for the worker's run, the worker's files in parallel                           | 0.73.1  |
+| W1.2 | Tests for sixteen built requirements whose design already claims them, and CNT-124's second sentence (API-003 moved to W2) | 0.73.2  |
+| W1.3 | Design claims, then tests, for PUB-069, PUB-031, CNT-160 and CNT-166                                                       | 0.73.3  |
 
 Each is a Build bump: none changes what the product does.
 
@@ -329,9 +329,35 @@ references records a new document version, naming who and when` - a reference `l
 
 ---
 
+## What the build changed
+
+**W1.1 (PR #239, merged).** CI's Test step went from 9 min 14 s to 2 min 57 s. The warm veraPDF
+reads each report back with `docker exec`, since the image writes them as its own user; a check
+whose answer names another file, or none in time, ends the process for good; and `close()` removes
+the container by name and waits until it is gone. The first review found a timer holding every run
+open ten seconds and the role test flaking against the other suites' bootstraps; both were fixed test
+first.
+
+**W1.2 (PR #241).**
+
+- **API-003 moved to W2.** The probe the plan asked for showed an undeclared status sent unchecked,
+  undeclared fields included (issue #240). A citation now would claim a contract test that does not
+  exist, so API-003, its routes-both-ways test and the fix land together in W2.
+- **A title `it.each` builds cites nothing.** The trace's static scan reads literal titles, so
+  CNT-164's and API-005's table-driven tests were rewritten as one literal test each, looping over
+  their cases, every assertion naming its case.
+- **CNT-014** is shown by the schema's content match - the block ProseMirror makes wherever it must
+  make one is its `defaultType`, which is the paragraph for a document, a quotation and a list item -
+  beside a round trip, rather than by driving each exit key, which the editor's own tests already do.
+- **CNT-085's Word half** was already demonstrated (the run's `mark-underline` style, and the style's
+  `w:u single`); the style test now carries the citation beside the PDF's.
+- **TAB-050** needed a reading-order reader: `readPdf` gains `reading`, every structure element in the
+  tree's order with its text, which PUB-031 (W1.3) reads too.
+- Citations 335 to 353, counted once per requirement per file.
+
 ## Done when
 
-- `pnpm trace tranche T1`: the twenty-one named here Covered (seventeen in W1.2, four in W1.3),
+- `pnpm trace tranche T1`: the twenty named here Covered (sixteen in W1.2, four in W1.3; API-003 went to W2),
   CNT-124 cited for both sentences, STY-019 still waiting on K7.
 - CI's Test step on W1.1's own run, beside 9 min 14 s.
 - The remainder plan's tracking row reads W1 built, with the three PR numbers; this plan's status

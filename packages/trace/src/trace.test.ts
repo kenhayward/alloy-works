@@ -522,8 +522,12 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 353, from 335 (2026-09-26): W1.2, the test debt the T1 audit found - one file each for CNT-014,
+  // CNT-019, CNT-026, CNT-061, CNT-062, CNT-081, CNT-164 (two tests, one file), CNT-169, STR-024,
+  // STR-068, TAB-050, VER-009, IAM-053, IAM-078 and API-005; CNT-085 in two, the PDF's paint and
+  // Word's style; and CNT-124's second sentence on the creation test.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(335);
+    expect(model.citations).toHaveLength(353);
   });
 
   it('cites no identifier the corpus does not hold', () => {

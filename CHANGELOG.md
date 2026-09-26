@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.73.2 - 2026-09-26 (PR #241)
+
+### Changed
+
+- **Sixteen more requirements are now shown by a test**, each one watched fail first by breaking
+  the code it covers. They were built already, but no test named them. Among them: pasting from
+  Markdown or a web page keeps every structure a component can hold, and says what it changed; an
+  underline is drawn in the PDF; undo stops at a version you saved; each mark goes on and comes off
+  from its button and its shortcut; a customer's own web address works as soon as it is added; a
+  table broken across pages is read as one table, row by row; and every error the service gives has
+  a stable code beside its message.
+
 ## 0.73.1 - 2026-09-26 (PR #239)
 
 ### Changed
