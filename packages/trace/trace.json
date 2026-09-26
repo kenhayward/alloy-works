@@ -16477,7 +16477,7 @@
         },
         {
           "id": "PUB-026",
-          "howItIsMet": "A cross-reference is a `REF` field to a bookmark on its target, with the resolved number as the field's current result"
+          "howItIsMet": "A cross-reference is a `REF`, `NOTEREF` or `PAGEREF` field at a bookmark on its target, prefilled with what the PDF prints"
         },
         {
           "id": "PUB-028",
