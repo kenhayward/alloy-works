@@ -241,7 +241,8 @@ describe('writing in an editing session through the service', () => {
 
       // Opened at 0.1; two versions cut in one session. Only revision 0 exists until a revision is
       // designated (T4), so "within their revision" is shown within that one.
-      const numbers = ['0.1'];
+      const opened = await call('ada', 'GET', `/v1/components/${made.id}`);
+      const numbers = [opened.json<{ version: { number: string } }>().version.number];
       let openedFrom = made.openedFrom;
       for (const [sequence, text] of [
         [1, 'Unbox the printer.'],

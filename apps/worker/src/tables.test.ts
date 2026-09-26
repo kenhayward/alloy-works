@@ -149,7 +149,9 @@ describe('a table in the PDF (tables 2)', () => {
   }, 120_000);
 
   it('TAB-050 tags the table as one table, read row by row and cell by cell in stored order across the page it breaks at', () => {
-    // One table in the whole file, however many pages it reaches, and a Table is what a reader is told.
+    // One table in the whole file, though it reaches a second page, and a Table is what a reader is
+    // told.
+    expect(pageOf(read, `Site ${BODY_ROWS - 1}`)).toBeGreaterThan(pageOf(read, 'Site 0'));
     expect(read.elements).toMatchObject({ Table: 1 });
     expect(read.roles).toContain('Table');
     // Every row once, in the order it is stored, each cell left to right: the repeated header at the

@@ -1,6 +1,8 @@
 import { parseContentDocument, type Mark } from '@alloy-works/domain';
 import {
   createEditorState,
+  EDITOR_COMMANDS,
+  editorSchema,
   fromEditor,
   mountEditor,
   Selection,
@@ -692,15 +694,25 @@ describe('the marks an author applies directly', () => {
   it('CNT-164 offers no control over typeface, font size or colour', () => {
     renderToolbar();
     const toolbar = screen.getByRole('toolbar', { name: 'Formatting' });
-    const said = within(toolbar)
-      .getAllByRole('button')
-      .map((button) => `${button.getAttribute('aria-label')} ${button.getAttribute('title')}`);
+    const appearance = /font|typeface|size|colou?r|highlight/i;
 
-    // The toolbar is the registry, button for button (CNT-077), so nothing a key can do is missing
-    // from what is read here.
-    expect(said).toHaveLength(LABELS.length);
-    for (const words of said) {
-      expect(words).not.toMatch(/font|typeface|size|colou?r|highlight/i);
+    // Every control the toolbar holds, whatever its kind - a button, a list to choose from, a field,
+    // a colour well - and what each says of itself.
+    const controls = [...toolbar.querySelectorAll('button, select, input, textarea, [role]')];
+    expect(controls.filter((each) => each.tagName === 'BUTTON')).toHaveLength(LABELS.length);
+    expect(
+      controls.filter((each) => each.tagName !== 'BUTTON' && !each.hasAttribute('data-icon')),
+    ).toEqual([]);
+    for (const each of controls) {
+      const said = ['aria-label', 'title', 'name', 'type']
+        .map((name) => each.getAttribute(name) ?? '')
+        .join(' ');
+      expect(said).not.toMatch(appearance);
     }
+
+    // And nothing a key can do: every command, the toolbar's and the keyboard's alike, applies a mark
+    // or makes a block, and the editor holds no mark for a face, a size or a colour to apply.
+    for (const command of EDITOR_COMMANDS) expect(command.label).not.toMatch(appearance);
+    expect(Object.keys(editorSchema.marks).filter((name) => appearance.test(name))).toEqual([]);
   });
 });

@@ -10,11 +10,11 @@ spending most of its time starting Java.
 
 **Three pull requests**, in this order, because the first makes the other two cheaper to run:
 
-| PR   | Holds                                                                                                                      | Version |
-| ---- | -------------------------------------------------------------------------------------------------------------------------- | ------- |
-| W1.1 | CI: Turbo's logs streamed, one warm veraPDF for the worker's run, the worker's files in parallel                           | 0.73.1  |
-| W1.2 | Tests for sixteen built requirements whose design already claims them, and CNT-124's second sentence (API-003 moved to W2) | 0.73.2  |
-| W1.3 | Design claims, then tests, for PUB-069, PUB-031, CNT-160 and CNT-166                                                       | 0.73.3  |
+| PR   | Holds                                                                                                                                                                | Version |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| W1.1 | CI: Turbo's logs streamed, one warm veraPDF for the worker's run, the worker's files in parallel                                                                     | 0.73.1  |
+| W1.2 | Tests for fourteen built requirements whose design already claims them, and CNT-124's second sentence (API-003 moved to W2; CNT-061 and CNT-062 wait on a rewording) | 0.73.2  |
+| W1.3 | Design claims, then tests, for PUB-069, PUB-031, CNT-160 and CNT-166                                                                                                 | 0.73.3  |
 
 Each is a Build bump: none changes what the product does.
 
@@ -353,11 +353,24 @@ first.
   `w:u single`); the style test now carries the citation beside the PDF's.
 - **TAB-050** needed a reading-order reader: `readPdf` gains `reading`, every structure element in the
   tree's order with its text, which PUB-031 (W1.3) reads too.
-- Citations 335 to 353, counted once per requirement per file.
+- **CNT-061 and CNT-062 are not cited.** Their tests show every structure a component can hold
+  surviving a paste, and the report naming what did not - but a heading is kept as a paragraph, and
+  "paste from Markdown (HTML) must preserve structure" makes no such exception. CNT-167 was reworded
+  to say so for Word; the same rewording for these two is Ken's, beside K7. The tests stay, uncited,
+  and the HTML one gained a header column and a cell spanning two rows after the review found a
+  rowspan break it did not catch.
+- **The final review broke four citations the implementer's breaks had not**, each fixed test first:
+  CNT-169 passed with undo removed altogether (it now shows undo working up to each version and
+  stopping there); CNT-164's typeface test read buttons only (it now reads every control, every
+  command and every mark the schema holds); CNT-081 could not tell a reference by identity from one
+  taking the last block of its kind (blocks after the targets as well as before); and STR-024 varied
+  the word but not the number (the counter's form and separator too).
+- Citations 335 to 352, counted once per requirement per file.
 
 ## Done when
 
-- `pnpm trace tranche T1`: the twenty named here Covered (sixteen in W1.2, four in W1.3; API-003 went to W2),
+- `pnpm trace tranche T1`: the eighteen named here Covered (fourteen in W1.2, four in W1.3; API-003 went to W2, CNT-061 and
+  CNT-062 wait on their rewording),
   CNT-124 cited for both sentences, STY-019 still waiting on K7.
 - CI's Test step on W1.1's own run, beside 9 min 14 s.
 - The remainder plan's tracking row reads W1 built, with the three PR numbers; this plan's status

@@ -66,9 +66,11 @@ export interface ReadPdf {
    */
   readonly elements: Readonly<Record<string, number>>;
   /**
-   * Every structure element each page holds, in the order the structure tree gives it - the order a
-   * reader is told the document in, whatever the layout moved - with the text it holds, page after
-   * page. An element whose content crosses a page is here once for each page it reaches.
+   * Every structure element each page's tree holds, in the order the tree gives it - the order a
+   * reader is told the document in, whatever the layout moved - with the text it holds on that page,
+   * page after page. pdf.js answers a page's tree with the whole of every element the page reaches,
+   * so a table on two pages is here twice, every row under it each time, and a row set on the other
+   * page holds no text on this one.
    */
   readonly reading: readonly { readonly role: string; readonly text: string }[];
   /**

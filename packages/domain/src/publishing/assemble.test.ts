@@ -866,7 +866,7 @@ describe('assemble', () => {
     expect(numbered(defaultLayout)).toEqual({ scheme: 'default/1', numbers: ['1', '2', '1.1'] });
   });
 
-  it("STR-024 takes a caption's label and number from the layout, and its words from the component", () => {
+  it("STR-024 takes a caption's label and its number's form from the layout, and its words from the component", () => {
     const RED = '00000000-0000-4000-8000-00000000a551';
     const assets = new Map([
       [
@@ -901,9 +901,18 @@ describe('assemble', () => {
     ];
     const abbreviated = layoutWith((layout) => {
       layout.scheme.id = 'abbreviated/1';
+      // The word, the counter's form and the separator, each the layout's own.
       for (const matter of ['front', 'body', 'appendix'] as const) {
-        layout.scheme.sequences['figure']![matter].label = 'Fig.';
-        layout.scheme.sequences['table']![matter].label = 'Tab.';
+        Object.assign(layout.scheme.sequences['figure']![matter], {
+          label: 'Fig.',
+          format: ['lowerAlpha'],
+          separator: '-',
+        });
+        Object.assign(layout.scheme.sequences['table']![matter], {
+          label: 'Tab.',
+          format: ['upperRoman'],
+          separator: '/',
+        });
       }
     });
     const captionsUnder = (layout: Layout) => {
@@ -926,8 +935,8 @@ describe('assemble', () => {
     const words = (value: string) => [{ text: value, marks: [] }];
 
     expect(captionsUnder(abbreviated)).toEqual([
-      { label: 'Fig. 1.1', caption: words('Shapes') },
-      { label: 'Tab. 1.1', caption: words('Readings') },
+      { label: 'Fig. 1-a', caption: words('Shapes') },
+      { label: 'Tab. 1/I', caption: words('Readings') },
     ]);
     // The same component under the default layout: the words stay, the label is the layout's.
     expect(captionsUnder(defaultLayout)).toEqual([
@@ -3586,8 +3595,8 @@ describe('cross-references, published (cross-references 2)', () => {
       text(', '),
       xref('x3', toBlock('e1')),
     );
-    /** What each reference prints, with `before` standing ahead of the three it names. */
-    const printedWith = (...before: unknown[]) =>
+    /** What each reference prints, with `before` ahead of the three it names and `after` after them. */
+    const printedWith = (before: unknown[], after: unknown[] = []) =>
       publishedOf(
         assemble(
           input({
@@ -3595,7 +3604,14 @@ describe('cross-references, published (cross-references 2)', () => {
             occurrences: new Map([
               [
                 id('calib'),
-                component([...before, figure('f1'), table('t1'), equation('e1'), pointing]),
+                component([
+                  ...before,
+                  figure('f1'),
+                  table('t1'),
+                  equation('e1'),
+                  ...after,
+                  pointing,
+                ]),
               ],
             ]),
             assets,
@@ -3604,16 +3620,24 @@ describe('cross-references, published (cross-references 2)', () => {
       ).references.map((each) => [each.anchor, each.text]);
 
     const at = (block: string) => B('calib', block);
-    expect(printedWith()).toEqual([
+    const others = [figure('f0'), table('t0'), equation('e0')];
+    expect(printedWith([])).toEqual([
       [at('f1'), 'Figure 1.1'],
       [at('t1'), 'Table 1.1'],
       [at('e1'), 'Equation 1'],
     ]);
     // One of each put ahead of them: each reference still names its own target, now numbered second.
-    expect(printedWith(figure('f0'), table('t0'), equation('e0'))).toEqual([
+    expect(printedWith(others)).toEqual([
       [at('f1'), 'Figure 1.2'],
       [at('t1'), 'Table 1.2'],
       [at('e1'), 'Equation 2'],
+    ]);
+    // And one of each put after them: its own target, still first. Neither the first nor the last of
+    // a kind is what a reference names, but the block it names.
+    expect(printedWith([], others)).toEqual([
+      [at('f1'), 'Figure 1.1'],
+      [at('t1'), 'Table 1.1'],
+      [at('e1'), 'Equation 1'],
     ]);
   });
 

@@ -1286,8 +1286,14 @@ describe('the component editor', () => {
         } as never),
       ) ?? false;
 
-    // The version the session opened from: there is nothing before it to go back to.
+    // The version the session opened from: there is nothing before it to go back to - and undo is
+    // there, taking back what is typed as far as the version and no further.
     const openedWith = view.state.doc.textContent;
+    expect(undo()).toBe(false);
+    view.dispatch(view.state.tr.insertText(' Mind the cable.', 19));
+    expect(view.state.doc.textContent).not.toBe(openedWith);
+    expect(undo()).toBe(true);
+    expect(view.state.doc.textContent).toBe(openedWith);
     expect(undo()).toBe(false);
     expect(view.state.doc.textContent).toBe(openedWith);
 
@@ -1298,10 +1304,16 @@ describe('the component editor', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save version' }));
     await screen.findByText('Version 0.2 saved.');
 
-    // The version cut: what it holds stays, however often undo is pressed.
+    // The version cut: what it holds stays, however often undo is pressed; what is typed after it
+    // undoes back to it, and no further.
     const cut = view.state.doc.textContent;
     expect(cut).toContain('Keep the box.');
     expect(undo()).toBe(false);
+    expect(view.state.doc.textContent).toBe(cut);
+    view.dispatch(view.state.tr.insertText(' Then wait.', view.state.doc.content.size - 1));
+    expect(view.state.doc.textContent).not.toBe(cut);
+    expect(undo()).toBe(true);
+    expect(view.state.doc.textContent).toBe(cut);
     expect(undo()).toBe(false);
     expect(view.state.doc.textContent).toBe(cut);
   });
