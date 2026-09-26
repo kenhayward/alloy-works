@@ -35,7 +35,7 @@ import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { checkOoxml } from './testing/ooxml.js';
 import { readPdf } from './testing/pdf.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
-import { askedOf, blocksOf as blocksIn, walk as walkNodes } from './testing/word.js';
+import { askedOf, blocksOf as blocksIn, fieldOf, walk as walkNodes } from './testing/word.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
 const fonts = await loadPinnedFonts();
@@ -756,6 +756,39 @@ function equationsOf(value: unknown): { tree: MathsTree; alternative: string; di
 }
 
 /**
+ * How many equations the writer prefills the contents and the lists after it with, which Word
+ * rebuilds from the headings and the captions: each in a title to the contents' depth, and each in a
+ * numbered caption a list after the contents collects.
+ */
+function listedEquationsOf(published: {
+  readonly nodes: readonly PublishedNode[];
+  readonly front: {
+    readonly contents: { readonly depth: number } | null;
+    readonly lists: readonly { readonly sequence: string }[];
+  };
+}): number {
+  const count = (runs: readonly object[]) => runs.filter((run) => 'equation' in run).length;
+  const depth = published.front.contents?.depth ?? 0;
+  const listed = new Set(published.front.lists.map((list) => list.sequence));
+  return walkNodes(published.nodes).reduce(
+    (sum, node) =>
+      sum +
+      (node.depth <= depth ? count(node.title) : 0) +
+      blocksIn(node.blocks).reduce(
+        (inner, block) =>
+          inner +
+          ((block.type === 'table' || block.type === 'figure') &&
+          block.label !== null &&
+          listed.has(block.type)
+            ? count(block.caption)
+            : 0),
+        0,
+      ),
+    0,
+  );
+}
+
+/**
  * Every run a published document holds, wherever it stands - a title, a paragraph, a term, an
  * attribution, a caption, a table's note and a footnote's paragraphs - each in the document's order.
  */
@@ -957,8 +990,9 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
       // The section's title.
       'REF _Ref \\r',
       ...forms('REF _Ref \\r \\h', 'REF _Ref \\h'),
-      ...forms('REF _Ref \\h', 'REF _Ref \\h'),
-      ...forms('REF _Ref \\h', 'REF _Ref \\h'),
+      // A caption's number in the reference's own formatting (the final review of Word 4, M2).
+      ...forms('REF _Ref \\h \\* CHARFORMAT', 'REF _Ref \\h'),
+      ...forms('REF _Ref \\h \\* CHARFORMAT', 'REF _Ref \\h'),
       // The caption, the header row and the table's note.
       'REF _Ref \\r',
       'REF _Ref \\p',
@@ -1094,7 +1128,7 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     });
   }, 120_000);
 
-  it("PUB-035 makes the Word document accessible on the PDF's terms: every heading at its outline level, every image described or flagged decorative, every table's header rows marked and its caption its title, every footnote Word's own, every cross-reference a field with the PDF's words, a link where the PDF's is one, every list's items on Word's own list, every run in its language, a note's and a reference's among them, and every equation Word's own maths, never an image and never described by us", () => {
+  it("writes what Word carries of the PDF's accessibility: every heading at its outline level, every image described or flagged decorative, every table's header rows marked and its caption its title, every footnote Word's own, every cross-reference a field with the PDF's words, a link where the PDF's is one, every list's items on Word's own list, every run in its language, a note's and a reference's among them, and every equation Word's own maths, never an image and never described by us", () => {
     // Words 1 to 3's document, with a section of references of every form beside its own (Word 3).
     const assembled = assemble(cited);
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
@@ -1250,16 +1284,10 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
           /<w:r>(?:<w:rPr>((?:(?!<\/w:rPr>).)*)<\/w:rPr>)?<w:fldChar w:fldCharType="begin"\/><\/w:r><w:r>(?:<w:rPr>(?:(?!<\/w:rPr>).)*<\/w:rPr>)?<w:instrText xml:space="preserve"> ((?:REF|NOTEREF|PAGEREF) _Ref\d{9}[^<]*?) <\/w:instrText>((?:(?!fldCharType="end").)*)/g,
         ),
       ].map(([, properties = '', code, rest]) => {
-        const [name, , ...switches] = code!.split(' ');
-        const own = switches.map((each) => each.slice(1));
+        const { field, link } = fieldOf(code!);
         const result = words(rest!.split('fldCharType="separate"')[1]!);
         const tag = /<w:lang w:(?:val|bidi)="([^"]+)"/.exec(properties)?.[1] ?? 'en-GB';
-        return [
-          [name, ...own.filter((each) => each !== 'h')].join(' '),
-          own.includes('h'),
-          result,
-          tag.split('-')[0],
-        ];
+        return [field, link, result, tag.split('-')[0]];
       });
     const want = (story: string) =>
       asked
@@ -1382,9 +1410,11 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     expect(mathsBody.match(/<m:oMathPara>/g)).toHaveLength(
       set.filter((each) => each.display).length,
     );
+    // Each once, and again where the contents and the lists are prefilled with it: exactly, so that a
+    // dropped one is not hidden by a prefill (the final review of Word 4, M4).
     expect(
       (mathsBody.match(/<m:oMath>/g) ?? []).length + (mathsNotes.match(/<m:oMath>/g) ?? []).length,
-    ).toBeGreaterThanOrEqual(set.length);
+    ).toBe(set.length + listedEquationsOf(solved.document));
     expect(mathsBody.match(/<wp:docPr [^>]*descr="Two red squares"/g)).toHaveLength(1);
     expect(mathsBody.match(/<wp:docPr /g)).toHaveLength(1);
     const untitled = (mathsBody + mathsNotes).replace(/<w:tblCaption w:val="[^"]*"\/>/g, '');
@@ -1394,7 +1424,7 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
       (entry) => entry.sequence === 'equation' && entry.label !== null,
     );
     expect(numberedLabels.length).toBeGreaterThan(0);
-    expect(mathsBody.match(/ SEQ Equation /g)).toHaveLength(numberedLabels.length);
+    expect(mathsBody.match(/ SEQ Equation(?:Front)? /g)).toHaveLength(numberedLabels.length);
     const labelWords = [
       ...mathsBody.matchAll(
         /<w:r><w:rPr>((?:(?!<\/w:rPr>).)*)<\/w:rPr><w:t xml:space="preserve">Equation <\/w:t><\/w:r>/g,
@@ -1437,11 +1467,15 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     expect(document.match(/<m:oMathPara>/g)).toHaveLength(
       published.filter((each) => each.display).length,
     );
-    // Each numbered one by Word's fields, and listed after the contents by them.
-    expect(document.match(/ SEQ Equation /g)).toHaveLength(5);
-    expect(document).toContain(
-      '<w:instrText xml:space="preserve"> TOC \\h \\z \\c &quot;Equation&quot; </w:instrText>',
-    );
+    // Each numbered one by Word's fields, front matter's under a name of its own, and listed after
+    // the contents by both (the final review of Word 4, I1).
+    expect(document.match(/ SEQ Equation /g)).toHaveLength(4);
+    expect(document.match(/ SEQ EquationFront /g)).toHaveLength(1);
+    for (const name of ['EquationFront', 'Equation']) {
+      expect(document).toContain(
+        `<w:instrText xml:space="preserve"> TOC \\h \\z \\c &quot;${name}&quot; </w:instrText>`,
+      );
+    }
   });
 
   it('CNT-045 sets every equation in the PDF and in Word from its one stored MathML, converted once to the maths tree both are set from: in the PDF a Formula saying its words, and in Word the OMML of that tree', async () => {
@@ -1457,7 +1491,10 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
       );
     }
 
-    // The PDF: every equation a Formula carrying its words, set from the tree the document holds.
+    // The PDF: every equation a Formula carrying its words, set from the tree the document holds, and
+    // drawn in it: the formula's own content is the tree's glyphs, x plus the equation's own number,
+    // the x the maths face's italic, so a tagged formula drawing nothing fails (the final review of
+    // Word 4, M4).
     const pdf = await typst.compile(
       PUBLICATION_TEMPLATE[TEMPLATE_READING[assembled.document.schema]].file,
       JSON.stringify(assembled.document),
@@ -1465,8 +1502,16 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
       ROOT_IMAGES,
     );
     const read = await readPdf(pdf);
-    for (const each of published) {
-      expect(read.formulas.map((formula) => formula.alt)).toContain(each.alternative);
+    // A title's and a listed caption's again in the contents and the lists.
+    const repeated: readonly string[] = ['title', 'tableCaption', 'figureCaption'];
+    for (const key of said) {
+      const formulas = read.formulas.filter((formula) => formula.alt === SAYS[key]);
+      expect(formulas, key).toHaveLength(repeated.includes(key) ? 2 : 1);
+      for (const formula of formulas) {
+        expect(formula.text.replace(/\s/g, ''), key).toBe(
+          `${String.fromCodePoint(0x1d465)}+${said.indexOf(key)}`,
+        );
+      }
     }
 
     // Word: every equation that tree's OMML, in a line or displayed as it stands.
@@ -1492,7 +1537,7 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     expect(written).not.toContain('<math');
   }, 120_000);
 
-  it("PUB-023 carries every construct a T1 document can hold into Word as Word's own, flattening none to formatted text and dropping none unsaid, in a document the Open XML SDK finds nothing wrong with", async () => {
+  it("carries every construct a T1 document can hold into Word as Word's own structure, with what the writer knows it loses named in the report, in a document the Open XML SDK finds nothing wrong with", async () => {
     const assembled = assemble(everything);
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     const { bytes, report } = writeDocx({
@@ -1615,13 +1660,27 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     expect(count(document + notes, / (?:REF|NOTEREF|PAGEREF) _Ref\d{9}/g)).toBe(asked.length);
     const equations = equationsOf(published.nodes);
     expect(count(document, /<m:oMathPara>/g)).toBe(equations.filter((each) => each.display).length);
-    expect(count(document + notes, /<m:oMath>/g)).toBeGreaterThanOrEqual(equations.length);
+    expect(count(document + notes, /<m:oMath>/g)).toBe(
+      equations.length + listedEquationsOf(published),
+    );
     const numbered = assembled.numbering.entries.filter(
       (entry) => entry.block !== null && entry.sequence !== 'footnote' && entry.label !== null,
     );
-    expect(count(document, / SEQ (?:Figure|Table|Equation) /g)).toBe(numbered.length);
+    expect(count(document, / SEQ (?:Figure|Table|Equation|EquationFront) /g)).toBe(numbered.length);
     expect(count(document, / TOC \\o /g)).toBe(1);
-    expect(count(document, / TOC (?:\\h )?\\z \\c /g)).toBe(published.front.lists.length);
+    // A field per list, but the list of equations, which counts front matter's under a name of its own
+    // and the rest's under another, a field each where each has one (the final review of Word 4, I1).
+    const equationFields = new Set(
+      numbered
+        .filter((entry) => entry.sequence === 'equation')
+        .map((entry) => entry.matter === 'front'),
+    ).size;
+    expect(count(document, / TOC (?:\\h )?\\z \\c /g)).toBe(
+      published.front.lists.length +
+        (published.front.lists.some((list) => list.sequence === 'equation')
+          ? Math.max(equationFields, 1) - 1
+          : 0),
+    );
 
     // Nothing dropped unsaid: what Word cannot say is in the report by name, beside the maths face it
     // sets in its own and the PDF as the output a page cites.

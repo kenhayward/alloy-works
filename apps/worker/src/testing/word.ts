@@ -27,6 +27,23 @@ export interface Asked {
   readonly language: string;
 }
 
+/**
+ * A reference field's code as `Asked` names it - its instruction and its own switches but `h`, `REF r`
+ * - and whether it links: read from the code, less the bookmark's name and a format switch, `\*
+ * CHARFORMAT`, which says how Word formats the result and not what it is (the final review of Word 4,
+ * M2).
+ */
+export function fieldOf(code: string): { readonly field: string; readonly link: boolean } {
+  const [name, , ...rest] = code.trim().split(' ');
+  const own = rest
+    .filter((each, at) => each !== '\\*' && rest[at - 1] !== '\\*')
+    .map((each) => each.slice(1));
+  return {
+    field: [name, ...own.filter((each) => each !== 'h')].join(' '),
+    link: own.includes('h'),
+  };
+}
+
 /** A footnote as the numbering table labels it, in the order Word numbers them. */
 export interface Noted {
   readonly label: string;

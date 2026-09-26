@@ -46,7 +46,7 @@ import { publishJob } from './jobs/publish.js';
 import { PUBLICATION_TEMPLATE } from './template.js';
 import { checkOoxml } from './testing/ooxml.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
-import { askedOf } from './testing/word.js';
+import { askedOf, fieldOf } from './testing/word.js';
 import { checkPdfUa1, type VeraPdfVerdict } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath, type Typst } from './typst.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
@@ -1224,9 +1224,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
         /<w:instrText xml:space="preserve"> ((?:REF|NOTEREF|PAGEREF) _Ref\d{9}[^<]*?) <\/w:instrText>((?:(?!fldCharType="end").)*)/g,
       ),
     ].map(([, code, rest]) => {
-      const [name, , ...switches] = code!.split(' ');
-      const own = switches.map((each) => each.slice(1)).filter((each) => each !== 'h');
-      return [[name, ...own].join(' '), words(rest!.split('fldCharType="separate"')[1]!)];
+      return [fieldOf(code!).field, words(rest!.split('fldCharType="separate"')[1]!)];
     });
     expect(fields).toEqual(asked.map((each) => [each.field, each.text ?? '']));
     expect(new Set(asked.map((each) => each.field))).toEqual(

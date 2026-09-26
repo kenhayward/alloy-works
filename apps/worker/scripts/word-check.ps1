@@ -58,9 +58,15 @@ function Clean([string]$s) {
 
 # The text each equation in a range gives, in order: what the range's own text holds of it, which is
 # neither the equation's source nor anything a reader is told of it, so a test takes it out by this.
+# Untrimmed, as it stands in the range's own text: an equation with a fraction or a script gives the
+# characters that mark its structure, which Clean reads as spaces, at its start as well (the final review
+# of Word 4, I2), and a trimmed one would leave them in the words around it.
 function Maths($range) {
   $list = @()
-  foreach ($m in $range.OMaths) { $list += (Clean $m.Range.Text) }
+  foreach ($m in $range.OMaths) {
+    $s = [string]$m.Range.Text
+    $list += (($s.Replace([string][char]2, '')) -replace "[\r\a\x0b\x0c]", ' ')
+  }
   return , $list
 }
 
