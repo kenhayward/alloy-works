@@ -70,6 +70,8 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1449);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 436, from 432 (2026-09-26): W1.3 - publishing.md claims PUB-031 and PUB-069, structure.md
+    // CNT-160 and content-model.md CNT-166, each measured and demonstrated before it was claimed.
     // 432, from 434 (2026-09-26): content-model.md stopped claiming CNT-061 and CNT-062, whose paste
     // keeps a heading as a paragraph where "must preserve structure" makes no exception (W1.2's final
     // review); named in prose beside the table until they are reworded as CNT-167 was.
@@ -180,7 +182,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(432);
+    ).toBe(436);
   });
 });
 
@@ -525,13 +527,15 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 360, from 352 (2026-09-26): W1.3 - PUB-069 and PUB-031 in two files each, the PDF's and Word's;
+  // CNT-160 in one; CNT-166 in three, the store, the editor and the publish.
   // 352, from 335 (2026-09-26): W1.2, the test debt the T1 audit found - one file each for CNT-014,
   // CNT-019, CNT-026, CNT-081, CNT-164 (two tests, one file), CNT-169, STR-024, STR-068, TAB-050,
   // VER-009, IAM-053, IAM-078 and API-005; CNT-085 in three, the PDF's paint, Word's run and Word's
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(352);
+    expect(model.citations).toHaveLength(360);
   });
 
   it('cites no identifier the corpus does not hold', () => {

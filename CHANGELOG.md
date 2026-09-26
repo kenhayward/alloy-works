@@ -3,6 +3,19 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.73.3 - 2026-09-26 (PR #243)
+
+### Changed
+
+- **Four more requirements are designed and shown by a test.** A passage hyphenates by its own
+  language in the PDF, and Word is given each passage's language to hyphenate by; a language the
+  publisher has no hyphenation rules for is not hyphenated, rather than hyphenated as the document's.
+  A floated figure is read to assistive technology where it stands in the document, not where it is
+  drawn on the page. Changing which version of a component a document uses is kept as a new version
+  of the document, saying who changed it and when. And every character in Unicode, those outside
+  its first plane included, is stored and shown exactly, while one the typefaces cannot print stops
+  the publish by name.
+
 ## 0.73.2 - 2026-09-26 (PR #241)
 
 ### Changed

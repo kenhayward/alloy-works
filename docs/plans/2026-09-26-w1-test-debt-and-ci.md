@@ -4,6 +4,9 @@
 > as the Word slices were. It builds W1 of [the rest of T1](2026-09-25-t1-remainder.md): the
 > requirements the audit found built and uncited, and the three changes to how CI runs the tests
 > that Ken added on 2026-09-25.
+>
+> **Built** (PRs #239, #241, #243). [What the build changed](#what-the-build-changed) records where it
+> departed from the tasks below.
 
 **Goal:** the trace counts everything T1 has built that a test can show, and CI's test step stops
 spending most of its time starting Java.
@@ -367,6 +370,22 @@ first.
   taking the last block of its kind (blocks after the targets as well as before); and STR-024 varied
   the word but not the number (the counter's form and separator too).
 - Citations 335 to 352, counted once per requirement per file.
+
+**W1.3 (PR #243).**
+
+- **Each claim was measured before it was written.** PUB-069's: Typst 0.15.1 compiled one long
+  compound under 47 language tags. Latin-script text hyphenates by the passage's own patterns, which
+  differ (English breaks _...fahrtsge|sellschaft_, German _...gesell|schafts_), and a language the
+  engine has none for is not hyphenated at all - never as the document's. publishing.md records which
+  languages have patterns. PUB-031's: the structure tree reads a head float between the paragraphs
+  either side of it and a foot float before the one after it, however they are drawn.
+- **Both publishing claims hold for Word too**: each passage's `w:lang` under automatic hyphenation,
+  and a floated figure's box anchored between the same blocks.
+- **CNT-160 is read from the chain**: no route reads an older document version, so the test reads the
+  version chain the store keeps - four versions, each author and each reference in turn.
+- **CNT-166 is three citations**, the store, the editor and the publish, which content-model.md's claim
+  names part by part.
+- Design claims 432 to 436; citations 352 to 360.
 
 ## Done when
 
