@@ -654,6 +654,109 @@ describe('nesting an item and lifting it back', () => {
     expect(() => stored(state.doc)).not.toThrow();
   });
 
+  it('nests a definition item into the sublist the definition above already ends with', () => {
+    const doc = documentOf(
+      definitionList(
+        'D1',
+        definitionItem(
+          'Creep',
+          paragraph('b1', 'Slow strain.'),
+          definitionList('D2', definitionItem('Stress', paragraph('b2', 'Load.'))),
+        ),
+        definitionItem('Yield', paragraph('b3', 'The greatest stress.')),
+      ),
+    );
+    const { handled, next } = press(stateOf(doc, 'b3'), 'Tab');
+    expect(handled).toBe(true);
+    // Into the sublist that was there, after its item - not a second sublist beside it.
+    expect(shapeOf(next.doc)).toEqual([
+      'doc',
+      [
+        'definitionList',
+        [
+          'definitionItem',
+          ['term', 'Creep'],
+          [
+            'definition',
+            ['paragraph', 'Slow strain.'],
+            [
+              'definitionList',
+              ['definitionItem', ['term', 'Stress'], ['definition', ['paragraph', 'Load.']]],
+              [
+                'definitionItem',
+                ['term', 'Yield'],
+                ['definition', ['paragraph', 'The greatest stress.']],
+              ],
+            ],
+          ],
+        ],
+      ],
+    ]);
+    expect(identifiers(next.doc)).toEqual(['D1', 'b1', 'D2', 'b2', 'b3']);
+    expect(() => stored(next.doc)).not.toThrow();
+  });
+
+  it('lifts the middle of three nested definition items, and the ones after it go beneath it', () => {
+    const doc = documentOf(
+      definitionList(
+        'D1',
+        definitionItem(
+          'Creep',
+          paragraph('b1', 'Slow strain.'),
+          definitionList(
+            'D2',
+            definitionItem('Stress', paragraph('b2', 'Load.')),
+            definitionItem('Yield', paragraph('b3', 'The greatest stress.')),
+            definitionItem('Fatigue', paragraph('b4', 'Failure under cycles.')),
+          ),
+        ),
+      ),
+    );
+    const { handled, next } = pressShiftTab(stateOf(doc, 'b3'));
+    expect(handled).toBe(true);
+    // Out to the outer list after the item that held it, carrying the item after it as its own
+    // sublist, as a counted list's lift does; the item before stays where it was.
+    expect(shapeOf(next.doc)).toEqual([
+      'doc',
+      [
+        'definitionList',
+        [
+          'definitionItem',
+          ['term', 'Creep'],
+          [
+            'definition',
+            ['paragraph', 'Slow strain.'],
+            [
+              'definitionList',
+              ['definitionItem', ['term', 'Stress'], ['definition', ['paragraph', 'Load.']]],
+            ],
+          ],
+        ],
+        [
+          'definitionItem',
+          ['term', 'Yield'],
+          [
+            'definition',
+            ['paragraph', 'The greatest stress.'],
+            [
+              'definitionList',
+              [
+                'definitionItem',
+                ['term', 'Fatigue'],
+                ['definition', ['paragraph', 'Failure under cycles.']],
+              ],
+            ],
+          ],
+        ],
+      ],
+    ]);
+    // Every block keeps its identifier, and the sublist made for the item after it is named.
+    expect(identifiers(next.doc).slice(0, 5)).toEqual(['D1', 'b1', 'D2', 'b2', 'b3']);
+    expect(identifiers(next.doc)).toContain('b4');
+    expect(new Set(identifiers(next.doc)).size).toBe(identifiers(next.doc).length);
+    expect(() => stored(next.doc)).not.toThrow();
+  });
+
   it('nests a definition item and lifts it back, in a mixture of kinds', () => {
     const doc = documentOf(
       list('L1', 'unordered', [
@@ -1777,6 +1880,44 @@ describe('Backspace and Delete between two definition items (issue #160)', () =>
         ],
       ],
     ]);
+  });
+
+  it('does nothing from either side where the definition above ends in a list, however it ends (issue #250)', () => {
+    // The last text before the boundary is a paragraph, but one inside a list the definition ends
+    // with: the item's own last block is the list, so there is nothing for the term's words to join.
+    for (const [kind, sublist] of [
+      ['a bulleted list', list('L1', 'unordered', [item(paragraph('b9', 'Note.'))])],
+      [
+        'a definition list',
+        definitionList('D2', definitionItem('Stress', paragraph('b9', 'Note.'))),
+      ],
+    ] as const) {
+      const doc = documentOf(
+        definitionList(
+          'D1',
+          definitionItem('Creep', paragraph('b1', 'Slow strain.'), sublist),
+          definitionItem('Yield', paragraph('b2', 'Under load.')),
+        ),
+      );
+      const termOf = (nth: number) => {
+        let found = -1;
+        let seen = 0;
+        doc.descendants((node, pos) => {
+          if (node.type.name === 'term' && node.textContent !== 'Stress') {
+            if (seen === nth) found = pos + 1;
+            seen += 1;
+          }
+          return true;
+        });
+        return found;
+      };
+      const back = press(at(doc, termOf(1)), 'Backspace');
+      expect(back.handled, kind).toBe(true);
+      expect(back.next.doc.eq(doc), kind).toBe(true);
+      const forward = press(at(doc, inside(doc, 'b9') + 'Note.'.length), 'Delete');
+      expect(forward.handled, kind).toBe(true);
+      expect(forward.next.doc.eq(doc), kind).toBe(true);
+    }
   });
 
   it('never nests one item inside the other', () => {

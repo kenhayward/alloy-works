@@ -256,7 +256,7 @@ window, says nothing of a hold whose time has passed, and hears changes when its
 to. The state is decided for every component the caller may read, including an occurrence with no
 version to show.
 
-**W2.1b (PR #250).** Built as Task 2 says, with three things the plan did not foresee.
+**W2.1b (PR #251).** Built as Task 2 says, with three things the plan did not foresee.
 `prosemirror-schema-list`'s sink and lift put and look for a sublist after an item's last child,
 which is now the definition, so `sinkDefinitionItem` and a lift beside it are the product's, one level
 deeper; a Backspace or Delete join from a term with words leaves the emptied item behind, since a
@@ -266,7 +266,12 @@ follow a definition, measured - so the comments saying they do were corrected an
 them kept. ADR-0025 named `term block+` as its decision, so ADR-0026 restates it with the new shape
 and supersedes it. The mapping refuses an item whose blocks stand outside a definition, by name. The
 old `div > dt + p` body was also losing data in the HTML reader - a definition read back from the
-editor's HTML came back empty with nothing in the report - which the new shape ends.
+editor's HTML came back empty with nothing in the report - which the new shape ends. The final
+review found the join from a term reaching into a list that ends the definition above, a defect
+since issue #160 and on `main` too (issue #250): it asked the nearest text whether it was a
+paragraph, and a list's last line is one. It now asks the item above's own last block. The same
+review asked for the nested sink and the lift with siblings after it to be pressed rather than
+derived; both now are, each seen to fail under a break.
 
 ## Done when
 

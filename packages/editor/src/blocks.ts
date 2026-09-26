@@ -587,10 +587,15 @@ export function joinDefinitionItems(direction: 'backward' | 'forward'): Command 
       if (itemStart === null) return false;
     }
 
-    const item = state.doc.resolve(itemStart).nodeAfter!;
+    const $item = state.doc.resolve(itemStart);
+    const item = $item.nodeAfter!;
     const term = item.firstChild!;
-    const before = Selection.findFrom(state.doc.resolve(itemStart), -1, true);
-    if (before === null || before.$from.parent.type !== paragraphNode) return true;
+    // Asked of the item above's own last block, not of the nearest text: a definition ending in a
+    // list whose last line is a paragraph has that paragraph nearest, and the term's words would
+    // join a line of the list (issue #250).
+    if (blocksOf($item.nodeBefore!).lastChild?.type !== paragraphNode) return true;
+    const before = Selection.findFrom($item, -1, true);
+    if (before === null) return true;
     const joinFrom = before.from;
     const firstBody = blocksOf(item).firstChild!;
     // Into the first paragraph of the definition - one into the item, past the term, one into the
