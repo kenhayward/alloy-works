@@ -667,7 +667,10 @@ const DIRECT = [
 
 describe('the marks an author applies directly', () => {
   /** The mark types on the paragraph's first run, which the fixture's selection covers. */
-  const first = (target: EditorView) => runsOf(target)[0]?.marks.map((mark) => mark.type) ?? [];
+  const first = (target: EditorView) => {
+    const [run] = runsOf(target);
+    return run?.type === 'text' ? run.marks.map((mark) => mark.type) : [];
+  };
 
   it('CNT-164 applies and removes each of the seven marks by its button and by its shortcut', async () => {
     const { view: mounted } = renderToolbar({ range: [1, 6] });
