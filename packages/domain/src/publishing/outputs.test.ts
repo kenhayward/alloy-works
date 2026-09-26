@@ -25,7 +25,41 @@ describe("an output's report", () => {
       'header_column_lost',
       'header_repeated',
       'continuation_label_omitted',
+      'equation_flattened',
     ]);
+  });
+
+  it("names a heading or a listed caption holding an equation Word's rebuilt entries set as its characters in a row, by its place and its number or label (the final review of Word 4, I2)", () => {
+    const heading = { node: 'rateaaaaaaaaaaaaaaaaaaaaaa', block: null, label: '3' };
+    const caption = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1', label: 'Table 1.1' };
+    const report: OutputReport = [
+      { kind: 'equation_flattened', ...heading },
+      { kind: 'equation_flattened', ...caption },
+      { kind: 'equation_flattened', ...heading, node: 'openingaaaaaaaaaaaaaaaaaaa', label: null },
+    ];
+    expect(parseOutputReport(JSON.parse(JSON.stringify(report)))).toEqual(report);
+    // A heading and a caption in one node are two things; one said twice is one thing twice.
+    expect(() =>
+      parseOutputReport([
+        { kind: 'equation_flattened', ...heading },
+        { kind: 'equation_flattened', ...heading },
+      ]),
+    ).toThrow(/once/);
+    // Closed: a place as the outline and the component spell one - a heading's no block - and a
+    // number or a label of something or none, and nothing else.
+    expect(() => parseOutputReport([{ kind: 'equation_flattened', node: heading.node }])).toThrow();
+    expect(() =>
+      parseOutputReport([{ kind: 'equation_flattened', ...caption, block: '' }]),
+    ).toThrow();
+    expect(() =>
+      parseOutputReport([{ kind: 'equation_flattened', ...caption, label: '' }]),
+    ).toThrow();
+    expect(() =>
+      parseOutputReport([{ kind: 'equation_flattened', ...heading, node: 'Rate' }]),
+    ).toThrow();
+    expect(() =>
+      parseOutputReport([{ kind: 'equation_flattened', ...caption, text: 'x2' }]),
+    ).toThrow(/Unrecognized key/);
   });
 
   it('names a table Word could not set as its style asks by its place, and its label where it has one (Word 2, ruling R7)', () => {

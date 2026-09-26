@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { scanXml } from '../content/ooxml/xml.js';
 import { mathsTree, type MathsNode, type MathsTree } from '../publishing/maths.js';
 
-import { omml, type OmmlOptions } from './omml.js';
+import { inOneRow, omml, type OmmlOptions } from './omml.js';
 import { EVERY_KIND_MATHML } from './omml.fixture.js';
 
 // ---------------------------------------------------------------------------------------------------
@@ -440,7 +440,7 @@ describe('the converter from the maths tree to OMML (Word 4, ruling R3)', () => 
       );
     });
 
-    it('sets cases as an equation array after a brace, each column left-aligned by its own alignment points (M11: without them the rows centre)', () => {
+    it("sets cases as a matrix after a brace, each column aligned as the tree says, so the second column's cells start at one edge as the PDF's do (the final review of Word 4, M1: an equation array's alignment points ran the second column into a wider first)", () => {
       const equation = read({
         k: 'cases',
         rows: [
@@ -451,9 +451,11 @@ describe('the converter from the maths tree to OMML (Word 4, ruling R3)', () => 
       });
 
       expect(sketch(equation)).toBe(
-        "d(e(eqArr(e('&' 'x'[i] ',' '&' '&' 'x'[i] '\u{2265}' '0'[p]) e('&' '\u{2212}' 'x'[i] ',' '&' '&' 'otherwise'[nor]))))",
+        "d(e(m(mr(e('x'[i] ',') e('x'[i] '\u{2265}' '0'[p])) mr(e('\u{2212}' 'x'[i] ',') e('otherwise'[nor])))))",
       );
       expect([value(equation, 'm:begChr'), value(equation, 'm:endChr')]).toEqual(['{', '']);
+      expect(all(equation, 'm:mcJc').map((each) => each.attrs['m:val'])).toEqual(['left', 'left']);
+      expect(value(equation, 'm:plcHide')).toBe('1');
     });
 
     it("sets an ampersand the content holds in an equation array as Word's normal text, so it is never read as an alignment point", () => {
@@ -646,6 +648,25 @@ describe('the converter from the maths tree to OMML (Word 4, ruling R3)', () => 
       const prescripted: MathsNode = { k: 'attach', mode: 'scripts', base: o(SUM), tl: i('a') };
 
       expect(shape(row(prescripted, i('x')))).toBe("sPre(sub() sup('a'[i]) e('\u{2211}')) 'x'[i]");
+    });
+  });
+
+  describe("what Word's rebuilt entries keep (the final review of Word 4, I2)", () => {
+    it('finds an equation Word sets the same in a row where it is runs alone, whatever their style, and one holding anything else not', () => {
+      // Measured in Word 16: a rebuilt contents entry, list entry or running head keeps an equation's
+      // runs, each with its own properties - an upright capital omega's among them - and drops every
+      // structure around them.
+      expect(inOneRow(row(i('x'), o('+'), n('10')))).toBe(true);
+      expect(inOneRow(i('\u{3a9}', 'upright'))).toBe(true);
+      expect(inOneRow(row({ k: 'text', t: 'if' }, i('x'), { k: 'primes', count: 1 }))).toBe(true);
+      expect(inOneRow(row(i('x'), { k: 'space', em: 0.5 }, i('y')))).toBe(true);
+      // A script, a fraction, a root, a sum and a named operator taking its argument are structures
+      // Word's rebuilt entry drops, setting their characters one after another.
+      expect(inOneRow({ k: 'attach', mode: 'scripts', base: i('x'), t: n('2') })).toBe(false);
+      expect(inOneRow({ k: 'frac', n: i('a'), d: i('b') })).toBe(false);
+      expect(inOneRow({ k: 'sqrt', body: i('y') })).toBe(false);
+      expect(inOneRow(row({ k: 'o', t: SUM, large: true }, i('x')))).toBe(false);
+      expect(inOneRow(row({ k: 'op', t: 'sin', limits: false }, i('x')))).toBe(false);
     });
   });
 

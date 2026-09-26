@@ -26,8 +26,10 @@ const family = typefaceSchema.shape.family;
  * the Word document, whose pagination is Word's (PUB-065). Word 2's (ruling R7), each of one table
  * Word could not set as its table style asks: a header column, which Word cannot mark as one
  * (TAB-049); a header its style does not repeat, which Word repeats anyway, since it marks header rows
- * only by repeating them; and a continuation label, which Word cannot set. Later slices add their
- * kinds as new members here, never by changing one already stored.
+ * only by repeating them; and a continuation label, which Word cannot set. Word 4's (the final
+ * review's I2): a heading or a listed caption holding an equation that is not a row of plain runs, which
+ * Word's rebuilt contents, lists and running heads set as its characters in a row. Later slices add
+ * their kinds as new members here, never by changing one already stored.
  */
 export const OUTPUT_REPORT_KINDS = [
   'face_substituted',
@@ -36,6 +38,7 @@ export const OUTPUT_REPORT_KINDS = [
   'header_column_lost',
   'header_repeated',
   'continuation_label_omitted',
+  'equation_flattened',
 ] as const;
 
 /**
@@ -49,6 +52,17 @@ const table = {
   label: z.string().min(1).nullable(),
 };
 
+/**
+ * A heading or a caption a report names: its place, as `table`'s - but a heading's, which is its node's
+ * and so names no block - and its heading's number or its caption's label, `3` or `Table 1.1`, where
+ * it has one.
+ */
+const titled = {
+  node: nodeIdentifierSchema,
+  block: z.string().min(1).nullable(),
+  label: z.string().min(1).nullable(),
+};
+
 export const outputReportEntrySchema = z.discriminatedUnion('kind', [
   z
     .strictObject({ kind: z.literal('face_substituted'), family, wordFamily: family })
@@ -58,6 +72,7 @@ export const outputReportEntrySchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('header_column_lost'), ...table }),
   z.strictObject({ kind: z.literal('header_repeated'), ...table }),
   z.strictObject({ kind: z.literal('continuation_label_omitted'), ...table }),
+  z.strictObject({ kind: z.literal('equation_flattened'), ...titled }),
 ]);
 
 /**

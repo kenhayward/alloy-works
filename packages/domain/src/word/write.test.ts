@@ -3028,6 +3028,11 @@ describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; 
   const REF = (n: number, ...switches: string[]) =>
     ['REF', name(n), ...switches.map((each) => `\\${each}`)].join(' ');
   const PAGEREF = (n: number) => `PAGEREF ${name(n)} \\h`;
+  /**
+   * A caption's number, whose result Word sets in the field's own formatting (the final review of
+   * Word 4, M2).
+   */
+  const NUMBER = (n: number, ...switches: string[]) => `${REF(n, ...switches)} \\* CHARFORMAT`;
 
   /** Every element beneath this one, in document order. */
   const inOrder = (element: Element): Element[] =>
@@ -3136,6 +3141,9 @@ describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; 
   });
 
   it("PUB-026 writes every cross-reference as a field Word can update - REF, NOTEREF or PAGEREF at its target's bookmark - prefilled with what the PDF prints, and each page empty until Word lays the page out", () => {
+    // A caption's number set in the reference's own formatting by `\* CHARFORMAT`: measured in Word 16
+    // (the final review of Word 4, M2), a number in a bold term printed its label's regular, the rest
+    // of the term bold, where with the switch the whole term was bold, as the PDF sets it.
     expect(referencesIn(saying(P1))).toEqual([
       { code: REF(2, 'r', 'h'), result: '1' },
       { code: REF(2, 'h'), result: 'Methods' },
@@ -3147,9 +3155,9 @@ describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; 
     expect(
       referencesIn(saying('Table: Table 1.1 / Readings / Table 1.1 Readings / above / ')),
     ).toEqual([
-      { code: REF(4, 'h'), result: 'Table 1.1' },
+      { code: NUMBER(4, 'h'), result: 'Table 1.1' },
       { code: REF(5, 'h'), result: 'Readings' },
-      { code: REF(4, 'h'), result: 'Table 1.1' },
+      { code: NUMBER(4, 'h'), result: 'Table 1.1' },
       { code: REF(5, 'h'), result: 'Readings' },
       { code: REF(4, 'p', 'h'), result: 'above' },
       { code: PAGEREF(4), result: '' },
@@ -3157,9 +3165,9 @@ describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; 
     expect(
       referencesIn(saying('Figure: Figure 1.1 / Shapes / Figure 1.1 Shapes / above / ')),
     ).toEqual([
-      { code: REF(6, 'h'), result: 'Figure 1.1' },
+      { code: NUMBER(6, 'h'), result: 'Figure 1.1' },
       { code: REF(7, 'h'), result: 'Shapes' },
-      { code: REF(6, 'h'), result: 'Figure 1.1' },
+      { code: NUMBER(6, 'h'), result: 'Figure 1.1' },
       { code: REF(7, 'h'), result: 'Shapes' },
       { code: REF(6, 'p', 'h'), result: 'above' },
       { code: PAGEREF(6), result: '' },
@@ -3436,7 +3444,7 @@ describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; 
     expect(referencesIn(cites)).toEqual([
       { code: REF(3, 'p', 'h'), result: 'above' },
       { code: PAGEREF(1), result: '' },
-      { code: REF(1, 'h'), result: 'Figure 1.1' },
+      { code: NUMBER(1, 'h'), result: 'Figure 1.1' },
       { code: REF(2, 'h'), result: 'Blue on top' },
     ]);
   });
@@ -3829,7 +3837,7 @@ describe('writeDocx: equations (Word 4, rulings R4 and R5)', () => {
     expect(textOf(cellsOf(f1!)[1]!)).toBe('Equation i');
   });
 
-  it("numbers each equation by Word's fields as captionField says in every matter, each prefilled with the numbering table's label: the front's roman, the body's counting from 1 again, the appendix's by its chapter (Word 4's Ruling 3)", () => {
+  it("numbers each equation by Word's fields as captionField says in every matter, each prefilled with the numbering table's label: the front's roman under a name of its own, the body's counting from 1 again, the appendix's by its chapter (Word 4's Ruling 3)", () => {
     const labels = rows().map((row) => cellsOf(row)[1]!);
     expect(labels.map(textOf)).toEqual([
       'Equation i',
@@ -3840,7 +3848,7 @@ describe('writeDocx: equations (Word 4, rulings R4 and R5)', () => {
       'Equation A.2',
     ]);
     expect(labels.map(fieldCodes)).toEqual([
-      [`SEQ Equation ${BS}* roman ${BS}s 1`],
+      [`SEQ EquationFront ${BS}* roman ${BS}s 1`],
       [`SEQ Equation ${BS}* arabic ${BS}s 1`],
       [`SEQ Equation ${BS}* arabic`],
       [`SEQ Equation ${BS}* arabic`],
@@ -3932,20 +3940,21 @@ describe('writeDocx: equations (Word 4, rulings R4 and R5)', () => {
     ]);
     const referring = paragraphSaying(equations.docx, 'Equation 1 /  / above / above');
     expect(fieldCodes(referring)).toEqual([
-      `REF _Ref000000001 ${BS}h`,
+      `REF _Ref000000001 ${BS}h ${BS}* CHARFORMAT`,
       `PAGEREF _Ref000000001 ${BS}h`,
       `REF _Ref000000001 ${BS}p ${BS}h`,
       `REF _Ref000000002 ${BS}p ${BS}h`,
     ]);
   });
 
-  it('lists the numbered equations after the contents as the lists of figures and tables are: a TOC field over the SEQ Equation labels, prefilled with each label and no page', () => {
+  it("lists the numbered equations after the contents as the lists of figures and tables are: a TOC field over front matter's SEQ EquationFront labels, then one over the SEQ Equation labels, prefilled with each label and no page", () => {
     const [, front] = sections(equations.docx);
     const shown = front!.paragraphs.map(textOf);
     const listed = front!.paragraphs.slice(shown.indexOf('Equations'));
     expect(listed.map(textOf)).toEqual([
       'Equations',
       'Equation i',
+      '',
       'Equation 1',
       'Equation 2',
       'Equation 3',
@@ -3953,8 +3962,28 @@ describe('writeDocx: equations (Word 4, rulings R4 and R5)', () => {
       'Equation A.2',
     ]);
     expect(fieldCodes({ name: 'list', attrs: {}, children: listed })).toEqual([
+      `TOC ${BS}h ${BS}z ${BS}c "EquationFront"`,
       `TOC ${BS}h ${BS}z ${BS}c "Equation"`,
     ]);
+    // Each field begun in its first entry; front matter's ended in an empty paragraph of its own, its
+    // mark hidden, so that the empty paragraph Word leaves after the entries it rebuilds is joined to
+    // the body's first entry and no gap is seen between them (measured), and holding the leader tab
+    // Word gives the entries it rebuilds, which the joined entry is set by (measured: without it, the
+    // body's first entry lost its leader).
+    const marks = (paragraph: Element) =>
+      all(paragraph, 'w:fldChar').map((each) => each.attrs['w:fldCharType']);
+    expect(marks(listed[1]!)).toEqual(['begin', 'separate']);
+    expect(marks(listed[2]!)).toEqual(['end']);
+    expect(all(pPr(listed[2]!)!, 'w:vanish')).toHaveLength(1);
+    expect(all(pPr(listed[2]!)!, 'w:tab').map((each) => each.attrs)).toEqual([
+      { 'w:val': 'right', 'w:leader': 'dot', 'w:pos': twips(measure()) },
+    ]);
+    expect(marks(listed[3]!)).toEqual(['begin', 'separate']);
+    expect(marks(listed[7]!)).toEqual(['end']);
+    // The body's entries and the lists of figures and tables, one field each, hide no mark.
+    for (const entry of [listed[1]!, ...listed.slice(3)]) {
+      expect(all(entry, 'w:vanish')).toEqual([]);
+    }
     for (const entry of listed.slice(1)) expect(styleOf(entry)).toBe('TableofFigures');
   });
 
@@ -3965,6 +3994,58 @@ describe('writeDocx: equations (Word 4, rulings R4 and R5)', () => {
     expect(stated(table(), 'w:tblPr')['w:tblCaption']).toEqual({
       'w:val': 'Table 1.1 Values of x squared plus a small y',
     });
+  });
+
+  it("reports each heading the contents or a running head holds and each caption a list after the contents holds with an equation that is not a row of plain runs, which Word's rebuilt entries set as its characters in a row (the final review of Word 4, I2)", () => {
+    // The table's caption, which the list of tables holds, then the chapter the contents and the
+    // running heads hold, each holding x squared, in the order the text meets them.
+    expect(equations.report.filter((each) => each.kind === 'equation_flattened')).toEqual([
+      { kind: 'equation_flattened', node: id('calc'), block: 't1', label: 'Table 1.1' },
+      { kind: 'equation_flattened', node: id('method'), block: null, label: '2' },
+    ]);
+    // A row of plain runs is set the same in a row: nothing is said of one.
+    const FLAT =
+      '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x plus 10"><mi>x</mi><mo>+</mo><mn>10</mn></math>';
+    const flat = equated({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        nodes: [
+          {
+            ...section('method', 'Method', [reference('calc', 9)]),
+            title: [text('Method for '), { type: 'equation', mathml: FLAT }],
+          },
+        ],
+      }),
+      occurrences: new Map([
+        [
+          id('calc'),
+          component('Calculation', [
+            {
+              type: 'table',
+              id: 't1',
+              style: 'table',
+              caption: [text('Values of '), { type: 'equation', mathml: FLAT }],
+              headerRows: 0,
+              headerColumns: 0,
+              rows: [{ cells: [{ content: [said('c')], colspan: 1, rowspan: 1 }] }],
+            },
+          ]),
+        ],
+      ]),
+    });
+    expect(flat.report.filter((each) => each.kind === 'equation_flattened')).toEqual([]);
+    // Nor of a heading no contents and no running head holds, nor a caption no list collects.
+    const unlisted = equated({
+      layout: layoutWith((layout) => {
+        layout.matter.contents = null;
+        layout.matter.lists = [];
+        layout.formats.docx!.head = [[{ kind: 'field', field: 'title' }], [], []];
+      }),
+    });
+    expect(unlisted.report.filter((each) => each.kind === 'equation_flattened')).toEqual([]);
   });
 
   it('reports no substitution of the maths face, and writes no equation, where the document sets none', () => {

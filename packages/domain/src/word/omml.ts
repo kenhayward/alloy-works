@@ -317,6 +317,18 @@ function func(node: MathsNode, argumentXml: string, context: Context): string {
   );
 }
 
+/**
+ * **Whether Word sets an equation the same where it rebuilds it** (the final review of Word 4, I2):
+ * where the converter writes it as runs alone. Measured in Word 16: a rebuilt contents entry, a list's
+ * entry and a `STYLEREF`'s result keep an equation's runs, each with its own properties, and drop every
+ * structure around them - `x+10` and an upright capital omega as they were, but `x²` as "x2" and a
+ * fraction, a root, a sum and a named operator's argument as their characters one after another.
+ */
+export function inOneRow(tree: MathsTree): boolean {
+  const written = omml(tree, { display: false, size: 10, face: 'Cambria Math' });
+  return written.replace(/<m:r>(?:(?!<\/m:r>).)*<\/m:r>/gs, '') === '';
+}
+
 /** One node as OMML, taking nothing from beside it. */
 function write(node: MathsNode, context: Context): string {
   switch (node.k) {
@@ -386,8 +398,11 @@ function write(node: MathsNode, context: Context): string {
       return node.open === '' && node.close === ''
         ? matrix(node.rows, node.columns, context)
         : delimited(node.open, node.close, [matrix(node.rows, node.columns, context)], context);
+    // A matrix, not an equation array: measured in Word 16 (the final review of Word 4, M1), an
+    // array's alignment points set a second column's cells at the end of each row's first, so a wider
+    // first ran into "otherwise"; a matrix's columns start the second at one edge, where the PDF does.
     case 'cases':
-      return delimited('{', '', [equationArray(node.rows, node.columns, context)], context);
+      return delimited('{', '', [matrix(node.rows, node.columns, context)], context);
     case 'phantom':
       return (
         `<m:phant>${pr('phant', '<m:show m:val="0"/>', context)}` +
@@ -650,8 +665,7 @@ function matrix(
  * each cell is put in the next column of its own side: a right-aligned cell in the next right column,
  * a left-aligned one (or a centred one, which an equation array has no column for) in the next left
  * column, with a point for each column passed. An aligned equation's cells alternate already, one
- * point between each; cases' left-aligned cells are `& x, && x ≥ 0`, measured to set both columns
- * at their left where Word's own cases, `x, & x ≥ 0`, sets the first at its right.
+ * point between each. Cases are a matrix (`write`).
  */
 function equationArray(
   rows: readonly (readonly MathsNode[])[],

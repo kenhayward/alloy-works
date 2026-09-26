@@ -75,12 +75,12 @@ import {
   footnoteProperties,
   HEADING_LISTS,
   numberingXml,
-  sequenceName,
+  sequenceNames,
   WORD_FORMATS,
   WORD_LEVELS,
   type CaptionField,
 } from './numbering.js';
-import { omml } from './omml.js';
+import { inOneRow, omml } from './omml.js';
 import { panelsApart } from './panels.js';
 import { spacingOverrides, type SpacingOverride } from './spacing.js';
 
@@ -265,6 +265,11 @@ interface Paragraph {
   numbering?: string;
   readonly tabs?: string;
   readonly bidi?: boolean;
+  /**
+   * Its mark hidden, so that Word sets it as one paragraph with the next: the empty paragraph ending a
+   * list's field that another follows (`listsAfterContents`).
+   */
+  readonly hiddenMark?: boolean;
   /** Its indents, where a container stands it in from its style's or a panel is kept apart (Word 2). */
   indent?: Indent;
   /** The panel it belongs to, where its lines are one block's (Word 2, ruling R5): else its own. */
@@ -666,7 +671,9 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       footnotes: segment.matter,
     });
   }
-  if (front !== null) front.push(...writer.listsAfterContents(generated, front.length > 0));
+  if (front !== null) {
+    front.push(...writer.listsAfterContents(generated, front.length > 0, textBlockWidth(format)));
+  }
 
   const notes = writer.notes;
   const relationships = new Relationships();
@@ -963,7 +970,10 @@ class Writer {
     passage: Passage;
     floated: boolean;
   }[] = [];
-  /** What the report says of each table, in the order the text meets them (Word 2, ruling R7). */
+  /**
+   * What the report says of each table (Word 2, ruling R7) and of each heading and caption holding an
+   * equation Word's rebuilt entries flatten (`flattened`), in the order the text meets them.
+   */
   readonly reported: OutputReportEntry[] = [];
   /** Each face file's advances, read once, by its hash. */
   private readonly advances = new Map<string, FaceAdvances>();
@@ -1056,6 +1066,14 @@ class Writer {
       { ...(numbering === undefined ? {} : { numbering }), bidi: passage.rtl },
       style.id,
     );
+    // Rebuilt by Word from the heading: in the contents to its depth, and a running head's section.
+    const contents = this.published.front.contents;
+    const running =
+      depth === 1 &&
+      (holdsSection(this.numbers.format.head) || holdsSection(this.numbers.format.foot));
+    if ((contents !== null && depth <= contents.depth) || running) {
+      this.flattened(node.title, null, node.number);
+    }
     const blocks = this.flow(node.blocks, TOP_LEVEL, passage, {
       paragraph: heading,
       style: style.theme,
@@ -1768,12 +1786,19 @@ class Writer {
       target?.words,
       this.inlineRuns(captioned.caption, role, passage, { kind: 'caption', block: captioned.id }),
     );
+    const fielded = this.captioned.length;
     const label = this.labelRuns(
       captioned,
       this.prefill(captioned.caption, passage),
       passage,
       floated,
     );
+    // Listed by Word, where a list after the contents collects its sequence and its number is a field.
+    const sequence = this.captioned[fielded]?.sequence;
+    const listed = this.published.front.lists.some((list) =>
+      sequenceNames(list.sequence).some((name) => name === sequence),
+    );
+    if (listed) this.flattened(captioned.caption, captioned.id, captioned.label);
     return label === null
       ? bookmarked(target?.place, '') + own
       : bookmarked(target?.place, label) + this.runs(' ', passage) + own;
@@ -1832,6 +1857,23 @@ class Writer {
       }
     }
     return xml + this.runs(words, passage);
+  }
+
+  /**
+   * **What the report says of a heading or a caption Word rebuilds** (the final review of Word 4, I2):
+   * `equation_flattened` where it holds an equation that is not a row of plain runs (`inOneRow`), since
+   * Word's rebuilt contents entry, list entry or running head holds its characters in a row - a
+   * fraction's, a script's, a root's one after another - where the PDF sets its structure. By its place,
+   * `block` null for a heading, and its number or label.
+   */
+  private flattened(
+    runs: readonly (PublishedInline | PublishedTitleRun)[],
+    block: string | null,
+    label: string | null,
+  ) {
+    if (runs.some((run) => 'equation' in run && !inOneRow(run.equation.tree))) {
+      this.reported.push({ kind: 'equation_flattened', node: this.at, block, label });
+    }
   }
 
   /**
@@ -2075,41 +2117,72 @@ class Writer {
   /**
    * **The lists after the contents** (Word 2; measured, M9): each under its title in the list role's
    * style, starting a page where anything stands before it in the section, as the PDF's weak page break
-   * does; then one `TOC \h \z \c` field over the captions its sequence's `SEQ` name numbers - one
-   * name for the sequence in every matter, as `captionField` writes it - begun in its first entry and
-   * ended in its last, prefilled with each caption paragraph's words, label included, which is what
-   * Word rebuilds, and no page, which only Word can know. The entries are in the style Word rebuilds
-   * them in, `table of figures`, based on the list entry role's (`listEntryStyle`). A caption the
-   * scheme gives no number carries no field, so Word lists it neither before an update nor after.
+   * does; then a `TOC \h \z \c` field over the captions each of its sequence's `SEQ` names numbers -
+   * one name for the sequence in every matter, as `captionField` writes it, but for front matter's
+   * equations, which have one of their own and a field of their own before the body's - each begun in
+   * its first entry and ended in its last, prefilled with each caption paragraph's words, label
+   * included, which is what Word rebuilds, and no page, which only Word can know. A name no caption
+   * holds has no field, but that a list holding none has one empty field, of its last name. The entries
+   * are in the style Word rebuilds them in, `table of figures`, based on the list entry role's
+   * (`listEntryStyle`). A caption the scheme gives no number carries no field, so Word lists it neither
+   * before an update nor after.
+   *
+   * A field another follows ends in an empty paragraph of its own, its mark hidden, holding the leader
+   * tab Word gives the entries it rebuilds, at the end of the text block, `measure` points across.
+   * Measured in Word 16: a rebuilt `TOC` ends in an empty paragraph, which between two fields was an
+   * empty entry in the list; hidden, Word sets it as one with the next field's first entry, which then
+   * took its tab stops from it and, without the tab, lost its leader.
    */
-  listsAfterContents(lists: readonly PublishedGeneratedList[], opened: boolean): Paragraph[] {
+  listsAfterContents(
+    lists: readonly PublishedGeneratedList[],
+    opened: boolean,
+    measure: number,
+  ): Paragraph[] {
     const paragraphs: Paragraph[] = [];
     for (const list of lists) {
-      const name = sequenceName(list.sequence);
+      const names = sequenceNames(list.sequence);
       // `assemble` lists only a sequence it can publish: figures, tables and equations.
-      if (name === null) throw new Error(`No sequence of Word's lists ${list.sequence}`);
+      if (names.length === 0) throw new Error(`No sequence of Word's lists ${list.sequence}`);
       paragraphs.push(
         this.paragraph(this.theme.roles.list, this.runs(list.title, this.words), {
           pageBreakBefore: opened || paragraphs.length > 0,
         }),
       );
-      const entries = this.captioned.filter((each) => each.sequence === name);
-      // Linked to each caption (`\h`), but where one of them stands in a floated figure's text box:
-      // Word then lists that one with no page (measured), and a page is what a list is for.
-      const linked = !entries.some((each) => each.floated);
-      const code = ['TOC', ...(linked ? ['h'] : []), 'z', `c "${name}"`].join(` ${BACKSLASH}`);
-      const shown = entries.length === 0 ? [null] : entries;
-      shown.forEach((entry, index) => {
-        paragraphs.push(
-          this.paragraph(
-            this.theme.roles.listEntry,
-            (index === 0 ? fieldBegin(code) : '') +
-              (entry === null ? '' : this.runs(entry.label, this.words) + entry.prefill) +
-              (index === shown.length - 1 ? FIELD_END : ''),
-            {},
-            LIST_ENTRY_STYLE,
-          ),
-        );
+      const fields = names
+        .map((name) => ({ name, entries: this.captioned.filter((each) => each.sequence === name) }))
+        .filter((field) => field.entries.length > 0);
+      const written =
+        fields.length === 0 ? [{ name: names[names.length - 1]!, entries: [] }] : fields;
+      written.forEach(({ name, entries }, at) => {
+        const followed = at < written.length - 1;
+        // Linked to each caption (`\h`), but where one of them stands in a floated figure's text box:
+        // Word then lists that one with no page (measured), and a page is what a list is for.
+        const linked = !entries.some((each) => each.floated);
+        const code = ['TOC', ...(linked ? ['h'] : []), 'z', `c "${name}"`].join(` ${BACKSLASH}`);
+        const shown = entries.length === 0 ? [null] : entries;
+        shown.forEach((entry, index) => {
+          paragraphs.push(
+            this.paragraph(
+              this.theme.roles.listEntry,
+              (index === 0 ? fieldBegin(code) : '') +
+                (entry === null ? '' : this.runs(entry.label, this.words) + entry.prefill) +
+                (index === shown.length - 1 && !followed ? FIELD_END : ''),
+              {},
+              LIST_ENTRY_STYLE,
+            ),
+          );
+        });
+        if (followed) {
+          const tabs = `<w:tabs><w:tab w:val="right" w:leader="dot" w:pos="${twips(measure)}"/></w:tabs>`;
+          paragraphs.push(
+            this.paragraph(
+              this.theme.roles.listEntry,
+              FIELD_END,
+              { tabs, hiddenMark: true },
+              LIST_ENTRY_STYLE,
+            ),
+          );
+        }
       });
     }
     return paragraphs;
@@ -2371,15 +2444,18 @@ class Writer {
     // 3's check). A caption's number is its label's words, which `REF` copies as they are set, and
     // every other form is words, in the passage's direction.
     const numeral = properties.replace('<w:rtl/>', '');
-    const field = (code: string, result: string, own = properties) =>
-      referenceField(`${code}${run.link ? ` ${BACKSLASH}h` : ''}`, result, own);
+    const field = (code: string, result: string, own = properties, format = '') =>
+      referenceField(`${code}${run.link ? ` ${BACKSLASH}h` : ''}${format}`, result, own);
     const place = placeOf(target);
     const number = () =>
       target.kind === 'footnote'
         ? field(`NOTEREF ${place.name}`, form.label ?? '', numeral)
         : target.kind === 'heading'
           ? field(`REF ${place.name} ${BACKSLASH}r`, form.label ?? '', numeral)
-          : field(`REF ${place.name}`, form.label ?? '');
+          : // A caption's label, or a numbered equation's, set in the reference's own formatting, the
+            // field code's: measured in Word 16 (the final review of Word 4, M2), `REF` alone printed
+            // the label's own, regular in a bold term whose other words Word kept bold.
+            field(`REF ${place.name}`, form.label ?? '', properties, ` ${BACKSLASH}* CHARFORMAT`);
     const title = () =>
       field(`REF ${(target.kind === 'caption' ? target.words : place).name}`, form.title ?? '');
     switch (form.display) {
@@ -2752,6 +2828,7 @@ function paragraphXml(paragraph: Paragraph, sectionProperties?: string): string 
     (paragraph.indent === undefined ? '' : indentXml(paragraph.indent)) +
     (paragraph.spacing?.contextual === false ? '<w:contextualSpacing w:val="0"/>' : '') +
     (paragraph.justify === undefined ? '' : `<w:jc w:val="${paragraph.justify}"/>`) +
+    (paragraph.hiddenMark === true ? '<w:rPr><w:vanish/></w:rPr>' : '') +
     (sectionProperties ?? '');
   const box =
     paragraph.box === undefined
