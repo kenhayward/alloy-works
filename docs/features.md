@@ -369,8 +369,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   what the page gives its target, as a publication prints it. Nothing tracks where you are as you
   read - there is no reading view.
 
-  **This is structure, not the document.** There is no document view:
-  the outline is a tree you build, and you still open a component on its own to edit it. A section's
+  **This is structure and text, not the published document.** There is no document view - no view
+  that sets the document as it will publish: the page shows the outline you build beside the text in
+  reading order, and each component opens in place, in its card, to be edited. A section's
   title takes words and equations but no formatting or cross-reference - a title that already holds
   one is shown and not changed, with a sentence saying why - and a document's own title, language and
   direction cannot be changed once it is made.
@@ -699,8 +700,8 @@ Named explicitly so nobody has to read the source to find out:
 - No way to make, change or choose between component types: every environment has one, named Topic, and
   nothing yet lets an administrator add another or change which is the default.
 - No way to delete a component or a document, including one made by mistake.
-- No document view: a document's outline is a tree you build, and a component still opens on its own
-  to be edited. No reading view. No reuse or transclusion. No way to
+- No document view that sets a document as it will publish: its page shows the outline you build
+  beside the text in reading order, each component opening in place to be edited. No reading view. No reuse or transclusion. No way to
   make a figure or a table unnumbered: every one takes a number.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
   quotations, preformatted text, tables and their notes, figures, images in a line of text,
