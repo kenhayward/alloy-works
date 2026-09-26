@@ -167,9 +167,8 @@ describe('the shape of every failure', () => {
     },
   ] as const;
 
-  it.each(failures)(
-    'API-005 answers $said with a stable code beside a message, and a trace id',
-    async (failure) => {
+  it('API-005 answers every kind of failure with a stable code beside a message, and a trace id', async () => {
+    for (const failure of failures) {
       const { app } = testApp();
       const response = await app.inject(
         'body' in failure
@@ -181,14 +180,14 @@ describe('the shape of every failure', () => {
             }
           : { url: failure.url },
       );
-      expect(response.statusCode).toBe(failure.status);
+      expect(response.statusCode, failure.said).toBe(failure.status);
       const body = response.json<Record<string, unknown>>();
       // The code is the machine's, the same on every answer of this kind; the message is a person's.
-      expect(body.code).toBe(failure.code);
-      expect(typeof body.message).toBe('string');
-      expect(body.message).not.toBe('');
-      expect(body.message).not.toBe(body.code);
-      expect(body.traceId).toMatch(TRACE);
-    },
-  );
+      expect(body.code, failure.said).toBe(failure.code);
+      expect(typeof body.message, failure.said).toBe('string');
+      expect(body.message, failure.said).not.toBe('');
+      expect(body.message, failure.said).not.toBe(body.code);
+      expect(body.traceId, failure.said).toMatch(TRACE);
+    }
+  });
 });

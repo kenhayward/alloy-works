@@ -669,23 +669,22 @@ describe('the marks an author applies directly', () => {
   /** The mark types on the paragraph's first run, which the fixture's selection covers. */
   const first = (target: EditorView) => runsOf(target)[0]?.marks.map((mark) => mark.type) ?? [];
 
-  it.each(DIRECT)(
-    'CNT-164 applies and removes $label by its button and by its shortcut',
-    async ({ label, mark, key, keyCode, shift }) => {
-      const { view: mounted } = renderToolbar({ range: [1, 6] });
+  it('CNT-164 applies and removes each of the seven marks by its button and by its shortcut', async () => {
+    const { view: mounted } = renderToolbar({ range: [1, 6] });
+    for (const { label, mark, key, keyCode, shift } of DIRECT) {
       const button = screen.getByRole('button', { name: label });
 
       await userEvent.click(button);
-      expect(first(mounted)).toEqual([mark]);
+      expect(first(mounted), label).toEqual([mark]);
       await userEvent.click(button);
-      expect(first(mounted)).toEqual([]);
+      expect(first(mounted), label).toEqual([]);
 
-      expect(press(mounted, key, keyCode, shift)).toBe(true);
-      expect(first(mounted)).toEqual([mark]);
-      expect(press(mounted, key, keyCode, shift)).toBe(true);
-      expect(first(mounted)).toEqual([]);
-    },
-  );
+      expect(press(mounted, key, keyCode, shift), label).toBe(true);
+      expect(first(mounted), label).toEqual([mark]);
+      expect(press(mounted, key, keyCode, shift), label).toBe(true);
+      expect(first(mounted), label).toEqual([]);
+    }
+  });
 
   it('CNT-164 offers no control over typeface, font size or colour', () => {
     renderToolbar();
