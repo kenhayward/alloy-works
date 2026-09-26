@@ -111,19 +111,19 @@ undone, since the code already exists.
 
 This table is updated as each workstream lands.
 
-| #   | Workstream                         | Status                             |
-| --- | ---------------------------------- | ---------------------------------- |
-| W1  | Test debt                          | Not started                        |
-| W2  | Small fixes                        | Not started                        |
-| W3  | Word output                        | Built (PRs #231, #236, #237, #238) |
-| W4  | Templates                          | Not started                        |
-| W5  | Definitions and the metadata panel | Not started                        |
-| W6  | Search                             | Not started                        |
-| W7  | Listings and the API               | Not started                        |
-| W8  | The theme in the editor            | Not started                        |
-| W9  | The document view                  | Not started                        |
-| W10 | Preview                            | Not started                        |
-| W11 | Recovery                           | Not started                        |
-| W12 | Identity                           | Not started                        |
-| W13 | A browser suite                    | Not started                        |
-| W14 | Publishing, finished               | Not started                        |
+| #   | Workstream                         | Status                                                  |
+| --- | ---------------------------------- | ------------------------------------------------------- |
+| W1  | Test debt                          | In progress ([plan](2026-09-26-w1-test-debt-and-ci.md)) |
+| W2  | Small fixes                        | Not started                                             |
+| W3  | Word output                        | Built (PRs #231, #236, #237, #238)                      |
+| W4  | Templates                          | Not started                                             |
+| W5  | Definitions and the metadata panel | Not started                                             |
+| W6  | Search                             | Not started                                             |
+| W7  | Listings and the API               | Not started                                             |
+| W8  | The theme in the editor            | Not started                                             |
+| W9  | The document view                  | Not started                                             |
+| W10 | Preview                            | Not started                                             |
+| W11 | Recovery                           | Not started                                             |
+| W12 | Identity                           | Not started                                             |
+| W13 | A browser suite                    | Not started                                             |
+| W14 | Publishing, finished               | Not started                                             |
