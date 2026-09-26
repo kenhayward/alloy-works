@@ -29,6 +29,12 @@ export type ReportEntry =
       readonly node: string;
       readonly block: string;
       readonly label: string | null;
+    }
+  | {
+      readonly kind: 'equation_flattened';
+      readonly node: string;
+      readonly block: string | null;
+      readonly label: string | null;
     };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -63,6 +69,15 @@ export function reportIn(value: unknown): ReportEntry[] {
     ) {
       return [{ kind, node: entry.node, block: entry.block, label: entry.label }];
     }
+    // A heading's or a caption's (the final review of Word 4, I2): a heading names no block.
+    if (
+      entry.kind === 'equation_flattened' &&
+      typeof entry.node === 'string' &&
+      (typeof entry.block === 'string' || entry.block === null) &&
+      (typeof entry.label === 'string' || entry.label === null)
+    ) {
+      return [{ kind: entry.kind, node: entry.node, block: entry.block, label: entry.label }];
+    }
     return [];
   });
 }
@@ -84,8 +99,24 @@ export function reportWords(entry: ReportEntry): string {
       return `${tableName(entry)} repeats its header rows on every page it reaches in Word, though its table style does not: Word marks header rows only by repeating them.`;
     case 'continuation_label_omitted':
       return `${tableName(entry)} has no continuation label in Word on the pages it continues on, since Word cannot set one.`;
+    // A heading by its number and a caption by its label, as the PDF prints them.
+    case 'equation_flattened':
+      return `${flattenedName(entry)} holds an equation that Word sets as its characters in a row ${
+        entry.block === null
+          ? 'where it rebuilds the heading, in the contents or a running head, once it updates them'
+          : 'in the list after the contents once it updates the list'
+      }, so a fraction, a script or a root there reads differently from the PDF.`;
   }
 }
+
+const flattenedName = (entry: { readonly block: string | null; readonly label: string | null }) =>
+  entry.block === null
+    ? entry.label === null
+      ? 'A heading with no number'
+      : `The heading numbered ${entry.label}`
+    : entry.label === null
+      ? 'A caption with no number'
+      : `${entry.label}'s caption`;
 
 const tableName = (entry: { readonly label: string | null }) =>
   entry.label ?? 'A table with no number';
@@ -99,6 +130,6 @@ export function reportKey(entry: ReportEntry): string {
     case 'pages_cite_the_pdf':
       return entry.kind;
     default:
-      return `${entry.kind} ${entry.node} ${entry.block}`;
+      return `${entry.kind} ${entry.node} ${entry.block ?? ''}`;
   }
 }

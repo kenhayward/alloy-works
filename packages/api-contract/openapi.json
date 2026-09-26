@@ -10827,6 +10827,47 @@
                                         "block",
                                         "label"
                                       ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "equation_flattened"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "label": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block",
+                                        "label"
+                                      ]
                                     }
                                   ]
                                 },

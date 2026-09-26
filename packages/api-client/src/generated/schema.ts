@@ -5063,6 +5063,12 @@ export interface operations {
                                 node: string;
                                 block: string;
                                 label: string | null;
+                            } | {
+                                /** @constant */
+                                kind: "equation_flattened";
+                                node: string;
+                                block: string | null;
+                                label: string | null;
                             })[];
                             /** @description A link to the bytes, valid for five minutes, named by the publication id and format */
                             download: string;

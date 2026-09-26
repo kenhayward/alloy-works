@@ -231,6 +231,56 @@ describe('a publication at its own address', () => {
     ]);
   });
 
+  it("says of each heading and caption holding an equation that Word's rebuilt contents, lists and running heads set it as its characters in a row, naming it by its number or label (the final review of Word 4, I2)", async () => {
+    open(
+      json(200, {
+        ...record,
+        formats: ['pdf', 'docx'],
+        template: { name: 'publication', version: 13 },
+        pipeline: '13',
+        outputs: [
+          pdfOutput,
+          wordOutput([
+            {
+              kind: 'equation_flattened',
+              node: 'rateaaaaaaaaaaaaaaaaaaaaaa',
+              block: null,
+              label: '3',
+            },
+            {
+              kind: 'equation_flattened',
+              node: 'openingaaaaaaaaaaaaaaaaaaa',
+              block: null,
+              label: null,
+            },
+            {
+              kind: 'equation_flattened',
+              node: 'readingsaaaaaaaaaaaaaaaaaa',
+              block: 't1',
+              label: 'Table 1.1',
+            },
+            {
+              kind: 'equation_flattened',
+              node: 'readingsaaaaaaaaaaaaaaaaaa',
+              block: 'f1',
+              label: null,
+            },
+            // One that names no place is left out rather than said wrongly.
+            { kind: 'equation_flattened', label: '4' },
+          ]),
+        ],
+      }),
+    );
+    const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+    const report = within(aside).getByRole('list', { name: 'About the Word document' });
+    expect([...report.querySelectorAll('li')].map((each) => each.textContent)).toEqual([
+      'The heading numbered 3 holds an equation that Word sets as its characters in a row where it rebuilds the heading, in the contents or a running head, once it updates them, so a fraction, a script or a root there reads differently from the PDF.',
+      'A heading with no number holds an equation that Word sets as its characters in a row where it rebuilds the heading, in the contents or a running head, once it updates them, so a fraction, a script or a root there reads differently from the PDF.',
+      "Table 1.1's caption holds an equation that Word sets as its characters in a row in the list after the contents once it updates the list, so a fraction, a script or a root there reads differently from the PDF.",
+      'A caption with no number holds an equation that Word sets as its characters in a row in the list after the contents once it updates the list, so a fraction, a script or a root there reads differently from the PDF.',
+    ]);
+  });
+
   it('reads a publication in Word alone, which no PDF engine or template made, and offers it to save', async () => {
     open(
       json(200, {
