@@ -896,6 +896,9 @@ answer, and the pull request asks for his:
 | W3-A | A relative reference across a story's boundary - a footnote's, "see the table above" in a note or "the note below" in the text naming a note's paragraph, and a floated figure's text box, "compare the table below" in its caption - prints the bookmark's words or nothing, since `REF \p` compares only within one story | Refused for Word, `relative:footnote` and `relative:float`; the PDF publishes   | **Plain text with a report entry**, for both: the layout's word written as text, which Word never updates, and the publication's report naming the reference, so the document publishes and the author is told. PUB-026 asks for fields Word can update; this one would not be, and would be named. For the float alone, **set the figure as a block in Word**, reported: its caption then stands in the text and its fields are right, and the figure stands where its anchor is rather than at the head of the page, where the PDF's band stands. Floating the image alone and keeping the caption in the text, which Word 2 measured, parts the caption from its image |
 | W3-B | A caption's words named as a title, where they hold a reference that is not a number, print as Word's own form of it ("... above") where the PDF prints the target's kind ("... Paragraph")                                                                                                                                 | Refused for Word, `title:nested` and `numberAndTitle:nested`; the PDF publishes | **Accept Word's reading**, reporting that the two differ - arguably the better words; or **change what the PDF prints** for a reference inside a caption named by a title, to the reference's own form as Word prints it, which is cross-references 2's design to reopen and a change to every PDF of such a document                                                                                                                                                                                                                                                                                                                                                     |
 
+**Ken kept both refusals on 2026-09-26**: a relative reference across a story's boundary and a title
+form of a caption holding a reference stay refused for Word by name, and the PDF publishes both.
+
 **What Word showed that the design did not foresee**, measured in Word 16 against the PDF of the same
 document compiled through template 13:
 
@@ -986,8 +989,7 @@ and PUB-023 are Word 4's.
 reference to one, which is `word_not_yet` today with `detail` `crossReference`, and the list of
 equations, the last list after the contents still refused; deciding which of the maths tree's refusals
 Word sets and undoing the trap for the rest; reporting the maths face's substitution; PUB-067 and
-CNT-045, then PUB-023, and PUB-065 as above; and PUB-035's test extended to equations. The two
-decisions above, W3-A and W3-B, whichever way Ken takes them. **Not measured in Word**, tested for
+CNT-045, then PUB-023, and PUB-065 as above; and PUB-035's test extended to equations. **Not measured in Word**, tested for
 its XML only: a floated figure whose box Word sets on another page than its anchor, whose relative
 place would then be its anchor's. The final review measured the rest this list held: a reference in
 a definition's term or an attribution and a target that publishes nothing (its empty bookmark), each
