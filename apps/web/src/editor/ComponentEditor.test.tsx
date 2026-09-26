@@ -13,6 +13,7 @@ import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { heldSentence } from './held.js';
 import { shimRangeMeasurement } from '../test/range.js';
 import { StatusProvider } from '../shell/Status.js';
 import { ComponentEditor } from './ComponentEditor.js';
@@ -128,6 +129,9 @@ function open(
   };
   return { asked, surface };
 }
+
+/** What a reader is told of Grace holding a component until the lock fixture's release. */
+const GRACE_EDITING = heldSentence({ name: 'Grace', expectedRelease: '2026-09-16T09:15:00.000Z' });
 
 const lock = {
   holder: { id: ADA, name: 'Ada' },
@@ -409,7 +413,7 @@ describe('the component editor', () => {
     const view = await surface();
     view.dispatch(view.state.tr.insertText(' Mine.', 19));
 
-    expect(await screen.findByText('Grace is editing this component.')).toBeInTheDocument();
+    expect(await screen.findByText(GRACE_EDITING)).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Text that was not saved' })).toHaveValue(
       'Unbox the printer. Mine.',
     );
@@ -1234,10 +1238,10 @@ describe('the component editor', () => {
         }),
     });
     const view = await surface();
-    expect(screen.getByText('Grace is editing this component.')).toBeInTheDocument();
+    expect(screen.getByText(GRACE_EDITING)).toBeInTheDocument();
 
     view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
-    await waitFor(() => expect(screen.queryByText('Grace is editing this component.')).toBeNull());
+    await waitFor(() => expect(screen.queryByText(GRACE_EDITING)).toBeNull());
     await userEvent.click(await screen.findByRole('button', { name: 'Done editing' }));
     await waitFor(() =>
       expect(
@@ -1246,7 +1250,7 @@ describe('the component editor', () => {
     );
     // The stale GET-time lock said Grace held it; this author has since claimed and released it
     // themselves, so the notice must not reappear from that stale snapshot (fix round 1 minor).
-    expect(screen.queryByText('Grace is editing this component.')).toBeNull();
+    expect(screen.queryByText(GRACE_EDITING)).toBeNull();
   });
 
   it('keeps the selection after Save version instead of jumping to the start (fix round 1 minor)', async () => {

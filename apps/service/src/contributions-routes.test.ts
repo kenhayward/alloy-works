@@ -251,6 +251,55 @@ describe('what each occurrence contributes, through the service', () => {
     }
   });
 
+  it('answers, for each occurrence the caller may read, whether they may edit it now and who holds it, and nothing of one they may not', async () => {
+    const shared = await componentWith(general, 'Install the printer', [
+      figure('f1', 'The paper tray'),
+    ]);
+    const secret = await componentWith(quality, 'Calibration', [figure('s1', 'The secret bench')]);
+    let doc = await create('The locked report');
+    for (const [position, component] of [shared.id, secret.id].entries()) {
+      const answer = await call('grace', 'POST', `/v1/documents/${doc.id}/outline`, {
+        openedFrom: doc.version.id,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position,
+          node: { type: 'reference', component, mode: { kind: 'latest' } },
+        },
+      });
+      expect(answer.statusCode, answer.body).toBe(200);
+      doc = answer.json<DocumentBody>();
+    }
+    const [first, hidden] = doc.outline.nodes.map((node) => node.id);
+    // Ada is editing the shared component.
+    const claimed = await call('ada', 'POST', `/v1/components/${shared.id}/lock`, {
+      session: '00000000-0000-4000-8000-00000000abcd',
+    });
+    expect(claimed.statusCode, claimed.body).toBe(200);
+    const expectedRelease = claimed.json<{ lock: { expectedRelease: string } }>().lock
+      .expectedRelease;
+    const route = `/v1/documents/${doc.id}/texts`;
+    const occurrencesFor = async (who: string) =>
+      (await call(who, 'GET', route)).json<{ occurrences: unknown[] }>().occurrences;
+    const heldByAda = {
+      holder: { id: ids.ada, name: 'Ada' },
+      expectedRelease,
+      yours: false,
+      session: null,
+    };
+
+    // Grace may edit it, but not now: Ada holds it until then.
+    expect(await occurrencesFor('grace')).toEqual([
+      { node: first, version: shared.version, mayEdit: true, lock: heldByAda },
+      { node: hidden, version: secret.version, mayEdit: true, lock: null },
+    ]);
+    // Alice may read it and not edit it, and is told who holds it; of what she may not read, nothing.
+    expect(await occurrencesFor('alice')).toEqual([
+      { node: first, version: shared.version, mayEdit: false, lock: heldByAda },
+      { node: hidden, version: null, mayEdit: false, lock: null },
+    ]);
+  });
+
   it("answers each readable occurrence's version with its content, and null for one the caller may not read", async () => {
     const shared = await componentWith(general, 'Install the printer', [
       figure('f1', 'The paper tray'),
@@ -282,8 +331,8 @@ describe('what each occurrence contributes, through the service', () => {
     }>();
     expect(body.document).toBe(doc.id);
     expect(body.occurrences).toEqual([
-      { node: first, version: shared.version },
-      { node: hidden, version: null },
+      { node: first, version: shared.version, mayEdit: false, lock: null },
+      { node: hidden, version: null, mayEdit: false, lock: null },
     ]);
     expect(body.versions).toHaveLength(1);
     expect(body.versions[0]).toMatchObject({

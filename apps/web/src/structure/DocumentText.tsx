@@ -20,6 +20,7 @@ import {
 import '@alloy-works/editor/style.css';
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { heldSentence } from '../editor/held.js';
 import { textOffsetIn } from '../editor/caret.js';
 
 import { Lozenge } from '../states/Lozenge.js';
@@ -92,6 +93,39 @@ function offsetOfClick(root: HTMLElement, x: number, y: number): number | null {
   if (position) return textOffsetIn(root, position.offsetNode, position.offset);
   const range = doc.caretRangeFromPoint?.(x, y);
   if (range) return textOffsetIn(root, range.startContainer, range.startOffset);
+  return null;
+}
+
+/** Whether the reader may edit an occurrence's component now, and who holds it (CNT-074). */
+export interface Editable {
+  readonly mayEdit: boolean;
+  readonly lock: {
+    readonly holder: { readonly name: string | null };
+    readonly expectedRelease: string;
+    readonly yours: boolean;
+  } | null;
+}
+
+/**
+ * What a card says of its component before it is opened (CNT-074): who holds it and when they are
+ * expected back, or that the reader may read it and not edit it - and nothing where they may edit it
+ * now, or where the page has not heard.
+ */
+function EditableState({ state }: { state: Editable | undefined }) {
+  if (state === undefined) return null;
+  if (state.lock !== null && !state.lock.yours) {
+    return (
+      <p className={styles['state']}>
+        {heldSentence({
+          name: state.lock.holder.name,
+          expectedRelease: state.lock.expectedRelease,
+        })}
+      </p>
+    );
+  }
+  if (!state.mayEdit) {
+    return <p className={styles['state']}>You may read this component but not edit it.</p>;
+  }
   return null;
 }
 
@@ -204,6 +238,7 @@ export function DocumentText({
   editing = null,
   onEdit,
   editor,
+  editable,
   contributions = NOTHING_KNOWN,
 }: {
   outline: OutlineView;
@@ -215,6 +250,8 @@ export function DocumentText({
   texts?: ReadonlyMap<string, unknown>;
   /** The occurrence whose component is open for editing in place, if any: one at a time. */
   editing?: string | null;
+  /** Whether the reader may edit each occurrence's component now, and who holds it, by node. */
+  editable?: ReadonlyMap<string, Editable>;
   /** Asked to open a component in place, or with null to close it. */
   onEdit?: (node: string | null) => void;
   /** The editor for a component, put in its card in place of its text, where it stands. */
@@ -287,6 +324,9 @@ export function DocumentText({
                   </span>
                 )}
               </div>
+            )}
+            {node.component !== null && editing !== node.id && (
+              <EditableState state={editable?.get(node.id)} />
             )}
             {node.component !== null &&
               (editing === node.id && editor

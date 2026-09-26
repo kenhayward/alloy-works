@@ -110,3 +110,10 @@
   color: var(--muted);
   font-size: var(--size-body-small);
 }
+
+/* What a card says of its component before it is opened: read only, or who holds it (CNT-074). */
+.state {
+  margin: var(--space-6) 0 0;
+  color: var(--muted);
+  font-size: var(--size-body-small);
+}

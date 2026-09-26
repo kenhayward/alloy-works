@@ -62,6 +62,7 @@ import { referenceChoicesIn, type ReferenceChoices } from './referenceChoices.js
 import { ReferenceDialog } from './ReferenceDialog.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { uploadImage } from './upload.js';
+import { heldSentence } from './held.js';
 import { editingSessionFor, sessionService } from './service.js';
 import {
   browserClock,
@@ -1098,7 +1099,9 @@ export function ComponentEditor({
             )}
             {lock && !lock.yours && phase === 'reading' && !held && (
               <Notice tone="editing">
-                <p>{lock.holder.name ?? 'Someone else'} is editing this component.</p>
+                <p>
+                  {heldSentence({ name: lock.holder.name, expectedRelease: lock.expectedRelease })}
+                </p>
               </Notice>
             )}
             {held?.yours && (

@@ -3732,6 +3732,21 @@ export interface operations {
                         occurrences: {
                             node: string;
                             version: string | null;
+                            /** @description Whether the caller may edit the component: false where they may not read it */
+                            mayEdit: boolean;
+                            /** @description Who holds the component now and until when: null where nobody does, or where the caller may not read it */
+                            lock: {
+                                holder: {
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description When it lapses unless the holder saves again */
+                                expectedRelease: string;
+                                /** @description Whether the caller holds it, from this session or another */
+                                yours: boolean;
+                                /** @description The holding session, told only to its own principal */
+                                session: string | null;
+                            } | null;
                         }[];
                         /** @description Each version an occurrence resolved to, once, however many occurrences name it */
                         versions: {

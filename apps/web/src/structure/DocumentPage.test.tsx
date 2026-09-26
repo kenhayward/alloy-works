@@ -36,6 +36,7 @@ import userEvent from '@testing-library/user-event';
 import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { heldSentence } from '../editor/held.js';
 import { describeEquation } from '../editor/speech.js';
 import { shimRangeMeasurement } from '../test/range.js';
 import { DocumentList } from './DocumentList.js';
@@ -3077,7 +3078,14 @@ describe('the address of every node', () => {
         return json(200, {
           document: DOCUMENT,
           version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
-          occurrences: [{ node: REFERENCE, version: 'vvvvvvvv-0000-4000-8000-000000000001' }],
+          occurrences: [
+            {
+              node: REFERENCE,
+              version: 'vvvvvvvv-0000-4000-8000-000000000001',
+              mayEdit: true,
+              lock: null,
+            },
+          ],
           versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: printer }],
         });
       }
@@ -3128,6 +3136,113 @@ describe('the address of every node', () => {
     expect(await within(text).findByText('Unbox the printer.')).toBeInTheDocument();
   });
 
+  it('CNT-074 says of each component whether the reader may edit it now, and when not, why, naming who holds it and when it is expected back; and which one is open', async () => {
+    const user = userEvent.setup();
+    const [FREE, READ_ONLY, HELD] = [
+      'kkkkkkkkkkkkkkkkkkkkkkkkka',
+      'kkkkkkkkkkkkkkkkkkkkkkkkkb',
+      'kkkkkkkkkkkkkkkkkkkkkkkkkc',
+    ];
+    const components = {
+      [FREE]: 'cccccccc-0000-4000-8000-00000000000a',
+      [READ_ONLY]: 'cccccccc-0000-4000-8000-00000000000b',
+      [HELD]: 'cccccccc-0000-4000-8000-00000000000c',
+    };
+    const fake = service(
+      outline([FREE, READ_ONLY, HELD].map((node) => referenceTo(node, components[node]!))),
+    );
+    const text = (words: string) => ({
+      schemaVersion: 1,
+      title: words,
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: words, marks: [] }],
+        },
+      ],
+    });
+    const version = (at: number) => `vvvvvvvv-0000-4000-8000-00000000000${at}`;
+    const back = new Date(Date.now() + 45 * 60_000).toISOString();
+    const grace = {
+      holder: { id: 'grace', name: 'Grace' },
+      expectedRelease: back,
+      yours: false,
+      session: null,
+    };
+    const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      if (path === `/v1/documents/${DOCUMENT}/texts`) {
+        return json(200, {
+          document: DOCUMENT,
+          version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
+          occurrences: [
+            { node: FREE, version: version(1), mayEdit: true, lock: null },
+            { node: READ_ONLY, version: version(2), mayEdit: false, lock: null },
+            { node: HELD, version: version(3), mayEdit: true, lock: grace },
+          ],
+          versions: [
+            { id: version(1), content: text('Unbox the printer.') },
+            { id: version(2), content: text('Read the manual.') },
+            { id: version(3), content: text('Load the paper.') },
+          ],
+        });
+      }
+      if (path === `/v1/components/${components[FREE]}`) {
+        return json(200, {
+          id: components[FREE],
+          space: { id: SPACE, name: 'General' },
+          version: {
+            id: version(1),
+            number: '0.1',
+            author: ADA,
+            createdAt: '2026-09-18T09:00:00.000Z',
+            note: null,
+          },
+          content: text('Unbox the printer.'),
+          mayEdit: true,
+          lock: null,
+        });
+      }
+      return fake.fetch(request);
+    }) as typeof globalThis.fetch;
+    render(
+      <StrictMode>
+        <DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />
+      </StrictMode>,
+    );
+    const page = await screen.findByRole('region', { name: "The document's text" });
+    const card = (node: string) => page.querySelector<HTMLElement>(`[data-node="${node}"]`)!;
+    await within(page).findByText('Load the paper.');
+
+    // Before anything is opened: nothing where the reader may edit now; why not, where not.
+    expect(within(card(FREE)).queryByText(/editing this component|not edit it/)).toBeNull();
+    expect(
+      within(card(READ_ONLY)).getByText('You may read this component but not edit it.'),
+    ).toBeInTheDocument();
+    expect(
+      within(card(HELD)).getByText(heldSentence({ name: 'Grace', expectedRelease: back })),
+    ).toBeInTheDocument();
+    expect(heldSentence({ name: 'Grace', expectedRelease: back })).toMatch(
+      /^Grace is editing this component, expected back at \d\d:\d\d/,
+    );
+
+    // The one the cursor goes into is the one open, in its card; the others still say theirs.
+    await user.click(within(card(FREE)).getByText('Unbox the printer.'));
+    expect(
+      await within(card(FREE)).findByRole('textbox', { name: 'Content of Unbox the printer.' }),
+    ).toBeInTheDocument();
+    expect(card(FREE).querySelector('[data-editing="true"]')).not.toBeNull();
+    expect(card(READ_ONLY).querySelector('[data-editing="true"]')).toBeNull();
+    expect(
+      within(card(HELD)).getByText(heldSentence({ name: 'Grace', expectedRelease: back })),
+    ).toBeInTheDocument();
+  });
+
   it("CNT-075 sets a component's text, read before it opens, with the editing surface's own typography", async () => {
     const user = userEvent.setup();
     const REFERENCE = 'kkkkkkkkkkkkkkkkkkkkkkkkkk';
@@ -3155,7 +3270,14 @@ describe('the address of every node', () => {
         return json(200, {
           document: DOCUMENT,
           version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
-          occurrences: [{ node: REFERENCE, version: 'vvvvvvvv-0000-4000-8000-000000000001' }],
+          occurrences: [
+            {
+              node: REFERENCE,
+              version: 'vvvvvvvv-0000-4000-8000-000000000001',
+              mayEdit: true,
+              lock: null,
+            },
+          ],
           versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: printer }],
         });
       }
@@ -3815,7 +3937,14 @@ describe('a cross-reference in the document page (cross-references 1)', () => {
         return json(200, {
           document: DOCUMENT,
           version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
-          occurrences: [{ node: RESULTS, version: 'vvvvvvvv-0000-4000-8000-000000000001' }],
+          occurrences: [
+            {
+              node: RESULTS,
+              version: 'vvvvvvvv-0000-4000-8000-000000000001',
+              mayEdit: true,
+              lock: null,
+            },
+          ],
           versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: referring }],
         });
       }
@@ -3933,7 +4062,14 @@ describe('a cross-reference in the document page (cross-references 1)', () => {
         return json(200, {
           document: DOCUMENT,
           version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
-          occurrences: [{ node: RESULTS, version: 'vvvvvvvv-0000-4000-8000-000000000001' }],
+          occurrences: [
+            {
+              node: RESULTS,
+              version: 'vvvvvvvv-0000-4000-8000-000000000001',
+              mayEdit: true,
+              lock: null,
+            },
+          ],
           versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: relative }],
         });
       }

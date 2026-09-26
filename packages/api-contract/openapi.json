@@ -7684,11 +7684,69 @@
                               "string",
                               "null"
                             ]
+                          },
+                          "mayEdit": {
+                            "type": "boolean",
+                            "description": "Whether the caller may edit the component: false where they may not read it"
+                          },
+                          "lock": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "holder": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "expectedRelease": {
+                                    "type": "string",
+                                    "description": "When it lapses unless the holder saves again"
+                                  },
+                                  "yours": {
+                                    "type": "boolean",
+                                    "description": "Whether the caller holds it, from this session or another"
+                                  },
+                                  "session": {
+                                    "description": "The holding session, told only to its own principal",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "holder",
+                                  "expectedRelease",
+                                  "yours",
+                                  "session"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who holds the component now and until when: null where nobody does, or where the caller may not read it"
                           }
                         },
                         "required": [
                           "node",
-                          "version"
+                          "version",
+                          "mayEdit",
+                          "lock"
                         ]
                       },
                       "description": "Each component reference, in outline order, and the version it resolved to: null where the caller may not read the component, where it waits on revisions, or where its content does not read"

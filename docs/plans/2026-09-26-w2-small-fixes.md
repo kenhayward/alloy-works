@@ -42,6 +42,10 @@ words, marks included. The capture is kept as the reader's test fixture, its wor
 
 **Agreed as recommended**, all three, on 2026-09-26.
 
+**CNT-175 moved to its own PR, W2.1b** (Ken, 2026-09-26): a real `dd` needs a node for a definition's
+body, which changes Enter, Backspace, Delete, wrapping and lifting in definition lists - more than a
+small fix. W2.1 ships CNT-075, CNT-074 and the undo depth; issue #246 closes with W2.1b.
+
 | #    | Decision                                                                                                                                                                                                                                                                                  | Recommendation                                                                                                                                                                          |
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | W2-A | **How far back undo reaches.** ProseMirror's history keeps 100 events by default, so a long session cannot undo back to where it opened (CNT-069). The history is already cleared at every version cut (CNT-169)                                                                          | **No limit on depth.** A session's history lives until the next cut or Done; its steps are text-sized. CNT-069 stays uncited until W11 makes it survive a reload                        |
