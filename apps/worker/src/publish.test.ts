@@ -1020,9 +1020,10 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(await reportOf(both)).not.toContainEqual({ kind: 'no_page_cited_output' });
   }, 120_000);
 
-  it('refuses an equation for the PDF and Word by name, as Word cannot carry one yet, records nothing, and publishes it as a PDF alone', async () => {
+  it('lets an equation through to the Word writer, which stops the job rather than write Word without it until Word 4 writes one, and publishes it as a PDF alone', async () => {
     const kept = new Map<string, string>();
-    // Word 3 writes footnotes; an equation is Word 4's.
+    // Word 4's first task takes an equation off `word_not_yet` (ruling R1); its converter and writer
+    // are its second and third, and until then the writer refuses a document holding one, whole.
     const noted = (trx: TenantTransaction) =>
       component(
         trx,
@@ -1047,27 +1048,22 @@ describe('publishing a document, from the request to the stored PDF', () => {
       ).then((holder) => [reference(holder)]);
     const before = await publicationCount();
     const both = await requested(noted, ['pdf', 'docx']);
-    expect(await work({ handlers: noting(kept) })).toBe('failed');
+    for (const outcome of ['retry', 'retry', 'failed']) {
+      expect(await work({ handlers: noting(kept), queue: eager() })).toBe(outcome);
+    }
     const row = await requestRow(both);
     expect(row.state).toBe('failed');
+    // Not refused by name: the writer's refusal is the product's, and says nothing of the document.
     expect(row.failures).toEqual([
-      {
-        stage: 'compose',
-        code: 'word_not_yet',
-        node: expect.any(String),
-        block: 'b1',
-        detail: 'equation',
-      },
+      { stage: 'engine', code: 'engine_failed', node: null, block: null, detail: null },
     ]);
-    // Refused before either output was made: nothing kept, nothing recorded.
-    expect(kept.size).toBe(0);
     expect(await outputsOf(both)).toEqual([]);
     expect(await publicationCount()).toBe(before);
 
     const pdf = await requested(noted);
     expect(await work()).toBe('done');
     expect((await outputsOf(pdf)).map((each) => each.format)).toEqual(['pdf']);
-  }, 120_000);
+  }, 180_000);
 
   it('publishes a figure to Word alone under the default layout: its image read from the store, held to its hash, written into the document once, described, and listed after the contents', async () => {
     const bytes = await sharp({

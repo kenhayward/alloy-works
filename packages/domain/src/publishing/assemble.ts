@@ -71,6 +71,7 @@ import {
   type PublishedDocument,
   type PublishedDocument1,
   type PublishedEquation,
+  type PublishedEquationRun,
   type PublishedFigure,
   type PublishedInline,
   type PublishedItem,
@@ -172,8 +173,11 @@ export interface WordReference {
   readonly title: string | null;
 }
 
-/** A run of a section's title as Word writes it: its words, or a cross-reference among them. */
-export type WordTitleRun = PublishedRun | PublishedReferenceRun;
+/**
+ * A run of a section's title as Word writes it: its words, or a cross-reference or an equation among
+ * them.
+ */
+export type WordTitleRun = PublishedRun | PublishedReferenceRun | PublishedEquationRun;
 
 /** An image's size in points against the Word page's text block, as a figure's is against the PDF's. */
 export interface WordImage {
@@ -360,20 +364,21 @@ export function assemble(input: AssembleInput): Assembled {
    * **The failures that are the PDF engine's own** (Word 1, ruling R2): what the pinned Typst and the
    * PDF's page cannot do - a line or an image wider than the PDF's measure, a caption too long for its
    * page, a header cell the engine would grow the header by, a footnote or a reference's target in a
-   * header row the engine sets on every page, a table's continuation label the PDF sets, and an
-   * equation the maths tree cannot set - said only where a PDF is asked for. Everything else is the
-   * document's, or the layout's or the theme's, and is said whatever is asked for. Held by identity,
-   * since two failures alike in every member may be one of each.
+   * header row the engine sets on every page, and a table's continuation label the PDF sets - said
+   * only where a PDF is asked for. Everything else is the document's, or the layout's or the theme's,
+   * and is said whatever is asked for. Held by identity, since two failures alike in every member may
+   * be one of each.
    *
    * **A construct refused this way stays in the published document** (Word 2, ruling R2): a line too
    * wide, a figure whose caption leaves it no room, an image too wide for its line, a header cell
    * spanning the body and a table asking for a label all publish, so that where no PDF is asked for
    * Word writes them whole; where one is, the refusal fails the publish and nothing is made from the
    * document. Since Word 3 (ruling R1) so do a footnote in a header row and a reference to a target
-   * there, which Word writes once where the PDF's engine would set them on every page. One still leaves
-   * its construct out, and Word refuses it by name, `word_not_yet`, where Word alone is asked for: an
-   * equation the maths tree cannot set (Word 4). The slice that takes it off that list must publish it
-   * for Word whatever its PDF failures say, or Word would lose it in silence.
+   * there, which Word writes once where the PDF's engine would set them on every page. **Nothing
+   * refused here leaves its construct out** since Word 4 (ruling R2): an equation the maths tree cannot
+   * set, the last that did, has no tree for Word to write either, and is refused for every format
+   * (`REFUSAL_NAMES`). A refusal added here must keep its construct in the published document, or a
+   * Word-only publication loses it in silence.
    */
   const pdfsOwn = new Set<PublishFailure>();
   const pdfOnly = (next: PublishFailure): PublishFailure => {
@@ -395,12 +400,6 @@ export function assemble(input: AssembleInput): Assembled {
   /** Each reference's form for Word, and each section's title holding one, where Word is asked for. */
   const wordReferences = new Map<string, WordReference>();
   const wordTitles = new Map<string, readonly WordTitleRun[]>();
-  /** Where Word is asked for, what Word does not write yet, refused by name where it stands (R3). */
-  const wordNotYet = (node: string | null, block: string | null, construct: string) => {
-    if (docx && layout !== null) {
-      failOnce(failure('compose', 'word_not_yet', node, block, construct));
-    }
-  };
 
   // resolve and conditions: what each readable occurrence contributes, then REU's stage (#148).
   const contributions = new Map<string, readonly Contribution[]>();
@@ -700,7 +699,6 @@ export function assemble(input: AssembleInput): Assembled {
     const runs: PublishedInline[] = [];
     const caption = site.kind === 'caption';
     for (const inline of content) {
-      if (inline.type === 'equation') wordNotYet(node, block, inline.type);
       if (inline.type === 'footnote' && layout !== null) {
         // A table's header rows repeat on every page it reaches, and the engine refuses a footnote in
         // a repeated header outright - a link in an artifact - naming nothing (final review of
@@ -720,8 +718,6 @@ export function assemble(input: AssembleInput): Assembled {
       }
       if (inline.type === 'crossReference' && layout !== null) {
         const key = referenceKey(node, inline.id);
-        // A reference to an equation is Word 4's, as the equation is (Word 3, ruling R1).
-        if (resolved.toEquations.has(key)) wordNotYet(node, block, inline.type);
         const printed = resolved.printed.get(key);
         // A header row is set again on every page the table reaches, as an artifact, where the engine
         // refuses a link; a caption, a term, an attribution and a note are set again or read apart.
@@ -918,9 +914,8 @@ export function assemble(input: AssembleInput): Assembled {
    * running text, a list's item, a quotation or a table's cell - which a stored `body` means the
    * default style of (themes 1, TH-E).
    *
-   * **A block equation is the one kind Word does not write yet** (Word 1, ruling R3; Word 2, ruling R2):
-   * where Word is asked for, it is refused by name, `word_not_yet`, before anything else is said of it,
-   * and published for the PDF all the same.
+   * Every kind is published whatever the formats asked for: a block equation, the last kind Word 1
+   * refused by name, is published for Word too since Word 4 (ruling R1).
    */
   const publishable = (
     block: BlockNode,
@@ -1337,7 +1332,6 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
-        wordNotYet(node, block.id, block.type);
         const equation = publishedEquation(block.mathml, node, block.id);
         // `number`'s label, set beside the equation as its own text (EQ-E). A numbered equation the
         // scheme gives none - a layout numbering equations within chapters, in a part with no numbered
@@ -1595,10 +1589,10 @@ export function assemble(input: AssembleInput): Assembled {
    *   engine's fallback is off for maths, so one the face lacks would be set as nothing -
    *   `math_glyph_missing` for each, named apart from `glyph_missing` because the body face may have it.
    *
-   * Said once for its block however many of its equations share a reason, as an image's are. A
-   * construct the maths tree cannot set is the PDF engine's own refusal, and said only where a PDF is
-   * asked for; MathML that cannot be read, an error mark and an equation drawing nothing are said for
-   * every format (`EQUATIONS_OWN`).
+   * Said once for its block however many of its equations share a reason, as an image's are, and each
+   * **for every format** (Word 4, ruling R2): an equation the maths tree refuses has no tree, the PDF
+   * and Word are both written from the tree alone, and neither ever converts the MathML a second way
+   * (PUB-067), so neither has anything to set. `REFUSAL_NAMES` records why each is Word's refusal too.
    */
   const publishedEquation = (
     mathml: string,
@@ -1607,14 +1601,9 @@ export function assemble(input: AssembleInput): Assembled {
   ): PublishedEquation | null => {
     const converted = mathsTree(mathml);
     if (!converted.ok) {
-      const refused = failure(
-        'compose',
-        'equation_unrenderable',
-        node,
-        block,
-        REFUSAL_NAMES[converted.reason],
+      failOnce(
+        failure('compose', 'equation_unrenderable', node, block, REFUSAL_NAMES[converted.reason]),
       );
-      failOnce(EQUATIONS_OWN.has(converted.reason) ? refused : pdfOnly(refused));
     }
     // MathML that cannot be read has no alternative to read either, and giving it one mends nothing,
     // so it is said once, as the equation that cannot be set.
@@ -1644,13 +1633,22 @@ export function assemble(input: AssembleInput): Assembled {
    * **A section's title as Word writes it** (Word 3; the ledger's ruling): each run of its words, and
    * each reference that printed as the run a paragraph's would be - never a link, since a title is set
    * again in the contents and the running heads (XR-D) - its form kept by `inlineReferenceKey` under the
-   * section. What else a title holds is refused where the published title is made: an equation for
-   * Word, and a mark for every format.
+   * section; and since Word 4 (ruling R1) each equation where it stands, as `equationOf` published it
+   * for the PDF's title. What else a title holds is refused where the published title is made: a mark,
+   * for every format.
    */
-  const wordTitle = (node: string, title: readonly InlineNode[]): WordTitleRun[] => {
+  const wordTitle = (
+    node: string,
+    title: readonly InlineNode[],
+    equationOf: (equation: EquationNode) => PublishedEquation | null,
+  ): WordTitleRun[] => {
     const runs: WordTitleRun[] = [];
     for (const inline of title) {
       if (inline.type === 'text') runs.push({ text: inline.value, marks: [] });
+      if (inline.type === 'equation') {
+        const equation = equationOf(inline);
+        if (equation !== null) runs.push({ equation });
+      }
       if (inline.type !== 'crossReference') continue;
       const key = referenceKey(node, inline.id);
       const printed = resolved.printed.get(key);
@@ -1676,16 +1674,14 @@ export function assemble(input: AssembleInput): Assembled {
     };
 
     if (node.type === 'section') {
-      // Word 1 writes a title's words alone (R3): what else it holds is named by the section. An
-      // equation is Word 4's. A reference is published as the words it prints, which the writer cannot
-      // tell from the title's own, so where Word is asked for the title is carried beside the document
-      // too, as runs with each reference a run of its own, which the writer sets as a field (Word 3).
-      for (const inline of node.title) {
-        if (inline.type === 'equation') wordNotYet(node.id, null, inline.type);
-      }
-      if (docx && layout !== null && node.title.some((each) => each.type === 'crossReference')) {
-        wordTitles.set(node.id, wordTitle(node.id, node.title));
-      }
+      // Each equation in the title published once, for the PDF's title and for Word's alike.
+      const equations = new Map<EquationNode, PublishedEquation | null>();
+      const equationOf = (equation: EquationNode) => {
+        if (!equations.has(equation)) {
+          equations.set(equation, publishedEquation(equation.mathml, node.id, null));
+        }
+        return equations.get(equation) ?? null;
+      };
       // A title's reference is its number in the title's words (R6), set again in the contents and the
       // running heads. One that failed has said so and prints nothing. An equation in it is published
       // as it is anywhere (equations 2): a published title is runs, which the template sets in the
@@ -1703,8 +1699,14 @@ export function assemble(input: AssembleInput): Assembled {
               }
               return printed?.text ?? '';
             },
-        layout === null ? null : (equation) => publishedEquation(equation.mathml, node.id, null),
+        layout === null ? null : equationOf,
       );
+      // A reference is published as the words it prints, which the writer cannot tell from the title's
+      // own, so where Word is asked for the title is carried beside the document too, as runs with each
+      // reference a run of its own, which the writer sets as a field (Word 3), and each equation one.
+      if (docx && layout !== null && node.title.some((each) => each.type === 'crossReference')) {
+        wordTitles.set(node.id, wordTitle(node.id, node.title, equationOf));
+      }
       // A footnote in a title would be set twice, in the contents and where it stands (FN-B).
       // Under a layout alone: a request made before layouts keeps saying what it always said.
       if (layout !== null && 'unpublishable' in title && title.unpublishable === 'footnote') {
@@ -1805,16 +1807,11 @@ export function assemble(input: AssembleInput): Assembled {
     failures.push(failure('compose', 'nothing_to_publish', null, null, null));
   }
   // Each list the layout declares that has an entry, in its order (ruling R7): a list of nothing is
-  // not published, as a contents of nothing is not (decision K). Word writes the lists of figures and
-  // of tables (Word 2), and not yet the list of equations (Word 4) - which has an entry only where a
-  // numbered equation stands, itself refused for Word - named by its sequence alone, since a list
-  // stands in no node.
+  // not published, as a contents of nothing is not (decision K). Word writes each of them - the lists
+  // of figures and of tables since Word 2, and of equations since Word 4 (ruling R1).
   const lists = layout.matter.lists
     .filter((list) => listOf(conditioned, numbering, list.sequence).length > 0)
     .map((list) => ({ sequence: list.sequence, title: list.title }));
-  for (const list of lists) {
-    if (list.sequence === 'equation') wordNotYet(null, null, `listOf:${list.sequence}`);
-  }
 
   // Either language refused is already a failure; the null checks only narrow the types. So does the
   // Word page, which a request for Word under a layout with none has already failed for.
@@ -1938,6 +1935,22 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
  * fixed list and nothing else - never the variant, the element or the attribute the content wrote,
  * which an author reaches by a paste and which a failure's detail must not carry. Keyed by the
  * refusal's own reason, so a reason added to the converter fails to compile here until it is named.
+ *
+ * **Each is refused whatever is asked for** (Word 4, ruling R2), since a refusal leaves no tree and
+ * Word writes only from the tree. Word 1 said all but three for the PDF alone, and Word's own
+ * refusal of the equation, `word_not_yet`, covered them; ruled each in turn, none is the PDF's alone:
+ *
+ * - wrong whatever sets it: `unreadable`, `merror` (an error the converter reported), `element` and
+ *   `text` (MathML standing where MathML cannot: every element the strict reader keeps is mapped
+ *   here), `space` (nothing an author means needs more than twenty ems, and past a number's range no
+ *   writer can carry it) and `empty` (nothing drawn to carry the equation's words);
+ * - Word cannot set it either: `rtl` (OMML has no direction for maths), `multiscripts` (`m:sPre` and
+ *   `m:sSubSup` hold one pair a side), `voffset` (OMML moves no box and keeps it maths), `spanningCell`
+ *   (`m:m` spans no cell) and `accent` (`m:chr` is one character);
+ * - Word could set some of it, and the tree has no place for any: `mathvariant` (bold fraktur, bold
+ *   script and three sans-serif styles are `m:scr` with `m:sty`; the Arabic styles are not) and
+ *   `attribute` (a bold number, a relative script level). Setting them would widen the tree the
+ *   template reads too, which is not Word's to do.
  */
 const REFUSAL_NAMES: Readonly<Record<MathsRefusal['reason'], string>> = {
   unreadable: 'unreadable',
@@ -1957,20 +1970,11 @@ const REFUSAL_NAMES: Readonly<Record<MathsRefusal['reason'], string>> = {
   empty: 'empty',
 };
 
-/**
- * The refusals of an equation that are the equation's own, whatever sets it (Word 1, ruling R2):
- * MathML that cannot be read, an error its converter wrote into it, and one that draws nothing. Every
- * other is what the maths tree - the PDF engine's reading of MathML - cannot set, and is said only
- * where a PDF is asked for; Word 4 decides which of them Word sets.
- */
-const EQUATIONS_OWN: ReadonlySet<MathsRefusal['reason']> = new Set([
-  'unreadable',
-  'error',
-  'empty',
-] as const);
-
 /** A cross-reference as the content model stores it. */
 type ReferenceNode = Extract<InlineNode, { type: 'crossReference' }>;
+
+/** An equation in a line, as the content model stores it. */
+type EquationNode = Extract<InlineNode, { type: 'equation' }>;
 
 /**
  * What a resolved reference prints, before where it stands says whether it is a link. `relative` says
@@ -1995,8 +1999,6 @@ interface ResolvedReferences {
   readonly failures: readonly PublishFailure[];
   /** Those of `failures` that are the PDF engine's own (Word 1, ruling R2), by identity. */
   readonly pdfsOwn: ReadonlySet<PublishFailure>;
-  /** Each reference that resolved to an equation, by `referenceKey`: Word 4's to write (Word 3, R1). */
-  readonly toEquations: ReadonlySet<string>;
   /**
    * What Word writes each printed reference from, by `referenceKey` (Word 3, ruling R4): its form and
    * its target's number and title, which the published run, holding only what it prints, does not say.
@@ -2012,7 +2014,6 @@ const NO_REFERENCES: ResolvedReferences = {
   named: new Set(),
   failures: [],
   pdfsOwn: new Set(),
-  toEquations: new Set(),
   forms: new Map(),
   forWord: [],
 };
@@ -2269,7 +2270,6 @@ function resolveReferences(
   const named = new Set<string>();
   const failures: PublishFailure[] = [];
   const pdfsOwn = new Set<PublishFailure>();
-  const toEquations = new Set<string>();
   const forms = new Map<string, WordReference>();
   const forWord: PublishFailure[] = [];
   // Each caption whose words hold a reference asking for anything but its target's number, which a
@@ -2295,7 +2295,6 @@ function resolveReferences(
       continue;
     }
     const target = published(resolution.target);
-    if (target.kind === 'equation') toEquations.add(key);
     const { display } = reference;
     const anchor =
       target.block === null ? nodeAnchor(target.node) : blockAnchor(target.node, target.block);
@@ -2363,7 +2362,7 @@ function resolveReferences(
     );
     forms.set(key, { display, label: target.label, title: target.title });
   }
-  return { printed, named, failures, pdfsOwn, toEquations, forms, forWord };
+  return { printed, named, failures, pdfsOwn, forms, forWord };
 }
 
 /** A stored table, as a footnote's cell anchor resolves against one. */

@@ -505,6 +505,28 @@ describe('publishing from the document page', () => {
     }
   });
 
+  it("names an equation's number Word cannot compute, where the layout numbers it and why, pointing at the PDF", async () => {
+    // Word 4: `detail` is `equation:<matter>:<why>`, for a caption's reasons, and names the equation.
+    const refused = (detail: string) => ({
+      stage: 'compose' as const,
+      code: 'numbering_not_in_word' as const,
+      node: null,
+      block: 'e1',
+      detail,
+    });
+    const fake = failing([refused('equation:body:restart'), refused('equation:appendix:prefix')]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    const pdf = 'Publish this document as a PDF only, or under a layout Word can number.';
+    for (const said of [
+      'The layout numbers the equations in the body in a way Word cannot: a number starts again or carries on where Word would not, such as after a heading with no number.',
+      "The layout numbers the equations in the appendices in a way Word cannot: a number's prefix is the number of a heading Word would not find there, such as one with no number.",
+    ]) {
+      expect(why).toHaveTextContent(`${said} ${pdf}`);
+    }
+  });
+
   it("names a footnote's number Word cannot compute, where the layout numbers it and why, pointing at the PDF", async () => {
     // Word 3's ruling R2: `detail` is `footnote:<matter>:<why>`, and names the footnote that meets it;
     // Word numbers footnotes itself, so a word or a chapter's number before one is Word's to refuse.

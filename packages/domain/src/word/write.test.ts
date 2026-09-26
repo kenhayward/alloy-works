@@ -3517,3 +3517,72 @@ describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; 
     ]);
   });
 });
+
+describe('writeDocx: equations, which Word 4 writes (task 1)', () => {
+  const X = '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"><mi>x</mi></math>';
+  const equationBlock = (name: string, numbered = false) => ({
+    type: 'equation',
+    id: name,
+    mathml: X,
+    numbered,
+  });
+  /** A document of one component holding these blocks. */
+  const holding = (...content: unknown[]) => ({
+    outline: parseOutlineDocument({
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
+      title: 'The dosing report',
+      language: 'en-GB',
+      direction: 'ltr',
+      nodes: [section('intro', 'Introduction', [reference('calc', 9)])],
+    }),
+    occurrences: new Map([[id('calc'), component('Calculation', content)]]),
+  });
+  /** A document whose one section's title holds an equation, and a reference where `referring`. */
+  const titled = (referring: boolean) => ({
+    outline: parseOutlineDocument({
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
+      title: 'The dosing report',
+      language: 'en-GB',
+      direction: 'ltr',
+      nodes: [
+        section('intro', 'Introduction'),
+        section('method', 'Method', [], {
+          title: [
+            text('Method for '),
+            { type: 'equation', mathml: X },
+            ...(referring
+              ? [
+                  {
+                    type: 'crossReference',
+                    id: 'x1',
+                    target: { kind: 'node', node: id('intro') },
+                    display: 'number',
+                  },
+                ]
+              : []),
+          ],
+        }),
+      ],
+    }),
+    occurrences: new Map(),
+  });
+  const listing = layoutWith((layout) => {
+    layout.matter.lists = [...layout.matter.lists, { sequence: 'equation', title: 'Equations' }];
+  });
+
+  it("throws on an equation wherever assemble publishes one for Word, rather than drop it, until Word 4's converter and writer write it: a block, one in a line, one in a section's title, and the list of equations", () => {
+    const cases: [string, Partial<AssembleInput> & { readonly layout?: Layout }][] = [
+      ['a block', holding(equationBlock('e1'))],
+      ['a numbered block', holding(equationBlock('e1', true))],
+      ['one in a line', holding(paragraph('p1', text('Let '), { type: 'equation', mathml: X }))],
+      ["one in a section's title", titled(false)],
+      ["one in a section's title beside a reference", titled(true)],
+      ['the list of equations', { ...holding(equationBlock('e1', true)), layout: listing }],
+    ];
+    for (const [what, over] of cases) {
+      expect(() => written(over), what).toThrow(
+        'The Word writer does not write an equation yet: Word 4 writes them',
+      );
+    }
+  });
+});

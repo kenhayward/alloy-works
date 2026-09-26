@@ -36,9 +36,10 @@ const INLINES: Readonly<Record<string, string>> = {
 };
 
 /**
- * What `word_not_yet` names (Word 1, ruling R3): a block or an inline the Word writer does not write
+ * What `word_not_yet` names (Word 1, ruling R3): a block or an inline the Word writer did not write
  * yet, by its stored type - an equation is one word whether it stands alone or in a line - and a list
- * after the contents by its sequence. Each later slice of Word output takes its own off this list.
+ * after the contents by its sequence. Words 2 to 4 took each off it, and nothing is refused so now,
+ * but a request refused before then still holds its failure, and is read back by these words.
  */
 const NOT_YET_IN_WORD: Readonly<Record<string, string>> = {
   list: 'A list',
@@ -57,13 +58,15 @@ const NOT_YET_IN_WORD: Readonly<Record<string, string>> = {
 
 /**
  * What `numbering_not_in_word` names (Word 1, ruling R7; Word 2, ruling R1): `detail` is
- * `<sequence>:<matter>:<why>` - the headings', the figures', the tables' or the footnotes' numbers, the matter the
- * layout numbers them in, and what in its rule Word would number otherwise.
+ * `<sequence>:<matter>:<why>` - the headings', the figures', the tables', the equations' (Word 4) or
+ * the footnotes' numbers, the matter the layout numbers them in, and what in its rule Word would
+ * number otherwise. An equation's number is judged as a caption's, and said in a caption's words.
  */
 const NUMBERED: Readonly<Record<string, string>> = {
   section: 'the headings',
   figure: 'the figures',
   table: 'the tables',
+  equation: 'the equations',
   footnote: 'the footnotes',
 };
 const NUMBERED_IN: Readonly<Record<string, string>> = {

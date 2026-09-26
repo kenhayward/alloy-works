@@ -101,18 +101,18 @@ export interface WordNumberingProblem {
   readonly block: string | null;
   /**
    * `<sequence>:<matter>:<why>`: for `section`, `separator`, `letters`, `roman` or `depth`; for
-   * `figure` and `table`, `separator`, `prefix`, `restart`, `letters` or `roman`; for `footnote`,
-   * `label`, `prefix`, `restart`, `letters` or `roman`.
+   * `figure`, `table` and `equation`, `separator`, `prefix`, `restart`, `letters` or `roman`; for
+   * `footnote`, `label`, `prefix`, `restart`, `letters` or `roman`.
    */
   readonly detail: string;
 }
 
 /**
  * **What Word cannot number as the layout's scheme does** (Word 1, ruling R7; Word 2, ruling R1; Word
- * 3, ruling R2): `numbering_not_in_word`, said before anything is written, rather than a number Word
- * prints differently from the PDF's. The section sequence, the figure and table sequences and the
- * footnote sequence reach Word - an equation's number arrives with the slice that writes it, and is
- * asked of then - and of the section rules, four things:
+ * 3, ruling R2; Word 4): `numbering_not_in_word`, said before anything is written, rather than a number
+ * Word prints differently from the PDF's. Every sequence the scheme must have reaches Word - the
+ * section sequence, the figure, table and equation sequences and the footnote sequence - and of the
+ * section rules, four things:
  *
  * - **a separator holding `%`**, which a level's text reads as a number to come (`%1`); asked of every
  *   matter, whether or not it numbers anything here, since each definition is written all the same;
@@ -270,8 +270,11 @@ export const lettersPart = (format: NumberFormat, value: number) =>
 export const romanPart = (format: NumberFormat, value: number) =>
   (format === 'lowerRoman' || format === 'upperRoman') && value > 3999;
 
-/** The sequences whose captions Word numbers by fields (Word 2, ruling R1). */
-const CAPTIONED = ['figure', 'table'] as const;
+/**
+ * The sequences whose captions Word numbers by fields (Word 2, ruling R1): a figure's and a table's,
+ * and a numbered equation's (Word 4), whose number the PDF sets as its figure's caption too.
+ */
+const CAPTIONED = ['figure', 'table', 'equation'] as const;
 type Captioned = (typeof CAPTIONED)[number];
 const isCaptioned = (sequence: string): sequence is Captioned =>
   (CAPTIONED as readonly string[]).includes(sequence);
@@ -281,7 +284,11 @@ const isCaptioned = (sequence: string): sequence is Captioned =>
  * figures' `TOC \c` field names one; and not the label's word, which a layout may leave empty or write
  * in another language.
  */
-const SEQUENCE_NAMES: Readonly<Record<Captioned, string>> = { figure: 'Figure', table: 'Table' };
+const SEQUENCE_NAMES: Readonly<Record<Captioned, string>> = {
+  figure: 'Figure',
+  table: 'Table',
+  equation: 'Equation',
+};
 
 /**
  * A sequence's `SEQ` name, which its captions' fields count and a list after the contents collects them
@@ -313,6 +320,14 @@ const FIELD_FORMATS: Readonly<Record<NumberFormat, string>> = {
  * entry is not a figure's or a table's, and where the scheme gives it no number - a chapter-hungry rule
  * outside the body before its first chapter (`number`) - which is written with no field, so that
  * Word's count, like the scheme's, spends nothing on it.
+ *
+ * **An equation's number is a caption's** (Word 4), `SEQ Equation`, but for one thing: where its rule
+ * never restarts, its matter's first carries `\s 1`. The scheme counts each matter on counters of its
+ * own, where Word's one `SEQ` identifier counts through every matter - the default's front matter
+ * counts `i`, `ii`, and the body on from 1 - and the first of a matter always stands after that
+ * matter's first top-level node, a heading at the first level, so Word counts from 1 again there and on
+ * from it after. A figure's and a table's rules, which the default restarts at each chapter, are left
+ * as Word 2 wrote them.
  */
 export interface CaptionField {
   /** The label's word, `Figure`; empty where the layout gives none. */
@@ -342,13 +357,13 @@ export function captionField(scheme: NumberingScheme, entry: NumberingEntry): Ca
     separator: rule.separator,
     sequence: SEQUENCE_NAMES[entry.sequence],
     format: FIELD_FORMATS[rule.format[rule.format.length - 1]!],
-    restart: rule.restartAt,
+    restart: rule.restartAt ?? (entry.sequence === 'equation' && entry.value === 1 ? 1 : null),
   };
 }
 
 /**
  * **What Word's caption fields compute, followed through the document as Word reads it** (Word 2,
- * ruling R1), held to what the scheme wrote. Word's reading, measured in Word 16 - M3 at the first
+ * ruling R1; an equation's since Word 4), held to what the scheme wrote. Word's reading, measured in Word 16 - M3 at the first
  * level, and for this slice at the second, after a heading with no number, and before any heading:
  *
  * - every node is a heading in the style for its depth, the ninth's for any deeper, numbered or not;

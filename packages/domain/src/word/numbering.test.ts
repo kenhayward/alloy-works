@@ -23,6 +23,7 @@ import {
   footnoteSections,
   numberingNotInWord,
   numberingXml,
+  sequenceName,
 } from './numbering.js';
 
 /** A numbered section node, and the nodes beneath it. */
@@ -422,16 +423,83 @@ describe('a caption rule Word cannot compute (Word 2, ruling R1)', () => {
       problem('intro', 'f4000', 'figure:body:roman'),
     ]);
   });
+});
 
-  it('asks nothing of equations, which Word does not number yet', () => {
+describe('an equation rule Word cannot compute (Word 4)', () => {
+  it("finds nothing in the default scheme: front matter's in roman, the body's on through its chapters, and each appendix's by its letter, each matter counting on its own", () => {
+    const { table, problems } = captioned([
+      holding('preface', 'front', ['e0', 'e0b']),
+      holding('opening', 'body', ['eo'], [], false),
+      holding('intro', 'body', ['e1'], [holding('scope', 'body', ['e2'])]),
+      holding('method', 'body', ['e3']),
+      holding('tables', 'appendix', ['ea'], [holding('values', 'appendix', ['eb'])]),
+      holding('glossary', 'appendix', ['ec']),
+    ]);
+    expect(problems).toEqual([]);
+    const equations = table.entries.filter((entry) => entry.sequence === 'equation');
+    expect(equations.map((entry) => [entry.block, entry.label])).toEqual([
+      ['e0', 'Equation i'],
+      ['e0b', 'Equation ii'],
+      ['eo', 'Equation 1'],
+      ['e1', 'Equation 2'],
+      ['e2', 'Equation 3'],
+      ['e3', 'Equation 4'],
+      ['ea', 'Equation A.1'],
+      ['eb', 'Equation A.2'],
+      ['ec', 'Equation B.1'],
+    ]);
+  });
+
+  it("refuses a matter entered a second time whose count carries on, where Word's one sequence counts the matter between too", () => {
+    // The body's second is 2 to the scheme, and 3 to Word, after the appendix's two.
+    const outline = [
+      holding('intro', 'body', ['e1']),
+      holding('tables', 'appendix', ['ea', 'eb']),
+      holding('later', 'body', ['e2']),
+    ];
+    expect(captioned(outline).problems).toEqual([problem('later', 'e2', 'equation:body:restart')]);
+    // Where the body held none before the appendix, its first is its matter's first, and Word's count
+    // starts again there as the scheme's does.
+    const first = [holding('tables', 'appendix', ['ea']), holding('later', 'body', ['e2'])];
+    expect(captioned(first).problems).toEqual([]);
+  });
+
+  it('refuses an equation after a heading with no number, where the rule prefixes and restarts with the chapter', () => {
+    const scheme = withRules('equation', (rules) => {
+      rules.body = { ...rules.body, prefix: 1, restartAt: 1 };
+    });
+    const { table, problems } = captioned(
+      [
+        holding('intro', 'body', ['e1']),
+        holding('interlude', 'body', ['e2'], [], false),
+        holding('method', 'body', ['e3']),
+      ],
+      scheme,
+    );
+    expect(table.entries.find((entry) => entry.block === 'e2')?.label).toBe('Equation 1.2');
+    expect(problems).toEqual([
+      problem('interlude', 'e2', 'equation:body:prefix'),
+      problem('interlude', 'e2', 'equation:body:restart'),
+    ]);
+  });
+
+  it('refuses a prefix or a restart past the ninth level, where Word has no heading style', () => {
     const scheme = withRules('equation', (rules) => {
       rules.body = { ...rules.body, prefix: 12, restartAt: 12 };
     });
-    const outline = [
-      holding('intro', 'body', ['e1', 'n1']),
-      holding('interlude', 'body', ['e2', 'n2'], [], false),
-    ];
-    expect(captioned(outline, scheme).problems).toEqual([]);
+    expect(captioned([holding('intro', 'body', ['e1', 'e2'])], scheme).problems).toEqual([
+      problem('intro', 'e1', 'equation:body:prefix'),
+      problem('intro', 'e1', 'equation:body:restart'),
+    ]);
+  });
+
+  it('refuses a roman numeral past 3999, which the scheme writes in decimal and Word does not', () => {
+    const equations = (count: number) =>
+      Array.from({ length: count }, (_, index) => `e${index + 1}`);
+    expect(captioned([holding('preface', 'front', equations(3999))]).problems).toEqual([]);
+    expect(captioned([holding('preface', 'front', equations(4001))]).problems).toEqual([
+      problem('preface', 'e4000', 'equation:front:roman'),
+    ]);
   });
 });
 
@@ -588,6 +656,25 @@ describe("the fields a caption's number is written with (Word 2, ruling R1)", ()
     expect(captionField(defaultNumberingScheme, entry('ff'))).toBeNull();
     const heading = table.entries.find((each) => each.sequence === 'section')!;
     expect(captionField(defaultNumberingScheme, heading)).toBeNull();
+  });
+
+  it("writes an equation's number as a caption's, the SEQ named Equation, counting from 1 again at its matter's first where its rule never restarts (Word 4)", () => {
+    const { table } = captioned([
+      holding('preface', 'front', ['e0', 'e0b']),
+      holding('intro', 'body', ['e1', 'e2']),
+      holding('tables', 'appendix', ['ea']),
+    ]);
+    const entry = (block: string) => table.entries.find((each) => each.block === block)!;
+    const field = (block: string) => captionField(defaultNumberingScheme, entry(block));
+    const continuous = { word: 'Equation', prefix: null, separator: '.', sequence: 'Equation' };
+    expect(field('e0')).toEqual({ ...continuous, format: 'roman', restart: 1 });
+    expect(field('e0b')).toEqual({ ...continuous, format: 'roman', restart: null });
+    // The body's first counts from 1 again at its chapter, since the body's count is its own; the
+    // rest carry on through every chapter.
+    expect(field('e1')).toEqual({ ...continuous, format: 'arabic', restart: 1 });
+    expect(field('e2')).toEqual({ ...continuous, format: 'arabic', restart: null });
+    expect(field('ea')).toEqual({ ...continuous, prefix: 1, format: 'arabic', restart: 1 });
+    expect(sequenceName('equation')).toBe('Equation');
   });
 
   it("writes each format as Word's field format switch names it", () => {

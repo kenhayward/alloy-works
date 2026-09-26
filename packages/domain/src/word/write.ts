@@ -100,7 +100,8 @@ import { spacingOverrides, type SpacingOverride } from './spacing.js';
  * drawn from its own image's bytes at the size `assemble` gave it against the Word page (R3, R8).
  * Word 3 writes footnotes as Word's own, numbered by Word (ruling R2), and every cross-reference as a
  * field Word updates, at a hidden bookmark on its target named Word's way (rulings R3 and R4).
- * `assemble` refuses equations by name for Word (`word_not_yet`), so meeting one here throws.
+ * Word 4 writes equations; until its converter and writer do (tasks 2 and 3), a document holding one
+ * throws, whole, where `assemble` since publishes it for Word.
  */
 
 /**
@@ -519,6 +520,29 @@ const RIGHT_TO_LEFT =
 /** Whether words hold nothing written right to left: a number, a page, or a left-to-right language's. */
 const ltr = (words: string | null): boolean => !RIGHT_TO_LEFT.test(words ?? '');
 
+/** What the writer says of an equation it meets before Word 4 writes one. */
+const EQUATIONS_NOT_YET = 'The Word writer does not write an equation yet: Word 4 writes them';
+
+/**
+ * Whether the document holds an equation anywhere the writer would meet one - a block, a run of any
+ * block's, a section's title, as published or as Word's - or lists them after the contents. Searched
+ * through every value, rather than by the places equations stand today, so that a place added later
+ * is not missed.
+ */
+function holdsEquation(document: PublishedDocument, word: WordInput): boolean {
+  const holds = (value: unknown): boolean => {
+    if (Array.isArray(value)) return value.some(holds);
+    if (value === null || typeof value !== 'object') return false;
+    if ('equation' in value || ('type' in value && value.type === 'equation')) return true;
+    return Object.values(value).some(holds);
+  };
+  return (
+    holds(document.nodes) ||
+    document.front.lists.some((list) => list.sequence === 'equation') ||
+    [...word.titles.values()].some(holds)
+  );
+}
+
 /** Where a number, a page or a relative reference finds a target: a caption's label, or its place. */
 function placeOf(target: Bookmarked): Bookmark {
   return target.kind === 'caption' ? target.place : target.at;
@@ -526,6 +550,9 @@ function placeOf(target: Bookmarked): Bookmark {
 
 export function writeDocx(input: WordWriting): WrittenDocx {
   const { document, word } = input;
+  // Word 4's first task lets equations through `assemble` for Word before its converter and its writer
+  // can write one (tasks 2 and 3): refused here, whole, rather than written without it.
+  if (holdsEquation(document, word)) throw new Error(EQUATIONS_NOT_YET);
   const theme = word.theme;
   const format = word.format;
   const writer = new Writer(document, theme, input.faces, {
@@ -1180,7 +1207,7 @@ class Writer {
       case 'figure':
         return this.figure(block, place, passage);
       default:
-        // A block equation is Word 4's, which `assemble` refuses for Word until then; a marker is
+        // A block equation is Word 4's, which `writeDocx` refuses whole until then; a marker is
         // written by the flow it stands in.
         throw new Error(`The Word writer does not write a ${block.type} yet`);
     }
@@ -1930,7 +1957,7 @@ class Writer {
     const paragraphs: Paragraph[] = [];
     for (const list of lists) {
       const name = sequenceName(list.sequence);
-      // `assemble` refuses the list of equations for Word (`word_not_yet`) until Word 4.
+      // The list of equations is Word 4's, which `writeDocx` refuses whole until then.
       if (name === null)
         throw new Error(`The Word writer does not write a list of ${list.sequence}`);
       paragraphs.push(
@@ -2010,7 +2037,7 @@ class Writer {
     }
   }
 
-  /** A title's words, each a run carrying no mark; an equation in one is Word 4's, refused till then. */
+  /** A title's words, each a run carrying no mark; an equation in one is Word 4's, refused whole. */
   private titleRuns(
     title: readonly PublishedTitleRun[],
     styleId: string,
@@ -2019,7 +2046,7 @@ class Writer {
     return title
       .map((run) => {
         if (!('text' in run)) {
-          throw new Error('Word 1 does not write an equation, which assemble refuses for Word');
+          throw new Error(EQUATIONS_NOT_YET);
         }
         return this.textRun(run.text, [], styleId, passage, null);
       })
@@ -2072,8 +2099,8 @@ class Writer {
         continue;
       }
       if (!('text' in run)) {
-        // An equation is Word 4's.
-        throw new Error('The Word writer does not write this run, which assemble refuses for Word');
+        // An equation is Word 4's, which `writeDocx` refuses whole until then.
+        throw new Error(EQUATIONS_NOT_YET);
       }
       let href: string | null = null;
       let language: PublishedLanguage | null = null;
