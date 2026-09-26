@@ -13,7 +13,6 @@ import {
   listSpacesFor,
   readLock,
   type LockState,
-  type StoredVersion,
   type VersionHeading,
   type Tenant,
   type TenantDatabase,
