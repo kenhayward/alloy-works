@@ -573,6 +573,7 @@ describe('publishing from the document page', () => {
       refused('relative:footnote'),
       refused('title:caption'),
       refused('numberAndTitle:caption'),
+      refused('title:nested'),
     ]);
     open(fake.fetch);
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
@@ -581,6 +582,7 @@ describe('publishing from the document page', () => {
     for (const said of [
       'A cross-reference asks for above or below between a footnote and the text outside it, which Word cannot print.',
       "A cross-reference in a caption asks for that caption's own words, which Word cannot print.",
+      "A cross-reference asks for a caption's words that hold a cross-reference, which Word would print otherwise.",
     ]) {
       expect(why).toHaveTextContent(`${said} ${pdf}`);
     }

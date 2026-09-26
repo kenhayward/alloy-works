@@ -5144,13 +5144,46 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(pdf).toEqual([]);
     // Word's `REF \p` prints its bookmark's words where the field and the bookmark stand one in a
     // note and one outside it, and a caption's `REF` to its own words refuses to print itself; within
-    // the notes, to a footnote's mark, another caption's words and every other form, Word prints what
-    // the PDF prints.
+    // the notes, to a footnote's mark and every other form, Word prints what the PDF prints. The first
+    // table's words hold that reference to themselves, so a reference elsewhere to them is refused as
+    // well, as one to any caption holding a reference but to a number (Word 3's check).
     const refused = [
       notInWord('x1', 'title:caption'),
       notInWord('x2', 'relative:footnote'),
       notInWord('x5', 'relative:footnote'),
+      notInWord('x7', 'numberAndTitle:nested'),
+      notInWord('x8', 'numberAndTitle:nested'),
     ];
+    expect(docx).toEqual(refused);
+    expect(both).toEqual(refused);
+  });
+
+  it("refuses for Word by name a caption's words asked for where they hold a reference asking for anything but its target's number - which the PDF prints as that number, and Word's REF, copying the field, in its own form - and publishes it for the PDF (Word 3, ruling R5; measured by the Word check)", () => {
+    const over = holding(
+      paragraph('p0', text('First.')),
+      table('t1', { caption: [text('Checks '), xref('x1', toBlock('p0'), 'relative')] }),
+      table('t2', { caption: [text('Sums as in '), xref('x2', toBlock('t1'))] }),
+      paragraph(
+        'p1',
+        xref('x3', toBlock('t1'), 'title'),
+        text(', '),
+        xref('x4', toBlock('t1'), 'numberAndTitle'),
+        text(', '),
+        xref('x5', toBlock('t1')),
+        text(', '),
+        xref('x6', toBlock('t1'), 'relative'),
+        text(' and '),
+        xref('x7', toBlock('t2'), 'numberAndTitle'),
+      ),
+    );
+    const notInWord = (reference: string, detail: string) =>
+      failed('cross_reference_not_in_word', reference, detail);
+    const { pdf, docx, both } = failuresFor({ ...over, layout: listless });
+    expect(pdf).toEqual([]);
+    // The first table's words hold "above", which the PDF prints, read as a title, as its target's
+    // kind; the second's hold a number, which Word's copy prints as the PDF does. Its number, and its
+    // place, are the table's own.
+    const refused = [notInWord('x3', 'title:nested'), notInWord('x4', 'numberAndTitle:nested')];
     expect(docx).toEqual(refused);
     expect(both).toEqual(refused);
   });
@@ -5167,7 +5200,7 @@ describe('the formats a publication is assembled for (Word 1)', () => {
         [
           id('calib'),
           component([
-            table('t1', { caption: [text('Readings as in '), xref('x1', methods, 'title')] }),
+            table('t1', { caption: [text('Readings as in '), xref('x1', methods)] }),
             paragraph(
               'p1',
               text('See '),
@@ -5194,7 +5227,7 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       new Map([
         [
           inlineReferenceKey(id('calib'), { kind: 'caption', block: 't1' }, 1),
-          { display: 'title', label: '1', title: 'Methods' },
+          { display: 'number', label: '1', title: 'Methods' },
         ],
         [at('p1', 1), { display: 'numberAndTitle', label: 'Table 1.1', title: 'Readings as in 1' }],
         [at('p1', 3), { display: 'number', label: '1', title: null }],

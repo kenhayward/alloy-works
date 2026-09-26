@@ -2262,6 +2262,13 @@ function resolveReferences(
   const toEquations = new Set<string>();
   const forms = new Map<string, WordReference>();
   const forWord: PublishFailure[] = [];
+  // Each caption whose words hold a reference asking for anything but its target's number, which a
+  // reference to those words prints, as the PDF reads a caption as a title, as that number.
+  const nesting = new Set(
+    found.flatMap(({ inCaption, reference }) =>
+      inCaption !== null && reference.display !== 'number' ? [inCaption] : [],
+    ),
+  );
   for (const { node, reference, inTitle, at: where, inNote, inCaption } of found) {
     const key = referenceKey(node, reference.id);
     const resolution = resolutions.get(key)!;
@@ -2306,14 +2313,19 @@ function resolveReferences(
     // ruling R5; measured in Word 16): above or below between a footnote's text and the text outside
     // it - Word writes the notes in a part of their own, and its `REF \p` then prints the bookmark's
     // words - and a caption's words named in that caption, which Word's `REF` refuses as a reference
-    // to itself. A number or a title across the two parts, and every other form, Word prints as the
-    // PDF does.
+    // to itself; and a caption's words named where they hold a reference asking for anything but its
+    // target's number - Word's `REF` copies that field and prints it in its own form, "above" where
+    // the PDF prints the target's kind (measured by the Word check). A number or a title across the
+    // two parts, and every other form, Word prints as the PDF does.
+    const titled = display === 'title' || display === 'numberAndTitle';
     const limit =
       display === 'relative' && inNote !== inNotes.has(anchor)
         ? 'relative:footnote'
-        : (display === 'title' || display === 'numberAndTitle') && inCaption === anchor
+        : titled && inCaption === anchor
           ? `${display}:caption`
-          : null;
+          : titled && nesting.has(anchor)
+            ? `${display}:nested`
+            : null;
     if (limit !== null) {
       forWord.push(failure('compose', 'cross_reference_not_in_word', node, reference.id, limit));
     }

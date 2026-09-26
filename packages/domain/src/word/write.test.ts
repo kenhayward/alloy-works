@@ -3237,4 +3237,114 @@ describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; 
       [1, 2, 3, 4].map((n) => ({ code: PAGEREF(n), result: '' })),
     );
   });
+
+  /** Each reference field's runs in a paragraph, begin to end, by its instruction. */
+  const fieldRuns = (paragraph: Element) => {
+    const found: { code: string; runs: Element[] }[] = [];
+    let open: { code: string; runs: Element[] } | null = null;
+    for (const run of all(paragraph, 'w:r')) {
+      const kind = first(run, 'w:fldChar')?.attrs['w:fldCharType'];
+      if (kind === 'begin') open = { code: '', runs: [] };
+      if (open === null) continue;
+      open.runs.push(run);
+      const instruction = first(run, 'w:instrText');
+      if (instruction !== undefined) open.code += instruction.children.join('');
+      if (kind === 'end') {
+        found.push({ ...open, code: open.code.trim().replace(/ _Ref\d{9}/, '') });
+        open = null;
+      }
+    }
+    return found;
+  };
+
+  it("writes a number Word computes - a heading's, a note's, a page's - left to right in a right-to-left passage, its language the passage's, since Word drew one of digits alone in a right-to-left run in Times New Roman (measured by the Word check); every other form in the passage's direction", () => {
+    const hebrew = written({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: SEFER,
+        language: 'he-IL',
+        direction: 'rtl',
+        nodes: [section('rtlbody', SEFER, [reference('rtlpart', 4)])],
+      }),
+      occurrences: new Map([
+        [
+          id('rtlpart'),
+          component(
+            SEFER,
+            [
+              paragraph('r0', text(SHALOM), note('rn', paragraph('rna', text(SEFER)))),
+              paragraph(
+                'r1',
+                text(`${SHALOM} `),
+                xref('x0', toNode('rtlbody')),
+                text(' '),
+                xref('x1', toBlock('rn')),
+                text(' '),
+                xref('x2', toBlock('r0'), 'page'),
+                text(' '),
+                xref('x3', toBlock('r0'), 'relative'),
+                text(' '),
+                xref('x4', toNode('rtlbody'), 'title'),
+              ),
+            ],
+            { language: 'he-IL', direction: 'rtl' },
+          ),
+        ],
+      ]),
+    });
+    const [, cites] = all(hebrew.docx.xml('word/document.xml'), 'w:p').filter((each) =>
+      textOf(each).startsWith(SHALOM),
+    );
+    const fields = fieldRuns(cites!).map(({ code, runs }) => [
+      code,
+      runs.every((run) => first(run, 'w:rtl') !== undefined),
+      runs.every((run) => first(run, 'w:lang')?.attrs['w:bidi'] === 'he-IL'),
+    ]);
+    expect(fields).toEqual([
+      ['REF \\r \\h', false, true],
+      ['NOTEREF \\h', false, true],
+      ['PAGEREF \\h', false, true],
+      ['REF \\p \\h', true, true],
+      ['REF \\h', true, true],
+    ]);
+  });
+
+  it("names a floated figure's place for above and below where its box is anchored in the text, since Word's REF \\p to its caption in the box prints the caption's words (measured by the Word check); its number, title and page at its caption", () => {
+    const floated = writtenOf(
+      [
+        said('before'),
+        figure('f3', BLUE, 'Blue on top', { imageStyle: 'floated' }),
+        paragraph(
+          'p1',
+          xref('x0', toBlock('f3'), 'relative'),
+          text(' '),
+          xref('x1', toBlock('f3'), 'page'),
+          text(' '),
+          xref('x2', toBlock('f3'), 'numberAndTitle'),
+        ),
+      ],
+      { theme: floatedTheme, assets: IMAGES },
+    );
+    const { at, body } = bodyOf(floated.docx);
+    const anchor = body[body.indexOf(at('before')) + 1]!;
+    expect(first(anchor, 'w:txbxContent')).toBeDefined();
+    // The caption's two inside the box; the anchor's own after the box's run, holding nothing.
+    const boxed = all(first(anchor, 'w:txbxContent')!, 'w:bookmarkStart');
+    expect(boxed.map((each) => each.attrs['w:name'])).toEqual([name(1), name(2)]);
+    const own = kids(anchor).filter((each) => each.name === 'w:bookmarkStart');
+    expect(own.map((each) => each.attrs['w:name'])).toEqual([name(3)]);
+    expect(kids(anchor).map((each) => each.name)).toEqual([
+      'w:pPr',
+      'w:r',
+      'w:bookmarkStart',
+      'w:bookmarkEnd',
+    ]);
+    const cites = paragraphs(floated.docx).find((each) => textOf(each).startsWith('above'))!;
+    expect(referencesIn(cites)).toEqual([
+      { code: REF(3, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(1), result: '' },
+      { code: REF(1, 'h'), result: 'Figure 1.1' },
+      { code: REF(2, 'h'), result: 'Blue on top' },
+    ]);
+  });
 });

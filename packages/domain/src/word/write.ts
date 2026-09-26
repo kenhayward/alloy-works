@@ -411,11 +411,18 @@ interface Bookmark {
  * heading's around its title's words, whose number `REF \r` reads from the heading's list; a footnote's
  * around its mark, which `NOTEREF` reads; a block's where its first paragraph begins, holding nothing;
  * and a caption's two, around its label - where it has one - and around its words, so a number and a
- * title are each a field of their own.
+ * title are each a field of their own; and a floated figure's a third, holding nothing, where its box
+ * is anchored in the text, which above and below are read from (Word 3's check: Word's `REF \p` to a
+ * bookmark in a text box prints the bookmark's words, as it does across the notes).
  */
 type Bookmarked =
   | { readonly kind: 'heading' | 'footnote' | 'block'; readonly at: Bookmark }
-  | { readonly kind: 'caption'; readonly label: Bookmark | null; readonly words: Bookmark };
+  | {
+      readonly kind: 'caption';
+      readonly label: Bookmark | null;
+      readonly words: Bookmark;
+      readonly anchored: Bookmark | null;
+    };
 
 /**
  * **Every target's bookmarks, by the anchor the published document gives it** (Word 3, ruling R3):
@@ -461,7 +468,10 @@ function bookmarksOf(document: PublishedDocument): Map<string, Bookmarked> {
       case 'figure':
         if (each.anchor !== null) {
           const label = each.label === null ? null : next();
-          named.set(each.anchor, { kind: 'caption', label, words: next() });
+          const words = next();
+          // A floated figure's in its anchor's paragraph, after the box that holds its caption.
+          const anchored = each.type === 'figure' && each.placement === 'float' ? next() : null;
+          named.set(each.anchor, { kind: 'caption', label, words, anchored });
         }
         if (each.type === 'table') {
           for (const row of each.rows) for (const cell of row.cells) cell.blocks.forEach(block);
@@ -1700,11 +1710,12 @@ class Writer {
       });
       const height = size.height + properties.spaceBefore + properties.lineSpacing;
       const box = this.floatBox(number, height, [image, caption]);
-      const anchor = this.paragraph(role, '', {
-        bidi: passage.rtl,
-        held: { before: 0, after: 0 },
-        box,
-      });
+      // Where a reference names it, its place in the text for above and below, after the box.
+      const anchor = this.paragraph(
+        role,
+        bookmarked(this.bookmarkOf(figure.anchor, 'caption')?.anchored, ''),
+        { bidi: passage.rtl, held: { before: 0, after: 0 }, box },
+      );
       return { body: [anchor], top: role, bottom: role, container: true };
     }
     const drawn = `<w:r>${this.drawing(figure.path, size, figure.alternative)}</w:r>`;
@@ -2142,14 +2153,20 @@ class Writer {
     const target = this.bookmarks.get(run.anchor);
     if (target === undefined) throw new Error(`No bookmark for the target ${run.anchor}`);
     const properties = this.runProperties([], styleId, passage, null, strong);
-    const field = (code: string, result: string) =>
-      referenceField(`${code}${run.link ? ` ${BACKSLASH}h` : ''}`, result, properties);
+    // A number Word computes - a heading's list's, a note's, a page's - is written left to right, its
+    // language the passage's: Word drew one of digits alone in a right-to-left run in Times New Roman,
+    // not the embedded face, and without `w:rtl` sets it where it did, in the face (measured by Word
+    // 3's check). A caption's number is its label's words, which `REF` copies as they are set, and
+    // every other form is words, in the passage's direction.
+    const numeral = properties.replace('<w:rtl/>', '');
+    const field = (code: string, result: string, own = properties) =>
+      referenceField(`${code}${run.link ? ` ${BACKSLASH}h` : ''}`, result, own);
     const place = placeOf(target);
     const number = () =>
       target.kind === 'footnote'
-        ? field(`NOTEREF ${place.name}`, form.label ?? '')
+        ? field(`NOTEREF ${place.name}`, form.label ?? '', numeral)
         : target.kind === 'heading'
-          ? field(`REF ${place.name} ${BACKSLASH}r`, form.label ?? '')
+          ? field(`REF ${place.name} ${BACKSLASH}r`, form.label ?? '', numeral)
           : field(`REF ${place.name}`, form.label ?? '');
     const title = () =>
       field(`REF ${(target.kind === 'caption' ? target.words : place).name}`, form.title ?? '');
@@ -2161,9 +2178,12 @@ class Writer {
       case 'numberAndTitle':
         return number() + runXml(' ', properties) + title();
       case 'relative':
-        return field(`REF ${place.name} ${BACKSLASH}p`, run.text ?? '');
+        return field(
+          `REF ${(target.kind === 'caption' ? (target.anchored ?? place) : place).name} ${BACKSLASH}p`,
+          run.text ?? '',
+        );
       case 'page':
-        return field(`PAGEREF ${place.name}`, '');
+        return field(`PAGEREF ${place.name}`, '', numeral);
     }
   }
 
