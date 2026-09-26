@@ -415,3 +415,123 @@ describe('HTML through the admission pipeline', () => {
     expect(JSON.stringify(outcome.ok && outcome.content)).toMatch(/"kind":"unordered"/);
   });
 });
+
+/** What admission stored, with the identifiers it minted left out: they are fresh on every paste. */
+const unidentified = (value: unknown): unknown =>
+  Array.isArray(value)
+    ? value.map(unidentified)
+    : value !== null && typeof value === 'object'
+      ? Object.fromEntries(
+          Object.entries(value)
+            .filter(([key]) => key !== 'id')
+            .map(([key, each]) => [key, unidentified(each)]),
+        )
+      : value;
+/** A paragraph as admission stores it, in the body style. */
+const stored = (...content: unknown[]) => ({ type: 'paragraph', style: 'body', content });
+const run = (value: string, mark?: Record<string, unknown>) => ({
+  type: 'text',
+  value,
+  marks: mark ? [mark] : [],
+});
+const storedCell = (colspan: number, value: string) => ({
+  content: [stored(run(value))],
+  colspan,
+  rowspan: 1,
+});
+const receiving = () => {
+  let next = 0;
+  return {
+    document: {
+      schemaVersion: 1,
+      title: 'Notes',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [{ type: 'paragraph', id: 'b1', style: 'body', content: [] }],
+    } as ContentDocument,
+    conditionAxes: [],
+    newIdentifier: () => `n${(next += 1)}`,
+  };
+};
+
+describe('HTML pasted whole', () => {
+  // A component holds no heading - a heading is a section of the outline - so "structure" here is
+  // every structure a component can hold; a heading is kept as a paragraph and said so (CNT-060).
+  it('CNT-062 keeps every structure a component can hold, and says what it changed and left out', () => {
+    const outcome = admit(
+      read(`<h2>Setting up</h2>
+<p><strong>Unbox</strong> the <em>printer</em>, <u>carefully</u>, as H<sub>2</sub>O and x<sup>2</sup> say; run <code>lpr</code>, <q>gently</q>, and see <a href="https://example.com/manual">the manual</a>.</p>
+<ol start="3"><li>Plug it in<ul><li>At the wall</li></ul></li><li>Switch it on</li></ol>
+<dl><dt>Toner</dt><dd>The powder that prints.</dd></dl>
+<blockquote><p>Print only what you need.</p></blockquote>
+<pre class="language-sh">lpr -P office  report.pdf</pre>
+<table><caption>Readings</caption><tr><th>Site</th><th colspan="2">Values</th></tr><tr><td>York</td><td>1</td><td>2</td></tr></table>
+<p><img src="https://example.com/a.png" alt="chart"></p>`),
+      receiving(),
+    );
+    if (!outcome.ok) throw new Error(outcome.failure);
+
+    expect(unidentified(outcome.content)).toEqual([
+      stored(run('Setting up')),
+      stored(
+        run('Unbox', { type: 'strong' }),
+        run(' the '),
+        run('printer', { type: 'emphasis' }),
+        run(', '),
+        run('carefully', { type: 'underline' }),
+        run(', as H'),
+        run('2', { type: 'subscript' }),
+        run('O and x'),
+        run('2', { type: 'superscript' }),
+        run(' say; run '),
+        run('lpr', { type: 'inlineCode' }),
+        run(', '),
+        run('gently', { type: 'quotedPhrase' }),
+        run(', and see '),
+        run('the manual', { type: 'hyperlink', href: 'https://example.com/manual' }),
+        run('.'),
+      ),
+      {
+        type: 'list',
+        kind: 'ordered',
+        start: 3,
+        items: [
+          {
+            content: [
+              stored(run('Plug it in')),
+              {
+                type: 'list',
+                kind: 'unordered',
+                items: [{ content: [stored(run('At the wall'))] }],
+              },
+            ],
+          },
+          { content: [stored(run('Switch it on'))] },
+        ],
+      },
+      {
+        type: 'list',
+        kind: 'definition',
+        items: [{ term: [run('Toner')], content: [stored(run('The powder that prints.'))] }],
+      },
+      { type: 'blockquote', content: [stored(run('Print only what you need.'))] },
+      { type: 'preformatted', text: 'lpr -P office  report.pdf', language: 'sh' },
+      {
+        type: 'table',
+        style: 'table',
+        caption: [run('Readings')],
+        headerRows: 1,
+        headerColumns: 0,
+        rows: [
+          { cells: [storedCell(1, 'Site'), storedCell(2, 'Values')] },
+          { cells: [storedCell(1, 'York'), storedCell(1, '1'), storedCell(1, '2')] },
+        ],
+      },
+    ]);
+    // And what it did not keep as it came: the heading made a paragraph, the image left out.
+    expect(happened(outcome.report).filter((entry) => entry.stage === 'read')).toEqual([
+      { stage: 'read', action: 'rewritten', subject: 'heading', count: 1 },
+      { stage: 'read', action: 'discarded', subject: 'image', count: 1 },
+    ]);
+  });
+});

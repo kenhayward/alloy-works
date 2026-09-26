@@ -144,3 +144,129 @@ describe('reading Markdown', () => {
     });
   });
 });
+
+/** What admission stored, with the identifiers it minted left out: they are fresh on every paste. */
+const unidentified = (value: unknown): unknown =>
+  Array.isArray(value)
+    ? value.map(unidentified)
+    : value !== null && typeof value === 'object'
+      ? Object.fromEntries(
+          Object.entries(value)
+            .filter(([key]) => key !== 'id')
+            .map(([key, each]) => [key, unidentified(each)]),
+        )
+      : value;
+/** A paragraph as admission stores it, in the body style. */
+const stored = (...content: unknown[]) => ({ type: 'paragraph', style: 'body', content });
+const run = (value: string, mark?: Record<string, unknown>) => ({
+  type: 'text',
+  value,
+  marks: mark ? [mark] : [],
+});
+const storedCell = (colspan: number, value: string) => ({
+  content: [stored(run(value))],
+  colspan,
+  rowspan: 1,
+});
+const receiving = () => {
+  let next = 0;
+  return {
+    document: {
+      schemaVersion: 1,
+      title: 'Notes',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [{ type: 'paragraph', id: 'b1', style: 'body', content: [] }],
+    } as ContentDocument,
+    conditionAxes: [],
+    newIdentifier: () => `n${(next += 1)}`,
+  };
+};
+
+describe('Markdown pasted whole', () => {
+  // As for HTML: a heading is a section of the outline, so it is kept as a paragraph and said so.
+  it('CNT-061 keeps every structure a component can hold, and says what it changed and left out', () => {
+    const fence = '`'.repeat(3);
+    const outcome = admit(
+      read(
+        [
+          '## Setting up',
+          '',
+          '**Unbox** the *printer*, run `lpr`, and see [the manual](https://example.com/manual).',
+          '',
+          '3. Plug it in',
+          '   - At the wall',
+          '4. Switch it on',
+          '',
+          '> Print only what you need.',
+          '',
+          `${fence}sh`,
+          'lpr -P office  report.pdf',
+          fence,
+          '',
+          '| Site | Value |',
+          '| ---- | ----- |',
+          '| York | 1     |',
+          '',
+          '![chart](https://example.com/a.png)',
+          '',
+        ].join(String.fromCharCode(10)),
+      ),
+      receiving(),
+    );
+    if (!outcome.ok) throw new Error(outcome.failure);
+
+    expect(unidentified(outcome.content)).toEqual([
+      stored(run('Setting up')),
+      stored(
+        run('Unbox', { type: 'strong' }),
+        run(' the '),
+        run('printer', { type: 'emphasis' }),
+        run(', run '),
+        run('lpr', { type: 'inlineCode' }),
+        run(', and see '),
+        run('the manual', { type: 'hyperlink', href: 'https://example.com/manual' }),
+        run('.'),
+      ),
+      {
+        type: 'list',
+        kind: 'ordered',
+        start: 3,
+        items: [
+          {
+            content: [
+              stored(run('Plug it in')),
+              {
+                type: 'list',
+                kind: 'unordered',
+                items: [{ content: [stored(run('At the wall'))] }],
+              },
+            ],
+          },
+          { content: [stored(run('Switch it on'))] },
+        ],
+      },
+      { type: 'blockquote', content: [stored(run('Print only what you need.'))] },
+      {
+        type: 'preformatted',
+        text: `lpr -P office  report.pdf${String.fromCharCode(10)}`,
+        language: 'sh',
+      },
+      {
+        type: 'table',
+        style: 'table',
+        caption: [],
+        headerRows: 1,
+        headerColumns: 0,
+        rows: [
+          { cells: [storedCell(1, 'Site'), storedCell(1, 'Value')] },
+          { cells: [storedCell(1, 'York'), storedCell(1, '1')] },
+        ],
+      },
+    ]);
+    expect(happened(outcome.report).filter((entry) => entry.stage === 'read')).toEqual([
+      { stage: 'read', action: 'rewritten', subject: 'heading', count: 1 },
+      { stage: 'read', action: 'discarded', subject: 'image', count: 1 },
+    ]);
+  });
+});
