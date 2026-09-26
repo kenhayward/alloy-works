@@ -11,7 +11,13 @@ import {
   type OutlineViewNode,
   type SectionViewNode,
 } from '@alloy-works/domain';
-import { drawEquation, renderContent, type ReferenceContext } from '@alloy-works/editor';
+import {
+  drawEquation,
+  renderContent,
+  TEXT_CLASS,
+  type ReferenceContext,
+} from '@alloy-works/editor';
+import '@alloy-works/editor/style.css';
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { textOffsetIn } from '../editor/caret.js';
@@ -115,11 +121,11 @@ function RenderedText({
     return () => host.replaceChildren();
   }, [rendered]);
   if (rendered === null) return <p className={styles['cannot']}>{CANNOT_SHOW}</p>;
-  if (!onOpen) return <div ref={place} className={styles['body']} />;
+  if (!onOpen) return <div ref={place} className={`${styles['body']} ${TEXT_CLASS}`} />;
   return (
     <div
       ref={place}
-      className={styles['body']}
+      className={`${styles['body']} ${TEXT_CLASS}`}
       data-opens="true"
       tabIndex={0}
       title="Click to edit"

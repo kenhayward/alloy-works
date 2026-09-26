@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createApiClient } from '@alloy-works/api-client';
 import {
   applyOutlineOperation,
@@ -27,6 +29,7 @@ import {
   Selection,
   toEditor,
   type EditorView,
+  TEXT_CLASS,
 } from '@alloy-works/editor';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -3123,6 +3126,89 @@ describe('the address of every node', () => {
     // Read again on closing, so the card shows what was saved.
     await waitFor(() => expect(textsAsked).toBeGreaterThan(reads));
     expect(await within(text).findByText('Unbox the printer.')).toBeInTheDocument();
+  });
+
+  it("CNT-075 sets a component's text, read before it opens, with the editing surface's own typography", async () => {
+    const user = userEvent.setup();
+    const REFERENCE = 'kkkkkkkkkkkkkkkkkkkkkkkkkk';
+    const fake = service(outline([{ ...reference(REFERENCE, 'latest') }]));
+    const printer = {
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: 'Unbox the printer.', marks: [] }],
+        },
+      ],
+    };
+    let textsAsked = 0;
+    const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      if (path === `/v1/documents/${DOCUMENT}/texts`) {
+        textsAsked += 1;
+        return json(200, {
+          document: DOCUMENT,
+          version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
+          occurrences: [{ node: REFERENCE, version: 'vvvvvvvv-0000-4000-8000-000000000001' }],
+          versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: printer }],
+        });
+      }
+      if (path === `/v1/components/${PRINTER}`) {
+        return json(200, {
+          id: PRINTER,
+          space: { id: SPACE, name: 'General' },
+          version: {
+            id: 'vvvvvvvv-0000-4000-8000-000000000001',
+            number: '0.3',
+            author: ADA,
+            createdAt: '2026-09-18T09:00:00.000Z',
+            note: null,
+          },
+          content: printer,
+          mayEdit: false,
+          lock: null,
+        });
+      }
+      return fake.fetch(request);
+    }) as typeof globalThis.fetch;
+    render(
+      <StrictMode>
+        <DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />
+      </StrictMode>,
+    );
+
+    const text = await screen.findByRole('region', { name: "The document's text" });
+    const read = (await within(text).findByText('Unbox the printer.')).closest(`.${TEXT_CLASS}`);
+    expect(read).not.toBeNull();
+
+    await user.click(within(text).getByText('Unbox the printer.'));
+    const surface = await within(text).findByRole('textbox', {
+      name: 'Content of Install the printer',
+    });
+    expect(surface).toHaveClass(TEXT_CLASS);
+
+    // The one class holds the typography the surface needs - spaces kept as typed, no ligatures -
+    // in the editor's own stylesheet, and the surface keeps none of its own to drift from it.
+    const css = readFileSync(
+      join(process.cwd(), '..', '..', 'packages', 'editor', 'style.css'),
+      'utf8',
+    );
+    const rule = (selector: string) =>
+      new RegExp(`(?:^|\\n)${selector.replace('.', '\\.')}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+    for (const declaration of [
+      'white-space: break-spaces',
+      'font-variant-ligatures: none',
+      "font-feature-settings: 'liga' 0",
+    ]) {
+      expect(rule(`.${TEXT_CLASS}`), declaration).toContain(declaration);
+      expect(rule('.ProseMirror'), declaration).not.toContain(declaration.split(':')[0]);
+    }
   });
 
   it("puts the outline, the document's text and the chosen part's details in three columns", async () => {
