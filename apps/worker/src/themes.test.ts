@@ -345,7 +345,7 @@ const reference = (name: string, children: unknown[] = []) => ({
 const compile = async (
   theme: ResolvedTheme,
   layout: Layout,
-  components: readonly { name: string; title: string; content: unknown[] }[],
+  components: readonly { name: string; title: string; content: unknown[]; language?: string }[],
 ) => {
   const assembled = assemble({
     formats: ['pdf'],
@@ -357,12 +357,12 @@ const compile = async (
       nodes: components.map(({ name }) => reference(name)),
     }),
     occurrences: new Map(
-      components.map(({ name, title, content }) => [
+      components.map(({ name, title, content, language = 'en-GB' }) => [
         id(name),
         parseContentDocument({
           schemaVersion: 1,
           title,
-          language: 'en-GB',
+          language,
           direction: 'ltr',
           content,
         }) as ContentDocument,
@@ -1104,10 +1104,15 @@ describe("hyphenation by the passage's language", () => {
    * Where the engine broke the words of one paragraph of the compounds, under Ledger (whose running
    * text hyphenates) in a component in English: each piece set before a hyphen it added, in order.
    */
-  const breaksIn = async (tag: string | null) => {
+  const breaksIn = async (tag: string | null, component = 'en-GB') => {
     const marks = tag === null ? [] : [{ type: 'language', id: 'k1', tag }];
     const { paint } = await compile(ledger, bare, [
-      { name: 'specimen', title: 'Specimen', content: [para('p1', text(COMPOUNDS, ...marks))] },
+      {
+        name: 'specimen',
+        title: 'Specimen',
+        content: [para('p1', text(COMPOUNDS, ...marks))],
+        language: component,
+      },
     ]);
     const drawn = paint.texts.filter((each) => !each.artifact);
     return (
@@ -1134,6 +1139,15 @@ describe("hyphenation by the passage's language", () => {
     ]);
     // The same words marked German, in the same English document: German's points, not English's.
     expect(await breaksIn('de-DE')).toEqual([
+      'Donaudampf',
+      'Donaudampfschifffahrtsgesell',
+      'Donaudampfschifffahrtsgesellschaftskapitaens',
+      'Donaudampf',
+      'Donaudampfschifffahrtsgesell',
+      'Donaudampfschifffahrtsgesellschaftskapitaens',
+    ]);
+    // And a component written in German, unmarked, in the English document: its own language's.
+    expect(await breaksIn(null, 'de-DE')).toEqual([
       'Donaudampf',
       'Donaudampfschifffahrtsgesell',
       'Donaudampfschifffahrtsgesellschaftskapitaens',

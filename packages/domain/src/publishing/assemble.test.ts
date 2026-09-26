@@ -637,7 +637,10 @@ describe('assemble', () => {
     expect(refusedByAssemble).toEqual(['zh-Hans', 'es-419', 'sr-Latn', 'sl-rozaj']);
   });
 
-  it('CNT-166 refuses a character the faces cannot set, astral ones included, naming each by its code point, for the PDF and for Word', () => {
+  // Not cited as CNT-166 ("the full Unicode range must be storable"): U+0000 is refused, since
+  // Postgres cannot store it, and text is kept in NFC (CNT-056), so a code point NFC replaces is
+  // stored as its canonical equivalent. Whether CNT-166 is reworded to say so is Ken's (W1's plan).
+  it('refuses a character the faces cannot set, astral ones included, naming each by its code point, for the PDF and for Word', () => {
     // Mathematical bold capital A and a grinning face, both outside the Basic Multilingual Plane.
     const astral = oneParagraph(text('Mass \u{1d400} \u{1f600}'));
     const refused = (detail: string) => ({

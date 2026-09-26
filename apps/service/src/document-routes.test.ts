@@ -11,9 +11,11 @@ import {
   grant,
   migrate,
   publicationInputs,
+  readVersion,
   recordVersion,
   requestPublication,
   seedDevelopmentContent,
+  substanceOf,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -381,6 +383,7 @@ describe('documents through the service', () => {
   });
 
   it('CNT-160 records changing which version a document references as a new version, naming who and when, each reference readable after', async () => {
+    // A component of two versions, 0.1 and 0.2, to re-point a reference between.
     const component = await tenantDb.withTenant(tenant, async (trx) => {
       const made = await createComponent(trx, {
         spaceId: general,
@@ -390,51 +393,62 @@ describe('documents through the service', () => {
         author: ids.ada!,
       });
       if (made.answer !== 'created') throw new Error('Expected a component');
-      return { id: made.version.artifactId, version: made.version.id };
+      const substance = substanceOf(made.version) as Extract<
+        ReturnType<typeof substanceOf>,
+        { kind: 'component' }
+      >;
+      const recorded = await recordVersion(trx, {
+        artifactId: made.version.artifactId,
+        openedFrom: made.version.id,
+        author: ids.ada!,
+        substance: { ...substance, content: { ...substance.content, title: 'Weigh it twice' } },
+      });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+      return { id: made.version.artifactId, first: made.version.id, second: recorded.version.id };
     });
+    const started = Date.now();
     let doc = (await create('ada', general, 'The weighing report')).json<DocumentBody>();
+    const versions = [doc.version.id];
     const step = async (as: string, operation: Json) => {
       const answer = await act(as, doc.id, doc.version.id, operation);
       expect(answer.statusCode, answer.body).toBe(200);
       doc = answer.json<DocumentBody>();
+      versions.push(doc.version.id);
     };
+    const pinned = (version: string) => ({ kind: 'pinned', version });
+    // Ada places it pinned to 0.1; Grace re-points it to 0.2; Ada sets it following the latest.
     await step('ada', {
       operation: 'insert',
       parent: null,
       position: 0,
-      node: { type: 'reference', component: component.id, mode: { kind: 'latest' } },
+      node: { type: 'reference', component: component.id, mode: pinned(component.first) },
     });
     const node = doc.outline.nodes[0]!.id;
-    // Grace pins it to the version it is now; Ada sets it following the latest again.
-    await step('grace', {
-      operation: 'set',
-      node,
-      mode: { kind: 'pinned', version: component.version },
-    });
+    await step('grace', { operation: 'set', node, mode: pinned(component.second) });
     await step('ada', { operation: 'set', node, mode: { kind: 'latest' } });
+    const finished = Date.now();
     expect(doc.version.number).toBe('0.4');
 
-    // Every version the chain keeps, read back: who made it, when, and what it referenced.
-    const chain = await tenantDb.withTenant(tenant, (trx) =>
-      trx
-        .selectFrom('artifact_version')
-        .select(['version_no', 'author_id', 'created_at', 'content'])
-        .where('artifact_id', '=', doc.id)
-        .orderBy('version_no')
-        .execute(),
+    // Every version, read back as the store reads one: who made it, when, and what it referenced.
+    const read = await tenantDb.withTenant(tenant, (trx) =>
+      Promise.all(versions.map((id) => readVersion(trx, id))),
     );
     const modeIn = (content: unknown) =>
       (content as { nodes: { mode?: unknown }[] }).nodes[0]?.mode ?? null;
-    expect(
-      chain.map((version) => [version.version_no, version.author_id, modeIn(version.content)]),
-    ).toEqual([
-      [1, ids.ada, null],
-      [2, ids.ada, { kind: 'latest' }],
-      [3, ids.grace, { kind: 'pinned', version: component.version }],
-      [4, ids.ada, { kind: 'latest' }],
+    expect(read.map((version) => [version!.author, modeIn(version!.content)])).toEqual([
+      [ids.ada, null],
+      [ids.ada, pinned(component.first)],
+      [ids.grace, pinned(component.second)],
+      [ids.ada, { kind: 'latest' }],
     ]);
-    const times = chain.map((version) => new Date(version.created_at).getTime());
+    // Each made when its act was, in the order they were made. A second's slack either side, for a
+    // database clock and this one.
+    const times = read.map((version) => version!.createdAt.getTime());
     expect(times).toEqual([...times].sort((a, b) => a - b));
+    for (const time of times) {
+      expect(time).toBeGreaterThanOrEqual(started - 1000);
+      expect(time).toBeLessThanOrEqual(finished + 1000);
+    }
   });
 
   it('answers an act that changes nothing as the version it already was, keeping no row for it', async () => {

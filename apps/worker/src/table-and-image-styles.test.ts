@@ -677,6 +677,20 @@ describe('an image placed and sized by its style (themes 2)', () => {
               para('h1', 'Headword opens.'),
               figure('fe', 'float-end', 'Floatend'),
               para('h2', 'Headafter closes.'),
+              {
+                type: 'paragraph',
+                id: 'h3',
+                style: 'body',
+                content: [
+                  text('Headnote closes.'),
+                  {
+                    type: 'footnote',
+                    id: 'n1',
+                    anchor: { kind: 'span' },
+                    content: [para('n1p', 'The note it holds.')],
+                  },
+                ],
+              },
             ],
           },
           {
@@ -830,6 +844,19 @@ describe('an image placed and sized by its style (themes 2)', () => {
     // ...and read between them, where the document has it.
     expect(at('Headword opens.')).toBeLessThan(at('Figure B.1 Floatend'));
     expect(at('Figure B.1 Floatend')).toBeLessThan(at('Headafter closes.'));
+
+    // A footnote, drawn at the foot of its page below the paragraph it stands in, is read in that
+    // paragraph, before anything after it: here the next appendix's heading.
+    const note = read.reading.findIndex((each) => each.role === 'Note');
+    const noted = read.reading.findIndex(
+      (each) => each.role === 'P' && each.text.startsWith('Headnote closes.'),
+    );
+    const next = read.reading.findIndex((each) => each.role === 'H1' && each.text === 'C foot');
+    expect(read.reading[note]?.text).toContain('The note it holds.');
+    expect(item(read, 'The note it holds').y).toBeLessThan(item(read, 'Headnote').y);
+    expect(noted).toBeGreaterThanOrEqual(0);
+    expect(note).toBeGreaterThan(noted);
+    expect(note).toBeLessThan(next);
 
     // Floated to the foot of its page, drawn below the paragraph after it, and read before it.
     for (const [name, caption, after] of [

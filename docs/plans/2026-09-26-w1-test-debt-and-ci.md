@@ -383,9 +383,21 @@ first.
   and a floated figure's box anchored between the same blocks.
 - **CNT-160 is read from the chain**: no route reads an older document version, so the test reads the
   version chain the store keeps - four versions, each author and each reference in turn.
-- **CNT-166 is three citations**, the store, the editor and the publish, which content-model.md's claim
-  names part by part.
-- Design claims 432 to 436; citations 352 to 360.
+- **CNT-166 is not claimed.** Its three tests (the store, the editor, the publish) show the astral
+  planes stored, shown and saved, and refused by name where no face has them. But the final review
+  found two things short of "the full Unicode range": U+0000 is refused, since Postgres cannot store
+  it, and text is kept in NFC (CNT-056), so 1,120 code points - 555 of them the CJK compatibility
+  ideographs in the supplementary plane - are stored as their canonical equivalents. The tests stay,
+  uncited; rewording CNT-166 is Ken's, beside K7. The editor's test is a jsdom proxy for "shown": it
+  reads the surface's text, not what is drawn.
+- **The final review broke CNT-160 twice** where the first test could not see it: a re-pin from one
+  version to another dropped (the component had one version) and every version stamped with one
+  old time. The test now re-points 0.1 to 0.2, bounds each time, and reads each version with the
+  store's own `readVersion`. W9 no longer lists CNT-160. **PUB-069's** PDF test gained a component
+  written in German, which a break ignoring a component's own language passed; its claim now says
+  what line breaking beyond hyphenation was measured to do. **PUB-031's** claim and test name the
+  footnote, the other thing drawn out of the document's order.
+- Design claims 432 to 435; citations 352 to 357.
 
 ## Done when
 

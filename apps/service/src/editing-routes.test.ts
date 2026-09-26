@@ -282,7 +282,10 @@ describe('writing in an editing session through the service', () => {
       ]);
     });
 
-    it('CNT-166 stores characters outside the Basic Multilingual Plane and gives them back exactly', async () => {
+    // Not cited as CNT-166 ("the full Unicode range must be storable"): U+0000 is refused, since
+    // Postgres cannot store it, and text is kept in NFC (CNT-056), so a code point NFC replaces is
+    // stored as its canonical equivalent. Whether CNT-166 is reworded to say so is Ken's (W1's plan).
+    it('stores characters outside the Basic Multilingual Plane and gives them back exactly', async () => {
       const made = await component();
       const session = randomUUID();
       await call('ada', 'POST', `/v1/components/${made.id}/lock`, { session });
