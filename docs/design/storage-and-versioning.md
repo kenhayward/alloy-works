@@ -125,7 +125,7 @@ that sentence as a table.
 **`version_definition`** relates a version to each field, schema and component type version it was written against (MET-017), one row per definition version, by foreign key. It takes inserts only, on the same terms as the version row, and a baseline reaches every definition its versions used through it.
 
 **`component_type_default`** is one row per environment naming the component type a component takes when
-its author names none (MET-012). Migration 0015 writes it, pointing at the component type every
+its author names none (MET-042). Migration 0015 writes it, pointing at the component type every
 environment is provisioned with - _Topic_, assigning no schemas - so creating always has a type to take.
 The runtime role may read it and insert into it, and may not update, delete or truncate it: nothing in the
 service changes an environment's default yet, and a table restricted to the writes something actually

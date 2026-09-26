@@ -308,7 +308,7 @@ describe('numbering an outline', () => {
   );
 
   it(
-    'gives no number to a caption in appendix matter before any numbered appendix has started, ' +
+    'STR-070 gives no number to a caption in appendix matter before any numbered appendix has started, ' +
       'rather than a bare one that would repeat a body caption of its own',
     () => {
       const outline = [
@@ -352,7 +352,7 @@ describe('numbering an outline', () => {
   );
 
   it(
-    'does not consume a counter value for a caption an appendix rule withholds, so a continuous ' +
+    'STR-070 does not consume a counter value for a caption an appendix rule withholds, so a continuous ' +
       "counter is not inflated by the time a numbered appendix's first caption prints",
     () => {
       // A layout's rule, not the default scheme: figure never restarts in appendix matter, but

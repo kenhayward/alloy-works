@@ -17,66 +17,129 @@ function sources(directory: string): string[] {
   });
 }
 
-/** What reaches the network other than through the generated client: named so a finding says which. */
-const OUTSIDE_THE_CLIENT = ['XMLHttpRequest', 'WebSocket', 'EventSource'];
+/**
+ * What reaches the network, or loads an address, other than through the generated client and the
+ * stream reader: named so a finding says which.
+ */
+const NETWORK = new Set([
+  'fetch',
+  'sendBeacon',
+  'XMLHttpRequest',
+  'WebSocket',
+  'EventSource',
+  'Worker',
+  'SharedWorker',
+  'Image',
+]);
 
 interface Found {
   readonly file: string;
   readonly line: number;
   readonly what: string;
-  /** A template's text before a substitution, which names the start of an address, not the whole. */
-  readonly partial?: boolean;
 }
 
 /**
- * Every call of `fetch`, every construction of another network object and every `sendBeacon` in a
- * file, and every address under `/v1/` it names - a string, or a template's text up to its first
- * substitution. Read through the TypeScript parser, so a comment is never mistaken for code.
+ * Where an identifier only names something - a property being declared or assigned, a member of a
+ * pattern - rather than reaching the value it names.
  */
-function scan(path: string): { calls: Found[]; addresses: Found[] } {
+function namesOnly(node: ts.Identifier): boolean {
+  const parent = node.parent;
+  return (
+    ((ts.isPropertyAssignment(parent) ||
+      ts.isPropertySignature(parent) ||
+      ts.isPropertyDeclaration(parent) ||
+      ts.isMethodDeclaration(parent) ||
+      ts.isParameter(parent) ||
+      ts.isVariableDeclaration(parent)) &&
+      parent.name === node) ||
+    (ts.isBindingElement(parent) && parent.propertyName === node) ||
+    ts.isImportSpecifier(parent) ||
+    ts.isJsxAttribute(parent)
+  );
+}
+
+/** A template as a pattern: each substitution one path segment, anything from a `?` on dropped. */
+function templatePattern(node: ts.TemplateExpression): RegExp {
+  const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let pattern = '';
+  const parts = [node.head.text, ...node.templateSpans.map((span) => span.literal.text)];
+  for (const [index, text] of parts.entries()) {
+    const cut = text.indexOf('?');
+    pattern += escape(cut === -1 ? text : text.slice(0, cut));
+    if (cut !== -1) break;
+    if (index < parts.length - 1) pattern += '[^/]+';
+  }
+  return new RegExp(`^${pattern}$`);
+}
+
+/**
+ * Every reach for the network in a file - a call, a construction, a property or an element named for
+ * one, however it is reached, and an `import()` of anything but a literal - and every address under
+ * `/v1` it names, whole: a string, or a template matched as a pattern. Read through the TypeScript
+ * parser, so a comment and a type are never mistaken for code. It reads the code, not every way code
+ * can be written: an address assembled from a variable's value is a review's to catch.
+ */
+function scan(path: string, paths: readonly string[]): { reaches: Found[]; undeclared: Found[] } {
   const file = ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true);
-  const at = (node: ts.Node) => ({
+  const at = (node: ts.Node, what: string) => ({
     file: relative(SOURCE, path),
     line: file.getLineAndCharacterOfPosition(node.getStart()).line + 1,
+    what,
   });
-  const calls: Found[] = [];
-  const addresses: Found[] = [];
+  const reaches: Found[] = [];
+  const undeclared: Found[] = [];
+  const route = (address: string) => paths.includes(address.split('?')[0]!);
   const visit = (node: ts.Node) => {
-    if (ts.isCallExpression(node)) {
-      const callee = node.expression;
-      const name = ts.isIdentifier(callee)
-        ? callee.text
-        : ts.isPropertyAccessExpression(callee)
-          ? callee.name.text
-          : '';
-      if (name === 'fetch' || name === 'sendBeacon') calls.push({ ...at(node), what: name });
-    }
-    if (ts.isNewExpression(node) && ts.isIdentifier(node.expression)) {
-      if (OUTSIDE_THE_CLIENT.includes(node.expression.text)) {
-        calls.push({ ...at(node), what: node.expression.text });
-      }
+    // A type says nothing about what runs.
+    if (ts.isTypeNode(node)) return;
+    if (ts.isIdentifier(node) && NETWORK.has(node.text) && !namesOnly(node)) {
+      reaches.push(at(node, node.text));
     }
     if (
-      (ts.isStringLiteral(node) ||
-        ts.isNoSubstitutionTemplateLiteral(node) ||
-        ts.isTemplateHead(node)) &&
-      node.text.startsWith('/v1/')
+      ts.isElementAccessExpression(node) &&
+      ts.isStringLiteralLike(node.argumentExpression) &&
+      NETWORK.has(node.argumentExpression.text)
     ) {
-      addresses.push({ ...at(node), what: node.text, partial: ts.isTemplateHead(node) });
+      reaches.push(at(node, node.argumentExpression.text));
+    }
+    if (
+      ts.isPropertyAccessExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'window' &&
+      node.name.text === 'open'
+    ) {
+      reaches.push(at(node, 'window.open'));
+    }
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      !ts.isStringLiteralLike(node.arguments[0]!)
+    ) {
+      reaches.push(at(node, 'import()'));
+    }
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      if (node.text.startsWith('/v1') ? !route(node.text) : node.text.includes('/v1/')) {
+        undeclared.push(at(node, node.text));
+      }
+    }
+    if (ts.isTemplateExpression(node) && node.head.text.startsWith('/v1')) {
+      const pattern = templatePattern(node);
+      if (!paths.some((path) => pattern.test(path))) undeclared.push(at(node, node.getText()));
+      // Its parts are the address's, judged as one above.
+      return;
+    }
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.PlusToken &&
+      ts.isStringLiteralLike(node.left) &&
+      node.left.text.startsWith('/v1')
+    ) {
+      undeclared.push(at(node, node.getText()));
     }
     ts.forEachChild(node, visit);
   };
   visit(file);
-  return { calls, addresses };
-}
-
-/**
- * Whether an address the renderer names is a route the contract declares: the whole route for a string,
- * and the start of one for a template's text before its first substitution. A query is not the route's.
- */
-function declared(found: Found, paths: readonly string[]): boolean {
-  const bare = found.what.split('?')[0]!;
-  return paths.some((path) => (found.partial ? path.startsWith(bare) : path === bare));
+  return { reaches, undeclared };
 }
 
 describe('the interface and the API', () => {
@@ -87,16 +150,14 @@ describe('the interface and the API', () => {
     expect(paths.length).toBeGreaterThan(0);
     const files = sources(SOURCE);
     expect(files.length).toBeGreaterThan(0);
-    const found = files.map(scan);
+    const found = files.map((path) => scan(path, paths));
 
     // Nothing in the renderer reaches the network itself: the client and the stream reader, from
-    // @alloy-works/api-client, are handed `fetch` and are the only things that call it.
-    expect(found.flatMap((each) => each.calls)).toEqual([]);
+    // @alloy-works/api-client, call `fetch`, and the renderer only ever hands them a stand-in for it.
+    expect(found.flatMap((each) => each.reaches)).toEqual([]);
 
     // And every address the renderer names - the client's typed paths, a link to sign in - is a
-    // route the contract declares.
-    const addresses = found.flatMap((each) => each.addresses);
-    expect(addresses.length).toBeGreaterThan(0);
-    expect(addresses.filter((each) => !declared(each, paths))).toEqual([]);
+    // route the contract declares, whole.
+    expect(found.flatMap((each) => each.undeclared)).toEqual([]);
   });
 });

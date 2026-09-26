@@ -2280,7 +2280,7 @@
     {
       "id": "CNT-173",
       "area": "CNT",
-      "statement": "Every Unicode character but U+0000 must be storable and shown in the editor, those outside the Basic Multilingual Plane included, kept in the normalisation form CNT-056 requires; a character a publication's typefaces cannot set must fail the publish, naming it",
+      "statement": "Every Unicode character but U+0000 must be storable in running text and shown in the editor, those outside the Basic Multilingual Plane included, kept in the normalisation form CNT-056 requires - and in preformatted text, every one but the controls and separators that would be a second spelling of a line break or nothing at all; a character a publication's typefaces cannot set must fail the publish, naming it",
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
@@ -10551,7 +10551,7 @@
     {
       "id": "STR-070",
       "area": "STR",
-      "statement": "Every figure and table must be numbered in the sequence for its kind; a block equation must be numbered unless it is explicitly unnumbered (CNT-047); and a caption the scheme gives no number where it stands, such as front matter before any numbered front section, takes none",
+      "statement": "Every figure and table must be numbered in the sequence for its kind; a block equation must be numbered unless it is explicitly unnumbered (CNT-047); and a caption in front or appendix matter before that matter's first numbered section, where the scheme's rule wants a prefix there is none of, takes no number and uses up none",
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
@@ -15291,7 +15291,7 @@
         },
         {
           "id": "CNT-173",
-          "howItIsMet": "Text is JSON strings, so every character but U+0000 is storable - Postgres cannot hold U+0000 in `jsonb`, and the store refuses it - and read back, the astral planes included, in the NFC CNT-056 requires. The editor holds and shows it through the same mapping and saves what is typed among it whole. A publish judges each character a whole code point at a time and refuses one no face can set as `glyph_missing`, naming it, for the PDF and Word alike, since `assemble` serves both (STY-049's check)"
+          "howItIsMet": "Text is JSON strings, so every character but U+0000 is storable in running text - Postgres cannot hold U+0000 in `jsonb`, and the store refuses it - and read back in the NFC CNT-056 requires, the astral planes included. Preformatted text refuses the C0 and C1 controls but the tab and the line feed, and the line and paragraph separators, each invisible or a second spelling of a line break (`forbiddenInPreformatted`). The editor holds and shows it through the same mapping and saves what is typed among it whole. A publish judges each character a whole code point at a time and refuses one no face can set as `glyph_missing`, naming it, for the PDF and Word alike, since `assemble` serves both (STY-049's check)"
         },
         {
           "id": "CNT-063",
@@ -16287,7 +16287,7 @@
         },
         {
           "id": "STR-070",
-          "howItIsMet": "The engine takes each occurrence's figures, tables and block equations in document order and increments the sequence for the kind: every figure and every table takes a number; a block equation takes one unless the model marks it unnumbered (CNT-047); and a caption met where the scheme gives no number - in front or appendix matter before any numbered part has begun a chapter - takes none and uses up none"
+          "howItIsMet": "The engine takes each occurrence's figures, tables and block equations in document order and increments the sequence for the kind: every figure and every table takes a number; a block equation takes one unless the model marks it unnumbered (CNT-047); and a caption met in front or appendix matter before that matter's first numbered section - where its rule wants a chapter prefix and there is none - takes none and uses up none"
         },
         {
           "id": "CNT-160",
@@ -16709,13 +16709,13 @@
     {
       "id": "API-039",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 311,
+      "line": 314,
       "kind": "title"
     },
     {
       "id": "CNT-071",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 367,
+      "line": 370,
       "kind": "title"
     },
     {
@@ -16841,7 +16841,7 @@
     {
       "id": "API-061",
       "file": "apps/web/src/api.test.ts",
-      "line": 83,
+      "line": 146,
       "kind": "title"
     },
     {
@@ -17615,25 +17615,25 @@
     {
       "id": "AST-005",
       "file": "packages/domain/src/assets/version.test.ts",
-      "line": 24,
+      "line": 29,
       "kind": "title"
     },
     {
       "id": "AST-012",
       "file": "packages/domain/src/assets/version.test.ts",
-      "line": 24,
+      "line": 29,
       "kind": "title"
     },
     {
       "id": "AST-041",
       "file": "packages/domain/src/assets/version.test.ts",
-      "line": 24,
+      "line": 29,
       "kind": "title"
     },
     {
       "id": "STY-078",
       "file": "packages/domain/src/assets/version.test.ts",
-      "line": 33,
+      "line": 38,
       "kind": "title"
     },
     {
@@ -17735,13 +17735,13 @@
     {
       "id": "CNT-018",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 296,
+      "line": 307,
       "kind": "title"
     },
     {
       "id": "CNT-019",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 303,
+      "line": 314,
       "kind": "title"
     },
     {
@@ -17795,7 +17795,7 @@
     {
       "id": "CNT-129",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 322,
+      "line": 333,
       "kind": "title"
     },
     {
@@ -17819,7 +17819,13 @@
     {
       "id": "CNT-153",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 572,
+      "line": 583,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-173",
+      "file": "packages/domain/src/content/model/document.test.ts",
+      "line": 296,
       "kind": "title"
     },
     {

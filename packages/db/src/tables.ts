@@ -199,7 +199,7 @@ export interface VersionDefinitionTable {
   definition_kind: ColumnType<DefinitionKind, DefinitionKind, never>;
 }
 
-/** The environment's declared default component type (MET-012): one row, set by 0015. */
+/** The environment's declared default component type (MET-042): one row, set by 0015. */
 export interface ComponentTypeDefaultTable {
   singleton: ColumnType<boolean, boolean | undefined, never>;
   component_type_id: ColumnType<string, string, string>;

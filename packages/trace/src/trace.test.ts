@@ -531,7 +531,7 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
-  // 369, from 357 (2026-09-26): the rewordings - CNT-173 in three files, MET-042 in two, and CNT-171,
+  // 370, from 357 (2026-09-26): the rewordings - CNT-173 in four files, MET-042 in two, and CNT-171,
   // CNT-172, STR-070, STY-078, API-061, IAM-039 and IAM-024 in one each.
   // 357, from 352 (2026-09-26): W1.3 - PUB-069 and PUB-031 in two files each, the PDF's and Word's;
   // CNT-160 in one. CNT-166's three tests stay uncited until it is reworded.
@@ -541,7 +541,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(369);
+    expect(model.citations).toHaveLength(370);
   });
 
   it('cites no identifier the corpus does not hold', () => {

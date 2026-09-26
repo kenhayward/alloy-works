@@ -293,6 +293,17 @@ describe('the content document', () => {
     expect(() => contentDocumentSchema.parse(doc([withoutNumbered]))).toThrow();
   });
 
+  it('CNT-173 stores in preformatted text every character but the controls that would be a second spelling of a line break or nothing', () => {
+    const pre = (text: string) => doc([{ type: 'preformatted', id: 'b8', text }]);
+    // Astral characters, a tab and a line feed, kept exactly.
+    const held = 'x = "\u{1d400}"\t# \u{1f600}\nend';
+    expect(parseContentDocument(pre(held)).content[0]).toMatchObject({ text: held });
+    // A bell, a carriage return, a next line and a line separator are refused.
+    for (const refused of ['\u0007', '\r', '\u0085', ' ']) {
+      expect(() => parseContentDocument(pre(`a${refused}b`)), JSON.stringify(refused)).toThrow();
+    }
+  });
+
   it('CNT-018 preserves whitespace in a preformatted block', () => {
     const pre = { type: 'preformatted', id: 'b8', text: '  two spaces\n\ttab', language: 'sql' };
     expect(parseContentDocument(doc([pre])).content[0]).toMatchObject({

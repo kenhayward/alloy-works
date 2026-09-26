@@ -67,6 +67,12 @@ describe('the component type every environment starts with', () => {
       expect(found.version.revision_no).toBe(0);
       expect(found.version.version_no).toBe(1);
       expect(found.version.component_type_version_id).toBeNull();
+      // A default that assigns no schemas, which the statement allows.
+      const read = readDefinition('componentType', found.version.content, {
+        artifact: STARTER_COMPONENT_TYPE_ID,
+        version: found.version.id,
+      });
+      expect(read.ok && read.definition).toMatchObject({ assignments: [] });
     }
   });
 

@@ -6035,7 +6035,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            /** @description The environment's default, preselected (MET-011, MET-012) */
+                            /** @description The environment's default, preselected (MET-011, MET-042) */
                             isDefault: boolean;
                         }[];
                     };

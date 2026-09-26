@@ -7,14 +7,17 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 ### Changed
 
-- **Eleven requirements now say exactly what the product does, and nine of them are shown by a
-  test.** Nothing the product does changes; the wording did. Paste from Markdown and from web pages
-  keeps every structure a component can hold and turns a heading into a paragraph, saying so. Every
-  character but the null character is stored, in one normal form. Figures and tables are always
-  numbered, an equation unless it is marked unnumbered. Every environment has a default component
-  type. An image's width and height are always recorded. The interface reads and changes what is
-  stored only through the API. Signing out ends the session wherever it is used, and permissions
-  pass from the environment to each space and on to what is in it, never from one item to another.
+- **Eleven requirements are reworded to say exactly what is required, and nine of them are now
+  shown by a test.** Nothing the product does changes. Paste from Markdown and from web pages keeps
+  every structure a component can hold and turns a heading into a paragraph, saying so. Every
+  character but the null character can be stored in running text, in one normal form, and
+  preformatted text refuses only the control characters that would be a hidden line break or
+  nothing at all. Figures and tables are numbered, and an equation unless it is marked unnumbered,
+  except a caption in front or appendix matter before its first numbered section. Every environment
+  has a default component type. An image's width and height are always recorded. The interface reads
+  and changes what is stored only through the API. Signing out ends the session wherever it is used,
+  and permissions pass from the environment to each space and on to what is in it, never from one
+  item to another.
 - Two of the rewordings wait for work still to come before a test can show them: who may read an
   editing session's saved steps (with recovery), and the editor's structure for assistive
   technology (with the next round of small fixes).
