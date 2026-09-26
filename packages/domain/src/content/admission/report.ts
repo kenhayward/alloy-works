@@ -49,6 +49,8 @@ export const reportMessages = {
     image: 'An image was left out. Images cannot be pasted yet.',
     mathematics: 'An equation was left out. Equations cannot be pasted yet.',
     rule: 'A horizontal line was left out.',
+    footnote:
+      'A footnote was left out, because its note could not be found or it stood inside another note.',
     control: 'Invisible control characters were removed.',
   },
   rewritten: {

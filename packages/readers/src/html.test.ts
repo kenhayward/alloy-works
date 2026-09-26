@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import {
   admit,
   admissionLimits,
@@ -539,6 +540,76 @@ describe('HTML pasted whole', () => {
     expect(happened(outcome.report).filter((entry) => entry.stage === 'read')).toEqual([
       { stage: 'read', action: 'rewritten', subject: 'heading', count: 1 },
       { stage: 'read', action: 'discarded', subject: 'image', count: 1 },
+    ]);
+  });
+});
+
+describe('HTML pasted from Word', () => {
+  // Word's own clipboard HTML, captured from Word 16 through COM (the W2 plan, "Measured before
+  // planning"): a heading, two paragraphs each with a footnote - one note's words part bold - a
+  // bulleted list and a table. The words are invented, and no path of the machine it came from is in it.
+  const fromWord = readFileSync(new URL('./fixtures/word-footnotes.html', import.meta.url), 'utf8');
+  const footnote = (...paragraphs: unknown[]) => ({
+    type: 'footnote',
+    anchor: { kind: 'span' },
+    content: paragraphs,
+  });
+
+  it("CNT-167 keeps Word's lists, tables, footnotes and emphasis, and makes a heading a paragraph, naming it", () => {
+    const outcome = admit(read(fromWord), receiving());
+    if (!outcome.ok) throw new Error(outcome.failure);
+    // Each footnote where its mark stood, holding its note's words with their marks; no mark's
+    // number left in the text, and no note left at the end as a paragraph of its own.
+    expect(unidentified(outcome.content)).toEqual([
+      stored(run('Calibration')),
+      stored(
+        run('Unbox the printer'),
+        footnote(stored(run('Keep the box for '), run('thirty days.', { type: 'strong' }))),
+        run(' and remove the tape.'),
+      ),
+      stored(
+        run('Load the paper'),
+        footnote(stored(run('Plain paper only.'))),
+        run(' before printing.'),
+      ),
+      {
+        type: 'list',
+        kind: 'unordered',
+        items: [
+          { content: [stored(run('Check the ink.'))] },
+          { content: [stored(run('Check the cable.'))] },
+        ],
+      },
+      {
+        type: 'table',
+        style: 'table',
+        caption: [],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [
+          { cells: [storedCell(1, 'Tray'), storedCell(1, 'Sheets')] },
+          { cells: [storedCell(1, 'Upper'), storedCell(1, '250')] },
+        ],
+      },
+    ]);
+    // And the heading is named as kept as a paragraph; the spacing paragraph Word ends with, left out.
+    expect(happened(outcome.report).filter((entry) => entry.stage === 'read')).toEqual([
+      { stage: 'read', action: 'rewritten', subject: 'heading', count: 1 },
+      { stage: 'read', action: 'discarded', subject: 'emptyParagraph', count: 1 },
+    ]);
+  });
+
+  it('leaves out a Word footnote whose note is not there, its number with it, and says so', () => {
+    const outcome = admit(
+      read(
+        `<p class=MsoNormal>Unbox it<a style='mso-footnote-id:ftn7' href="#_ftn7" name="_ftnref7"><span class=MsoFootnoteReference>[7]</span></a> now.</p>`,
+      ),
+      receiving(),
+    );
+    if (!outcome.ok) throw new Error(outcome.failure);
+    expect(unidentified(outcome.content)).toEqual([stored(run('Unbox it now.'))]);
+    expect(happened(outcome.report).filter((entry) => entry.stage === 'read')).toEqual([
+      { stage: 'read', action: 'discarded', subject: 'footnote', count: 1 },
     ]);
   });
 });

@@ -30,6 +30,13 @@ interface Context {
   readonly depth: number;
   /** Inside a table's cell, where a table is kept as its text and an empty paragraph is no spacing. */
   readonly inCell: boolean;
+  /**
+   * Word's footnotes by the identifier its anchors name (`ftn1`), each the `mso-element:footnote`
+   * element holding the note: read where its anchor stands, and nowhere else (CNT-167).
+   */
+  readonly notes: ReadonlyMap<string, Element>;
+  /** Inside a note, where a footnote may not stand (CNT-129) and Word's back-anchor is dropped. */
+  readonly inNote: boolean;
 }
 
 type Run = {
@@ -40,6 +47,21 @@ type Run = {
 };
 
 type Block = Record<string, unknown>;
+
+/**
+ * A footnote as the pipeline takes one: no identifier yet, which re-identify gives it, anchored where
+ * it stood, and holding its note's paragraphs.
+ */
+type Footnote = {
+  readonly type: 'footnote';
+  readonly anchor: { readonly kind: 'span' };
+  readonly content: readonly Block[];
+};
+
+/** What a paragraph holds as it is read: runs of text, and a footnote where Word's anchor stood. */
+type Inline = Run | Footnote;
+
+const isRun = (inline: Inline): inline is Run => inline.type === 'text';
 
 /**
  * Past this depth nothing more is read, and what was left is reported. A browser nests as deep as
@@ -150,6 +172,12 @@ const MSO_LIST = /mso-list:\s*(l\d+)\s+level(\d+)/i;
 /** Word's list marker, which the paragraph carries as text and a list carries by its kind. */
 const MSO_MARKER = /mso-list:\s*ignore/i;
 
+/** Word's footnote anchor, in the text and in the note: which note it names. */
+const MSO_FOOTNOTE_ID = /mso-footnote-id:\s*([\w-]+)/i;
+/** Word's list of notes, and each note in it, which are read where their anchors stand. */
+const MSO_FOOTNOTE_LIST = /mso-element:\s*footnote-list/i;
+const MSO_FOOTNOTE = /mso-element:\s*footnote(?!-)/i;
+
 /** What was read that the report has to mention, counted as the walk goes. */
 class Tally {
   headings = 0;
@@ -165,6 +193,8 @@ class Tally {
   empties = 0;
   controls = 0;
   tooDeep = 0;
+  /** Word footnotes left out: a note not found, or an anchor inside another note. */
+  footnotes = 0;
 }
 
 /**
@@ -174,7 +204,7 @@ class Tally {
  */
 class Sink {
   readonly blocks: Block[] = [];
-  private runs: Run[] = [];
+  private runs: Inline[] = [];
   private presentation: Record<string, string> = {};
 
   constructor(private readonly tally: Tally) {}
@@ -191,6 +221,11 @@ class Sink {
     Object.assign(this.presentation, context.presentation);
   }
 
+  /** A footnote where its anchor stood, in the paragraph being read. */
+  footnote(footnote: Footnote): void {
+    this.runs.push(footnote);
+  }
+
   /**
    * Closes the open paragraph. `explicit` is for a `p` or a heading, whose emptiness is spacing an
    * author put there and is counted; whitespace standing between two blocks is not a paragraph at
@@ -201,7 +236,7 @@ class Sink {
     const presentation = this.presentation;
     this.runs = [];
     this.presentation = {};
-    if (runs.every((run) => /^\s*$/.test(run.value))) {
+    if (runs.every((run) => isRun(run) && /^\s*$/.test(run.value))) {
       if (explicit) this.tally.empties += 1;
       return false;
     }
@@ -225,24 +260,36 @@ class Sink {
  * boundaries; the control characters a paragraph may not hold removed and counted; and neighbours
  * carrying the same marks joined.
  */
-function tidy(runs: readonly Run[], tally: Tally): Run[] {
-  const out: Run[] = [];
+function tidy(runs: readonly Inline[], tally: Tally): Inline[] {
+  const out: Inline[] = [];
   let spaceBefore = true;
   for (const run of runs) {
+    // A footnote stands between runs and joins neither; the space after it is the text's own.
+    if (!isRun(run)) {
+      out.push(run);
+      spaceBefore = false;
+      continue;
+    }
     const cleaned = withoutControls(run.value.replace(/[ \t\n\r\f]+/g, ' '), 'paragraph');
     tally.controls += cleaned.removed;
     const value: string = spaceBefore ? cleaned.text.replace(/^ /, '') : cleaned.text;
     if (value === '') continue;
     spaceBefore = value.endsWith(' ');
     const previous = out.at(-1);
-    if (previous && !previous.handlers && !run.handlers && sameMarks(previous.marks, run.marks)) {
+    if (
+      previous &&
+      isRun(previous) &&
+      !previous.handlers &&
+      !run.handlers &&
+      sameMarks(previous.marks, run.marks)
+    ) {
       out[out.length - 1] = { ...previous, value: previous.value + value };
     } else {
       out.push({ ...run, value });
     }
   }
   const last = out.at(-1);
-  if (last?.value.endsWith(' ')) {
+  if (last && isRun(last) && last.value.endsWith(' ')) {
     const value = last.value.slice(0, -1);
     if (value === '') out.pop();
     else out[out.length - 1] = { ...last, value };
@@ -334,6 +381,8 @@ function within(element: Element, context: Context): Context {
     handlers: handlers.length > 0 ? { names: handlers, spent: false } : context.handlers,
     depth: context.depth + 1,
     inCell: context.inCell,
+    notes: context.notes,
+    inNote: context.inNote,
   };
 }
 
@@ -413,6 +462,15 @@ function walk(node: ChildNode, context: Context, sink: Sink, tally: Tally): void
   }
   if (name === 'br') {
     sink.close(false);
+    return;
+  }
+
+  const style = attribute(node, 'style') ?? '';
+  // Word's notes, gathered at the end of what it copied, are read where their anchors stand.
+  if (MSO_FOOTNOTE_LIST.test(style) || MSO_FOOTNOTE.test(style)) return;
+  const noteId = name === 'a' ? MSO_FOOTNOTE_ID.exec(style)?.[1] : undefined;
+  if (noteId !== undefined) {
+    wordFootnote(noteId, node, context, sink, tally);
     return;
   }
 
@@ -825,6 +883,83 @@ function wordLists(paragraphs: readonly Element[], context: Context, tally: Tall
 }
 
 /**
+ * Every note Word copied, by its identifier: each `mso-element:footnote` element carrying an `id`,
+ * wherever it stands. Gathered before the walk, because an anchor comes before its note.
+ */
+function wordNotes(nodes: readonly ChildNode[]): Map<string, Element> {
+  const notes = new Map<string, Element>();
+  const visit = (list: readonly ChildNode[], depth: number) => {
+    if (depth >= DEEPEST) return;
+    for (const node of list) {
+      if (!isElement(node)) continue;
+      const id = attribute(node, 'id');
+      if (id !== undefined && MSO_FOOTNOTE.test(attribute(node, 'style') ?? '')) {
+        if (!notes.has(id)) notes.set(id, node);
+        continue;
+      }
+      visit(node.childNodes, depth + 1);
+    }
+  };
+  visit(nodes, 0);
+  return notes;
+}
+
+/**
+ * A Word footnote anchor (CNT-167): a footnote where it stands, holding its note's paragraphs with
+ * their marks, and not the number Word writes in the anchor for a reader that has no footnotes.
+ * Inside a note, the anchor is Word's link back to the text, and is nothing. A note that cannot be
+ * found, or an anchor inside another note - where a footnote may not stand (CNT-129) - is left out
+ * and counted for the report (CNT-064). A note's content is paragraphs alone (CNT-129): anything
+ * else in it is kept as the paragraphs it is read to.
+ */
+function wordFootnote(
+  id: string,
+  anchor: Element,
+  context: Context,
+  sink: Sink,
+  tally: Tally,
+): void {
+  if (context.inNote) {
+    // Word's back-anchor names the note's own identifier from inside it; any other is a footnote
+    // in a note, which cannot be kept.
+    if (!(attribute(anchor, 'href') ?? '').startsWith('#_ftnref')) tally.footnotes += 1;
+    return;
+  }
+  const note = context.notes.get(id);
+  if (note === undefined) {
+    tally.footnotes += 1;
+    return;
+  }
+  const inNote: Context = {
+    marks: [],
+    presentation: {},
+    handlers: null,
+    depth: context.depth + 1,
+    inCell: false,
+    notes: context.notes,
+    inNote: true,
+  };
+  const paragraphs = paragraphsOf(blocksOf(note.childNodes, inNote, tally));
+  if (paragraphs.length === 0) {
+    tally.footnotes += 1;
+    return;
+  }
+  sink.footnote({ type: 'footnote', anchor: { kind: 'span' }, content: paragraphs });
+}
+
+/** Blocks as the paragraphs they hold: a list's items and a quotation's blocks, flattened. */
+function paragraphsOf(blocks: readonly Block[]): Block[] {
+  return blocks.flatMap((block): Block[] => {
+    if (block.type === 'paragraph') return [block];
+    if (block.type === 'list') {
+      return (block.items as { content: Block[] }[]).flatMap((item) => paragraphsOf(item.content));
+    }
+    if (block.type === 'blockquote') return paragraphsOf(block.content as Block[]);
+    return [];
+  });
+}
+
+/**
  * HTML, as the pipeline's input (content-model.md, "The admission boundary"): what a browser, Word
  * or Google Docs puts on the clipboard.
  *
@@ -842,14 +977,17 @@ export function readHtml(html: string): ReaderResult {
   const refused = refuseOversized(html);
   if (refused) return refused;
   const tally = new Tally();
+  const document = parse(html);
   const context: Context = {
     marks: [],
     presentation: {},
     handlers: null,
     depth: 0,
     inCell: false,
+    notes: wordNotes(document.childNodes),
+    inNote: false,
   };
-  const content = blocksOf(parse(html).childNodes, context, tally);
+  const content = blocksOf(document.childNodes, context, tally);
 
   const report = createReport();
   const say = (count: number, add: (extra: { count: number }) => void) => {
@@ -865,6 +1003,7 @@ export function readHtml(html: string): ReaderResult {
   say(tally.empties, (extra) => report.add('read', 'discarded', 'emptyParagraph', extra));
   reportControls(report, tally.controls);
   say(tally.tooDeep, (extra) => report.add('read', 'discarded', 'unrepresentable', extra));
+  say(tally.footnotes, (extra) => report.add('read', 'discarded', 'footnote', extra));
 
   return {
     ok: true,

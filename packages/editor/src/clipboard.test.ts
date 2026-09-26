@@ -90,6 +90,39 @@ describe('pasting', () => {
     ]);
   });
 
+  it("pastes Word's footnote as a footnote, holding its note, where its mark stood (issue #254)", () => {
+    // Word's shape, as its clipboard carries it: the anchor in the text naming its note, and the
+    // note after the text in Word's list of notes, opening with a link back.
+    const html = `<p class=MsoNormal>Unbox it<a style='mso-footnote-id:ftn1' href="#_ftn1" name="_ftnref1"><span class=MsoFootnoteReference>[1]</span></a> now.</p>
+<div style='mso-element:footnote-list'><div style='mso-element:footnote' id=ftn1>
+<p class=MsoFootnoteText><a style='mso-footnote-id:ftn1' href="#_ftnref1" name="_ftn1"><span class=MsoFootnoteReference>[1]</span></a> Keep the <b>box</b>.</p>
+</div></div>`;
+    const state = paste(stateOf([paragraph('b1', '')]), { 'text/html': html });
+    expect(stored(state)).toMatchObject([
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'text', value: 'Unbox it' },
+          {
+            type: 'footnote',
+            anchor: { kind: 'span' },
+            content: [
+              {
+                type: 'paragraph',
+                content: [
+                  { type: 'text', value: 'Keep the ' },
+                  { type: 'text', value: 'box', marks: [{ type: 'strong' }] },
+                  { type: 'text', value: '.' },
+                ],
+              },
+            ],
+          },
+          { type: 'text', value: ' now.' },
+        ],
+      },
+    ]);
+  });
+
   it("reads the product's own type before HTML, and HTML before plain text", () => {
     const source = stateOf([paragraph('s1', 'Bold', [{ type: 'strong', id: 's2' }])]);
     const copied = productClipboard(source, 0, source.doc.content.size);

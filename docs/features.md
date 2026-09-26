@@ -165,7 +165,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   text, or from another component, and its paragraphs, lists, quotations, preformatted text and
   formatting come with it; a link is kept when its address is a web or email address. Pasted text in
   the middle of a paragraph joins it, and one undo takes a paste back. Pasting into preformatted text
-  keeps every character exactly. What could not be kept is said at the time: the status bar says the
+  keeps every character exactly. A footnote pasted from Word arrives as a footnote, where its mark
+  stood, holding its note with its formatting. What could not be kept is said at the time: the status bar says the
   paste happened, and a **Paste report** above the text lists what was changed or left out - a
   heading kept as a paragraph, a table's rows made the same length, an image or an equation left out, a typeface
   or a colour removed because the theme decides how text looks, a script or a link that could run
