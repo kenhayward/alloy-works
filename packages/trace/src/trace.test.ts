@@ -497,8 +497,12 @@ describe('the citations in the committed model', () => {
   // word.test.ts, where the contents, the lists of figures and of tables and every page reference are
   // fields updated as the document opens, and none holds a page. Word 16 updated every field to what
   // the PDF prints and every page to the page it laid the target on, measured by hand for this slice.
+  // 332, from 331 (2026-09-26): Word 4's converter cites PUB-067 in packages/domain's
+  // word/omml.test.ts, where an equation holding every kind of maths node, read by mathsTree from one
+  // stored MathML, is written as OMML objects alone - no image, no second reading of the MathML -
+  // inline and displayed; Word 16 opened it as two OMaths in Cambria Math, measured by hand.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(331);
+    expect(model.citations).toHaveLength(332);
   });
 
   it('cites no identifier the corpus does not hold', () => {

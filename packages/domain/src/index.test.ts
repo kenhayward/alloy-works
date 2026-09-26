@@ -272,6 +272,9 @@ describe('the domain package', () => {
         // Word 3 (ruling R6): a cross-reference's key beside the document, which the worker's Word
         // check and PUB-035's test read each reference's form by, as the writer does.
         'inlineReferenceKey',
+        // Word 4 (ruling R3): the maths tree as OMML, which the worker's test validates in Word's
+        // schema before the writer writes an equation.
+        'omml',
       ].sort(),
     );
   });
