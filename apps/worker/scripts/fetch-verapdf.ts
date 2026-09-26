@@ -3,7 +3,7 @@
 import { execFile } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { promisify } from 'node:util';
-import { VERAPDF_IMAGE } from '../src/testing/verapdf.js';
+import { VERAPDF_IMAGE } from '../src/testing/verapdf-server.js';
 
 const run = promisify(execFile);
 

@@ -4,6 +4,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // One veraPDF kept warm for the whole run (src/testing/verapdf-server.ts), not one per check.
+    globalSetup: ['src/testing/verapdf-setup.ts'],
     // Login roles are cluster-wide, so two files bootstrapping them at once would race. Each file
     // has a database of its own; they simply take turns.
     fileParallelism: false,
