@@ -992,3 +992,21 @@ describe('an equation through the mapping (equations 1)', () => {
     expect(() => fromEditor(doc)).toThrow('Block 0 has no identifier');
   });
 });
+
+describe('the paragraph', () => {
+  it('CNT-014 a paragraph is supported, and is the block made wherever one must be made', () => {
+    // Supported: a written paragraph and an empty one come back from the editor as they were stored.
+    const stored = document([paragraph('b1', 'Plug it in.'), paragraph('b2', '')]);
+    expect(fromEditor(openedDoc(stored))).toEqual(stored);
+
+    // The default: ProseMirror makes a content match's default type wherever it must make a block -
+    // an empty document, leaving a quotation or preformatted text (`exitCode`), splitting an item's
+    // body. For the document, a quotation and a list item, that type is the paragraph.
+    for (const name of ['doc', 'blockquote', 'listItem']) {
+      expect(editorSchema.nodes[name]!.contentMatch.defaultType?.name).toBe('paragraph');
+    }
+    const empty = editorSchema.nodes.doc.createAndFill(root)!;
+    expect(empty.childCount).toBe(1);
+    expect(empty.firstChild!.type.name).toBe('paragraph');
+  });
+});

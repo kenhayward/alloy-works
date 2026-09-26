@@ -300,6 +300,25 @@ describe('the content document', () => {
     });
   });
 
+  it('CNT-019 holds a quotation with no attribution, and one whose attribution carries a citation', () => {
+    const bare = { type: 'blockquote', id: 'q1', content: [paragraph('q1p')] };
+    const attributed = {
+      type: 'blockquote',
+      id: 'q2',
+      content: [paragraph('q2p', 'Numbers are the soul of the engine.')],
+      attribution: [
+        { type: 'text', value: 'Ada, ', marks: [] },
+        { type: 'citation', entry: 'ada-1843', locator: 'p. 7' },
+      ],
+    };
+    const parsed = parseContentDocument(doc([bare, attributed]));
+
+    expect(parsed.content).toEqual([bare, attributed]);
+    // And it round-trips: what is stored reads back as the same bytes.
+    const stored = canonicalise(parsed);
+    expect(canonicalise(parseContentDocument(JSON.parse(stored)))).toBe(stored);
+  });
+
   it('CNT-129 admits no table and no image inside a footnote, and nothing outside its closed list', () => {
     const noting = (content: unknown[]) => ({
       type: 'paragraph',

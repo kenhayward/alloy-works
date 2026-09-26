@@ -643,3 +643,62 @@ describe('the formatting toolbar', () => {
     expect(prompt).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * A chord pressed on the mounted view, through the key handlers its state was built with: the same
+ * route a real keydown takes, without a synthetic event's missing key code deciding the answer.
+ */
+function press(target: EditorView, key: string, keyCode: number, shift: boolean): boolean {
+  const mac = /Mac|iP(hone|[oa]d)/.test(navigator.platform);
+  const event = { key, keyCode, ctrlKey: !mac, metaKey: mac, altKey: false, shiftKey: shift };
+  return target.someProp('handleKeyDown', (handle) => handle(target, event as never)) ?? false;
+}
+
+/** The seven marks an author applies directly, each with its button's label and its chord. */
+const DIRECT = [
+  { label: 'Strong', mark: 'strong', key: 'b', keyCode: 66, shift: false },
+  { label: 'Emphasis', mark: 'emphasis', key: 'i', keyCode: 73, shift: false },
+  { label: 'Underline', mark: 'underline', key: 'u', keyCode: 85, shift: false },
+  { label: 'Subscript', mark: 'subscript', key: ',', keyCode: 188, shift: false },
+  { label: 'Superscript', mark: 'superscript', key: '.', keyCode: 190, shift: false },
+  { label: 'Inline code', mark: 'inlineCode', key: 'e', keyCode: 69, shift: false },
+  { label: 'Quoted phrase', mark: 'quotedPhrase', key: 'Q', keyCode: 81, shift: true },
+] as const;
+
+describe('the marks an author applies directly', () => {
+  /** The mark types on the paragraph's first run, which the fixture's selection covers. */
+  const first = (target: EditorView) => runsOf(target)[0]?.marks.map((mark) => mark.type) ?? [];
+
+  it.each(DIRECT)(
+    'CNT-164 applies and removes $label by its button and by its shortcut',
+    async ({ label, mark, key, keyCode, shift }) => {
+      const { view: mounted } = renderToolbar({ range: [1, 6] });
+      const button = screen.getByRole('button', { name: label });
+
+      await userEvent.click(button);
+      expect(first(mounted)).toEqual([mark]);
+      await userEvent.click(button);
+      expect(first(mounted)).toEqual([]);
+
+      expect(press(mounted, key, keyCode, shift)).toBe(true);
+      expect(first(mounted)).toEqual([mark]);
+      expect(press(mounted, key, keyCode, shift)).toBe(true);
+      expect(first(mounted)).toEqual([]);
+    },
+  );
+
+  it('CNT-164 offers no control over typeface, font size or colour', () => {
+    renderToolbar();
+    const toolbar = screen.getByRole('toolbar', { name: 'Formatting' });
+    const said = within(toolbar)
+      .getAllByRole('button')
+      .map((button) => `${button.getAttribute('aria-label')} ${button.getAttribute('title')}`);
+
+    // The toolbar is the registry, button for button (CNT-077), so nothing a key can do is missing
+    // from what is read here.
+    expect(said).toHaveLength(LABELS.length);
+    for (const words of said) {
+      expect(words).not.toMatch(/font|typeface|size|colou?r|highlight/i);
+    }
+  });
+});
