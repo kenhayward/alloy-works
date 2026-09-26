@@ -3,7 +3,7 @@
 > **A sketch**, built a pull request at a time, each test-first with one final whole-branch review
 > before it opens that is asked for a break of its own against every citation. It builds W4 of
 > [the rest of T1](2026-09-25-t1-remainder.md) from [templates.md](../design/templates.md), whose
-> decisions TE-A to TE-K were taken as recommended on Ken's instruction of 2026-09-26 and are his to
+> decisions TE-A to TE-L were taken as recommended on Ken's instruction of 2026-09-26 and are his to
 > review at the end of W4.
 
 **Goal:** a template is made, read and versioned; a document is made from one, keeps what it was made
@@ -63,8 +63,10 @@ section came from`.
 2. **Materialising** (`packages/domain/src/template/`): the starting outline to section nodes with new
    identifiers, origins and seeded values. **Test:** `TPL-012 starts a document with the template's
 sections, in its order` and `TPL-062 materialises the starting outline and seeds its values`.
-3. **Instantiation** (`packages/db`): documents' values allowed by migration, `document_template`, and
-   `createDocument` with a template, in one transaction. **Tests:** `TPL-004 refuses to make a document
+3. **Instantiation** (`packages/db`): documents' values allowed by migration and carried by
+   `DocumentSubstance`, `canonicaliseVersion`, `insertVersion` and `substanceOf` (a document version
+   made before templates keeps its digest); `document_template`; and `createDocument` with a template,
+   in one transaction; `template.unresolved` in the service's wire codes with TPL-004 as its rule. **Tests:** `TPL-004 refuses to make a document
 while any reference does not resolve, and writes nothing`; `TPL-025 records the template and its
 version`; `TPL-027 leaves the document's outline its own` (an act changes the document and not the
    template; the template's next version changes no document made); uncited, `document_template`
@@ -72,7 +74,7 @@ version`; `TPL-027 leaves the document's outline its own` (an act changes the do
 4. **The route and the chooser**: `POST /v1/spaces/{space}/documents` with `template`, `read` on it
    decided, an unreadable one answered as not found; **New document** offers the templates the author
    may read, and _Blank_. **Tests:** the route's refusals; the dialog making a document from a template.
-5. **Its theme and layout**: `requestPublication`, the document's view and its numbering read the
+5. **Its theme and layout**: `layoutLatest` and `themeLatest`; `requestPublication`, the document's view and its numbering read the
    document's template. **Test:** `STY-025 publishes a document under the theme its template binds`,
    and uncited, its layout and the page's numbering.
 6. Docs as W4.1's.
@@ -92,7 +94,8 @@ schemas` (an unknown field and a bad value refused by name).
 
 ## W4.4: Publishing's checks
 
-1. **Required sections** at `requestPublication`. **Test:** `TPL-013 refuses to publish a document
+1. **Required sections** at `requestPublication`, `section.required` in the wire codes with TPL-013 as
+   its rule, and `metadata.invalid` with TPL-055. **Test:** `TPL-013 refuses to publish a document
 missing a required section, naming it` (removed, and a retitled or moved one still found by its key).
 2. **Fields**. **Test:** `TPL-055 refuses to publish a document whose fields, or any section's, do not
 satisfy its template, naming each failure`.
@@ -107,4 +110,4 @@ Filled in as each pull request lands.
 
 - Every requirement templates.md claims is Covered, and STY-025, VER-056, TPL-006 and IAM-018 are cited
   in the designs that claim them.
-- The remainder plan's W4 row reads Built with the five PR numbers, and Ken has reviewed TE-A to TE-K.
+- The remainder plan's W4 row reads Built with the five PR numbers, and Ken has reviewed TE-A to TE-L.

@@ -44,13 +44,14 @@ refused while a required section is missing or a field its template applies is n
 
 ## What this document does not own
 
-| Left unclaimed   | Why                                                                                                                                                                |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| TPL-006, IAM-018 | [access.md](access.md) claims both: `design` decides a template, and a grant can be made on one. This document names the routes and which permission each asks for |
-| STY-025          | [themes.md](themes.md) claims it: a document takes its template's theme. This document says where the binding is read                                              |
-| VER-056          | [storage-and-versioning.md](storage-and-versioning.md) claims it; a template is versioned by `recordVersion` like any artifact                                     |
-| TPL-056, TPL-057 | Not T1. A document records no definition versions, so its values are validated against the current definitions (TE-K)                                              |
-| TPL-014, TPL-026 | Not T1: a starting outline holds sections and no component references, and templates are made through the API rather than an editor                                |
+| Left unclaimed   | Why                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TPL-006, IAM-018 | [access.md](access.md) claims both: `design` decides a template, and a grant can be made on one. This document names the routes and which permission each asks for                                                                                                                                                                                                                                                                     |
+| STY-025          | [themes.md](themes.md) claims it: a document takes its template's theme. This document says where the binding is read                                                                                                                                                                                                                                                                                                                  |
+| VER-056          | [storage-and-versioning.md](storage-and-versioning.md) claims it; a template is versioned by `recordVersion` like any artifact                                                                                                                                                                                                                                                                                                         |
+| TPL-056, TPL-057 | Not T1. A document records no definition versions, so its values are validated against the current definitions (TE-K)                                                                                                                                                                                                                                                                                                                  |
+| TPL-014, TPL-026 | Not T1: a starting outline holds sections and no component references, and templates are made through the API rather than an editor                                                                                                                                                                                                                                                                                                    |
+| MET-019          | **A named gap.** Nothing records the definition versions a document's or a section's values were written against (TE-K), so a later change to a field or a schema can make a document that satisfied its template fail its next publication - what MET-019 forbids for documents and sections. Recording them is TPL-056 and validating against them TPL-057, both outside T1; [metadata.md](metadata.md) already defers these to them |
 
 ## The template
 
@@ -59,7 +60,7 @@ refused while a required section is missing or a field its template applies is n
 `template` joins `artifactKinds` as a **spaced** kind (TPL-001): the space rule `artifact_space_by_kind`
 and `spacedKinds` gain it, and `createArtifact` takes a space for it as it does for a document. It is a
 content artifact in [access.md](access.md)'s sense, living in one space, and its versions carry no
-values, no type and no definitions, as a document's do not.
+values, no type and no definitions: everything it says is its payload.
 
 ### The definition
 
@@ -160,10 +161,14 @@ false, a `remove` of a section when `remove` is false, and a `move` of a section
 
 ### Values
 
-- **A document's values** are the version's `metadata_values`, the column a component's already use;
-  the constraint that held it to components is widened to documents, and the digest already covers
-  it (ADR-0024). `PUT /v1/documents/{id}/values`, taking `openedFrom` and the whole set, cuts a version
-  with the outline unchanged.
+- **A document's values** are the version's `metadata_values`, the column a component's already use.
+  Four things hold them to components today, and each widens to documents: the column's constraint
+  `artifact_version_values_by_kind` (migration 0028), `DocumentSubstance`, which gains `values`,
+  `canonicaliseVersion`, which reads a document's values into the digest's `values` member as it
+  reads a component's (ADR-0024), and `insertVersion` and `substanceOf`, which write and read them. A
+  document version made before templates has none, so its digest is unchanged: the member was the
+  empty object's canonical form before and is still. `PUT /v1/documents/{id}/values`, taking
+  `openedFrom` and the whole set, cuts a version with the outline unchanged.
 - **A section's values** are its node's `values`, which `set` writes (STR-060). A reference's stay
   `{}`: a component's values are its own.
 - **Both are checked where written**: a value must name an effective field at its level and pass
@@ -175,8 +180,9 @@ A document with no template has no effective fields, so its values, and its sect
 
 ## Publishing a document made from a template
 
-`requestPublication` takes the **layout and theme the document's recorded template version names**, at
-their latest versions, where the environment's defaults stood; a document with no template keeps the
+`requestPublication` (`packages/db/src/publishing.ts`) takes the **layout and theme the document's
+recorded template version names**, at their latest versions, read by `layoutLatest` and
+`themeLatest` beside `defaultLayout` and `defaultTheme`, where the environment's defaults stood; a document with no template keeps the
 defaults (TE-F). The document page's layout and its numbering read the same, so the numbers shown are
 the numbers that publish (STR-036).
 
@@ -194,25 +200,29 @@ nothing is queued to fail.
 
 ## Routes
 
-| Route                               | Permission                                    | Does                                                                                           |
-| ----------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `POST /v1/spaces/{space}/templates` | `design` on the space                         | Makes a template at 0.1 from a definition that passes `checkTemplate` and resolves             |
-| `GET /v1/templates`                 | Signed in                                     | The templates the caller may read, each with its name, space and latest version. Not yet paged |
-| `GET /v1/templates/{id}`            | `read` on the template                        | Its latest version and definition                                                              |
-| `POST /v1/templates/{id}/versions`  | `design` on the template                      | Cuts a version from `openedFrom` and a whole definition (API-037's precondition)               |
-| `POST /v1/spaces/{space}/documents` | `create` on the space, `read` on the template | As today, with an optional `template`                                                          |
-| `PUT /v1/documents/{id}/values`     | `edit` on the document                        | Replaces the document's values, cutting a version                                              |
+| Route                               | Permission                                    | Does                                                                                                                |
+| ----------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/spaces/{space}/templates` | `design` on the space                         | Makes a template at 0.1 from a definition that passes `checkTemplate` and resolves (TE-L)                           |
+| `GET /v1/templates`                 | Signed in                                     | The templates the caller may read, each with its name, space and latest version. Not yet paged                      |
+| `GET /v1/templates/{id}`            | `read` on the template                        | Its latest version and definition                                                                                   |
+| `POST /v1/templates/{id}/versions`  | `design` on the template                      | Cuts a version from `openedFrom` and a whole definition that passes and resolves, as above (API-037's precondition) |
+| `POST /v1/spaces/{space}/documents` | `create` on the space, `read` on the template | As today, with an optional `template`                                                                               |
+| `PUT /v1/documents/{id}/values`     | `edit` on the document                        | Replaces the document's values, cutting a version                                                                   |
 
 ## Where the code lives
 
-| Where                                      | What                                                                                                  |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| `domain: src/template/`                    | The definition's schema, `checkTemplate`, `resolveTemplate`, and the starting outline's materialising |
-| `domain: src/structure/`                   | `origin`, outline schema 3, and `changes` passed to `applyOutlineOperation`                           |
-| `db: migrations/tenant/0028_templates.sql` | The kind, the space rule, `document_template`, and documents' values                                  |
-| `db: src/templates.ts`                     | Making, reading and versioning a template; instantiating a document; a document's template            |
-| `service: src/templates.ts`                | The template routes; the documents and publishing handlers read a document's template                 |
-| `web: src/structure/NewDocument.tsx`       | The template to start from                                                                            |
+| Where                                              | What                                                                                                                               |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: src/template/`                            | The definition's schema, `checkTemplate`, `resolveTemplate`, and the starting outline's materialising                              |
+| `domain: src/structure/`                           | `origin`, outline schema 3, and `changes` passed to `applyOutlineOperation`                                                        |
+| `db: migrations/tenant/0028_templates.sql`         | The kind, the space rule, `document_template`, and documents' values                                                               |
+| `db: src/templates.ts`                             | Making, reading and versioning a template; instantiating a document; a document's template                                         |
+| `service: src/templates.ts`                        | The template routes; the documents and publishing handlers read a document's template                                              |
+| `domain: src/version/substance.ts`                 | `DocumentSubstance.values`, and `canonicaliseVersion` digesting them                                                               |
+| `db: src/versions.ts`                              | `insertVersion` and `substanceOf` writing and reading a document's values                                                          |
+| `db: src/publishing.ts`, `layouts.ts`, `themes.ts` | `requestPublication` reading the document's template's layout and theme, `layoutLatest` and `themeLatest`, and the two door checks |
+| `service: src/wire-codes.ts`                       | `template.unresolved`, `section.required` and `metadata.invalid`, with their rules TPL-004, TPL-013 and TPL-055 (API-006)          |
+| `web: src/structure/NewDocument.tsx`               | The template to start from                                                                                                         |
 
 ## Verification
 
@@ -232,19 +242,20 @@ nothing is queued to fail.
 Taken as recommended on Ken's standing instruction of 2026-09-26 ("continue through to the end of W4 ...
 and I will review all live at the end"), each open to reversal at that review.
 
-| #    | Decision                                                                                                                                                                                                                               |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TE-A | A template is a spaced kind (TPL-001), and a document may be made from any template its author may read into any space they may create in                                                                                              |
-| TE-B | The theme, layout and schemas are referenced by artifact identifier and resolved to their latest versions where used - at instantiation and at publication - while the template version a document was made from is recorded (TPL-025) |
-| TE-C | A starting outline holds sections only, each with a key stable across versions; no component references in T1 (TPL-014)                                                                                                                |
-| TE-D | `changes` is template-wide - add, remove, reorder - applies to sections only, and is read from the document's recorded template version                                                                                                |
-| TE-E | The link is an insert-only table beside the document; a section's origin is an optional outline member no act writes, at outline schema 3                                                                                              |
-| TE-F | A template is optional: a blank document keeps the environment's default theme and layout. No tenant is seeded with a template; development's seed has one                                                                             |
-| TE-G | A document's values are its version's `metadata_values`; a section's are its node's `values`. Each is checked field by field when written, and for required fields only at publication                                                 |
-| TE-H | Required sections and fields are checked at the publication request's door, as two refusals in that order, each naming every failure                                                                                                   |
-| TE-I | `design` on the space makes a template and on the template changes it; `read` shows it; making a document from one asks `create` in the target space and `read` on the template, an unreadable template answered as not found          |
-| TE-J | T1's interface is the template chooser in **New document** and the refusals where the page already shows them; making and changing a template is through the API, and a template's own page and editor come later                      |
-| TE-K | With TPL-056 and TPL-057 outside T1, nothing records definition versions on a document: its values are resolved and validated against the current definitions each time                                                                |
+| #    | Decision                                                                                                                                                                                                                                    |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TE-A | A template is a spaced kind (TPL-001), and a document may be made from any template its author may read into any space they may create in                                                                                                   |
+| TE-B | The theme, layout and schemas are referenced by artifact identifier and resolved to their latest versions where used - at instantiation and at publication - while the template version a document was made from is recorded (TPL-025)      |
+| TE-C | A starting outline holds sections only, each with a key stable across versions; no component references in T1 (TPL-014)                                                                                                                     |
+| TE-D | `changes` is template-wide - add, remove, reorder - applies to sections only, and is read from the document's recorded template version                                                                                                     |
+| TE-E | The link is an insert-only table beside the document; a section's origin is an optional outline member no act writes, at outline schema 3                                                                                                   |
+| TE-F | A template is optional: a blank document keeps the environment's default theme and layout. No tenant is seeded with a template; development's seed has one                                                                                  |
+| TE-G | A document's values are its version's `metadata_values`; a section's are its node's `values`. Each is checked field by field when written, and for required fields only at publication                                                      |
+| TE-H | Required sections and fields are checked at the publication request's door, as two refusals in that order, each naming every failure                                                                                                        |
+| TE-I | `design` on the space makes a template and on the template changes it; `read` shows it; making a document from one asks `create` in the target space and `read` on the template, an unreadable template answered as not found               |
+| TE-J | T1's interface is the template chooser in **New document** and the refusals where the page already shows them; making and changing a template is through the API, and a template's own page and editor come later                           |
+| TE-K | With TPL-056 and TPL-057 outside T1, nothing records definition versions on a document: its values are resolved and validated against the current definitions each time, which leaves MET-019 unmet for documents and sections, named above |
+| TE-L | A template is refused, when made and when versioned, unless its definition passes `checkTemplate` and every reference resolves; resolution runs again when a document is made from it, because what it names can change after it is saved   |
 
 ## What was ruled out
 
