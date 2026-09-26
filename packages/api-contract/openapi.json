@@ -7361,6 +7361,7 @@
                               "word_not_yet",
                               "format_unsupported",
                               "numbering_not_in_word",
+                              "list_not_in_word",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10118,6 +10119,7 @@
                               "word_not_yet",
                               "format_unsupported",
                               "numbering_not_in_word",
+                              "list_not_in_word",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10720,6 +10722,108 @@
                                       },
                                       "required": [
                                         "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "header_column_lost"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "label": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block",
+                                        "label"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "header_repeated"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "label": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block",
+                                        "label"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "continuation_label_omitted"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "label": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block",
+                                        "label"
                                       ]
                                     }
                                   ]

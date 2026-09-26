@@ -43,8 +43,10 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 > [themes 2](../plans/2026-09-24-themes-02-table-and-image-styles.md)). The first of slice 7's four
 > built Word: a publication may be a PDF, a Word document or both, from one `assemble`, each output
 > recorded with its producer and a report ([Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md),
-> [word-output.md](word-output.md#what-was-built)), and a document holding anything Word 1 does not
-> write is refused for Word by name. The defined
+> [word-output.md](word-output.md#what-was-built)), and the second carried lists, quotations,
+> preformatted text, tables, figures and images into Word, with the lists of figures and of tables
+> ([Word 2](../plans/2026-09-25-word-02-lists-tables-and-figures.md)); a document holding a footnote,
+> a cross-reference or an equation is refused for Word by name. The defined
 > term, condition, suggestion and comment marks, a citation, a variable and a binding,
 > veraPDF on every publication, preview and the rest of Word are later slices'
 > ([Build order](#build-order)); a block equation wider than its
@@ -306,7 +308,7 @@ and the layout, and must decide none of them. So the intermediate is one type in
 | `format` | The layout's member for this format, in points, with its words                                                                                                                                                                                                                                                                                                                                            |
 | `theme`  | The theme's projection for this writer (themes.md): `TypstTheme` for the PDF                                                                                                                                                                                                                                                                                                                              |
 | `front`  | Generated front matter the layout declares - cover, contents, lists - each already computed                                                                                                                                                                                                                                                                                                               |
-| `nodes`  | The outline as a tree: each node's anchor, depth, matter, number or none, title, `pageBreak`, language and direction where they differ, blocks, and children                                                                                                                                                                                                                                              |
+| `nodes`  | The outline as a tree: each node's anchor, depth, matter, number or none, title, language and direction where they differ, blocks, and children. **Not yet its `pageBreak`**: the outline records it and no published node carries it, so neither output starts a node on a new page ([issue #234](https://github.com/kenhayward/alloy-works/issues/234))                                                 |
 | `back`   | Generated back matter                                                                                                                                                                                                                                                                                                                                                                                     |
 
 **A language tag the engine cannot carry is refused, naming it, never shortened - decision K,
@@ -505,7 +507,9 @@ no way to mark a header column**, which is why TAB-031 was challenged and supers
 ### What the TAB claims rest on
 
 TAB-039, TAB-040 and TAB-049 are claimed above for the PDF, as measured here, and for Word as
-word-output.md designs it. TAB-050 is claimed above for the tagged PDF, as measured here. PUB-032 - header cells associated with what they describe - is claimed for
+word-output.md designs it and Word 2 built it: TAB-039 and TAB-049 are cited by one test reading one
+publication's PDF and Word document together, since each asks it of every output
+([word-output.md](word-output.md#what-was-built)). TAB-050 is claimed above for the tagged PDF, as measured here. PUB-032 - header cells associated with what they describe - is claimed for
 the PDF, where both header rows and header columns are `TH`s with a scope veraPDF checks.
 
 Not claimed, and why:
@@ -1230,7 +1234,8 @@ and a preview worker holds a handful. The slice sizes them and evicts the least 
 
 The Word writer ([word-output.md](word-output.md)) reads the same `PublishedDocument` and owns
 everything about its parts. This design gives it four things, each built by
-[Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md):
+[Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md), and a fifth built by
+[Word 2](../plans/2026-09-25-word-02-lists-tables-and-figures.md):
 
 - **One `assemble`, told the formats.** A request names `pdf`, `docx` or both, where the layout has a
   page for each; the job calls `assemble` once with them, which says the PDF engine's own refusals only
@@ -1243,13 +1248,19 @@ everything about its parts. This design gives it four things, each built by
   `.docx` with the writer, reading the pinned face files by hash for it to embed, keeps each in the
   store by its hash, and records all of them in one transaction.
 - **One `publication_output` row per format**, each saying what made it - `typst` and the template's
-  version, or `word` and `word/1` - with its own report, which is empty for a PDF and for Word says
-  which faces Word set in another face (STY-052), that no PDF stands beside it where none does
-  (PUB-074), and that a page number cited from the publication is the PDF's (PUB-065).
+  version, or `word` and the writer's, `word/1` as Word 1 built it and `word/2` since Word 2 - with
+  its own report, which is empty for a PDF and for Word says which faces Word set in another face
+  (STY-052), that no PDF stands beside it where none does (PUB-074), that a page number cited from the
+  publication is the PDF's (PUB-065), and, since Word 2, which tables lost their header column, had
+  their header repeated where the style does not, or lost their continuation label (TAB-049).
 - **A request without `pdf` is refused where anything the document holds cites a page**,
   `page_reference_without_pdf`, at the door (PUB-074), because the PDF is the paged record (PUB-065).
   Word 1 refuses every reference for Word by name anyway; the door's refusal is the one an author
   meets first, and it says to add the PDF.
+- **Images for Word are sized against its page and read once.** `assemble` resolves each figure's and
+  inline image's size against the layout's Word page by the PDF's own functions, and the job reads
+  the images once, held to their hashes, and hands the same bytes to Typst and to the Word writer,
+  which embeds each once.
 
 ## Stores
 

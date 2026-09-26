@@ -1,7 +1,7 @@
 import { escapeXml } from '../content/ooxml/xml.js';
 import type { PublishedLanguage } from '../publishing/published.js';
 import type { ResolvedCharacterStyle, ResolvedParagraphStyle, ResolvedTheme } from './read.js';
-import { ROLES, STYLED_MARKS, type StyledMark, type Typeface } from './schema.js';
+import { ROLES, STYLED_MARKS, type StyledMark, type TableStyle, type Typeface } from './schema.js';
 
 /**
  * Word's projection: resolved styles as `word/styles.xml` (PUB-027, docs/design/themes.md, and
@@ -27,8 +27,10 @@ import { ROLES, STYLED_MARKS, type StyledMark, type Typeface } from './schema.js
  * - Elements in the order the schema requires (CT_PPrBase, CT_RPr), because Word refuses a file
  *   with them out of order rather than reading past them.
  *
- * **What it does not project**: a table style (`w:tblStylePr`) and an image style, which arrive with
- * the slice that writes tables and figures (Word 2), and a mark's `scale`, which is of the text the
+ * - Each table style as a Word table style (Word 2, ruling R7; `tableStyle`).
+ *
+ * **What it does not project**: an image style, which Word has no style for - the writer places and
+ * sizes each image by its own (Word 2, ruling R8) - and a mark's `scale`, which is of the text the
  * mark stands in and so cannot be a character style's: `wordRun` sets the size on the run.
  */
 
@@ -81,11 +83,110 @@ export function projectStylesXml(
     paragraphStyle(style, headings.get(style.id), options.headingList),
   );
   const characters = STYLED_MARKS.map((mark) => characterStyle(theme.characterStyles[mark]));
+  // Word keeps one namespace of names across every kind of style.
+  const taken = new Set(
+    [
+      ...[...theme.paragraphStyles.values()].map((style) =>
+        wordStyleName(style, headings.get(style.id)),
+      ),
+      ...STYLED_MARKS.map((mark) => theme.characterStyles[mark].name),
+    ].map((name) => name.toLowerCase()),
+  );
+  const tables = [...theme.tableStyles.values()].map((style) => tableStyle(style, taken));
   const extra = (options.extraStyles ?? []).join('');
   return (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
-    `<w:styles ${W_NS}>${docDefaults(theme, document)}${paragraphs.join('')}${characters.join('')}${extra}</w:styles>`
+    `<w:styles ${W_NS}>${docDefaults(theme, document)}${paragraphs.join('')}${characters.join('')}${tables.join('')}${extra}</w:styles>`
   );
+}
+
+/**
+ * A table style's Word style id. Its own spelling, as a mark's is, because Word keeps one namespace of
+ * style ids and a catalogue's identifiers are unique only within their catalogue: with a capital
+ * letter, which no catalogue identifier holds.
+ */
+export function tableStyleId(id: string): string {
+  return `Table-${id}`;
+}
+
+/**
+ * **A table style as Word's** (Word 2, ruling R7; measured, M6, M14 and for this slice): the table's
+ * outer rule as its borders and the horizontal and vertical ones as the rules inside it, each in
+ * eighths of a point, where Word draws the nearest width it has (2pt drew as 2.25pt, measured); the
+ * padding as every cell's margins; bands a row high. Then its conditions, which the writer's
+ * `w:tblLook` turns on for each table as it has header rows, a header column and a band:
+ *
+ * - `firstRow`, which Word applies to every header row, measured with two: its fill, its weight, and
+ *   its rule, which Word draws below the last header row alone, as the PDF does;
+ * - `firstCol`, the first column's: its fill, its weight, and its rule after it;
+ * - `band1Horz`, the band: Word counts bands from the first row after the header rows, so band one is
+ *   the first body row and every other one after it, the rows template 13 fills (measured; `band2Horz`,
+ *   which the plan named from M14, fills the others).
+ *
+ * A header's weight is stated either way. By Word's toggle rule a bold header sets bold the text of a
+ * cell style that is not, and regular the text of one that is, measured - which is why the writer
+ * also sets a bold header's runs bold, as template 13 sets them over whatever their style says - and a
+ * header stated not bold leaves a bold cell style's text bold and a regular one's regular, as the PDF
+ * does (measured). A fill or a rule of `none` is not stated, so that the band and the table's own
+ * rules show through it, as they do in the PDF.
+ */
+function tableStyle(style: TableStyle, taken: ReadonlySet<string>): string {
+  const name = taken.has(style.name.toLowerCase()) ? `${style.name} (${style.id})` : style.name;
+  const header = (stated: TableStyle['headerRow'], side: 'bottom' | 'right') =>
+    `<w:rPr>${toggle('b', stated.bold)}</w:rPr>` +
+    (stated.fill === 'none' && stated.rule === 'none'
+      ? ''
+      : '<w:tcPr>' +
+        (stated.rule === 'none'
+          ? ''
+          : `<w:tcBorders>${tableRule(side, stated.rule)}</w:tcBorders>`) +
+        (stated.fill === 'none' ? '' : shading(stated.fill)) +
+        '</w:tcPr>');
+  const margin = twips(style.padding);
+  const { outer, horizontal, vertical } = style.rules;
+  return (
+    `<w:style w:type="table" w:styleId="${tableStyleId(style.id)}">` +
+    `<w:name w:val="${escapeXml(name)}"/>` +
+    '<w:tblPr><w:tblStyleRowBandSize w:val="1"/>' +
+    '<w:tblBorders>' +
+    tableRule('top', outer) +
+    tableRule('left', outer) +
+    tableRule('bottom', outer) +
+    tableRule('right', outer) +
+    tableRule('insideH', horizontal) +
+    tableRule('insideV', vertical) +
+    '</w:tblBorders>' +
+    '<w:tblCellMar>' +
+    ['top', 'left', 'bottom', 'right']
+      .map((side) => `<w:${side} w:w="${margin}" w:type="dxa"/>`)
+      .join('') +
+    '</w:tblCellMar></w:tblPr>' +
+    `<w:tblStylePr w:type="firstRow">${header(style.headerRow, 'bottom')}</w:tblStylePr>` +
+    `<w:tblStylePr w:type="firstCol">${header(style.headerColumn, 'right')}</w:tblStylePr>` +
+    (style.banding.fill === 'none'
+      ? ''
+      : `<w:tblStylePr w:type="band1Horz"><w:tcPr>${shading(style.banding.fill)}</w:tcPr></w:tblStylePr>`) +
+    '</w:style>'
+  );
+}
+
+/** Word's widths for a single rule, in eighths of a point: a quarter of a point to twelve. */
+const THINNEST_RULE = 2;
+const WIDEST_RULE = 96;
+
+/**
+ * A table's rule on one side, as a table's and a cell's borders spell it: single, in eighths of a
+ * point, or none. The writer draws a cell's own rule the same way.
+ */
+export function tableRule(side: string, rule: TableStyle['rules']['outer']): string {
+  if (rule === 'none') return `<w:${side} w:val="nil"/>`;
+  const width = Math.min(WIDEST_RULE, Math.max(THINNEST_RULE, Math.round(rule.width * 8)));
+  return `<w:${side} w:val="single" w:sz="${width}" w:space="0" w:color="${hex(rule.colour)}"/>`;
+}
+
+/** A cell's fill, as a table style's conditions and the writer's own cells spell it. */
+export function shading(colour: string): string {
+  return `<w:shd w:val="clear" w:color="auto" w:fill="${hex(colour)}"/>`;
 }
 
 /**
@@ -142,6 +243,15 @@ function wordStyleName(style: ResolvedParagraphStyle, depth: number | undefined)
  */
 const PANEL_REACH = 2;
 
+/**
+ * How far in from a style's own indents its text stands in Word: where it has a background, its
+ * padding and `PANEL_REACH`, which the projection adds to its indents; otherwise nothing. The Word
+ * writer asks it where a container moves a paragraph in from its style's indents (Word 2).
+ */
+export function panelInset(properties: ResolvedParagraphStyle['properties']): number {
+  return properties.background === 'none' ? 0 : properties.padding + PANEL_REACH;
+}
+
 /** A border's width in eighths of a point: a half point, as the measurement was made with. */
 const PANEL_BORDER = 4;
 
@@ -162,7 +272,7 @@ function paragraphStyle(
 ): string {
   const p = style.properties;
   const filled = p.background !== 'none';
-  const inset = filled ? p.padding + PANEL_REACH : 0;
+  const inset = panelInset(p);
   const fill = filled ? hex(p.background) : '';
   const border = (side: string) =>
     filled

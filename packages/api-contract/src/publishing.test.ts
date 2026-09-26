@@ -59,6 +59,23 @@ describe('the publishing contract (Word 1)', () => {
     }
   });
 
+  it("serves a report's table entries, each naming its table's place and its label or none (Word 2)", () => {
+    const place = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1' };
+    const report = [
+      { kind: 'header_column_lost', ...place, label: 'Table 1.1' },
+      { kind: 'header_repeated', ...place, label: 'Table 1.1' },
+      { kind: 'continuation_label_omitted', ...place, label: null },
+    ];
+    expect(PublicationView.parse(viewWith([{ ...docx, report }])).outputs[0]!.report).toEqual(
+      report,
+    );
+    expect(
+      PublicationView.safeParse(
+        viewWith([{ ...docx, report: [{ kind: 'header_repeated', label: 'Table 1.1' }] }]),
+      ).success,
+    ).toBe(false);
+  });
+
   it('shows each output with its format, standard, producer and report, and a view link for the PDF alone', () => {
     const both = PublicationView.parse(viewWith([pdf, docx]));
     expect(both.outputs).toEqual([pdf, docx]);

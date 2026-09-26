@@ -71,20 +71,23 @@ a web application and a desktop application**.
 > and a quotation set off by contextual spacing; and a style the theme lacks or cannot use there, a
 > label for a continued table under a layout with no words for it, and a face it may not embed or the
 > worker does not hold failing the publish by name; and, beside the PDF or instead of it, to a Word
-> document of its paragraphs and headings from the same `assemble`, written by `writeDocx` in
-> `packages/domain/src/word/` in the theme's styles as Word styles, its headings numbered by Word from
-> the layout's Word page of layout schema 5, with the cover, the contents as a field, the running
-> heads and feet and the faces embedded, each output recorded with its producer and a report by
-> migration 0027, checked by the Open XML SDK in the worker's suite and in Word itself by the Word
-> check, and anything else refused for Word by name - and nothing else authors or
+> document from the same `assemble`, written by `writeDocx` in `packages/domain/src/word/` in the
+> theme's styles as Word styles, its headings numbered by Word from the layout's Word page of layout
+> schema 5, with the cover, the contents as a field, the running heads and feet and the faces
+> embedded, and its lists, quotations, preformatted text, tables in their table styles, figures and
+> images in a line spaced and sized as the PDF sets them, its figures' and tables' captions numbered
+> by Word's fields and listed after the contents, and what Word cannot carry of a table named in its
+> report, each output recorded with its producer and a report by migration 0027, checked by the Open
+> XML SDK in the worker's suite and in Word itself by the Word check against the PDF of the same
+> document, and footnotes, cross-references and equations still refused for Word by name - and
+> nothing else authors or
 > publishes content: no image or equation pasted from outside the product, no metadata panel,
 > no making a component type, no defined term written or resolved, no
 > document view, no list of equations in the default layout, no
 > choosing or editing a layout or a theme, no theme in the editor, no style to choose for a paragraph,
-> a table or an image, no preview, and no list, quotation, table, figure, footnote, reference or
-> equation in Word. The single `Component` in `packages/domain` is the scaffolding's, and
-> nothing renders it any more. [`docs/features.md`](docs/features.md) lists what does and does not
-> exist.
+> a table or an image, no preview, and no footnote, cross-reference or equation in Word. The single
+> `Component` in `packages/domain` is the scaffolding's, and nothing renders it any more.
+> [`docs/features.md`](docs/features.md) lists what does and does not exist.
 
 ## Architecture & data flow
 

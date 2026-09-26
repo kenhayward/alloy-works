@@ -106,10 +106,11 @@ export const publishFailureCodes = [
   // and the style. The label would otherwise be a table's number with nothing after it.
   'continuation_words_missing',
   // compose, from Word 1 (ruling R3): where Word is asked for, a block or an inline the Word writer
-  // does not write yet - a list, a quotation, preformatted text, a table, a figure, an equation, an
-  // image in a line, a footnote or a cross-reference - naming where it stands and, in `detail`, what
-  // it is, by its stored type; and a list after the contents, naming no place and its sequence as
-  // `listOf:<sequence>`. Each later slice of Word output takes its constructs off the list. And a
+  // does not write yet - an equation, a footnote or a cross-reference, since Word 2 took lists,
+  // quotations, preformatted text, tables, figures and images off it - naming where it stands and, in
+  // `detail`, what it is, by its stored type; and a list after the contents, naming no place and its
+  // sequence as `listOf:<sequence>`. Each later slice of Word output takes its constructs off the list.
+  // A publication refused for one before Word 2 still reads it back by name. And a
   // request for a format its layout has no page for, `detail` the format: refused when the request is
   // made (PUB-014), so met here only by a request built past that check, and said rather than thrown.
   'word_not_yet',
@@ -117,8 +118,18 @@ export const publishFailureCodes = [
   // compose, from Word 1 (ruling R7): where Word is asked for, a heading number the layout's scheme
   // writes that Word would compute differently - `detail` is `section:<matter>:<why>`: a separator
   // holding `%` (no node), letters past z, a roman numeral past 3999, or a heading numbered past the
-  // ninth level (the first heading that meets it). The PDF is unaffected.
+  // ninth level (the first heading that meets it). From Word 2 (ruling R1), a figure's or a table's
+  // number Word's caption fields would compute differently - `figure:<matter>:<why>` or
+  // `table:<matter>:<why>`, naming the first caption that meets it: a separator a run cannot carry, a
+  // prefix or a count Word's fields reach otherwise, letters past z, or a roman numeral past 3999. The
+  // PDF is unaffected.
   'numbering_not_in_word',
+  // compose, from Word 2 (ruling R4): where Word is asked for, a list Word would not print as the PDF
+  // does, naming it - `detail` `depth` for one nested past Word's ninth level, counted through items
+  // and quotations and afresh in a table's cell (WO-I); `letters` for one numbered in letters past
+  // the 27th, where Word writes bb and the PDF ab; `roman` for one numbered past 3999. The PDF is
+  // unaffected.
+  'list_not_in_word',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

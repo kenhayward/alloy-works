@@ -8,14 +8,16 @@ import {
   type NumberableNode,
   type NumberingTable,
 } from '../structure/numbering.js';
-import type { OutlineMatter } from '../structure/outline.js';
+import type { Contribution } from '../structure/contributions.js';
+import { walkOutline, type OutlineMatter } from '../structure/outline.js';
 import {
   defaultNumberingScheme,
   numberingSchemeSchema,
+  type NumberingRule,
   type NumberingScheme,
 } from '../structure/scheme.js';
 
-import { numberingNotInWord, numberingXml } from './numbering.js';
+import { captionField, numberingNotInWord, numberingXml } from './numbering.js';
 
 /** A numbered section node, and the nodes beneath it. */
 const node = (
@@ -28,6 +30,10 @@ const node = (
 /** The numbering table `assemble` hands the writer, for an outline of sections alone. */
 const numbered = (nodes: NumberableNode[], scheme = defaultNumberingScheme): NumberingTable =>
   number(conditions(resolve({ nodes }, new Map())), scheme);
+
+/** What Word cannot compute of an outline of sections alone, numbered by `scheme`. */
+const sectionProblems = (nodes: NumberableNode[], scheme = defaultNumberingScheme) =>
+  numberingNotInWord(scheme, numbered(nodes, scheme), { nodes });
 
 /** The default scheme with its section rules changed, held to the scheme's own parse. */
 const withSections = (
@@ -153,7 +159,7 @@ describe('a section rule Word cannot compute (Word 1, ruling R7)', () => {
   ];
 
   it('finds nothing in the default scheme: every number it writes is one Word computes', () => {
-    expect(numberingNotInWord(defaultNumberingScheme, numbered(outline))).toEqual([]);
+    expect(sectionProblems(outline)).toEqual([]);
   });
 
   it('refuses a separator holding a per cent sign, which Word reads as a number to come, in every matter that has one', () => {
@@ -162,9 +168,9 @@ describe('a section rule Word cannot compute (Word 1, ruling R7)', () => {
       rules.appendix = { ...rules.appendix, separator: ' %1 ' };
     });
     // Whether or not anything is numbered in that matter: the definition is written all the same.
-    expect(numberingNotInWord(scheme, numbered([node('intro', 'body')], scheme))).toEqual([
-      { node: null, detail: 'section:front:separator' },
-      { node: null, detail: 'section:appendix:separator' },
+    expect(sectionProblems([node('intro', 'body')], scheme)).toEqual([
+      { node: null, block: null, detail: 'section:front:separator' },
+      { node: null, block: null, detail: 'section:appendix:separator' },
     ]);
   });
 
@@ -172,9 +178,9 @@ describe('a section rule Word cannot compute (Word 1, ruling R7)', () => {
     const appendices = (count: number) =>
       Array.from({ length: count }, (_, index) => node(`a${index + 1}`, 'appendix'));
     // Up to "aa" Word and the scheme agree: its letter doubled is the scheme's 27th.
-    expect(numberingNotInWord(defaultNumberingScheme, numbered(appendices(27)))).toEqual([]);
-    expect(numberingNotInWord(defaultNumberingScheme, numbered(appendices(30)))).toEqual([
-      { node: 'a28', detail: 'section:appendix:letters' },
+    expect(sectionProblems(appendices(27))).toEqual([]);
+    expect(sectionProblems(appendices(30))).toEqual([
+      { node: 'a28', block: null, detail: 'section:appendix:letters' },
     ]);
   });
 
@@ -195,9 +201,9 @@ describe('a section rule Word cannot compute (Word 1, ruling R7)', () => {
         },
       ],
     };
-    expect(numberingNotInWord(defaultNumberingScheme, table)).toEqual([
-      { node: 'far', detail: 'section:front:roman' },
-    ]);
+    expect(
+      numberingNotInWord(defaultNumberingScheme, table, { nodes: [node('far', 'front')] }),
+    ).toEqual([{ node: 'far', block: null, detail: 'section:front:roman' }]);
   });
 
   it('refuses a heading numbered past the ninth level, the most Word numbers (WO-I)', () => {
@@ -206,12 +212,266 @@ describe('a section rule Word cannot compute (Word 1, ruling R7)', () => {
         ? node(`d${depth}`, matter)
         : { ...node(`d${depth}`, matter), children: [chain(depth - 1, matter)] };
     // Built from the deepest up: the outermost is `d10`, and the tenth level is `d1`.
-    expect(numberingNotInWord(defaultNumberingScheme, numbered([chain(9, 'body')]))).toEqual([]);
-    expect(numberingNotInWord(defaultNumberingScheme, numbered([chain(10, 'body')]))).toEqual([
-      { node: 'd1', detail: 'section:body:depth' },
+    expect(sectionProblems([chain(9, 'body')])).toEqual([]);
+    expect(sectionProblems([chain(10, 'body')])).toEqual([
+      { node: 'd1', block: null, detail: 'section:body:depth' },
     ]);
     // An unnumbered heading that deep takes no number, and Word is asked to compute none.
     const unnumbered = { ...chain(10, 'body'), numbered: false };
-    expect(numberingNotInWord(defaultNumberingScheme, numbered([unnumbered]))).toEqual([]);
+    expect(sectionProblems([unnumbered])).toEqual([]);
+  });
+});
+
+/**
+ * A component in the outline, and the captions its occurrence holds, in order: `t…` a table's, `e…` an
+ * equation's, `n…` a footnote's, and any other a figure's.
+ */
+type Holding = NumberableNode & {
+  readonly captions: readonly string[];
+  readonly children: readonly Holding[];
+};
+const holding = (
+  id: string,
+  matter: OutlineMatter,
+  captions: string[] = [],
+  children: Holding[] = [],
+  numbered = true,
+): Holding => ({ type: 'reference', id, numbered, matter, children, captions });
+
+const SEQUENCES: Readonly<Record<string, string>> = { t: 'table', e: 'equation', n: 'footnote' };
+
+/** The numbering table of an outline of components, and what Word cannot compute of it. */
+function captioned(nodes: Holding[], scheme = defaultNumberingScheme) {
+  const contributions = new Map<string, Contribution[]>();
+  walkOutline(nodes, (each) => {
+    contributions.set(
+      each.id,
+      each.captions.map((block) => ({
+        block,
+        sequence: SEQUENCES[block[0]!] ?? 'figure',
+        numbered: true,
+      })),
+    );
+  });
+  const table = number(conditions(resolve({ nodes }, contributions)), scheme);
+  return { table, problems: numberingNotInWord(scheme, table, { nodes }) };
+}
+
+/** The default scheme with a sequence's rules changed, held to the scheme's own parse. */
+const withRules = (
+  sequence: 'figure' | 'table' | 'equation',
+  change: (rules: NumberingScheme['sequences'][string]) => void,
+): NumberingScheme => {
+  const scheme = structuredClone(defaultNumberingScheme);
+  change(scheme.sequences[sequence]!);
+  return numberingSchemeSchema.parse(scheme);
+};
+
+/** A rule counting on through its matter, never restarting and taking no prefix. */
+const continuous = (rule: NumberingRule): NumberingRule => ({
+  ...rule,
+  restartAt: null,
+  prefix: null,
+});
+
+const problem = (node: string, block: string, detail: string) => ({ node, block, detail });
+
+describe('a caption rule Word cannot compute (Word 2, ruling R1)', () => {
+  it('finds nothing in the default scheme: every figure and table number it writes is one Word computes', () => {
+    const { table, problems } = captioned([
+      // An unnumbered foreword gives its figure no number, and Word is asked to compute none.
+      holding('foreword', 'front', ['ff'], [], false),
+      holding('preface', 'front', ['fp', 'tp']),
+      // Before the body's first chapter a number has no prefix, and Word's count restarts at the
+      // chapter as the scheme's does (measured: an unnumbered Heading 1 restarts a SEQ too).
+      holding('opening', 'body', ['fo'], [], false),
+      holding('intro', 'body', ['f1', 't1'], [holding('scope', 'body', ['f2'])]),
+      holding('method', 'body', ['f3']),
+      holding('tables', 'appendix', ['fa', 'ta'], [holding('values', 'appendix', ['fb'])]),
+    ]);
+    expect(problems).toEqual([]);
+    const captions = table.entries.filter((entry) => entry.sequence !== 'section');
+    expect(captions.map((entry) => [entry.block, entry.label])).toEqual([
+      ['ff', null],
+      ['fp', 'Figure i.1'],
+      ['tp', 'Table i.1'],
+      ['fo', 'Figure 1'],
+      ['f1', 'Figure 1.1'],
+      ['t1', 'Table 1.1'],
+      ['f2', 'Figure 1.2'],
+      ['f3', 'Figure 2.1'],
+      ['fa', 'Figure A.1'],
+      ['ta', 'Table A.1'],
+      ['fb', 'Figure A.2'],
+    ]);
+  });
+
+  it('refuses a caption after a heading with no number, which Word takes as the chapter and restarts its count at', () => {
+    // Measured in Word 16: `STYLEREF 1 \s` gives 0 for an unnumbered Heading 1 and `SEQ \s 1` restarts
+    // there, so Word prints "Figure 0.1" where the scheme carries on to "Figure 1.2".
+    const { table, problems } = captioned([
+      holding('intro', 'body', ['f1']),
+      holding('interlude', 'body', ['f2', 't1'], [], false),
+      holding('method', 'body', ['f3']),
+    ]);
+    expect(table.entries.find((entry) => entry.block === 'f2')?.label).toBe('Figure 1.2');
+    expect(problems).toEqual([
+      problem('interlude', 'f2', 'figure:body:prefix'),
+      problem('interlude', 'f2', 'figure:body:restart'),
+      // The document's first table is 1 to both: only its prefix is Word's own.
+      problem('interlude', 't1', 'table:body:prefix'),
+    ]);
+  });
+
+  it("computes a prefix at the second level, as Word's STYLEREF 2 does, and refuses a caption before its chapter's first second-level heading", () => {
+    const scheme = withRules('figure', (rules) => {
+      rules.body = { ...rules.body, prefix: 2, restartAt: 2 };
+    });
+    const under = captioned(
+      [
+        holding('intro', 'body', [], [holding('scope', 'body', ['f1', 'f2'])]),
+        holding('method', 'body', [], [holding('design', 'body', ['f3'])]),
+      ],
+      scheme,
+    );
+    expect(under.problems).toEqual([]);
+    expect(under.table.entries.find((entry) => entry.block === 'f3')?.label).toBe('Figure 2.1.1');
+    // Measured in Word 16: STYLEREF 2 finds the last second-level heading, 1.1, where the scheme
+    // writes 2.0; `SEQ \s 2` restarts at the chapter, as the scheme's counter does.
+    const before = captioned(
+      [
+        holding('intro', 'body', [], [holding('scope', 'body', ['f1'])]),
+        holding('method', 'body', ['f2']),
+      ],
+      scheme,
+    );
+    expect(before.table.entries.find((entry) => entry.block === 'f2')?.label).toBe('Figure 2.0.1');
+    expect(before.problems).toEqual([problem('method', 'f2', 'figure:body:prefix')]);
+  });
+
+  it("refuses a count that carries on through its matter where Word's one sequence counts the matter before it too", () => {
+    const scheme = withRules('figure', (rules) => {
+      rules.front = continuous(rules.front);
+      rules.body = continuous(rules.body);
+      rules.appendix = continuous(rules.appendix);
+    });
+    // Across chapters of one matter, Word's SEQ with no restart counts as the scheme does.
+    const chapters = [holding('intro', 'body', ['f1']), holding('method', 'body', ['f2', 'f3'])];
+    expect(captioned(chapters, scheme).problems).toEqual([]);
+    // Each matter counts from 1 in the scheme, and Word's sequence carries on from the preface's.
+    const matters = [holding('preface', 'front', ['f0']), holding('intro', 'body', ['f1'])];
+    expect(captioned(matters, scheme).problems).toEqual([
+      problem('intro', 'f1', 'figure:body:restart'),
+    ]);
+  });
+
+  it('refuses a prefix or a restart past the ninth level, where Word has no heading style', () => {
+    const scheme = withRules('table', (rules) => {
+      rules.body = { ...rules.body, prefix: 10, restartAt: 10 };
+    });
+    expect(captioned([holding('intro', 'body', ['t1', 't2'])], scheme).problems).toEqual([
+      problem('intro', 't1', 'table:body:prefix'),
+      problem('intro', 't1', 'table:body:restart'),
+    ]);
+  });
+
+  it('refuses a separator holding a character Word cannot write in a run, where the number is prefixed', () => {
+    const separated = (separator: string) =>
+      withRules('figure', (rules) => {
+        rules.body = { ...rules.body, separator };
+      });
+    const control = separated(`x${String.fromCharCode(1)}`);
+    expect(captioned([holding('intro', 'body', ['f1', 'f2'])], control).problems).toEqual([
+      problem('intro', 'f1', 'figure:body:separator'),
+    ]);
+    // Where the scheme writes no prefix the separator is never written, and is not asked.
+    const unprefixed = [holding('opening', 'body', ['f0'], [], false)];
+    expect(captioned(unprefixed, control).problems).toEqual([]);
+    // A caption's separator is words between two fields, not a level's text: a per cent sign and a
+    // tab are written as they are.
+    for (const writable of ['%', String.fromCharCode(9), ' - ']) {
+      const { problems } = captioned([holding('intro', 'body', ['f1'])], separated(writable));
+      expect(problems).toEqual([]);
+    }
+  });
+
+  it('refuses letters past z, where Word writes "bb" for the scheme\'s "ab", naming the first caption and once', () => {
+    const scheme = withRules('table', (rules) => {
+      rules.body = { ...continuous(rules.body), format: ['lowerAlpha'] };
+    });
+    const tables = (count: number) => Array.from({ length: count }, (_, index) => `t${index + 1}`);
+    expect(captioned([holding('intro', 'body', tables(27))], scheme).problems).toEqual([]);
+    expect(captioned([holding('intro', 'body', tables(30))], scheme).problems).toEqual([
+      problem('intro', 't28', 'table:body:letters'),
+    ]);
+  });
+
+  it('refuses a roman numeral past 3999, which the scheme writes in decimal and Word does not', () => {
+    const scheme = withRules('figure', (rules) => {
+      rules.body = { ...continuous(rules.body), format: ['upperRoman'] };
+    });
+    const figures = (count: number) => Array.from({ length: count }, (_, index) => `f${index + 1}`);
+    expect(captioned([holding('intro', 'body', figures(3999))], scheme).problems).toEqual([]);
+    expect(captioned([holding('intro', 'body', figures(4001))], scheme).problems).toEqual([
+      problem('intro', 'f4000', 'figure:body:roman'),
+    ]);
+  });
+
+  it('asks nothing of equations and footnotes, which Word does not number yet', () => {
+    const scheme = withRules('equation', (rules) => {
+      rules.body = { ...rules.body, prefix: 12, restartAt: 12 };
+    });
+    const outline = [
+      holding('intro', 'body', ['e1', 'n1']),
+      holding('interlude', 'body', ['e2', 'n2'], [], false),
+    ];
+    expect(captioned(outline, scheme).problems).toEqual([]);
+  });
+});
+
+describe("the fields a caption's number is written with (Word 2, ruling R1)", () => {
+  it("names the label's word, the heading level of its prefix, the separator, the sequence, its format and its restart", () => {
+    const { table } = captioned([
+      holding('foreword', 'front', ['ff'], [], false),
+      holding('opening', 'body', ['fo'], [], false),
+      holding('intro', 'body', ['t1']),
+    ]);
+    const entry = (block: string) => table.entries.find((each) => each.block === block)!;
+    expect(captionField(defaultNumberingScheme, entry('t1'))).toEqual({
+      word: 'Table',
+      prefix: 1,
+      separator: '.',
+      sequence: 'Table',
+      format: 'arabic',
+      restart: 1,
+    });
+    // Where the scheme writes no prefix, the number is the sequence's field alone.
+    expect(captionField(defaultNumberingScheme, entry('fo'))).toEqual({
+      word: 'Figure',
+      prefix: null,
+      separator: '.',
+      sequence: 'Figure',
+      format: 'arabic',
+      restart: 1,
+    });
+    // A caption the scheme gives no number is written with no field, and a heading has none of these.
+    expect(captionField(defaultNumberingScheme, entry('ff'))).toBeNull();
+    const heading = table.entries.find((each) => each.sequence === 'section')!;
+    expect(captionField(defaultNumberingScheme, heading)).toBeNull();
+  });
+
+  it("writes each format as Word's field format switch names it", () => {
+    const formats = ['decimal', 'lowerAlpha', 'upperAlpha', 'lowerRoman', 'upperRoman'] as const;
+    const written = formats.map((format) => {
+      const scheme = withRules('figure', (rules) => {
+        rules.body = { ...rules.body, format: [format] };
+      });
+      const { table } = captioned([holding('intro', 'body', ['f1'])], scheme);
+      return captionField(
+        scheme,
+        table.entries.find((each) => each.block === 'f1')!,
+      )?.format;
+    });
+    expect(written).toEqual(['arabic', 'alphabetic', 'ALPHABETIC', 'roman', 'ROMAN']);
   });
 });

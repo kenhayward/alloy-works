@@ -77,8 +77,9 @@ class StoreFailed extends Error {
  * Every image the request recorded, read from the tenant's store and placed where the published
  * document names it (figures 3, ruling R7): `assets/<sha256>.<extension>`, the hash its key ends in and
  * the extension its format declares. The bytes are held to that hash before they are handed on, as the
- * faces are, so Typst reads no image that is not the one recorded. Bytes that are not are a broken
- * store: thrown, never a refusal, so the job is tried again and then failed at the engine's stage.
+ * faces are, so neither Typst nor the Word writer reads an image that is not the one recorded (Word 2,
+ * ruling R3). Bytes that are not are a broken store: thrown, never a refusal, so the job is tried again
+ * and then failed at the engine's stage.
  */
 export async function rootImages(
   assets: ReadonlyMap<string, PublishingAsset>,
@@ -197,9 +198,10 @@ export function publishJob(deps: {
       // from too.
       const data = JSON.stringify(assembled.document);
       const outputs: NewPublicationOutput[] = [];
+      // Read once, for whichever outputs are asked for: the same bytes by the same paths.
+      const images = await rootImages(assets, (key) => read.store.get(key));
       if (formats.includes('pdf')) {
         const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[schema]];
-        const images = await rootImages(assets, (key) => read.store.get(key));
         const pdf = await deps.typst.compile(template.file, data, request.requestedAt, images);
         const engineVersion = await deps.typst.version();
         const stored = await keep(read.store, pdf, 'pdf');
@@ -227,6 +229,7 @@ export function publishJob(deps: {
           // Every pinned face by its hash, checked again as a compile checks them: the theme's faces
           // were held to exactly these files above, so every file it names is here.
           faces: await pinnedFacesByHash(deps.fonts.directory),
+          images: new Map(images.map((image) => [image.path, image.bytes])),
         });
         const stored = await keep(read.store, bytes, 'docx');
         outputs.push({

@@ -270,34 +270,57 @@ change meets it.
 ## The Word check
 
 Passing the validator says Word will open a file, not what it will show. **The Word check opens the
-writer's fixtures in Word itself**, as a standing practice (PUB-029): `apps/worker/src/word-check.test.ts`
-makes seven documents through the worker's own path - `assemble` under the default theme and layout
-with the worker's own face files, then `writeDocx` - and `apps/worker/scripts/word-check.ps1` opens
-each in a hidden Word through COM, updates its contents and fields, reads every section, paragraph,
-list string and field back, has Word export it to PDF, and saves it again. The test then checks ten
-things: each opens without an error; each heading's list string is the numbering table's number, its
-style Word's heading style for its depth, and its text holds no number; the updated contents lists
-every heading to the layout's depth with its number and page, and keeps its section; **Not approved**
-heads every page, the cover's included; each running head names the level-one heading the page is in,
-by its title alone where it has no number, and in reading order in a right-to-left document; no page
-is left blank, where an appendix fills its last page to the foot; the page labels run per matter; the foot carries the
-revision on every page but the cover, right to left too; the Liberation faces are embedded and every
-visible character is set in them, never Times New Roman, with one exception Word makes and the test
-pins (digits alone in a right-to-left heading); and saving again changes no paragraph's text, style or
-number.
+writer's fixtures in Word itself**, as a standing practice (PUB-029):
+`apps/worker/src/word-check.test.ts` makes nine documents through the worker's own path - `assemble`
+with the worker's own face files, under the default theme and layout but where a fixture says
+otherwise, then `writeDocx` - and `apps/worker/scripts/word-check.ps1` opens each in a hidden Word
+through COM, updates its contents and fields, reads every section, paragraph, list string and field
+back, has Word export it to PDF, and saves it again. The test then checks ten things: each opens
+without an error; each heading's list string is the numbering table's number, its style Word's
+heading style for its depth, and its text holds no number; the updated contents lists every heading
+to the layout's depth with its number and page, and keeps its section; **Not approved** heads every
+page, the cover's included; each running head names the level-one heading the page is in, by its
+title alone where it has no number, and in reading order in a right-to-left document; no page is
+left blank, where an appendix fills its last page to the foot; the page labels run per matter; the
+foot carries the revision on every page but the cover, right to left too; the Liberation faces are
+embedded and every visible character is set in them, never Times New Roman, with one exception Word
+makes and the test pins (digits alone in a right-to-left heading); and saving again changes no
+paragraph's text, style or number.
+
+Since Word 2 it also holds Word to the PDF of the same document. One fixture carries every construct
+Word 2 writes - lists of each kind, format and start nested to the ninth level, a definition list,
+two attributed quotations in a row, two preformatted blocks in a row and a line as wide as the PDF's
+measure holds, a banded table crossing a page, described, decorative and floated figures, images in
+a line and in a cell, and two floated figures a paragraph apart - under the default theme with a
+banded table style and a floated image style beside its own, which has neither, and is compiled
+through template 13 beside it, with the same image bytes; a second numbers its captions under the
+third and the ninth levels, by a layout of its own; and the right-to-left fixture holds a numbered
+table. Every caption field is prefilled "9" before Word opens it. The test then checks ten things
+more, reading both PDFs by baseline and by their operators: every list string is the marker the PDF
+prints; every step between two lines of the lists, the quotations and the preformatted text both
+PDFs set on one page is the PDF's within a point, but a term above its definition, held at the
+3.40pt Word's line adds; two preformatted blocks are two panels; the widest line stays one line; the
+table's header rows are marked and repeated on every page its body reaches, and every cell's fill is
+the one the PDF paints behind the same words; every caption's label is the numbering table's after
+the update; every image is the PDF's size within half a point, described or flagged decorative;
+each floated figure and its caption are one text box at the head of its page, the first where the PDF
+sets it and the second below it on the same page, no image painted over another in either PDF and
+each floated caption read whole; a right-to-left caption's label reads left to right before its
+words, as the PDF prints it; and the lists after the contents name every figure and table with the page Word sets it on, which is the
+page the PDF's lists name.
 
 - **Who and when.** Whoever changes the Word writer - `packages/domain/src/word/`, the theme's Word
   projection or `wordRun` - runs it before the change lands, on Windows with Word installed. **A pull
   request that changes the writer pastes its result**: the test run and a summary of what Word showed.
-- **How.** `ALLOY_WORD_CHECK=1 pnpm --filter @alloy-works/worker test -- src/word-check.test.ts`
-  (in PowerShell, `$env:ALLOY_WORD_CHECK = '1'` first), after
-  `pnpm --filter @alloy-works/domain build` if the writer changed, since the worker reads the domain's
-  `dist/`. It takes about half a minute. It leaves the fixtures, Word's PDFs, the copies Word saved and
-  `record.json`, everything Word reported, in `alloy-works-word-check` under the system's temporary
-  folder, for a person to read and to summarise in the pull request. **Run alone like this, it
-  rewrites `.trace-results/worker.json` with that one file's results**, so run the whole worker suite
-  (`pnpm --filter @alloy-works/worker test`) after it and before `pnpm trace verify`, which reads that
-  file.
+- **How.** `ALLOY_WORD_CHECK=1 pnpm --filter @alloy-works/worker test -- src/word-check.test.ts` (in
+  PowerShell, `$env:ALLOY_WORD_CHECK = '1'` first), after `pnpm --filter @alloy-works/domain build`
+  if the writer changed, since the worker reads the domain's `dist/`. It takes about a minute and a
+  quarter. It leaves the fixtures, Word's PDFs, the copies Word saved and `record.json`, everything
+  Word reported, in `alloy-works-word-check` under the system's temporary folder, for a person to
+  read and to summarise in the pull request. **Run alone like this, it rewrites
+  `.trace-results/worker.json` with that one file's results**, so run the whole worker suite
+  (`pnpm --filter @alloy-works/worker test`) after it and before `pnpm trace verify`, which reads
+  that file.
 - **What CI does with it.** It is skipped: `describe.runIf` runs it only on Windows with the variable
   set, and CI runs Linux and has no Word. So **PUB-029, which it cites, is Covered by the citation and
   Verified only by a local run**; the report CI writes records it as skipped. It cites nothing else,

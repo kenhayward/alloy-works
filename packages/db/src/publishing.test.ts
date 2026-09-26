@@ -763,12 +763,19 @@ describe('requesting and recording a publication', () => {
     sha256: fill.repeat(64),
     bytes: 1000,
   });
-  /** A Word document made by the writer's first version, with what it could not carry. */
+  /**
+   * A Word document made by the writer's second version, with what it could not carry: a face, and a
+   * table's header column, its header its style does not repeat, and its label (Word 2, ruling R7).
+   */
+  const readings = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1', label: 'Table 1.1' };
   const docxOutput = (fill = 'd') => ({
     format: 'docx' as const,
-    writerVersion: 'word/1',
+    writerVersion: 'word/2',
     report: [
       { kind: 'face_substituted' as const, family: 'STIX Two Math', wordFamily: 'Cambria Math' },
+      { kind: 'header_column_lost' as const, ...readings },
+      { kind: 'header_repeated' as const, ...readings },
+      { kind: 'continuation_label_omitted' as const, ...readings, label: null },
       { kind: 'pages_cite_the_pdf' as const },
     ],
     key: `${production.role}/sha256/${fill.repeat(64)}`,
@@ -1758,7 +1765,7 @@ describe('requesting and recording a publication', () => {
         // A Word document claims no PDF standard.
         standard: null,
         producer: 'word',
-        producer_version: 'word/1',
+        producer_version: 'word/2',
         report: docxOutput().report,
         bytes: 2000,
       },
@@ -1789,7 +1796,7 @@ describe('requesting and recording a publication', () => {
         bytes: 2000,
         standard: null,
         producer: 'word',
-        producerVersion: 'word/1',
+        producerVersion: 'word/2',
         report: docxOutput().report,
       },
     ]);
@@ -1837,7 +1844,8 @@ describe('requesting and recording a publication', () => {
         ),
       ).rejects.toThrow(/one output per format/);
     }
-    // A report that is not one, which the writer never makes: refused before it is stored.
+    // A report that is not one - a table's entry that names no table - which the writer never makes:
+    // refused before it is stored.
     const unreported = { ...docxOutput(), report: [{ kind: 'header_column_lost' }] };
     await expect(
       service.withTenant(production, (trx) =>

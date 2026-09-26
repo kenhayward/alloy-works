@@ -13,7 +13,14 @@ import {
   type OutlineDocument,
 } from '../structure/outline.js';
 
-import { assemble, type Assembled, type AssembleInput, type PublishingAsset } from './assemble.js';
+import {
+  assemble,
+  figureImageKey,
+  inlineImageKey,
+  type Assembled,
+  type AssembleInput,
+  type PublishingAsset,
+} from './assemble.js';
 import type { PublishFailure } from './failures.js';
 import type { Covers } from './glyphs.js';
 import { publishedLanguage } from './language.js';
@@ -4919,8 +4926,12 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     const { pdf, docx, both } = assembledFor(over);
     return { pdf: failuresOf(pdf), docx: failuresOf(docx), both: failuresOf(both) };
   };
+  /** The default layout listing nothing after the contents, which Word does not write yet (Word 3). */
+  const listless = layoutWith((layout) => {
+    layout.matter.lists = [];
+  });
 
-  it("carries what Word is written from - the layout's Word page, the theme, the scheme and no image sizes yet - only where Word is asked for", () => {
+  it("carries what Word is written from - the layout's Word page, the theme, the scheme and each image's size, of which there are none here - only where Word is asked for", () => {
     const { pdf, docx, both } = assembledFor(
       holding(paragraph('b1', text('Set the tray.')), paragraph('b2', text('Then wait.'))),
     );
@@ -4971,7 +4982,7 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(failuresOf(assemble({ ...before, formats: ['docx'] }))).toEqual([unsupported]);
   });
 
-  it('refuses every block and inline Word 1 does not write, by name where it stands, and still publishes the PDF', () => {
+  it('refuses what Word does not write yet - an equation, a footnote, a cross-reference and the list of equations - by name where it stands, and still publishes the PDF', () => {
     const over = holding(
       list('L1', paragraph('i1', text('An item.'))),
       quotation('q1', paragraph('q1p', text('Quoted.'))),
@@ -4987,37 +4998,68 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     const { pdf, docx, both } = failuresFor(over);
     expect(pdf).toEqual([]);
     const refused = [
-      notYet('L1', 'list'),
-      notYet('q1', 'blockquote'),
-      notYet('pre1', 'preformatted'),
-      notYet('t1', 'table'),
-      notYet('f1', 'figure'),
       notYet('e1', 'equation'),
-      notYet('p1', 'image'),
       notYet('p2', 'equation'),
       notYet('p3', 'footnote'),
       notYet('p4', 'crossReference'),
-      // The default layout lists figures and tables after the contents, where there are any.
-      listNotYet('figure'),
-      listNotYet('table'),
     ];
     expect(docx).toEqual(refused);
     expect(both).toEqual(refused);
+    // The lists of figures and of tables are Word's since Word 2's fourth task; the list of equations
+    // is Word 4's. It lists numbered equations alone, so it stands only beside one, itself refused.
+    const equations = layoutWith((layout) => {
+      layout.matter.lists = [...layout.matter.lists, { sequence: 'equation', title: 'Equations' }];
+    });
+    expect(failuresFor({ ...over, layout: equations }).docx).toEqual(refused);
+    const numbered = { ...holding({ ...equation('e2'), numbered: true }), layout: equations };
+    const listed = [notYet('e2', 'equation'), listNotYet('equation')];
+    expect(failuresFor(numbered).docx).toEqual(listed);
+    expect(failuresFor(numbered).both).toEqual(listed);
   });
 
-  it("refuses what Word 1 does not write wherever it stands: nested, in a caption, or in a section's title", () => {
+  it('publishes the lists of figures and of tables after the contents for Word, as the PDF does', () => {
+    const over = holding(table('t1'), figure('f1'));
+    const { pdf, docx } = assembledFor(over);
+    if (!pdf.ok || !docx.ok) throw new Error('refused');
+    expect(docx.document.front.lists).toEqual([
+      { sequence: 'figure', title: 'Figures' },
+      { sequence: 'table', title: 'Tables' },
+    ]);
+    expect(JSON.stringify(docx.document)).toBe(JSON.stringify(pdf.document));
+  });
+
+  it('publishes a list, a quotation, preformatted text, a table, a figure and an image for Word, in the document the PDF is made from (Word 2, ruling R2)', () => {
+    const over = {
+      ...holding(
+        list('L1', paragraph('i1', text('An item.'))),
+        quotation('q1', paragraph('q1p', text('Quoted.'))),
+        { type: 'preformatted', id: 'pre1', text: 'SELECT 1;' },
+        table('t1'),
+        figure('f1'),
+        paragraph('p1', text('A logo '), image),
+      ),
+      layout: listless,
+    };
+    const { pdf, docx, both } = assembledFor(over);
+    if (!pdf.ok || !docx.ok || !both.ok) throw new Error('refused');
+    expect(blocksOf(pdf).map((block) => [block.type, 'id' in block ? block.id : null])).toEqual([
+      ['list', 'L1'],
+      ['blockquote', 'q1'],
+      ['preformatted', 'pre1'],
+      ['table', 't1'],
+      ['figure', 'f1'],
+      ['paragraph', 'p1'],
+    ]);
+    expect(JSON.stringify(docx.document)).toBe(JSON.stringify(pdf.document));
+    expect(JSON.stringify(both.document)).toBe(JSON.stringify(pdf.document));
+  });
+
+  it("refuses an equation wherever it stands - nested, in a caption, or in a section's title - and a reference in a title", () => {
     const inner = holding(
       quotation('q1', list('L1', paragraph('i1', text('One '), inlineEquation))),
       table('t1', { caption: [text('Readings '), inlineEquation] }),
     );
-    expect(failuresFor(inner).docx).toEqual([
-      notYet('q1', 'blockquote'),
-      notYet('L1', 'list'),
-      notYet('i1', 'equation'),
-      notYet('t1', 'table'),
-      notYet('t1', 'equation'),
-      listNotYet('table'),
-    ]);
+    expect(failuresFor(inner).docx).toEqual([notYet('i1', 'equation'), notYet('t1', 'equation')]);
     // A section's title may hold an equation and a reference, and is named by its node alone.
     const titled = {
       ...section('results', 'Results'),
@@ -5037,53 +5079,69 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     ]);
   });
 
-  it("reports a preformatted line too wide for the PDF's page only where the PDF is asked for", () => {
+  it("reports a preformatted line too wide for the PDF's page only where the PDF is asked for, and publishes the line whole for Word", () => {
     const wide = { type: 'preformatted', id: 'pre1', text: 'x'.repeat(200) };
     const tooWide = {
       ...failed('line_too_wide', 'pre1'),
       detail: expect.stringMatching(/^line 1, 200 of \d+ columns$/),
     };
-    expect(failuresFor(holding(wide))).toEqual({
-      pdf: [tooWide],
-      docx: [notYet('pre1', 'preformatted')],
-      both: [notYet('pre1', 'preformatted'), tooWide],
-    });
+    expect(failuresFor(holding(wide))).toEqual({ pdf: [tooWide], docx: [], both: [tooWide] });
+    expect(blocksOf(assemble({ ...holding(wide), formats: ['docx'] }))).toEqual([
+      { type: 'preformatted', id: 'pre1', anchor: null, label: null, lines: ['x'.repeat(200)] },
+    ]);
   });
 
-  it("reports a caption too long for the PDF's page beside its image only where the PDF is asked for", () => {
+  it("reports a caption too long for the PDF's page beside its image only where the PDF is asked for, and publishes the figure for Word", () => {
     const long = {
       ...holding(figure('f1', { caption: [text('x'.repeat(3000))] })),
       assets: new Map([[RED, asset({ width: 500, height: 2000 })]]),
+      layout: listless,
     };
-    expect(failuresFor(long)).toEqual({
-      pdf: [failed('caption_too_long', 'f1')],
-      docx: [notYet('f1', 'figure'), listNotYet('figure')],
-      both: [notYet('f1', 'figure'), failed('caption_too_long', 'f1'), listNotYet('figure')],
+    const tooLong = failed('caption_too_long', 'f1');
+    expect(failuresFor(long)).toEqual({ pdf: [tooLong], docx: [], both: [tooLong] });
+    const [figured] = blocksOf(assemble({ ...long, formats: ['docx'] }));
+    expect(figured).toMatchObject({
+      type: 'figure',
+      id: 'f1',
+      caption: [{ text: 'x'.repeat(3000), marks: [] }],
     });
   });
 
-  it("reports an image in a line wider than the PDF's line only where the PDF is asked for", () => {
-    const wide = {
+  it("reports an image in a line wider than the PDF's line only where the PDF is asked for, and publishes it for Word where Word's line holds it", () => {
+    const wide = (layout: Layout) => ({
       ...holding(quotation('q1', paragraph('p1', image))),
       assets: new Map([[RED, asset({ width: 6000, height: 100 })]]),
-    };
-    expect(failuresFor(wide)).toEqual({
-      pdf: [failed('image_too_wide', 'p1')],
-      docx: [notYet('q1', 'blockquote'), notYet('p1', 'image')],
-      both: [notYet('q1', 'blockquote'), notYet('p1', 'image'), failed('image_too_wide', 'p1')],
+      layout,
+    });
+    // A Word page wide enough for the image, which the PDF's is not.
+    const broad = layoutWith((layout) => {
+      layout.formats.docx!.page = { width: 1200, height: 1584 };
+    });
+    const tooWide = failed('image_too_wide', 'p1');
+    expect(failuresFor(wide(broad))).toEqual({ pdf: [tooWide], docx: [], both: [tooWide] });
+    const [quoted] = blocksOf(assemble({ ...wide(broad), formats: ['docx'] }));
+    expect(quoted).toMatchObject({
+      type: 'blockquote',
+      blocks: [{ type: 'paragraph', id: 'p1', runs: [{ image: { placement: 'inline' } }] }],
+    });
+    // Too wide for Word's line as well, it is refused for Word by the PDF's rule, and said once.
+    expect(failuresFor(wide(defaultLayout))).toEqual({
+      pdf: [tooWide],
+      docx: [tooWide],
+      both: [tooWide],
     });
   });
 
-  it("reports a header cell spanning into the body, which the PDF's engine takes into the header, only where the PDF is asked for", () => {
+  it("reports a header cell spanning into the body, which the PDF's engine takes into the header, only where the PDF is asked for, and publishes the table for Word", () => {
     const spanning = table('t1', {
       headerRows: 1,
       rows: [{ cells: [{ ...cellOf(paragraph('h1', text('Site'))), rowspan: 2 }] }, { cells: [] }],
     });
-    expect(failuresFor(holding(spanning))).toEqual({
-      pdf: [failed('table_header_spans_body', 't1')],
-      docx: [notYet('t1', 'table'), listNotYet('table')],
-      both: [notYet('t1', 'table'), failed('table_header_spans_body', 't1'), listNotYet('table')],
-    });
+    const spans = failed('table_header_spans_body', 't1');
+    const over = { ...holding(spanning), layout: listless };
+    expect(failuresFor(over)).toEqual({ pdf: [spans], docx: [], both: [spans] });
+    const [tabled] = blocksOf(assemble({ ...over, formats: ['docx'] }));
+    expect(tabled).toMatchObject({ type: 'table', id: 't1', headerRows: 1 });
   });
 
   it("reports a footnote in a table's header row, which the PDF's engine sets on every page, only where the PDF is asked for", () => {
@@ -5092,25 +5150,19 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       { headerRows: 1 },
       paragraph('h1', text('North'), footnote('n1', paragraph('n1p', text('Once.')))),
     );
+    // Word does not write a footnote yet (Word 3), so it is refused by name wherever it stands.
     expect(failuresFor(holding(headed))).toEqual({
       pdf: [failed('footnote_not_publishable_here', 'h1')],
-      docx: [notYet('t1', 'table'), notYet('h1', 'footnote'), listNotYet('table')],
-      both: [
-        notYet('t1', 'table'),
-        notYet('h1', 'footnote'),
-        failed('footnote_not_publishable_here', 'h1'),
-        listNotYet('table'),
-      ],
+      docx: [notYet('h1', 'footnote')],
+      both: [notYet('h1', 'footnote'), failed('footnote_not_publishable_here', 'h1')],
     });
     // A footnote in a caption is refused whatever the format: it is where no footnote may stand.
     const captioned = table('t2', {
       caption: [text('Readings'), footnote('n2', paragraph('n2p', text('Once.')))],
     });
     expect(failuresFor(holding(captioned)).docx).toEqual([
-      notYet('t2', 'table'),
       notYet('t2', 'footnote'),
       failed('footnote_not_publishable_here', 't2'),
-      listNotYet('table'),
     ]);
   });
 
@@ -5127,20 +5179,14 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     );
     const unavailable = (reference: string, form: string) =>
       failed('cross_reference_form_unavailable', reference, form);
+    // Word does not write a reference yet (Word 3), so it is refused by name where it stands.
     expect(failuresFor(over)).toEqual({
       pdf: [unavailable('x1', 'page'), unavailable('x2', 'number')],
-      docx: [
-        unavailable('x2', 'number'),
-        notYet('t1', 'table'),
-        notYet('b1', 'crossReference'),
-        listNotYet('table'),
-      ],
+      docx: [unavailable('x2', 'number'), notYet('b1', 'crossReference')],
       both: [
         unavailable('x1', 'page'),
         unavailable('x2', 'number'),
-        notYet('t1', 'table'),
         notYet('b1', 'crossReference'),
-        listNotYet('table'),
       ],
     });
   });
@@ -5170,7 +5216,7 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     ]);
   });
 
-  it("reports a table style's continuation label under a layout with no words for it only where the PDF is asked for", () => {
+  it("reports a table style's continuation label under a layout with no words for it only where the PDF is asked for, and publishes the table for Word", () => {
     const inputs = defaultInputs();
     const [plain] = inputs.catalogues.table.styles;
     inputs.catalogues.table.styles.push({
@@ -5181,21 +5227,95 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     });
     // A layout with a Word page and no words for a continued table, built past the parse: Word sets
     // no such label, so it is the PDF's refusal alone.
-    const wordless = structuredClone(defaultLayout);
+    const wordless = structuredClone(listless);
     delete wordless.words.continued;
     const over = {
       ...holding(table('t1', { style: 'labelled' })),
       theme: resolved(inputs),
       layout: wordless,
     };
+    const unlabelled = failed('continuation_words_missing', 't1', 'labelled');
+    expect(failuresFor(over)).toEqual({ pdf: [unlabelled], docx: [], both: [unlabelled] });
+    const [tabled] = blocksOf(assemble({ ...over, formats: ['docx'] }));
+    expect(tabled).toMatchObject({ type: 'table', id: 't1', style: 'labelled' });
+  });
+
+  it("refuses a figure's or a table's number Word cannot compute only where Word is asked for, naming the caption and the rule (Word 2, ruling R1)", () => {
+    // A figure after a heading with no number: Word takes that heading as the chapter, prints its 0
+    // and restarts its count there, where the scheme carries on from the chapter before it.
+    const over = {
+      ...input({
+        outline: outline([reference('calib'), { ...reference('interlude'), numbered: false }]),
+        occurrences: new Map([
+          [id('calib'), component([figure('f1')])],
+          [id('interlude'), component([figure('f2')])],
+        ]),
+        assets: new Map([[RED, asset()]]),
+      }),
+      layout: listless,
+    };
+    const refused = (why: string) => ({
+      stage: 'compose',
+      code: 'numbering_not_in_word',
+      node: id('interlude'),
+      block: 'f2',
+      detail: `figure:body:${why}`,
+    });
     expect(failuresFor(over)).toEqual({
-      pdf: [failed('continuation_words_missing', 't1', 'labelled')],
-      docx: [notYet('t1', 'table'), listNotYet('table')],
-      both: [
-        notYet('t1', 'table'),
-        failed('continuation_words_missing', 't1', 'labelled'),
-        listNotYet('table'),
-      ],
+      pdf: [],
+      docx: [refused('prefix'), refused('restart')],
+      both: [refused('prefix'), refused('restart')],
+    });
+  });
+
+  it('refuses a list Word would not print as the PDF does only where Word is asked for, naming the list: nested past the ninth level, counted afresh in a cell, or numbered past the 27th letter or 3999 (Word 2, ruling R4; WO-I)', () => {
+    /** Lists nested `levels` deep, `name1` outermost, and `inner` in the deepest's item. */
+    const nested = (name: string, levels: number, ...inner: unknown[]): unknown =>
+      Array.from({ length: levels }, (_, index) => levels - index).reduce<unknown[]>(
+        (content, level) => [
+          {
+            type: 'list',
+            id: `${name}${level}`,
+            kind: level % 2 === 0 ? 'ordered' : 'unordered',
+            items: [{ content: [paragraph(`${name}p${level}`, text('Deeper')), ...content] }],
+          },
+        ],
+        inner,
+      )[0];
+    const refused = (block: string, detail: string) => failed('list_not_in_word', block, detail);
+    expect(failuresFor(holding(nested('n', 9)))).toEqual({ pdf: [], docx: [], both: [] });
+    // A quotation between two levels is no level; the list at the tenth is named, once.
+    const deep = holding(nested('d', 2, quotation('q1', nested('e', 7, nested('f', 2)) as object)));
+    expect(failuresFor(deep)).toEqual({
+      pdf: [],
+      docx: [refused('f1', 'depth')],
+      both: [refused('f1', 'depth')],
+    });
+    // A table's cell is a place of its own, whose lists Word numbers from its first level again.
+    const celled = {
+      ...holding(nested('g', 5, table('t1', {}, nested('h', 9) as object))),
+      layout: listless,
+    };
+    expect(failuresFor(celled)).toEqual({ pdf: [], docx: [], both: [] });
+    // Word writes the 28th letter bb where the PDF writes ab, and has no roman numeral past 3999.
+    const counted = (id: string, format: string, start: number, items: number) => ({
+      type: 'list',
+      id,
+      kind: 'ordered',
+      format,
+      start,
+      items: Array.from({ length: items }, (_, index) => ({
+        content: [paragraph(`${id}p${index}`, text('Counted'))],
+      })),
+    });
+    expect(
+      failuresFor(holding(counted('a1', 'alphabetic', 26, 2), counted('r1', 'roman', 3998, 2))),
+    ).toEqual({ pdf: [], docx: [], both: [] });
+    const past = holding(counted('a2', 'alphabetic', 27, 2), counted('r2', 'roman', 3999, 2));
+    expect(failuresFor(past)).toEqual({
+      pdf: [],
+      docx: [refused('a2', 'letters'), refused('r2', 'roman')],
+      both: [refused('a2', 'letters'), refused('r2', 'roman')],
     });
   });
 
@@ -5306,3 +5426,192 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     });
   });
 });
+
+describe("each image's size against the Word page (Word 2, ruling R3)", () => {
+  const RED = '00000000-0000-4000-8000-00000000a551';
+  const asset = (over: Partial<PublishingAsset> = {}): PublishingAsset => ({
+    object: `t_acme/sha256/${'ab'.repeat(32)}`,
+    format: 'png',
+    width: 800,
+    height: 600,
+    alternative: { text: 'Two red squares', language: 'en-GB' },
+    ...over,
+  });
+  const figure = (name: string, over: object = {}) => ({
+    type: 'figure',
+    id: name,
+    asset: RED,
+    imageStyle: 'figure',
+    caption: [text('Shapes')],
+    alternative: { kind: 'inherited' },
+    ...over,
+  });
+  const image = {
+    type: 'image',
+    asset: RED,
+    imageStyle: 'inline',
+    alternative: { kind: 'inherited' },
+  };
+  const node = id('calib');
+  /** The default layout listing nothing after the contents, which Word 2 does not write, with its Word page's margins. */
+  const withMargins = (margin: number) =>
+    layoutWith((layout) => {
+      layout.matter.lists = [];
+      layout.formats.docx!.margins = {
+        top: margin,
+        bottom: margin,
+        inside: margin,
+        outside: margin,
+      };
+    });
+  /** One component holding these blocks, with the one image resolved, under `layout`, for Word. */
+  const forWord = (
+    layout: Layout,
+    blocks: unknown[],
+    pixels: Partial<PublishingAsset> = {},
+    formats: UnderALayout['formats'] = ['docx'],
+  ) => {
+    const assembled = assemble({
+      ...oneComponent(...blocks),
+      assets: new Map([[RED, asset(pixels)]]),
+      layout,
+      formats,
+    });
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    return assembled;
+  };
+  const A4 = { width: 595.28, height: 841.89 };
+  const round = (length: number) => Math.round(length * 100) / 100;
+
+  it("sizes a figure by its image style against the Word page's text block, where the PDF's is sized against the PDF's", () => {
+    // Half-inch margins on Word's page, an inch on the PDF's: the default figure is the measure wide.
+    const assembled = forWord(withMargins(36), [figure('f1')]);
+    const measure = A4.width - 72;
+    expect(assembled.word!.images).toEqual(
+      new Map([
+        [figureImageKey(node, 'f1'), { width: round(measure), height: round(measure * 0.75) }],
+      ]),
+    );
+    const [published] = blocksOf(assembled);
+    expect(published).toMatchObject({
+      width: A4.width - 144,
+      height: round((A4.width - 144) * 0.75),
+    });
+  });
+
+  it('holds a figure to the room where it stands on the Word page, and to what its caption leaves of it', () => {
+    const quoted = DEFAULT_THEME.paragraphStyles.get(DEFAULT_THEME.places.quotation)!.properties;
+    const inset = quoted.startIndent + quoted.endIndent;
+    const inQuotation = forWord(withMargins(36), [
+      { type: 'blockquote', id: 'q1', content: [figure('f1')] },
+    ]);
+    const across = A4.width - 72 - inset;
+    expect(inQuotation.word!.images.get(figureImageKey(node, 'f1'))).toEqual({
+      width: round(across),
+      height: round(across * 0.75),
+    });
+    // A tall image is held by its style to 0.6 of the Word page's text block, the proportion kept.
+    const tall = forWord(withMargins(36), [figure('f1')], { width: 500, height: 2000 });
+    const height = (A4.height - 72) * 0.6;
+    expect(tall.word!.images.get(figureImageKey(node, 'f1'))).toEqual({
+      width: round(height / 4),
+      height: round(height),
+    });
+  });
+
+  it('sizes a figure whose caption leaves the PDF no room by the Word page alone, where only Word is asked for', () => {
+    // The PDF refuses the caption (`caption_too_long`); Word sets it on as it flows, and the image is
+    // held to the page's text block rather than to less than nothing.
+    const long = forWord(withMargins(72), [figure('f1', { caption: [text('x'.repeat(3000))] })], {
+      width: 500,
+      height: 2000,
+    });
+    const height = (A4.height - 144) * 0.6;
+    expect(long.word!.images.get(figureImageKey(node, 'f1'))).toEqual({
+      width: round(height / 4),
+      height: round(height),
+    });
+  });
+
+  it("sizes an image in a line by its style's ems of the text it stands in, keyed by the runs it stands among and its place in them", () => {
+    const definitions = {
+      type: 'list',
+      id: 'L1',
+      kind: 'definition',
+      items: [
+        { term: [text('Flag')], content: [paragraph('d1', text('A signal.'))] },
+        { term: [text('Logo '), image], content: [paragraph('d2', text('A mark.'))] },
+      ],
+    };
+    const cell = { content: [paragraph('c1', image)], colspan: 1, rowspan: 1 };
+    const assembled = forWord(withMargins(36), [
+      paragraph('p1', text('Press '), image, text(' to start.')),
+      definitions,
+      {
+        type: 'blockquote',
+        id: 'q1',
+        content: [paragraph('q1p', text('Quoted.'))],
+        attribution: [image],
+      },
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [text('Readings')],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [{ cells: [cell] }],
+        note: [text('After '), image],
+      },
+    ]);
+    // 1.2 ems of the text each stands in, the width from 800 by 600: the page does not change an em.
+    const sized = (size: number) => ({
+      width: round(size * 1.2 * (4 / 3)),
+      height: round(size * 1.2),
+    });
+    const sizeOf = (role: Parameters<typeof roleSize>[0]) => sized(roleSize(role));
+    const placeSize = (place: keyof ResolvedTheme['places']) =>
+      sized(DEFAULT_THEME.paragraphStyles.get(DEFAULT_THEME.places[place])!.properties.size);
+    expect(assembled.word!.images).toEqual(
+      new Map([
+        [inlineImageKey(node, { kind: 'paragraph', block: 'p1' }, 1), placeSize('text')],
+        [inlineImageKey(node, { kind: 'term', block: 'L1', item: 1 }, 1), placeSize('listItem')],
+        [inlineImageKey(node, { kind: 'attribution', block: 'q1' }, 0), sizeOf('attribution')],
+        [inlineImageKey(node, { kind: 'paragraph', block: 'c1' }, 0), placeSize('tableCell')],
+        [inlineImageKey(node, { kind: 'note', block: 't1' }, 1), sizeOf('tableNote')],
+      ]),
+    );
+    // The same size the PDF's run carries, where the em is the same on both pages.
+    const [paragraphed] = blocksOf(assembled);
+    expect(paragraphRuns(paragraphed)[1]).toMatchObject({ image: placeSize('text') });
+  });
+
+  it("refuses an image in a line wider than Word's line, by the PDF's rule, only where Word is asked for", () => {
+    // 3000 by 100 at 13.2 points high is 396 points wide: within the PDF's A4 line in a quotation. On a
+    // Word page 400 points wide with inch margins the style's maximum holds it to the 256-point measure,
+    // wider than the quotation leaves of it.
+    const narrow = layoutWith((layout) => {
+      layout.matter.lists = [];
+      layout.formats.docx!.page = { width: 400, height: 841.89 };
+    });
+    const over = {
+      ...oneComponent({ type: 'blockquote', id: 'q1', content: [paragraph('p1', image)] }),
+      assets: new Map([[RED, asset({ width: 3000, height: 100 })]]),
+      layout: narrow,
+    };
+    const tooWide = { stage: 'compose', code: 'image_too_wide', node, block: 'p1', detail: null };
+    expect(failuresOf(assemble({ ...over, formats: ['pdf'] }))).toEqual([]);
+    expect(failuresOf(assemble({ ...over, formats: ['docx'] }))).toEqual([tooWide]);
+    expect(failuresOf(assemble({ ...over, formats: ['pdf', 'docx'] }))).toEqual([tooWide]);
+  });
+
+  it('sizes nothing where Word is not asked for', () => {
+    const assembled = forWord(withMargins(36), [figure('f1'), paragraph('p1', image)], {}, ['pdf']);
+    expect(assembled.word).toBeNull();
+  });
+});
+
+/** The size of the default theme's style for a role. */
+function roleSize(role: keyof ResolvedTheme['roles']): number {
+  return DEFAULT_THEME.paragraphStyles.get(DEFAULT_THEME.roles[role])!.properties.size;
+}
