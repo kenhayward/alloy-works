@@ -195,6 +195,8 @@ class Tally {
   tooDeep = 0;
   /** Word footnotes left out: a note not found, or an anchor inside another note. */
   footnotes = 0;
+  /** Tables, lists, quotations and preformatted text in a Word note, kept as its paragraphs. */
+  footnoteBlocks = 0;
 }
 
 /**
@@ -939,7 +941,7 @@ function wordFootnote(
     notes: context.notes,
     inNote: true,
   };
-  const paragraphs = paragraphsOf(blocksOf(note.childNodes, inNote, tally));
+  const paragraphs = paragraphsOf(blocksOf(note.childNodes, inNote, tally), tally);
   if (paragraphs.length === 0) {
     tally.footnotes += 1;
     return;
@@ -947,14 +949,44 @@ function wordFootnote(
   sink.footnote({ type: 'footnote', anchor: { kind: 'span' }, content: paragraphs });
 }
 
-/** Blocks as the paragraphs they hold: a list's items and a quotation's blocks, flattened. */
-function paragraphsOf(blocks: readonly Block[]): Block[] {
+/**
+ * Blocks as the paragraphs they hold, which is all a note may (CNT-129): a list's items - a term as a
+ * paragraph of its own - a quotation's blocks and its attribution, a table's cells in reading order,
+ * and each line of preformatted text. Each block kept so is counted for the report, and nothing Word
+ * put in a note is lost without a word (CNT-064).
+ */
+function paragraphsOf(blocks: readonly Block[], tally: Tally): Block[] {
+  const runs = (content: unknown): Block[] =>
+    Array.isArray(content) && content.length > 0 ? [{ type: 'paragraph', content }] : [];
   return blocks.flatMap((block): Block[] => {
     if (block.type === 'paragraph') return [block];
+    tally.footnoteBlocks += 1;
     if (block.type === 'list') {
-      return (block.items as { content: Block[] }[]).flatMap((item) => paragraphsOf(item.content));
+      return (block.items as { term?: unknown; content: Block[] }[]).flatMap((item) => [
+        ...runs(item.term),
+        ...paragraphsOf(item.content, tally),
+      ]);
     }
-    if (block.type === 'blockquote') return paragraphsOf(block.content as Block[]);
+    if (block.type === 'blockquote') {
+      return [...paragraphsOf(block.content as Block[], tally), ...runs(block.attribution)];
+    }
+    if (block.type === 'table') {
+      const rows = block.rows as { cells: { content: Block[] }[] }[];
+      return [
+        ...runs(block.caption),
+        ...rows.flatMap((row) => row.cells.flatMap((cell) => paragraphsOf(cell.content, tally))),
+      ];
+    }
+    if (block.type === 'preformatted') {
+      return (block.text as string)
+        .split('\n')
+        .filter((line) => line.trim() !== '')
+        .map((line) => ({
+          type: 'paragraph',
+          content: [{ type: 'text', value: line, marks: [] }],
+        }));
+    }
+    // Nothing else a note's reading makes; were it to, it is counted and its content left out.
     return [];
   });
 }
@@ -1004,6 +1036,7 @@ export function readHtml(html: string): ReaderResult {
   reportControls(report, tally.controls);
   say(tally.tooDeep, (extra) => report.add('read', 'discarded', 'unrepresentable', extra));
   say(tally.footnotes, (extra) => report.add('read', 'discarded', 'footnote', extra));
+  say(tally.footnoteBlocks, (extra) => report.add('read', 'rewritten', 'footnoteBlocks', extra));
 
   return {
     ok: true,

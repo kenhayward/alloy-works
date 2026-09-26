@@ -9,7 +9,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 - **Footnotes pasted from Word arrive as footnotes**, each where its mark stood and holding its note
   with its formatting, beside the lists, tables and emphasis Word's paste already kept. A footnote
-  whose note cannot be found is left out and named in the paste report (issue #254).
+  whose note cannot be found is left out and named in the paste report, and a table, list or
+  quotation in a note is kept as the note's paragraphs, which the report says (issue #254).
 
 ### Fixed
 

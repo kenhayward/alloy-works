@@ -599,6 +599,38 @@ describe('HTML pasted from Word', () => {
     ]);
   });
 
+  it('keeps a table, a list or a quotation in a Word note as its paragraphs, and says so', () => {
+    const outcome = admit(
+      read(
+        `<p class=MsoNormal>Unbox it<a style='mso-footnote-id:ftn1' href="#_ftn1" name="_ftnref1"><span class=MsoFootnoteReference>[1]</span></a> now.</p>
+<div style='mso-element:footnote-list'><div style='mso-element:footnote' id=ftn1>
+<p class=MsoFootnoteText><a style='mso-footnote-id:ftn1' href="#_ftnref1" name="_ftn1"><span class=MsoFootnoteReference>[1]</span></a> See the trays.</p>
+<table><tr><td><p>Upper</p></td><td><p>250</p></td></tr></table>
+<ul><li>Plain paper only.</li></ul>
+</div></div>`,
+      ),
+      receiving(),
+    );
+    if (!outcome.ok) throw new Error(outcome.failure);
+    // A note holds paragraphs alone (CNT-129): nothing Word put in one is lost, and the report says
+    // what was kept differently.
+    expect(unidentified(outcome.content)).toEqual([
+      stored(
+        run('Unbox it'),
+        footnote(
+          stored(run('See the trays.')),
+          stored(run('Upper')),
+          stored(run('250')),
+          stored(run('Plain paper only.')),
+        ),
+        run(' now.'),
+      ),
+    ]);
+    expect(happened(outcome.report).filter((entry) => entry.stage === 'read')).toEqual([
+      { stage: 'read', action: 'rewritten', subject: 'footnoteBlocks', count: 2 },
+    ]);
+  });
+
   it('leaves out a Word footnote whose note is not there, its number with it, and says so', () => {
     const outcome = admit(
       read(
