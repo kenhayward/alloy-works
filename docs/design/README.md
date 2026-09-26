@@ -30,6 +30,7 @@ understand the storage layer, rather than something to be thrown away.
 | [structure.md](structure.md)                           | The document and its outline, and the numbering, references, navigation and links computed over it            |
 | [assets.md](assets.md)                                 | An image arriving: proved to be what its format permits, stored by its hash, read by who may read its space   |
 | [publishing.md](publishing.md)                         | A document version to a kept, reproducible PDF: who may publish, the layout, the pipeline and the record      |
+| [templates.md](templates.md)                           | A template, a document made from one, and what the document keeps of it                                       |
 
 ## Why these are not one per requirement area
 
