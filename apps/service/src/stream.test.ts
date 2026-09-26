@@ -212,6 +212,20 @@ describe('what an environment is doing, as it happens', () => {
   const announce = (tenant: Tenant, id: string) =>
     tenantDb.withTenant(tenant, (trx) => notifyTenant(trx, { kind: 'sample', id, state: 'done' }));
 
+  it("API-047 answers the stream with its request identifier too, the caller's where given", async () => {
+    // The stream writes its own head, past the hook that gives every other response the header.
+    const controller = new AbortController();
+    try {
+      const answer = await fetch(`${address}/v1/stream`, {
+        headers: { cookie, accept: 'text/event-stream', 'x-request-id': 'viewer-42' },
+        signal: controller.signal,
+      });
+      expect(answer.headers.get('x-request-id')).toBe('viewer-42');
+    } finally {
+      controller.abort();
+    }
+  });
+
   it('opens with what there is now', async () => {
     const id = await sampleIn(production);
     const stream = openStream(`${address}/v1/stream`, cookie);

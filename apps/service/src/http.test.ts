@@ -162,6 +162,32 @@ describe('the HTTP layer', () => {
     expect(response.json().traceId).toMatch(TRACE);
   });
 
+  it("API-047 answers every response with its request identifier, the caller's where given, and logs it and reports it in an error", async () => {
+    const { app, logs } = testApp();
+    // A fresh one where the caller sent none, on a success, a refusal and an address nobody serves.
+    for (const url of ['/named', '/refused', '/nowhere']) {
+      const response = await app.inject(url);
+      expect(response.headers['x-request-id'], url).toMatch(TRACE);
+    }
+    // The caller's own where it sent one: on the response, in the error it reports and in the log.
+    const theirs = 'checkout-7f3a.retry_2';
+    const broken = await app.inject({ url: '/broken', headers: { 'x-request-id': theirs } });
+    expect(broken.headers['x-request-id']).toBe(theirs);
+    expect(broken.json().traceId).toBe(theirs);
+    const logged = logs.lines.map((line) => JSON.parse(line) as { traceId?: string; msg?: string });
+    expect(logged.filter((line) => line.traceId === theirs).map((line) => line.msg)).toContain(
+      'request failed',
+    );
+    const named = await app.inject({ url: '/named', headers: { 'x-request-id': theirs } });
+    expect(named.headers['x-request-id']).toBe(theirs);
+    // One that is not a plain token of at most 128 characters is not taken - it would be written
+    // into the log as it came - and the response carries a fresh one instead.
+    for (const unfit of ['two words', 'x'.repeat(129), '<script>', 'id"quoted"', '']) {
+      const response = await app.inject({ url: '/named', headers: { 'x-request-id': unfit } });
+      expect(response.headers['x-request-id'], JSON.stringify(unfit)).toMatch(TRACE);
+    }
+  });
+
   it('labels every log line of a request with its trace id', async () => {
     const { app, logs } = testApp();
     await app.inject('/named');
