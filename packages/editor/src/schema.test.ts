@@ -201,20 +201,17 @@ describe('the lists in the editor schema', () => {
    * type over the names the schema was built with: a `string` index would not typecheck, and a
    * misspelling here should fail the compiler rather than the assertion.
    */
-  const items = ['listItem', 'definitionItem'] as const;
+  const items = ['listItem', 'definition'] as const;
   const lists = ['list', 'definitionList'] as const;
 
   /**
-   * The content match an item offers **once its required opening has been matched**. `contentMatch`
-   * is the match at position zero, and a definition item opens with its term (decision C: a
-   * ProseMirror content expression is fixed per type, so one item type cannot be `block+` for two
-   * kinds and `term block+` for the third). Do not "simplify" this by relaxing `definitionItem` to
-   * `block+` or `term? block+` - that is the one change decision C exists to forbid.
+   * Where an item's blocks stand: a counted item holds them itself, and a definition item holds them
+   * in its `definition`, after its term (decision C: a ProseMirror content expression is fixed per
+   * type, so one item type cannot be `block+` for two kinds and open with a term for the third). Do
+   * not "simplify" this by relaxing `definitionItem` to `block+` or `term? definition` - that is the
+   * one change decision C exists to forbid.
    */
-  const opens = (item: (typeof items)[number]) =>
-    item === 'definitionItem'
-      ? editorSchema.nodes.definitionItem.contentMatch.matchType(editorSchema.nodes.term)!
-      : editorSchema.nodes.listItem.contentMatch;
+  const opens = (item: (typeof items)[number]) => editorSchema.nodes[item].contentMatch;
 
   it('holds a list and an item shaped as the stored model holds them', () => {
     expect(editorSchema.nodes.list.spec.content).toBe('listItem+');
@@ -229,7 +226,9 @@ describe('the lists in the editor schema', () => {
   // statement. The citation belongs on a body that makes all three and round-trips them.
   it('holds a definition list whose item opens with the term it defines', () => {
     expect(editorSchema.nodes.definitionList.spec.content).toBe('definitionItem+');
-    expect(editorSchema.nodes.definitionItem.spec.content).toBe('term block+');
+    expect(editorSchema.nodes.definitionItem.spec.content).toBe('term definition');
+    // Its definition is blocks, as a counted item is, in a node of its own rendered `dd`.
+    expect(editorSchema.nodes.definition.spec.content).toBe('block+');
     // A term takes marks, because a term is inline content and not a string.
     expect(editorSchema.nodes.term.spec.marks).toBe('_');
   });
@@ -242,7 +241,7 @@ describe('the lists in the editor schema', () => {
     // model's.
     //
     // Worth recording plainly: **no shape this schema can make distinguishes the two readings
-    // today.** `definitionItem` is `term block+`, so a term can only stand first, and the walk's
+    // today.** `definitionItem` is `term definition`, so a term can only stand first, and the walk's
     // emptiness test keys on the type name `paragraph`, so a term pairs with nothing whatever group
     // it is in. That is what makes this assertion the guard rather than a document-level test - and
     // what makes it worth having, because the day a family puts a node that is not a block between
@@ -450,7 +449,7 @@ describe('the editor stylesheet', () => {
         editorSchema.node('definitionList', { id: 'D1' }, [
           editorSchema.node('definitionItem', null, [
             editorSchema.node('term', null),
-            paragraph('b4'),
+            editorSchema.node('definition', null, [paragraph('b4')]),
           ]),
         ]),
       ),
@@ -458,6 +457,13 @@ describe('the editor stylesheet', () => {
     expectSelector(`.aw-text ${dlTag}`);
     const dtTag = tagOf(editorSchema.nodes.term.spec.toDOM!(editorSchema.node('term', null)));
     expectSelector(`.aw-text ${dtTag}`);
+    // And the definition, set as the paragraphs it holds and not as the browser indents a `dd`.
+    const ddTag = tagOf(
+      editorSchema.nodes.definition.spec.toDOM!(
+        editorSchema.node('definition', null, [paragraph('b5')]),
+      ),
+    );
+    expectSelector(`.aw-text ${ddTag}`);
   });
 });
 

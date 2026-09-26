@@ -88,10 +88,8 @@ describe('an equation in the editor schema (equations 1)', () => {
     expect(nodes.listItem!.validContent(one)).toBe(true);
     // A quotation holds its blocks and then its attribution.
     expect(nodes.blockquote!.validContent(one)).toBe(true);
-    // A definition item opens with its term, and its body is blocks.
-    expect(
-      nodes.definitionItem!.validContent(Fragment.from([nodes.term!.create(), one.child(0)])),
-    ).toBe(true);
+    // A definition item opens with its term, and its definition is blocks.
+    expect(nodes.definition!.validContent(one)).toBe(true);
     // A cell holds paragraphs and lists alone (tables 1, decision T-D); a list inside one is the
     // commands' and the paste's to refuse, as it is for a quotation.
     expect(nodes.table_cell!.validContent(one)).toBe(false);

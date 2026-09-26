@@ -1,6 +1,6 @@
 # 0025 - The editor schema is not the stored model one for one
 
-- **Status:** Accepted
+- **Status:** Superseded by 0026
 - **Date:** 2026-09-20
 
 ## Context

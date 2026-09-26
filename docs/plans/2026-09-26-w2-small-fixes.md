@@ -81,19 +81,43 @@ typography` - the read-only card and the open editor both carry the shared class
   reads tokens). **Break:** drop the class from the read-only container.
 - **Claim** CNT-075 in component-editor.md.
 
-### Task 2: CNT-175, a definition list as one
+### Task 2: CNT-175, a definition list as one (W2.1b)
 
-**Issue first:** a screen reader reading a definition list in the editor, or in a document's text,
+**Issue #246:** a screen reader reading a definition list in the editor, or in a document's text,
 hears each definition as a plain paragraph in an unlabelled group, not as the definition of its term.
 
-- `definitionItem` renders its body as `dd` (`dl > dt + dd`, the grouping `div` kept only as HTML
-  allows it: `dl > div > dt + dd`), in the editor's schema and in `renderContent`; the parse rules
-  read both the new shape and the old, so a paste of the editor's own HTML still reads.
-- **Test** (`packages/editor`): `CNT-175 exposes a component's lists, tables and footnotes as
-structure` - rendered DOM: a list is `ul`/`ol` > `li`, a definition list `dl` with `dt` and `dd`, a
-  table `table` with `caption`, `th` and `td`, a footnote anchor an element carrying its note, and no
-  structure made of styled `div`s. **Break:** the old `div > p` body.
-- **Claim** CNT-175 in component-editor.md.
+**What the schema does today, and why it cannot be fixed in the rendering alone.** A
+`definitionItem` is `term block+` and renders `div > dt + p...`: the body's blocks are the item's own
+children, so no `toDOM` can put a `dd` round them, and a node view's one content element cannot split
+them from the term. A `dd` needs a node.
+
+**The change.** A new node, `definition`, `content: 'block+'`, `defining`, rendering `dd` and read
+back from `dd`; `definitionItem` becomes `term definition`, rendering `div` (HTML admits
+`dl > div > dt + dd`). The stored model does not change - an item is `{ term?, content }` and still
+is - so nothing is migrated: `mapping.ts` is where the two spellings meet, and gains the one level.
+
+- `mapping.ts`: `definitionListOf` wraps an item's blocks in `definition`; `storedBlock` reads them
+  from it; the labels of a failure inside a definition keep their numbers (the body's labels start at
+  0 today because the term is skipped - they now start at 0 because the definition is the body).
+- `identity.ts`, `state.ts`: `definition`, like `listItem`, is walked through and never named.
+- `blocks.ts`: every definition-list command is written against `term block+` - Enter from the term
+  into the body, Enter in the body making the next item, Backspace and Delete joining two items,
+  leaving the list from an emptied last item, lifting and nesting, the empty-item test, and
+  **Definition list** wrapping a paragraph. Each moves one level deeper. Their behaviour does not
+  change, and the ~80 existing definition-list tests in `blocks.test.ts`, whose builder gains the
+  `definition` node, are the regression suite for it; an expected shape that names the body changes
+  with it, and nothing else in an expectation does.
+- `style.css`: `.aw-text dd`, set as the body was.
+- **Paste needs nothing.** A component pasted into another travels as the product's own type
+  (`PRODUCT_CLIPBOARD_TYPE`), not as HTML. `packages/readers` already reads `dl > div > dt + dd` and
+  never read the old `div > dt + p` body (it skips a `p` there, measured), so the editor's own HTML,
+  read back without the product's type, now keeps its definitions where it did not.
+- **Test** (`packages/editor`): `CNT-175 exposes a component's lists, tables and footnotes to
+assistive technology as structure` - the view's DOM and `renderContent`'s alike: a list `ul`/`ol`
+  of `li`, a definition list `dl` of `dt` and `dd` (each `div` holding exactly one `dt` then one
+  `dd`), a table `table` with `caption`, `th` and `td`, a footnote's anchor carrying its note. **Break:**
+  the definition rendered as `div`, or the item's blocks outside it.
+- **Claim** CNT-175 in component-editor.md. Version 0.74.1, a fix; issue #246 closes.
 
 ### Task 3: CNT-074, who may edit and why
 
@@ -231,6 +255,25 @@ test now measures the route. A card also says so where the reader holds the comp
 window, says nothing of a hold whose time has passed, and hears changes when its window is returned
 to. The state is decided for every component the caller may read, including an occurrence with no
 version to show.
+
+**W2.1b (PR #251).** Built as Task 2 says, with three things the plan did not foresee.
+`prosemirror-schema-list`'s sink and lift put and look for a sublist after an item's last child,
+which is now the definition, so `sinkDefinitionItem` and a lift beside it are the product's, one level
+deeper; a Backspace or Delete join from a term with words leaves the emptied item behind, since a
+deletion cannot move a whole `definition`, so the join takes its definition's blocks in a second
+deletion; and upstream Backspace and Delete can no longer nest one item in another - nothing may
+follow a definition, measured - so the comments saying they do were corrected and the depth guard on
+them kept. ADR-0025 named `term block+` as its decision, so ADR-0026 restates it with the new shape
+and supersedes it. The mapping refuses an item whose blocks stand outside a definition, by name. The
+old `div > dt + p` body was also losing data in the HTML reader - a definition read back from the
+editor's HTML came back empty with nothing in the report - which the new shape ends. The final
+review found the join from a term reaching into a list that ends the definition above, a defect
+since issue #160 and on `main` too (issue #250): it asked the nearest text whether it was a
+paragraph, and a list's last line is one. It now asks the item above's own last block. The same
+review asked for the nested sink and the lift with siblings after it to be pressed rather than
+derived; both now are, each seen to fail under a break. Its re-review found Delete at the end of a nested definition
+list's last item stopping at that item, before the guard, and handing the key on to select the item
+after; the climb now carries on to the item holding the list, and the test asserts the caret too.
 
 ## Done when
 

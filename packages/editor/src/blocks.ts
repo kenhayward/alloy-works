@@ -1,6 +1,6 @@
 import { forbiddenInPreformatted, isLanguageLabel } from '@alloy-works/domain';
 import { chainCommands, newlineInCode, splitBlockAs } from 'prosemirror-commands';
-import { Fragment, Slice, type Node, type NodeType } from 'prosemirror-model';
+import { Fragment, NodeRange, Slice, type Node, type NodeType } from 'prosemirror-model';
 import { liftListItem, sinkListItem, splitListItem, wrapInList } from 'prosemirror-schema-list';
 import { Selection, TextSelection, type Command, type EditorState } from 'prosemirror-state';
 import { ReplaceAroundStep, ReplaceStep } from 'prosemirror-transform';
@@ -15,6 +15,7 @@ const listNode = editorSchema.nodes.list;
 const listItemNode = editorSchema.nodes.listItem;
 const definitionListNode = editorSchema.nodes.definitionList;
 const definitionItemNode = editorSchema.nodes.definitionItem;
+const definitionNode = editorSchema.nodes.definition;
 const termNode = editorSchema.nodes.term;
 const paragraphNode = editorSchema.nodes.paragraph;
 const preformattedNode = editorSchema.nodes.preformatted;
@@ -44,11 +45,12 @@ const NUMBERINGS = new Set(['decimal', 'alphabetic', 'roman']);
  * is issue #159, which carries the measurement. Refusing here at the engine's number would refuse
  * content the store holds, which is a different and worse kind of wrong.
  *
- * **Five routes answer to it, because five can build a level.** Three are commands: `nestItem`,
- * `makeDefinitionList` over any paragraph, and `countedList` over a paragraph inside a definition
- * item, where it wraps rather than toggling. Two are keys nobody would guess at - `Backspace` at the
- * start of a definition item's term and `Delete` at the end of the one before it, which cannot join
- * two items and nest one inside the other instead (`refusePastTheLimit`, and issue #160). The
+ * **Three commands answer to it, because three can build a level**: `nestItem`,
+ * `makeDefinitionList` over any paragraph, and `countedList` over a paragraph inside a definition,
+ * where it wraps rather than toggling. Two keys nobody would guess at are guarded too -
+ * `Backspace` at the start of a definition item's term and `Delete` at the end of the one before it,
+ * which under the item's old shape nested one item inside the other (`refusePastTheLimit`, and issue
+ * #160). They no longer can: nothing may follow an item's `definition`, measured. The
  * toggle, the kind change and both lifts cannot make a document deeper than the one they were
  * handed, so they do not ask.
  */
@@ -89,11 +91,14 @@ const tooDeep = (doc: Node | undefined): boolean =>
 /**
  * A key that would make the document deeper than the model admits, **taken and not passed on**.
  *
- * `Backspace` and `Delete` build a list level, which nothing about either key suggests. Two
- * `definitionItem`s cannot merge - the content is `term block+` - so `deleteBarrier`, which the base
- * chain reaches through `joinBackward` and `joinForward`, wraps the following item in a new
- * definition list inside the previous one instead of joining them. At the limit that is a document
- * `fromEditor` throws on, reached by one press of a key an author thinks of as destructive.
+ * `Backspace` and `Delete` built a list level, which nothing about either key suggests. While a
+ * `definitionItem` was `term block+`, two could not merge, so `deleteBarrier`, which the base chain
+ * reaches through `joinBackward` and `joinForward`, wrapped the following item in a new definition
+ * list inside the previous one instead of joining them - at the limit a document `fromEditor` throws
+ * on, from one press of a key an author thinks of as destructive. `joinDefinitionItems` now answers
+ * both keys first (issue #160), and an item is `term definition`, after which the wrap finds no
+ * place (CNT-175): so this guards a route no key reaches today, and stays so that the depth rule
+ * does not rest on either of those facts.
  *
  * **It returns true to refuse and false to allow**, which is the opposite of every other command
  * here and is the whole point. This stands **ahead of** the binding that does the work: returning
@@ -215,30 +220,149 @@ function itemTypeAt(state: EditorState): NodeType | null {
  * `enterWithoutEmpties`, which is what it did before this chain existed, and a command that declines
  * leaves the author where they were.
  *
- * So the item holds the cursor's block and nothing else, except that a definition item also holds
- * its term and **the term must be empty too**: an item whose word is written and whose definition is
- * not is an item being typed, and Enter there makes the next item rather than leaving the list - and
- * leaving it would discard the word, because a term has no home outside a definition list.
+ * So the item holds the cursor's block and nothing else - a definition item's `definition` holds it
+ * and nothing else - except that a definition item also holds its term and **the term must be empty
+ * too**: an item whose word is written and whose definition is not is an item being typed, and Enter
+ * there makes the next item rather than leaving the list - and leaving it would discard the word,
+ * because a term has no home outside a definition list.
  *
- * The index check is what keeps a cursor in an empty **term** out: a term is a textblock too, and
- * the item's last child is its body. **Deleting it fails no test, and that is the claim rather than
- * a hole**: the count above already forces the index for every shape this schema can make, and the
- * only way to reach it from a term is a chain that answers the term later than this one -
- * `splitDefinitionItem` answers it first. It is here so that such a chain fails loudly rather than
- * lifting an item out from under a written body.
+ * A cursor in an empty **term** is out because a term stands in its item and not in a `definition`:
+ * a term is a textblock too, and Enter there moves into the definition (`splitDefinitionItem`).
  */
 function emptyItemAt(state: EditorState): Node | null {
   const { $from, empty } = state.selection;
   if (!empty || $from.depth < 2) return null;
   if (!$from.parent.isTextblock || $from.parent.content.size !== 0) return null;
-  const item = $from.node(-1);
-  if (item.type !== listItemNode && item.type !== definitionItemNode) return null;
-  const definition = item.type === definitionItemNode;
-  if (item.childCount !== (definition ? 2 : 1)) return null;
-  if ($from.index(-1) !== item.childCount - 1) return null;
-  if (definition && item.firstChild!.content.size !== 0) return null;
-  return item;
+  const holder = $from.node(-1);
+  if (holder.type === listItemNode) return holder.childCount === 1 ? holder : null;
+  if (holder.type !== definitionNode || holder.childCount !== 1) return null;
+  const item = $from.node(-2);
+  return item.firstChild!.content.size === 0 ? item : null;
 }
+
+/**
+ * The blocks an item holds: a counted item's own children, and a definition item's in its
+ * definition. What `nestItem` asks of the item above to tell a sublist already there from one it
+ * makes.
+ */
+const blocksOf = (item: Node): Node => (item.type === definitionItemNode ? item.lastChild! : item);
+
+/**
+ * `sinkListItem(definitionItem)`, one level deeper. The upstream command puts the new sublist after
+ * the last child of the item above, and a definition item's last child is its `definition`, after
+ * which `term definition` admits nothing - so it throws. This builds the same step with the sublist
+ * **inside** that definition: into the sublist already ending it, where there is one, and into a new
+ * one otherwise. A `ReplaceAroundStep` as upstream's is, so the items moved keep every position
+ * inside them and every block its identifier.
+ */
+export const sinkDefinitionItem: Command = (state, dispatch) => {
+  const { $from, $to } = state.selection;
+  const range = $from.blockRange(
+    $to,
+    (node) => node.childCount > 0 && node.firstChild!.type === definitionItemNode,
+  );
+  if (!range || range.startIndex === 0) return false;
+  const list = range.parent;
+  const above = list.child(range.startIndex - 1);
+  if (above.type !== definitionItemNode) return false;
+  if (dispatch) {
+    // Into the end of the sublist the definition above ends with, past its close, the definition's
+    // and the item's; or into the end of that definition, past its close and the item's.
+    const nested = blocksOf(above).lastChild?.type === list.type;
+    const open = nested ? 3 : 2;
+    const wrapper = definitionItemNode.create(
+      null,
+      Fragment.from(definitionNode.create(null, Fragment.from(list.type.create(null)))),
+    );
+    const { start, end } = range;
+    dispatch(
+      state.tr
+        .step(
+          new ReplaceAroundStep(
+            start - open,
+            end,
+            start,
+            end,
+            new Slice(Fragment.from(wrapper), open, 0),
+            nested ? 0 : 1,
+            true,
+          ),
+        )
+        .scrollIntoView(),
+    );
+  }
+  return true;
+};
+
+/**
+ * `liftListItem(definitionItem)` for an item in a definition list nested in another's definition,
+ * which the upstream command cannot do: it looks for the list's parent to be an item, finds a
+ * `definition`, and tries to take the list apart where it stands, which `term definition` refuses.
+ *
+ * The same two steps as upstream's `liftToOuterList`, one level deeper: the items after the lifted
+ * ones go into the last lifted item's definition as a sublist, and then the lifted items are lifted
+ * out of the nested list, the definition and the item holding it, into the outer list after that
+ * item. **It declines where the item above could not keep its shape**: when blocks follow the
+ * nested list in the definition, which would need an item of their own with no term, and when
+ * nothing would be left in the definition before the lifted items - which is where upstream's
+ * `liftTarget` declined under the old shape too.
+ */
+const liftNestedDefinitionItem: Command = (state, dispatch) => {
+  const { $from, $to } = state.selection;
+  let range = $from.blockRange(
+    $to,
+    (node) => node.childCount > 0 && node.firstChild!.type === definitionItemNode,
+  );
+  if (!range || range.depth < 3) return false;
+  const depth = range.depth;
+  const definition = $from.node(depth - 1);
+  if (definition.type !== definitionNode || $from.node(depth - 2).type !== definitionItemNode) {
+    return false;
+  }
+  const listIndex = $from.index(depth - 1);
+  if (listIndex !== definition.childCount - 1) return false;
+  if (range.startIndex === 0 && listIndex === 0) return false;
+  const tr = state.tr;
+  try {
+    const end = range.end;
+    const endOfList = range.$to.end(depth);
+    if (end < endOfList) {
+      tr.step(
+        new ReplaceAroundStep(
+          end - 2,
+          endOfList,
+          end,
+          endOfList,
+          new Slice(
+            Fragment.from(
+              definitionItemNode.create(
+                null,
+                Fragment.from(definitionNode.create(null, Fragment.from(range.parent.copy()))),
+              ),
+            ),
+            2,
+            0,
+          ),
+          1,
+          true,
+        ),
+      );
+      range = new NodeRange(tr.doc.resolve(range.$from.pos), tr.doc.resolve(endOfList), depth);
+    }
+    tr.lift(range, depth - 3);
+  } catch {
+    // A shape the guards above did not foresee: declined, and the author left where they were.
+    return false;
+  }
+  dispatch?.(tr.scrollIntoView());
+  return true;
+};
+
+/** Lifts an item of either kind a level: one nested in a definition by the command above. */
+const liftItemOf = (itemType: NodeType): Command =>
+  itemType === definitionItemNode
+    ? chainCommands(liftNestedDefinitionItem, liftListItem(definitionItemNode))
+    : liftListItem(itemType);
 
 /**
  * Changes a list's kind, start or numbering, refusing a start a numbering cannot carry.
@@ -350,9 +474,9 @@ function countedList(kind: 'ordered' | 'unordered', newIdentifier: () => string)
 
 /**
  * `wrapInList(definitionList)` returns false, measured: it cannot make an item that needs a term out
- * of a paragraph, because a definition item is `term block+` and a wrapping never inserts a sibling.
- * This wraps the paragraph as the item's body and opens an empty term above it, with the selection
- * in the term, because the term is what an author types first.
+ * of a paragraph, because a definition item is `term definition` and a wrapping never inserts a
+ * sibling. This wraps the paragraph as the item's definition and opens an empty term above it, with
+ * the selection in the term, because the term is what an author types first.
  *
  * **A `ReplaceAroundStep` rather than a replacement**, for the reason `wrapInList` uses one: the
  * paragraph is left where it is and only wrapped, so its position maps forward and it keeps its
@@ -389,11 +513,14 @@ function makeDefinitionList(newIdentifier: () => string): Command {
       const term = termNode.create();
       const wrapper = definitionListNode.create(
         { id: newIdentifier() },
-        Fragment.from(definitionItemNode.create(null, Fragment.from(term))),
+        Fragment.from(
+          definitionItemNode.create(null, Fragment.from([term, definitionNode.create()])),
+        ),
       );
-      // The gap - the paragraph being wrapped - opens after the term: one position into the list,
-      // one into the item, and the term's own size past it.
-      const insert = 1 + 1 + term.nodeSize;
+      // The gap - the paragraph being wrapped - opens in the definition after the term: one
+      // position into the list, one into the item, the term's own size past it, and one into the
+      // definition.
+      const insert = 1 + 1 + term.nodeSize + 1;
       const tr = state.tr.step(
         new ReplaceAroundStep(
           start,
@@ -418,13 +545,14 @@ function makeDefinitionList(newIdentifier: () => string): Command {
 /**
  * `Backspace` at the start of a definition item's term, or `Delete` at the end of the item before it:
  * **the two items become one** (issue #160). Without this, `deleteBarrier` could not merge them - a
- * definition item is `term block+`, so a join puts a paragraph where the term must be - and wrapped
- * the second item in a new definition list inside the first instead, one level deeper, from a key an
- * author thinks of as destructive.
+ * definition item opens with its term, so a join puts a paragraph where the term must be - and,
+ * while the item was `term block+`, wrapped the second item in a new definition list inside the
+ * first instead, one level deeper, from a key an author thinks of as destructive.
  *
  * The join is the one a paragraph gets: the second term's text runs on at the end of the first
- * item's last paragraph, and the second item's body follows it. **An empty term is taken away and
- * the body's first paragraph joins instead**, which is exactly the inverse of `Enter` in a
+ * item's last paragraph, and the second item's definition follows it, its blocks joining the first
+ * item's definition. **An empty term is taken away and
+ * the definition's first paragraph joins instead**, which is exactly the inverse of `Enter` in a
  * definition: that splits the paragraph and opens an empty term between the halves.
  *
  * One deletion over the boundary, so everything before it maps forward untouched and every block
@@ -451,7 +579,9 @@ export function joinDefinitionItems(direction: 'backward' | 'forward'): Command 
         // Only from the very end of an item: the caret's block is the last thing in each level.
         if ($at.index(depth) !== node.childCount - 1) return false;
         if (node.type === definitionItemNode) {
-          if ($at.index(depth - 1) + 1 >= $at.node(depth - 1).childCount) return false;
+          // The last item of a list nested in a definition: the caret is at the end of the item
+          // holding that list too, so the question is that item's, further up (issue #250).
+          if ($at.index(depth - 1) + 1 >= $at.node(depth - 1).childCount) continue;
           itemStart = $at.after(depth);
           break;
         }
@@ -459,18 +589,36 @@ export function joinDefinitionItems(direction: 'backward' | 'forward'): Command 
       if (itemStart === null) return false;
     }
 
-    const item = state.doc.resolve(itemStart).nodeAfter!;
+    const $item = state.doc.resolve(itemStart);
+    const item = $item.nodeAfter!;
     const term = item.firstChild!;
-    const before = Selection.findFrom(state.doc.resolve(itemStart), -1, true);
-    if (before === null || before.$from.parent.type !== paragraphNode) return true;
+    // Asked of the item above's own last block, not of the nearest text: a definition ending in a
+    // list whose last line is a paragraph has that paragraph nearest, and the term's words would
+    // join a line of the list (issue #250).
+    if (blocksOf($item.nodeBefore!).lastChild?.type !== paragraphNode) return true;
+    const before = Selection.findFrom($item, -1, true);
+    if (before === null) return true;
     const joinFrom = before.from;
-    const firstBody = item.child(1);
-    const joinTo =
-      term.content.size === 0 && firstBody.type === paragraphNode
-        ? itemStart + 1 + term.nodeSize + 1
-        : itemStart + 2;
+    const firstBody = blocksOf(item).firstChild!;
+    // Into the first paragraph of the definition - one into the item, past the term, one into the
+    // definition and one into the paragraph - or to the start of the term's text.
+    const whole = term.content.size === 0 && firstBody.type === paragraphNode;
+    const joinTo = whole ? itemStart + 1 + term.nodeSize + 1 + 1 : itemStart + 2;
     if (dispatch) {
       const tr = state.tr.delete(joinFrom, joinTo);
+      if (!whole) {
+        // The term's words run on, and the item they came out of is left with an empty term and
+        // its definition - a deletion cannot move a whole `definition` into another, so the fit
+        // keeps the item. Its definition's blocks then join the first item's: one deletion of the
+        // tokens between the two definitions' contents, so every block keeps its position and
+        // its identifier.
+        const $joined = tr.doc.resolve(joinFrom);
+        let depth = $joined.depth;
+        while ($joined.node(depth).type !== definitionItemNode) depth -= 1;
+        const next = $joined.after(depth);
+        const emptied = tr.doc.nodeAt(next)!;
+        tr.delete(next - 2, next + 1 + emptied.firstChild!.nodeSize + 1);
+      }
       dispatch(tr.setSelection(TextSelection.create(tr.doc, joinFrom)).scrollIntoView());
     }
     return true;
@@ -482,14 +630,15 @@ export function joinDefinitionItems(direction: 'backward' | 'forward'): Command 
  * split's remainder is a paragraph, which cannot be an item's first child where that must be a term,
  * and `Transform.split` can change a type but never add a sibling.
  *
- * From the **term**, Enter does not split at all - it moves the cursor into the body, which is what
- * every definition list an author has used does and what they mean by pressing it.
+ * From the **term**, Enter does not split at all - it moves the cursor into the definition, which is
+ * what every definition list an author has used does and what they mean by pressing it.
  * From the **body**, Enter makes a new item whose term is empty and whose body holds the remainder,
  * and puts the selection in the new term - except in an item where nothing has been written at all,
  * which it declines so that Enter leaves the list instead (see `leaveTheList`).
  *
  * The step is the one `Transform.split` builds, with the term added to the second item: an open
- * slice of two items inserted at the cursor, so everything after the cursor flows into the second
+ * slice of two items, each open through its definition to the block, inserted at the cursor, so
+ * everything after the cursor flows into the second
  * and **every position before it maps forward untouched**. That is what keeps the blocks already in
  * the item carrying the identifiers they had.
  */
@@ -497,35 +646,45 @@ function splitDefinitionItem(newIdentifier: () => string): Command {
   return (state, dispatch) => {
     const { $from, $to } = state.selection;
     if ($from.depth < 2 || !$from.sameParent($to)) return false;
-    if ($from.node(-1).type !== definitionItemNode) return false;
 
     if ($from.parent.type === termNode) {
+      if ($from.node(-1).type !== definitionItemNode) return false;
       if (dispatch) {
-        // `term block+`, so there is always a body to move into, and it opens one past the term.
+        // `term definition`, so there is always a definition to move into, and its first block
+        // opens two past the term: into the definition, and into the block.
         const body = Selection.near(state.doc.resolve($from.after($from.depth) + 1), 1);
         dispatch(state.tr.setSelection(body).scrollIntoView());
       }
       return true;
     }
+    if ($from.depth < 3 || $from.node(-1).type !== definitionNode) return false;
     if (!$from.parent.isTextblock) return false;
     if (emptyItemAt(state) !== null) return false;
 
     if (dispatch) {
       const tr = state.tr.delete($from.pos, $to.pos);
-      const head = definitionItemNode.create(null, Fragment.from($from.parent.copy()));
+      const head = definitionItemNode.create(
+        null,
+        Fragment.from(definitionNode.create(null, Fragment.from($from.parent.copy()))),
+      );
       const tail = definitionItemNode.create(
         null,
         Fragment.from([
           termNode.create(),
-          // A fresh identifier rather than the copied one: the raw split leaves two blocks carrying
-          // one identifier, which the store refuses as used more than once. The identity plugin
-          // answers that too, and answering it here as well is what makes the command's own output
-          // storable.
-          $from.parent.type.create({ ...$from.parent.attrs, id: newIdentifier() }),
+          definitionNode.create(
+            null,
+            Fragment.from(
+              // A fresh identifier rather than the copied one: the raw split leaves two blocks
+              // carrying one identifier, which the store refuses as used more than once. The
+              // identity plugin answers that too, and answering it here as well is what makes the
+              // command's own output storable.
+              $from.parent.type.create({ ...$from.parent.attrs, id: newIdentifier() }),
+            ),
+          ),
         ]),
       );
       tr.step(
-        new ReplaceStep($from.pos, $from.pos, new Slice(Fragment.from([head, tail]), 2, 2), true),
+        new ReplaceStep($from.pos, $from.pos, new Slice(Fragment.from([head, tail]), 3, 3), true),
       );
       // The first empty term after the cut is the one just made; `splitListItem` finds its own
       // selection the same way, and for the same reason: the step's own positions are not the
@@ -559,9 +718,10 @@ function outOfDefinitionList(newIdentifier: () => string): Command {
     const { $from } = state.selection;
     const item = emptyItemAt(state);
     if (item === null || item.type !== definitionItemNode) return false;
-    if ($from.node(-2).type !== definitionListNode) return false;
-    const list = $from.node(-2);
-    const at = $from.index(-2);
+    // The block stands in the item's definition, so the list is three up and not two.
+    if ($from.node(-3).type !== definitionListNode) return false;
+    const list = $from.node(-3);
+    const at = $from.index(-3);
     if (dispatch) {
       const items = (from: number, to: number): Node[] => {
         const taken: Node[] = [];
@@ -579,7 +739,7 @@ function outOfDefinitionList(newIdentifier: () => string): Command {
           ),
         );
       }
-      const from = $from.before(-2);
+      const from = $from.before(-3);
       const tr = state.tr.replaceWith(from, from + list.nodeSize, left);
       const paragraphAt = at > 0 ? from + left[0]!.nodeSize : from;
       dispatch(tr.setSelection(Selection.near(tr.doc.resolve(paragraphAt + 1))).scrollIntoView());
@@ -601,7 +761,7 @@ function outOfDefinitionList(newIdentifier: () => string): Command {
 function leaveTheList(newIdentifier: () => string): Command {
   const lift = chainCommands(
     liftListItem(listItemNode),
-    liftListItem(definitionItemNode),
+    liftItemOf(definitionItemNode),
     outOfDefinitionList(newIdentifier),
   );
   return (state, dispatch) => (emptyItemAt(state) === null ? false : lift(state, dispatch));
@@ -666,7 +826,7 @@ function nestItem(newIdentifier: () => string): Command {
   return (state, dispatch) => {
     const itemType = itemTypeAt(state);
     if (itemType === null) return false;
-    const sink = sinkListItem(itemType);
+    const sink = itemType === definitionItemNode ? sinkDefinitionItem : sinkListItem(itemType);
     const would: Node[] = [];
     if (!sink(state, (tr) => would.push(tr.doc))) return false;
     if (tooDeep(would[0])) return false;
@@ -678,7 +838,9 @@ function nestItem(newIdentifier: () => string): Command {
     const outer = itemDepth > 0 ? $from.node(itemDepth - 1) : null;
     const index = itemDepth > 0 ? $from.index(itemDepth - 1) : 0;
     const joins =
-      outer !== null && index > 0 && outer.child(index - 1).lastChild?.type === outer.type;
+      outer !== null &&
+      index > 0 &&
+      blocksOf(outer.child(index - 1)).lastChild?.type === outer.type;
     if (joins) return sink(state, dispatch);
 
     return sink(state, (tr) => {
@@ -737,7 +899,7 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
       return (state, dispatch) => {
         const itemType = itemTypeAt(state);
         if (itemType === null) return false;
-        return liftListItem(itemType)(state, dispatch ?? (() => undefined));
+        return liftItemOf(itemType)(state, dispatch ?? (() => undefined));
       };
     case 'quotation':
       return quotation(newIdentifier);

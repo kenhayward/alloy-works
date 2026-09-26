@@ -344,6 +344,8 @@ function countedListOf(list: Extract<BlockNode, { type: 'list' }>): Node {
  *
  * An item whose term is absent gets the empty `term` node an author types into. The editor always
  * has the node, because that is where their cursor goes; what is optional is what reaches the store.
+ * The item's blocks stand in a `definition`, which the stored model has no member for: an item is
+ * `{ term?, content }`, and its `content` is the definition's children.
  */
 function definitionListOf(list: Extract<BlockNode, { type: 'list' }>): Node {
   return editorSchema.node(
@@ -352,7 +354,7 @@ function definitionListOf(list: Extract<BlockNode, { type: 'list' }>): Node {
     list.items.map((item) =>
       editorSchema.node('definitionItem', null, [
         editorSchema.node('term', null, (item.term ?? []).flatMap(toRun)),
-        ...nodesOf(item.content),
+        editorSchema.node('definition', null, nodesOf(item.content)),
       ]),
     ),
   );
@@ -474,16 +476,14 @@ export function fromEditor(doc: Node): ContentDocument {
  * no identifier has no other name to be refused under, and at depth an index alone would say almost
  * nothing about which block an author should look at.
  *
- * `from` skips the children that are not blocks. A definition item opens with its term, so its body
- * starts at 1 - and the body's own labels start at 0, because the term is not a block and counting
- * it would make every message in a definition list one out.
+ * A definition item's blocks are its `definition`'s children, so they are labelled from 0 under the
+ * item, as a counted item's are: the term is not a block, and counting it would make every message
+ * in a definition list one out.
  */
-function storedBlocks(parent: Node, within: string, from = 0): unknown[] {
+function storedBlocks(parent: Node, within: string): unknown[] {
   const blocks: unknown[] = [];
   parent.forEach((child, _offset, index) => {
-    if (index < from) return;
-    const at = index - from;
-    blocks.push(storedBlock(child, within === '' ? String(at) : `${within}.${at}`));
+    blocks.push(storedBlock(child, within === '' ? String(index) : `${within}.${index}`));
   });
   return blocks;
 }
@@ -548,9 +548,16 @@ function storedBlock(node: Node, at: string): unknown {
         // before the word is mid-edit, not in error, and the only message an iteration save can
         // give them names nothing (`checkBlock`, and CNT-124's empty paragraph before it).
         const term = runsOf(opening, id);
+        // The item's blocks are its definition's children, so a block standing there instead would
+        // be walked as a definition, its text read as blocks and refused under a name that says
+        // nothing of why - guarded as the term is, and for the same reason.
+        const definition = item.maybeChild(1);
+        if (definition?.type.name !== 'definition') {
+          throw new Error(`Item ${at}.${index} holds its blocks outside a definition`);
+        }
         items.push({
           ...(term.length === 0 ? {} : { term }),
-          content: storedBlocks(item, `${at}.${index}`, 1),
+          content: storedBlocks(definition, `${at}.${index}`),
         });
       });
       // One stored `list` of three kinds, out of the editor's two node types: this is the join.

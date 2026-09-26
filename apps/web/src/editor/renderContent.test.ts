@@ -1,4 +1,4 @@
-import { renderContent } from '@alloy-works/editor';
+import { createEditorState, mountEditor, renderContent, toEditor } from '@alloy-works/editor';
 import { describe, expect, it } from 'vitest';
 
 const content = {
@@ -238,6 +238,119 @@ describe('a component rendered as text', () => {
       marker: null,
       words: 'No description',
     });
+  });
+
+  it("CNT-175 exposes a component's lists, tables and footnotes to assistive technology as structure, not styling", () => {
+    const text = (value: string) => ({ type: 'text', value, marks: [] });
+    const para = (id: string, ...runs: unknown[]) => ({
+      type: 'paragraph',
+      id,
+      style: 'body',
+      content: runs,
+    });
+    const cell = (id: string, value: string) => ({
+      content: [para(id, text(value))],
+      colspan: 1,
+      rowspan: 1,
+    });
+    const structured = {
+      ...content,
+      content: [
+        {
+          type: 'list',
+          id: 'l1',
+          kind: 'unordered',
+          items: [{ content: [para('u1', text('Plug it in.'))] }],
+        },
+        {
+          type: 'list',
+          id: 'l2',
+          kind: 'ordered',
+          items: [{ content: [para('o1', text('Switch it on.'))] }],
+        },
+        {
+          type: 'list',
+          id: 'l3',
+          kind: 'definition',
+          items: [
+            { term: [text('Creep')], content: [para('d1', text('Slow strain.'))] },
+            {
+              term: [text('Yield')],
+              content: [para('d2', text('The greatest stress.')), para('d3', text('Measured.'))],
+            },
+          ],
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [text('Readings')],
+          headerRows: 1,
+          headerColumns: 0,
+          rows: [{ cells: [cell('h1', 'City')] }, { cells: [cell('c1', 'York')] }],
+        },
+        para('b1', text('Unbox it'), {
+          type: 'footnote',
+          id: 'f1',
+          anchor: { kind: 'span' },
+          content: [para('fp1', text('Twice.'))],
+        }),
+      ],
+    };
+
+    // What a list, a definition list and a table are, to anything reading the markup: elements that
+    // say so, and a definition list's every group exactly one term and then its definition, holding
+    // every block of the definition - never a paragraph standing beside the term.
+    const exposed = (root: Element) => {
+      expect(root.querySelector('ul > li')).toHaveTextContent('Plug it in.');
+      expect(root.querySelector('ol > li')).toHaveTextContent('Switch it on.');
+      const groups = [...root.querySelector('dl')!.children];
+      expect(groups.map((group) => group.tagName)).toEqual(['DIV', 'DIV']);
+      expect(groups.map((group) => [...group.children].map((child) => child.tagName))).toEqual([
+        ['DT', 'DD'],
+        ['DT', 'DD'],
+      ]);
+      expect(groups.map((group) => group.querySelector(':scope > dt')!.textContent)).toEqual([
+        'Creep',
+        'Yield',
+      ]);
+      expect(
+        [...groups[1]!.querySelectorAll(':scope > dd > p')].map((block) => block.textContent),
+      ).toEqual(['The greatest stress.', 'Measured.']);
+      const table = root.querySelector('figure table')!;
+      expect(table.closest('figure')!.querySelector('figcaption')).toHaveTextContent('Readings');
+      expect(table.querySelector('th')).toHaveTextContent('City');
+      expect(table.querySelector('td')).toHaveTextContent('York');
+    };
+
+    // The editor's surface, which is what CNT-175 asks of: and there a footnote is a marker named as
+    // one, its text an editor of its own named as the footnote's.
+    const opened = toEditor(structured as never);
+    if (!opened.editable) throw new Error(opened.unsupported.join(', '));
+    const place = document.createElement('div');
+    document.body.appendChild(place);
+    const view = mountEditor(place, {
+      state: createEditorState({ doc: opened.doc, newIdentifier: () => 'x' }),
+      label: 'Content',
+      editable: () => true,
+      dispatch: (tr, target) => target.updateState(target.state.apply(tr)),
+      pasted: () => undefined,
+      refused: () => undefined,
+    });
+    try {
+      exposed(view.dom);
+      expect(view.dom.querySelector('sup[role="img"]')).toHaveAttribute('aria-label', 'Footnote');
+    } finally {
+      view.destroy();
+      place.remove();
+    }
+
+    // And the same component read on its document's page, before it is opened.
+    const rendered = renderContent(structured, document);
+    if (rendered === null) throw new Error('Expected markup');
+    const host = document.createElement('div');
+    host.append(rendered);
+    exposed(host);
   });
 
   it('answers null for content it cannot read', () => {

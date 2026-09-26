@@ -249,7 +249,7 @@ describe('what the editor always holds', () => {
     () => {
       // The sequence above never leaves the top level, where every position is a paragraph's. Seeded
       // with a document that nests, the same two thousand edits land inside list items, inside a
-      // definition item's body and inside its term - which is where identity, adjacency and the
+      // definition item's definition and inside its term - which is where identity, adjacency and the
       // mapping all had to learn to descend, and where a position they disagree about first shows up.
       const opened = toEditor({
         schemaVersion: 1,
@@ -308,9 +308,9 @@ describe('what the editor always holds', () => {
  * pair, and a rule the two write paths disagree on is a rule one of them breaks.
  *
  * Three of those homes are reachable from this schema today: the top level, a list item, and a
- * definition item's body beneath its term. A blockquote, a table cell and a footnote arrive with the
- * families that make them editable, and the walk meets them without being told, because it asks the
- * schema which nodes are blocks rather than naming the nodes that hold them.
+ * definition item's definition beneath its term. A blockquote, a table cell and a footnote arrive
+ * with the families that make them editable, and the walk meets them without being told, because
+ * it asks the schema which nodes are blocks rather than naming the nodes that hold them.
  */
 describe('two adjacent empty paragraphs, at any depth', () => {
   const emptyParagraph = () => editorSchema.node('paragraph', { id: null, style: 'body' });
@@ -326,7 +326,7 @@ describe('two adjacent empty paragraphs, at any depth', () => {
     editorSchema.node('definitionList', null, [
       editorSchema.node('definitionItem', null, [
         editorSchema.node('term', null, term === '' ? [] : [editorSchema.text(term)]),
-        ...blocks,
+        editorSchema.node('definition', null, blocks),
       ]),
     ]);
 
@@ -350,14 +350,16 @@ describe('two adjacent empty paragraphs, at any depth', () => {
     return found;
   };
 
-  /** The paragraphs of one item, addressed by the list holding it and the item's index. */
+  /**
+   * The paragraphs of one item, addressed by the list holding it and the item's index: a counted
+   * item's own, and a definition item's in its definition.
+   */
   const paragraphsIn = (doc: Node, [list, index]: readonly [string, number]) => {
     const found: Node[] = [];
-    find(doc, list)
-      .node.child(index)
-      .forEach((child) => {
-        if (child.type.name === 'paragraph') found.push(child);
-      });
+    const item = find(doc, list).node.child(index);
+    (item.type.name === 'definitionItem' ? item.child(1) : item).forEach((child) => {
+      if (child.type.name === 'paragraph') found.push(child);
+    });
     return found;
   };
 
@@ -377,7 +379,7 @@ describe('two adjacent empty paragraphs, at any depth', () => {
     expect(after.doc.childCount).toBe(4);
     expect(after.doc.child(1).textContent).toBe('');
     expect(after.doc.child(2).type.name).toBe('list');
-    // A list item, and a definition item's body beneath its term.
+    // A list item, and a definition item's definition beneath its term.
     expect(paragraphsIn(after.doc, ['list', 0])).toHaveLength(1);
     expect(paragraphsIn(after.doc, ['definitionList', 0])).toHaveLength(1);
   });
@@ -415,10 +417,10 @@ describe('two adjacent empty paragraphs, at any depth', () => {
 
   it('does the same inside a definition item, beneath its term', () => {
     const state = componentOf([textParagraph('Unbox'), definitionOf('Cable', [emptyParagraph()])]);
-    // The item's blocks begin where its term ends, so this is a pair in the body and not a term
-    // standing beside a paragraph.
+    // The item's blocks begin one inside the definition that follows its term, so this is a pair in
+    // the definition and not a term standing beside a paragraph.
     const term = find(state.doc, 'term');
-    const after = state.apply(state.tr.insert(term.pos + term.node.nodeSize, emptyParagraph()));
+    const after = state.apply(state.tr.insert(term.pos + term.node.nodeSize + 1, emptyParagraph()));
     expect(paragraphsIn(after.doc, ['definitionList', 0])).toHaveLength(1);
     expect(find(after.doc, 'term').node.textContent).toBe('Cable');
   });
@@ -434,7 +436,7 @@ describe('two adjacent empty paragraphs, at any depth', () => {
     // An author who writes the definition before the word leaves an empty term above an empty
     // paragraph. The stored model never sees those two in one sequence - a term belongs to the item
     // and its blocks are a sequence of their own - so neither may the editor. The two cannot be
-    // reordered by any gesture, `definitionItem` being `term block+`, so this pins the reading
+    // reordered by any gesture, `definitionItem` being `term definition`, so this pins the reading
     // rather than catching a case a command produces: the walk asks the schema which children are
     // blocks, and a term is not one.
     const state = componentOf([textParagraph('Unbox'), definitionOf('', [emptyParagraph()])]);
@@ -444,10 +446,11 @@ describe('two adjacent empty paragraphs, at any depth', () => {
   });
 
   it('takes a child that is not a block out of the sequence, rather than reading it as a member', () => {
-    // The group filter itself. **No document the editor's own schema can make reaches it**: the one
-    // non-block child it has is a `definitionItem`'s term, `definitionItem` is `term block+`, so a
-    // term can only stand first and never between two paragraphs - and the emptiness test keys on
-    // the type name `paragraph`, so a term pairs with nothing whatever group it is in. So this
+    // The group filter itself. **No document the editor's own schema can make reaches it**: the
+    // non-block children it has are a `definitionItem`'s term and definition, and the item is
+    // `term definition`, so a term can only stand first and never between two paragraphs - and the
+    // emptiness test keys on the type name `paragraph`, so a term pairs with nothing whatever group
+    // it is in. So this
     // builds a schema of its own to put a node that is not a block **between** two empty paragraphs,
     // which is the case the filter decides and the case the next family that nests may bring.
     //

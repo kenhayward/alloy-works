@@ -4,6 +4,7 @@ import { sinkListItem, splitListItem } from 'prosemirror-schema-list';
 import { Selection, type EditorState, type Transaction } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
 
+import { sinkDefinitionItem } from './blocks.js';
 import { KEEPS_IDENTIFIERS } from './identity.js';
 import { editorSchema } from './schema.js';
 import { createEditorState, enterWithoutEmpties } from './state.js';
@@ -27,7 +28,7 @@ const list = (id: string, ...items: Node[]) => editorSchema.node('list', { id },
 const definitionItem = (term: string, ...blocks: Node[]) =>
   editorSchema.node('definitionItem', null, [
     editorSchema.node('term', null, term === '' ? [] : [editorSchema.text(term)]),
-    ...blocks,
+    editorSchema.node('definition', null, blocks),
   ]);
 
 const definitionList = (id: string, ...items: Node[]) =>
@@ -111,7 +112,7 @@ const at = (state: EditorState, pos: number) =>
 
 const splitItem = splitListItem(editorSchema.nodes.listItem!);
 const sinkItem = sinkListItem(editorSchema.nodes.listItem!);
-const sinkDefinition = sinkListItem(editorSchema.nodes.definitionItem!);
+const sinkDefinition = sinkDefinitionItem;
 
 /**
  * ADR-0023's rule reaches every block, not the top level. A list item holds blocks, so ordinary

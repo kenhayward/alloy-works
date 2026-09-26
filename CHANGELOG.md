@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.74.1 - 2026-09-26 (PR #251)
+
+### Fixed
+
+- A screen reader now hears each definition in a definition list as the definition of its term, in
+  the editor and on a document's page, where it used to hear a plain paragraph. Definition lists
+  look and behave as before, and one copied from the editor is marked up as a definition list
+  (issue #246).
+- Backspace at the start of a definition's term, or Delete at the end of the item above, no longer
+  joins the term's word onto a list that ends the definition above. Where the definition above ends
+  in a list, the key now does nothing, as it already did after a quotation (issue #250).
+
 ## 0.74.0 - 2026-09-26 (PR #249)
 
 ### Added
