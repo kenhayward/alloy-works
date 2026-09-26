@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { bootstrapCluster } from './bootstrap.js';
+import { bootstrapCluster, bootstrapLoginRoles, prepareDatabase } from './bootstrap.js';
+import { migrate } from './migrate.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 
 describe('bootstrapCluster', () => {
@@ -63,5 +64,34 @@ describe('bootstrapCluster', () => {
 
   it('is safe to run again', async () => {
     await expect(bootstrapCluster(db.adminUrl, TEST_PASSWORDS)).resolves.toBeUndefined();
+  });
+});
+
+describe('prepareDatabase', () => {
+  let db: TestDatabase;
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapLoginRoles(db.adminUrl, TEST_PASSWORDS);
+  });
+
+  afterAll(() => db.drop());
+
+  // What lets a suite set the login roles up once and prepare a database per file in parallel: a
+  // database's preparation writes no row every other database shares.
+  it('makes a database ready to migrate without writing a login role', async () => {
+    const roles = () =>
+      queryAs(
+        db.adminUrl,
+        `select rolname, xmin::text as xmin from pg_authid
+          where rolname in ('aw_service', 'aw_worker', 'aw_migrator', 'aw_tenant') order by rolname`,
+      ).then((result) => result.rows);
+    const before = await roles();
+
+    await prepareDatabase(db.adminUrl);
+    await migrate(db.migratorUrl);
+
+    expect(before).toHaveLength(4);
+    expect(await roles()).toEqual(before);
   });
 });

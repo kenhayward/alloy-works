@@ -1,12 +1,12 @@
 import {
-  bootstrapCluster,
+  prepareDatabase,
   createTenant,
   createTenantDatabase,
   migrate,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import { freshDatabase, type TestDatabase } from '@alloy-works/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sweepExpiredSignIns } from './sweep.js';
 
@@ -17,7 +17,7 @@ describe('sweeping what sign-ins leave behind', () => {
 
   beforeAll(async () => {
     db = await freshDatabase();
-    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    await prepareDatabase(db.adminUrl);
     await migrate(db.migratorUrl);
     tenant = await createTenant(db.adminUrl, db.migratorUrl, {
       organisation: { id: 'acme', name: 'Acme' },

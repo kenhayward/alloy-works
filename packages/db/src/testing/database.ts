@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { sql } from 'kysely';
 import pg from 'pg';
+import { bootstrapLoginRoles } from '../bootstrap.js';
 import type { Tenant } from '../provision.js';
 import type { TenantTransaction } from '../tables.js';
 import type { TenantDatabase } from '../tenant-database.js';
@@ -133,6 +134,15 @@ export interface TestDatabase {
   /** A tenant id this database will clean up after: `test` and eight hex digits. */
   newTenantId(): string;
   drop(): Promise<void>;
+}
+
+/**
+ * The login roles every test database's connections use, set on the test server once. A suite whose
+ * files run in parallel calls this from its global setup and `prepareDatabase` from each file, so no
+ * two files write the same role at once.
+ */
+export async function bootstrapTestLoginRoles(): Promise<void> {
+  await bootstrapLoginRoles(serverUrl(), TEST_PASSWORDS);
 }
 
 function serverUrl(): string {

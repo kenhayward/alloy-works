@@ -1,4 +1,9 @@
-export { bootstrapCluster, type LoginPasswords } from './bootstrap.js';
+export {
+  bootstrapCluster,
+  bootstrapLoginRoles,
+  prepareDatabase,
+  type LoginPasswords,
+} from './bootstrap.js';
 export { migrate, type MigrateOptions, type MigrationReport } from './migrate.js';
 export { tenantNames, type TenantNames } from './names.js';
 export {

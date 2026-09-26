@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
-  bootstrapCluster,
+  prepareDatabase,
   createArtifact,
   createComponent,
   createDocument,
@@ -26,7 +26,7 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import { freshDatabase, queryAs, type TestDatabase } from '@alloy-works/db/testing';
 import {
   assemble,
   blockIdentifierFrom,
@@ -299,7 +299,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     typst = createTypst({ binary: typstBinaryPath(), fonts });
     db = await freshDatabase();
     objects = await testObjectStore();
-    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    await prepareDatabase(db.adminUrl);
     await migrate(db.migratorUrl);
     tenant = await createTenant(db.adminUrl, db.migratorUrl, {
       organisation: { id: 'acme', name: 'Acme' },
@@ -1330,7 +1330,7 @@ describe('publishing a request made before layouts', () => {
     typst = createTypst({ binary: typstBinaryPath(), fonts });
     db = await freshDatabase();
     objects = await testObjectStore();
-    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    await prepareDatabase(db.adminUrl);
     // Every tenant migration up to 0017 and none after: where every environment stood before layouts.
     before = await mkdtemp(join(tmpdir(), 'aw-before-0018-'));
     await cp(new URL('../../../packages/db/migrations/', import.meta.url), before, {
