@@ -232,6 +232,8 @@ makes a heading a paragraph, naming it` - the measured fixture, extended with a 
 - publishing.md's CNT-054 row: a citation fails as `inline_not_publishable`, not
   `citation_unresolved`.
 - publishing.md's "Where the code lives": veraPDF runs in the worker's suite, not its job.
+- publishing.md's PUB-074 row: the refusal is `page_reference_without_pdf`, not
+  `page_citation_without_pdf` (found by W2.2's final review).
 - docs/features.md: the document page shows the text in reading order, each component opening in
   place; "no document view" means no view that renders the document as it will publish. Say it once
   and consistently.
