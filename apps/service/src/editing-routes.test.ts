@@ -282,6 +282,32 @@ describe('writing in an editing session through the service', () => {
       ]);
     });
 
+    it('CNT-166 stores characters outside the Basic Multilingual Plane and gives them back exactly', async () => {
+      const made = await component();
+      const session = randomUUID();
+      await call('ada', 'POST', `/v1/components/${made.id}/lock`, { session });
+      // Mathematical bold capital A, a grinning face, a Linear B syllable and a CJK Extension B
+      // ideograph: four planes' worth, each two UTF-16 units.
+      const written = 'Mass \u{1d400}, \u{1f600}, \u{10000} and \u{20000}.';
+      await call('ada', 'PUT', `/v1/components/${made.id}/iterations/${session}/1`, {
+        openedFrom: made.openedFrom,
+        content: paragraphs(written),
+      });
+      const cut = await call('ada', 'POST', `/v1/components/${made.id}/versions`, {
+        session,
+        openedFrom: made.openedFrom,
+      });
+      expect(cut.statusCode, cut.body).toBe(200);
+
+      const opened = await call('grace', 'GET', `/v1/components/${made.id}`);
+      const read = opened.json<{ content: { content: { content: { value: string }[] }[] } }>()
+        .content.content[0]!.content[0]!.value;
+      expect(read).toBe(written);
+      expect([...read].map((character) => character.codePointAt(0)!.toString(16))).toEqual(
+        [...written].map((character) => character.codePointAt(0)!.toString(16)),
+      );
+    });
+
     it('API-039 refuses every write to a component another identity holds, naming the holder and when it is expected back', async () => {
       const made = await component();
       const session = randomUUID();
