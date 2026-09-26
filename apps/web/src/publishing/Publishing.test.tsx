@@ -571,6 +571,7 @@ describe('publishing from the document page', () => {
     });
     const fake = failing([
       refused('relative:footnote'),
+      refused('relative:float'),
       refused('title:caption'),
       refused('numberAndTitle:caption'),
       refused('title:nested'),
@@ -581,6 +582,7 @@ describe('publishing from the document page', () => {
     const pdf = 'Publish this document as a PDF only, or change the cross-reference.';
     for (const said of [
       'A cross-reference asks for above or below between a footnote and the text outside it, which Word cannot print.',
+      "A cross-reference in a floating figure's caption asks for above or below, which Word cannot print there.",
       "A cross-reference in a caption asks for that caption's own words, which Word cannot print.",
       "A cross-reference asks for a caption's words that hold a cross-reference, which Word would print otherwise.",
     ]) {

@@ -5158,6 +5158,62 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(both).toEqual(refused);
   });
 
+  it("refuses for Word by name above or below in a floated figure's caption, which Word writes in a text box of its own, and publishes it for the PDF and in a figure set as a block (Word 3, ruling R5; measured in Word 16)", () => {
+    const inputs = defaultInputs();
+    inputs.catalogues.image.styles.push({
+      id: 'floated',
+      name: 'floated',
+      appliesTo: ['figure'],
+      fixed: { dimension: 'width', value: 0.5, unit: 'measure' },
+      maximum: { value: 1, unit: 'textHeight' },
+      placement: 'float',
+      alignment: 'end',
+    });
+    const caption = (name: string, target: string) => [
+      text('Shapes, see '),
+      xref(`${name}a`, toBlock('p0'), 'relative'),
+      text(' on '),
+      xref(`${name}b`, toBlock('p0'), 'page'),
+      text(', '),
+      xref(`${name}c`, toBlock(target), 'relative'),
+      text(' and '),
+      xref(`${name}d`, toBlock('t1')),
+    ];
+    const over = {
+      ...holding(
+        paragraph('p0', text('First.'), footnote('n1', paragraph('n1p', text('Noted.')))),
+        figure('f1', { imageStyle: 'floated', caption: caption('x', 'p1') }),
+        figure('f2', { caption: caption('y', 'p1') }),
+        figure('f3', { imageStyle: 'floated', caption: caption('z', 'n1p') }),
+        table('t1'),
+        paragraph(
+          'p1',
+          xref('w1', toBlock('f1'), 'relative'),
+          text(' and '),
+          xref('w2', toBlock('f3'), 'page'),
+        ),
+      ),
+      theme: resolved(inputs),
+      layout: listless,
+    };
+    const notInWord = (reference: string, detail: string) =>
+      failed('cross_reference_not_in_word', reference, detail);
+    const { pdf, docx, both } = failuresFor(over);
+    expect(pdf).toEqual([]);
+    // Word's `REF \p` in the box printed nothing, either way; the box's page and number, and a
+    // relative reference from the text to the floated figure, which names its place in the text, are
+    // right. The same caption on a figure set as a block stands in the text, and is written. One
+    // across a footnote's boundary as well is named once, for the note.
+    const refused = [
+      notInWord('xa', 'relative:float'),
+      notInWord('xc', 'relative:float'),
+      notInWord('za', 'relative:float'),
+      notInWord('zc', 'relative:footnote'),
+    ];
+    expect(docx).toEqual(refused);
+    expect(both).toEqual(refused);
+  });
+
   it("refuses for Word by name a caption's words asked for where they hold a reference asking for anything but its target's number - which the PDF prints as that number, and Word's REF, copying the field, in its own form - and publishes it for the PDF (Word 3, ruling R5; measured by the Word check)", () => {
     const over = holding(
       paragraph('p0', text('First.')),

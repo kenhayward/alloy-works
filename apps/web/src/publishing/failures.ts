@@ -124,14 +124,17 @@ const LIST_NOT_IN_WORD: Readonly<Record<string, string>> = {
 
 /**
  * What `cross_reference_not_in_word` names (Word 3, ruling R5): `detail` is `<form>:<why>`, and the why
- * alone decides the sentence - above or below between a footnote and the text outside it, a caption's
- * own words named in it, or a caption's words named where they hold a reference Word would print in
- * its own form, all of which Word's fields print otherwise than the PDF. The reference is the author's
- * to change, and the PDF can be made.
+ * alone decides the sentence - above or below between a footnote and the text outside it, or in a
+ * floated figure's caption, which Word sets in a text box of its own; a caption's own words named in
+ * it; or a caption's words named where they hold a reference Word would print in its own form, all of
+ * which Word's fields print otherwise than the PDF. The reference is the author's to change, and the
+ * PDF can be made.
  */
 const REFERENCE_NOT_IN_WORD: Readonly<Record<string, string>> = {
   footnote:
     'A cross-reference asks for above or below between a footnote and the text outside it, which Word cannot print.',
+  float:
+    "A cross-reference in a floating figure's caption asks for above or below, which Word cannot print there.",
   caption:
     "A cross-reference in a caption asks for that caption's own words, which Word cannot print.",
   nested:

@@ -623,7 +623,13 @@ export function assemble(input: AssembleInput): Assembled {
   const resolved =
     layout === null
       ? NO_REFERENCES
-      : resolveReferences(input, numbering, layout.words.above, layout.words.below);
+      : resolveReferences(
+          input,
+          numbering,
+          layout.words.above,
+          layout.words.below,
+          (style) => theme!.imageStyles.get(style)?.placement === 'float',
+        );
   failures.push(...resolved.failures);
   for (const each of resolved.pdfsOwn) pdfsOwn.add(each);
   if (docx) failures.push(...resolved.forWord);
@@ -2103,6 +2109,7 @@ function resolveReferences(
   numbering: NumberingTable,
   above: string | undefined,
   below: string | undefined,
+  floats: (imageStyle: string) => boolean,
 ): ResolvedReferences {
   const found: Found[] = [];
   const positions = new Map<string, number>();
@@ -2116,6 +2123,8 @@ function resolveReferences(
   const repeated = new Set<string>();
   /** Every footnote's paragraph's anchor: what Word writes in the footnotes part (Word 3, R5). */
   const inNotes = new Set<string>();
+  /** Every floated figure's anchor, whose caption Word writes in a text box (Word 3, R5). */
+  const floated = new Set<string>();
   let at = 0;
 
   const place = (anchor: string, inHeader: boolean) => {
@@ -2173,6 +2182,7 @@ function resolveReferences(
         return;
       case 'figure':
         captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });
+        if (floats(stored.imageStyle)) floated.add(blockAnchor(node, stored.id));
         inlines(stored.caption, node, false, inHeader, blockAnchor(node, stored.id));
         return;
       case 'preformatted':
@@ -2312,7 +2322,11 @@ function resolveReferences(
     // What Word's field would not print as the PDF does, refused where Word is asked for (Word 3,
     // ruling R5; measured in Word 16): above or below between a footnote's text and the text outside
     // it - Word writes the notes in a part of their own, and its `REF \p` then prints the bookmark's
-    // words - and a caption's words named in that caption, which Word's `REF` refuses as a reference
+    // words - and in a floated figure's caption, which Word writes in a text box, a story of its own
+    // too, where `REF \p` printed nothing whatever it named (the final review of Word 3, I1); a
+    // footnote and a text box are the only stories the writer puts a reference in, since a header's
+    // and a footer's words are the layout's, the document's title and fields of Word's own. And a
+    // caption's words named in that caption, which Word's `REF` refuses as a reference
     // to itself; and a caption's words named where they hold a reference asking for anything but its
     // target's number - Word's `REF` copies that field and prints it in its own form, "above" where
     // the PDF prints the target's kind (measured by the Word check). A number or a title across the
@@ -2321,11 +2335,13 @@ function resolveReferences(
     const limit =
       display === 'relative' && inNote !== inNotes.has(anchor)
         ? 'relative:footnote'
-        : titled && inCaption === anchor
-          ? `${display}:caption`
-          : titled && nesting.has(anchor)
-            ? `${display}:nested`
-            : null;
+        : display === 'relative' && inCaption !== null && floated.has(inCaption)
+          ? 'relative:float'
+          : titled && inCaption === anchor
+            ? `${display}:caption`
+            : titled && nesting.has(anchor)
+              ? `${display}:nested`
+              : null;
     if (limit !== null) {
       forWord.push(failure('compose', 'cross_reference_not_in_word', node, reference.id, limit));
     }
