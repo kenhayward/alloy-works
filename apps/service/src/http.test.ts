@@ -48,6 +48,17 @@ function testApp() {
   app.get('/refused', async () => {
     throw new AppError(403, 'forbidden', 'You may not do that here.', 'ZZZ-001');
   });
+  // Issue #240: a status the route does not declare, carrying a field the contract never names.
+  app.get('/teapot', { schema: { response: { 200: Named } } }, async (_request, reply) =>
+    // Cast: the declared statuses type the reply, and the point is a status that is not one.
+    reply.status(418 as 200).send({ name: 'Ada', password: 'leak' } as unknown as { name: string }),
+  );
+  // A refusal at a status this route does not list, carrying a member it does not declare either.
+  app.get('/refused-undeclared', { schema: { response: { 200: Named } } }, async () => {
+    throw new AppError(409, 'held', 'Somebody else has this.', undefined, {
+      holder: { id: 'p1', name: 'Grace' },
+    });
+  });
   app.get('/broken', async () => {
     throw new Error('connection to postgres://aw_service:hunter2@db failed');
   });
@@ -122,6 +133,25 @@ describe('the HTTP layer', () => {
     expect(response.statusCode).toBe(500);
     expect(response.json().code).toBe('internal');
     expect(response.body).not.toContain('invalid_type');
+  });
+
+  it('API-003 answers a status the contract does not declare as a failure, sending nothing undeclared', async () => {
+    const { app } = testApp();
+    const response = await app.inject('/teapot');
+    // Every route declares its statuses and, for any other, the one error shape (the published
+    // contract's `default`): a body that is not one is the service failing, as a malformed one is.
+    expect(response.statusCode).toBe(500);
+    expect(response.json().code).toBe('internal');
+    expect(response.body).not.toContain('leak');
+    // A refusal at a status the route does not list is still one: sent in the error shape, with
+    // nothing the shape does not name.
+    const refused = await app.inject('/refused-undeclared');
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json()).toEqual({
+      code: 'held',
+      message: 'Somebody else has this.',
+      traceId: expect.stringMatching(TRACE),
+    });
   });
 
   it('answers an unknown route with not_found in the same shape', async () => {

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { ErrorBody } from '@alloy-works/api-contract';
 import type { Writable } from 'node:stream';
 import Fastify, {
   LogController,
@@ -14,6 +15,11 @@ export interface HttpOptions {
   readonly logLevel: LogLevel;
   /** Where log lines go; standard output unless a test captures them. */
   readonly logStream?: Writable;
+  /**
+   * Told of every route as it is registered, a HEAD beside each GET included: how a test holds the
+   * routes served to the contract's, both ways (API-003). Registered first, so it hears every one.
+   */
+  readonly onRoute?: (route: { readonly method: string; readonly url: string }) => void;
 }
 
 /** What answers an address no route claims: the API saying, in its own shape, that there is none. */
@@ -54,6 +60,13 @@ export function createHttp(
     logController: new LogController({ requestIdLogLabel: 'traceId' }),
   });
 
+  if (options.onRoute) {
+    const told = options.onRoute;
+    app.addHook('onRoute', (route) => {
+      for (const method of [route.method].flat()) told({ method, url: route.url });
+    });
+  }
+
   app.setValidatorCompiler(({ schema }) => (data) => {
     const result = (schema as z.ZodType).safeParse(data);
     return result.success ? { value: result.data } : { error: result.error };
@@ -66,6 +79,18 @@ export function createHttp(
       (data) =>
         JSON.stringify((schema as z.ZodType).parse(data)),
   );
+
+  // Every status a route does not list is declared as the one error shape, as the published contract
+  // declares it (`default`), so a status the contract does not name is serialised against that
+  // shape: an error body goes out as one, with nothing it does not name, and anything else is the
+  // service failing, never sent as it came (API-003, issue #240). A route declaring no responses at
+  // all - the renderer's files - is left alone.
+  app.addHook('onRoute', (route) => {
+    const response = route.schema?.response as Record<string, unknown> | undefined;
+    if (response !== undefined && !('default' in response)) {
+      route.schema!.response = { ...response, default: ErrorBody };
+    }
+  });
 
   app.setErrorHandler((error, request, reply) => {
     const { status, body } = toErrorBody(error, request.id);
