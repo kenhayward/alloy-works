@@ -11,8 +11,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   now, can be published to Word, alone or beside its PDF. Each footnote is a real Word footnote: its
   mark in the text, in a table's cell or in a table's header row, and its note at the foot of the
   page Word sets the mark on, with its paragraphs, formatting, links and language. Word numbers them
-  itself, from 1 again in the front matter, the body and each appendix, as the PDF does, so a
-  recipient who adds a footnote sees the rest renumber.
+  itself, from 1 again in the front matter, the body and the appendices - the appendices counting on
+  from one to the next - as the PDF does, so a recipient who adds a footnote sees the rest renumber.
 - **Cross-references now reach Word**, each one a field Word updates rather than words typed in:
   a section's number or title or both, a figure's or a table's label or caption, a footnote's number,
   _above_ or _below_, and a page. Each is filled in with what the PDF prints, so the document reads
@@ -20,8 +20,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   update the document. In a paragraph's text or a footnote, a reference is a link to what it names,
   as in the PDF. A reference in a section's title reaches Word too.
 - **Publishing to Word refuses, by name, a cross-reference Word would print otherwise than the PDF**,
-  and the PDF is unaffected: _above_ or _below_ between a footnote and the text outside it, a
-  caption's own words named inside that caption, and a caption's words named where they hold a
+  and the PDF is unaffected: _above_ or _below_ between a footnote and the text outside it, or in the
+  caption of a figure whose image style floats it, a caption's own words named inside that caption, and a caption's words named where they hold a
   reference that prints anything but a number. So is a layout whose footnote numbering Word would
   count otherwise - a word or a chapter's number before the note's number, or a count starting again
   part-way through a part - and a part that comes back after another when its first run held notes.
@@ -32,9 +32,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **A Word document is now written by the Word writer's version 3**, which the publication's page
   names. Word documents already published keep the version that wrote them.
 - **In a passage in another language, Word prints its own words for above and below** - _oben_ and
-  _unten_ in German, say - where the PDF prints the layout's; in a passage whose language Word has no
-  words for, Hebrew among them, it prints English ones. A footnote's mark is a touch smaller and lower
-  in Word than in the PDF, and its notes a touch further apart.
+  _unten_ in German, say - where the PDF prints the layout's; where the Word opening the document has
+  no words of its own for the passage's language, it prints its own language's - English for Hebrew in
+  the one Word we checked, Word 16 in English. A footnote's mark is a touch smaller and lower in Word
+  than in the PDF, and its notes a touch further apart.
 - **Equations are still refused for Word**, by name, with a reference to one and the list of
   equations, and arrive in a later release.
 

@@ -361,11 +361,12 @@ stands as it was agreed; three of its lines are no longer what was built, and
 **What building Word 3 found, 2026-09-26.** WO-B and WO-C stand as agreed, and
 [What was built](#what-was-built) says where Word 3 departed from its plan. Two things here read
 differently now. A scheme is not the only thing Word may compute otherwise than the PDF prints: three
-kinds of reference - above or below across a footnote's boundary, a caption's words named inside it,
-and a caption's words holding a reference that is not a number - are Word's fields printing other
-words, and are refused by name as `cross_reference_not_in_word`, two of them open for Ken. And WO-C's
-Word words are the passage's language's only where Word has words for it: in a Hebrew passage Word 16
-printed the English ones.
+kinds of reference - above or below across a story's boundary (a footnote's, or a floated figure's
+text box), a caption's words named inside it, and a caption's words holding a reference that is not
+a number - are Word's fields printing other words, and are refused by name as
+`cross_reference_not_in_word`, two of them open for Ken. And WO-C's Word words are the passage's
+language's only where the Word opening the document has words for it: in a Hebrew passage the one
+Word 16 measured, with an English interface, printed the English ones.
 
 **What Word 1 to Word 4 claim and cite.** Word 1: PUB-023 once the rest have landed rather than
 first, PUB-027 (themes.md), PUB-034's and CNT-084's Word halves, CNT-128's, PUB-092's, PUB-012, PUB-065
@@ -826,7 +827,12 @@ stay refused by name, `word_not_yet`, with a reference to one and the list of eq
   field inside the bookmark it names, "Error! Not a valid bookmark self-reference.", measured for a
   paragraph naming itself; empty at its start, `PAGEREF` and `REF \p` print what the PDF does before
   it, after it and inside it. A table's and a figure's page and place are its caption's label
-  bookmark, since nothing stands between a figure and its kept caption. **A floated figure a
+  bookmark, since nothing stands between a figure and its kept caption - and **where the caption has
+  no label**, a bookmark holding nothing where the caption begins, for the same reason: its place
+  had been the bookmark around its words, and a relative field in the caption naming its own place
+  printed "Error! Not a valid bookmark self-reference." (M1 of the final review); measured after, a
+  table's and a figure's caption naming their own place, and the text naming both, print the PDF's
+  words and pages. **A floated figure a
   reference names gets a third bookmark**, holding nothing, in its anchor paragraph after the box: its
   caption's bookmarks stand in the text box, another story, where `REF \p` printed the bookmark's
   words ("Figure 1.2"), found by the Word check; its number, title and page stay on the caption,
@@ -846,8 +852,9 @@ stay refused by name, `word_not_yet`, with a reference to one and the list of eq
 - **Word's own words for above and below in another language** (WO-C): a relative field's runs carry
   the passage's language, so Word's update prints its own word in it - `oben` and `unten` in a German
   passage where the PDF prints the layout's _above_ and _below_. **In a Hebrew passage Word 16 here
-  printed the English words**, having no Hebrew ones of its own; another Word's language resources
-  may print others, and the Word check would say so.
+  printed the English words**, having no Hebrew words in the language resources installed here - one
+  Word 16 with an English interface; a Word with Hebrew proofing or a Hebrew interface may print
+  Hebrew ones, which this machine cannot show, and the Word check would say so where it runs on one.
 - **A new refusal, `cross_reference_not_in_word`** (R5), where Word is asked for, naming the reference
   as the other reference failures do, `detail` `<form>:<why>`, for a reference Word's field prints
   otherwise than the PDF, each found in Word 16, and the PDF unaffected. R5 said to refuse by name
@@ -859,6 +866,17 @@ stay refused by name, `word_not_yet`, with a reference to one and the list of eq
     the note's own mark nothing; from the text to a note's paragraph, that paragraph's words or
     nothing. Between two paragraphs of the notes it is right, and is written, as are a number, a title
     and a page across the two.
+  - `relative:float` - above or below in a floated figure's caption, found by the final review
+    (I1). Word writes the caption in a text box, a story of its own too, and `REF \p` there printed
+    nothing, to a paragraph before the figure and one after it, where the PDF prints _above_ and
+    _below_; Word's list of figures copied the gap. Its number and its page in the box, and a relative
+    reference from the text to the floated figure, which names its anchor in the text, are right.
+    Refused only where the figure's image style floats it: the same caption on a figure set as a
+    block stands in the text and is written. One across a note's boundary as well is named once,
+    `relative:footnote`. **A footnote and a text box are the only stories the writer puts a reference
+    in**: a header's and a footer's words are the layout's, the document's title as text, and Word's
+    own `PAGE`, `NUMPAGES` and `STYLEREF` fields, and the titles `STYLEREF` copies hold a reference
+    only as a number, never above or below.
   - `title:caption` and `numberAndTitle:caption` - a caption's own words named inside it. Word's `REF`
     refused it as a reference to itself, "Error! Not a valid bookmark self-reference."; a caption's own
     number and its own place, `above`, were right, and are written.
@@ -873,10 +891,10 @@ stay refused by name, `word_not_yet`, with a reference to one and the list of eq
 fields cannot print what the PDF does, and was taken as R5 says, refusing by name; each has another
 answer, and the pull request asks for his:
 
-| #    | What Word does                                                                                                                                                                                                                      | Built                                                                           | The alternatives                                                                                                                                                                                                                                                                                                      |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| W3-A | A relative reference across a footnote's boundary - "see the table above" in a note, "the note below" in the text naming a note's paragraph - prints the bookmark's words or nothing, since `REF \p` compares only within one story | Refused for Word, `relative:footnote`; the PDF publishes                        | **Plain text with a report entry**: the layout's word written as text, which Word never updates, and the publication's report naming the reference, so the document publishes and the author is told. PUB-026 asks for fields Word can update; this one would not be, and would be named                              |
-| W3-B | A caption's words named as a title, where they hold a reference that is not a number, print as Word's own form of it ("... above") where the PDF prints the target's kind ("... Paragraph")                                         | Refused for Word, `title:nested` and `numberAndTitle:nested`; the PDF publishes | **Accept Word's reading**, reporting that the two differ - arguably the better words; or **change what the PDF prints** for a reference inside a caption named by a title, to the reference's own form as Word prints it, which is cross-references 2's design to reopen and a change to every PDF of such a document |
+| #    | What Word does                                                                                                                                                                                                                                                                                                              | Built                                                                           | The alternatives                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W3-A | A relative reference across a story's boundary - a footnote's, "see the table above" in a note or "the note below" in the text naming a note's paragraph, and a floated figure's text box, "compare the table below" in its caption - prints the bookmark's words or nothing, since `REF \p` compares only within one story | Refused for Word, `relative:footnote` and `relative:float`; the PDF publishes   | **Plain text with a report entry**, for both: the layout's word written as text, which Word never updates, and the publication's report naming the reference, so the document publishes and the author is told. PUB-026 asks for fields Word can update; this one would not be, and would be named. For the float alone, **set the figure as a block in Word**, reported: its caption then stands in the text and its fields are right, and the figure stands where its anchor is rather than at the head of the page, where the PDF's band stands. Floating the image alone and keeping the caption in the text, which Word 2 measured, parts the caption from its image |
+| W3-B | A caption's words named as a title, where they hold a reference that is not a number, print as Word's own form of it ("... above") where the PDF prints the target's kind ("... Paragraph")                                                                                                                                 | Refused for Word, `title:nested` and `numberAndTitle:nested`; the PDF publishes | **Accept Word's reading**, reporting that the two differ - arguably the better words; or **change what the PDF prints** for a reference inside a caption named by a title, to the reference's own form as Word prints it, which is cross-references 2's design to reopen and a change to every PDF of such a document                                                                                                                                                                                                                                                                                                                                                     |
 
 **What Word showed that the design did not foresee**, measured in Word 16 against the PDF of the same
 document compiled through template 13:
@@ -900,6 +918,32 @@ document compiled through template 13:
   them, and a `PAGEREF` read `1` until the document was paginated: so the check prefills every result
   wrong, a page's empty prefill among them, and what proves the update is the wrong document reading
   right.
+
+**What the final review found in Word, and the fixes measured there**, each test first and measured
+in Word 16 through the check's own script against the PDF of the same document:
+
+- **I1**, a relative reference in a floated figure's caption printing nothing: refused,
+  `relative:float`, above, and part of W3-A.
+- **M1**, a caption with no label naming its own place: its place is a bookmark holding nothing where
+  the caption begins, above; measured right. `REF \p` inside the bookmark it names was the only form
+  Word could not compute: `PAGEREF` there printed the page, and a title of its own words is refused
+  (`title:caption`).
+- **M2**, right to left. **References side by side read in another order than the PDF's**: in a
+  Hebrew paragraph the PDF sets "Table 1.1 above 1 1 above 1" as one left-to-right run, and Word set
+  each field's result apart, "1 above 1 1 above Table 1.1" from the left. Measured over eleven
+  variants of the paragraph: the same words as one run of text, with `w:rtl`, set as the PDF does;
+  the fields' own runs without `w:rtl` changed nothing; and the spaces between them, each a run of
+  its own with `w:rtl`, were what Word read as right to left. So **a space between two fields that
+  print nothing right to left** - between two references, and between a number and its title - is
+  written without `w:rtl`, the fields keeping theirs; Word then set the paragraph as the PDF does. And
+  **the notes' separator** stood at the left of a right-to-left document, where the PDF draws its
+  line at the right: its paragraph, and the continuation separator's, are `w:bidi` in a right-to-left
+  document, and Word drew it at the right. **Left as it is**: a word of the author's own written
+  left to right beside a reference, "see Table 1.1" in a Hebrew passage, still stands apart from it
+  in Word - the space ending the author's run is inside a right-to-left run of words, which the
+  writer does not split (measured); punctuation between two references (", "), and a relative field
+  that a Word with Hebrew words would print in Hebrew, beside which the writer judges a space by the
+  PDF's word, are not measured.
 
 **The Word check** gained two fixtures and three checks, now eleven documents and 23 checks, all
 green in Word 16 on the final code: footnotes in front matter, the body and an appendix, four to a
@@ -943,11 +987,12 @@ reference to one, which is `word_not_yet` today with `detail` `crossReference`, 
 equations, the last list after the contents still refused; deciding which of the maths tree's refusals
 Word sets and undoing the trap for the rest; reporting the maths face's substitution; PUB-067 and
 CNT-045, then PUB-023, and PUB-065 as above; and PUB-035's test extended to equations. The two
-decisions above, W3-A and W3-B, whichever way Ken takes them. **Not measured in Word**, each tested for
-its XML only: a reference in a definition's term or an attribution; a target that publishes nothing
-(its empty bookmark); a floated figure whose box Word sets on another page than its anchor, whose
-relative place would then be its anchor's; and a reference inside a floated figure's caption, which
-the check can read but no fixture holds. The fixtures of Word 3's checks are compared with the
+decisions above, W3-A and W3-B, whichever way Ken takes them. **Not measured in Word**, tested for
+its XML only: a floated figure whose box Word sets on another page than its anchor, whose relative
+place would then be its anchor's. The final review measured the rest this list held: a reference in
+a definition's term or an attribution and a target that publishes nothing (its empty bookmark), each
+printing as the PDF, and a reference inside a floated figure's caption, whose relative form is now
+refused, `relative:float`. The fixtures of Word 3's checks are compared with the
 resolved document rather than a compiled PDF, since what the PDF prints and where it links is the
 published run's, which the template's own tests hold. Still open from Word 1 and 2: how a reader who
 declines the prompt sees the contents, a cover running to a second page, and a matter entered twice,

@@ -1271,7 +1271,8 @@ Serif`, `Liberation Mono` or `STIX Two Math`) since themes 1, which set the glyp
   Word's fields or count would compute otherwise, `list_not_in_word` a list past the ninth level, in
   letters from the 28th or past roman 3999, `image_too_wide` an image in a line wider than Word's
   line, and since Word 3 `cross_reference_not_in_word` a reference Word's field would print
-  otherwise than the PDF - above or below across a footnote's boundary (`relative:footnote`), a
+  otherwise than the PDF - above or below across a footnote's boundary (`relative:footnote`) or in a
+  floated figure's caption, which Word writes in a text box (`relative:float`), a
   caption's words named inside it (`title:caption`, `numberAndTitle:caption`) or where they hold a
   reference that is not a number (`title:nested`, `numberAndTitle:nested`); `format_unsupported` is
   said, not thrown, for Word under a layout with no Word page. Since Word 3 a footnote in a header
@@ -1314,15 +1315,17 @@ faces, images })`, pure and deterministic - a fixed zip time, the parts in a fix
   anchored at the head of the text area where no other float may overlap it; an image in a
   line a `wp:inline` in its run; each image once in `word/media/` by its hash; and the lists of
   figures and of tables after the contents as `TOC \c` fields. Since Word 3: `footnotes.xml`, with
-  Word's separators, holds each note, its paragraphs through the same flow as the text's and its
+  Word's separators, right to left in a right-to-left document, holds each note, its paragraphs through the same flow as the text's and its
   links and images related from its own part, its mark a `w:footnoteReference` in Word's Footnote
   Reference style, each matter's section restarting the count (`w:footnotePr`, `eachSect`); every
   anchor a reference names is a hidden bookmark `_Ref` and nine digits, in the order written - a
-  heading's around its title, a caption's around its label and around its words, a footnote's around
+  heading's around its title, a caption's around its label - or holding nothing at its start where it
+  has none - and around its words, a footnote's around
   its mark, a block's holding nothing at its first paragraph's start, and a floated figure's third in
   its anchor paragraph; and every reference is a field prefilled with what the PDF prints, `REF`
   (`\r` for a heading's number, `\p` for above or below), `NOTEREF` or `PAGEREF`, the last empty,
-  `\h` exactly where the published run links. It answers the bytes and the output's report, which
+  `\h` exactly where the published run links, and a space between two fields printing left to
+  right in a right-to-left passage written without its direction. It answers the bytes and the output's report, which
   names each table's lost header column, repeated header and omitted label.
   [`design/word-output.md`](design/word-output.md#what-was-built) says what Word 1 to Word 3 built
   and what Word showed.

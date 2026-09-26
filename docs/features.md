@@ -512,8 +512,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   _unten_ in German, say - where the PDF prints the layout's. A footnote's mark is a touch smaller and
   lower in Word than in the PDF, and its notes a touch further apart. Three kinds of reference Word
   would print otherwise than the PDF are refused for Word, naming the reference, and can still be
-  published as a PDF alone: _above_ or _below_ between a footnote and the text outside it; a
-  caption's own words named inside that caption; and a caption's words named where they themselves
+  published as a PDF alone: _above_ or _below_ between a footnote and the text outside it, or in the
+  caption of a figure whose image style floats it; a caption's own words named inside that caption; and a caption's words named where they themselves
   hold a reference that prints anything but a number. So is a layout whose footnote numbering Word would count otherwise -
   a word before the number, a chapter's number before it, or a count that starts again part-way
   through a part - and a part entered a second time after its first run held notes. **Equations do
