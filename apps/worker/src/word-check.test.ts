@@ -44,6 +44,15 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { defaultTheme } from './testing/theme.js';
+import {
+  askedOf,
+  blocksOf,
+  walk,
+  wordsOf,
+  type Asked,
+  type Noted,
+  type Target,
+} from './testing/word.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
 /**
@@ -80,6 +89,22 @@ const paragraph = (name: string, ...inlines: unknown[]) => ({
   style: 'body',
   content: inlines,
 });
+/** A footnote holding these paragraphs, anchored where it stands (Word 3). */
+const footnote = (name: string, ...paragraphs: unknown[]) => ({
+  type: 'footnote',
+  id: name,
+  anchor: { kind: 'span' },
+  content: paragraphs,
+});
+/** A cross-reference to `target` in one form (Word 3). */
+const xref = (name: string, target: object, display = 'number') => ({
+  type: 'crossReference',
+  id: name,
+  target,
+  display,
+});
+const toNode = (name: string) => ({ kind: 'node', node: id(name) });
+const toBlock = (block: string) => ({ kind: 'block', block });
 
 /** Invented sentences, enough of them to carry a chapter over a page. */
 const SENTENCES = [
@@ -267,10 +292,38 @@ const rtlTable = {
     })),
   })),
 };
+/**
+ * Word 3's right to left: a note on a Hebrew paragraph, then references to the table - its number, its
+ * place and its page - to the note, and to a heading's number and to an appendix's, with its title, in
+ * a Hebrew passage.
+ */
+const rtlCited = [
+  paragraph(
+    'rn',
+    text(`${SHALOM} Ada.`),
+    footnote('RN', paragraph('rna', text(`${SEFER} ${KRIAH}.`))),
+  ),
+  paragraph(
+    'rx',
+    text(`${KRIAH} `),
+    xref('rx0', toBlock('RT')),
+    text(' '),
+    xref('rx1', toBlock('RT'), 'relative'),
+    text(' '),
+    xref('rx2', toBlock('RT'), 'page'),
+    text(' '),
+    xref('rx3', toBlock('RN')),
+    text(' '),
+    xref('rx4', toNode('rtlbody')),
+    text(' '),
+    xref('rx5', toNode('rtlappendix'), 'numberAndTitle'),
+    text('.'),
+  ),
+];
 const rtlOccurrences = new Map<string, ContentDocument>([
   [
     id('rtlpart'),
-    component(SEFER, [...hebrew(SEFER, 3).content, rtlTable], {
+    component(SEFER, [...hebrew(SEFER, 3).content, rtlTable, ...rtlCited], {
       language: 'he-IL',
       direction: 'rtl',
     }),
@@ -681,6 +734,310 @@ const constructsTheme: ResolvedTheme = (() => {
   return read.theme;
 })();
 
+/** Every form a reference can take. */
+const FORMS = ['number', 'title', 'numberAndTitle', 'relative', 'page'];
+/** A reference to `target` in each of `forms`, a comma between each two. */
+const inEach = (name: string, target: object, forms: readonly string[] = FORMS) =>
+  forms.flatMap((display, at) => [
+    ...(at === 0 ? [] : [text(', ')]),
+    xref(`${name}${at}`, target, display),
+  ]);
+/** A table's cell of one paragraph holding these inlines. */
+const cellOf = (name: string, ...inlines: unknown[]) => ({
+  content: [paragraph(name, ...inlines)],
+  colspan: 1,
+  rowspan: 1,
+});
+
+/**
+ * Word 3's document (ruling R6): footnotes in front matter, the body and an appendix, numbered afresh
+ * in each by the default scheme - three on one page, one in a table's cell, one of two paragraphs, one
+ * in German - and every form of reference to every kind of target - a heading at the first and the
+ * third levels, in front matter and in an appendix, a table, a figure, a floated figure, a paragraph
+ * and a footnote - before its target and after it, pages away, in a paragraph, a note's text, a
+ * caption, a header row, a table's note and a section's title, and relative ones in a German passage.
+ */
+const citedOutline = parseOutlineDocument({
+  schemaVersion: OUTLINE_SCHEMA_VERSION,
+  title: 'The cited notes',
+  language: 'en-GB',
+  direction: 'ltr',
+  nodes: [
+    reference('xpreface', 20, { matter: 'front' }),
+    section('xmethods', 'Methods', [
+      reference('xciting', 21),
+      section('xdeep', 'Deep', [section('xdeeper', 'Deeper', [reference('xdeeptext', 22)])]),
+    ]),
+    {
+      ...section('xresults', 'Results', [reference('xgerman', 23)]),
+      title: [text('After '), xref('xt0', toNode('xmethods'))],
+    },
+    section(
+      'xannex',
+      'Annex',
+      [
+        section('xannexb', 'Annex B', [
+          section('xannexc', 'Annex C', [reference('xannextext', 24)]),
+        ]),
+      ],
+      { matter: 'appendix' },
+    ),
+  ],
+});
+const CITING = component('Citing', [
+  paragraph('x0', text('The first target.')),
+  paragraph(
+    'x1',
+    text('Before its targets: '),
+    ...inEach('ba', toBlock('xt')),
+    text('; '),
+    ...inEach('bb', toBlock('xf')),
+    text('; '),
+    ...inEach('bc', toBlock('x9'), ['relative', 'page']),
+    text('; '),
+    ...inEach('bd', toBlock('xn1'), ['number', 'relative', 'page']),
+    text('.'),
+  ),
+  // Three notes on one page, the second of two paragraphs holding a link and references within it, the
+  // third references out of it.
+  paragraph(
+    'x2',
+    text('Grace checked the frame.'),
+    footnote('xn1', paragraph('xn1a', text('Checked twice.'))),
+  ),
+  paragraph(
+    'x3',
+    text('Alice checked the glue.'),
+    footnote(
+      'xn2',
+      paragraph('xn2a', text('Checked once.')),
+      paragraph(
+        'xn2b',
+        text('See '),
+        text('the log', { type: 'hyperlink', id: 'k1', href: 'https://example.test/log' }),
+        text(', the note '),
+        xref('bn0', toBlock('xn2a'), 'relative'),
+        text(' on '),
+        xref('bn1', toBlock('xn2a'), 'page'),
+        text('.'),
+      ),
+    ),
+  ),
+  paragraph(
+    'x4',
+    text('Ada checked the drawing.'),
+    footnote(
+      'xn3',
+      paragraph(
+        'xn3a',
+        text('In '),
+        xref('bn2', toNode('xmethods'), 'numberAndTitle'),
+        text(', '),
+        xref('bn3', toBlock('xt')),
+        text(' and on '),
+        xref('bn4', toBlock('x9'), 'page'),
+        text('.'),
+      ),
+    ),
+  ),
+  {
+    type: 'table',
+    id: 'xt',
+    style: 'table',
+    // Its words, named by a title, hold numbers alone, which Word's copy prints as the PDF does: a
+    // heading's and another caption's.
+    caption: [
+      text('Readings as in '),
+      xref('bt0', toNode('xmethods')),
+      text(' and '),
+      xref('bt1', toBlock('xu')),
+    ],
+    headerRows: 1,
+    headerColumns: 0,
+    note: [text('Noted on '), xref('bt2', toBlock('x9'), 'page')],
+    rows: [
+      {
+        cells: [cellOf('xh', text('Site '), xref('bt3', toBlock('x0'), 'relative')), cell('Value')],
+      },
+      {
+        cells: [
+          cellOf('xc', text('York'), footnote('xn4', paragraph('xn4a', text('A note in a cell.')))),
+          cell('12'),
+        ],
+      },
+    ],
+  },
+  figure('xf', FOUR_BY_THREE!, 'Measured shapes'),
+  // A caption holding a relative reference, named by its number, its place and its page alone: Word
+  // refuses its words named elsewhere (`title:nested`).
+  {
+    type: 'table',
+    id: 'xu',
+    style: 'table',
+    caption: [text('Checks '), xref('bu0', toBlock('x0'), 'relative')],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [{ cells: [cell('Tray')] }],
+  },
+  ...filler('xa', 6),
+  figure('xg', SQUARE!, 'Floating square', { imageStyle: 'floated' }),
+  paragraph('x8', text('Between the float and the target.')),
+  ...filler('xb', 6),
+  paragraph('x9', text('The second target.')),
+  paragraph(
+    'x10',
+    text('After its targets: '),
+    ...inEach('aa', toBlock('xt')),
+    text('; '),
+    ...inEach('ab', toBlock('xf')),
+    text('; '),
+    ...inEach('ac', toBlock('xg')),
+    text('; '),
+    ...inEach('ad', toBlock('x0'), ['relative', 'page']),
+    text('; '),
+    ...inEach('af', toBlock('xu'), ['number', 'relative', 'page']),
+    text('; '),
+    ...inEach('ae', toBlock('xn1'), ['number', 'relative', 'page']),
+    text('.'),
+  ),
+  paragraph(
+    'x11',
+    text('Headings: '),
+    ...inEach('ha', toNode('xmethods')),
+    text('; '),
+    ...inEach('hb', toNode('xdeeper')),
+    text('; '),
+    ...inEach('hc', toNode('xpreface')),
+    text('; '),
+    ...inEach('hd', toNode('xannexc')),
+    text('.'),
+  ),
+]);
+const citedOccurrences = new Map<string, ContentDocument>([
+  [
+    id('xpreface'),
+    component('Preface by Ada', [
+      paragraph(
+        'xp1',
+        text('Ada wrote the preface first.'),
+        footnote('xpn', paragraph('xpna', text('A note in the front matter.'))),
+      ),
+      paragraph(
+        'xp2',
+        text('From the front: '),
+        ...inEach('xa', toNode('xdeeper'), ['number', 'relative', 'page']),
+        text('; '),
+        ...inEach('xb', toNode('xannexc'), ['numberAndTitle', 'relative', 'page']),
+        text('.'),
+      ),
+    ]),
+  ],
+  [id('xciting'), CITING],
+  [id('xdeeptext'), component('Deep text', [paragraph('xd', text('Deep in the methods.'))])],
+  [
+    id('xgerman'),
+    component(
+      'Verweise',
+      [
+        paragraph(
+          'xg',
+          text('Siehe '),
+          xref('ga0', toNode('xmethods'), 'relative'),
+          text(' und '),
+          xref('ga1', toNode('xannexc'), 'relative'),
+          text('.'),
+          footnote('xgn', paragraph('xgna', text('Eine Anmerkung.'))),
+        ),
+      ],
+      { language: 'de-DE' },
+    ),
+  ],
+  [
+    id('xannextext'),
+    component('Annex text', [
+      paragraph(
+        'xz1',
+        text('The annex begins.'),
+        footnote('xzn', paragraph('xzna', text('A note in the appendix.'))),
+      ),
+      paragraph(
+        'xz2',
+        text('From the annex: '),
+        ...inEach('za', toNode('xdeeper'), ['number', 'relative', 'page']),
+        text('; '),
+        ...inEach('zb', toNode('xmethods'), ['relative', 'page']),
+        text('.'),
+      ),
+    ]),
+  ],
+]);
+
+/**
+ * Word 3's for Word alone (ruling R1's trap): a footnote in a table's header row, which the PDF's
+ * engine refuses and Word repeats on every page the table crosses, a note in a body row on a later
+ * page, and references to the header row's note and to its paragraph after the table.
+ */
+const headedOutline = parseOutlineDocument({
+  schemaVersion: OUTLINE_SCHEMA_VERSION,
+  title: 'The headed notes',
+  language: 'en-GB',
+  direction: 'ltr',
+  nodes: [section('wbody', 'Readings', [reference('wtable', 25)])],
+});
+const headedOccurrences = new Map<string, ContentDocument>([
+  [
+    id('wtable'),
+    component('Long readings', [
+      paragraph(
+        'w0',
+        text('Before the table.'),
+        footnote('wn0', paragraph('wn0a', text('Before the long table.'))),
+      ),
+      {
+        type: 'table',
+        id: 'wt',
+        style: 'table',
+        caption: [text('Long readings')],
+        headerRows: 1,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [
+              cellOf(
+                'wh',
+                text('Site'),
+                footnote('wnh', paragraph('wnha', text('A note in the header row.'))),
+              ),
+              cell('Value'),
+            ],
+          },
+          ...Array.from({ length: 60 }, (_, at) => ({
+            cells: [
+              cell(`Site ${at}`),
+              at === 55
+                ? cellOf(
+                    'wv',
+                    text(`${at}`),
+                    footnote('wnb', paragraph('wnba', text('A note on a later page.'))),
+                  )
+                : cell(`${at}`),
+            ],
+          })),
+        ],
+      },
+      paragraph(
+        'w1',
+        text('After the table: '),
+        ...inEach('wa', toBlock('wnh'), ['number', 'relative', 'page']),
+        text('; '),
+        ...inEach('wb', toBlock('wh'), ['relative', 'page']),
+        text('.'),
+        footnote('wn9', paragraph('wn9a', text('After the long table.'))),
+      ),
+    ]),
+  ],
+]);
+
 /** The kinds of Word section a fixture is written as, in order: what its pages are numbered by. */
 type Kind = 'cover' | 'contents' | OutlineMatter;
 
@@ -787,6 +1144,25 @@ const FIXTURES: readonly Fixture[] = [
       [id('capnineb'), captioned('b', 2)],
     ]),
   },
+  {
+    name: 'references',
+    layout: defaultLayout,
+    formats: ['pdf', 'docx'],
+    sections: ['cover', 'contents', 'front', 'body', 'appendix'],
+    outline: citedOutline,
+    occurrences: citedOccurrences,
+    serifOnly: true,
+    theme: constructsTheme,
+  },
+  {
+    name: 'notes-word-alone',
+    layout: defaultLayout,
+    formats: ['docx'],
+    sections: ['cover', 'contents', 'body'],
+    outline: headedOutline,
+    occurrences: headedOccurrences,
+    serifOnly: true,
+  },
 ];
 
 /** What `word-check.ps1` reads of one document through COM. */
@@ -812,13 +1188,47 @@ interface Opened {
   /** Every image in a line, in the document's order, the ones in a floated figure's box included. */
   readonly images: readonly ImageRead[];
   readonly floats: readonly FloatRead[];
+  /**
+   * Word 3's (ruling R6): every cross-reference's field - one naming a `_Ref` bookmark - in the text,
+   * the notes and any text box, each story in its order, after the update.
+   */
+  readonly references: readonly FieldRead[];
+  /** Every bookmark as opened, hidden ones shown; and how many Word shows where they are not. */
+  readonly bookmarks: readonly string[];
+  readonly visibleBookmarks: number;
+  /** Every footnote, in the document's order, after the update. */
+  readonly notes: readonly NoteRead[];
   readonly pdf: string;
-  /** The copy Word saved, reopened: every paragraph, and its own settings. */
+  /**
+   * The copy Word saved, reopened: every paragraph, and its own settings; and each footnote's number,
+   * as Word's own `NOTEREF` to its mark reads it, since COM gives a mark's text as a code point 2.
+   */
   readonly saved: {
     readonly path: string;
     readonly embedTrueTypeFonts: boolean;
     readonly paragraphs: readonly ParagraphRead[];
+    readonly numbers: readonly string[];
   };
+}
+
+interface FieldRead {
+  readonly story: 'text' | 'footnotes' | 'box';
+  readonly code: string;
+  readonly result: string;
+  /** The page its result stands on, and the page its bookmark begins on, from 1. */
+  readonly page: number;
+  readonly target: number | null;
+  /** The style of the paragraph it stands in. */
+  readonly style: string;
+}
+
+interface NoteRead {
+  /** The section its mark stands in, from 1. */
+  readonly section: number;
+  /** The page its mark stands on, and the page its note begins on. */
+  readonly mark: number;
+  readonly note: number;
+  readonly text: string;
 }
 
 interface SectionRead {
@@ -924,6 +1334,12 @@ interface Checked {
   readonly widest: string;
   /** The PDF, and Word's own PDF, each as laid out, where the fixture is compared. */
   readonly compared: { readonly pdf: LaidOut; readonly word: LaidOut } | null;
+  /** Word 3's: every reference field the document asks for, every footnote, and each target. */
+  readonly asked: readonly Asked[];
+  readonly footnotes: readonly Noted[];
+  readonly targets: Readonly<Record<string, Target>>;
+  /** Every bookmark the writer wrote, by its name. */
+  readonly written: readonly string[];
 }
 
 interface Caption {
@@ -1269,9 +1685,6 @@ function panels(fills: LaidOut['fills'], fill: string, within: (box: Painted) =>
   return found;
 }
 
-/** Every node in document order, the outline's depth first. */
-const walk = (nodes: readonly PublishedNode[]): PublishedNode[] =>
-  nodes.flatMap((node) => [node, ...walk(node.children)]);
 const titleOf = (node: PublishedNode) =>
   node.title.map((run) => ('text' in run ? run.text : '')).join('');
 
@@ -1375,7 +1788,9 @@ function widestLine(base: Omit<AssembleInput, 'occurrences'>): string {
 
 /**
  * The document with every caption's number prefilled "9": each `SEQ` field's result and each
- * `STYLEREF` of a heading level's, whatever the writer wrote. A fixture with no caption has none.
+ * `STYLEREF` of a heading level's, whatever the writer wrote. A fixture with no caption has none. And
+ * since Word 3 every cross-reference's result, in the text and in the notes, "9" too, the empty one a
+ * page reference is written with among them, so that what Word shows is what its update computed.
  */
 function wrongFilled(bytes: Uint8Array): Uint8Array {
   const parts = unzipSync(bytes);
@@ -1385,25 +1800,30 @@ function wrongFilled(bytes: Uint8Array): Uint8Array {
       (_, open: string, close: string) => `${open}9${close}`,
     ),
   );
+  for (const name of ['word/document.xml', 'word/footnotes.xml']) {
+    if (parts[name] === undefined) continue;
+    parts[name] = strToU8(
+      strFromU8(parts[name]).replace(
+        /(<w:instrText xml:space="preserve"> (?:REF|NOTEREF|PAGEREF) _Ref\d{9}[^<]*<\/w:instrText><\/w:r><w:r>(<w:rPr>(?:(?!<\/w:rPr>).)*<\/w:rPr>)?<w:fldChar w:fldCharType="separate"\/><\/w:r>)(?:(?!w:fldCharType).)*?(<w:r>(?:<w:rPr>(?:(?!<\/w:rPr>).)*<\/w:rPr>)?<w:fldChar w:fldCharType="end"\/><\/w:r>)/g,
+        (_, open: string, properties: string | undefined, close: string) =>
+          `${open}<w:r>${properties ?? ''}<w:t xml:space="preserve">9</w:t></w:r>${close}`,
+      ),
+    );
+  }
   return zipSync(parts);
 }
 
-/** Every block a node publishes, in order, those inside a list, a quotation and a table's cell too. */
-function blocksOf(blocks: readonly PublishedBlock[]): PublishedBlock[] {
-  return blocks.flatMap((block) => [
-    block,
-    ...(block.type === 'list'
-      ? block.items.flatMap((item) => blocksOf(item.blocks))
-      : block.type === 'blockquote'
-        ? blocksOf(block.blocks)
-        : block.type === 'table'
-          ? block.rows.flatMap((row) => row.cells.flatMap((each) => blocksOf(each.blocks)))
-          : []),
-  ]);
+/** Every bookmark the writer wrote, by its name, in the text and in the notes. */
+function bookmarkNames(bytes: Uint8Array): string[] {
+  const parts = unzipSync(bytes);
+  return ['word/document.xml', 'word/footnotes.xml'].flatMap((name) =>
+    parts[name] === undefined
+      ? []
+      : [...strFromU8(parts[name]).matchAll(/<w:bookmarkStart [^>]*w:name="([^"]+)"/g)].map(
+          (match) => match[1]!,
+        ),
+  );
 }
-
-const wordsOf = (runs: readonly PublishedInline[]) =>
-  runs.map((run) => ('text' in run ? run.text : '')).join('');
 
 /** Every figure's and table's caption the numbering table labels, in the document's order. */
 function captionsOf(
@@ -1474,6 +1894,17 @@ function placedOf(nodes: readonly PublishedNode[]): Placed[] {
   return walk(nodes).flatMap((node) => placed(node.blocks));
 }
 
+/**
+ * Word's own words for above and below in a passage whose language is not the layout's, which its
+ * update prints in place of the layout's (Word 3, WO-C): measured in Word 16, and so recorded here,
+ * not computed. The PDF prints the layout's.
+ */
+const WORDS_OF_WORD: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  de: { above: 'oben', below: 'unten' },
+  // Word 16 has no Hebrew words of its own for them: it prints the English ones.
+  he: { above: 'above', below: 'below' },
+};
+
 // Skipped where Word is not, and so skipped in CI. The citation is on the describe inside, since
 // `packages/trace` reads a title only where a string follows `describe(` or its modifiers.
 describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)', () => {
@@ -1540,6 +1971,8 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           images: placedOf(assembled.document.nodes),
           widest,
           typst: pdf,
+          ...askedOf(assembled.document, assembled.word!, assembled.numbering.entries),
+          written: bookmarkNames(bytes),
         });
       }
 
@@ -2119,6 +2552,145 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           fixture.name,
         ).toEqual(lists.map((list) => printed(list.sequence)));
       }
+    });
+
+    // Word 3 (ruling R6): footnotes and cross-references, updated by Word.
+
+    it("numbers every footnote as the numbering table does, each on its mark's page - in text, in a cell and in a header row, three to a page, afresh in each matter", () => {
+      for (const { fixture, word, footnotes } of checked) {
+        expect(word.saved.numbers, fixture.name).toEqual(footnotes.map((each) => each.label));
+        expect(
+          word.notes.filter((each) => each.note !== each.mark),
+          fixture.name,
+        ).toEqual([]);
+      }
+      // The fixtures hold what they are for: three notes on one page; notes in front matter, the body
+      // and an appendix, each numbered from 1; a note in a cell, in a header row Word repeats, and
+      // right to left.
+      const notes = checked.flatMap(({ fixture, word }) =>
+        word.notes.map((each, at) => ({
+          fixture: fixture.name,
+          kind: fixture.sections[each.section - 1],
+          number: word.saved.numbers[at],
+          ...each,
+        })),
+      );
+      const perPage = new Map<string, number>();
+      for (const each of notes) {
+        const key = `${each.fixture} ${each.mark}`;
+        perPage.set(key, (perPage.get(key) ?? 0) + 1);
+      }
+      expect(Math.max(...perPage.values())).toBeGreaterThanOrEqual(3);
+      for (const kind of ['front', 'body', 'appendix']) {
+        expect(
+          notes.some((each) => each.kind === kind && each.number === '1'),
+          kind,
+        ).toBe(true);
+      }
+      for (const text of ['A note in a cell.', 'A note in the header row.', `${SEFER} ${KRIAH}.`]) {
+        expect(
+          notes.some((each) => each.text === text),
+          text,
+        ).toBe(true);
+      }
+    });
+
+    it("updates every cross-reference, each prefilled wrong, to what the PDF prints - Word's own words for above and below in another language - every page to the page Word sets its target on, and links it exactly where the PDF links", () => {
+      for (const { fixture, word, pages, asked, targets, expected, captions } of checked) {
+        const labels = pages.map(labelOf);
+        const headings = word.paragraphs.filter((each) => each.style.startsWith('Heading '));
+        const shown = word.paragraphs.filter(
+          (each) => each.style === 'Caption' && each.images === 0 && each.anchors === 0,
+        );
+        expect(headings, fixture.name).toHaveLength(expected.length);
+        expect(shown, fixture.name).toHaveLength(captions.length);
+        // Where Word sets each target: the page its heading, its caption, its mark, its note or its
+        // paragraph stands on.
+        const pageOf = (anchor: string) => {
+          const target = targets[anchor];
+          if (target === undefined) throw new Error(`${fixture.name}: no target ${anchor}`);
+          switch (target.kind) {
+            case 'heading':
+              return headings[target.index]!.page;
+            case 'caption':
+              return shown[target.index]!.page;
+            case 'footnote':
+              return word.notes[target.index]!.mark;
+            case 'note':
+              return word.notes[target.index]!.note;
+            case 'paragraph': {
+              const found = word.paragraphs.filter((each) => each.text === target.text);
+              expect(found, `${fixture.name} ${target.text}`).toHaveLength(1);
+              return found[0]!.page;
+            }
+          }
+        };
+        const layoutLanguage = fixture.layout.language.split('-')[0]!;
+        const want = asked.map((each) => {
+          const text =
+            each.text === null
+              ? labels[pageOf(each.anchor) - 1]
+              : each.field === 'REF p' && each.language !== layoutLanguage
+                ? (WORDS_OF_WORD[each.language]?.[each.text] ?? `(unmeasured) ${each.text}`)
+                : each.text;
+          return [each.story, each.field, each.link, text];
+        });
+        const got = word.references.map((each) => {
+          const [name, , ...switches] = each.code.split(' ');
+          const own = switches.map((one) => one.slice(1));
+          const field = [name, ...own.filter((one) => one !== 'h')].join(' ');
+          return [each.story, field, own.includes('h'), each.result];
+        });
+        const inOrder = (list: unknown[][]) =>
+          (['text', 'footnotes', 'box'] as const).flatMap((story) =>
+            list.filter((each) => each[0] === story),
+          );
+        expect(got, fixture.name).toEqual(inOrder(want));
+      }
+      // The fixtures hold what they are for: every form to every kind of target, linked and not, in the
+      // notes, a text box's target, and above or below in German.
+      const all = checked.flatMap((each) =>
+        each.asked.map((asked) => ({ ...asked, kind: each.targets[asked.anchor]!.kind })),
+      );
+      const pairs = new Set(all.map((each) => `${each.kind} ${each.field}`));
+      expect([...pairs].sort()).toEqual(
+        expect.arrayContaining([
+          'caption PAGEREF',
+          'caption REF',
+          'caption REF p',
+          'footnote NOTEREF',
+          'footnote PAGEREF',
+          'footnote REF p',
+          'heading PAGEREF',
+          'heading REF',
+          'heading REF p',
+          'heading REF r',
+          'note PAGEREF',
+          'note REF p',
+          'paragraph PAGEREF',
+          'paragraph REF p',
+        ]),
+      );
+      expect(new Set(all.map((each) => each.link))).toEqual(new Set([true, false]));
+      expect(all.some((each) => each.story === 'footnotes')).toBe(true);
+      expect(all.some((each) => each.language === 'de' && each.field === 'REF p')).toBe(true);
+    });
+
+    it('names every bookmark the writer writes `_Ref` and nine digits, hidden, and Word keeps each name whole', () => {
+      for (const { fixture, word, written } of checked) {
+        expect(
+          written.filter((name) => !/^_Ref\d{9}$/.test(name)),
+          fixture.name,
+        ).toEqual([]);
+        // Beside Word's own, `_Toc` and its digits, which it makes as it updates the contents and the
+        // lists on opening.
+        expect(
+          word.bookmarks.filter((name) => !/^_Toc\d+$/.test(name)).sort(),
+          fixture.name,
+        ).toEqual([...written].sort());
+        expect(word.visibleBookmarks, fixture.name).toBe(0);
+      }
+      expect(checked.some((each) => each.written.length > 0)).toBe(true);
     });
   });
 });

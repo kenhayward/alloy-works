@@ -1,4 +1,6 @@
-export { assemble, publishedImagePath } from './assemble.js';
+// Word 3: a cross-reference's key in `WordInput.references`, which the worker's Word check reads each
+// reference's form by, as the writer does.
+export { assemble, inlineReferenceKey, publishedImagePath } from './assemble.js';
 export type {
   Assembled,
   AssembleInput,

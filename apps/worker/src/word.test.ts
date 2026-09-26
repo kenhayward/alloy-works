@@ -30,6 +30,7 @@ import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { checkOoxml } from './testing/ooxml.js';
 import { readPdf } from './testing/pdf.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
+import { askedOf } from './testing/word.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
 const fonts = await loadPinnedFonts();
@@ -876,14 +877,15 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     });
   }, 120_000);
 
-  it("PUB-035 makes the Word document accessible on the PDF's terms: every heading at its outline level, every image described or flagged decorative, every table's header rows marked and its caption its title, and every run in its language", () => {
-    const assembled = assemble(input);
+  it("PUB-035 makes the Word document accessible on the PDF's terms: every heading at its outline level, every image described or flagged decorative, every table's header rows marked and its caption its title, every footnote Word's own, every cross-reference a field with the PDF's words, a link where the PDF's is one, and every run in its language, a note's and a reference's among them", () => {
+    // Words 1 to 3's document, with a section of references of every form beside its own (Word 3).
+    const assembled = assemble(cited);
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     const { bytes, report } = writeDocx({
       document: assembled.document,
       numbering: assembled.numbering,
       word: assembled.word!,
-      formats: input.formats,
+      formats: cited.formats,
       faces,
       images: IMAGES,
     });
@@ -973,7 +975,7 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
         ? 'decorative'
         : (/descr="([^"]*)"/.exec(m[1]!)?.[1] ?? 'undescribed'),
     );
-    expect(expected).toHaveLength(5);
+    expect(expected).toHaveLength(6);
     expect(described).toEqual(expected);
 
     // Tables: each one's header rows marked header rows, and no others; its caption the paragraph
@@ -1002,6 +1004,57 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
       tables.filter((table) => table.headerColumns > 0).length,
     );
 
+    // Footnotes (Word 3): each mark Word's own, which Word and a screen reader take a reader from to
+    // its note as the PDF's link does, one for each footnote in the order the PDF numbers them, none
+    // a mark of the writer's own; each note opening with Word's number. Their words are in their
+    // languages below.
+    const notes = strFromU8(parts['word/footnotes.xml']!);
+    const { asked, footnotes } = askedOf(
+      assembled.document,
+      assembled.word!,
+      assembled.numbering.entries,
+    );
+    expect(footnotes.length).toBeGreaterThan(0);
+    expect([...body.matchAll(/<w:footnoteReference w:id="(\d+)"\/>/g)].map((m) => m[1])).toEqual(
+      footnotes.map((_, at) => String(at + 1)),
+    );
+    expect(body).not.toContain('w:customMarkFollows');
+    const numbered = [...notes.matchAll(/<w:footnote w:id="([1-9]\d*)">(.*?)<\/w:footnote>/g)];
+    expect(numbered).toHaveLength(footnotes.length);
+    for (const [, , note] of numbered) expect(note).toMatch(/^<w:p>.*?<w:footnoteRef\/>/);
+
+    // Cross-references (Word 3): each a field Word updates, prefilled with the words the PDF prints -
+    // a page left for Word, which lays the pages out - a link to its target exactly where the PDF's is
+    // one, and in the language of the passage it stands in, as the PDF's text is; in a German passage
+    // Word's update prints its own words for above and below (WO-C).
+    const fields = (xml: string) =>
+      [
+        ...xml.matchAll(
+          /<w:r>(?:<w:rPr>((?:(?!<\/w:rPr>).)*)<\/w:rPr>)?<w:fldChar w:fldCharType="begin"\/><\/w:r><w:r>(?:<w:rPr>(?:(?!<\/w:rPr>).)*<\/w:rPr>)?<w:instrText xml:space="preserve"> ((?:REF|NOTEREF|PAGEREF) _Ref\d{9}[^<]*?) <\/w:instrText>((?:(?!fldCharType="end").)*)/g,
+        ),
+      ].map(([, properties = '', code, rest]) => {
+        const [name, , ...switches] = code!.split(' ');
+        const own = switches.map((each) => each.slice(1));
+        const result = words(rest!.split('fldCharType="separate"')[1]!);
+        const tag = /<w:lang w:(?:val|bidi)="([^"]+)"/.exec(properties)?.[1] ?? 'en-GB';
+        return [
+          [name, ...own.filter((each) => each !== 'h')].join(' '),
+          own.includes('h'),
+          result,
+          tag.split('-')[0],
+        ];
+      });
+    const want = (story: string) =>
+      asked
+        .filter((each) => each.story === story)
+        .map((each) => [each.field, each.link, each.text ?? '', each.language]);
+    expect(fields(body)).toEqual(want('text'));
+    expect(fields(notes)).toEqual(want('footnotes'));
+    // The document holds what it is for: linked and unlinked, in the notes, and in German.
+    expect(new Set(asked.map((each) => each.link))).toEqual(new Set([true, false]));
+    expect(want('footnotes').length).toBeGreaterThan(0);
+    expect(asked.some((each) => each.language === 'de')).toBe(true);
+
     // Languages: the document's in its defaults and its settings, and every run of text in the body
     // and in its footnotes (Word 3) in the language it is written in - a component's, or a marked
     // phrase's, a note's the language where its mark stands - as the PDF tags it.
@@ -1009,9 +1062,8 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     expect(/<w:rPrDefault>.*?<w:lang w:val="en-GB"\/>/.exec(styles)).not.toBeNull();
     expect(strFromU8(parts['word/settings.xml']!)).toContain('<w:themeFontLang w:val="en-GB"/>');
     const spoken = new Map<string, Set<string>>();
-    const notes = strFromU8(parts['word/footnotes.xml']!);
     for (const m of (body + notes).matchAll(
-      /<w:r>(?:<w:rPr>(.*?)<\/w:rPr>)?((?:<w:t xml:space="preserve">[^<]*<\/w:t>|<w:tab\/>|<w:br\/>)+)<\/w:r>/g,
+      /<w:r>(?:<w:rPr>((?:(?!<\/w:r>).)*?)<\/w:rPr>)?((?:<w:t xml:space="preserve">[^<]*<\/w:t>|<w:tab\/>|<w:br\/>)+)<\/w:r>/g,
     )) {
       const properties = m[1] ?? '';
       const language = properties.includes('<w:rtl/>')
@@ -1042,7 +1094,12 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
         ...labels,
       ]),
     );
-    expect(spoken.get('de-DE')).toEqual(new Set(['Grüße', 'Grüße aus Berlin.', 'Eine Anmerkung.']));
+    // A German passage's relative reference is prefilled with the layout's word, in the passage's
+    // language, which Word's update replaces with its own as the document opens: "oben", measured by
+    // the Word check (WO-C).
+    expect(spoken.get('de-DE')).toEqual(
+      new Set(['Grüße', 'Grüße aus Berlin.', 'Eine Anmerkung.', 'Verweise', 'Siehe ', 'above']),
+    );
     expect(spoken.get('en-GB')).toContain('Twice, as Ada asked.');
     expect(spoken.get('he-IL')).toEqual(new Set([SEFER, `${SHALOM} Ada ${SEFER} 2026.`]));
     expect(spoken.get('fr-FR')).toEqual(new Set(['la mesure']));

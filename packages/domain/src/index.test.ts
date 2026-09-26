@@ -269,6 +269,9 @@ describe('the domain package', () => {
         // Word 1 (ruling R6): the Word writer, and the version the job records it at.
         'writeDocx',
         'WORD_WRITER_VERSION',
+        // Word 3 (ruling R6): a cross-reference's key beside the document, which the worker's Word
+        // check and PUB-035's test read each reference's form by, as the writer does.
+        'inlineReferenceKey',
       ].sort(),
     );
   });
