@@ -40,6 +40,8 @@ words, marks included. The capture is kept as the reader's test fixture, its wor
 
 ## Decisions for Ken
 
+**Agreed as recommended**, all three, on 2026-09-26.
+
 | #    | Decision                                                                                                                                                                                                                                                                                  | Recommendation                                                                                                                                                                          |
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | W2-A | **How far back undo reaches.** ProseMirror's history keeps 100 events by default, so a long session cannot undo back to where it opened (CNT-069). The history is already cleared at every version cut (CNT-169)                                                                          | **No limit on depth.** A session's history lives until the next cut or Done; its steps are text-sized. CNT-069 stays uncited until W11 makes it survive a reload                        |
