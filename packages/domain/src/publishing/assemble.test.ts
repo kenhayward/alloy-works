@@ -905,7 +905,8 @@ describe('assemble', () => {
       for (const matter of ['front', 'body', 'appendix'] as const) {
         Object.assign(layout.scheme.sequences['figure']![matter], {
           label: 'Fig.',
-          format: ['lowerAlpha'],
+          // Two forms, of which the counter is written in the last.
+          format: ['upperRoman', 'lowerAlpha'],
           separator: '-',
         });
         Object.assign(layout.scheme.sequences['table']![matter], {
@@ -3620,7 +3621,8 @@ describe('cross-references, published (cross-references 2)', () => {
       ).references.map((each) => [each.anchor, each.text]);
 
     const at = (block: string) => B('calib', block);
-    const others = [figure('f0'), table('t0'), equation('e0')];
+    // Identifiers that sort neither first nor last, so no rule by order could pick the targets out.
+    const others = [figure('fz'), table('ta'), equation('eq')];
     expect(printedWith([])).toEqual([
       [at('f1'), 'Figure 1.1'],
       [at('t1'), 'Table 1.1'],

@@ -712,7 +712,19 @@ describe('the marks an author applies directly', () => {
 
     // And nothing a key can do: every command, the toolbar's and the keyboard's alike, applies a mark
     // or makes a block, and the editor holds no mark for a face, a size or a colour to apply.
+    // A closed list, so a mark added later is read against this statement before the test passes.
     for (const command of EDITOR_COMMANDS) expect(command.label).not.toMatch(appearance);
-    expect(Object.keys(editorSchema.marks).filter((name) => appearance.test(name))).toEqual([]);
+    expect(Object.keys(editorSchema.marks).sort()).toEqual([
+      'definedTerm',
+      'emphasis',
+      'hyperlink',
+      'inlineCode',
+      'language',
+      'quotedPhrase',
+      'strong',
+      'subscript',
+      'superscript',
+      'underline',
+    ]);
   });
 });

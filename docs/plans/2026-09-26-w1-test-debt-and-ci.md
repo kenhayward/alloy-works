@@ -358,7 +358,8 @@ first.
   "paste from Markdown (HTML) must preserve structure" makes no such exception. CNT-167 was reworded
   to say so for Word; the same rewording for these two is Ken's, beside K7. The tests stay, uncited,
   and the HTML one gained a header column and a cell spanning two rows after the review found a
-  rowspan break it did not catch.
+  rowspan break it did not catch. By the same reasoning content-model.md no longer claims them either (design
+  claims 434 to 432): the gap is named in prose beside its table until they are reworded.
 - **The final review broke four citations the implementer's breaks had not**, each fixed test first:
   CNT-169 passed with undo removed altogether (it now shows undo working up to each version and
   stopping there); CNT-164's typeface test read buttons only (it now reads every control, every

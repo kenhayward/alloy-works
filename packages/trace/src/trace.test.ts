@@ -70,6 +70,9 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1449);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 432, from 434 (2026-09-26): content-model.md stopped claiming CNT-061 and CNT-062, whose paste
+    // keeps a heading as a paragraph where "must preserve structure" makes no exception (W1.2's final
+    // review); named in prose beside the table until they are reworded as CNT-167 was.
     // 434, from 436 (2026-09-26): word-output.md stopped claiming PUB-023 and PUB-035, which Word 4's
     // final review found claimed for more than the design gives - PUB-023's first-class kept by
     // STY-053's suite, not built, and PUB-035's same terms asking for structures Word does not carry
@@ -177,7 +180,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(434);
+    ).toBe(432);
   });
 });
 
