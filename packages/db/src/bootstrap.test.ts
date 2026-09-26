@@ -85,10 +85,21 @@ describe('prepareDatabase', () => {
     const query = vi.spyOn(pg.Client.prototype, 'query');
     try {
       await prepareDatabase(db.adminUrl);
-      const sent = query.mock.calls.map(([text]) => (typeof text === 'string' ? text : ''));
+      // A statement may be sent as a string or as `{ text }`; both are read.
+      const sent = query.mock.calls.map(([statement]) =>
+        typeof statement === 'string'
+          ? statement
+          : String((statement as { text?: unknown } | undefined)?.text ?? ''),
+      );
+      // A role's attributes, and one role's membership of another (`grant aw_tenant to ...`), are
+      // the cluster's rows; a privilege granted on a schema is this database's.
+      const writesARole = (text: string) =>
+        /\b(create|alter|drop)\s+role\b/i.test(text) ||
+        /^\s*grant\s+[\w"]+\s+to\b/i.test(text) ||
+        /^\s*revoke\s+[\w"]+\s+from\b/i.test(text);
 
       expect(sent.some((text) => /create schema if not exists platform/i.test(text))).toBe(true);
-      expect(sent.filter((text) => /\b(create|alter|drop)\s+role\b/i.test(text))).toEqual([]);
+      expect(sent.filter(writesARole)).toEqual([]);
     } finally {
       query.mockRestore();
     }

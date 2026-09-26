@@ -73,6 +73,35 @@ describe('a warm veraPDF, one process for the run', () => {
     expect(verdictOf(fail.stdout, fail.exit).compliant).toBe(false);
   }, 120_000);
 
+  // A paused container stands in for a JVM that hangs: killing the `docker run` client is not enough
+  // to remove it, and every answer after a missing one would pair with the wrong check.
+  it('a veraPDF that stops answering is ended, rejects what waits on it, and leaves no container', async () => {
+    const hung = startWarmVeraPdf({ checkTimeout: 5_000 });
+    try {
+      await hung.check(passing);
+      await promisify(execFile)('docker', ['pause', hung.name]);
+
+      const [stalled, next] = await Promise.allSettled([hung.check(passing), hung.check(passing)]);
+
+      expect(stalled.status).toBe('rejected');
+      expect(String((stalled as PromiseRejectedResult).reason)).toMatch(
+        /answered nothing in 5000 ms/,
+      );
+      expect(next.status).toBe('rejected');
+    } finally {
+      await hung.close();
+    }
+    const { stdout } = await promisify(execFile)('docker', [
+      'ps',
+      '--all',
+      '--filter',
+      `name=${hung.name}`,
+      '--format',
+      '{{.Names}}',
+    ]);
+    expect(stdout.trim()).toBe('');
+  }, 120_000);
+
   // A timer left behind by `close` holds the run open after its last test, on every run that checks.
   it('closes leaving no timer to hold the run open', async () => {
     const timers = () =>

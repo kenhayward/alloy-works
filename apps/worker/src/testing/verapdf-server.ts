@@ -54,8 +54,11 @@ const REPORT_PATH = /^\/tmp\/[A-Za-z0-9._-]+$/;
  * waits for the next answer with nothing awaited between: answers pair with checks first in, first
  * out, however many are in flight.
  */
-export function startWarmVeraPdf(options: { readonly image?: string } = {}): WarmVeraPdf {
+export function startWarmVeraPdf(
+  options: { readonly image?: string; readonly checkTimeout?: number } = {},
+): WarmVeraPdf {
   const image = options.image ?? VERAPDF_IMAGE;
+  const checkTimeout = options.checkTimeout ?? CHECK_TIMEOUT;
   const name = `aw-verapdf-${process.pid}-${randomBytes(4).toString('hex')}`;
   let started: Promise<Started> | null = null;
   let count = 0;
@@ -63,7 +66,9 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
   interface Started {
     readonly process: ChildProcessWithoutNullStreams;
     readonly directory: string;
-    readonly line: () => Promise<string>;
+    readonly line: (timeout?: number) => Promise<string>;
+    /** Ends the process for good: every check waiting and every later one fails with `error`. */
+    readonly abandon: (error: Error) => void;
     /** The tail of what veraPDF has said on stderr since it became ready. */
     readonly stderr: () => string;
   }
@@ -124,7 +129,14 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
       end(new Error(`veraPDF ${name} stopped reading: ${error.message}`)),
     );
 
-    const line = () =>
+    // `docker run`'s client going does not take a hung container with it, so it is removed by name.
+    const abandon = (error: Error) => {
+      end(error);
+      child.kill();
+      void run('docker', ['rm', '-f', name]).catch(() => undefined);
+    };
+
+    const line = (timeout = CHECK_TIMEOUT) =>
       new Promise<string>((resolve, reject) => {
         const buffered = lines.shift();
         if (buffered !== undefined) return resolve(buffered);
@@ -132,11 +144,8 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
         const timer = setTimeout(() => {
           // Its answer may still come, and would then be taken for the next check's: once one
           // answer is missing, no later one can be trusted, so the process goes.
-          end(
-            new Error(`veraPDF ${name} answered nothing in ${CHECK_TIMEOUT} ms: ${stderr.trim()}`),
-          );
-          child.kill();
-        }, CHECK_TIMEOUT);
+          abandon(new Error(`veraPDF ${name} answered nothing in ${timeout} ms: ${stderr.trim()}`));
+        }, timeout);
         const done = (value: string) => {
           clearTimeout(timer);
           resolve(value);
@@ -154,13 +163,13 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
       const ready = await line();
       await report(ready);
     } catch (error) {
-      child.kill();
+      abandon(error as Error);
       await rm(directory, { recursive: true, force: true });
       throw error;
     }
     // What the empty start-up run said ("There are no files to process") is no check's business.
     stderr = '';
-    return { process: child, directory, line, stderr: () => stderr.trim() };
+    return { process: child, directory, line, abandon, stderr: () => stderr.trim() };
   };
 
   /** A report's text, read and removed inside the container that wrote it. */
@@ -180,21 +189,24 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
 
   const once = async (pdf: Uint8Array): Promise<VeraPdfAnswer> => {
     started ??= start();
-    const { directory, process: child, line, stderr } = await started;
+    const { directory, process: child, line, abandon, stderr } = await started;
     const file = `${++count}.pdf`;
     await writeFile(join(directory, file), pdf, { mode: 0o644 });
     try {
       child.stdin.write(`/checked/${file}\n`);
       // Taken before anything is awaited, so this check's answer is the next one in line.
-      const answered = line();
+      const answered = line(checkTimeout);
       const stdout = await report(await answered);
       // A PDF veraPDF could not open still gets a report path, and an empty report.
       if (stdout.trim() === '') throw new Error(`veraPDF could not check ${file}: ${stderr()}`);
       const checked = reportOf(stdout).report?.jobs?.[0]?.itemDetails?.name;
       if (checked !== `/checked/${file}`) {
-        throw new Error(
+        // The answers are out of step with the checks, and every later one would be too.
+        const error = new Error(
           `veraPDF answered for ${checked ?? 'nothing'} where it was asked for ${file}`,
         );
+        abandon(error);
+        throw error;
       }
       return { stdout, exit: compliant(stdout) ? 0 : 1 };
     } finally {
@@ -220,16 +232,29 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
         timer = setTimeout(() => resolve('late'), 10_000);
       });
       try {
-        if ((await Promise.race([exited, late])) === 'late') {
-          await run('docker', ['rm', '-f', name]).catch(() => undefined);
-        }
+        await Promise.race([exited, late]);
       } finally {
         // Left running, it would hold the whole test run open ten seconds after its last test.
         clearTimeout(timer);
       }
+      // Whether or not the client exited: a container that hung outlives its client. A removal
+      // already under way (an abandoned process's, or `--rm`'s) answers at once, before it is done,
+      // so the container is waited for until it is gone.
+      await run('docker', ['rm', '-f', name]).catch(() => undefined);
+      for (let attempt = 0; attempt < 40 && (await exists(name)); attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
       await rm(up.directory, { recursive: true, force: true });
     },
   };
+}
+
+/** Whether Docker still has a container by this name, removed or not. */
+async function exists(name: string): Promise<boolean> {
+  return run('docker', ['container', 'inspect', '--format', '{{.Id}}', name]).then(
+    () => true,
+    () => false,
+  );
 }
 
 /**
