@@ -1127,6 +1127,31 @@ describe("hyphenation by the passage's language", () => {
     );
   };
 
+  it("PUB-069 breaks a line at a hyphen in the text as the passage's language does, repeating it where that language does", async () => {
+    // Words already holding hyphens, so lines break at them.
+    const HYPHENED = Array.from({ length: 40 }, (_, at) => `re-entry${at} co-operation`).join(' ');
+    /** How many of the paragraph's lines begin with a hyphen, set in a component in this language. */
+    const repeatedIn = async (language: string) => {
+      const { paint } = await compile(ledger, bare, [
+        { name: 'specimen', title: 'Specimen', content: [para('p1', text(HYPHENED))], language },
+      ]);
+      const drawn = paint.texts.filter((each) => !each.artifact);
+      return drawn.filter(
+        (each, at) =>
+          (at === 0 ||
+            drawn[at - 1]!.page !== each.page ||
+            Math.abs(drawn[at - 1]!.y - each.y) > 1) &&
+          each.text.startsWith('-'),
+      ).length;
+    };
+
+    // English breaks after the hyphen and starts the next line with the rest of the word; Polish and
+    // Spanish repeat the hyphen at the start of the next line, as their typesetting does.
+    expect(await repeatedIn('en-GB')).toBe(0);
+    expect(await repeatedIn('pl-PL')).toBeGreaterThan(0);
+    expect(await repeatedIn('es-ES')).toBeGreaterThan(0);
+  }, 120_000);
+
   it("PUB-069 hyphenates a passage by its own language, and one the engine has no patterns for not at all - never by the document's", async () => {
     // English, the document's and the component's language: its own patterns' points.
     expect(await breaksIn(null)).toEqual([

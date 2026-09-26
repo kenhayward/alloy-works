@@ -682,13 +682,14 @@ describe('an image placed and sized by its style (themes 2)', () => {
                 id: 'h3',
                 style: 'body',
                 content: [
-                  text('Headnote closes.'),
+                  text('Headnote'),
                   {
                     type: 'footnote',
                     id: 'n1',
                     anchor: { kind: 'span' },
                     content: [para('n1p', 'The note it holds.')],
                   },
+                  text(' then closes.'),
                 ],
               },
             ],
@@ -845,16 +846,21 @@ describe('an image placed and sized by its style (themes 2)', () => {
     expect(at('Headword opens.')).toBeLessThan(at('Figure B.1 Floatend'));
     expect(at('Figure B.1 Floatend')).toBeLessThan(at('Headafter closes.'));
 
-    // A footnote, drawn at the foot of its page below the paragraph it stands in, is read in that
-    // paragraph, before anything after it: here the next appendix's heading.
+    // A footnote, drawn at the foot of its page below the paragraph it stands in, is read inside that
+    // paragraph where its anchor is: after the word it follows and before the words after it.
     const note = read.reading.findIndex((each) => each.role === 'Note');
     const noted = read.reading.findIndex(
-      (each) => each.role === 'P' && each.text.startsWith('Headnote closes.'),
+      (each) => each.role === 'P' && each.text.startsWith('Headnote'),
     );
-    const next = read.reading.findIndex((each) => each.role === 'H1' && each.text === 'C foot');
     expect(read.reading[note]?.text).toContain('The note it holds.');
-    expect(item(read, 'The note it holds').y).toBeLessThan(item(read, 'Headnote').y);
+    expect(item(read, 'The note it holds').y).toBeLessThan(item(read, 'then closes').y);
     expect(noted).toBeGreaterThanOrEqual(0);
+    const said = read.reading[noted]!.text;
+    expect(said.indexOf('The note it holds.')).toBeGreaterThan(said.indexOf('Headnote'));
+    expect(said.indexOf('The note it holds.')).toBeLessThan(said.indexOf('then closes.'));
+    // The note is the paragraph's own: the next element read after the paragraph's is its note, and
+    // the next appendix's heading comes after both.
+    const next = read.reading.findIndex((each) => each.role === 'H1' && each.text === 'C foot');
     expect(note).toBeGreaterThan(noted);
     expect(note).toBeLessThan(next);
 

@@ -7,8 +7,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 ### Changed
 
-- **Three more requirements are designed and shown by a test.** A passage hyphenates by its own
-  language in the PDF, and Word is given each passage's language to hyphenate by; a language the
+- **Three more requirements are designed and shown by a test.** A passage hyphenates, and breaks its
+  lines, by its own language in the PDF, and Word is given each passage's language to hyphenate by; a language the
   publisher has no hyphenation rules for is not hyphenated, rather than hyphenated as the document's.
   A floated figure and a footnote are read to assistive technology where they stand in the document,
   not where they are drawn on the page. Changing which version of a component a document uses is

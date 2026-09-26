@@ -441,10 +441,12 @@ describe('documents through the service', () => {
       [ids.grace, pinned(component.second)],
       [ids.ada, { kind: 'latest' }],
     ]);
-    // Each made when its act was, in the order they were made. A second's slack either side, for a
-    // database clock and this one.
+    // Each made when its own act was: strictly after the one before, and within the test's run, with a
+    // second's slack either side for a database clock and this one.
     const times = read.map((version) => version!.createdAt.getTime());
-    expect(times).toEqual([...times].sort((a, b) => a - b));
+    for (let at = 1; at < times.length; at++) {
+      expect(times[at], `version ${at + 1}`).toBeGreaterThan(times[at - 1]!);
+    }
     for (const time of times) {
       expect(time).toBeGreaterThanOrEqual(started - 1000);
       expect(time).toBeLessThanOrEqual(finished + 1000);

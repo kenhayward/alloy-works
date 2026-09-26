@@ -15416,7 +15416,7 @@
         },
         {
           "id": "PUB-031",
-          "howItIsMet": "Blocks are published in the document's order and tagged in it. Two things are drawn elsewhere, and each is tagged where the document has it: a figure its style floats, drawn at the head or the foot of its page, is read between the blocks either side of it, and in Word its text box is anchored in a paragraph of its own at the same place; a footnote, drawn at the foot of its page, is read inside the paragraph it stands in. A table's header repeated on a later page is an artifact, not read again (TAB-050). Measured (W1.3)"
+          "howItIsMet": "Blocks are published in the document's order and tagged in it. Two things are drawn elsewhere, and each is tagged where the document has it: a figure its style floats, drawn at the head or the foot of its page, is read between the blocks either side of it, and in Word its text box is anchored in a paragraph of its own at the same place; a footnote, drawn at the foot of its page, is read inside the paragraph it stands in, where its anchor is. In Word a footnote is Word's own, and where Word reads it is Word's. That a table's header repeated on a later page is not read again is TAB-050's. Measured (W1.3)"
         },
         {
           "id": "PUB-034",
@@ -15424,7 +15424,7 @@
         },
         {
           "id": "PUB-069",
-          "howItIsMet": "Each run carries its passage's language to the engine - a component's own, a language mark's - and in Word it is the run's `w:lang`, which Word hyphenates by where the document asks it to. Typst hyphenates by it, and a language it has no patterns for is not hyphenated at all, never as the document's. Beyond hyphenation, its line breaking follows Unicode's rules, which are the same in every language for the scripts the product can set: measured over Latin text in English, French, German, Welsh and Turkish at 52 measures, no break moved; it differs by language only for CJK, which no pinned face sets in T1 (STY-075). Measured on Typst 0.15.1 over Latin text: patterns for Afrikaans, Albanian, Catalan, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Hungarian, Icelandic, Italian, Kurdish, Latin, Lithuanian, Norwegian (`no`, `nb`, `nn`), Polish, Portuguese, Slovak, Slovenian, Spanish, Swedish, Turkish and Turkmen; none for Basque, Breton, Esperanto, Frisian, Galician, Indonesian, Irish, Latvian, Luxembourgish, Malay, Maltese, Northern Sami, Occitan, Romanian, Scottish Gaelic, Swahili, Vietnamese or Welsh. Patterns for scripts other than Latin were not probed (W1.3)"
+          "howItIsMet": "Each run carries its passage's language to the engine - a component's own, a language mark's - and in Word it is the run's `w:lang`, which Word hyphenates by where the document asks it to. Typst hyphenates by it, and a language it has no patterns for is not hyphenated at all, never as the document's. It breaks lines by it too: Croatian, Czech, Polish, Portuguese, Slovak and Spanish repeat a hyphen already in the text at the start of the next line, and CJK breaks by its own rules, which no pinned face sets in T1 (STY-075). Otherwise the lines were the same in every language probed - English, French, German, Welsh, Turkish, Greek, Russian, Ukrainian, Serbian and Hebrew, with the pinned faces, compared line by line at 52 measures. Measured on Typst 0.15.1 over Latin text: patterns for Afrikaans, Albanian, Catalan, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Hungarian, Icelandic, Italian, Kurdish, Latin, Lithuanian, Norwegian (`no`, `nb`, `nn`), Polish, Portuguese, Slovak, Slovenian, Spanish, Swedish, Turkish and Turkmen; none for Basque, Breton, Esperanto, Frisian, Galician, Indonesian, Irish, Latvian, Luxembourgish, Malay, Maltese, Northern Sami, Occitan, Romanian, Scottish Gaelic, Swahili, Vietnamese or Welsh. Patterns for scripts other than Latin were not probed (W1.3)"
         },
         {
           "id": "PUB-091",
@@ -16592,7 +16592,7 @@
     {
       "id": "STR-059",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 546,
+      "line": 548,
       "kind": "title"
     },
     {
@@ -17096,7 +17096,7 @@
     {
       "id": "PUB-031",
       "file": "apps/worker/src/table-and-image-styles.test.ts",
-      "line": 828,
+      "line": 829,
       "kind": "title"
     },
     {
@@ -17108,7 +17108,7 @@
     {
       "id": "STY-018",
       "file": "apps/worker/src/table-and-image-styles.test.ts",
-      "line": 775,
+      "line": 776,
       "kind": "title"
     },
     {
@@ -17144,7 +17144,7 @@
     {
       "id": "PUB-019",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1514,
+      "line": 1539,
       "kind": "title"
     },
     {
@@ -17174,13 +17174,13 @@
     {
       "id": "STY-042",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1514,
+      "line": 1539,
       "kind": "title"
     },
     {
       "id": "STY-074",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1190,
+      "line": 1215,
       "kind": "title"
     },
     {
