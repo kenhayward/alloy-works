@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { createApiClient } from '@alloy-works/api-client';
 import {
   applyOutlineOperation,
@@ -36,7 +35,6 @@ import userEvent from '@testing-library/user-event';
 import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { heldSentence } from '../editor/held.js';
 import { describeEquation } from '../editor/speech.js';
 import { shimRangeMeasurement } from '../test/range.js';
 import { DocumentList } from './DocumentList.js';
@@ -3138,18 +3136,29 @@ describe('the address of every node', () => {
 
   it('CNT-074 says of each component whether the reader may edit it now, and when not, why, naming who holds it and when it is expected back; and which one is open', async () => {
     const user = userEvent.setup();
-    const [FREE, READ_ONLY, HELD] = [
+    const [FREE, READ_ONLY, HELD, LAPSED, MINE, MINE_AGAIN] = [
       'kkkkkkkkkkkkkkkkkkkkkkkkka',
       'kkkkkkkkkkkkkkkkkkkkkkkkkb',
       'kkkkkkkkkkkkkkkkkkkkkkkkkc',
+      'kkkkkkkkkkkkkkkkkkkkkkkkkd',
+      'kkkkkkkkkkkkkkkkkkkkkkkkke',
+      'kkkkkkkkkkkkkkkkkkkkkkkkkf',
     ];
     const components = {
       [FREE]: 'cccccccc-0000-4000-8000-00000000000a',
       [READ_ONLY]: 'cccccccc-0000-4000-8000-00000000000b',
       [HELD]: 'cccccccc-0000-4000-8000-00000000000c',
+      [LAPSED]: 'cccccccc-0000-4000-8000-00000000000d',
+      [MINE]: 'cccccccc-0000-4000-8000-00000000000e',
+      // The same component a second time, further on.
+      [MINE_AGAIN]: 'cccccccc-0000-4000-8000-00000000000e',
     };
     const fake = service(
-      outline([FREE, READ_ONLY, HELD].map((node) => referenceTo(node, components[node]!))),
+      outline(
+        [FREE, READ_ONLY, HELD, LAPSED, MINE, MINE_AGAIN].map((node) =>
+          referenceTo(node, components[node]!),
+        ),
+      ),
     );
     const text = (words: string) => ({
       schemaVersion: 1,
@@ -3167,12 +3176,20 @@ describe('the address of every node', () => {
     });
     const version = (at: number) => `vvvvvvvv-0000-4000-8000-00000000000${at}`;
     const back = new Date(Date.now() + 45 * 60_000).toISOString();
-    const grace = {
+    const grace = (expectedRelease: string) => ({
       holder: { id: 'grace', name: 'Grace' },
-      expectedRelease: back,
+      expectedRelease,
       yours: false,
       session: null,
+    });
+    // Held by this reader, in a session this page did not open.
+    const mine = {
+      holder: { id: ADA, name: 'Ada' },
+      expectedRelease: back,
+      yours: true,
+      session: 'ssssssss-0000-4000-8000-000000000001',
     };
+    let released = false;
     const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const request = input instanceof Request ? input : new Request(String(input), init);
       const path = new URL(request.url).pathname;
@@ -3183,27 +3200,37 @@ describe('the address of every node', () => {
           occurrences: [
             { node: FREE, version: version(1), mayEdit: true, lock: null },
             { node: READ_ONLY, version: version(2), mayEdit: false, lock: null },
-            { node: HELD, version: version(3), mayEdit: true, lock: grace },
+            { node: HELD, version: version(3), mayEdit: true, lock: released ? null : grace(back) },
+            {
+              node: LAPSED,
+              version: version(4),
+              mayEdit: true,
+              lock: grace(new Date(Date.now() - 60_000).toISOString()),
+            },
+            { node: MINE, version: version(5), mayEdit: true, lock: mine },
+            { node: MINE_AGAIN, version: version(5), mayEdit: true, lock: mine },
           ],
           versions: [
             { id: version(1), content: text('Unbox the printer.') },
             { id: version(2), content: text('Read the manual.') },
             { id: version(3), content: text('Load the paper.') },
+            { id: version(4), content: text('Close the lid.') },
+            { id: version(5), content: text('Print a page.') },
           ],
         });
       }
-      if (path === `/v1/components/${components[FREE]}`) {
+      if (path === `/v1/components/${components[MINE]}`) {
         return json(200, {
-          id: components[FREE],
+          id: components[MINE],
           space: { id: SPACE, name: 'General' },
           version: {
-            id: version(1),
+            id: version(5),
             number: '0.1',
             author: ADA,
             createdAt: '2026-09-18T09:00:00.000Z',
             note: null,
           },
-          content: text('Unbox the printer.'),
+          content: text('Print a page.'),
           mayEdit: true,
           lock: null,
         });
@@ -3218,29 +3245,46 @@ describe('the address of every node', () => {
     const page = await screen.findByRole('region', { name: "The document's text" });
     const card = (node: string) => page.querySelector<HTMLElement>(`[data-node="${node}"]`)!;
     await within(page).findByText('Load the paper.');
+    const said = (node: string) => within(card(node)).queryByText(/this component/);
 
-    // Before anything is opened: nothing where the reader may edit now; why not, where not.
-    expect(within(card(FREE)).queryByText(/editing this component|not edit it/)).toBeNull();
-    expect(
-      within(card(READ_ONLY)).getByText('You may read this component but not edit it.'),
-    ).toBeInTheDocument();
-    expect(
-      within(card(HELD)).getByText(heldSentence({ name: 'Grace', expectedRelease: back })),
-    ).toBeInTheDocument();
-    expect(heldSentence({ name: 'Grace', expectedRelease: back })).toMatch(
-      /^Grace is editing this component, expected back at \d\d:\d\d/,
-    );
+    // Before anything is opened: nothing where the reader may edit now; why not, where not - the
+    // holder by name and the time on the reader's own clock, and the day where it is not today.
+    const clock = new Date(back).toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const day =
+      new Date(back).toDateString() === new Date().toDateString()
+        ? ''
+        : ` on ${new Date(back).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`;
+    const graceBack = `Grace is editing this component, expected back at ${clock}${day}.`;
+    expect(said(FREE)).toBeNull();
+    expect(said(READ_ONLY)).toHaveTextContent('You may read this component but not edit it.');
+    expect(said(HELD)).toHaveTextContent(graceBack);
+    // A hold whose time has passed holds nothing: nobody is expected back at a time already gone.
+    expect(said(LAPSED)).toBeNull();
+    // What the reader holds elsewhere, they are told they hold.
+    expect(said(MINE)).toHaveTextContent('You are editing this component in another window.');
+    expect(said(MINE_AGAIN)).toHaveTextContent('You are editing this component in another window.');
 
-    // The one the cursor goes into is the one open, in its card; the others still say theirs.
-    await user.click(within(card(FREE)).getByText('Unbox the printer.'));
+    // The one the cursor goes into is the one open, in its card; the others still say theirs, but
+    // of the same component open on this page, nothing more.
+    await user.click(within(card(MINE)).getByText('Print a page.'));
     expect(
-      await within(card(FREE)).findByRole('textbox', { name: 'Content of Unbox the printer.' }),
+      await within(card(MINE)).findByRole('textbox', { name: 'Content of Print a page.' }),
     ).toBeInTheDocument();
-    expect(card(FREE).querySelector('[data-editing="true"]')).not.toBeNull();
+    expect(card(MINE).querySelector('[data-editing="true"]')).not.toBeNull();
     expect(card(READ_ONLY).querySelector('[data-editing="true"]')).toBeNull();
-    expect(
-      within(card(HELD)).getByText(heldSentence({ name: 'Grace', expectedRelease: back })),
-    ).toBeInTheDocument();
+    expect(said(MINE_AGAIN)).toBeNull();
+    expect(said(HELD)).toHaveTextContent(graceBack);
+
+    // Returning to the window hears what has changed since: Grace has let hers go.
+    released = true;
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    await waitFor(() => expect(said(HELD)).toBeNull());
+    expect(said(READ_ONLY)).toHaveTextContent('You may read this component but not edit it.');
   });
 
   it("CNT-075 sets a component's text, read before it opens, with the editing surface's own typography", async () => {
@@ -3313,21 +3357,47 @@ describe('the address of every node', () => {
     });
     expect(surface).toHaveClass(TEXT_CLASS);
 
-    // The one class holds the typography the surface needs - spaces kept as typed, no ligatures -
-    // in the editor's own stylesheet, and the surface keeps none of its own to drift from it.
-    const css = readFileSync(
-      join(process.cwd(), '..', '..', 'packages', 'editor', 'style.css'),
-      'utf8',
+    // How text looks is the class's alone. Every rule in the editor's stylesheet or the editor's own
+    // module that reaches the surface and not the class may set only what editing needs - where the
+    // caret stands, what is selected, a placeholder's word - and no typography, so the read text and
+    // the surface cannot differ in how either is set.
+    const sheet = (path: string) =>
+      readFileSync(new URL(path, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const TYPOGRAPHY =
+      /^(font|line-height|white-space|letter-spacing|word-spacing|text-|margin|padding|border|list-style|quotes|counter|background|color|width|height|tab-size|hyphens|direction)/;
+    const surfaceTypography = [
+      sheet('../../../../packages/editor/style.css'),
+      sheet('../editor/ComponentEditor.module.css'),
+    ].flatMap((css) =>
+      [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)].flatMap(([, selectors, body]) => {
+        const surface = selectors!
+          .split(',')
+          .map((selector) => selector.trim())
+          .filter((selector) => /\.ProseMirror(?![-\w])/.test(selector));
+        // A placeholder's word and how it looks are the editing surface's own, as a caret is.
+        const placeholder = surface.every((selector) => selector.endsWith('.aw-empty::before'));
+        const declared = body!
+          .split(';')
+          .map((declaration) => declaration.split(':')[0]!.trim())
+          .filter((property) => property !== '' && TYPOGRAPHY.test(property));
+        return surface.length > 0 && !placeholder && declared.length > 0
+          ? [`${surface.join(', ')}: ${declared.join(', ')}`]
+          : [];
+      }),
     );
-    const rule = (selector: string) =>
-      new RegExp(`(?:^|\\n)${selector.replace('.', '\\.')}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+    expect(surfaceTypography).toEqual([]);
+
+    // And the class carries it: spaces kept as typed, no ligatures, the body's size and leading.
+    const own =
+      /\.aw-text\s*\{([^}]*)\}/.exec(sheet('../../../../packages/editor/style.css'))?.[1] ?? '';
     for (const declaration of [
       'white-space: break-spaces',
       'font-variant-ligatures: none',
       "font-feature-settings: 'liga' 0",
+      'font-size: var(--size-body)',
+      'line-height: 1.6',
     ]) {
-      expect(rule(`.${TEXT_CLASS}`), declaration).toContain(declaration);
-      expect(rule('.ProseMirror'), declaration).not.toContain(declaration.split(':')[0]);
+      expect(own, declaration).toContain(declaration);
     }
   });
 

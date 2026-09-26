@@ -14950,7 +14950,7 @@
         },
         {
           "id": "CNT-075",
-          "howItIsMet": "A component's text carries one class, `TEXT_CLASS`, wherever it is shown - the editing surface and a document's read text alike - and the editor's stylesheet sets that class's typography once: spaces kept as typed, no ligatures. The read text is `renderContent`, the same schema's own rendering, so opening a component moves nothing"
+          "howItIsMet": "A component's text carries one class, `TEXT_CLASS`, wherever it is shown - the editing surface and a document's read text alike - and the editor's stylesheet sets all of that class's typography once - spaces kept as typed, no ligatures, the size, leading and every block's spacing - while its rules for the surface alone set only the caret, the selection and a placeholder. The read text is `renderContent`, the same schema's own rendering, so opening a component moves nothing"
         },
         {
           "id": "CNT-174",
@@ -16795,7 +16795,7 @@
     {
       "id": "STR-063",
       "file": "apps/service/src/navigation-budget.test.ts",
-      "line": 119,
+      "line": 125,
       "kind": "title"
     },
     {
@@ -16993,61 +16993,61 @@
     {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2238,
+      "line": 2237,
       "kind": "title"
     },
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3139,
+      "line": 3138,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3246,
+      "line": 3291,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3514,
+      "line": 3585,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 485,
+      "line": 484,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3718,
+      "line": 3789,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3554,
+      "line": 3625,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2948,
+      "line": 2947,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2994,
+      "line": 2993,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 865,
+      "line": 864,
       "kind": "title"
     },
     {
@@ -17377,13 +17377,13 @@
     {
       "id": "IAM-027",
       "file": "packages/db/src/access-facts.test.ts",
-      "line": 282,
+      "line": 304,
       "kind": "title"
     },
     {
       "id": "IAM-063",
       "file": "packages/db/src/access-facts.test.ts",
-      "line": 303,
+      "line": 325,
       "kind": "title"
     },
     {
@@ -17437,7 +17437,7 @@
     {
       "id": "VER-001",
       "file": "packages/db/src/editing.test.ts",
-      "line": 281,
+      "line": 301,
       "kind": "title"
     },
     {

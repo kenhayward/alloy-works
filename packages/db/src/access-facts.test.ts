@@ -1,7 +1,7 @@
-import { decide, type Level } from '@alloy-works/domain';
+import { decide, permissions, type Level } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { lockAccessForChange, loadFacts, loadReadableSet } from './access-facts.js';
+import { lockAccessForChange, loadFacts, loadFactsFor, loadReadableSet } from './access-facts.js';
 import { bootstrapCluster } from './bootstrap.js';
 import { grant, type NewGrant } from './grants.js';
 import { addToGroup, createGroup } from './groups.js';
@@ -277,6 +277,28 @@ describe('the facts a decision reads', () => {
     await expect(may(made.documentReader, 'read', { kind: 'space', id: made.place })).resolves.toBe(
       false,
     );
+  });
+
+  it('loads the facts for many artifacts at once, deciding each as loadFacts decides it', async () => {
+    const ids = [dosing, audit, field, '00000000-0000-4000-8000-00000000dead'];
+    const [many, each] = await service.withTenant(production, async (trx) => [
+      await loadFactsFor(trx, ada, ids),
+      await Promise.all(ids.map((id) => loadFacts(trx, ada, { kind: 'artifact', id }))),
+    ]);
+    // An artifact the tenant does not hold has no facts, as loadFacts answers undefined for it.
+    expect(many.has(ids[3]!)).toBe(false);
+    ids.forEach((id, at) => {
+      const one = each[at];
+      const batch = many.get(id);
+      expect(batch === undefined, id).toBe(one === undefined);
+      if (one === undefined || batch === undefined) return;
+      expect(batch.chain, id).toEqual(one.chain);
+      for (const permission of permissions) {
+        expect(decide(permission, batch).allowed, `${id} ${permission}`).toBe(
+          decide(permission, one).allowed,
+        );
+      }
+    });
   });
 
   it("IAM-027 answers from the grants as they are, so changing a role changes every holder's next decision", async () => {

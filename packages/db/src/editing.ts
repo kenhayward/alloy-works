@@ -127,6 +127,33 @@ export async function readLock(
   );
 }
 
+/** The live lock on each of many artifacts, in one query; an artifact nobody holds is absent. */
+export async function readLocks(
+  trx: TenantTransaction,
+  artifactIds: readonly string[],
+): Promise<Map<string, LockState>> {
+  const ids = [...new Set(artifactIds.filter((id) => UUID.test(id)))];
+  if (ids.length === 0) return new Map();
+  const rows = await trx
+    .selectFrom('component_lock as l')
+    .innerJoin('principal as p', 'p.id', 'l.principal_id')
+    .select(['l.artifact_id', 'l.principal_id', 'p.display_name', 'l.session_id', 'l.expires_at'])
+    .where('l.artifact_id', 'in', ids)
+    .where('l.expires_at', '>', sql<Date>`clock_timestamp()`)
+    .execute();
+  return new Map(
+    rows.map((row) => [
+      row.artifact_id,
+      {
+        holder: row.principal_id,
+        holderName: row.display_name,
+        session: row.session_id,
+        expiresAt: row.expires_at,
+      },
+    ]),
+  );
+}
+
 /** The lock, when this session holds it; the refusal otherwise. */
 export async function holding(
   trx: TenantTransaction,

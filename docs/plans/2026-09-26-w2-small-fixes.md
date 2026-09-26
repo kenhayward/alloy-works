@@ -220,6 +220,18 @@ cards' state is a line beneath the card's head, "You may read this component but
 `heldSentence`'s, which the open editor's notices share; the texts route says nothing of an occurrence
 the caller may not read. Undo's depth is unbounded.
 
+The final review found the first cut of CNT-075 true of three properties and not of the rest: the
+surface's own rules still set its paragraphs' spacing and every block's typography under
+`.ProseMirror`, which the read text never wore. Every typographic rule now hangs on `.aw-text`, the
+surface keeps only the caret, the selection and the placeholders, and the test reads both
+stylesheets and fails on any typography a rule gives the surface alone. The texts route read the
+facts and the lock once per component, 564 ms at the p95 on the STR-063 document against a budget of
+250; `loadFactsFor` and `readLocks` read them once for the whole document (80 ms), and the budget
+test now measures the route. A card also says so where the reader holds the component in another
+window, says nothing of a hold whose time has passed, and hears changes when its window is returned
+to. The state is decided for every component the caller may read, including an occurrence with no
+version to show.
+
 ## Done when
 
 - CNT-075, CNT-175, CNT-074, API-003, API-006, API-012, API-037, API-047 and CNT-167 Covered; CNT-069

@@ -257,25 +257,36 @@ describe('what each occurrence contributes, through the service', () => {
     ]);
     const secret = await componentWith(quality, 'Calibration', [figure('s1', 'The secret bench')]);
     let doc = await create('The locked report');
-    for (const [position, component] of [shared.id, secret.id].entries()) {
+    // The shared component a second time, by its approved version, which it has not got: the
+    // occurrence has no version to show, but the component is still one the reader may read.
+    const references = [
+      { component: shared.id, mode: { kind: 'latest' } },
+      { component: secret.id, mode: { kind: 'latest' } },
+      { component: shared.id, mode: { kind: 'approved' } },
+    ];
+    for (const [position, reference] of references.entries()) {
       const answer = await call('grace', 'POST', `/v1/documents/${doc.id}/outline`, {
         openedFrom: doc.version.id,
         operation: {
           operation: 'insert',
           parent: null,
           position,
-          node: { type: 'reference', component, mode: { kind: 'latest' } },
+          node: { type: 'reference', ...reference },
         },
       });
       expect(answer.statusCode, answer.body).toBe(200);
       doc = answer.json<DocumentBody>();
     }
-    const [first, hidden] = doc.outline.nodes.map((node) => node.id);
-    // Ada is editing the shared component.
+    const [first, hidden, unapproved] = doc.outline.nodes.map((node) => node.id);
+    // Ada is editing the shared component, and Grace the one Alice may not read.
     const claimed = await call('ada', 'POST', `/v1/components/${shared.id}/lock`, {
       session: '00000000-0000-4000-8000-00000000abcd',
     });
     expect(claimed.statusCode, claimed.body).toBe(200);
+    const secretClaimed = await call('grace', 'POST', `/v1/components/${secret.id}/lock`, {
+      session: '00000000-0000-4000-8000-00000000abce',
+    });
+    expect(secretClaimed.statusCode, secretClaimed.body).toBe(200);
     const expectedRelease = claimed.json<{ lock: { expectedRelease: string } }>().lock
       .expectedRelease;
     const route = `/v1/documents/${doc.id}/texts`;
@@ -288,16 +299,32 @@ describe('what each occurrence contributes, through the service', () => {
       session: null,
     };
 
-    // Grace may edit it, but not now: Ada holds it until then.
-    expect(await occurrencesFor('grace')).toEqual([
+    // Grace may edit it, but not now: Ada holds it until then. The one she holds is hers.
+    const graces = await occurrencesFor('grace');
+    expect(graces).toEqual([
       { node: first, version: shared.version, mayEdit: true, lock: heldByAda },
-      { node: hidden, version: secret.version, mayEdit: true, lock: null },
+      {
+        node: hidden,
+        version: secret.version,
+        mayEdit: true,
+        lock: {
+          holder: { id: ids.grace!, name: 'Grace' },
+          expectedRelease: expect.any(String),
+          yours: true,
+          session: '00000000-0000-4000-8000-00000000abce',
+        },
+      },
+      { node: unapproved, version: null, mayEdit: true, lock: heldByAda },
     ]);
     // Alice may read it and not edit it, and is told who holds it; of what she may not read, nothing.
-    expect(await occurrencesFor('alice')).toEqual([
+    const forAlice = await call('alice', 'GET', route);
+    expect(forAlice.json<{ occurrences: unknown[] }>().occurrences).toEqual([
       { node: first, version: shared.version, mayEdit: false, lock: heldByAda },
       { node: hidden, version: null, mayEdit: false, lock: null },
+      { node: unapproved, version: null, mayEdit: false, lock: heldByAda },
     ]);
+    expect(forAlice.body).not.toContain('Grace');
+    expect(forAlice.body).not.toContain(ids.grace!);
   });
 
   it("answers each readable occurrence's version with its content, and null for one the caller may not read", async () => {

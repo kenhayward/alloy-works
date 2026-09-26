@@ -111,13 +111,9 @@
   outline-offset: -2px;
 }
 
+/* How its text is set is the editor stylesheet's `.aw-text`, which a document's read text carries too
+ * (CNT-075); the surface adds only what editing needs. */
 .surface :global(.ProseMirror) {
   min-height: 280px;
   outline: none;
-  font-size: var(--size-body);
-  line-height: 1.6;
-}
-
-.surface :global(.ProseMirror p) {
-  margin: 0 0 var(--space-10);
 }

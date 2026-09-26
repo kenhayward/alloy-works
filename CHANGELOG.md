@@ -8,8 +8,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 ### Added
 
 - **A document's page says, for each component, whether you may edit it now**, before you open it:
-  "You may read this component but not edit it.", or who is editing it and when they are expected
-  back, in your own time. Nothing is said where you may edit it now.
+  "You may read this component but not edit it.", who is editing it and when they are expected
+  back, in your own time, or that you are editing it yourself in another window. Nothing is said
+  where you may edit it now, and a hold whose expected time has passed is not mentioned. Returning to
+  the page's window brings what it says up to date.
 
 ### Fixed
 

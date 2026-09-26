@@ -108,18 +108,26 @@ export interface Editable {
 
 /**
  * What a card says of its component before it is opened (CNT-074): who holds it and when they are
- * expected back, or that the reader may read it and not edit it - and nothing where they may edit it
- * now, or where the page has not heard.
+ * expected back, that the reader holds it themselves in another window, or that they may read it
+ * and not edit it - and nothing where they may edit it now, where the page has not heard, or where
+ * the same component is open on this page already. A hold past its expected release holds nothing:
+ * it lapses as that time passes, and the next claim takes it.
  */
-function EditableState({ state }: { state: Editable | undefined }) {
+function EditableState({ state, openHere }: { state: Editable | undefined; openHere: boolean }) {
   if (state === undefined) return null;
-  if (state.lock !== null && !state.lock.yours) {
+  const lock =
+    state.lock !== null && new Date(state.lock.expectedRelease).getTime() > Date.now()
+      ? state.lock
+      : null;
+  if (lock?.yours) {
+    return openHere ? null : (
+      <p className={styles['state']}>You are editing this component in another window.</p>
+    );
+  }
+  if (lock !== null) {
     return (
       <p className={styles['state']}>
-        {heldSentence({
-          name: state.lock.holder.name,
-          expectedRelease: state.lock.expectedRelease,
-        })}
+        {heldSentence({ name: lock.holder.name, expectedRelease: lock.expectedRelease })}
       </p>
     );
   }
@@ -281,6 +289,19 @@ export function DocumentText({
     [outline, scheme, contributions, words],
   );
 
+  // The component open in place on this page, whichever occurrence it was opened from.
+  const openComponent = useMemo(() => {
+    const find = (nodes: readonly OutlineViewNode[]): string | null => {
+      for (const node of nodes) {
+        if (node.id === editing) return node.type === 'reference' ? node.component : null;
+        const within = find(node.children);
+        if (within !== null) return within;
+      }
+      return null;
+    };
+    return editing === null ? null : find(outline.nodes);
+  }, [editing, outline]);
+
   const titled = (node: OutlineViewNode, depth: number) => {
     const at = numbers.get(node.id);
     return (
@@ -326,7 +347,10 @@ export function DocumentText({
               </div>
             )}
             {node.component !== null && editing !== node.id && (
-              <EditableState state={editable?.get(node.id)} />
+              <EditableState
+                state={editable?.get(node.id)}
+                openHere={openComponent !== null && openComponent === node.component}
+              />
             )}
             {node.component !== null &&
               (editing === node.id && editor

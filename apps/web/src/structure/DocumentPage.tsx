@@ -397,6 +397,12 @@ export function DocumentPage({
       current = false;
     };
   }, [client, id, shownVersion, textsAttempt]);
+  // Who holds what changes while the page is in another window's shadow: returning to it hears it.
+  useEffect(() => {
+    const again = () => setTextsAttempt((attempt) => attempt + 1);
+    window.addEventListener('focus', again);
+    return () => window.removeEventListener('focus', again);
+  }, []);
   const [attempt, setAttempt] = useState(0);
   const [undo, setUndo] = useState<readonly OutlineOperation[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
