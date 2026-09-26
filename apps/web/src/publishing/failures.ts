@@ -123,6 +123,19 @@ const LIST_NOT_IN_WORD: Readonly<Record<string, string>> = {
 };
 
 /**
+ * What `cross_reference_not_in_word` names (Word 3, ruling R5): `detail` is `<form>:<why>`, and the why
+ * alone decides the sentence - above or below between a footnote and the text outside it, or a
+ * caption's own words named in it, both of which Word's fields print otherwise than the PDF. The
+ * reference is the author's to change, and the PDF can be made.
+ */
+const REFERENCE_NOT_IN_WORD: Readonly<Record<string, string>> = {
+  footnote:
+    'A cross-reference asks for above or below between a footnote and the text outside it, which Word cannot print.',
+  caption:
+    "A cross-reference in a caption asks for that caption's own words, which Word cannot print.",
+};
+
+/**
  * What `equation_unrenderable` names of the construct an equation held that the converter refused
  * (`REFUSAL_NAMES`, `assemble.ts`), in words - never the equation's text, its values or its elements,
  * which `detail` never carries either (R5). `mathvariant`, `element` and `attribute` each name part of
@@ -350,6 +363,11 @@ export function failureWords(failure: Failure): string {
     // Word 2's ruling R4: nothing else in the document is wrong, and the PDF can be made of it.
     case 'list_not_in_word':
       return `A list here ${LIST_NOT_IN_WORD[failure.detail ?? ''] ?? 'cannot be printed by Word as the PDF prints it'}. Publish this document as a PDF only, or change the list.`;
+    // Word 3's ruling R5: nothing else in the document is wrong, and the PDF can be made of it.
+    case 'cross_reference_not_in_word': {
+      const why = (failure.detail ?? '').split(':')[1] ?? '';
+      return `${REFERENCE_NOT_IN_WORD[why] ?? 'A cross-reference here cannot be printed by Word as the PDF prints it.'} Publish this document as a PDF only, or change the cross-reference.`;
+    }
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

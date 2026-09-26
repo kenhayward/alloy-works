@@ -560,6 +560,33 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Publish again');
   });
 
+  it('names a cross-reference Word would not print as the PDF does, and why, pointing at the PDF', async () => {
+    // Word 3's ruling R5: `detail` is `<form>:<why>`, and the reference is the author's to change.
+    const refused = (detail: string) => ({
+      stage: 'compose' as const,
+      code: 'cross_reference_not_in_word' as const,
+      node: null,
+      block: 'x1',
+      detail,
+    });
+    const fake = failing([
+      refused('relative:footnote'),
+      refused('title:caption'),
+      refused('numberAndTitle:caption'),
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    const pdf = 'Publish this document as a PDF only, or change the cross-reference.';
+    for (const said of [
+      'A cross-reference asks for above or below between a footnote and the text outside it, which Word cannot print.',
+      "A cross-reference in a caption asks for that caption's own words, which Word cannot print.",
+    ]) {
+      expect(why).toHaveTextContent(`${said} ${pdf}`);
+    }
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
   it('says what a figure needs before it can be published, and names nothing of an image it may not read', async () => {
     const fake = failing([
       { stage: 'compose', code: 'figure_without_caption', node: null, block: 'f1', detail: null },

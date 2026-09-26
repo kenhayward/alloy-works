@@ -7362,6 +7362,7 @@
                               "format_unsupported",
                               "numbering_not_in_word",
                               "list_not_in_word",
+                              "cross_reference_not_in_word",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10120,6 +10121,7 @@
                               "format_unsupported",
                               "numbering_not_in_word",
                               "list_not_in_word",
+                              "cross_reference_not_in_word",
                               "engine_failed",
                               "store_failed"
                             ]

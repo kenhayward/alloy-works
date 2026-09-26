@@ -3,7 +3,11 @@ import { ADMITTED_FORMATS } from '../assets/header.js';
 import type { AssetVersionContent } from '../assets/version.js';
 import { startsOutsideItsNumbering, type BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
-import type { CrossReferenceTarget, InlineNode } from '../content/model/inline.js';
+import type {
+  CrossReferenceDisplay,
+  CrossReferenceTarget,
+  InlineNode,
+} from '../content/model/inline.js';
 import type { Mark } from '../content/model/marks.js';
 import { hasText } from '../content/model/text.js';
 import { contributionsOf, type Contribution } from '../structure/contributions.js';
@@ -75,6 +79,8 @@ import {
   type PublishedNode1,
   type PublishedPattern,
   type PublishedPdfFormat,
+  type PublishedReferenceRun,
+  type PublishedRun,
   type PublishedTitleRun,
 } from './published.js';
 
@@ -137,15 +143,37 @@ export type PublishingAsset = Pick<
  * the request was made under as `readTheme` resolved it - the Word styles are projected from it, not
  * from the Typst projection the document carries - the layout's numbering scheme, whose section,
  * figure and table rules Word numbers the headings and captions by (Word 1, ruling R7; Word 2, ruling
- * R1), and **each image's size against the Word page** (Word 2, ruling R3): every figure and every
- * image in a line the document publishes, keyed by `figureImageKey` and `inlineImageKey`.
+ * R1), **each image's size against the Word page** (Word 2, ruling R3): every figure and every
+ * image in a line the document publishes, keyed by `figureImageKey` and `inlineImageKey` - and **each
+ * cross-reference as Word writes it** (Word 3, rulings R3 and R4): the form it asks for and what it
+ * prints from, which the published run does not say, keyed by `inlineReferenceKey`; and every section's
+ * title holding one, as runs the writer sets each reference among as a field, by its node, where the
+ * published title holds the words it printed, which the writer could not tell from the title's own.
  */
 export interface WordInput {
   readonly format: DocxFormat;
   readonly theme: ResolvedTheme;
   readonly scheme: NumberingScheme;
   readonly images: ReadonlyMap<string, WordImage>;
+  readonly references: ReadonlyMap<string, WordReference>;
+  readonly titles: ReadonlyMap<string, readonly WordTitleRun[]>;
 }
+
+/**
+ * **A cross-reference as Word writes it** (Word 3, ruling R4): the form it asks for, and its target's
+ * number and title as the reference prints them - the numbering table's label, and a section's title's
+ * published words or a caption's with its own references as their numbers - each null where the target
+ * has none. A field prefilled from them reads as the PDF does until Word updates it, and a number and
+ * a title are two fields, since Word finds each at a bookmark of its own.
+ */
+export interface WordReference {
+  readonly display: CrossReferenceDisplay;
+  readonly label: string | null;
+  readonly title: string | null;
+}
+
+/** A run of a section's title as Word writes it: its words, or a cross-reference among them. */
+export type WordTitleRun = PublishedRun | PublishedReferenceRun;
 
 /** An image's size in points against the Word page's text block, as a figure's is against the PDF's. */
 export interface WordImage {
@@ -154,16 +182,22 @@ export interface WordImage {
 }
 
 /**
- * The runs an image in a line stands among, as the published document holds them and the Word writer
- * meets them (Word 2, ruling R3): a paragraph's - a table's cell's among them - by its identifier; a
- * definition list's term, by the list and the item's place in it, since an item has no identifier; a
- * quotation's attribution; and a table's note. A caption holds none (`image_in_caption`).
+ * The runs an image in a line or a cross-reference stands among, as the published document holds them
+ * and the Word writer meets them (Word 2, ruling R3): a paragraph's - a table's cell's and a footnote's
+ * among them - by its identifier; a definition list's term, by the list and the item's place in it,
+ * since an item has no identifier; a quotation's attribution; a table's note; and a table's or a
+ * figure's caption, by the block, which holds no image (`image_in_caption`) but may hold a reference
+ * (Word 3).
  */
 export type RunsSite =
   | { readonly kind: 'paragraph'; readonly block: string }
   | { readonly kind: 'term'; readonly block: string; readonly item: number }
   | { readonly kind: 'attribution'; readonly block: string }
-  | { readonly kind: 'note'; readonly block: string };
+  | { readonly kind: 'note'; readonly block: string }
+  | { readonly kind: 'caption'; readonly block: string };
+
+/** Where a cross-reference stands: among a block's runs, or in the title of the section it is read in. */
+export type ReferenceSite = RunsSite | { readonly kind: 'title' };
 
 /**
  * A figure's key in `WordInput.images`: its occurrence's node and its identifier, which one component
@@ -181,6 +215,17 @@ export function figureImageKey(node: string, block: string): string {
 export function inlineImageKey(node: string, site: RunsSite, index: number): string {
   const item = site.kind === 'term' ? [site.item] : [];
   return JSON.stringify([site.kind, node, site.block, ...item, index]);
+}
+
+/**
+ * A cross-reference's key in `WordInput.references` (Word 3, ruling R4): as an image in a line's is
+ * made, its place among the **published** runs where it stands - a section's title's, by the section,
+ * among the runs `WordInput.titles` holds for it.
+ */
+export function inlineReferenceKey(node: string, site: ReferenceSite, index: number): string {
+  if (site.kind === 'title') return JSON.stringify(['reference', 'title', node, index]);
+  const item = site.kind === 'term' ? [site.item] : [];
+  return JSON.stringify(['reference', site.kind, node, site.block, ...item, index]);
 }
 
 /**
@@ -347,6 +392,9 @@ export function assemble(input: AssembleInput): Assembled {
   const wordPage =
     docx && layout?.formats.docx !== undefined ? publishedPdf(layout.formats.docx) : null;
   const wordImages = new Map<string, WordImage>();
+  /** Each reference's form for Word, and each section's title holding one, where Word is asked for. */
+  const wordReferences = new Map<string, WordReference>();
+  const wordTitles = new Map<string, readonly WordTitleRun[]>();
   /** Where Word is asked for, what Word does not write yet, refused by name where it stands (R3). */
   const wordNotYet = (node: string | null, block: string | null, construct: string) => {
     if (docx && layout !== null) {
@@ -578,6 +626,7 @@ export function assemble(input: AssembleInput): Assembled {
       : resolveReferences(input, numbering, layout.words.above, layout.words.below);
   failures.push(...resolved.failures);
   for (const each of resolved.pdfsOwn) pdfsOwn.add(each);
+  if (docx) failures.push(...resolved.forWord);
   /** A block's or a footnote's anchor where a reference names it, else null. */
   const anchorOf = (node: string, block: string): string | null => {
     const anchor = blockAnchor(node, block);
@@ -608,7 +657,7 @@ export function assemble(input: AssembleInput): Assembled {
    * stands - `indent` is what the measure has lost by then on each page, a table's cell included - and
    * described as a figure is. Its failures name `block`, the block that holds it. Where Word is asked
    * for, its size against the Word page is kept by `site`, the runs it stands among, and its place in
-   * them (Word 2, ruling R3). `site` is `caption` for a caption's runs, where an image is refused.
+   * them (Word 2, ruling R3). One among a caption's runs is refused.
    *
    * **So is a footnote, in a paragraph's runs alone** (footnotes 2, FN-B): `inParagraph` says the runs
    * are a paragraph's, with the table the paragraph stands in, if any, which a footnote anchored to a
@@ -619,7 +668,8 @@ export function assemble(input: AssembleInput): Assembled {
    * **And so is a cross-reference, as `resolveReferences` printed it** (cross-references 2): a link to
    * its target in a paragraph's text - `inParagraph`, a footnote's paragraphs among them - outside a
    * table's header rows, and text everywhere else (R5, XR-D). One that did not resolve, or asked for a
-   * form its target lacks, has already failed by name and is not set.
+   * form its target lacks, has already failed by name and is not set. Where Word is asked for, its form
+   * and what it prints from are kept by `site` and its place among the runs (Word 3, ruling R4).
    *
    * **And so is an equation, wherever inline content is** (equations 2, EQ-G): as its maths tree and
    * its alternative, a table's header rows included - measured to set and tag there as in the body,
@@ -638,11 +688,11 @@ export function assemble(input: AssembleInput): Assembled {
     families: readonly string[],
     size: number,
     indent: Indent,
-    site: RunsSite | 'caption',
+    site: RunsSite,
     inParagraph: { readonly table: TableNode | null; readonly heading: boolean } | null = null,
   ): PublishedInline[] => {
     const runs: PublishedInline[] = [];
-    const caption = site === 'caption';
+    const caption = site.kind === 'caption';
     for (const inline of content) {
       if (inline.type === 'equation') wordNotYet(node, block, inline.type);
       if (inline.type === 'footnote' && layout !== null) {
@@ -673,6 +723,9 @@ export function assemble(input: AssembleInput): Assembled {
         if (printed === undefined) continue;
         // The layout's word for above or below, set in the family of the text it stands in.
         if (printed.relative && printed.text !== null) checkWords(printed.text, families, failOnce);
+        // Where Word is asked for, what it writes the field from, by where the writer meets it.
+        if (docx)
+          wordReferences.set(inlineReferenceKey(node, site, runs.length), resolved.forms.get(key)!);
         runs.push({ reference: { ...printed, link } });
         continue;
       }
@@ -682,7 +735,7 @@ export function assemble(input: AssembleInput): Assembled {
         failOnce(failure('compose', 'image_in_caption', node, block, null));
         continue;
       }
-      if (inline.type === 'image' && layout !== null && site !== 'caption') {
+      if (inline.type === 'image' && layout !== null && !caption) {
         const key = inlineImageKey(node, site, runs.length);
         const published = publishedImage(inline, node, block, indent, size, key);
         if (published !== null) runs.push(published);
@@ -1108,7 +1161,7 @@ export function assemble(input: AssembleInput): Assembled {
           captionFamilies('table'),
           roleStyle('caption').properties.size,
           indent,
-          'caption',
+          { kind: 'caption', block: block.id },
         );
         // A note on the table as a whole (CNT-038, FN-C), set beneath it in its figure (footnotes 2,
         // ruling R7), in the `tableNote` role's style. One that says nothing, which another route may
@@ -1201,7 +1254,7 @@ export function assemble(input: AssembleInput): Assembled {
           captionFamilies('figure'),
           roleStyle('caption').properties.size,
           indent,
-          'caption',
+          { kind: 'caption', block: block.id },
         );
         const label =
           numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
@@ -1581,6 +1634,28 @@ export function assemble(input: AssembleInput): Assembled {
     return { tree: converted.tree, alternative: { text: alternative, language } };
   };
 
+  /**
+   * **A section's title as Word writes it** (Word 3; the ledger's ruling): each run of its words, and
+   * each reference that printed as the run a paragraph's would be - never a link, since a title is set
+   * again in the contents and the running heads (XR-D) - its form kept by `inlineReferenceKey` under the
+   * section. What else a title holds is refused where the published title is made: an equation for
+   * Word, and a mark for every format.
+   */
+  const wordTitle = (node: string, title: readonly InlineNode[]): WordTitleRun[] => {
+    const runs: WordTitleRun[] = [];
+    for (const inline of title) {
+      if (inline.type === 'text') runs.push({ text: inline.value, marks: [] });
+      if (inline.type !== 'crossReference') continue;
+      const key = referenceKey(node, inline.id);
+      const printed = resolved.printed.get(key);
+      if (printed === undefined) continue;
+      const kept = inlineReferenceKey(node, { kind: 'title' }, runs.length);
+      wordReferences.set(kept, resolved.forms.get(key)!);
+      runs.push({ reference: { ...printed, link: false } });
+    }
+    return runs;
+  };
+
   /** A node and every node beneath it, in the matter of the top-level node that holds them. */
   const project = (node: OutlineNode, depth: number, matter: OutlineMatter): PublishedNode => {
     const numberText = numbers.get(node.id) ?? null;
@@ -1595,13 +1670,15 @@ export function assemble(input: AssembleInput): Assembled {
     };
 
     if (node.type === 'section') {
-      // Word 1 writes a title's words alone (R3): what else it holds is named by the section. A
-      // title's reference is published as the words it prints, which the writer cannot tell from the
-      // title's own, so it stays Word's to refuse until the writer writes it as a field (Word 3).
+      // Word 1 writes a title's words alone (R3): what else it holds is named by the section. An
+      // equation is Word 4's. A reference is published as the words it prints, which the writer cannot
+      // tell from the title's own, so where Word is asked for the title is carried beside the document
+      // too, as runs with each reference a run of its own, which the writer sets as a field (Word 3).
       for (const inline of node.title) {
-        if (inline.type === 'equation' || inline.type === 'crossReference') {
-          wordNotYet(node.id, null, inline.type);
-        }
+        if (inline.type === 'equation') wordNotYet(node.id, null, inline.type);
+      }
+      if (docx && layout !== null && node.title.some((each) => each.type === 'crossReference')) {
+        wordTitles.set(node.id, wordTitle(node.id, node.title));
       }
       // A title's reference is its number in the title's words (R6), set again in the contents and the
       // running heads. One that failed has said so and prints nothing. An equation in it is published
@@ -1750,7 +1827,14 @@ export function assemble(input: AssembleInput): Assembled {
     numbering,
     word:
       docx && docxFormat !== undefined
-        ? { format: docxFormat, theme: theme!, scheme: layout.scheme, images: wordImages }
+        ? {
+            format: docxFormat,
+            theme: theme!,
+            scheme: layout.scheme,
+            images: wordImages,
+            references: wordReferences,
+            titles: wordTitles,
+          }
         : null,
     document: {
       schema: PUBLISHING_SCHEMA,
@@ -1907,6 +1991,13 @@ interface ResolvedReferences {
   readonly pdfsOwn: ReadonlySet<PublishFailure>;
   /** Each reference that resolved to an equation, by `referenceKey`: Word 4's to write (Word 3, R1). */
   readonly toEquations: ReadonlySet<string>;
+  /**
+   * What Word writes each printed reference from, by `referenceKey` (Word 3, ruling R4): its form and
+   * its target's number and title, which the published run, holding only what it prints, does not say.
+   */
+  readonly forms: ReadonlyMap<string, WordReference>;
+  /** What Word's fields would not print as the PDF does, said where Word is asked for (Word 3, R5). */
+  readonly forWord: readonly PublishFailure[];
 }
 
 /** Nothing resolved: a request made before layouts, which refuses a reference where it stands. */
@@ -1916,6 +2007,8 @@ const NO_REFERENCES: ResolvedReferences = {
   failures: [],
   pdfsOwn: new Set(),
   toEquations: new Set(),
+  forms: new Map(),
+  forWord: [],
 };
 
 /**
@@ -1954,6 +2047,10 @@ interface Found {
   readonly reference: ReferenceNode;
   readonly inTitle: boolean;
   readonly at: number;
+  /** Whether it stands in a footnote's text, which Word writes in a part of its own (Word 3, R5). */
+  readonly inNote: boolean;
+  /** The anchor of the table or the figure whose caption it stands in, else null (Word 3, R5). */
+  readonly inCaption: string | null;
 }
 
 /**
@@ -2017,6 +2114,8 @@ function resolveReferences(
   >();
   /** Every anchor standing in a table's header rows, which the engine sets on every page. */
   const repeated = new Set<string>();
+  /** Every footnote's paragraph's anchor: what Word writes in the footnotes part (Word 3, R5). */
+  const inNotes = new Set<string>();
   let at = 0;
 
   const place = (anchor: string, inHeader: boolean) => {
@@ -2028,16 +2127,19 @@ function resolveReferences(
     node: string,
     inTitle: boolean,
     inHeader: boolean,
+    inCaption: string | null = null,
+    inNote = false,
   ) => {
     for (const inline of content) {
       if (inline.type === 'crossReference') {
-        found.push({ node, reference: inline, inTitle, at: at++ });
+        found.push({ node, reference: inline, inTitle, at: at++, inNote, inCaption });
       } else if (inline.type === 'footnote') {
         place(blockAnchor(node, inline.id), inHeader);
         const paragraphs = inline.content as readonly Extract<BlockNode, { type: 'paragraph' }>[];
         for (const paragraph of paragraphs) {
           place(blockAnchor(node, paragraph.id), inHeader);
-          inlines(paragraph.content, node, inTitle, inHeader);
+          inNotes.add(blockAnchor(node, paragraph.id));
+          inlines(paragraph.content, node, inTitle, inHeader, inCaption, true);
         }
       }
     }
@@ -2062,7 +2164,7 @@ function resolveReferences(
         return;
       case 'table':
         captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });
-        inlines(stored.caption, node, false, inHeader);
+        inlines(stored.caption, node, false, inHeader, blockAnchor(node, stored.id));
         stored.rows.forEach((row, index) => {
           const header = inHeader || index < stored.headerRows;
           for (const cell of row.cells) for (const each of cell.content) block(each, node, header);
@@ -2071,7 +2173,7 @@ function resolveReferences(
         return;
       case 'figure':
         captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });
-        inlines(stored.caption, node, false, inHeader);
+        inlines(stored.caption, node, false, inHeader, blockAnchor(node, stored.id));
         return;
       case 'preformatted':
       case 'equation':
@@ -2158,7 +2260,9 @@ function resolveReferences(
   const failures: PublishFailure[] = [];
   const pdfsOwn = new Set<PublishFailure>();
   const toEquations = new Set<string>();
-  for (const { node, reference, inTitle, at: where } of found) {
+  const forms = new Map<string, WordReference>();
+  const forWord: PublishFailure[] = [];
+  for (const { node, reference, inTitle, at: where, inNote, inCaption } of found) {
     const key = referenceKey(node, reference.id);
     const resolution = resolutions.get(key)!;
     if (!resolution.ok) {
@@ -2198,6 +2302,21 @@ function resolveReferences(
       pdfsOwn.add(refused);
     }
     named.add(anchor);
+    // What Word's field would not print as the PDF does, refused where Word is asked for (Word 3,
+    // ruling R5; measured in Word 16): above or below between a footnote's text and the text outside
+    // it - Word writes the notes in a part of their own, and its `REF \p` then prints the bookmark's
+    // words - and a caption's words named in that caption, which Word's `REF` refuses as a reference
+    // to itself. A number or a title across the two parts, and every other form, Word prints as the
+    // PDF does.
+    const limit =
+      display === 'relative' && inNote !== inNotes.has(anchor)
+        ? 'relative:footnote'
+        : (display === 'title' || display === 'numberAndTitle') && inCaption === anchor
+          ? `${display}:caption`
+          : null;
+    if (limit !== null) {
+      forWord.push(failure('compose', 'cross_reference_not_in_word', node, reference.id, limit));
+    }
     // Found by the same walk, so every target resolution reaches has its place.
     const before = positions.get(anchor)! <= where;
     const label = target.label ?? '';
@@ -2214,8 +2333,9 @@ function resolveReferences(
         ? { anchor, text: null, page: true, relative: false }
         : { anchor, text: text[display], page: false, relative: display === 'relative' },
     );
+    forms.set(key, { display, label: target.label, title: target.title });
   }
-  return { printed, named, failures, pdfsOwn, toEquations };
+  return { printed, named, failures, pdfsOwn, toEquations, forms, forWord };
 }
 
 /** A stored table, as a footnote's cell anchor resolves against one. */

@@ -17,6 +17,7 @@ import {
   assemble,
   figureImageKey,
   inlineImageKey,
+  inlineReferenceKey,
   type Assembled,
   type AssembleInput,
   type PublishingAsset,
@@ -4942,6 +4943,8 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       theme: DEFAULT_THEME,
       scheme: defaultLayout.scheme,
       images: new Map(),
+      references: new Map(),
+      titles: new Map(),
     };
     expect(docx.word).toEqual(word);
     expect(both.word).toEqual(word);
@@ -5083,7 +5086,7 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(JSON.stringify(both.document)).toBe(JSON.stringify(pdf.document));
   });
 
-  it("refuses an equation wherever it stands - nested, in a caption, or in a section's title - and a reference in a title", () => {
+  it("refuses an equation wherever it stands - nested, in a caption, or in a section's title - and not a reference in a title, which Word writes as a field (Word 3, task 3)", () => {
     const inner = holding(
       quotation('q1', list('L1', paragraph('i1', text('One '), inlineEquation))),
       table('t1', { caption: [text('Readings '), inlineEquation] }),
@@ -5102,10 +5105,132 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     const inTitle = input({ outline: outline([section('methods', 'Methods'), titled]) });
     const { pdf, docx } = failuresFor(inTitle);
     expect(pdf).toEqual([]);
-    expect(docx).toEqual([
-      { ...notYet(null, 'equation'), node: id('results') },
-      { ...notYet(null, 'crossReference'), node: id('results') },
-    ]);
+    expect(docx).toEqual([{ ...notYet(null, 'equation'), node: id('results') }]);
+  });
+
+  it("refuses for Word by name the two references Word cannot print - above or below between a footnote's text and the text outside it, and a caption's words named in that caption - and publishes both for the PDF (Word 3, ruling R5; measured)", () => {
+    const over = holding(
+      table('t1', { caption: [text('Own '), xref('x1', toBlock('t1'), 'title')] }),
+      paragraph(
+        'p1',
+        text('Noted'),
+        footnote(
+          'n1',
+          paragraph(
+            'n1p',
+            text('See '),
+            xref('x2', toBlock('t1'), 'relative'),
+            text(', '),
+            xref('x3', toBlock('n1q'), 'relative'),
+            text(' and '),
+            xref('x4', toBlock('t1'), 'page'),
+          ),
+          paragraph('n1q', text('More.')),
+        ),
+      ),
+      paragraph(
+        'p2',
+        xref('x5', toBlock('n1p'), 'relative'),
+        text(', '),
+        xref('x6', toBlock('n1'), 'relative'),
+        text(' and '),
+        xref('x7', toBlock('t1'), 'numberAndTitle'),
+      ),
+      table('t2', { caption: [text('Beside '), xref('x8', toBlock('t1'), 'numberAndTitle')] }),
+    );
+    const notInWord = (reference: string, detail: string) =>
+      failed('cross_reference_not_in_word', reference, detail);
+    const { pdf, docx, both } = failuresFor({ ...over, layout: listless });
+    expect(pdf).toEqual([]);
+    // Word's `REF \p` prints its bookmark's words where the field and the bookmark stand one in a
+    // note and one outside it, and a caption's `REF` to its own words refuses to print itself; within
+    // the notes, to a footnote's mark, another caption's words and every other form, Word prints what
+    // the PDF prints.
+    const refused = [
+      notInWord('x1', 'title:caption'),
+      notInWord('x2', 'relative:footnote'),
+      notInWord('x5', 'relative:footnote'),
+    ];
+    expect(docx).toEqual(refused);
+    expect(both).toEqual(refused);
+  });
+
+  it("carries each cross-reference's form and what it prints from for Word, keyed where the writer meets it - a paragraph, a caption, a footnote's paragraph and a section's title - and a title holding one as runs, its references among its words, leaving the published document the PDF's (Word 3, rulings R3 and R4)", () => {
+    const methods = { kind: 'node', node: id('methods') };
+    const titled = {
+      ...section('results', 'Results'),
+      title: [text('After '), xref('x9', methods), text(' ended')],
+    };
+    const over = input({
+      outline: outline([section('methods', 'Methods', [reference('calib')]), titled]),
+      occurrences: new Map([
+        [
+          id('calib'),
+          component([
+            table('t1', { caption: [text('Readings as in '), xref('x1', methods, 'title')] }),
+            paragraph(
+              'p1',
+              text('See '),
+              xref('x2', toBlock('t1'), 'numberAndTitle'),
+              text(' and '),
+              xref('x3', toBlock('n1')),
+            ),
+            paragraph(
+              'p2',
+              text('Noted'),
+              footnote('n1', paragraph('n1p', text('Back on '), xref('x4', toBlock('p1'), 'page'))),
+            ),
+          ]),
+        ],
+      ]),
+      layout: listless,
+    });
+    const { pdf, docx, both } = assembledFor(over);
+    if (!pdf.ok || !docx.ok || !both.ok) throw new Error('refused');
+    expect(pdf.word).toBeNull();
+    const at = (block: string, index: number) =>
+      inlineReferenceKey(id('calib'), { kind: 'paragraph', block }, index);
+    expect(docx.word?.references).toEqual(
+      new Map([
+        [
+          inlineReferenceKey(id('calib'), { kind: 'caption', block: 't1' }, 1),
+          { display: 'title', label: '1', title: 'Methods' },
+        ],
+        [at('p1', 1), { display: 'numberAndTitle', label: 'Table 1.1', title: 'Readings as in 1' }],
+        [at('p1', 3), { display: 'number', label: '1', title: null }],
+        [at('n1p', 1), { display: 'page', label: null, title: null }],
+        [
+          inlineReferenceKey(id('results'), { kind: 'title' }, 1),
+          { display: 'number', label: '1', title: 'Methods' },
+        ],
+      ]),
+    );
+    // A title's reference is a run of its own, as a paragraph's is, never a link (XR-D).
+    expect(docx.word?.titles).toEqual(
+      new Map([
+        [
+          id('results'),
+          [
+            { text: 'After ', marks: [] },
+            {
+              reference: {
+                anchor: `n-${id('methods')}`,
+                text: '1',
+                page: false,
+                relative: false,
+                link: false,
+              },
+            },
+            { text: ' ended', marks: [] },
+          ],
+        ],
+      ]),
+    );
+    expect(both.word).toEqual(docx.word);
+    // The published title is the PDF's words, the reference among them as its number.
+    expect(docx.document.nodes[1]!.title).toEqual([{ text: 'After 1 ended', marks: [] }]);
+    expect(JSON.stringify(docx.document)).toBe(JSON.stringify(pdf.document));
+    expect(JSON.stringify(both.document)).toBe(JSON.stringify(pdf.document));
   });
 
   it("reports a preformatted line too wide for the PDF's page only where the PDF is asked for, and publishes the line whole for Word", () => {
