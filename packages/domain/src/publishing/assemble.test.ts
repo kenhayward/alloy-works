@@ -17,6 +17,7 @@ import {
   assemble,
   figureImageKey,
   inlineImageKey,
+  inlineReferenceKey,
   type Assembled,
   type AssembleInput,
   type PublishingAsset,
@@ -4942,6 +4943,8 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       theme: DEFAULT_THEME,
       scheme: defaultLayout.scheme,
       images: new Map(),
+      references: new Map(),
+      titles: new Map(),
     };
     expect(docx.word).toEqual(word);
     expect(both.word).toEqual(word);
@@ -4982,7 +4985,7 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(failuresOf(assemble({ ...before, formats: ['docx'] }))).toEqual([unsupported]);
   });
 
-  it('refuses what Word does not write yet - an equation, a footnote, a cross-reference and the list of equations - by name where it stands, and still publishes the PDF', () => {
+  it('refuses what Word does not write yet - an equation, a reference to one and the list of equations - by name where it stands, and still publishes the PDF', () => {
     const over = holding(
       list('L1', paragraph('i1', text('An item.'))),
       quotation('q1', paragraph('q1p', text('Quoted.'))),
@@ -4994,14 +4997,15 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       paragraph('p2', text('Let '), inlineEquation),
       paragraph('p3', text('Noted'), footnote('n1', paragraph('n1p', text('A note.')))),
       paragraph('p4', text('See '), xref('x1', toBlock('t1'))),
+      // A reference to an equation is Word 4's, as the equation is (Word 3, ruling R1).
+      paragraph('p5', text('See '), xref('x2', toBlock('e1'), 'relative')),
     );
     const { pdf, docx, both } = failuresFor(over);
     expect(pdf).toEqual([]);
     const refused = [
       notYet('e1', 'equation'),
       notYet('p2', 'equation'),
-      notYet('p3', 'footnote'),
-      notYet('p4', 'crossReference'),
+      notYet('p5', 'crossReference'),
     ];
     expect(docx).toEqual(refused);
     expect(both).toEqual(refused);
@@ -5054,7 +5058,35 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(JSON.stringify(both.document)).toBe(JSON.stringify(pdf.document));
   });
 
-  it("refuses an equation wherever it stands - nested, in a caption, or in a section's title - and a reference in a title", () => {
+  it("publishes a footnote and a cross-reference for Word, in a paragraph's text and a table's cell, in the document the PDF is made from (Word 3, ruling R1)", () => {
+    const over = {
+      ...holding(
+        paragraph('p1', text('Noted'), footnote('n1', paragraph('n1p', text('A note.')))),
+        table(
+          't1',
+          {},
+          paragraph('c1', text('Cell'), footnote('n2', paragraph('n2p', text('In.')))),
+        ),
+        paragraph(
+          'p2',
+          text('See '),
+          xref('x1', toBlock('t1')),
+          text(' and '),
+          xref('x2', toBlock('n1')),
+        ),
+      ),
+      layout: listless,
+    };
+    const { pdf, docx, both } = assembledFor(over);
+    if (!pdf.ok || !docx.ok || !both.ok) throw new Error('refused');
+    const [noted, , seen] = blocksOf(docx);
+    expect(paragraphRuns(noted)[1]).toMatchObject({ footnote: { label: '1' } });
+    expect(paragraphRuns(seen).filter((run) => 'reference' in run)).toHaveLength(2);
+    expect(JSON.stringify(docx.document)).toBe(JSON.stringify(pdf.document));
+    expect(JSON.stringify(both.document)).toBe(JSON.stringify(pdf.document));
+  });
+
+  it("refuses an equation wherever it stands - nested, in a caption, or in a section's title - and not a reference in a title, which Word writes as a field (Word 3, task 3)", () => {
     const inner = holding(
       quotation('q1', list('L1', paragraph('i1', text('One '), inlineEquation))),
       table('t1', { caption: [text('Readings '), inlineEquation] }),
@@ -5073,10 +5105,221 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     const inTitle = input({ outline: outline([section('methods', 'Methods'), titled]) });
     const { pdf, docx } = failuresFor(inTitle);
     expect(pdf).toEqual([]);
-    expect(docx).toEqual([
-      { ...notYet(null, 'equation'), node: id('results') },
-      { ...notYet(null, 'crossReference'), node: id('results') },
-    ]);
+    expect(docx).toEqual([{ ...notYet(null, 'equation'), node: id('results') }]);
+  });
+
+  it("refuses for Word by name the two references Word cannot print - above or below between a footnote's text and the text outside it, and a caption's words named in that caption - and publishes both for the PDF (Word 3, ruling R5; measured)", () => {
+    const over = holding(
+      table('t1', { caption: [text('Own '), xref('x1', toBlock('t1'), 'title')] }),
+      paragraph(
+        'p1',
+        text('Noted'),
+        footnote(
+          'n1',
+          paragraph(
+            'n1p',
+            text('See '),
+            xref('x2', toBlock('t1'), 'relative'),
+            text(', '),
+            xref('x3', toBlock('n1q'), 'relative'),
+            text(' and '),
+            xref('x4', toBlock('t1'), 'page'),
+          ),
+          paragraph('n1q', text('More.')),
+        ),
+      ),
+      paragraph(
+        'p2',
+        xref('x5', toBlock('n1p'), 'relative'),
+        text(', '),
+        xref('x6', toBlock('n1'), 'relative'),
+        text(' and '),
+        xref('x7', toBlock('t1'), 'numberAndTitle'),
+      ),
+      table('t2', { caption: [text('Beside '), xref('x8', toBlock('t1'), 'numberAndTitle')] }),
+    );
+    const notInWord = (reference: string, detail: string) =>
+      failed('cross_reference_not_in_word', reference, detail);
+    const { pdf, docx, both } = failuresFor({ ...over, layout: listless });
+    expect(pdf).toEqual([]);
+    // Word's `REF \p` prints its bookmark's words where the field and the bookmark stand one in a
+    // note and one outside it, and a caption's `REF` to its own words refuses to print itself; within
+    // the notes, to a footnote's mark and every other form, Word prints what the PDF prints. The first
+    // table's words hold that reference to themselves, so a reference elsewhere to them is refused as
+    // well, as one to any caption holding a reference but to a number (Word 3's check).
+    const refused = [
+      notInWord('x1', 'title:caption'),
+      notInWord('x2', 'relative:footnote'),
+      notInWord('x5', 'relative:footnote'),
+      notInWord('x7', 'numberAndTitle:nested'),
+      notInWord('x8', 'numberAndTitle:nested'),
+    ];
+    expect(docx).toEqual(refused);
+    expect(both).toEqual(refused);
+  });
+
+  it("refuses for Word by name above or below in a floated figure's caption, which Word writes in a text box of its own, and publishes it for the PDF and in a figure set as a block (Word 3, ruling R5; measured in Word 16)", () => {
+    const inputs = defaultInputs();
+    inputs.catalogues.image.styles.push({
+      id: 'floated',
+      name: 'floated',
+      appliesTo: ['figure'],
+      fixed: { dimension: 'width', value: 0.5, unit: 'measure' },
+      maximum: { value: 1, unit: 'textHeight' },
+      placement: 'float',
+      alignment: 'end',
+    });
+    const caption = (name: string, target: string) => [
+      text('Shapes, see '),
+      xref(`${name}a`, toBlock('p0'), 'relative'),
+      text(' on '),
+      xref(`${name}b`, toBlock('p0'), 'page'),
+      text(', '),
+      xref(`${name}c`, toBlock(target), 'relative'),
+      text(' and '),
+      xref(`${name}d`, toBlock('t1')),
+    ];
+    const over = {
+      ...holding(
+        paragraph('p0', text('First.'), footnote('n1', paragraph('n1p', text('Noted.')))),
+        figure('f1', { imageStyle: 'floated', caption: caption('x', 'p1') }),
+        figure('f2', { caption: caption('y', 'p1') }),
+        figure('f3', { imageStyle: 'floated', caption: caption('z', 'n1p') }),
+        table('t1'),
+        paragraph(
+          'p1',
+          xref('w1', toBlock('f1'), 'relative'),
+          text(' and '),
+          xref('w2', toBlock('f3'), 'page'),
+        ),
+      ),
+      theme: resolved(inputs),
+      layout: listless,
+    };
+    const notInWord = (reference: string, detail: string) =>
+      failed('cross_reference_not_in_word', reference, detail);
+    const { pdf, docx, both } = failuresFor(over);
+    expect(pdf).toEqual([]);
+    // Word's `REF \p` in the box printed nothing, either way; the box's page and number, and a
+    // relative reference from the text to the floated figure, which names its place in the text, are
+    // right. The same caption on a figure set as a block stands in the text, and is written. One
+    // across a footnote's boundary as well is named once, for the note.
+    const refused = [
+      notInWord('xa', 'relative:float'),
+      notInWord('xc', 'relative:float'),
+      notInWord('za', 'relative:float'),
+      notInWord('zc', 'relative:footnote'),
+    ];
+    expect(docx).toEqual(refused);
+    expect(both).toEqual(refused);
+  });
+
+  it("refuses for Word by name a caption's words asked for where they hold a reference asking for anything but its target's number - which the PDF prints as that number, and Word's REF, copying the field, in its own form - and publishes it for the PDF (Word 3, ruling R5; measured by the Word check)", () => {
+    const over = holding(
+      paragraph('p0', text('First.')),
+      table('t1', { caption: [text('Checks '), xref('x1', toBlock('p0'), 'relative')] }),
+      table('t2', { caption: [text('Sums as in '), xref('x2', toBlock('t1'))] }),
+      paragraph(
+        'p1',
+        xref('x3', toBlock('t1'), 'title'),
+        text(', '),
+        xref('x4', toBlock('t1'), 'numberAndTitle'),
+        text(', '),
+        xref('x5', toBlock('t1')),
+        text(', '),
+        xref('x6', toBlock('t1'), 'relative'),
+        text(' and '),
+        xref('x7', toBlock('t2'), 'numberAndTitle'),
+      ),
+    );
+    const notInWord = (reference: string, detail: string) =>
+      failed('cross_reference_not_in_word', reference, detail);
+    const { pdf, docx, both } = failuresFor({ ...over, layout: listless });
+    expect(pdf).toEqual([]);
+    // The first table's words hold "above", which the PDF prints, read as a title, as its target's
+    // kind; the second's hold a number, which Word's copy prints as the PDF does. Its number, and its
+    // place, are the table's own.
+    const refused = [notInWord('x3', 'title:nested'), notInWord('x4', 'numberAndTitle:nested')];
+    expect(docx).toEqual(refused);
+    expect(both).toEqual(refused);
+  });
+
+  it("carries each cross-reference's form and what it prints from for Word, keyed where the writer meets it - a paragraph, a caption, a footnote's paragraph and a section's title - and a title holding one as runs, its references among its words, leaving the published document the PDF's (Word 3, rulings R3 and R4)", () => {
+    const methods = { kind: 'node', node: id('methods') };
+    const titled = {
+      ...section('results', 'Results'),
+      title: [text('After '), xref('x9', methods), text(' ended')],
+    };
+    const over = input({
+      outline: outline([section('methods', 'Methods', [reference('calib')]), titled]),
+      occurrences: new Map([
+        [
+          id('calib'),
+          component([
+            table('t1', { caption: [text('Readings as in '), xref('x1', methods)] }),
+            paragraph(
+              'p1',
+              text('See '),
+              xref('x2', toBlock('t1'), 'numberAndTitle'),
+              text(' and '),
+              xref('x3', toBlock('n1')),
+            ),
+            paragraph(
+              'p2',
+              text('Noted'),
+              footnote('n1', paragraph('n1p', text('Back on '), xref('x4', toBlock('p1'), 'page'))),
+            ),
+          ]),
+        ],
+      ]),
+      layout: listless,
+    });
+    const { pdf, docx, both } = assembledFor(over);
+    if (!pdf.ok || !docx.ok || !both.ok) throw new Error('refused');
+    expect(pdf.word).toBeNull();
+    const at = (block: string, index: number) =>
+      inlineReferenceKey(id('calib'), { kind: 'paragraph', block }, index);
+    expect(docx.word?.references).toEqual(
+      new Map([
+        [
+          inlineReferenceKey(id('calib'), { kind: 'caption', block: 't1' }, 1),
+          { display: 'number', label: '1', title: 'Methods' },
+        ],
+        [at('p1', 1), { display: 'numberAndTitle', label: 'Table 1.1', title: 'Readings as in 1' }],
+        [at('p1', 3), { display: 'number', label: '1', title: null }],
+        [at('n1p', 1), { display: 'page', label: null, title: null }],
+        [
+          inlineReferenceKey(id('results'), { kind: 'title' }, 1),
+          { display: 'number', label: '1', title: 'Methods' },
+        ],
+      ]),
+    );
+    // A title's reference is a run of its own, as a paragraph's is, never a link (XR-D).
+    expect(docx.word?.titles).toEqual(
+      new Map([
+        [
+          id('results'),
+          [
+            { text: 'After ', marks: [] },
+            {
+              reference: {
+                anchor: `n-${id('methods')}`,
+                text: '1',
+                page: false,
+                relative: false,
+                link: false,
+              },
+            },
+            { text: ' ended', marks: [] },
+          ],
+        ],
+      ]),
+    );
+    expect(both.word).toEqual(docx.word);
+    // The published title is the PDF's words, the reference among them as its number.
+    expect(docx.document.nodes[1]!.title).toEqual([{ text: 'After 1 ended', marks: [] }]);
+    expect(JSON.stringify(docx.document)).toBe(JSON.stringify(pdf.document));
+    expect(JSON.stringify(both.document)).toBe(JSON.stringify(pdf.document));
   });
 
   it("reports a preformatted line too wide for the PDF's page only where the PDF is asked for, and publishes the line whole for Word", () => {
@@ -5144,31 +5387,50 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(tabled).toMatchObject({ type: 'table', id: 't1', headerRows: 1 });
   });
 
-  it("reports a footnote in a table's header row, which the PDF's engine sets on every page, only where the PDF is asked for", () => {
+  it("reports a footnote in a table's header row, which the PDF's engine sets on every page, only where the PDF is asked for, and publishes it for Word", () => {
     const headed = table(
       't1',
       { headerRows: 1 },
       paragraph('h1', text('North'), footnote('n1', paragraph('n1p', text('Once.')))),
     );
-    // Word does not write a footnote yet (Word 3), so it is refused by name wherever it stands.
-    expect(failuresFor(holding(headed))).toEqual({
-      pdf: [failed('footnote_not_publishable_here', 'h1')],
-      docx: [notYet('h1', 'footnote')],
-      both: [notYet('h1', 'footnote'), failed('footnote_not_publishable_here', 'h1')],
-    });
+    const refused = failed('footnote_not_publishable_here', 'h1');
+    const over = { ...holding(headed), layout: listless };
+    expect(failuresFor(over)).toEqual({ pdf: [refused], docx: [], both: [refused] });
+    // The trap Word 1 left (Word 3, ruling R1): the PDF's refusal no longer drops the footnote, so a
+    // Word document carries it in its header row, numbered as the PDF would have numbered it.
+    const [tabled] = blocksOf(assemble({ ...over, formats: ['docx'] }));
+    if (tabled?.type !== 'table') throw new Error('no table');
+    expect(paragraphRuns(tabled.rows[0]!.cells[0]!.blocks[0])).toEqual([
+      { text: 'North', marks: [] },
+      {
+        footnote: {
+          label: '1',
+          anchor: null,
+          paragraphs: [
+            {
+              type: 'paragraph',
+              id: 'n1p',
+              anchor: null,
+              style: 'footnote',
+              runs: [{ text: 'Once.', marks: [] }],
+            },
+          ],
+        },
+      },
+    ]);
     // A footnote in a caption is refused whatever the format: it is where no footnote may stand.
     const captioned = table('t2', {
       caption: [text('Readings'), footnote('n2', paragraph('n2p', text('Once.')))],
     });
     expect(failuresFor(holding(captioned)).docx).toEqual([
-      notYet('t2', 'footnote'),
       failed('footnote_not_publishable_here', 't2'),
     ]);
   });
 
-  it("reports a reference to what stands in a table's header rows only where the PDF is asked for, and a form its target lacks for every format", () => {
+  it("reports a reference to what stands in a table's header rows only where the PDF is asked for, and publishes it for Word, and a form its target lacks for every format", () => {
+    const headed = table('t1', { headerRows: 1 }, paragraph('h1', text('Site')));
     const over = holding(
-      table('t1', { headerRows: 1 }, paragraph('h1', text('Site'))),
+      headed,
       paragraph(
         'b1',
         text('See '),
@@ -5179,15 +5441,28 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     );
     const unavailable = (reference: string, form: string) =>
       failed('cross_reference_form_unavailable', reference, form);
-    // Word does not write a reference yet (Word 3), so it is refused by name where it stands.
     expect(failuresFor(over)).toEqual({
       pdf: [unavailable('x1', 'page'), unavailable('x2', 'number')],
-      docx: [unavailable('x2', 'number'), notYet('b1', 'crossReference')],
-      both: [
-        unavailable('x1', 'page'),
-        unavailable('x2', 'number'),
-        notYet('b1', 'crossReference'),
-      ],
+      docx: [unavailable('x2', 'number')],
+      both: [unavailable('x1', 'page'), unavailable('x2', 'number')],
+    });
+    // The trap Word 1 left (Word 3, ruling R1): the PDF's refusal no longer drops the reference, so a
+    // Word document carries it, and its target in the header row carries the anchor it points at.
+    const carried = {
+      ...holding(headed, paragraph('b1', text('See '), xref('x1', toBlock('h1'), 'page'))),
+      layout: listless,
+    };
+    expect(failuresFor(carried)).toEqual({
+      pdf: [unavailable('x1', 'page')],
+      docx: [],
+      both: [unavailable('x1', 'page')],
+    });
+    const [tabled, seen] = blocksOf(assemble({ ...carried, formats: ['docx'] }));
+    if (tabled?.type !== 'table') throw new Error('no table');
+    const anchor = `b-${id('calib')}-h1`;
+    expect(tabled.rows[0]!.cells[0]!.blocks[0]).toMatchObject({ id: 'h1', anchor });
+    expect(paragraphRuns(seen)[1]).toEqual({
+      reference: { anchor, text: null, page: true, relative: false, link: true },
     });
   });
 
@@ -5367,6 +5642,57 @@ describe('the formats a publication is assembled for (Word 1)', () => {
         refused(id(appendix(27)), 'section:appendix:letters'),
       ],
     });
+  });
+
+  it("refuses a footnote's number Word cannot compute only where Word is asked for, naming the footnote and the rule, and passes the default scheme (Word 3, ruling R2)", () => {
+    const noted = (name: string) =>
+      component([
+        paragraph(`${name}p`, text('Set'), footnote(name, paragraph(`${name}t`, text('A note.')))),
+      ]);
+    const document = (layout: Layout) =>
+      input({
+        layout,
+        outline: outline([
+          inMatter('front', reference('preface')),
+          reference('intro'),
+          reference('method'),
+          inMatter('appendix', reference('tables')),
+        ]),
+        occurrences: new Map([
+          [id('preface'), noted('n0')],
+          [id('intro'), noted('n1')],
+          [id('method'), noted('n2')],
+          [id('tables'), noted('n3')],
+        ]),
+      });
+    // The default scheme counts each matter's footnotes from 1, as Word does restarting each section.
+    expect(failuresFor(document(listless))).toEqual({ pdf: [], docx: [], both: [] });
+    const scheme = structuredClone(listless.scheme);
+    const rules = scheme.sequences['footnote']!;
+    rules.body = { ...rules.body, prefix: 1, restartAt: 1 };
+    rules.appendix = { ...rules.appendix, label: 'Note' };
+    const refused = (node: string, block: string, why: string) => ({
+      stage: 'compose',
+      code: 'numbering_not_in_word',
+      node: id(node),
+      block,
+      detail: why,
+    });
+    const expected = [
+      refused('intro', 'n1', 'footnote:body:prefix'),
+      refused('method', 'n2', 'footnote:body:restart'),
+      refused('tables', 'n3', 'footnote:appendix:label'),
+    ];
+    expect(
+      failuresFor(
+        document(
+          layoutWith((layout) => {
+            layout.matter.lists = [];
+            layout.scheme = scheme;
+          }),
+        ),
+      ),
+    ).toEqual({ pdf: [], docx: expected, both: expected });
   });
 
   it("asks a face's licence of a PDF for a PDF and of Word for Word, where a face Word may not embed is substituted rather than refused", () => {

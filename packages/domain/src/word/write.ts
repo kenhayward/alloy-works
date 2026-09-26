@@ -5,9 +5,13 @@ import { escapeXml } from '../content/ooxml/xml.js';
 import {
   figureImageKey,
   inlineImageKey,
+  inlineReferenceKey,
+  type ReferenceSite,
   type RunsSite,
   type WordImage,
   type WordInput,
+  type WordReference,
+  type WordTitleRun,
 } from '../publishing/assemble.js';
 import type { PageFormat, PublishingFormat, SlotPart } from '../publishing/layout.js';
 import { columnsOf } from '../publishing/measure.js';
@@ -28,6 +32,7 @@ import type {
   PublishedNode,
   PublishedPreformatted,
   PublishedQuotation,
+  PublishedReferenceRun,
   PublishedTable,
   PublishedTitleRun,
 } from '../publishing/published.js';
@@ -65,6 +70,7 @@ import {
 } from './lists.js';
 import {
   captionField,
+  footnoteProperties,
   HEADING_LISTS,
   numberingXml,
   sequenceName,
@@ -92,16 +98,18 @@ import { spacingOverrides, type SpacingOverride } from './spacing.js';
  * preformatted text, each stood in and spaced as the PDF sets it (rulings R4 to R6), tables in
  * their table styles, captioned by Word's fields (R1, R7), and figures and images in a line, each
  * drawn from its own image's bytes at the size `assemble` gave it against the Word page (R3, R8).
- * `assemble` refuses equations, footnotes and cross-references by name for Word (`word_not_yet`), so
- * meeting one here throws.
+ * Word 3 writes footnotes as Word's own, numbered by Word (ruling R2), and every cross-reference as a
+ * field Word updates, at a hidden bookmark on its target named Word's way (rulings R3 and R4).
+ * `assemble` refuses equations by name for Word (`word_not_yet`), so meeting one here throws.
  */
 
 /**
  * What the job records as the output's producer version (R12). A version names the writer that made
  * the file, so it moves whenever what the writer writes does: `word/2` is Word 2's, which writes lists,
- * quotations, preformatted text, tables and figures where `word/1` refused them.
+ * quotations, preformatted text, tables and figures where `word/1` refused them, and `word/3` is Word
+ * 3's, which writes footnotes and cross-references where `word/2` refused them.
  */
-export const WORD_WRITER_VERSION = 'word/2';
+export const WORD_WRITER_VERSION = 'word/3';
 
 /** What the writer is given: `assemble`'s answer for Word, the formats asked for, and the faces. */
 export interface WordWriting {
@@ -195,6 +203,28 @@ const HEADINGS = [
   'heading6',
 ] as const satisfies readonly Role[];
 
+/**
+ * The footnote reference style, by its identifier: Word's own, as Word names it, so that a footnote a
+ * recipient adds is marked in it too (Word 3, ruling R2; M5).
+ */
+const FOOTNOTE_REFERENCE = 'FootnoteReference';
+
+/**
+ * What stands between a note's number and its text, in ems of the note: the pinned Typst's footnote
+ * entry's gap, measured in template 13's PDF (0.47pt at the default theme's 9.35pt note) - narrower
+ * than a space, which is a quarter of an em in Liberation Serif, and wider than nothing.
+ */
+const NOTE_NUMBER_GAP = 0.05;
+
+/** The parts the text is written into, each relating its own links and images (Word 3, ruling R2). */
+type Story = 'document' | 'footnotes';
+
+/** What a part relates to: its links by target, and its images by path, each with its identifier. */
+interface Related {
+  readonly links: Map<string, string>;
+  readonly media: Map<string, string>;
+}
+
 /** A heading or a paragraph taken off every list, where its style would number it. */
 const NO_NUMBER = '<w:numPr><w:ilvl w:val="0"/><w:numId w:val="0"/></w:numPr>';
 
@@ -213,7 +243,8 @@ interface Paragraph {
   readonly style: string;
   /** The theme's style its spaces are read from: its own, or the one a style of the writer's is based on. */
   readonly theme: string;
-  readonly content: string;
+  /** What it holds; a bookmark of a target that publishes nothing is added to it (Word 3, R3). */
+  content: string;
   /**
    * Kept on the page with what follows it, over its style: a table's caption (Word 2, ruling R7), and a
    * figure's image, whose caption stands below it (R8).
@@ -363,6 +394,134 @@ interface Section {
   readonly furniture: Furniture;
   /** `w:pgNumType`, or none: the cover carries no number (M16). */
   readonly pageNumbering: string | null;
+  /**
+   * The matter whose footnotes Word numbers in it (`footnoteProperties`); none for the cover's and the
+   * contents', which hold no footnote.
+   */
+  readonly footnotes: OutlineMatter | null;
+}
+
+/** A hidden bookmark: its name, Word's way, and its identifier, the number the name ends in. */
+interface Bookmark {
+  readonly id: number;
+  readonly name: string;
+}
+
+/**
+ * **The bookmarks a target a reference names is given** (Word 3, ruling R3; M4), by what it is: a
+ * heading's around its title's words, whose number `REF \r` reads from the heading's list; a footnote's
+ * around its mark, which `NOTEREF` reads; a block's where its first paragraph begins, holding nothing;
+ * and a caption's two, around its label and around its words, so a number and a title are each a
+ * field of their own - or, where it has no label, holding nothing where the caption begins, since a
+ * relative field in the caption naming the bookmark around its words, which holds that field, printed
+ * Word's "Error! Not a valid bookmark self-reference." (M1 of Word 3's final review); and a floated
+ * figure's a third, holding nothing, where its box
+ * is anchored in the text, which above and below are read from (Word 3's check: Word's `REF \p` to a
+ * bookmark in a text box prints the bookmark's words, as it does across the notes).
+ */
+type Bookmarked =
+  | { readonly kind: 'heading' | 'footnote' | 'block'; readonly at: Bookmark }
+  | {
+      readonly kind: 'caption';
+      /** Around its label, or holding nothing where the caption begins where it has none. */
+      readonly place: Bookmark;
+      readonly words: Bookmark;
+      readonly anchored: Bookmark | null;
+    };
+
+/**
+ * **Every target's bookmarks, by the anchor the published document gives it** (Word 3, ruling R3):
+ * `_Ref` and nine digits, numbered in the order the document holds them - a node where its heading
+ * stands, before its blocks and its children; a block where it begins, before what it holds; a
+ * footnote where its mark stands, before its paragraphs - which is the order the writer writes them in.
+ * Deterministic, so the same document makes the same names, and 13 characters, inside the 40 Word keeps
+ * (M4). The published document carries an anchor exactly where a reference names it, so every target
+ * is named once however many references name it, and nothing else is.
+ */
+function bookmarksOf(document: PublishedDocument): Map<string, Bookmarked> {
+  const named = new Map<string, Bookmarked>();
+  let count = 0;
+  const next = (): Bookmark => {
+    count += 1;
+    return { id: count, name: `_Ref${String(count).padStart(9, '0')}` };
+  };
+  const add = (anchor: string | null, kind: 'heading' | 'footnote' | 'block') => {
+    if (anchor !== null) named.set(anchor, { kind, at: next() });
+  };
+  const runs = (inlines: readonly PublishedInline[]) => {
+    for (const run of inlines) {
+      if (!('footnote' in run)) continue;
+      add(run.footnote.anchor, 'footnote');
+      run.footnote.paragraphs.forEach(block);
+    }
+  };
+  const block = (each: PublishedBlock): void => {
+    switch (each.type) {
+      case 'paragraph':
+        add(each.anchor, 'block');
+        runs(each.runs);
+        return;
+      case 'list':
+        add(each.anchor, 'block');
+        for (const item of each.items) item.blocks.forEach(block);
+        return;
+      case 'blockquote':
+        add(each.anchor, 'block');
+        each.blocks.forEach(block);
+        return;
+      case 'table':
+      case 'figure':
+        if (each.anchor !== null) {
+          const place = next();
+          const words = next();
+          // A floated figure's in its anchor's paragraph, after the box that holds its caption.
+          const anchored = each.type === 'figure' && each.placement === 'float' ? next() : null;
+          named.set(each.anchor, { kind: 'caption', place, words, anchored });
+        }
+        if (each.type === 'table') {
+          for (const row of each.rows) for (const cell of row.cells) cell.blocks.forEach(block);
+        }
+        return;
+      case 'preformatted':
+      case 'equation':
+      case 'marker':
+        add(each.anchor, 'block');
+        return;
+    }
+  };
+  const node = (each: PublishedNode) => {
+    add(each.anchor, 'heading');
+    each.blocks.forEach(block);
+    each.children.forEach(node);
+  };
+  document.nodes.forEach(node);
+  return named;
+}
+
+/** Content inside a bookmark, where there is one. */
+function bookmarked(bookmark: Bookmark | null | undefined, content: string): string {
+  if (bookmark === null || bookmark === undefined) return content;
+  return (
+    `<w:bookmarkStart w:id="${bookmark.id}" w:name="${bookmark.name}"/>` +
+    content +
+    `<w:bookmarkEnd w:id="${bookmark.id}"/>`
+  );
+}
+
+/**
+ * Characters of a script written right to left - Hebrew, Arabic, Syriac, Thaana, N'Ko and the rest of
+ * their blocks, and their presentation forms - by block, which is near enough to Unicode's strong
+ * right-to-left classes for the words a reference prints.
+ */
+const RIGHT_TO_LEFT =
+  /[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufeff\u{10800}-\u{10fff}\u{1e800}-\u{1efff}]/u;
+
+/** Whether words hold nothing written right to left: a number, a page, or a left-to-right language's. */
+const ltr = (words: string | null): boolean => !RIGHT_TO_LEFT.test(words ?? '');
+
+/** Where a number, a page or a relative reference finds a target: a caption's label, or its place. */
+function placeOf(target: Bookmarked): Bookmark {
+  return target.kind === 'caption' ? target.place : target.at;
 }
 
 export function writeDocx(input: WordWriting): WrittenDocx {
@@ -374,6 +533,8 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     scheme: word.scheme,
     format,
     images: word.images,
+    references: word.references,
+    titles: word.titles,
   });
 
   // The page's furniture: the cover's header and footer, the running ones, and the contents' where its
@@ -443,6 +604,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       cover: true,
       furniture: coverFurniture,
       pageNumbering: null,
+      footnotes: null,
     });
   }
   const contents = document.front.contents;
@@ -467,6 +629,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       cover: false,
       furniture: contentsFurniture,
       pageNumbering: pageNumbering('front'),
+      footnotes: null,
     });
   }
   for (const segment of segmentsOf(document.nodes)) {
@@ -485,15 +648,18 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       cover: false,
       furniture: runningFurniture,
       pageNumbering: pageNumbering(segment.matter),
+      footnotes: segment.matter,
     });
   }
   if (front !== null) front.push(...writer.listsAfterContents(generated, front.length > 0));
 
+  const notes = writer.notes;
   const relationships = new Relationships();
   relationships.add('styles', 'styles.xml');
   relationships.add('numbering', 'numbering.xml');
   relationships.add('settings', 'settings.xml');
   relationships.add('fontTable', 'fontTable.xml');
+  if (notes.length > 0) relationships.add('footnotes', 'footnotes.xml');
   const partIds = new Map(
     headerParts.parts.map((part) => [part.name, relationships.add(part.kind, part.name)]),
   );
@@ -509,7 +675,8 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     const own = writer.properties(next.theme).spaceBefore;
     next.wanted = { ...next.wanted, before: (next.wanted?.before ?? own) + after };
   });
-  for (const run of paragraphRuns(inOrder)) {
+  /** A run of paragraphs Word reads as neighbours, spaced and parted as the PDF sets them. */
+  const settle = (run: Paragraph[]) => {
     // The spaces a container decides, stated over the styles where Word would read them otherwise
     // (Word 2, ruling R6), among paragraphs Word reads as neighbours: a table stands between the
     // paragraphs either side of it, and a cell's are its own.
@@ -556,10 +723,30 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       const indent = paragraph.indent ?? writer.ownIndent(paragraph.theme);
       paragraph.indent = { ...indent, left: indent.left + 1, right: indent.right + 1 };
     });
-  }
+  };
+  for (const run of paragraphRuns(inOrder)) settle(run);
+  // Two notes stand apart as two blocks of the footnote place's style do, two containers, whose
+  // spaces add whether or not the style asks for contextual spacing (template 13's `apart`, the gap
+  // between its footnote entries); a note's own paragraphs as its flow spaced them. The footnotes part
+  // is a run of its own, its notes' paragraphs one after another as Word reads them.
+  const noteStyle = writer.properties(theme.places.footnote);
+  notes.forEach((note, index) => {
+    const next = notes[index + 1]?.paragraphs[0];
+    const last = note.paragraphs[note.paragraphs.length - 1]!;
+    if (next === undefined) return;
+    last.wanted = { ...last.wanted, after: noteStyle.spaceAfter };
+    next.wanted = { ...next.wanted, before: noteStyle.spaceBefore };
+  });
+  settle(notes.flatMap((note) => note.paragraphs));
   const body = sections
     .map((section, index) => {
-      const properties = sectionProperties(section, format, partIds);
+      const numbered = section.footnotes;
+      const properties = sectionProperties(
+        section,
+        format,
+        partIds,
+        notes.length === 0 || numbered === null ? '' : footnoteProperties(word.scheme, numbered),
+      );
       const last = index === sections.length - 1;
       const items = section.body;
       // Word ends a section, and the body, with a paragraph: after a table, one a point high.
@@ -579,15 +766,22 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     })
     .join('');
   // The images the text places, each once, in the order the text first meets them; then the text's
-  // links, each named in the order the text first meets its target.
-  const media = [...writer.media].map(([path, id]) => {
-    const bytes = input.images.get(path);
-    if (bytes === undefined) throw new Error(`No bytes for the image ${path}`);
-    const name = path.slice(path.lastIndexOf('/') + 1);
-    relationships.add('image', `media/${name}`, id);
-    return { name, bytes, extension: name.slice(name.lastIndexOf('.') + 1) };
-  });
-  for (const [href, id] of writer.links) relationships.external(id, 'hyperlink', href);
+  // links, each named in the order the text first meets its target. The notes' likewise, related from
+  // the footnotes part, and an image placed in both written once.
+  const media = new Map<string, { name: string; bytes: Uint8Array; extension: string }>();
+  const relate = (related: Related, from: Relationships) => {
+    for (const [path, id] of related.media) {
+      const bytes = input.images.get(path);
+      if (bytes === undefined) throw new Error(`No bytes for the image ${path}`);
+      const name = path.slice(path.lastIndexOf('/') + 1);
+      from.add('image', `media/${name}`, id);
+      media.set(path, { name, bytes, extension: name.slice(name.lastIndexOf('.') + 1) });
+    }
+    for (const [href, id] of related.links) from.external(id, 'hyperlink', href);
+  };
+  relate(writer.related.document, relationships);
+  const noteRelationships = new Relationships();
+  relate(writer.related.footnotes, noteRelationships);
 
   const fonts = fontParts(theme, writer.used, input.faces);
   const files: Zippable = {};
@@ -601,6 +795,9 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     ['/word/numbering.xml', `${WML}numbering+xml`],
     ['/word/settings.xml', `${WML}settings+xml`],
     ['/word/fontTable.xml', `${WML}fontTable+xml`],
+    ...(notes.length === 0
+      ? []
+      : [['/word/footnotes.xml', `${WML}footnotes+xml`] satisfies [string, string]]),
     ...headerParts.parts.map((part): [string, string] => [
       `/word/${part.name}`,
       `${WML}${part.kind}+xml`,
@@ -615,7 +812,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       (fonts.files.length === 0
         ? ''
         : '<Default Extension="odttf" ContentType="application/vnd.openxmlformats-officedocument.obfuscatedFont"/>') +
-      imageTypes(media.map((each) => each.extension)) +
+      imageTypes([...media.values()].map((each) => each.extension)) +
       overrides
         .map(([part, type]) => `<Override PartName="${part}" ContentType="${type}"/>`)
         .join('') +
@@ -634,7 +831,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     `${DECLARATION}<w:document ${DOCUMENT_NAMESPACES}><w:body>${body}</w:body></w:document>`,
   );
   put('word/_rels/document.xml.rels', relationshipsXml(relationships.xml));
-  for (const each of media) put(`word/media/${each.name}`, each.bytes);
+  for (const each of media.values()) put(`word/media/${each.name}`, each.bytes);
   put(
     'word/styles.xml',
     projectStylesXml(
@@ -646,6 +843,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
           ...ownHeadingStyles(theme),
           ...(contents === null ? [] : contentsStyles(theme, contents.depth)),
           ...(generated.length === 0 ? [] : [listEntryStyle(theme)]),
+          ...(notes.length === 0 ? [] : [FOOTNOTE_REFERENCE_STYLE]),
         ],
       },
     ),
@@ -654,7 +852,16 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     'word/numbering.xml',
     numberingXml(word.scheme, headingLinks(theme), writer.lists.map(listNumberingXml)),
   );
-  put('word/settings.xml', settingsXml(document, theme, format));
+  put('word/settings.xml', settingsXml(document, theme, format, notes.length > 0));
+  if (notes.length > 0) {
+    put(
+      'word/footnotes.xml',
+      footnotesXml(notes, theme.places.footnote, document.direction === 'rtl'),
+    );
+    if (noteRelationships.xml.length > 0) {
+      put('word/_rels/footnotes.xml.rels', relationshipsXml(noteRelationships.xml));
+    }
+  }
   put('word/fontTable.xml', fonts.table);
   if (fonts.files.length > 0) {
     put(
@@ -689,13 +896,24 @@ export function writeDocx(input: WordWriting): WrittenDocx {
 class Writer {
   /** Each face the text is set in, by its identifier, with every weight and posture it is set at. */
   readonly used = new Map<string, Set<string>>();
-  /** Each link's target, with its relationship's identifier, in the order the text meets them. */
-  readonly links = new Map<string, string>();
   /**
-   * Each image the text places, by its path, with its relationship's identifier, in the order the text
-   * first meets it: one part however often it is placed (Word 2, ruling R8).
+   * What each part the text is written into relates to, the document's and the footnotes' (Word 3,
+   * ruling R2), since a link or an image in a note is related from the part the note is in: each link's
+   * target with its relationship's identifier, in the order the text meets them; and each image the
+   * text places, by its path, with its relationship's identifier, in the order the text first meets it,
+   * one part however often it is placed (Word 2, ruling R8).
    */
-  readonly media = new Map<string, string>();
+  readonly related: Readonly<Record<Story, Related>> = {
+    document: { links: new Map(), media: new Map() },
+    footnotes: { links: new Map(), media: new Map() },
+  };
+  /** The part the text is being written into: a note's is the footnotes part. */
+  private story: Story = 'document';
+  /**
+   * Each footnote, in the order the text meets its mark, which is the order Word numbers them in: its
+   * identifier, from 1, and its paragraphs (Word 3, ruling R2).
+   */
+  readonly notes: { readonly id: number; readonly paragraphs: Paragraph[] }[] = [];
   /** How many drawings the text has placed: each one's number is the next, in document order. */
   private drawings = 0;
   /** Each list Word numbers, in the order the text meets them (Word 2, ruling R4). */
@@ -720,6 +938,8 @@ class Writer {
   private readonly advances = new Map<string, FaceAdvances>();
   /** The node whose blocks are being written: a caption's number and a report's place are by it. */
   private at = '';
+  /** Every target's bookmarks, by its anchor (Word 3, ruling R3). */
+  private readonly bookmarks: ReadonlyMap<string, Bookmarked>;
 
   constructor(
     private readonly published: PublishedDocument,
@@ -730,8 +950,11 @@ class Writer {
       readonly scheme: NumberingScheme;
       readonly format: PageFormat;
       readonly images: ReadonlyMap<string, WordImage>;
+      readonly references: ReadonlyMap<string, WordReference>;
+      readonly titles: ReadonlyMap<string, readonly WordTitleRun[]>;
     },
   ) {
+    this.bookmarks = bookmarksOf(published);
     this.document = {
       tag: wordLanguage(published.language),
       rtl: published.direction === 'rtl',
@@ -789,9 +1012,16 @@ class Writer {
         `<w:numPr><w:ilvl w:val="${depth - 1}"/>` +
         `<w:numId w:val="${HEADING_LISTS[node.matter]}"/></w:numPr>`;
     }
+    // A title holding a reference is carried beside the document as runs, each reference a field
+    // (Word 3); a heading a reference names is bookmarked around its words (R3).
+    const title = this.numbers.titles.get(node.id);
+    const words =
+      title === undefined
+        ? this.titleRuns(node.title, style.theme, passage)
+        : this.inlineRuns(title, style.theme, passage, { kind: 'title' });
     const heading = this.paragraph(
       style.theme,
-      this.titleRuns(node.title, style.theme, passage),
+      bookmarked(this.bookmarkOf(node.anchor, 'heading'), words),
       { ...(numbering === undefined ? {} : { numbering }), bidi: passage.rtl },
       style.id,
     );
@@ -831,11 +1061,24 @@ class Writer {
   ): (WrittenBlock & Last)[] {
     const written: (WrittenBlock & Last)[] = [];
     let last = above;
+    /** Bookmarks of targets that publish nothing, waiting for the next paragraph to hold them. */
+    let pending = '';
     for (const block of blocks) {
+      if (block.type === 'marker') {
+        // A target that publishes nothing (XR-D) keeps its place as a bookmark holding nothing: at the
+        // end of the paragraph before it, else at the start of the next (Word 3, ruling R3).
+        const at = this.bookmarkOf(block.anchor, 'block');
+        const marker = bookmarked(at, '');
+        if (last !== null && !isTable(last.paragraph)) last.paragraph.content += marker;
+        else pending += marker;
+        continue;
+      }
       const each = this.block(block, place, passage);
       // A table begins with its caption: a block's top is always a paragraph.
       const top = each.body[0] as Paragraph | undefined;
       if (top === undefined) continue;
+      top.content = pending + top.content;
+      pending = '';
       if (last !== null) {
         this.space(last.paragraph, last.style, top, each.top, !last.container && !each.container);
       }
@@ -845,6 +1088,20 @@ class Writer {
         container: each.container,
       };
       written.push({ ...each, ...last });
+    }
+    if (pending !== '') {
+      // Nothing else in the flow to hold them: an empty paragraph of the place's does, as a cell's
+      // empty paragraph would.
+      const style = this.theme.places[place.at];
+      const holder = this.paragraph(style, pending, { bidi: passage.rtl });
+      written.push({
+        body: [holder],
+        top: style,
+        bottom: style,
+        container: false,
+        paragraph: holder,
+        style,
+      });
     }
     return written;
   }
@@ -875,6 +1132,23 @@ class Writer {
   }
 
   private block(block: PublishedBlock, place: Place, passage: Passage): WrittenBlock {
+    const written = this.unmarked(block, place, passage);
+    // A block a reference names is bookmarked where its first paragraph begins, holding nothing (R3):
+    // a page and above or below are all a block is named for, and Word refuses a relative field
+    // inside the bookmark it names, which one in the block's own first paragraph would be (measured
+    // in Word 16: "Error! Not a valid bookmark self-reference"). A table and a figure are bookmarked
+    // around their caption's label and words, where the caption is written.
+    if (block.type !== 'table' && block.type !== 'figure' && block.type !== 'marker') {
+      const at = this.bookmarkOf(block.anchor, 'block');
+      const opening = written.body.find((each): each is Paragraph => !isTable(each));
+      if (at !== null && opening !== undefined) {
+        opening.content = bookmarked(at, '') + opening.content;
+      }
+    }
+    return written;
+  }
+
+  private unmarked(block: PublishedBlock, place: Place, passage: Passage): WrittenBlock {
     switch (block.type) {
       case 'paragraph':
         return {
@@ -906,8 +1180,8 @@ class Writer {
       case 'figure':
         return this.figure(block, place, passage);
       default:
-        // A block equation is Word 4's and a marker, which only a cross-reference makes, Word 3's:
-        // `assemble` refuses each for Word until then.
+        // A block equation is Word 4's, which `assemble` refuses for Word until then; a marker is
+        // written by the flow it stands in.
         throw new Error(`The Word writer does not write a ${block.type} yet`);
     }
   }
@@ -989,10 +1263,12 @@ class Writer {
         const numbering =
           `<w:numPr><w:ilvl w:val="${numbered.level}"/>` +
           `<w:numId w:val="${numbered.id}"/></w:numPr>`;
-        const first = each.blocks[0];
-        if (opening !== undefined && first?.type === 'paragraph') {
+        // What the item opens with, a target that publishes nothing aside: its bookmark stands in
+        // the paragraph after it, or in one of its own where nothing follows.
+        const first = each.blocks.find((block) => block.type !== 'marker');
+        if (opening !== undefined && (first === undefined || first.type === 'paragraph')) {
           opening.numbering = numbering;
-          opening.indent = this.indent(first.style, within, numbered.marker);
+          opening.indent = this.indent(opening.theme, within, numbered.marker);
         } else {
           own.push(
             this.paragraph(itemStyle, '', {
@@ -1367,14 +1643,20 @@ class Writer {
       (each) => each.node === this.at && each.block === captioned.id,
     );
     const field = entry === undefined ? null : captionField(this.numbers.scheme, entry);
+    // Where a reference names it, its label and its words each inside a bookmark (Word 3, R3).
+    const target = this.bookmarkOf(captioned.anchor, 'caption');
     // A caption holds no image: `assemble` refuses one (`image_in_caption`).
-    const own = this.inlineRuns(captioned.caption, role, passage, null);
+    const own = bookmarked(
+      target?.words,
+      this.inlineRuns(captioned.caption, role, passage, { kind: 'caption', block: captioned.id }),
+    );
     if (entry === undefined || field === null || entry.number === null || entry.value === null) {
       // No number of Word's to compute: the label as the PDF prints it, where there is one.
       return (
         (captioned.label === null
-          ? ''
-          : this.runs(captioned.label, this.words) + this.runs(' ', passage)) + own
+          ? bookmarked(target?.place, '')
+          : bookmarked(target?.place, this.runs(captioned.label, this.words)) +
+            this.runs(' ', passage)) + own
       );
     }
     const rule = this.numbers.scheme.sequences[entry.sequence]![entry.matter];
@@ -1387,7 +1669,10 @@ class Writer {
       floated,
     });
     return (
-      captionLabel(field, entry.number, counter, (text) => this.runs(text, this.words)) +
+      bookmarked(
+        target?.place,
+        captionLabel(field, entry.number, counter, (text) => this.runs(text, this.words)),
+      ) +
       this.runs(' ', passage) +
       own
     );
@@ -1444,11 +1729,12 @@ class Writer {
       });
       const height = size.height + properties.spaceBefore + properties.lineSpacing;
       const box = this.floatBox(number, height, [image, caption]);
-      const anchor = this.paragraph(role, '', {
-        bidi: passage.rtl,
-        held: { before: 0, after: 0 },
-        box,
-      });
+      // Where a reference names it, its place in the text for above and below, after the box.
+      const anchor = this.paragraph(
+        role,
+        bookmarked(this.bookmarkOf(figure.anchor, 'caption')?.anchored, ''),
+        { bidi: passage.rtl, held: { before: 0, after: 0 }, box },
+      );
       return { body: [anchor], top: role, bottom: role, container: true };
     }
     const drawn = `<w:r>${this.drawing(figure.path, size, figure.alternative)}</w:r>`;
@@ -1745,27 +2031,48 @@ class Writer {
    * pinned (R9) - its language where it differs, and consecutive runs linked to one target as one
    * `w:hyperlink` to an external relationship. A quoted phrase adds nothing but its style: its text is
    * what the author wrote, marks and all. An image among them is a drawing in a run of its own, at the
-   * size `assemble` gave it for the Word page under its place among `site`'s runs (Word 2, ruling R8).
+   * size `assemble` gave it for the Word page under its place among `site`'s runs (Word 2, ruling R8);
+   * a cross-reference a field, in the form `assemble` kept for it there (Word 3, ruling R4).
    */
   private inlineRuns(
     runs: readonly PublishedInline[],
     styleId: string,
     passage: Passage,
-    site: RunsSite | null,
+    site: ReferenceSite | null,
     strong = false,
   ): string {
     let xml = '';
     let linking: string | null = null;
     for (const [index, run] of runs.entries()) {
-      if ('image' in run && site !== null) {
+      if ('image' in run && site !== null && site.kind !== 'title') {
         if (linking !== null) xml += '</w:hyperlink>';
         linking = null;
         const size = this.imageSize(inlineImageKey(this.at, site, index));
         xml += `<w:r>${this.drawing(run.image.path, size, run.image.alternative)}</w:r>`;
         continue;
       }
+      if ('footnote' in run) {
+        // The mark is no part of a link before it, as in the PDF it links to its note alone.
+        if (linking !== null) xml += '</w:hyperlink>';
+        linking = null;
+        xml += this.footnote(run.footnote, passage, strong);
+        continue;
+      }
+      if ('reference' in run) {
+        // A field of its own, no part of a link before it: where it links, it links to its target.
+        if (linking !== null) xml += '</w:hyperlink>';
+        linking = null;
+        const form =
+          site === null
+            ? undefined
+            : this.numbers.references.get(inlineReferenceKey(this.at, site, index));
+        if (form === undefined)
+          throw new Error(`No form for a reference to ${run.reference.anchor}`);
+        xml += this.reference(run.reference, form, styleId, passage, strong);
+        continue;
+      }
       if (!('text' in run)) {
-        // A footnote, a cross-reference and an equation are Word 3's and Word 4's.
+        // An equation is Word 4's.
         throw new Error('The Word writer does not write this run, which assemble refuses for Word');
       }
       let href: string | null = null;
@@ -1780,10 +2087,165 @@ class Writer {
         linking = href;
       }
       const kinds = run.marks.map((mark) => mark.kind);
-      xml += this.textRun(run.text, kinds, styleId, passage, language, strong);
+      const between =
+        passage.rtl &&
+        /^\s+$/u.test(run.text) &&
+        this.fieldLtr(runs, index - 1, site, 'end') &&
+        this.fieldLtr(runs, index + 1, site, 'start');
+      xml += between
+        ? runXml(
+            run.text,
+            this.runProperties(kinds, styleId, passage, language, strong).replace('<w:rtl/>', ''),
+          )
+        : this.textRun(run.text, kinds, styleId, passage, language, strong);
     }
     if (linking !== null) xml += '</w:hyperlink>';
     return xml;
+  }
+
+  /**
+   * **A footnote** (Word 3, ruling R2; measured, M5): a real Word footnote, numbered by Word, whose
+   * mark is a `w:footnoteReference` run in the footnote reference style where the footnote stands -
+   * bold in a header row, as template 13 sets a header's text and its mark with it - and whose note is
+   * written into the footnotes part, its identifier the next in the order the text meets them. The
+   * note's paragraphs are written as the text's are - their styles, which `assemble` resolved to the
+   * `footnote` place's, their runs, marks, links and images - in the language and direction where the
+   * mark stands, as template 13 sets a note at the foot of the page (footnotes 2), and spaced as its
+   * flow spaces them. Its first opens with Word's number, `w:footnoteRef`, in the same style, as the
+   * engine sets the note: an em of the footnote place's style in, then the number, then a twentieth of
+   * an em before the text - a space, scaled to that width by the face's own advance (`w:w`), since
+   * Word set the text straight after the number where the number's run asked for character spacing
+   * (measured against the PDF in Word 16).
+   */
+  private footnote(
+    footnote: Extract<PublishedInline, { footnote: unknown }>['footnote'],
+    passage: Passage,
+    strong: boolean,
+  ): string {
+    const id = this.notes.length + 1;
+    const story = this.story;
+    this.story = 'footnotes';
+    const paragraphs = this.flow(footnote.paragraphs, TOP_LEVEL, passage).flatMap(
+      (block) => block.body as Paragraph[],
+    );
+    this.story = story;
+    const place = this.theme.places.footnote;
+    // A note holds a paragraph at least: `assemble` refuses one with nothing in it.
+    const [opening = this.paragraph(place, '', { bidi: passage.rtl }), ...rest] = paragraphs;
+    const style = this.style(place);
+    const em = style.properties.size;
+    // Word sets the note at the nearest half point, and its space by the face's advance.
+    const space = this.advancesOf(style).width(' ') * (Math.round(em * 2) / 2);
+    const scale = Math.min(600, Math.max(1, Math.round((100 * NOTE_NUMBER_GAP * em) / space)));
+    const number =
+      `<w:r><w:rPr><w:rStyle w:val="${FOOTNOTE_REFERENCE}"/></w:rPr><w:footnoteRef/></w:r>` +
+      `<w:r><w:rPr><w:w w:val="${scale}"/></w:rPr><w:t xml:space="preserve"> </w:t></w:r>`;
+    const indent = opening.indent ?? this.ownIndent(opening.theme);
+    this.notes.push({
+      id,
+      paragraphs: [
+        {
+          ...opening,
+          content: number + opening.content,
+          indent: { left: indent.left, right: indent.right, firstLine: twips(em) },
+        },
+        ...rest,
+      ],
+    });
+    // A footnote a reference names is bookmarked around its mark, which `NOTEREF` reads (R3).
+    return bookmarked(
+      this.bookmarkOf(footnote.anchor, 'footnote'),
+      `<w:r><w:rPr><w:rStyle w:val="${FOOTNOTE_REFERENCE}"/>${strong ? toggle('b', true) : ''}` +
+        `</w:rPr><w:footnoteReference w:id="${id}"/></w:r>`,
+    );
+  }
+
+  /**
+   * **A cross-reference as a field Word updates** (Word 3, ruling R4; M4), at its target's bookmark and
+   * prefilled with what the PDF prints, so a reader who never updates sees the PDF's words and one who
+   * does sees Word's: a number a heading's `REF \r` - the number of the heading's list, which is the
+   * number it prints - a caption's `REF` on its label and a footnote's `NOTEREF`; a title `REF` on the
+   * heading's or the caption's words; both, the two fields a space apart, as the PDF joins them; a
+   * relative one `REF \p`, prefilled with the layout's word, which Word's update replaces with its own
+   * in the language of the passage the field stands in (WO-C); and a page `PAGEREF`, left empty until
+   * Word lays the page out, since a page copied from the PDF would be wrong the moment Word reflows
+   * (PUB-066). Each is a link to its target, `\h`, where the PDF's is one - a paragraph's text - and
+   * the same field without it anywhere else (XR-D). Its runs are set as the text around it.
+   */
+  private reference(
+    run: PublishedReferenceRun['reference'],
+    form: WordReference,
+    styleId: string,
+    passage: Passage,
+    strong: boolean,
+  ): string {
+    const target = this.bookmarks.get(run.anchor);
+    if (target === undefined) throw new Error(`No bookmark for the target ${run.anchor}`);
+    const properties = this.runProperties([], styleId, passage, null, strong);
+    // A number Word computes - a heading's list's, a note's, a page's - is written left to right, its
+    // language the passage's: Word drew one of digits alone in a right-to-left run in Times New Roman,
+    // not the embedded face, and without `w:rtl` sets it where it did, in the face (measured by Word
+    // 3's check). A caption's number is its label's words, which `REF` copies as they are set, and
+    // every other form is words, in the passage's direction.
+    const numeral = properties.replace('<w:rtl/>', '');
+    const field = (code: string, result: string, own = properties) =>
+      referenceField(`${code}${run.link ? ` ${BACKSLASH}h` : ''}`, result, own);
+    const place = placeOf(target);
+    const number = () =>
+      target.kind === 'footnote'
+        ? field(`NOTEREF ${place.name}`, form.label ?? '', numeral)
+        : target.kind === 'heading'
+          ? field(`REF ${place.name} ${BACKSLASH}r`, form.label ?? '', numeral)
+          : field(`REF ${place.name}`, form.label ?? '');
+    const title = () =>
+      field(`REF ${(target.kind === 'caption' ? target.words : place).name}`, form.title ?? '');
+    switch (form.display) {
+      case 'number':
+        return number();
+      case 'title':
+        return title();
+      // The space between the two as one between two references (`fieldLtr`).
+      case 'numberAndTitle':
+        return (
+          number() +
+          runXml(
+            ' ',
+            passage.rtl && ltr(form.label) && ltr(form.title)
+              ? properties.replace('<w:rtl/>', '')
+              : properties,
+          ) +
+          title()
+        );
+      case 'relative':
+        return field(
+          `REF ${(target.kind === 'caption' ? (target.anchored ?? place) : place).name} ${BACKSLASH}p`,
+          run.text ?? '',
+        );
+      case 'page':
+        return field(`PAGEREF ${place.name}`, '', numeral);
+    }
+  }
+
+  /**
+   * A target's bookmarks, where a reference names it, as the kind of thing it was named as; a caption's
+   * as a caption's. Named by the same walk the writer makes, so a target's kind cannot differ.
+   */
+  private bookmarkOf(
+    anchor: string | null,
+    kind: 'heading' | 'footnote' | 'block',
+  ): Bookmark | null;
+  private bookmarkOf(
+    anchor: string | null,
+    kind: 'caption',
+  ): Extract<Bookmarked, { kind: 'caption' }> | null;
+  private bookmarkOf(
+    anchor: string | null,
+    kind: Bookmarked['kind'],
+  ): Bookmark | Extract<Bookmarked, { kind: 'caption' }> | null {
+    const named = anchor === null ? undefined : this.bookmarks.get(anchor);
+    if (named === undefined) return null;
+    if (named.kind !== kind) throw new Error(`The target ${anchor} is a ${named.kind}`);
+    return named.kind === 'caption' ? named : named.at;
   }
 
   /** An image's size against the Word page, as `assemble` gave it (Word 2, ruling R3). */
@@ -1804,10 +2266,11 @@ class Writer {
     size: WordImage,
     alternative: PublishedFigure['alternative'],
   ): string {
-    let relationship = this.media.get(path);
+    const { media } = this.related[this.story];
+    let relationship = media.get(path);
     if (relationship === undefined) {
-      relationship = `rIdImage${this.media.size + 1}`;
-      this.media.set(path, relationship);
+      relationship = `rIdImage${media.size + 1}`;
+      media.set(path, relationship);
     }
     this.drawings += 1;
     const number = this.drawings;
@@ -1832,8 +2295,43 @@ class Writer {
     );
   }
 
+  /**
+   * Whether the run at `at` is a reference whose field nearest the `side` of it facing a space prints
+   * nothing written right to left: a number and a title's number at its start and its title at its
+   * end, as the two fields stand. **A space between two such, in a right-to-left passage, is written
+   * without its direction** (M2 of Word 3's final review; measured in Word 16): Word resolves a space
+   * in a right-to-left run as right to left, so each field stood apart in reading order - "1 above 1 1
+   * above Table 1.1" read from the left - where the PDF's bidi algorithm sets them as one left-to-right
+   * run, "Table 1.1 above 1 1 above 1"; written without it, Word sets them as the PDF does. The fields
+   * keep their direction, which measured the same either way.
+   */
+  private fieldLtr(
+    runs: readonly PublishedInline[],
+    at: number,
+    site: ReferenceSite | null,
+    side: 'start' | 'end',
+  ): boolean {
+    const run = runs[at];
+    if (run === undefined || !('reference' in run) || site === null) return false;
+    const form = this.numbers.references.get(inlineReferenceKey(this.at, site, at));
+    if (form?.display !== 'numberAndTitle') return ltr(run.reference.text);
+    return ltr(side === 'start' ? form.label : form.title);
+  }
+
   private textRun(
     text: string,
+    marks: readonly StyledMark[],
+    styleId: string,
+    passage: Passage,
+    language: PublishedLanguage | null,
+    strong = false,
+    closer = 0,
+  ): string {
+    return runXml(text, this.runProperties(marks, styleId, passage, language, strong, closer));
+  }
+
+  /** What a run of text states over its paragraph's style, the face it is set in counted as used. */
+  private runProperties(
     marks: readonly StyledMark[],
     styleId: string,
     passage: Passage,
@@ -1846,23 +2344,23 @@ class Writer {
     this.use(rendered.typeface, rendered.bold || strong, rendered.italic);
     // A definition list's term, which the engine sets bold whatever its style and marks say.
     const run = wordRun(this.theme, style, marks);
-    return runXml(
-      text,
+    return (
       pinned(strong ? { ...run, pins: { ...run.pins, bold: true } } : run, closer) +
-        languageProperties(
-          passage,
-          language === null ? null : wordLanguage(language),
-          this.document.tag,
-        ),
+      languageProperties(
+        passage,
+        language === null ? null : wordLanguage(language),
+        this.document.tag,
+      )
     );
   }
 
-  /** A link's relationship, one per target however often it is linked. */
+  /** A link's relationship from the part being written, one per target however often it is linked. */
   private link(href: string): string {
-    let id = this.links.get(href);
+    const { links } = this.related[this.story];
+    let id = links.get(href);
     if (id === undefined) {
-      id = `rIdLink${this.links.size + 1}`;
-      this.links.set(href, id);
+      id = `rIdLink${links.size + 1}`;
+      links.set(href, id);
     }
     return id;
   }
@@ -1983,6 +2481,7 @@ function tableXml(table: WordTable): string {
 /** What a caption holds, as the table's and the list's caption fields and Word's title read it. */
 interface Captioned {
   readonly id: string;
+  readonly anchor: string | null;
   readonly label: string | null;
   readonly caption: readonly PublishedInline[];
 }
@@ -1992,9 +2491,14 @@ function leading(properties: ResolvedParagraphStyle['properties']): number {
   return properties.lineSpacing - properties.size;
 }
 
-/** A caption's words, its label's and its own, as the PDF prints them: a table's title in Word. */
+/**
+ * A caption's words, its label's and its own, as the PDF prints them - a reference among them as what
+ * it printed, and a page as nothing, which only the page knows: a table's title in Word.
+ */
 function captionText(captioned: Captioned): string {
-  const own = captioned.caption.map((run) => ('text' in run ? run.text : '')).join('');
+  const own = captioned.caption
+    .map((run) => ('text' in run ? run.text : 'reference' in run ? (run.reference.text ?? '') : ''))
+    .join('');
   return captioned.label === null ? own : `${captioned.label} ${own}`;
 }
 
@@ -2151,6 +2655,25 @@ function instruction(code: string): string {
 }
 
 /**
+ * **A cross-reference's field** (Word 3, ruling R4): every run of it - its marks, its instruction and
+ * its result - stating `properties`, the text's around it, since Word sets an updated result as the
+ * instruction's first character is set and reads a relative field's words in that run's language
+ * (M4); its result `result`, or none.
+ */
+function referenceField(code: string, result: string, properties: string): string {
+  const stated = properties === '' ? '' : `<w:rPr>${properties}</w:rPr>`;
+  const mark = (kind: 'begin' | 'separate' | 'end') =>
+    `<w:r>${stated}<w:fldChar w:fldCharType="${kind}"/></w:r>`;
+  return (
+    mark('begin') +
+    `<w:r>${stated}<w:instrText xml:space="preserve"> ${escapeXml(code)} </w:instrText></w:r>` +
+    mark('separate') +
+    runXml(result, properties) +
+    mark('end')
+  );
+}
+
+/**
  * A running head's section (measured in Word for the final review of Word 1, I1 and M1): the level-1
  * heading's number, a space and its title, as the PDF prints the heading. Word's number for a heading
  * with none - front matter's under a scheme that numbers none there, or one not numbered - is "0",
@@ -2187,7 +2710,8 @@ function textBlockWidth(format: PageFormat): number {
 const twips = (points: number) => Math.round(points * 20);
 
 /**
- * A section's properties (R8; measured, M8 and M16): its header and footer, a new page, the Word page
+ * A section's properties (R8; measured, M8 and M16): its header and footer, its footnotes' numbering
+ * where the document has a footnote (Word 3, ruling R2), a new page, the Word page
  * - its size turned where it is landscape, the inside margin on the left and the outside on the right,
  * which `w:mirrorMargins` alternates where they differ, the header and footer halfway into their
  * margins - its page numbering, and the cover's title page.
@@ -2196,6 +2720,7 @@ function sectionProperties(
   section: Section,
   format: PageFormat,
   parts: ReadonlyMap<string, string>,
+  footnotes: string,
 ): string {
   const header = parts.get(section.furniture.header)!;
   const footer = parts.get(section.furniture.footer)!;
@@ -2211,6 +2736,7 @@ function sectionProperties(
   return (
     '<w:sectPr>' +
     references +
+    footnotes +
     '<w:type w:val="nextPage"/>' +
     `<w:pgSz w:w="${twips(width)}" w:h="${twips(height)}"${landscape ? ' w:orient="landscape"' : ''}/>` +
     `<w:pgMar w:top="${twips(top)}" w:right="${twips(outside)}" w:bottom="${twips(bottom)}" ` +
@@ -2225,13 +2751,15 @@ function sectionProperties(
 /**
  * The document's settings (R6), in CT_Settings' order: its faces embedded, the margins mirrored where
  * the inside and the outside differ, hyphenation where a style hyphenates, the fields updated as it
- * opens, compatibility mode 15 with spaces that add (M1), the maths face Word sets equations in (R10),
- * and the document's language.
+ * opens, the separator and the continuation separator its footnotes are set under where it has a
+ * footnote (Word 3, ruling R2; M5), compatibility mode 15 with spaces that add (M1), the maths face
+ * Word sets equations in (R10), and the document's language.
  */
 function settingsXml(
   document: PublishedDocument,
   theme: ResolvedTheme,
   format: PageFormat,
+  footnotes: boolean,
 ): string {
   const mirrored = format.margins.inside !== format.margins.outside || format.gutter > 0;
   const hyphenates = [...theme.paragraphStyles.values()].some(
@@ -2244,6 +2772,9 @@ function settingsXml(
     (mirrored ? '<w:mirrorMargins/>' : '') +
     (hyphenates ? '<w:autoHyphenation/>' : '') +
     '<w:updateFields w:val="true"/>' +
+    (footnotes
+      ? '<w:footnotePr><w:footnote w:id="-1"/><w:footnote w:id="0"/></w:footnotePr>'
+      : '') +
     '<w:compat><w:doNotUseHTMLParagraphAutoSpacing/>' +
     '<w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/>' +
     '</w:compat>' +
@@ -2368,6 +2899,50 @@ function listEntryStyle(theme: ResolvedTheme): string {
     `<w:style w:type="paragraph" w:styleId="${LIST_ENTRY_STYLE}">` +
     `<w:name w:val="table of figures"/><w:basedOn w:val="${theme.roles.listEntry}"/>` +
     '<w:uiPriority w:val="99"/><w:unhideWhenUsed/></w:style>'
+  );
+}
+
+/**
+ * **The footnote reference style** (Word 3, ruling R2; M5): Word's own, by its name and identifier,
+ * superscript as template 13 sets a footnote's mark in the text and its number in the note, the rest
+ * the text's where the mark stands. Measured in Word 16 against the PDF of one document: in 11pt text
+ * Word's mark is 6.96pt raised 4.56 where the engine's is 7.15 raised 4.98, and in a 9.35pt note its
+ * number 6.00 raised 3.48 against 6.08 and 4.24, each standing where the engine's does to 0.03pt.
+ */
+const FOOTNOTE_REFERENCE_STYLE =
+  `<w:style w:type="character" w:styleId="${FOOTNOTE_REFERENCE}">` +
+  '<w:name w:val="footnote reference"/><w:uiPriority w:val="99"/><w:unhideWhenUsed/>' +
+  '<w:rPr><w:vertAlign w:val="superscript"/></w:rPr></w:style>';
+
+/**
+ * **The footnotes part** (Word 3, ruling R2; M5): the separator and the continuation separator Word
+ * requires, `-1` and `0`, which the settings name, each a paragraph of the footnote place's style with
+ * no space about it, as Word writes its own - right to left in a right-to-left document, where Word
+ * then draws its line at the right, as the PDF does, and at the left without it (M2 of Word 3's final
+ * review; measured in Word 16); then each note, by its identifier, in the order the text met its mark.
+ */
+function footnotesXml(
+  notes: readonly { readonly id: number; readonly paragraphs: readonly Paragraph[] }[],
+  place: string,
+  rtl: boolean,
+): string {
+  const separator = (type: string, id: number, element: string) =>
+    `<w:footnote w:type="${type}" w:id="${id}"><w:p><w:pPr><w:pStyle w:val="${place}"/>` +
+    `${rtl ? '<w:bidi/>' : ''}<w:spacing w:before="0" w:after="0"/></w:pPr>` +
+    `<w:r><w:${element}/></w:r></w:p></w:footnote>`;
+  return (
+    `${DECLARATION}<w:footnotes ${DOCUMENT_NAMESPACES}>` +
+    separator('separator', -1, 'separator') +
+    separator('continuationSeparator', 0, 'continuationSeparator') +
+    notes
+      .map(
+        (note) =>
+          `<w:footnote w:id="${note.id}">` +
+          note.paragraphs.map((paragraph) => paragraphXml(paragraph)).join('') +
+          '</w:footnote>',
+      )
+      .join('') +
+    '</w:footnotes>'
   );
 }
 

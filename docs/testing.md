@@ -271,7 +271,7 @@ change meets it.
 
 Passing the validator says Word will open a file, not what it will show. **The Word check opens the
 writer's fixtures in Word itself**, as a standing practice (PUB-029):
-`apps/worker/src/word-check.test.ts` makes nine documents through the worker's own path - `assemble`
+`apps/worker/src/word-check.test.ts` makes eleven documents through the worker's own path - `assemble`
 with the worker's own face files, under the default theme and layout but where a fixture says
 otherwise, then `writeDocx` - and `apps/worker/scripts/word-check.ps1` opens each in a hidden Word
 through COM, updates its contents and fields, reads every section, paragraph, list string and field
@@ -309,13 +309,31 @@ each floated caption read whole; a right-to-left caption's label reads left to r
 words, as the PDF prints it; and the lists after the contents name every figure and table with the page Word sets it on, which is the
 page the PDF's lists name.
 
+Since Word 3 it holds Word's footnotes and cross-references to the numbering table and to what the
+PDF prints. One fixture carries footnotes in front matter, the body and an appendix - three on one
+page, one in a table's cell, one of two paragraphs, one in German - and every form of reference to
+every kind of target - headings at the first and the third levels, in front matter and an appendix,
+a table, a figure, a floated figure, a paragraph and a footnote - before and after its target, pages
+away, in a paragraph, a note's text, a caption, a header row, a table's note and a section's title,
+and relative ones in a German passage; a second, for Word alone, a footnote in a table's header row
+Word repeats and references to it; and the right-to-left fixture a Hebrew note and references in a
+Hebrew passage. Every reference's result is prefilled "9", a page's among them, before Word opens
+it, and the script updates the notes' fields as well as the text's. The test then checks three
+things more: every footnote's number, as Word's own `NOTEREF` to its mark reads it on the reopened
+copy, is the numbering table's label, and its note begins on its mark's page; every reference's
+field, in the text, the notes and a text box, in order, is the instruction the form asks for, linked
+exactly where the PDF links, and its result what the PDF prints - Word's own words for above and
+below in another language, recorded in the test as measured (`oben` and `unten` in German, the
+English ones in Hebrew) - and every page the page Word sets its target on, by the page's own foot;
+and every bookmark the writer wrote is `_Ref` and nine digits, hidden, and kept whole by Word, beside
+the `_Toc` ones Word makes as it updates the contents.
+
 - **Who and when.** Whoever changes the Word writer - `packages/domain/src/word/`, the theme's Word
   projection or `wordRun` - runs it before the change lands, on Windows with Word installed. **A pull
   request that changes the writer pastes its result**: the test run and a summary of what Word showed.
 - **How.** `ALLOY_WORD_CHECK=1 pnpm --filter @alloy-works/worker test -- src/word-check.test.ts` (in
   PowerShell, `$env:ALLOY_WORD_CHECK = '1'` first), after `pnpm --filter @alloy-works/domain build`
-  if the writer changed, since the worker reads the domain's `dist/`. It takes about a minute and a
-  quarter. It leaves the fixtures, Word's PDFs, the copies Word saved and `record.json`, everything
+  if the writer changed, since the worker reads the domain's `dist/`. It takes about two minutes. It leaves the fixtures, Word's PDFs, the copies Word saved and `record.json`, everything
   Word reported, in `alloy-works-word-check` under the system's temporary folder, for a person to
   read and to summarise in the pull request. **Run alone like this, it rewrites
   `.trace-results/worker.json` with that one file's results**, so run the whole worker suite

@@ -130,6 +130,16 @@ export const publishFailureCodes = [
   // the 27th, where Word writes bb and the PDF ab; `roman` for one numbered past 3999. The PDF is
   // unaffected.
   'list_not_in_word',
+  // compose, from Word 3 (ruling R5): where Word is asked for, a cross-reference Word's field would
+  // not print as the PDF does, naming it as the other reference failures do - `detail`
+  // `<form>:<why>`: `relative:footnote` for above or below between a footnote's text and the text
+  // outside it, where Word's `REF \p` prints its bookmark's words; `relative:float` for above or
+  // below in a floated figure's caption, which Word writes in a text box, where it printed nothing;
+  // `title:caption` or `numberAndTitle:caption` for a caption's words named in that caption, which
+  // Word's `REF` refuses as a reference to itself; `title:nested` or `numberAndTitle:nested` for a
+  // caption's words named where they hold a reference that is not a number (each measured in Word
+  // 16). The PDF is unaffected.
+  'cross_reference_not_in_word',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

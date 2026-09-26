@@ -57,13 +57,14 @@ const NOT_YET_IN_WORD: Readonly<Record<string, string>> = {
 
 /**
  * What `numbering_not_in_word` names (Word 1, ruling R7; Word 2, ruling R1): `detail` is
- * `<sequence>:<matter>:<why>` - the headings', the figures' or the tables' numbers, the matter the
+ * `<sequence>:<matter>:<why>` - the headings', the figures', the tables' or the footnotes' numbers, the matter the
  * layout numbers them in, and what in its rule Word would number otherwise.
  */
 const NUMBERED: Readonly<Record<string, string>> = {
   section: 'the headings',
   figure: 'the figures',
   table: 'the tables',
+  footnote: 'the footnotes',
 };
 const NUMBERED_IN: Readonly<Record<string, string>> = {
   front: 'in front matter',
@@ -82,6 +83,17 @@ const NOT_IN_WORD_BECAUSE: Readonly<Record<string, string>> = {
 };
 /** A caption's separator is words between Word's fields, where only a control character fails. */
 const CAPTION_SEPARATOR = 'its separator holds a character Word cannot write';
+/**
+ * Word 3's ruling R2: Word numbers a footnote itself, with nothing beside the number, and starts the
+ * count again only where a matter's section begins.
+ */
+const FOOTNOTE_NOT_IN_WORD_BECAUSE: Readonly<Record<string, string>> = {
+  label: 'a word stands before the number, which Word does not write beside a footnote',
+  prefix:
+    "a chapter's number stands before the number, which Word does not write beside a footnote",
+  restart:
+    'they start again or carry on where Word would not, since Word starts them again only where front matter, the body or the appendices begin',
+};
 
 /** The sentence for `numbering_not_in_word`: the layout's to change, and the PDF can be made. */
 function notInWord(detail: string | null): string {
@@ -89,7 +101,11 @@ function notInWord(detail: string | null): string {
   const numbered = NUMBERED[sequence] ?? 'the headings';
   const where = NUMBERED_IN[matter] === undefined ? numbered : `${numbered} ${NUMBERED_IN[matter]}`;
   const because =
-    why === 'separator' && sequence !== 'section' ? CAPTION_SEPARATOR : NOT_IN_WORD_BECAUSE[why];
+    sequence === 'footnote' && FOOTNOTE_NOT_IN_WORD_BECAUSE[why] !== undefined
+      ? FOOTNOTE_NOT_IN_WORD_BECAUSE[why]
+      : why === 'separator' && sequence !== 'section'
+        ? CAPTION_SEPARATOR
+        : NOT_IN_WORD_BECAUSE[why];
   return (
     `The layout numbers ${where} in a way Word cannot${because === undefined ? '' : `: ${because}`}. ` +
     'Publish this document as a PDF only, or under a layout Word can number.'
@@ -104,6 +120,25 @@ const LIST_NOT_IN_WORD: Readonly<Record<string, string>> = {
   depth: 'is nested more than nine levels deep, and Word nests nine',
   letters: 'is numbered in letters past the 27th, which Word writes differently',
   roman: 'is numbered in roman numerals past 3999, which Word writes differently',
+};
+
+/**
+ * What `cross_reference_not_in_word` names (Word 3, ruling R5): `detail` is `<form>:<why>`, and the why
+ * alone decides the sentence - above or below between a footnote and the text outside it, or in a
+ * floated figure's caption, which Word sets in a text box of its own; a caption's own words named in
+ * it; or a caption's words named where they hold a reference Word would print in its own form, all of
+ * which Word's fields print otherwise than the PDF. The reference is the author's to change, and the
+ * PDF can be made.
+ */
+const REFERENCE_NOT_IN_WORD: Readonly<Record<string, string>> = {
+  footnote:
+    'A cross-reference asks for above or below between a footnote and the text outside it, which Word cannot print.',
+  float:
+    "A cross-reference in a floating figure's caption asks for above or below, which Word cannot print there.",
+  caption:
+    "A cross-reference in a caption asks for that caption's own words, which Word cannot print.",
+  nested:
+    "A cross-reference asks for a caption's words that hold a cross-reference, which Word would print otherwise.",
 };
 
 /**
@@ -334,6 +369,11 @@ export function failureWords(failure: Failure): string {
     // Word 2's ruling R4: nothing else in the document is wrong, and the PDF can be made of it.
     case 'list_not_in_word':
       return `A list here ${LIST_NOT_IN_WORD[failure.detail ?? ''] ?? 'cannot be printed by Word as the PDF prints it'}. Publish this document as a PDF only, or change the list.`;
+    // Word 3's ruling R5: nothing else in the document is wrong, and the PDF can be made of it.
+    case 'cross_reference_not_in_word': {
+      const why = (failure.detail ?? '').split(':')[1] ?? '';
+      return `${REFERENCE_NOT_IN_WORD[why] ?? 'A cross-reference here cannot be printed by Word as the PDF prints it.'} Publish this document as a PDF only, or change the cross-reference.`;
+    }
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

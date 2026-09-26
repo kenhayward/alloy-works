@@ -302,9 +302,11 @@ const DEFAULT_THEME = resolved();
 /**
  * The advances every invented face sets its characters at, in 2048ths of an em: Liberation Serif's for
  * the characters a list's markers are made of - a figure half an em, a full stop a quarter, a disc
- * 0.35 - and none of its own for anything else, which takes the missing glyph's half an em.
+ * 0.35 - and for a space, a quarter, which a note's number is set apart from its text by; and none of
+ * its own for anything else, which takes the missing glyph's half an em.
  */
 const ADVANCES = new Map<number, number>([
+  [0x20, 512],
   ...[...'0123456789'].map((digit): [number, number] => [digit.codePointAt(0)!, 1024]),
   [0x2e, 512],
   [0x61, 909],
@@ -516,8 +518,8 @@ describe('writeDocx: the package (Word 1, ruling R6)', () => {
     }
   });
 
-  it('is the Word writer at word/2', () => {
-    expect(WORD_WRITER_VERSION).toBe('word/2');
+  it('is the Word writer at word/3', () => {
+    expect(WORD_WRITER_VERSION).toBe('word/3');
   });
 });
 
@@ -2598,5 +2600,920 @@ describe('writeDocx: the lists after the contents (Word 2, M9)', () => {
     expect(properties(lists!.paragraphs[0]!)).not.toContain('w:pageBreakBefore');
     expect(first(lists!.properties, 'w:pgNumType')!.attrs['w:fmt']).toBe('lowerRoman');
     expect(textOf(body!.paragraphs[0]!)).toBe('Blocks');
+  });
+});
+
+describe('writeDocx: footnotes (Word 3, ruling R2; M5)', () => {
+  const note = (name: string, ...paragraphs: unknown[]) => ({
+    type: 'footnote',
+    id: name,
+    anchor: { kind: 'span' },
+    content: paragraphs,
+  });
+  const noteCell = (name: string, ...content: unknown[]) => ({
+    content: [paragraph(name, ...content)],
+    colspan: 1,
+    rowspan: 1,
+  });
+  /** Notes in running text, in a table's cell and in its header row, a German one and a Hebrew one. */
+  const NOTED = component('Notes', [
+    paragraph('p1', text('A claim'), note('n1', paragraph('n1a', text('The first note.')))),
+    paragraph(
+      'p2',
+      text('Linked', link),
+      note(
+        'n2',
+        paragraph('n2a', text('See '), text('the report', { ...link, id: 'k20' }), text('.')),
+        paragraph(
+          'n2b',
+          text('Its '),
+          text('second', { type: 'emphasis', id: 'e1' }),
+          text(' paragraph.'),
+        ),
+      ),
+      text(' and on'),
+    ),
+    {
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Readings')],
+      headerRows: 1,
+      headerColumns: 0,
+      rows: [
+        { cells: [noteCell('h1', text('Site'), note('n3', paragraph('n3a', text('Headed.'))))] },
+        { cells: [noteCell('c1', text('York'), note('n4', paragraph('n4a', text('In a cell.'))))] },
+      ],
+    },
+  ]);
+  const GERMAN_NOTE = component(
+    'Grüße',
+    [paragraph('g1', text('Grüße'), note('n5', paragraph('n5a', text('Eine Anmerkung.'))))],
+    { language: 'de-DE' },
+  );
+  const HEBREW_NOTE = component(
+    SEFER,
+    [paragraph('r1', text(SHALOM), note('n6', paragraph('n6a', text(SEFER))))],
+    { language: 'he-IL', direction: 'rtl' },
+  );
+  const noted = written({
+    // A table style whose header is bold, as template 13 sets its text and its mark.
+    theme: themeWith((inputs) => {
+      inputs.catalogues.table.styles[0]!.headerRow.bold = true;
+    }),
+    layout: layoutWith((layout) => {
+      layout.matter.lists = [];
+    }),
+    outline: parseOutlineDocument({
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
+      title: 'The dosing report',
+      language: 'en-GB',
+      direction: 'ltr',
+      nodes: [
+        reference('preface', 1, { matter: 'front' }),
+        reference('noted', 2),
+        reference('german', 3),
+        reference('hebrew', 4),
+        reference('values', 5, { matter: 'appendix' }),
+      ],
+    }),
+    occurrences: new Map([
+      [id('preface'), PREFACE],
+      [id('noted'), NOTED],
+      [id('german'), GERMAN_NOTE],
+      [id('hebrew'), HEBREW_NOTE],
+      [id('values'), VALUES],
+    ]),
+  });
+  const body = () => first(noted.docx.xml('word/document.xml'), 'w:body')!;
+  const notes = () => kids(noted.docx.xml('word/footnotes.xml'), 'w:footnote');
+  /** The paragraphs of the note at this place in the part, its separators counted. */
+  const noteAt = (at: number) => kids(notes()[at]!, 'w:p');
+  const WML = 'application/vnd.openxmlformats-officedocument.wordprocessingml.';
+  const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/';
+
+  it('writes the footnotes part, typed and related from the document, with the separator and continuation separator Word requires and every note after them, numbered in document order', () => {
+    const types = noted.docx.xml('[Content_Types].xml');
+    expect(
+      all(types, 'Override').find((each) => each.attrs['PartName'] === '/word/footnotes.xml')
+        ?.attrs['ContentType'],
+    ).toBe(`${WML}footnotes+xml`);
+    const related = [...relationships(noted.docx, 'word/_rels/document.xml.rels').values()];
+    expect(related.filter((each) => each['Type'] === `${REL}footnotes`)).toEqual([
+      expect.objectContaining({ Target: 'footnotes.xml' }),
+    ]);
+    expect(notes().map((each) => [each.attrs['w:type'], each.attrs['w:id']])).toEqual([
+      ['separator', '-1'],
+      ['continuationSeparator', '0'],
+      ...['1', '2', '3', '4', '5', '6'].map((each) => [undefined, each]),
+    ]);
+    expect(all(notes()[0]!, 'w:separator')).toHaveLength(1);
+    expect(all(notes()[1]!, 'w:continuationSeparator')).toHaveLength(1);
+    // Settings name the two, after the fields' update and before the compatibility settings.
+    const settings = noted.docx.xml('word/settings.xml');
+    const names = kids(settings).map((each) => each.name);
+    expect(names.indexOf('w:footnotePr')).toBe(names.indexOf('w:updateFields') + 1);
+    expect(
+      kids(first(settings, 'w:footnotePr')!).map((each) => [each.name, each.attrs['w:id']]),
+    ).toEqual([
+      ['w:footnote', '-1'],
+      ['w:footnote', '0'],
+    ]);
+  });
+
+  it("PUB-025 writes every footnote as a real Word footnote, numbered by Word: a reference run in the footnote reference style where it stands - in text, in a cell and in a header row - and Word's own number at the head of its note, never a number of the PDF's", () => {
+    expect(all(body(), 'w:footnoteReference').map((each) => each.attrs['w:id'])).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+    ]);
+    const runs = all(body(), 'w:r').filter((run) => kids(run, 'w:footnoteReference').length > 0);
+    for (const run of runs) {
+      expect(first(run, 'w:rStyle')!.attrs['w:val']).toBe('FootnoteReference');
+    }
+    // Word's number, never the numbering table's label: no mark of its own follows a reference, and
+    // each note opens with Word's number of it.
+    for (const run of runs) expect(textOf(run)).toBe('');
+    expect(strFromU8(noted.docx.files['word/document.xml']!)).not.toContain('customMarkFollows');
+    for (const each of notes().slice(2)) {
+      expect(kids(kids(each, 'w:p')[0]!, 'w:r')[0]!.children).toContainEqual(
+        expect.objectContaining({ name: 'w:footnoteRef' }),
+      );
+    }
+    // A header row sets its text bold, as template 13 does, and its mark with it.
+    expect(first(runs[2]!, 'w:b')?.attrs['w:val']).toBe('1');
+    expect(first(runs[3]!, 'w:b')).toBeUndefined();
+    // The link before the mark is closed first: the mark is no part of it.
+    const linked = paragraphSaying(noted.docx, 'Linked and on');
+    expect(all(linked, 'w:hyperlink').map(textOf)).toEqual(['Linked']);
+    expect(all(first(linked, 'w:hyperlink')!, 'w:footnoteReference')).toEqual([]);
+    // The one in the header row and the one in the body row are in the table's cells.
+    const table = first(body(), 'w:tbl')!;
+    expect(all(table, 'w:footnoteReference').map((each) => each.attrs['w:id'])).toEqual(['3', '4']);
+  });
+
+  it('defines the footnote reference style as Word names its own, superscript as the PDF sets the mark', () => {
+    const styles = noted.docx.xml('word/styles.xml');
+    const style = all(styles, 'w:style').find(
+      (each) => each.attrs['w:styleId'] === 'FootnoteReference',
+    )!;
+    expect(style.attrs['w:type']).toBe('character');
+    expect(first(style, 'w:name')!.attrs['w:val']).toBe('footnote reference');
+    expect(first(style, 'w:vertAlign')!.attrs['w:val']).toBe('superscript');
+    // Written only where a footnote is.
+    expect(strFromU8(plain.docx.files['word/styles.xml']!)).not.toContain('FootnoteReference');
+  });
+
+  it("opens each note with its number in the same style, an em in and a twentieth of an em from its text, as the PDF sets it, and sets its paragraphs in the footnote place's style", () => {
+    const [only] = noteAt(2);
+    expect(styleOf(only!)).toBe('footnote');
+    const [number, gap] = kids(only!, 'w:r');
+    expect(kids(number!).map((each) => each.name)).toEqual(['w:rPr', 'w:footnoteRef']);
+    expect(kids(kids(number!, 'w:rPr')[0]!).map((each) => each.name)).toEqual(['w:rStyle']);
+    expect(first(number!, 'w:rStyle')!.attrs['w:val']).toBe('FootnoteReference');
+    // Then a space, scaled to 0.05em of the footnote place's 9.35pt: the engine's gap after the number,
+    // a fifth of the face's quarter-em space at Word's 9.5pt.
+    expect(textOf(gap!)).toBe(' ');
+    expect(first(gap!, 'w:w')!.attrs['w:val']).toBe('20');
+    // Its first line an em in, of 9.35pt; its later paragraphs where the style stands them.
+    expect(first(pPr(only!)!, 'w:ind')!.attrs['w:firstLine']).toBe('187');
+    expect(textOf(only!)).toBe(' The first note.');
+    const [opening, second] = noteAt(3);
+    expect(first(pPr(opening!)!, 'w:ind')!.attrs['w:firstLine']).toBe('187');
+    expect(first(pPr(second!)!, 'w:ind')).toBeUndefined();
+    expect(all(second!, 'w:footnoteRef')).toEqual([]);
+    expect(styleOf(second!)).toBe('footnote');
+  });
+
+  it("writes a note's runs as the text's: its marks by their character styles and its links related from the footnotes part", () => {
+    const [opening, second] = noteAt(3);
+    expect(textOf(second!)).toBe('Its second paragraph.');
+    const emphasised = all(second!, 'w:r').find((run) => textOf(run) === 'second')!;
+    expect(first(emphasised, 'w:rStyle')!.attrs['w:val']).toBe('mark-emphasis');
+    const [hyperlink] = all(opening!, 'w:hyperlink');
+    expect(textOf(hyperlink!)).toBe('the report');
+    expect(
+      relationships(noted.docx, 'word/_rels/footnotes.xml.rels').get(hyperlink!.attrs['r:id']!),
+    ).toMatchObject({ Type: `${REL}hyperlink`, Target: REPORT, TargetMode: 'External' });
+  });
+
+  it("stands the notes' separators at the start of a right-to-left document's lines, its right, where the PDF draws its line, and at the left in a left-to-right one, whatever direction a note is in (measured, M2 of Word 3's final review)", () => {
+    const separators = (written: Written) =>
+      kids(written.docx.xml('word/footnotes.xml'), 'w:footnote')
+        .slice(0, 2)
+        .map((each) => first(kids(each, 'w:p')[0]!, 'w:bidi') !== undefined);
+    // The Hebrew note stands in a left-to-right document.
+    expect(separators(noted)).toEqual([false, false]);
+    const hebrew = written({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: SEFER,
+        language: 'he-IL',
+        direction: 'rtl',
+        nodes: [reference('hebrew', 4)],
+      }),
+      occurrences: new Map([[id('hebrew'), HEBREW_NOTE]]),
+      layout: layoutWith((layout) => {
+        layout.matter.lists = [];
+      }),
+    });
+    expect(separators(hebrew)).toEqual([true, true]);
+  });
+
+  it('sets a note in the language and direction where its mark stands, as the PDF does', () => {
+    const [german] = noteAt(6);
+    const words = all(german!, 'w:r').find((run) => textOf(run) === 'Eine Anmerkung.')!;
+    expect(first(words, 'w:lang')!.attrs).toEqual({ 'w:val': 'de-DE' });
+    const [hebrew] = noteAt(7);
+    expect(properties(hebrew!)).toContain('w:bidi');
+    const own = all(hebrew!, 'w:r').find((run) => textOf(run) === SEFER)!;
+    expect(first(own, 'w:rtl')).toBeDefined();
+    expect(first(own, 'w:lang')!.attrs).toEqual({ 'w:bidi': 'he-IL' });
+  });
+
+  it("numbers each matter's section's footnotes by Word, in its rule's format, from 1 again at each (footnoteProperties)", () => {
+    const numbered = sections(noted.docx).map((each) => {
+      const stated = first(each.properties, 'w:footnotePr');
+      return stated === undefined
+        ? null
+        : kids(stated).map((child) => [child.name, child.attrs['w:val']]);
+    });
+    const restarted = [
+      ['w:numFmt', 'decimal'],
+      ['w:numRestart', 'eachSect'],
+    ];
+    // The cover and the contents hold no footnote.
+    expect(numbered).toEqual([null, null, restarted, restarted, restarted]);
+    // After the header and footer references, where CT_SectPr puts it.
+    const [, , front] = sections(noted.docx);
+    const names = kids(front!.properties).map((each) => each.name);
+    expect(names.indexOf('w:footnotePr')).toBe(names.lastIndexOf('w:footerReference') + 1);
+  });
+
+  it('writes nothing of footnotes where the document has none', () => {
+    expect(Object.keys(plain.docx.files)).not.toContain('word/footnotes.xml');
+    expect(strFromU8(plain.docx.files['word/settings.xml']!)).not.toContain('footnotePr');
+    expect(strFromU8(plain.docx.files['word/document.xml']!)).not.toContain('footnotePr');
+  });
+
+  it('spaces two notes apart by both their spaces, as the PDF sets two notes: nothing stated under the default theme, whose footnote style adds them, and M1 d8 where the style asks for contextual spacing', () => {
+    for (const each of notes()
+      .slice(2)
+      .flatMap((one) => kids(one, 'w:p'))) {
+      expect(properties(each)).not.toContain('w:spacing');
+      expect(properties(each)).not.toContain('w:contextualSpacing');
+    }
+    const contextual = themeWith((inputs) => {
+      const footnote = inputs.catalogues.paragraph.styles.find((each) => each.id === 'footnote')!;
+      footnote.properties = { ...footnote.properties, spaceBefore: 1, contextualSpacing: true };
+    });
+    const spaced = writtenOf(
+      [
+        paragraph(
+          'p1',
+          text('One'),
+          note('n1', paragraph('n1a', text('A.')), paragraph('n1b', text('B.'))),
+          text('Two'),
+          note('n2', paragraph('n2a', text('C.')), paragraph('n2b', text('D.'))),
+        ),
+      ],
+      { theme: contextual },
+    );
+    const said = kids(spaced.docx.xml('word/footnotes.xml'), 'w:footnote')
+      .flatMap((one) => kids(one, 'w:p'))
+      .slice(2)
+      .map((each) => ({
+        contextual: first(pPr(each)!, 'w:contextualSpacing')?.attrs['w:val'],
+        spacing: first(pPr(each)!, 'w:spacing')?.attrs,
+      }));
+    // Within a note its style's contextual spacing stands; between two, M1's d8: off on the pair, and
+    // the space it drops within each note dropped by hand.
+    expect(said).toEqual([
+      { contextual: undefined, spacing: undefined },
+      { contextual: '0', spacing: { 'w:before': '0' } },
+      { contextual: '0', spacing: { 'w:after': '0' } },
+      { contextual: undefined, spacing: undefined },
+    ]);
+  });
+});
+
+describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; M4)', () => {
+  const xref = (name: string, target: object, display = 'number') => ({
+    type: 'crossReference',
+    id: name,
+    target,
+    display,
+  });
+  const toNode = (name: string) => ({ kind: 'node', node: id(name) });
+  const toBlock = (block: string) => ({ kind: 'block', block });
+  const note = (name: string, ...paragraphs: unknown[]) => ({
+    type: 'footnote',
+    id: name,
+    anchor: { kind: 'span' },
+    content: paragraphs,
+  });
+  const cellOf = (name: string, ...content: unknown[]) => ({
+    content: [paragraph(name, ...content)],
+    colspan: 1,
+    rowspan: 1,
+  });
+  const EVERY = ['number', 'title', 'numberAndTitle', 'relative', 'page'];
+  /** A reference to `target` in each of `forms`, a slash between each two. */
+  const inEach = (name: string, target: object, forms: readonly string[] = EVERY) =>
+    forms.flatMap((display, at) => [
+      ...(at === 0 ? [] : [text(' / ')]),
+      xref(`${name}${at}`, target, display),
+    ]);
+  /**
+   * References of every form to every kind of target: a section, a table, a figure, a footnote and a
+   * paragraph; a section three deep in the body, one three deep in an appendix and a component in the
+   * front matter; and references in a table's header row, its caption and its note, a footnote's text,
+   * a section's title and a German passage.
+   */
+  const CITING = component('Citing', [
+    paragraph('p1', text('Methods: '), ...inEach('a', toNode('methods'))),
+    {
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Readings')],
+      headerRows: 1,
+      headerColumns: 0,
+      rows: [
+        { cells: [cellOf('h1', text('Site '), xref('h0', toBlock('p1'), 'relative'))] },
+        { cells: [cellOf('c1', text('York'))] },
+      ],
+    },
+    figure('f1', RED, 'Shapes'),
+    paragraph('p2', text('Table: '), ...inEach('b', toBlock('t1'))),
+    paragraph('p3', text('Figure: '), ...inEach('q', toBlock('f1'))),
+    paragraph(
+      'p4',
+      text('Noted'),
+      note('n1', paragraph('n1a', text('Back on '), xref('c0', toBlock('p1'), 'page'))),
+    ),
+    paragraph(
+      'p5',
+      ...inEach('d', toBlock('n1'), ['number', 'relative', 'page']),
+      text(' / '),
+      ...inEach('e', toBlock('p1'), ['relative', 'page']),
+      text(' / '),
+      xref('g0', toNode('deeper')),
+      text(' / '),
+      xref('g1', toNode('annexc')),
+      text(' / '),
+      xref('g2', toNode('front')),
+    ),
+    {
+      type: 'table',
+      id: 't2',
+      style: 'table',
+      caption: [text('Cited in '), xref('k0', toNode('methods'))],
+      headerRows: 0,
+      headerColumns: 0,
+      note: [text('See '), xref('k1', toBlock('t1'), 'relative')],
+      rows: [{ cells: [cellOf('c2', text('x'))] }],
+    },
+  ]);
+  const GERMAN_CITING = component(
+    'Verweise',
+    [paragraph('g1', text('Siehe '), xref('r0', toNode('methods'), 'relative'))],
+    { language: 'de-DE' },
+  );
+  const CITING_OUTLINE = parseOutlineDocument({
+    schemaVersion: OUTLINE_SCHEMA_VERSION,
+    title: 'The dosing report',
+    language: 'en-GB',
+    direction: 'ltr',
+    nodes: [
+      reference('front', 1, { matter: 'front' }),
+      section('methods', 'Methods', [
+        reference('citing', 2),
+        section('deep', 'Deep', [section('deeper', 'Deeper')]),
+      ]),
+      {
+        ...section('results', 'Results', [reference('german', 3)]),
+        title: [text('After '), xref('t0', toNode('methods')), text(' ended')],
+      },
+      section('annex', 'Annex', [section('annexb', 'Annex B', [section('annexc', 'Annex C')])], {
+        matter: 'appendix',
+      }),
+    ],
+  });
+  const citing = (): Written =>
+    written({
+      outline: CITING_OUTLINE,
+      occurrences: new Map([
+        [id('front'), PREFACE],
+        [id('citing'), CITING],
+        [id('german'), GERMAN_CITING],
+      ]),
+      assets: IMAGES,
+    });
+  const cited = citing();
+  const document = () => cited.docx.xml('word/document.xml');
+  const footnotes = () => cited.docx.xml('word/footnotes.xml');
+  /** The last body paragraph printing exactly this: a caption's, after its list's entry. */
+  const saying = (words: string): Element => {
+    const found = paragraphs(cited.docx).filter((each) => textOf(each) === words);
+    if (found.length === 0) throw new Error(`no paragraph says ${JSON.stringify(words)}`);
+    return found[found.length - 1]!;
+  };
+  const name = (n: number) => `_Ref${String(n).padStart(9, '0')}`;
+  const REF = (n: number, ...switches: string[]) =>
+    ['REF', name(n), ...switches.map((each) => `\\${each}`)].join(' ');
+  const PAGEREF = (n: number) => `PAGEREF ${name(n)} \\h`;
+
+  /** Every element beneath this one, in document order. */
+  const inOrder = (element: Element): Element[] =>
+    kids(element).flatMap((child) => [child, ...inOrder(child)]);
+
+  /**
+   * Each bookmark in a part or a paragraph, in the order they begin: its name and identifier, the text
+   * it holds - field results included - whether it holds a footnote's mark, and whether it ends.
+   */
+  const bookmarksOf = (element: Element) => {
+    const found: { name: string; id: string; text: string; mark: boolean; ended: boolean }[] = [];
+    const open: (typeof found)[number][] = [];
+    for (const each of inOrder(element)) {
+      if (each.name === 'w:bookmarkStart') {
+        const bookmark = {
+          name: each.attrs['w:name']!,
+          id: each.attrs['w:id']!,
+          text: '',
+          mark: false,
+          ended: false,
+        };
+        found.push(bookmark);
+        open.push(bookmark);
+      } else if (each.name === 'w:bookmarkEnd') {
+        const at = open.findIndex((bookmark) => bookmark.id === each.attrs['w:id']);
+        open[at]!.ended = true;
+        open.splice(at, 1);
+      } else if (each.name === 'w:t') {
+        for (const bookmark of open) bookmark.text += each.children.join('');
+      } else if (each.name === 'w:footnoteReference') {
+        for (const bookmark of open) bookmark.mark = true;
+      }
+    }
+    return found;
+  };
+
+  /** Each field at the top of a paragraph or a part: its instruction, trimmed, and what it shows. */
+  const fieldsOf = (element: Element) => {
+    const found: { code: string; result: string }[] = [];
+    const open: { code: string; result: string; separated: boolean }[] = [];
+    for (const run of all(element, 'w:r')) {
+      for (const child of kids(run)) {
+        const kind = child.attrs['w:fldCharType'];
+        const top = open[open.length - 1];
+        if (child.name === 'w:instrText') top!.code += child.children.join('');
+        else if (kind === 'begin') open.push({ code: '', result: '', separated: false });
+        else if (kind === 'separate') top!.separated = true;
+        else if (kind === 'end') {
+          const field = open.pop()!;
+          if (open.length === 0) found.push({ code: field.code.trim(), result: field.result });
+        } else if (child.name === 'w:t' && top?.separated === true) {
+          top.result += child.children.join('');
+        }
+      }
+    }
+    return found;
+  };
+  /** The references among a paragraph's fields: those that name a bookmark. */
+  const referencesIn = (paragraph: Element) =>
+    fieldsOf(paragraph).filter((field) => /^(REF|NOTEREF|PAGEREF) /.test(field.code));
+  const P1 = 'Methods: 1 / Methods / 1 Methods / above / ';
+
+  it("names each target's hidden bookmarks _Ref and nine digits, in document order, one set however many references name it, and the same names for the same document", () => {
+    const marked = [...bookmarksOf(document()), ...bookmarksOf(footnotes())];
+    // The front matter's component, Methods, the paragraph, the table's two, the figure's two, the
+    // footnote, the section three deep and the appendix's three deep.
+    expect(marked.map((each) => [each.name, each.id])).toEqual(
+      Array.from({ length: 10 }, (_, at) => [name(at + 1), String(at + 1)]),
+    );
+    for (const each of marked) {
+      expect(each.name).toMatch(/^_Ref[0-9]{9}$/);
+      expect(each.ended).toBe(true);
+    }
+    // Written again, the same bytes.
+    expect(citing().bytes).toEqual(cited.bytes);
+  });
+
+  it("sets a heading's bookmark around its title's words, a caption's two around its label and its words, a footnote's around its mark and a block's where it begins, holding nothing, since a page or above and below is all a block is named for and Word refuses a relative field inside its own bookmark (measured)", () => {
+    const [
+      front,
+      methods,
+      p1,
+      tableLabel,
+      tableWords,
+      figureLabel,
+      figureWords,
+      mark,
+      deeper,
+      annex,
+    ] = bookmarksOf(document());
+    expect(front!.text).toBe('Preface by Ada');
+    // Word's number is the heading's list's, which `REF \r` reads: no text of the heading's own.
+    expect(methods!.text).toBe('Methods');
+    expect(deeper!.text).toBe('Deeper');
+    expect(annex!.text).toBe('Annex C');
+    expect(bookmarksOf(saying('Methods')).map((each) => each.name)).toEqual([name(2)]);
+    expect(p1!.text).toBe('');
+    // Begun and ended before anything the paragraph holds.
+    const held = kids(saying(P1)).map((each) => each.name);
+    expect(held.slice(0, 3)).toEqual(['w:pPr', 'w:bookmarkStart', 'w:bookmarkEnd']);
+    expect(tableLabel!.text).toBe('Table 1.1');
+    expect(tableWords!.text).toBe('Readings');
+    expect(figureLabel!.text).toBe('Figure 1.1');
+    expect(figureWords!.text).toBe('Shapes');
+    expect(mark).toMatchObject({ text: '', mark: true });
+  });
+
+  it("PUB-026 writes every cross-reference as a field Word can update - REF, NOTEREF or PAGEREF at its target's bookmark - prefilled with what the PDF prints, and each page empty until Word lays the page out", () => {
+    expect(referencesIn(saying(P1))).toEqual([
+      { code: REF(2, 'r', 'h'), result: '1' },
+      { code: REF(2, 'h'), result: 'Methods' },
+      { code: REF(2, 'r', 'h'), result: '1' },
+      { code: REF(2, 'h'), result: 'Methods' },
+      { code: REF(2, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(2), result: '' },
+    ]);
+    expect(
+      referencesIn(saying('Table: Table 1.1 / Readings / Table 1.1 Readings / above / ')),
+    ).toEqual([
+      { code: REF(4, 'h'), result: 'Table 1.1' },
+      { code: REF(5, 'h'), result: 'Readings' },
+      { code: REF(4, 'h'), result: 'Table 1.1' },
+      { code: REF(5, 'h'), result: 'Readings' },
+      { code: REF(4, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(4), result: '' },
+    ]);
+    expect(
+      referencesIn(saying('Figure: Figure 1.1 / Shapes / Figure 1.1 Shapes / above / ')),
+    ).toEqual([
+      { code: REF(6, 'h'), result: 'Figure 1.1' },
+      { code: REF(7, 'h'), result: 'Shapes' },
+      { code: REF(6, 'h'), result: 'Figure 1.1' },
+      { code: REF(7, 'h'), result: 'Shapes' },
+      { code: REF(6, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(6), result: '' },
+    ]);
+    expect(referencesIn(saying('1 / above /  / above /  / 1.2.1 / A.1.1 / i'))).toEqual([
+      { code: `NOTEREF ${name(8)} \\h`, result: '1' },
+      { code: REF(8, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(8), result: '' },
+      { code: REF(3, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(3), result: '' },
+      { code: REF(9, 'r', 'h'), result: '1.2.1' },
+      { code: REF(10, 'r', 'h'), result: 'A.1.1' },
+      { code: REF(1, 'r', 'h'), result: 'i' },
+    ]);
+    // In a footnote's text, a paragraph's, and a link as the PDF's is.
+    expect(referencesIn(footnotes())).toEqual([{ code: PAGEREF(3), result: '' }]);
+  });
+
+  it("links a reference only where the PDF does - a paragraph's text - and writes the same field without its link in a header row, a caption, a table's note and a section's title (XR-D)", () => {
+    const [header] = all(first(document(), 'w:tbl')!, 'w:p');
+    expect(referencesIn(header!)).toEqual([{ code: REF(3, 'p'), result: 'above' }]);
+    expect(referencesIn(saying('Table 1.2 Cited in 1'))).toEqual([
+      { code: REF(2, 'r'), result: '1' },
+    ]);
+    expect(referencesIn(saying('See above'))).toEqual([{ code: REF(4, 'p'), result: 'above' }]);
+    // The section's title: its words, and the reference among them, as the PDF sets them.
+    const results = saying('After 1 ended');
+    expect(isHeading(results)).toBe(true);
+    expect(referencesIn(results)).toEqual([{ code: REF(2, 'r'), result: '1' }]);
+  });
+
+  it("sets a relative reference in the passage's language, whose words Word's update prints (WO-C), prefilled with the layout's", () => {
+    const german = saying('Siehe above');
+    expect(referencesIn(german)).toEqual([{ code: REF(2, 'p', 'h'), result: 'above' }]);
+    const runs = all(german, 'w:r').slice(1);
+    expect(runs.length).toBeGreaterThan(0);
+    for (const run of runs) expect(first(run, 'w:lang')?.attrs).toEqual({ 'w:val': 'de-DE' });
+  });
+
+  it('keeps the place of a target that publishes nothing as a bookmark holding nothing: at the end of the paragraph before it, else at the start of the one after it, else in an empty paragraph of its own, which carries a list item its number', () => {
+    const pointing = (...blocks: string[]) =>
+      paragraph(
+        'refs',
+        ...blocks.flatMap((block, at) => [
+          text(at === 0 ? 'See ' : ', '),
+          xref(`r${at}`, toBlock(block), 'page'),
+        ]),
+      );
+    const blank = (name: string) => paragraph(name);
+    const marked = writtenOf([
+      said('before'),
+      blank('e1'),
+      { type: 'blockquote', id: 'q1', content: [blank('e2'), said('quoted')] },
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [text('Readings')],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [cellOf('c1', text('York')), { content: [blank('e3')], colspan: 1, rowspan: 1 }],
+          },
+        ],
+      },
+      list('L1', 'ordered', [item(blank('e4')), item(said('second'))]),
+      pointing('e1', 'e2', 'e3', 'e4'),
+    ]);
+    const { body, at } = bodyOf(marked.docx);
+    const names = (paragraph: Element) =>
+      kids(paragraph)
+        .filter((each) => each.name === 'w:bookmarkStart')
+        .map((each) => each.attrs['w:name']);
+    const ends = (paragraph: Element) => kids(paragraph).map((each) => each.name);
+    // After the paragraph before it, holding nothing.
+    expect(names(at('before'))).toEqual([name(1)]);
+    expect(ends(at('before')).slice(-2)).toEqual(['w:bookmarkStart', 'w:bookmarkEnd']);
+    // First in a quotation, before the paragraph after it.
+    expect(names(at('quoted'))).toEqual([name(2)]);
+    expect(ends(at('quoted')).slice(0, 3)).toEqual(['w:pPr', 'w:bookmarkStart', 'w:bookmarkEnd']);
+    // Alone in a cell, in the cell's one paragraph.
+    const [, cell] = rowsOf(first(marked.docx.xml('word/document.xml'), 'w:tbl')!)[0]!;
+    const [holder, ...none] = kids(cell!, 'w:p');
+    expect(none).toEqual([]);
+    expect(names(holder!)).toEqual([name(3)]);
+    expect(styleOf(holder!)).toBe(marked.theme.places.tableCell);
+    // Alone in a list's item, in the one paragraph that carries the item's number.
+    const second = body.indexOf(at('second'));
+    const items = body.slice(second - 1, second + 1);
+    expect(items.map((each) => [textOf(each), styleOf(each)])).toEqual([
+      ['', marked.theme.places.listItem],
+      ['second', marked.theme.places.listItem],
+    ]);
+    expect(names(items[0]!)).toEqual([name(4)]);
+    for (const each of items) expect(first(pPr(each)!, 'w:numPr')).toBeDefined();
+    // And no other paragraph for it: the caption before the table stands before it.
+    expect(textOf(body[second - 2]!)).toBe('Table 1.1 Readings');
+    expect(referencesIn(at('See , , , '))).toEqual(
+      [1, 2, 3, 4].map((n) => ({ code: PAGEREF(n), result: '' })),
+    );
+  });
+
+  /** Each reference field's runs in a paragraph, begin to end, by its instruction. */
+  const fieldRuns = (paragraph: Element) => {
+    const found: { code: string; runs: Element[] }[] = [];
+    let open: { code: string; runs: Element[] } | null = null;
+    for (const run of all(paragraph, 'w:r')) {
+      const kind = first(run, 'w:fldChar')?.attrs['w:fldCharType'];
+      if (kind === 'begin') open = { code: '', runs: [] };
+      if (open === null) continue;
+      open.runs.push(run);
+      const instruction = first(run, 'w:instrText');
+      if (instruction !== undefined) open.code += instruction.children.join('');
+      if (kind === 'end') {
+        found.push({ ...open, code: open.code.trim().replace(/ _Ref\d{9}/, '') });
+        open = null;
+      }
+    }
+    return found;
+  };
+
+  it("writes a number Word computes - a heading's, a note's, a page's - left to right in a right-to-left passage, its language the passage's, since Word drew one of digits alone in a right-to-left run in Times New Roman (measured by the Word check); every other form in the passage's direction", () => {
+    const hebrew = written({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: SEFER,
+        language: 'he-IL',
+        direction: 'rtl',
+        nodes: [section('rtlbody', SEFER, [reference('rtlpart', 4)])],
+      }),
+      occurrences: new Map([
+        [
+          id('rtlpart'),
+          component(
+            SEFER,
+            [
+              paragraph('r0', text(SHALOM), note('rn', paragraph('rna', text(SEFER)))),
+              paragraph(
+                'r1',
+                text(`${SHALOM} `),
+                xref('x0', toNode('rtlbody')),
+                text(' '),
+                xref('x1', toBlock('rn')),
+                text(' '),
+                xref('x2', toBlock('r0'), 'page'),
+                text(' '),
+                xref('x3', toBlock('r0'), 'relative'),
+                text(' '),
+                xref('x4', toNode('rtlbody'), 'title'),
+              ),
+            ],
+            { language: 'he-IL', direction: 'rtl' },
+          ),
+        ],
+      ]),
+    });
+    const [, cites] = all(hebrew.docx.xml('word/document.xml'), 'w:p').filter((each) =>
+      textOf(each).startsWith(SHALOM),
+    );
+    const fields = fieldRuns(cites!).map(({ code, runs }) => [
+      code,
+      runs.every((run) => first(run, 'w:rtl') !== undefined),
+      runs.every((run) => first(run, 'w:lang')?.attrs['w:bidi'] === 'he-IL'),
+    ]);
+    expect(fields).toEqual([
+      ['REF \\r \\h', false, true],
+      ['NOTEREF \\h', false, true],
+      ['PAGEREF \\h', false, true],
+      ['REF \\p \\h', true, true],
+      ['REF \\h', true, true],
+    ]);
+  });
+
+  it("writes the space between two references' fields that print left to right in a right-to-left passage without its direction, so Word sets them as one left-to-right run, as the PDF does, where each stood apart in reading order (measured, M2 of Word 3's final review)", () => {
+    const hebrew = written({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: SEFER,
+        language: 'he-IL',
+        direction: 'rtl',
+        nodes: [section('rtlbody', SEFER, [reference('rtlpart', 4)])],
+      }),
+      occurrences: new Map([
+        [
+          id('rtlpart'),
+          component(
+            SEFER,
+            [
+              paragraph('r0', text(SHALOM), note('rn', paragraph('rna', text(SEFER)))),
+              {
+                type: 'table',
+                id: 't1',
+                style: 'table',
+                caption: [text('Readings')],
+                headerRows: 0,
+                headerColumns: 0,
+                rows: [{ cells: [cellOf('c1', text('1'))] }],
+              },
+              paragraph(
+                'r1',
+                text(`${SHALOM} `),
+                xref('x0', toNode('rtlbody')),
+                text(' '),
+                xref('x1', toBlock('rn')),
+                text(' '),
+                xref('x2', toBlock('r0'), 'page'),
+                text(' '),
+                xref('x3', toBlock('r0'), 'relative'),
+                text(' '),
+                xref('x4', toNode('rtlbody'), 'numberAndTitle'),
+                text(' '),
+                xref('x5', toNode('rtlbody'), 'title'),
+                text(' '),
+                xref('x6', toBlock('r0'), 'relative'),
+                text(' '),
+                xref('x7', toBlock('t1'), 'numberAndTitle'),
+                text(' '),
+                xref('x8', toBlock('r0'), 'relative'),
+              ),
+            ],
+            { language: 'he-IL', direction: 'rtl' },
+          ),
+        ],
+      ]),
+    });
+    const [, cites] = all(hebrew.docx.xml('word/document.xml'), 'w:p').filter((each) =>
+      textOf(each).startsWith(SHALOM),
+    );
+    // Each run of text, outside the fields, and whether it is right to left.
+    const texts = kids(cites!, 'w:r')
+      .filter((run) => first(run, 'w:t') !== undefined && first(run, 'w:instrText') === undefined)
+      .map((run) => [textOf(run), first(run, 'w:rtl') !== undefined]);
+    const spaces = texts.filter(([words]) => words === ' ').map(([, rtl]) => rtl);
+    // Between a number, a note's number, a page and "above", none, and before a number and a title,
+    // which the number begins; beside the Hebrew title, whether between two references or inside
+    // one, the passage's; between a table's label and its Latin words, inside the reference and after
+    // it, none. And the words before them the passage's.
+    expect(spaces).toEqual([false, false, false, false, true, true, true, false, false, false]);
+    expect(texts[0]).toEqual([`${SHALOM} `, true]);
+  });
+
+  it("names a floated figure's place for above and below where its box is anchored in the text, since Word's REF \\p to its caption in the box prints the caption's words (measured by the Word check); its number, title and page at its caption", () => {
+    const floated = writtenOf(
+      [
+        said('before'),
+        figure('f3', BLUE, 'Blue on top', { imageStyle: 'floated' }),
+        paragraph(
+          'p1',
+          xref('x0', toBlock('f3'), 'relative'),
+          text(' '),
+          xref('x1', toBlock('f3'), 'page'),
+          text(' '),
+          xref('x2', toBlock('f3'), 'numberAndTitle'),
+        ),
+      ],
+      { theme: floatedTheme, assets: IMAGES },
+    );
+    const { at, body } = bodyOf(floated.docx);
+    const anchor = body[body.indexOf(at('before')) + 1]!;
+    expect(first(anchor, 'w:txbxContent')).toBeDefined();
+    // The caption's two inside the box; the anchor's own after the box's run, holding nothing.
+    const boxed = all(first(anchor, 'w:txbxContent')!, 'w:bookmarkStart');
+    expect(boxed.map((each) => each.attrs['w:name'])).toEqual([name(1), name(2)]);
+    const own = kids(anchor).filter((each) => each.name === 'w:bookmarkStart');
+    expect(own.map((each) => each.attrs['w:name'])).toEqual([name(3)]);
+    expect(kids(anchor).map((each) => each.name)).toEqual([
+      'w:pPr',
+      'w:r',
+      'w:bookmarkStart',
+      'w:bookmarkEnd',
+    ]);
+    const cites = paragraphs(floated.docx).find((each) => textOf(each).startsWith('above'))!;
+    expect(referencesIn(cites)).toEqual([
+      { code: REF(3, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(1), result: '' },
+      { code: REF(1, 'h'), result: 'Figure 1.1' },
+      { code: REF(2, 'h'), result: 'Blue on top' },
+    ]);
+  });
+
+  it("names a caption with no label's place by a bookmark holding nothing where the caption begins, since Word's REF \\p inside the bookmark around its words printed Word's self-reference error (measured, M1 of Word 3's final review)", () => {
+    // An appendix without a number, before any with one: the scheme gives its table and its figure
+    // no number, so their captions have no label.
+    const unlabelled = written({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        nodes: [
+          section('early', 'Early annex', [reference('blocks', 9)], {
+            matter: 'appendix',
+            numbered: false,
+          }),
+        ],
+      }),
+      occurrences: new Map([
+        [
+          id('blocks'),
+          component('Blocks', [
+            said('before'),
+            {
+              type: 'table',
+              id: 'u1',
+              style: 'table',
+              caption: [
+                text('Early, see '),
+                xref('u0', toBlock('u1'), 'relative'),
+                text(' on '),
+                xref('u2', toBlock('u1'), 'page'),
+              ],
+              headerRows: 0,
+              headerColumns: 0,
+              rows: [{ cells: [cellOf('c1', text('x'))] }],
+            },
+            figure('f1', RED, 'Shapes', {
+              caption: [text('Shapes '), xref('u3', toBlock('f1'), 'relative')],
+            }),
+            paragraph(
+              'p1',
+              xref('u4', toBlock('u1'), 'relative'),
+              text(' '),
+              xref('u5', toBlock('f1'), 'page'),
+            ),
+          ]),
+        ],
+      ]),
+      assets: IMAGES,
+    });
+    const captioned = (words: string) =>
+      paragraphs(unlabelled.docx).find((each) => textOf(each) === words)!;
+    const table = captioned('Early, see above on ');
+    // The place first, holding nothing, then the words, holding the references to the place.
+    expect(
+      kids(table)
+        .map((each) => each.name)
+        .slice(0, 4),
+    ).toEqual(['w:pPr', 'w:bookmarkStart', 'w:bookmarkEnd', 'w:bookmarkStart']);
+    expect(bookmarksOf(table).map(({ name, text }) => [name, text])).toEqual([
+      [name(1), ''],
+      [name(2), 'Early, see above on '],
+    ]);
+    expect(referencesIn(table)).toEqual([
+      { code: REF(1, 'p'), result: 'above' },
+      { code: `PAGEREF ${name(1)}`, result: '' },
+    ]);
+    const figured = captioned('Shapes above');
+    expect(bookmarksOf(figured).map(({ name, text }) => [name, text])).toEqual([
+      [name(3), ''],
+      [name(4), 'Shapes above'],
+    ]);
+    expect(referencesIn(figured)).toEqual([{ code: REF(3, 'p'), result: 'above' }]);
+    expect(referencesIn(captioned('above '))).toEqual([
+      { code: REF(1, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(3), result: '' },
+    ]);
   });
 });

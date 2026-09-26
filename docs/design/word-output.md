@@ -25,7 +25,7 @@ in them, so a reader who never refreshes still sees correct numbers everywhere e
 | **PUB-023** | Every construct below is a native Word construct; nothing is flattened to formatted text                                            |
 | **PUB-024** | Heading numbering is a `numbering.xml` definition linked from each heading style, in the scheme the layout declares (PUB-011)       |
 | **PUB-025** | Footnotes are `footnotes.xml` entries: `w:footnoteReference` in the text, `w:footnoteRef` inside the note, so Word numbers both     |
-| **PUB-026** | A cross-reference is a `REF` field to a bookmark on its target, with the resolved number as the field's current result              |
+| **PUB-026** | A cross-reference is a `REF`, `NOTEREF` or `PAGEREF` field at a bookmark on its target, prefilled with what the PDF prints          |
 | **PUB-028** | Suggestions become `w:ins` and `w:del` with author and date; comment threads become `comments.xml` anchored by range                |
 | **PUB-029** | The writer's output is opened in Word before any change to it lands, and the conformance harness renders and schema-checks it       |
 | **PUB-035** | Headings carry outline levels, images carry alternative text, header rows repeat and are marked, and every run carries its language |
@@ -357,6 +357,16 @@ stands as it was agreed; three of its lines are no longer what was built, and
   tables after the contents, since the default layout lists both and without them no document holding
   a figure or a table could reach Word under it. Word 3 is footnotes, cross-references and their
   bookmarks; Word 4 is equations and the list of equations.
+
+**What building Word 3 found, 2026-09-26.** WO-B and WO-C stand as agreed, and
+[What was built](#what-was-built) says where Word 3 departed from its plan. Two things here read
+differently now. A scheme is not the only thing Word may compute otherwise than the PDF prints: three
+kinds of reference - above or below across a story's boundary (a footnote's, or a floated figure's
+text box), a caption's words named inside it, and a caption's words holding a reference that is not
+a number - are Word's fields printing other words, and are refused by name as
+`cross_reference_not_in_word`, two of them open for Ken. And WO-C's Word words are the passage's
+language's only where the Word opening the document has words for it: in a Hebrew passage the one
+Word 16 measured, with an English interface, printed the English ones.
 
 **What Word 1 to Word 4 claim and cite.** Word 1: PUB-023 once the rest have landed rather than
 first, PUB-027 (themes.md), PUB-034's and CNT-084's Word halves, CNT-128's, PUB-092's, PUB-012, PUB-065
@@ -756,6 +766,238 @@ since Word's list is its `SEQ` fields; the report names the same words for every
 and `apps/web/src/publishing/failures.ts` still says `listOf:figure` and `listOf:table`, which
 stored failures may name. Still open from Word 1: how a reader who declines the prompt sees the
 contents, a cover running to a second page, and a matter entered twice.
+
+**Word 3 is built**, by [Word 3](../plans/2026-09-26-word-03-footnotes-and-cross-references.md): the
+third of WO-M's slices, as Word 2 left it. Every footnote reaches Word as Word's own, numbered by
+Word, and every cross-reference as a field Word updates, at a hidden bookmark on its target named
+Word's way; with them, a Word document carries everything a document holds but its equations, which
+stay refused by name, `word_not_yet`, with a reference to one and the list of equations. The writer is
+`word/3`. Building it changed these things here:
+
+- **Off `word_not_yet`, and the trap undone.** A footnote - in text, in a table's cell and in a
+  table's header row - and a cross-reference in every place the PDF prints one, a section's title
+  included, are written. The two constructs Word 2 left dropped by a PDF engine refusal now stay in
+  the published document: a footnote in a header row and a reference to a target in one are still
+  refused for the PDF alone (`footnote_not_publishable_here`, `cross_reference_form_unavailable`),
+  and a Word-only publication carries them - the header row's note numbered once, its mark repeating
+  with the row on every page Word sets it, measured. What still drops its construct is an equation
+  the maths tree refuses, which is still `word_not_yet`: Word 4's.
+- **Footnotes are Word's** (R2, M5). `footnotes.xml` holds the separator and continuation separator
+  Word requires, in the footnote place's style with no space about them, and each note in the order
+  the text meets its mark; a mark is a `w:footnoteReference` run in Word's own **Footnote Reference**
+  style, superscript, with no text of its own, and a note opens with `w:footnoteRef` in the same
+  style, then a space scaled by `w:w` to the engine's 0.05em (Word ignored `w:spacing` on that run,
+  measured at 0.00), its first line indented an em as the PDF's. A note's paragraphs are written
+  through the writer's own flow - their styles, runs, marks, links and images, in the passage where
+  its mark stands - and relate their links and images from `footnotes.xml.rels`, so the writer now
+  keeps relationships per part. M1 d8 is written between notes where the footnote style asks for
+  contextual spacing, since Word applies contextual spacing across footnotes: without it two notes
+  under such a style stood 10.80 apart where the PDF sets 14.62. None of this, the footnotes part,
+  its settings and the reference style, is written where a document holds no footnote.
+- **Each matter's section restarts its notes, and `continuous` is never written.** Each matter's
+  sections carry `w:footnotePr`, `w:numRestart eachSect` and the format of the matter's footnote
+  rule's own counter, each section counting from 1 as Word does unasked (no `w:numStart`). The
+  plan's R2 would have written `continuous` for a rule that runs on through the document; **measured in Word 16, a continuous section numbers
+  a note by its place among every note in the document**, not on from the section before - the body
+  entered again after an appendix printed 5 where the scheme counts 3 - so it is the scheme's count
+  only where `eachSect` is too. `numbering_not_in_word` extends to footnotes, `detail`
+  `footnote:<matter>:<why>`, once per matter and naming the first note that meets it, following
+  Word's count through the writer's sections as captions' is: `label`, a word the rule writes before
+  the number, which Word's mark cannot carry; `prefix`, a chapter's number before it; `restart`,
+  Word's count not the scheme's - a rule restarting at a chapter, where Word's section is the whole
+  run of the matter, and **a matter entered a second time whose earlier run held notes**, whose count
+  the scheme carries on; and `letters` and `roman` as a heading's. `w:numStart` could carry the
+  second, and would pin the PDF's number where Word's is asked for. The default scheme passes.
+- **A section's title reaches Word through `WordInput`**, not a change to the published document: the
+  published title carries a reference as the words it prints, which the writer could not tell from
+  the title's own, so `WordInput.titles` holds, for each section whose title holds a reference, its
+  words as runs and each reference as the published reference run. The PDF's document is byte for
+  byte what it was, and `publishing/13`, template 13 and `PIPELINE_VERSION` stay.
+- **Each reference's form reaches Word through `WordInput.references`**, `{ display, label, title }`
+  keyed by `inlineReferenceKey(node, site, index)`, its place among the published runs as an image
+  in a line is keyed - a caption now a site of its own - since a form read back from the printed words
+  is ambiguous (a title that is its number).
+- **Bookmarks** (R3, M4): every anchor a reference names gets `_Ref` and nine digits, numbered in the
+  order the writer writes, 13 characters, one set per anchor however many references name it; the
+  writer holds the map, and `assemble` knows no name. A heading's stands around its title's runs,
+  since its number is Word's; a caption's are two, around its label and around its words; a
+  footnote's around its mark. **A block's - a paragraph, a list, a quotation, preformatted text - is
+  a bookmark holding nothing where its first paragraph begins**, not R3's bookmark around that
+  paragraph: a block is named only for its page and for above or below, and Word refuses a relative
+  field inside the bookmark it names, "Error! Not a valid bookmark self-reference.", measured for a
+  paragraph naming itself; empty at its start, `PAGEREF` and `REF \p` print what the PDF does before
+  it, after it and inside it. A table's and a figure's page and place are its caption's label
+  bookmark, since nothing stands between a figure and its kept caption - and **where the caption has
+  no label**, a bookmark holding nothing where the caption begins, for the same reason: its place
+  had been the bookmark around its words, and a relative field in the caption naming its own place
+  printed "Error! Not a valid bookmark self-reference." (M1 of the final review); measured after, a
+  table's and a figure's caption naming their own place, and the text naming both, print the PDF's
+  words and pages. **A floated figure a
+  reference names gets a third bookmark**, holding nothing, in its anchor paragraph after the box: its
+  caption's bookmarks stand in the text box, another story, where `REF \p` printed the bookmark's
+  words ("Figure 1.2"), found by the Word check; its number, title and page stay on the caption,
+  measured right. A target that publishes nothing is a bookmark holding nothing at the end of the
+  paragraph before it, else at the start of the next, else in an empty paragraph of its place's style.
+- **Every form is a field** (R4, M4), prefilled with what the PDF prints and carrying the text's run
+  properties on every run, since Word takes the updated result's formatting and a relative field's
+  language from them: a heading's number `REF _Ref \r`, a caption's `REF` on its label, a footnote's
+  `NOTEREF` **without `\f`** - the PDF prints the number as text, and `\f` made it superscript in
+  Footnote Reference, measured; a title `REF` on the heading's or the caption's words; both, the two
+  fields with a space between, as the PDF joins them; above or below `REF _Ref \p`, prefilled with the
+  layout's word; a page `PAGEREF _Ref`, **prefilled empty** (PUB-066). **`\r` for heading numbers**,
+  as planned: measured, `\r`, `\w` and `\n` print the same full number (`1.2.1`, `A.1.1`, `i`) from
+  every context tried, since each level's text writes the levels above it. `\h` stands exactly where
+  the published run links - a paragraph's text and a note's - and not in a header row, a caption, a
+  term, an attribution, a table's note or a title (XR-D).
+- **Word's own words for above and below in another language** (WO-C): a relative field's runs carry
+  the passage's language, so Word's update prints its own word in it - `oben` and `unten` in a German
+  passage where the PDF prints the layout's _above_ and _below_. **In a Hebrew passage Word 16 here
+  printed the English words**, having no Hebrew words in the language resources installed here - one
+  Word 16 with an English interface; a Word with Hebrew proofing or a Hebrew interface may print
+  Hebrew ones, which this machine cannot show, and the Word check would say so where it runs on one.
+- **A new refusal, `cross_reference_not_in_word`** (R5), where Word is asked for, naming the reference
+  as the other reference failures do, `detail` `<form>:<why>`, for a reference Word's field prints
+  otherwise than the PDF, each found in Word 16, and the PDF unaffected. R5 said to refuse by name
+  rather than report; a new code rather than `cross_reference_form_unavailable`, whose sentences say
+  what the target or the layout lacks, which is false here:
+  - `relative:footnote` - above or below between a footnote's text and the text outside it, either
+    way. Word writes the notes in a story of their own and `REF \p` compares positions only within one
+    story: from a note to a table in the text it printed the bookmark's words, `Table 1.1`, and to
+    the note's own mark nothing; from the text to a note's paragraph, that paragraph's words or
+    nothing. Between two paragraphs of the notes it is right, and is written, as are a number, a title
+    and a page across the two.
+  - `relative:float` - above or below in a floated figure's caption, found by the final review
+    (I1). Word writes the caption in a text box, a story of its own too, and `REF \p` there printed
+    nothing, to a paragraph before the figure and one after it, where the PDF prints _above_ and
+    _below_; Word's list of figures copied the gap. Its number and its page in the box, and a relative
+    reference from the text to the floated figure, which names its anchor in the text, are right.
+    Refused only where the figure's image style floats it: the same caption on a figure set as a
+    block stands in the text and is written. One across a note's boundary as well is named once,
+    `relative:footnote`. **A footnote and a text box are the only stories the writer puts a reference
+    in**: a header's and a footer's words are the layout's, the document's title as text, and Word's
+    own `PAGE`, `NUMPAGES` and `STYLEREF` fields, and the titles `STYLEREF` copies hold a reference
+    only as a number, never above or below.
+  - `title:caption` and `numberAndTitle:caption` - a caption's own words named inside it. Word's `REF`
+    refused it as a reference to itself, "Error! Not a valid bookmark self-reference."; a caption's own
+    number and its own place, `above`, were right, and are written.
+  - `title:nested` and `numberAndTitle:nested` - a caption's words named where they hold a reference
+    in any form but its number. The PDF prints each reference inside a caption as its target's number
+    or kind ("Readings as in 1, Paragraph", by cross-references 2's design); Word's `REF` copies the
+    nested field and updates it, printing "... above", found by the Word check. A number copies
+    right, measured - a heading's `1` and a table's `Table 1.2` - and is written. Two captions naming
+    each other's words fall under the same rule.
+
+**Two decisions for Ken, open.** Each refusal below narrows what Word can publish where Word's
+fields cannot print what the PDF does, and was taken as R5 says, refusing by name; each has another
+answer, and the pull request asks for his:
+
+| #    | What Word does                                                                                                                                                                                                                                                                                                              | Built                                                                           | The alternatives                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W3-A | A relative reference across a story's boundary - a footnote's, "see the table above" in a note or "the note below" in the text naming a note's paragraph, and a floated figure's text box, "compare the table below" in its caption - prints the bookmark's words or nothing, since `REF \p` compares only within one story | Refused for Word, `relative:footnote` and `relative:float`; the PDF publishes   | **Plain text with a report entry**, for both: the layout's word written as text, which Word never updates, and the publication's report naming the reference, so the document publishes and the author is told. PUB-026 asks for fields Word can update; this one would not be, and would be named. For the float alone, **set the figure as a block in Word**, reported: its caption then stands in the text and its fields are right, and the figure stands where its anchor is rather than at the head of the page, where the PDF's band stands. Floating the image alone and keeping the caption in the text, which Word 2 measured, parts the caption from its image |
+| W3-B | A caption's words named as a title, where they hold a reference that is not a number, print as Word's own form of it ("... above") where the PDF prints the target's kind ("... Paragraph")                                                                                                                                 | Refused for Word, `title:nested` and `numberAndTitle:nested`; the PDF publishes | **Accept Word's reading**, reporting that the two differ - arguably the better words; or **change what the PDF prints** for a reference inside a caption named by a title, to the reference's own form as Word prints it, which is cross-references 2's design to reopen and a change to every PDF of such a document                                                                                                                                                                                                                                                                                                                                                     |
+
+**What Word showed that the design did not foresee**, measured in Word 16 against the PDF of the same
+document compiled through template 13:
+
+- **A footnote's mark and number are Word's superscript**, not the engine's: a mark in 11pt text is
+  6.96pt raised 4.56 in Word against 7.15 raised 4.98 in the PDF, 0.19 smaller and 0.42 lower; a note's
+  number in its 9.5pt note 6.00 raised 3.48 against 6.08 raised 4.24. The reference style states
+  superscript, the plan's word, rather than a size and a raise pinned to the engine's. Typst sets some
+  marks with the face's own superscript glyphs; Word always synthesises them.
+- **The note step is Word's line**: two notes, and two lines of one, step 11.64 to 11.76 in Word
+  against the PDF's 11.62, and a wrapped line 10.92 against 10.80, Word's 9.5pt line being taller than
+  the style's 10.8 at least. The number's left edge (81.38 against 81.35) and the text after it (84.86
+  both) are the PDF's. The separator is Word's own line, not the PDF's, and is not matched: pagination
+  is Word's (PUB-065).
+- **Digits alone in a right-to-left run are drawn in Times New Roman**, as Word 1 found in a heading's
+  number: in the Hebrew passage the results of `PAGEREF`, `NOTEREF` and `REF \r` were set in it where
+  Liberation Serif is embedded. The same fields without `w:rtl` are set in the embedded face at the
+  same place, measured, so those three are written without it, their `w:lang w:bidi` kept; a caption's
+  number, a title and a relative field keep the passage's direction.
+- **Hidden, Word had already updated every `REF` as it opened**, from `w:updateFields`, before COM read
+  them, and a `PAGEREF` read `1` until the document was paginated: so the check prefills every result
+  wrong, a page's empty prefill among them, and what proves the update is the wrong document reading
+  right.
+
+**What the final review found in Word, and the fixes measured there**, each test first and measured
+in Word 16 through the check's own script against the PDF of the same document:
+
+- **I1**, a relative reference in a floated figure's caption printing nothing: refused,
+  `relative:float`, above, and part of W3-A.
+- **M1**, a caption with no label naming its own place: its place is a bookmark holding nothing where
+  the caption begins, above; measured right. `REF \p` inside the bookmark it names was the only form
+  Word could not compute: `PAGEREF` there printed the page, and a title of its own words is refused
+  (`title:caption`).
+- **M2**, right to left. **References side by side read in another order than the PDF's**: in a
+  Hebrew paragraph the PDF sets "Table 1.1 above 1 1 above 1" as one left-to-right run, and Word set
+  each field's result apart, "1 above 1 1 above Table 1.1" from the left. Measured over eleven
+  variants of the paragraph: the same words as one run of text, with `w:rtl`, set as the PDF does;
+  the fields' own runs without `w:rtl` changed nothing; and the spaces between them, each a run of
+  its own with `w:rtl`, were what Word read as right to left. So **a space between two fields that
+  print nothing right to left** - between two references, and between a number and its title - is
+  written without `w:rtl`, the fields keeping theirs; Word then set the paragraph as the PDF does. And
+  **the notes' separator** stood at the left of a right-to-left document, where the PDF draws its
+  line at the right: its paragraph, and the continuation separator's, are `w:bidi` in a right-to-left
+  document, and Word drew it at the right. **Left as it is**: a word of the author's own written
+  left to right beside a reference, "see Table 1.1" in a Hebrew passage, still stands apart from it
+  in Word - the space ending the author's run is inside a right-to-left run of words, which the
+  writer does not split (measured); punctuation between two references (", "), and a relative field
+  that a Word with Hebrew words would print in Hebrew, beside which the writer judges a space by the
+  PDF's word, are not measured.
+
+**The Word check** gained two fixtures and three checks, now eleven documents and 23 checks, all
+green in Word 16 on the final code: footnotes in front matter, the body and an appendix, four to a
+page, in a cell, of two paragraphs with a link, in German, in a header row Word repeats for Word
+alone, and in Hebrew; and every form to every kind of target - headings at the first and third
+levels, in front matter and an appendix, a table, a figure, a floated figure, a paragraph, a footnote
+and a note's paragraph - before and after it, pages away, in a paragraph, a note, a caption, a header
+row, a table's note and a section's title, in German and in Hebrew. The references fixture holds 93
+fields on 11 pages and 17 bookmarks. Every footnote's number, read by a `NOTEREF` Word inserts on a
+copy closed unsaved, is the numbering table's, on its mark's page; every field, prefilled "9", updates
+to what the PDF prints and every page to the page Word sets its target on, by that page's own foot; and
+every bookmark is `_Ref` and nine digits, hidden, and kept whole. It found the three things above the
+writer then fixed - the right-to-left digits, the floated figure's place and the nested caption - each
+test first. [`docs/testing.md`](../testing.md#the-word-check) lists what it checks.
+
+**What each claim now stands on**, as `pnpm trace show` reports it; the citations pin moved from 328
+to 331:
+
+| ID          | Claimed by    | Cited                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **PUB-025** | this document | `word/write.test.ts`, on the XML: every mark a `w:footnoteReference` in Word's Footnote Reference style with no text of its own and no `w:customMarkFollows`, in text, a cell and a header row; every note opening with Word's `w:footnoteRef`. Each section's `w:footnotePr` is asserted beside it, uncited. That Word numbers them as the numbering table does is the Word check's, which does not cite it |
+| **PUB-026** | this document | `word/write.test.ts`, on the XML: every form to every kind of target a `REF`, `NOTEREF` or `PAGEREF` field at its target's hidden bookmark, prefilled with what the PDF prints and a page left empty. That Word updates each to the PDF's words is the Word check's, which does not cite it                                                                                                                  |
+| **PUB-066** | this document | `apps/worker/src/word.test.ts`: the contents and the lists of figures and of tables each one `TOC` field with every entry prefilled without a page, every `PAGEREF` in the text and the notes with no result, and `w:updateFields` - the whole statement, now page references exist. Shown to bite by prefilling a `PAGEREF` with "9"                                                                        |
+| **PUB-035** | this document | `apps/worker/src/word.test.ts`, extended as Word 2 said it must be: every footnote Word's own, numbered in the published order, every note opening with `w:footnoteRef`; every reference a field of the instruction its form asks for, linked exactly where the PDF links, prefilled with the PDF's words, its runs in its passage's language, a German passage's relative field among them                  |
+
+The Word check cites PUB-029 alone, as before: CI skips it, and a skipped citation of PUB-025 or
+PUB-026 would demote a requirement the unit tests show. **PUB-035 is whole only while equations are
+refused for Word**: no Word document carries one, so none carries one inaccessibly, and footnotes and
+references, now carried, are now read. Word 4 must extend it again.
+
+**Not cited, and why.** PUB-065 asks Word to carry the resolved document's content, numbering and
+cross-references and leave pagination to Word, and the publication record to say the PDF is what a
+page cites. Its record half is `pages_cite_the_pdf` on every Word output, which the job's test holds;
+its carrying half is not yet whole while Word refuses equations and a reference to one, and no one
+test shows both. It stays Designed, to be cited in the job's Word test once Word 4 lands - or now, if
+"carry" is read as "never drop in silence", which the refusals by name already meet. PUB-067, CNT-045
+and PUB-023 are Word 4's.
+
+**Left for Word 4.** Equations - inline and displayed, numbered in a row of two cells (WO-H) - a
+reference to one, which is `word_not_yet` today with `detail` `crossReference`, and the list of
+equations, the last list after the contents still refused; deciding which of the maths tree's refusals
+Word sets and undoing the trap for the rest; reporting the maths face's substitution; PUB-067 and
+CNT-045, then PUB-023, and PUB-065 as above; and PUB-035's test extended to equations. The two
+decisions above, W3-A and W3-B, whichever way Ken takes them. **Not measured in Word**, tested for
+its XML only: a floated figure whose box Word sets on another page than its anchor, whose relative
+place would then be its anchor's. The final review measured the rest this list held: a reference in
+a definition's term or an attribution and a target that publishes nothing (its empty bookmark), each
+printing as the PDF, and a reference inside a floated figure's caption, whose relative form is now
+refused, `relative:float`. The fixtures of Word 3's checks are compared with the
+resolved document rather than a compiled PDF, since what the PDF prints and where it links is the
+published run's, which the template's own tests hold. Still open from Word 1 and 2: how a reader who
+declines the prompt sees the contents, a cover running to a second page, and a matter entered twice,
+which for footnotes is now refused where its earlier run held notes. Word 2's known differences
+stand.
 
 ## Open questions
 

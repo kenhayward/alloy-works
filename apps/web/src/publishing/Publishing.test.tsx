@@ -505,6 +505,36 @@ describe('publishing from the document page', () => {
     }
   });
 
+  it("names a footnote's number Word cannot compute, where the layout numbers it and why, pointing at the PDF", async () => {
+    // Word 3's ruling R2: `detail` is `footnote:<matter>:<why>`, and names the footnote that meets it;
+    // Word numbers footnotes itself, so a word or a chapter's number before one is Word's to refuse.
+    const refused = (detail: string) => ({
+      stage: 'compose' as const,
+      code: 'numbering_not_in_word' as const,
+      node: null,
+      block: 'n1',
+      detail,
+    });
+    const fake = failing([
+      refused('footnote:body:label'),
+      refused('footnote:front:prefix'),
+      refused('footnote:appendix:restart'),
+      refused('footnote:body:letters'),
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    const pdf = 'Publish this document as a PDF only, or under a layout Word can number.';
+    for (const said of [
+      'The layout numbers the footnotes in the body in a way Word cannot: a word stands before the number, which Word does not write beside a footnote.',
+      "The layout numbers the footnotes in front matter in a way Word cannot: a chapter's number stands before the number, which Word does not write beside a footnote.",
+      'The layout numbers the footnotes in the appendices in a way Word cannot: they start again or carry on where Word would not, since Word starts them again only where front matter, the body or the appendices begin.',
+      'The layout numbers the footnotes in the body in a way Word cannot: a number in letters goes past z, which Word writes differently.',
+    ]) {
+      expect(why).toHaveTextContent(`${said} ${pdf}`);
+    }
+  });
+
   it('names a list Word would not print as the PDF does, and why, pointing at the PDF', async () => {
     // Word 2's ruling R4: `detail` is `depth`, `letters` or `roman`, and the list is the author's to
     // change, not the layout.
@@ -524,6 +554,37 @@ describe('publishing from the document page', () => {
       'A list here is nested more than nine levels deep, and Word nests nine.',
       'A list here is numbered in letters past the 27th, which Word writes differently.',
       'A list here is numbered in roman numerals past 3999, which Word writes differently.',
+    ]) {
+      expect(why).toHaveTextContent(`${said} ${pdf}`);
+    }
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
+  it('names a cross-reference Word would not print as the PDF does, and why, pointing at the PDF', async () => {
+    // Word 3's ruling R5: `detail` is `<form>:<why>`, and the reference is the author's to change.
+    const refused = (detail: string) => ({
+      stage: 'compose' as const,
+      code: 'cross_reference_not_in_word' as const,
+      node: null,
+      block: 'x1',
+      detail,
+    });
+    const fake = failing([
+      refused('relative:footnote'),
+      refused('relative:float'),
+      refused('title:caption'),
+      refused('numberAndTitle:caption'),
+      refused('title:nested'),
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    const pdf = 'Publish this document as a PDF only, or change the cross-reference.';
+    for (const said of [
+      'A cross-reference asks for above or below between a footnote and the text outside it, which Word cannot print.',
+      "A cross-reference in a floating figure's caption asks for above or below, which Word cannot print there.",
+      "A cross-reference in a caption asks for that caption's own words, which Word cannot print.",
+      "A cross-reference asks for a caption's words that hold a cross-reference, which Word would print otherwise.",
     ]) {
       expect(why).toHaveTextContent(`${said} ${pdf}`);
     }

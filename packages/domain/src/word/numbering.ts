@@ -101,17 +101,18 @@ export interface WordNumberingProblem {
   readonly block: string | null;
   /**
    * `<sequence>:<matter>:<why>`: for `section`, `separator`, `letters`, `roman` or `depth`; for
-   * `figure` and `table`, `separator`, `prefix`, `restart`, `letters` or `roman`.
+   * `figure` and `table`, `separator`, `prefix`, `restart`, `letters` or `roman`; for `footnote`,
+   * `label`, `prefix`, `restart`, `letters` or `roman`.
    */
   readonly detail: string;
 }
 
 /**
- * **What Word cannot number as the layout's scheme does** (Word 1, ruling R7; Word 2, ruling R1):
- * `numbering_not_in_word`, said before anything is written, rather than a number Word prints
- * differently from the PDF's. The section sequence and the figure and table sequences reach Word - an
- * equation's and a footnote's number arrive with the slices that write them, and are asked of then -
- * and of the section rules, four things:
+ * **What Word cannot number as the layout's scheme does** (Word 1, ruling R7; Word 2, ruling R1; Word
+ * 3, ruling R2): `numbering_not_in_word`, said before anything is written, rather than a number Word
+ * prints differently from the PDF's. The section sequence, the figure and table sequences and the
+ * footnote sequence reach Word - an equation's number arrives with the slice that writes it, and is
+ * asked of then - and of the section rules, four things:
  *
  * - **a separator holding `%`**, which a level's text reads as a number to come (`%1`); asked of every
  *   matter, whether or not it numbers anything here, since each definition is written all the same;
@@ -128,7 +129,8 @@ export interface WordNumberingProblem {
  *
  * A caption's number is Word's fields, `captionField`, and what they compute is followed through
  * `outline` - the outline the table was numbered from, every node of which is a heading in Word - and
- * held to the table's (`captionsNotInWord`).
+ * held to the table's (`captionsNotInWord`). A footnote's is Word's own count, section by section,
+ * held to the table's the same way (`footnotesNotInWord`).
  */
 export function numberingNotInWord(
   scheme: NumberingScheme,
@@ -159,7 +161,104 @@ export function numberingNotInWord(
       if (romanPart(format, value)) say(entry.node, entry.matter, 'roman');
     });
   }
-  return [...problems, ...captionsNotInWord(scheme, table, outline)];
+  return [
+    ...problems,
+    ...captionsNotInWord(scheme, table, outline),
+    ...footnotesNotInWord(scheme, table, outline),
+  ];
+}
+
+/** A node as the writer and the check both meet one: its identifier, its matter, and what it holds. */
+interface Sectioned {
+  readonly id: string;
+  readonly matter: OutlineMatter;
+  readonly children: readonly Sectioned[];
+}
+
+/**
+ * **The sections the writer makes of an outline** (Word 3, ruling R2): each run of top-level nodes of
+ * one matter, in order, by its matter, and the section each node stands in, by its identifier - where
+ * Word counts its footnotes from 1 again (`footnoteProperties`).
+ */
+export function footnoteSections(nodes: readonly Sectioned[]): {
+  readonly matters: readonly OutlineMatter[];
+  readonly sectionOf: ReadonlyMap<string, number>;
+} {
+  const matters: OutlineMatter[] = [];
+  const sectionOf = new Map<string, number>();
+  for (const top of nodes) {
+    if (matters[matters.length - 1] !== top.matter) matters.push(top.matter);
+    walkOutline([top], (node) => sectionOf.set(node.id, matters.length - 1));
+  }
+  return { matters, sectionOf };
+}
+
+/**
+ * **A matter's section's footnote numbering** (Word 3, ruling R2; measured, M5 and for this slice), as
+ * `w:sectPr` holds it: the format of the matter's footnote rule's own counter, its last, as Word's
+ * number format, and Word's count started again at the section (`eachSect`), since the scheme counts
+ * each matter's footnotes from 1 on counters of its own. Never `continuous`: measured in Word 16, a
+ * continuous section numbers a note by its place among every note in the document, not on from the
+ * section before - the body entered again after an appendix printed 5 where the scheme counts 3 - so
+ * it is the scheme's count only where it is the restarting section's too. `w:numStart` is Word's 1.
+ */
+export function footnoteProperties(scheme: NumberingScheme, matter: OutlineMatter): string {
+  const rule = scheme.sequences['footnote']![matter];
+  return (
+    '<w:footnotePr>' +
+    `<w:numFmt w:val="${WORD_FORMATS[rule.format[rule.format.length - 1]!]}"/>` +
+    '<w:numRestart w:val="eachSect"/>' +
+    '</w:footnotePr>'
+  );
+}
+
+/**
+ * **What Word's footnote count computes, followed through the document** (Word 3, ruling R2; measured,
+ * M5), held to what the scheme wrote. Word numbers real footnotes itself, in document order - a
+ * table's cells among the text - one count through each of the writer's sections, started again at
+ * each (`footnoteProperties`), in the section's number format and with nothing beside the number. So a
+ * footnote is refused, `footnote:<matter>:<why>`, once per matter and naming the first footnote that
+ * meets it, where:
+ *
+ * - `label`: its rule writes a word before the number, which Word's mark cannot carry;
+ * - `prefix`: the scheme writes its chapter's number before its own, which Word's cannot either;
+ * - `restart`: Word's count is not the scheme's - a rule restarting at a chapter, where Word's
+ *   section is the whole run of the matter, or a matter entered again whose count carries on;
+ * - `letters` and `roman`: its counter, as a heading's is judged.
+ *
+ * A footnote the scheme cannot number yet (`value` null) is `assemble`'s to refuse, and is not asked.
+ */
+function footnotesNotInWord(
+  scheme: NumberingScheme,
+  table: NumberingTable,
+  outline: NumberableOutline,
+): WordNumberingProblem[] {
+  const { sectionOf } = footnoteSections(outline.nodes);
+  const problems: WordNumberingProblem[] = [];
+  const said = new Set<string>();
+  const say = (entry: NumberingEntry, why: string) => {
+    const detail = `footnote:${entry.matter}:${why}`;
+    if (said.has(detail)) return;
+    said.add(detail);
+    problems.push({ node: entry.node, block: entry.block, detail });
+  };
+  let section = -1;
+  let count = 0;
+  for (const entry of table.entries) {
+    if (entry.sequence !== 'footnote' || entry.value === null) continue;
+    const at = sectionOf.get(entry.node) ?? section;
+    if (at !== section) count = 0;
+    section = at;
+    count += 1;
+    const rule = scheme.sequences['footnote']![entry.matter];
+    const format = rule.format[rule.format.length - 1]!;
+    if (rule.label !== '') say(entry, 'label');
+    if (entry.number !== formatCounter(entry.value, format)) say(entry, 'prefix');
+    if (count !== entry.value) say(entry, 'restart');
+    if (lettersPart(format, entry.value)) say(entry, 'letters');
+    if (romanPart(format, entry.value)) say(entry, 'roman');
+  }
+  return problems;
 }
 
 /** Whether a counter in letters is one Word writes otherwise: past `z`, where it doubles the letter. */

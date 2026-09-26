@@ -18,7 +18,12 @@
 # every image in a line, with its description, its decorative flag, its size and whether it stands in
 # a floating text box; and every floating shape - a floated figure's text box - with what it holds,
 # where it is placed from and whether it may overlap another. A text box's paragraphs are read with
-# the text's, straight after the paragraph it is anchored in.
+# the text's, straight after the paragraph it is anchored in. And what Word 3 writes (ruling R6), after
+# the update: every cross-reference's field in the text, the notes and a text box, with its result, the
+# page it stands on and the page its bookmark begins on; every bookmark as opened, and how many a person
+# sees who does not ask for hidden ones; and every footnote, with the pages its mark and its note begin
+# on, and - on the reopened copy, which is never saved - its number, as Word's own NOTEREF to its mark
+# reads it, since COM gives a mark's text only as a code point 2.
 #
 # Tracks the WINWORD process it started and stops only that one, if Quit leaves it running. Where
 # starting Word started no process of its own, it attached to one somebody else runs, and it closes
@@ -28,6 +33,8 @@ $ErrorActionPreference = 'Stop'
 
 # Word's enumerations, by the values this uses.
 $wdActiveEndSectionNumber = 2
+$wdFootnotesStory = 2
+$wdCollapseStart = 1
 $wdActiveEndPageNumber = 3
 $wdVerticalPositionRelativeToPage = 6
 $wdStatisticPages = 2
@@ -37,8 +44,10 @@ $wdDoNotSaveChanges = 0
 
 function Clean([string]$s) {
   # A paragraph mark, a cell's end, a line break and a page break, each read as a space; tabs are kept.
-  # An image in a line is read as Word gives it, a slash.
+  # An image in a line is read as Word gives it, a slash; a footnote's mark, which Word gives as a code
+  # point 2, as nothing.
   if ($null -eq $s) { return '' }
+  $s = $s.Replace([string][char]2, '')
   return (($s -replace "[\r\a\x0b\x0c]", ' ').Trim())
 }
 
@@ -168,11 +177,69 @@ function ReadContents($doc) {
   return , $list
 }
 
+function ReadReferences($doc) {
+  # A cross-reference's field is one naming a bookmark the writer made, `_Ref` and its digits: never
+  # the contents' or a list's own PAGEREF, whose bookmarks Word names `_Toc`.
+  $stories = @([pscustomobject]@{ story = 'text'; fields = $doc.Fields })
+  if ($doc.Footnotes.Count -gt 0) {
+    $stories += [pscustomobject]@{ story = 'footnotes'; fields = $doc.StoryRanges.Item($wdFootnotesStory).Fields }
+  }
+  foreach ($shape in $doc.Shapes) {
+    if ($shape.TextFrame.HasText) { $stories += [pscustomobject]@{ story = 'box'; fields = $shape.TextFrame.TextRange.Fields } }
+  }
+  $list = @()
+  foreach ($each in $stories) {
+    foreach ($f in $each.fields) {
+      $code = Clean $f.Code.Text
+      if ($code -notmatch '(_Ref[0-9]+)') { continue }
+      $name = $Matches[1]
+      $r = $f.Result
+      $list += [ordered]@{
+        story = $each.story; code = $code; result = (Clean $r.Text); page = $r.Information($wdActiveEndPageNumber)
+        target = $(if ($doc.Bookmarks.Exists($name)) { $doc.Bookmarks.Item($name).Range.Information($wdActiveEndPageNumber) } else { $null })
+        style = [string]$r.Paragraphs.Item(1).Style.NameLocal
+      }
+    }
+  }
+  return , $list
+}
+
+function ReadNotes($doc) {
+  $list = @()
+  foreach ($fn in $doc.Footnotes) {
+    $mark = $fn.Reference
+    $start = $fn.Range.Duplicate
+    $start.Collapse($wdCollapseStart)
+    $list += [ordered]@{
+      section = $mark.Information($wdActiveEndSectionNumber); mark = $mark.Information($wdActiveEndPageNumber)
+      note = $start.Information($wdActiveEndPageNumber); text = (Clean $fn.Range.Text)
+    }
+  }
+  return , $list
+}
+
+function NumberNotes($doc) {
+  # Each note's number as Word prints it at its mark: a NOTEREF to a bookmark around the mark, added at
+  # the document's end - only ever to a copy that is closed unsaved.
+  $numbers = @()
+  $count = $doc.Footnotes.Count
+  for ($k = 1; $k -le $count; $k++) { [void]$doc.Bookmarks.Add("_Check$k", $doc.Footnotes.Item($k).Reference) }
+  for ($k = 1; $k -le $count; $k++) {
+    $at = $doc.Range($doc.Content.End - 1, $doc.Content.End - 1)
+    $f = $doc.Fields.Add($at, -1, "NOTEREF _Check$k", $false)
+    [void]$f.Update()
+    $numbers += (Clean $f.Result.Text)
+  }
+  return , $numbers
+}
+
 function Update($doc) {
-  # What a person gets by accepting the prompt to update fields on opening, or by pressing F9.
+  # What a person gets by accepting the prompt to update fields on opening, or by pressing F9: in the
+  # notes as well as the text.
   foreach ($t in $doc.TablesOfContents) { $t.Update() }
   foreach ($t in $doc.TablesOfFigures) { $t.Update() }
   [void]$doc.Fields.Update()
+  if ($doc.Footnotes.Count -gt 0) { [void]$doc.StoryRanges.Item($wdFootnotesStory).Fields.Update() }
   foreach ($s in $doc.Sections) {
     foreach ($i in 1..3) {
       [void]$s.Headers.Item($i).Range.Fields.Update()
@@ -201,6 +268,12 @@ try {
       $out.version = [string]$word.Version
       $out.caption = [string]$doc.Windows.Item(1).Caption
       $doc.Repaginate()
+      $doc.Bookmarks.ShowHidden = $false
+      $out.visibleBookmarks = $doc.Bookmarks.Count
+      $doc.Bookmarks.ShowHidden = $true
+      $marks = @()
+      foreach ($b in $doc.Bookmarks) { $marks += [string]$b.Name }
+      $out.bookmarks = $marks
       $out.sectionsBefore = (ReadSections $doc)
       $out.contentsBefore = (ReadContents $doc)
       Update $doc
@@ -213,6 +286,8 @@ try {
       $out.tables = (ReadTables $doc)
       $out.images = (ReadImages $doc)
       $out.floats = (ReadFloats $doc)
+      $out.references = (ReadReferences $doc)
+      $out.notes = (ReadNotes $doc)
       # Each path cast to a plain string: Join-Path's answer reaches COM wrapped, and Word then waits
       # forever inside ExportAsFixedFormat or SaveAs2 rather than failing.
       $pdf = [string](Join-Path $Folder "$name.pdf")
@@ -227,6 +302,7 @@ try {
       $out.saved = [ordered]@{
         path = $saved; embedTrueTypeFonts = [bool]$doc.EmbedTrueTypeFonts; paragraphs = (ReadParagraphs $doc)
       }
+      $out.saved.numbers = (NumberNotes $doc)
       $doc.Close([ref]$wdDoNotSaveChanges)
       $doc = $null
     } catch {

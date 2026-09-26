@@ -13,8 +13,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > Footnotes, a table's note, cross-references and equations are written and published, and every
 > publication is set from the environment's theme and records it, its tables and images from the
 > theme's table and image styles. A document can be published to Word as well, or instead, as a
-> Word document in the theme's styles with its headings, figures and tables numbered by Word; its
-> footnotes, cross-references and equations do not reach Word yet.
+> Word document in the theme's styles with its headings, figures, tables and footnotes numbered by
+> Word and its cross-references fields Word updates; its equations do not reach Word yet.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -498,14 +498,32 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   said on the publication's page, table by table: a header column, which Word cannot mark as one;
   header rows Word repeats though the table's style does not; and a continuation label, which Word
   cannot set. A term stands a little further from its definition in Word than in the PDF, and an
-  item that opens with a nested list or preformatted text a line lower. **Footnotes,
-  cross-references and equations do not reach Word yet**: a document holding one is refused for
-  Word, naming each one and where it stands, and can still be published as a PDF alone. So can a
-  layout whose numbering Word would count differently - letters past _z_, say - and a list nested
-  past the ninth level or numbered in letters past _aa_, which Word would number otherwise; the
-  default layout's numbering is inside what Word counts. The Word documents the product's tests make
-  are checked against the file format's own rules, and opened in Word itself before any change to
-  how Word documents are written lands.
+  item that opens with a nested list or preformatted text a line lower.
+
+  **Footnotes and cross-references reach Word.** A footnote is Word's own, its mark in the text and
+  its note at the foot of the page Word sets the mark on, numbered by Word from 1 again in the front
+  matter, the body and the appendices, as the PDF numbers them - in a paragraph, a table's cell or a
+  table's header row, with its paragraphs, marks, links and language. A recipient who adds a
+  footnote in Word sees the rest renumber. A cross-reference is a field Word updates, filled in with
+  what the PDF prints: a section's number or title or both, a figure's or a table's label or caption,
+  a footnote's number, _above_ or _below_, or a page, which Word fills in when the document opens,
+  from its own pages. In a paragraph's text or a note it is a link to what it names, as in the PDF.
+  In a passage in another language Word prints its own words for above and below - _oben_ and
+  _unten_ in German, say - where the PDF prints the layout's. A footnote's mark is a touch smaller and
+  lower in Word than in the PDF, and its notes a touch further apart. Three kinds of reference Word
+  would print otherwise than the PDF are refused for Word, naming the reference, and can still be
+  published as a PDF alone: _above_ or _below_ between a footnote and the text outside it, or in the
+  caption of a figure whose image style floats it; a caption's own words named inside that caption; and a caption's words named where they themselves
+  hold a reference that prints anything but a number. So is a layout whose footnote numbering Word would count otherwise -
+  a word before the number, a chapter's number before it, or a count that starts again part-way
+  through a part - and a part entered a second time after its first run held notes. **Equations do
+  not reach Word yet**: a document holding one, or a reference to one, is refused for Word, naming
+  each one and where it stands, and can still be published as a PDF alone. So can a layout whose
+  numbering Word would count differently - letters past _z_, say - and a list nested past the ninth
+  level or numbered in letters past _aa_, which Word would number otherwise; the default layout's
+  numbering is inside what Word counts. The Word documents the product's tests make are checked
+  against the file format's own rules, and opened in Word itself before any change to how Word
+  documents are written lands.
 
   **A document is published only under a layout written in its own language.** Where the two do not
   agree the page says so, naming both, before anything is queued; an English layout publishes an
@@ -642,7 +660,7 @@ Named explicitly so nobody has to read the source to find out:
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
   published PDF of a document's paragraphs, lists, quotations, preformatted text, tables, figures,
   images in a line of text, footnotes, cross-references and equations, and a published Word document
-  of all of that but its footnotes, cross-references and equations. The one sample document is a
+  of all of that but its equations. The one sample document is a
   fixed template with no content of yours in it.
 - No way to make, change or choose between component types: every environment has one, named Topic, and
   nothing yet lets an administrator add another or change which is the default.
@@ -652,9 +670,9 @@ Named explicitly so nobody has to read the source to find out:
   make a figure or a table unnumbered: every one takes a number.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
   quotations, preformatted text, tables and their notes, figures, images in a line of text,
-  footnotes, cross-references and equations, and a Word document of all of that but its footnotes,
-  cross-references and equations: no definition-list structure of PDF's own, no list of equations
-  under the one layout, no footnote, cross-reference or equation in Word yet, no preview, and no way
+  footnotes, cross-references and equations, and a Word document of all of that but its equations:
+  no definition-list structure of PDF's own, no list of equations under the one layout, no equation
+  in Word yet, no preview, and no way
   to approve a
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,

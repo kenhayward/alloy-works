@@ -45,8 +45,9 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 > recorded with its producer and a report ([Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md),
 > [word-output.md](word-output.md#what-was-built)), and the second carried lists, quotations,
 > preformatted text, tables, figures and images into Word, with the lists of figures and of tables
-> ([Word 2](../plans/2026-09-25-word-02-lists-tables-and-figures.md)); a document holding a footnote,
-> a cross-reference or an equation is refused for Word by name. The defined
+> ([Word 2](../plans/2026-09-25-word-02-lists-tables-and-figures.md)), and the third carried footnotes
+> and cross-references ([Word 3](../plans/2026-09-26-word-03-footnotes-and-cross-references.md)); a
+> document holding an equation is refused for Word by name. The defined
 > term, condition, suggestion and comment marks, a citation, a variable and a binding,
 > veraPDF on every publication, preview and the rest of Word are later slices'
 > ([Build order](#build-order)); a block equation wider than its
@@ -1234,33 +1235,43 @@ and a preview worker holds a handful. The slice sizes them and evicts the least 
 
 The Word writer ([word-output.md](word-output.md)) reads the same `PublishedDocument` and owns
 everything about its parts. This design gives it four things, each built by
-[Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md), and a fifth built by
-[Word 2](../plans/2026-09-25-word-02-lists-tables-and-figures.md):
+[Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md), a fifth built by
+[Word 2](../plans/2026-09-25-word-02-lists-tables-and-figures.md), and a sixth built by
+[Word 3](../plans/2026-09-26-word-03-footnotes-and-cross-references.md):
 
 - **One `assemble`, told the formats.** A request names `pdf`, `docx` or both, where the layout has a
   page for each; the job calls `assemble` once with them, which says the PDF engine's own refusals only
   where a PDF is asked for, refuses what the writer does not write yet by name (`word_not_yet`) and a
-  heading number Word would compute differently (`numbering_not_in_word`), and returns what the writer
-  needs beside the document - the layout's Word page, the resolved theme and the scheme - so the
-  published document is still `publishing/13` and a PDF made beside Word is byte for byte the PDF
-  made alone.
+  heading's, a caption's or a footnote's number Word would compute differently
+  (`numbering_not_in_word`), and returns what the writer needs beside the document - the layout's Word
+  page, the resolved theme and the scheme - so the published document is still `publishing/13` and a
+  PDF made beside Word is byte for byte the PDF made alone.
 - **The job makes every output asked for or none.** It compiles the PDF with Typst and writes the
   `.docx` with the writer, reading the pinned face files by hash for it to embed, keeps each in the
   store by its hash, and records all of them in one transaction.
 - **One `publication_output` row per format**, each saying what made it - `typst` and the template's
-  version, or `word` and the writer's, `word/1` as Word 1 built it and `word/2` since Word 2 - with
+  version, or `word` and the writer's, `word/1` as Word 1 built it, `word/2` since Word 2 and
+  `word/3` since Word 3 - with
   its own report, which is empty for a PDF and for Word says which faces Word set in another face
   (STY-052), that no PDF stands beside it where none does (PUB-074), that a page number cited from the
   publication is the PDF's (PUB-065), and, since Word 2, which tables lost their header column, had
   their header repeated where the style does not, or lost their continuation label (TAB-049).
 - **A request without `pdf` is refused where anything the document holds cites a page**,
   `page_reference_without_pdf`, at the door (PUB-074), because the PDF is the paged record (PUB-065).
-  Word 1 refuses every reference for Word by name anyway; the door's refusal is the one an author
-  meets first, and it says to add the PDF.
+  Since Word 3 a page reference reaches Word as a `PAGEREF` field Word fills in, never the PDF's
+  number, so the refusal is what keeps a page a reader cites the PDF's.
 - **Images for Word are sized against its page and read once.** `assemble` resolves each figure's and
   inline image's size against the layout's Word page by the PDF's own functions, and the job reads
   the images once, held to their hashes, and hands the same bytes to Typst and to the Word writer,
   which embeds each once.
+- **Footnotes and cross-references reach Word as Word's own.** `assemble` hands the writer each
+  reference's form, and each section title's references, beside the published document rather than in
+  it, which is unchanged; the writer makes each footnote a Word footnote Word numbers and each
+  reference a field Word updates at a hidden bookmark on its target. Where Word's field would print
+  otherwise than the PDF - above or below across a footnote's boundary, or a caption's words named in
+  a way Word reads differently - `assemble` refuses the Word output by name,
+  `cross_reference_not_in_word`, and the PDF is unaffected. A document holding an equation, a
+  reference to one or a list of equations is still refused for Word, `word_not_yet`, until Word 4.
 
 ## Stores
 
