@@ -17122,27 +17122,33 @@
       "kind": "title"
     },
     {
+      "id": "CNT-045",
+      "file": "apps/worker/src/word.test.ts",
+      "line": 1311,
+      "kind": "title"
+    },
+    {
       "id": "PUB-035",
       "file": "apps/worker/src/word.test.ts",
-      "line": 880,
+      "line": 1046,
       "kind": "title"
     },
     {
       "id": "PUB-066",
       "file": "apps/worker/src/word.test.ts",
-      "line": 774,
+      "line": 940,
       "kind": "title"
     },
     {
       "id": "TAB-039",
       "file": "apps/worker/src/word.test.ts",
-      "line": 813,
+      "line": 979,
       "kind": "title"
     },
     {
       "id": "TAB-049",
       "file": "apps/worker/src/word.test.ts",
-      "line": 813,
+      "line": 979,
       "kind": "title"
     },
     {
@@ -18318,49 +18324,55 @@
     {
       "id": "PUB-067",
       "file": "packages/domain/src/word/omml.test.ts",
-      "line": 700,
+      "line": 725,
       "kind": "title"
     },
     {
       "id": "CNT-084",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1099,
+      "line": 1101,
       "kind": "title"
     },
     {
       "id": "CNT-128",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1081,
+      "line": 1083,
       "kind": "title"
     },
     {
       "id": "PUB-024",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 612,
+      "line": 614,
       "kind": "title"
     },
     {
       "id": "PUB-025",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2724,
+      "line": 2726,
       "kind": "title"
     },
     {
       "id": "PUB-026",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3136,
+      "line": 3138,
       "kind": "title"
     },
     {
       "id": "PUB-034",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1099,
+      "line": 1101,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-067",
+      "file": "packages/domain/src/word/write.test.ts",
+      "line": 3653,
       "kind": "title"
     },
     {
       "id": "STY-052",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1180,
+      "line": 1182,
       "kind": "title"
     },
     {

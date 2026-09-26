@@ -5,16 +5,21 @@ import {
   DEFAULT_CATALOGUES_BY_VERSION,
   DEFAULT_THEME,
   defaultLayout,
+  mathsTree,
+  omml,
   OUTLINE_SCHEMA_VERSION,
   parseContentDocument,
+  parseLayout,
   parseOutlineDocument,
   publishedImagePath,
   readTheme,
+  withAlternative,
   writeDocx,
   type AssembleInput,
   type ImageCatalogue,
   type Layout,
   type ContentDocument,
+  type MathsTree,
   type PublishedBlock,
   type PublishedInline,
   type PublishedNode,
@@ -569,7 +574,168 @@ const cited: AssembleInput & { readonly layout: Layout } = {
   ]),
 };
 
-describe("a publication in Word, written from the worker's own faces (Word 1 to Word 3)", () => {
+/**
+ * Stored MathML as the editor stores it, with its alternative: x plus a number of its own, so that each
+ * equation says words no other does and is found by them.
+ */
+const maths = (alternative: string, n: number) => {
+  const written = withAlternative(
+    `<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi><mo>+</mo><mn>${n}</mn></math>`,
+    alternative,
+  );
+  if (written === null) throw new Error(`Not storable: ${alternative}`);
+  return written;
+};
+/** Every place Word 4 sets an equation, by the words its equation says. */
+const SAYS = {
+  text: 'In running text',
+  item: 'In a list item',
+  term: 'In a term',
+  attribution: 'In an attribution',
+  tableCaption: 'In a table caption',
+  header: 'In a header row',
+  cell: 'In a cell',
+  alone: 'Alone in a cell',
+  note: 'In a table note',
+  figureCaption: 'In a figure caption',
+  footnote: 'In a footnote',
+  title: 'In a title',
+  unnumbered: 'Displayed',
+  numbered: 'Numbered',
+  listed: 'Numbered in a list',
+  quoted: 'Numbered in a quotation',
+  front: 'Numbered in the front',
+  appendix: 'Numbered in an appendix',
+} as const;
+const said = Object.keys(SAYS) as (keyof typeof SAYS)[];
+const eq = (key: keyof typeof SAYS) => ({
+  type: 'equation',
+  mathml: maths(SAYS[key], said.indexOf(key)),
+});
+const displayed = (name: string, key: keyof typeof SAYS, numbered = true) => ({
+  type: 'equation',
+  id: name,
+  mathml: maths(SAYS[key], said.indexOf(key)),
+  numbered,
+});
+
+/**
+ * What Word 4 writes: an equation in a line wherever the PDF sets one - running text, a list's item,
+ * a term, an attribution, a table's caption, header row, cell and note, a figure's caption, a footnote
+ * and a section's title - displayed with no number, and numbered at the top level, in a list's item,
+ * in a quotation, in front matter and in an appendix; references to a numbered one and to one with no
+ * number; and the list of equations after the contents.
+ */
+const EQUATED = component('Solutions', [
+  paragraph('q1', text('Running '), eq('text'), text(' text.')),
+  displayed('d1', 'unnumbered', false),
+  displayed('n1', 'numbered'),
+  list('ql', 'ordered', [
+    [paragraph('qi', text('Take '), eq('item'))],
+    [displayed('n2', 'listed')],
+  ]),
+  {
+    type: 'list',
+    id: 'qd',
+    kind: 'definition',
+    items: [{ term: [text('Term '), eq('term')], content: [paragraph('qt', text('Defined.'))] }],
+  },
+  {
+    type: 'blockquote',
+    id: 'qq',
+    content: [paragraph('qp', text('Quoted.')), displayed('n3', 'quoted')],
+    attribution: [text('Ada on '), eq('attribution')],
+  },
+  {
+    type: 'table',
+    id: 'qt1',
+    style: 'table',
+    caption: [text('Values of '), eq('tableCaption')],
+    headerRows: 1,
+    headerColumns: 0,
+    note: [text('Where '), eq('note')],
+    rows: [
+      {
+        cells: [
+          { content: [paragraph('qh', text('Head '), eq('header'))], colspan: 1, rowspan: 1 },
+        ],
+      },
+      {
+        cells: [{ content: [paragraph('qc', text('Cell '), eq('cell'))], colspan: 1, rowspan: 1 }],
+      },
+      { cells: [{ content: [paragraph('qa', eq('alone'))], colspan: 1, rowspan: 1 }] },
+    ],
+  },
+  figure('qf', RED, '', { caption: [text('Area '), eq('figureCaption')] }),
+  paragraph('q2', text('Noted'), footnote('qn', paragraph('qna', text('As '), eq('footnote')))),
+  paragraph(
+    'q3',
+    text('See '),
+    xref('qx0', toBlock('n1')),
+    text(' on '),
+    xref('qx1', toBlock('n1'), 'page'),
+    text(', '),
+    xref('qx2', toBlock('n1'), 'relative'),
+    text(', and the one '),
+    xref('qx3', toBlock('d1'), 'relative'),
+    text('.'),
+  ),
+]);
+
+/** A document of Word 4's equations, in every matter, under the default layout listing them too. */
+const equated: AssembleInput & { readonly layout: Layout } = {
+  ...input,
+  layout: parseLayout({
+    ...defaultLayout,
+    matter: {
+      ...defaultLayout.matter,
+      lists: [...defaultLayout.matter.lists, { sequence: 'equation', title: 'Equations' }],
+    },
+  }),
+  outline: parseOutlineDocument({
+    schemaVersion: OUTLINE_SCHEMA_VERSION,
+    title: 'The printer notes',
+    language: 'en-GB',
+    direction: 'ltr',
+    nodes: [
+      reference('preface', 1, { matter: 'front' }),
+      section('solving', 'Solving', [reference('equated', 11)]),
+      { ...section('rated', 'Rated'), title: [text('Rate '), eq('title')] },
+      section('annexe', 'Annexe', [reference('derived', 12)], { matter: 'appendix' }),
+    ],
+  }),
+  occurrences: new Map([
+    [
+      id('preface'),
+      component('Preface by Ada', [paragraph('p1', text('Before.')), displayed('f1', 'front')]),
+    ],
+    [id('equated'), EQUATED],
+    [id('derived'), component('Derived', [displayed('a1', 'appendix')])],
+  ]),
+};
+
+/**
+ * Every equation a published document sets, found wherever it stands: a block's tree displayed, and a
+ * run's in a line - in a block, a note, a caption or a title.
+ */
+function equationsOf(value: unknown): { tree: MathsTree; alternative: string; display: boolean }[] {
+  if (Array.isArray(value)) return value.flatMap(equationsOf);
+  if (value === null || typeof value !== 'object') return [];
+  if ('type' in value && value.type === 'equation' && 'tree' in value && 'alternative' in value) {
+    const { tree, alternative } = value as { tree: MathsTree; alternative: { text: string } };
+    return [{ tree, alternative: alternative.text, display: true }];
+  }
+  if ('equation' in value) {
+    const { tree, alternative } = value.equation as {
+      tree: MathsTree;
+      alternative: { text: string };
+    };
+    return [{ tree, alternative: alternative.text, display: false }];
+  }
+  return Object.values(value).flatMap(equationsOf);
+}
+
+describe("a publication in Word, written from the worker's own faces (Word 1 to Word 4)", () => {
   it('writes a document the Open XML SDK finds nothing wrong with', async () => {
     const assembled = assemble(input);
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
@@ -1104,4 +1270,89 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     expect(spoken.get('he-IL')).toEqual(new Set([SEFER, `${SHALOM} Ada ${SEFER} 2026.`]));
     expect(spoken.get('fr-FR')).toEqual(new Set(['la mesure']));
   });
+  it("writes an equation in every place the PDF sets one - in a line in text, a list's item, a term, an attribution, a table's caption, header row, cells and note, a figure's caption, a footnote and a section's title; displayed, numbered or not, in text, a list's item, a quotation, front matter and an appendix - which the Open XML SDK finds nothing wrong with (Word 4)", async () => {
+    const assembled = assemble(equated);
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const { bytes, report } = writeDocx({
+      document: assembled.document,
+      numbering: assembled.numbering,
+      word: assembled.word!,
+      formats: equated.formats,
+      faces,
+      images: IMAGES,
+    });
+
+    expect(await checkOoxml(bytes)).toEqual([]);
+    // The maths face named in Word's own, and said so (R5).
+    expect(report).toContainEqual({
+      kind: 'face_substituted',
+      family: 'STIX Two Math',
+      wordFamily: 'Cambria Math',
+    });
+    const parts = unzipSync(bytes);
+    const document = strFromU8(parts['word/document.xml']!);
+    const footnotes = strFromU8(parts['word/footnotes.xml']!);
+    // Every equation the document sets, and again where the contents and the lists of tables and of
+    // figures are prefilled with a title or a caption holding one; each displayed one displayed.
+    const published = equationsOf(assembled.document.nodes);
+    expect(published).toHaveLength(said.length);
+    expect(document.match(/<m:oMath>/g)).toHaveLength(said.length - 1 + 3);
+    expect(footnotes.match(/<m:oMath>/g)).toHaveLength(1);
+    expect(document.match(/<m:oMathPara>/g)).toHaveLength(
+      published.filter((each) => each.display).length,
+    );
+    // Each numbered one by Word's fields, and listed after the contents by them.
+    expect(document.match(/ SEQ Equation /g)).toHaveLength(5);
+    expect(document).toContain(
+      '<w:instrText xml:space="preserve"> TOC \\h \\z \\c &quot;Equation&quot; </w:instrText>',
+    );
+  });
+
+  it('CNT-045 sets every equation in the PDF and in Word from its one stored MathML, converted once to the maths tree both are set from: in the PDF a Formula saying its words, and in Word the OMML of that tree', async () => {
+    const assembled = assemble(equated);
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const published = equationsOf(assembled.document.nodes);
+    // The one representation: each published tree is the stored MathML's, as the maths tree reads it.
+    for (const key of said) {
+      const converted = mathsTree(maths(SAYS[key], said.indexOf(key)));
+      if (!converted.ok) throw new Error(`Not converted: ${key}`);
+      expect(published.find((each) => each.alternative === SAYS[key])?.tree, key).toEqual(
+        converted.tree,
+      );
+    }
+
+    // The PDF: every equation a Formula carrying its words, set from the tree the document holds.
+    const pdf = await typst.compile(
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[assembled.document.schema]].file,
+      JSON.stringify(assembled.document),
+      new Date('2026-09-26T00:00:00Z'),
+      ROOT_IMAGES,
+    );
+    const read = await readPdf(pdf);
+    for (const each of published) {
+      expect(read.formulas.map((formula) => formula.alt)).toContain(each.alternative);
+    }
+
+    // Word: every equation that tree's OMML, in a line or displayed as it stands.
+    const { bytes } = writeDocx({
+      document: assembled.document,
+      numbering: assembled.numbering,
+      word: assembled.word!,
+      formats: equated.formats,
+      faces,
+      images: IMAGES,
+    });
+    const parts = unzipSync(bytes);
+    const written =
+      strFromU8(parts['word/document.xml']!) + strFromU8(parts['word/footnotes.xml']!);
+    for (const each of published) {
+      const content = omml(each.tree, { display: each.display, size: 11, face: 'Cambria Math' });
+      expect(written, each.alternative).toContain(
+        each.display
+          ? `<m:oMathPara><m:oMath>${content}</m:oMath></m:oMathPara>`
+          : `<m:oMath>${content}</m:oMath>`,
+      );
+    }
+    expect(written).not.toContain('<math');
+  }, 120_000);
 });

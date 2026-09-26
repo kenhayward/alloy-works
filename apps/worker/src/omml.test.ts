@@ -60,7 +60,9 @@ describe("the maths tree as OMML, in Word's schema (Word 4, ruling R3)", () => {
     const converted = mathsTree(EVERY_KIND_MATHML);
     if (!converted.ok) throw new Error(`The fixture is refused: ${converted.reason}`);
 
-    const bytes = equationDocx((display) => omml(converted.tree, { display, size: 11 }));
+    const bytes = equationDocx((display) =>
+      omml(converted.tree, { display, size: 11, face: 'Cambria Math' }),
+    );
 
     expect(await checkOoxml(bytes)).toEqual([]);
   });

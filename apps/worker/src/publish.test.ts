@@ -1020,11 +1020,8 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(await reportOf(both)).not.toContainEqual({ kind: 'no_page_cited_output' });
   }, 120_000);
 
-  it('lets an equation through to the Word writer, which stops the job rather than write Word without it until Word 4 writes one, and publishes it as a PDF alone', async () => {
-    const kept = new Map<string, string>();
-    // Word 4's first task takes an equation off `word_not_yet` (ruling R1); its converter and writer
-    // are its second and third, and until then the writer refuses a document holding one, whole.
-    const noted = (trx: TenantTransaction) =>
+  it("publishes an equation to the PDF and to Word, the Word document's record naming the maths face Word sets it in (Word 4, R5)", async () => {
+    const holding = (trx: TenantTransaction) =>
       component(
         trx,
         general,
@@ -1046,23 +1043,14 @@ describe('publishing a document, from the request to the stored PDF', () => {
           },
         ],
       ).then((holder) => [reference(holder)]);
-    const before = await publicationCount();
-    const both = await requested(noted, ['pdf', 'docx']);
-    for (const outcome of ['retry', 'retry', 'failed']) {
-      expect(await work({ handlers: noting(kept), queue: eager() })).toBe(outcome);
-    }
-    const row = await requestRow(both);
-    expect(row.state).toBe('failed');
-    // Not refused by name: the writer's refusal is the product's, and says nothing of the document.
-    expect(row.failures).toEqual([
-      { stage: 'engine', code: 'engine_failed', node: null, block: null, detail: null },
-    ]);
-    expect(await outputsOf(both)).toEqual([]);
-    expect(await publicationCount()).toBe(before);
-
-    const pdf = await requested(noted);
+    const both = await requested(holding, ['pdf', 'docx']);
     expect(await work()).toBe('done');
-    expect((await outputsOf(pdf)).map((each) => each.format)).toEqual(['pdf']);
+    const outputs = await outputsOf(both);
+    expect(outputs.map((each) => each.format)).toEqual(['pdf', 'docx']);
+    expect(outputs.find((each) => each.format === 'docx')!.report).toEqual([
+      { kind: 'face_substituted', family: 'STIX Two Math', wordFamily: 'Cambria Math' },
+      { kind: 'pages_cite_the_pdf' },
+    ]);
   }, 180_000);
 
   it('publishes a figure to Word alone under the default layout: its image read from the store, held to its hash, written into the document once, described, and listed after the contents', async () => {

@@ -24,6 +24,8 @@ import type {
   PublishedBlock,
   PublishedCell,
   PublishedDocument,
+  PublishedEquation,
+  PublishedEquationBlock,
   PublishedFigure,
   PublishedGeneratedList,
   PublishedInline,
@@ -78,6 +80,7 @@ import {
   WORD_LEVELS,
   type CaptionField,
 } from './numbering.js';
+import { omml } from './omml.js';
 import { panelsApart } from './panels.js';
 import { spacingOverrides, type SpacingOverride } from './spacing.js';
 
@@ -100,8 +103,10 @@ import { spacingOverrides, type SpacingOverride } from './spacing.js';
  * drawn from its own image's bytes at the size `assemble` gave it against the Word page (R3, R8).
  * Word 3 writes footnotes as Word's own, numbered by Word (ruling R2), and every cross-reference as a
  * field Word updates, at a hidden bookmark on its target named Word's way (rulings R3 and R4).
- * Word 4 writes equations; until its converter and writer do (tasks 2 and 3), a document holding one
- * throws, whole, where `assemble` since publishes it for Word.
+ * Word 4 writes equations as Word's own (rulings R4 and R5): in a line an `m:oMath` where its run
+ * stands, displayed an `m:oMathPara` in a paragraph of its own, and numbered a borderless row of two
+ * cells, the equation and its label, numbered by Word's fields - each the converter's OMML of the maths
+ * tree the PDF sets (`omml`).
  */
 
 /**
@@ -153,7 +158,7 @@ const WPS_NS = 'http://schemas.microsoft.com/office/word/2010/wordprocessingShap
 /** The document part's: its text's, and its drawings' (Word 2, ruling R8). */
 const DOCUMENT_NAMESPACES =
   `${NAMESPACES} xmlns:wp="${WP_NS}" xmlns:a="${A_NS}" xmlns:pic="${PIC_NS}"` +
-  ` xmlns:wps="${WPS_NS}"`;
+  ` xmlns:wps="${WPS_NS}" xmlns:m="${M_NS}"`;
 
 /** English Metric Units, which a drawing states its extent in, to the point. */
 const EMU_PER_POINT = 12_700;
@@ -179,6 +184,7 @@ const BACKSLASH = String.fromCharCode(92);
 const TAB = String.fromCharCode(9);
 const LINE_FEED = String.fromCharCode(10);
 const RIGHT_TO_LEFT_EMBEDDING = String.fromCharCode(0x202b);
+const ZERO_WIDTH_SPACE = String.fromCharCode(0x200b);
 const POP_DIRECTIONAL_FORMATTING = String.fromCharCode(0x202c);
 
 /**
@@ -321,6 +327,12 @@ interface WordTable {
    * no paragraph of its own can.
    */
   wanted?: { before?: number; after?: number };
+  /**
+   * The paragraphs the space around it is stated on, where it is a numbered equation's row (Word 4):
+   * each of its two cells' alike, so that the label stays on the middle of the equation, and nothing
+   * on the paragraphs either side, whose own spaces add to it as they add to a paragraph's.
+   */
+  readonly spaced?: readonly Paragraph[];
 }
 
 /** What a body, a section and a block are made of: paragraphs, and tables. */
@@ -520,29 +532,6 @@ const RIGHT_TO_LEFT =
 /** Whether words hold nothing written right to left: a number, a page, or a left-to-right language's. */
 const ltr = (words: string | null): boolean => !RIGHT_TO_LEFT.test(words ?? '');
 
-/** What the writer says of an equation it meets before Word 4 writes one. */
-const EQUATIONS_NOT_YET = 'The Word writer does not write an equation yet: Word 4 writes them';
-
-/**
- * Whether the document holds an equation anywhere the writer would meet one - a block, a run of any
- * block's, a section's title, as published or as Word's - or lists them after the contents. Searched
- * through every value, rather than by the places equations stand today, so that a place added later
- * is not missed.
- */
-function holdsEquation(document: PublishedDocument, word: WordInput): boolean {
-  const holds = (value: unknown): boolean => {
-    if (Array.isArray(value)) return value.some(holds);
-    if (value === null || typeof value !== 'object') return false;
-    if ('equation' in value || ('type' in value && value.type === 'equation')) return true;
-    return Object.values(value).some(holds);
-  };
-  return (
-    holds(document.nodes) ||
-    document.front.lists.some((list) => list.sequence === 'equation') ||
-    [...word.titles.values()].some(holds)
-  );
-}
-
 /** Where a number, a page or a relative reference finds a target: a caption's label, or its place. */
 function placeOf(target: Bookmarked): Bookmark {
   return target.kind === 'caption' ? target.place : target.at;
@@ -550,9 +539,6 @@ function placeOf(target: Bookmarked): Bookmark {
 
 export function writeDocx(input: WordWriting): WrittenDocx {
   const { document, word } = input;
-  // Word 4's first task lets equations through `assemble` for Word before its converter and its writer
-  // can write one (tasks 2 and 3): refused here, whole, rather than written without it.
-  if (holdsEquation(document, word)) throw new Error(EQUATIONS_NOT_YET);
   const theme = word.theme;
   const format = word.format;
   const writer = new Writer(document, theme, input.faces, {
@@ -696,6 +682,10 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   // The space the PDF puts below a table that ends in its cells, on the paragraph after it, which Word
   // spaces from the table by its own space before alone (Word 2, ruling R7).
   inOrder.forEach((item, index) => {
+    if (isTable(item) && item.spaced !== undefined) {
+      for (const paragraph of item.spaced) paragraph.wanted = { ...item.wanted };
+      return;
+    }
     const next = inOrder[index + 1];
     const after = isTable(item) ? item.wanted?.after : undefined;
     if (after === undefined || next === undefined || isTable(next)) return;
@@ -752,6 +742,17 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     });
   };
   for (const run of paragraphRuns(inOrder)) settle(run);
+  // A numbered equation's two cells' paragraphs are neighbours to Word, of one style: where it asks for
+  // contextual spacing, Word dropped the space after the equation's that faces the label's, and set
+  // the label a line above the equation (measured). Each cell is a block of its own, so neither drops
+  // any.
+  for (const item of inOrder) {
+    if (!isTable(item) || item.spaced === undefined) continue;
+    for (const paragraph of item.spaced) {
+      if (!writer.properties(paragraph.theme).contextualSpacing) continue;
+      paragraph.spacing = { ...paragraph.spacing, contextual: false };
+    }
+  }
   // Two notes stand apart as two blocks of the footnote place's style do, two containers, whose
   // spaces add whether or not the style asks for contextual spacing (template 13's `apart`, the gap
   // between its footnote entries); a note's own paragraphs as its flow spaced them. The footnotes part
@@ -955,7 +956,8 @@ class Writer {
   private readonly captioned: {
     sequence: string;
     label: string;
-    words: string;
+    /** What its entry shows after its label, as runs (`prefill`). */
+    prefill: string;
     passage: Passage;
     floated: boolean;
   }[] = [];
@@ -1101,10 +1103,12 @@ class Writer {
         continue;
       }
       const each = this.block(block, place, passage);
-      // A table begins with its caption: a block's top is always a paragraph.
-      const top = each.body[0] as Paragraph | undefined;
+      // A table begins with its caption, so a block's top is a paragraph, or a numbered equation's row,
+      // whose first cell holds what waits for it.
+      const top = each.body[0];
       if (top === undefined) continue;
-      top.content = pending + top.content;
+      const holder = isTable(top) ? top.rows[0]!.cells[0]!.paragraphs[0]! : top;
+      holder.content = pending + holder.content;
       pending = '';
       if (last !== null) {
         this.space(last.paragraph, last.style, top, each.top, !last.container && !each.container);
@@ -1138,13 +1142,7 @@ class Writer {
    * second's space before, or neither where both are one style asking for contextual spacing within
    * one flow (`between`).
    */
-  private space(
-    above: Body,
-    aboveStyle: string,
-    below: Paragraph,
-    belowStyle: string,
-    within: boolean,
-  ) {
+  private space(above: Body, aboveStyle: string, below: Body, belowStyle: string, within: boolean) {
     const a = this.properties(aboveStyle);
     const b = this.properties(belowStyle);
     const close = within && aboveStyle === belowStyle && a.contextualSpacing && b.contextualSpacing;
@@ -1153,7 +1151,7 @@ class Writer {
   }
 
   /** Two paragraphs the PDF sets a line apart and no more: two items, two lines of one block. */
-  private adjoin(above: Body, below: Paragraph) {
+  private adjoin(above: Body, below: Body) {
     above.wanted = { ...above.wanted, after: 0 };
     below.wanted = { ...below.wanted, before: 0 };
   }
@@ -1164,8 +1162,10 @@ class Writer {
     // a page and above or below are all a block is named for, and Word refuses a relative field
     // inside the bookmark it names, which one in the block's own first paragraph would be (measured
     // in Word 16: "Error! Not a valid bookmark self-reference"). A table and a figure are bookmarked
-    // around their caption's label and words, where the caption is written.
-    if (block.type !== 'table' && block.type !== 'figure' && block.type !== 'marker') {
+    // around their caption's label and words, where the caption is written, and a numbered equation
+    // around its label, where its row is written (Word 4).
+    const labelled = block.type === 'equation' && block.label !== null;
+    if (block.type !== 'table' && block.type !== 'figure' && block.type !== 'marker' && !labelled) {
       const at = this.bookmarkOf(block.anchor, 'block');
       const opening = written.body.find((each): each is Paragraph => !isTable(each));
       if (at !== null && opening !== undefined) {
@@ -1206,11 +1206,104 @@ class Writer {
         return this.table(block, place, passage);
       case 'figure':
         return this.figure(block, place, passage);
-      default:
-        // A block equation is Word 4's, which `writeDocx` refuses whole until then; a marker is
-        // written by the flow it stands in.
-        throw new Error(`The Word writer does not write a ${block.type} yet`);
+      case 'equation':
+        return this.equation(block, place);
+      case 'marker':
+        throw new Error('A marker is written by the flow it stands in');
     }
+  }
+
+  /**
+   * **A displayed equation** (Word 4, ruling R4), in the style of the text of the place it stands in,
+   * as template 13 sets its display block: an `m:oMathPara` in a paragraph of its own, standing where
+   * the place stands a paragraph, with no first line, which Word would otherwise take from the style.
+   * Numbered, it is a row of two cells (`numberedEquation`). Its paragraphs are not right to left in a
+   * right-to-left passage: OMML has no direction, and the PDF sets maths left to right.
+   */
+  private equation(block: PublishedEquationBlock, place: Place): WrittenBlock {
+    const style = this.theme.places[place.at];
+    const display = `<m:oMathPara><m:oMath>${this.maths(block, style, true)}</m:oMath></m:oMathPara>`;
+    if (block.label !== null)
+      return this.numberedEquation(block, block.label, style, display, place);
+    const indent = this.indent(style, place);
+    const own = this.ownIndent(style);
+    const standing: Indent = { left: indent.left, right: indent.right, firstLine: 0 };
+    const paragraph = this.paragraph(
+      style,
+      display,
+      standing.left === own.left && standing.right === own.right && own.firstLine === 0
+        ? {}
+        : { indent: standing },
+    );
+    return { body: [paragraph], top: style, bottom: style, container: false };
+  }
+
+  /**
+   * **A numbered displayed equation** (Word 4, ruling R4; WO-H, measured, M17): a borderless row of two
+   * cells as wide as its place leaves of the measure - the equation, displayed, in the first, and its
+   * label at the right of the second, numbered by Word's fields exactly as a caption's are
+   * (`captionLabel`) and set in the layout's words, left to right - which alone kept the number at the
+   * right when Word broke a long equation at its operators, inside its cell, and the number on the
+   * equation's middle line. The label's cell is as wide as the label and an em, the room template 13
+   * keeps for the number on each side of the equation, and the equation stands that far in from its
+   * cell's start, so it is centred on the measure as the PDF's is, and breaks where the PDF would set
+   * its number below it. A reference names it by a bookmark around its label (Word 3's `REF`). Word has
+   * no mark for a table that only lays things out: this one has no rule, no header row, no first column
+   * and no band, and a screen reader meets a table of one row and two cells, the equation, read by
+   * Word's own maths reading, and its label.
+   */
+  private numberedEquation(
+    block: PublishedEquationBlock,
+    label: string,
+    style: string,
+    display: string,
+    place: Place,
+  ): WrittenBlock {
+    const { size } = this.properties(style);
+    const room = twips(this.advancesOf(this.style(style)).width(label) * size + size);
+    const across = twips(textBlockWidth(this.numbers.format) - place.start - place.end);
+    const shown = this.paragraph(style, display, {
+      indent: { left: room, right: 0, firstLine: 0 },
+    });
+    const numbered = this.paragraph(
+      style,
+      bookmarked(
+        this.bookmarkOf(block.anchor, 'block'),
+        this.labelRuns({ id: block.id, label }, '', this.words, false) ?? '',
+      ),
+      { justify: 'right', indent: { left: 0, right: 0, firstLine: 0 } },
+    );
+    const cell = (width: number) =>
+      `<w:tcPr><w:tcW w:w="${width}" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>`;
+    const row: WordTable = {
+      kind: 'table',
+      properties:
+        '<w:tblPr>' +
+        `<w:tblW w:w="${across}" w:type="dxa"/>` +
+        (place.start > 0 ? `<w:tblInd w:w="${twips(place.start)}" w:type="dxa"/>` : '') +
+        '<w:tblBorders>' +
+        ['top', 'left', 'bottom', 'right', 'insideH', 'insideV']
+          .map((side) => `<w:${side} w:val="nil"/>`)
+          .join('') +
+        '</w:tblBorders>' +
+        '<w:tblLayout w:type="fixed"/>' +
+        '<w:tblCellMar><w:left w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar>' +
+        '<w:tblLook w:val="0600" w:firstRow="0" w:lastRow="0" w:firstColumn="0" w:lastColumn="0" ' +
+        'w:noHBand="1" w:noVBand="1"/>' +
+        '</w:tblPr>' +
+        `<w:tblGrid><w:gridCol w:w="${across - room}"/><w:gridCol w:w="${room}"/></w:tblGrid>`,
+      rows: [
+        {
+          properties: '<w:trPr><w:cantSplit/></w:trPr>',
+          cells: [
+            { properties: cell(across - room), paragraphs: [shown] },
+            { properties: cell(room), paragraphs: [numbered] },
+          ],
+        },
+      ],
+      spaced: [shown, numbered],
+    };
+    return { body: [row], top: style, bottom: style, container: false };
   }
 
   /**
@@ -1666,10 +1759,6 @@ class Writer {
     passage: Passage,
     floated = false,
   ): string {
-    const entry = this.numbers.numbering.entries.find(
-      (each) => each.node === this.at && each.block === captioned.id,
-    );
-    const field = entry === undefined ? null : captionField(this.numbers.scheme, entry);
     // Where a reference names it, its label and its words each inside a bookmark (Word 3, R3).
     const target = this.bookmarkOf(captioned.anchor, 'caption');
     // A caption holds no image: `assemble` refuses one (`image_in_caption`).
@@ -1677,32 +1766,70 @@ class Writer {
       target?.words,
       this.inlineRuns(captioned.caption, role, passage, { kind: 'caption', block: captioned.id }),
     );
+    const label = this.labelRuns(
+      captioned,
+      this.prefill(captioned.caption, passage),
+      passage,
+      floated,
+    );
+    return label === null
+      ? bookmarked(target?.place, '') + own
+      : bookmarked(target?.place, label) + this.runs(' ', passage) + own;
+  }
+
+  /**
+   * A caption's or a numbered equation's label: where the layout's numbering gives it a number Word
+   * computes, as Word's fields exactly as `captionField` says, prefilled with the numbering table's
+   * label, and listed for the list after the contents its sequence names, with `prefill`, what its
+   * entry shows after the label until Word rebuilds the list; otherwise the label as the PDF prints
+   * it, or null where it has none. `passage` is the caption's own words'.
+   */
+  private labelRuns(
+    captioned: { readonly id: string; readonly label: string | null },
+    prefill: string,
+    passage: Passage,
+    floated: boolean,
+  ): string | null {
+    const entry = this.numbers.numbering.entries.find(
+      (each) => each.node === this.at && each.block === captioned.id,
+    );
+    const field = entry === undefined ? null : captionField(this.numbers.scheme, entry);
     if (entry === undefined || field === null || entry.number === null || entry.value === null) {
       // No number of Word's to compute: the label as the PDF prints it, where there is one.
-      return (
-        (captioned.label === null
-          ? bookmarked(target?.place, '')
-          : bookmarked(target?.place, this.runs(captioned.label, this.words)) +
-            this.runs(' ', passage)) + own
-      );
+      return captioned.label === null ? null : this.runs(captioned.label, this.words);
     }
     const rule = this.numbers.scheme.sequences[entry.sequence]![entry.matter];
     const counter = formatCounter(entry.value, rule.format[rule.format.length - 1]!);
     this.captioned.push({
       sequence: field.sequence,
       label: captioned.label ?? '',
-      words: captionText({ ...captioned, label: null }),
+      prefill,
       passage,
       floated,
     });
-    return (
-      bookmarked(
-        target?.place,
-        captionLabel(field, entry.number, counter, (text) => this.runs(text, this.words)),
-      ) +
-      this.runs(' ', passage) +
-      own
-    );
+    return captionLabel(field, entry.number, counter, (text) => this.runs(text, this.words));
+  }
+
+  /**
+   * What a list's entry shows of a caption's words after its label until Word rebuilds the list: a
+   * space and its words as the PDF prints them - a reference as what it printed, a page as nothing,
+   * which only the page knows - each equation among them as Word's own, at the list entry's size.
+   */
+  private prefill(caption: readonly PublishedInline[], passage: Passage): string {
+    let xml = '';
+    let words = ' ';
+    for (const run of caption) {
+      if ('equation' in run) {
+        xml +=
+          this.runs(words, passage) + this.inlineEquation(run.equation, this.theme.roles.listEntry);
+        words = '';
+      } else if ('text' in run) {
+        words += run.text;
+      } else if ('reference' in run) {
+        words += run.reference.text ?? '';
+      }
+    }
+    return xml + this.runs(words, passage);
   }
 
   /**
@@ -1957,9 +2084,8 @@ class Writer {
     const paragraphs: Paragraph[] = [];
     for (const list of lists) {
       const name = sequenceName(list.sequence);
-      // The list of equations is Word 4's, which `writeDocx` refuses whole until then.
-      if (name === null)
-        throw new Error(`The Word writer does not write a list of ${list.sequence}`);
+      // `assemble` lists only a sequence it can publish: figures, tables and equations.
+      if (name === null) throw new Error(`No sequence of Word's lists ${list.sequence}`);
       paragraphs.push(
         this.paragraph(this.theme.roles.list, this.runs(list.title, this.words), {
           pageBreakBefore: opened || paragraphs.length > 0,
@@ -1976,10 +2102,7 @@ class Writer {
           this.paragraph(
             this.theme.roles.listEntry,
             (index === 0 ? fieldBegin(code) : '') +
-              (entry === null
-                ? ''
-                : this.runs(entry.label, this.words) +
-                  this.runs(` ${entry.words}`, entry.passage)) +
+              (entry === null ? '' : this.runs(entry.label, this.words) + entry.prefill) +
               (index === shown.length - 1 ? FIELD_END : ''),
             {},
             LIST_ENTRY_STYLE,
@@ -2037,20 +2160,40 @@ class Writer {
     }
   }
 
-  /** A title's words, each a run carrying no mark; an equation in one is Word 4's, refused whole. */
+  /** A title's words, each a run carrying no mark, and each equation among them in its place. */
   private titleRuns(
     title: readonly PublishedTitleRun[],
     styleId: string,
     passage: Passage,
   ): string {
     return title
-      .map((run) => {
-        if (!('text' in run)) {
-          throw new Error(EQUATIONS_NOT_YET);
-        }
-        return this.textRun(run.text, [], styleId, passage, null);
-      })
+      .map((run) =>
+        'equation' in run
+          ? this.inlineEquation(run.equation, styleId)
+          : this.textRun(run.text, [], styleId, passage, null),
+      )
       .join('');
+  }
+
+  /**
+   * **An equation in a line** (Word 4, ruling R4): an `m:oMath` where its run stands, the converter's
+   * OMML of its tree at the size of the style it stands in, its words in the maths face's Word face.
+   * It carries no language: Word reads its own maths aloud, and the alternative the PDF tags the
+   * formula with has nowhere to go (word-output.md, Accessibility). Its face is counted as used, so a
+   * document setting one reports the maths face set in Word's own (R5).
+   */
+  private inlineEquation(equation: PublishedEquation, styleId: string): string {
+    return `<m:oMath>${this.maths(equation, styleId, false)}</m:oMath>`;
+  }
+
+  /** An equation's content as the converter writes it, in a line or displayed, sized by a style. */
+  private maths(equation: PublishedEquation, styleId: string, display: boolean): string {
+    this.use(this.theme.maths, false, false);
+    return omml(equation.tree, {
+      display,
+      size: this.properties(styleId).size,
+      face: wordFamily(this.theme.maths),
+    });
   }
 
   /**
@@ -2098,10 +2241,15 @@ class Writer {
         xml += this.reference(run.reference, form, styleId, passage, strong);
         continue;
       }
-      if (!('text' in run)) {
-        // An equation is Word 4's, which `writeDocx` refuses whole until then.
-        throw new Error(EQUATIONS_NOT_YET);
+      if ('equation' in run) {
+        // No part of a link before it: an equation carries no mark.
+        if (linking !== null) xml += '</w:hyperlink>';
+        linking = null;
+        xml += this.inlineEquation(run.equation, styleId);
+        continue;
       }
+      // A title holds no image, and every other place's is sized for the Word page above.
+      if (!('text' in run)) throw new Error('An image where its size is not known');
       let href: string | null = null;
       let language: PublishedLanguage | null = null;
       for (const mark of run.marks) {
@@ -2520,11 +2668,20 @@ function leading(properties: ResolvedParagraphStyle['properties']): number {
 
 /**
  * A caption's words, its label's and its own, as the PDF prints them - a reference among them as what
- * it printed, and a page as nothing, which only the page knows: a table's title in Word.
+ * it printed, a page as nothing, which only the page knows, and an equation as its alternative, which
+ * is its words: a table's title in Word.
  */
 function captionText(captioned: Captioned): string {
   const own = captioned.caption
-    .map((run) => ('text' in run ? run.text : 'reference' in run ? (run.reference.text ?? '') : ''))
+    .map((run) =>
+      'text' in run
+        ? run.text
+        : 'reference' in run
+          ? (run.reference.text ?? '')
+          : 'equation' in run
+            ? run.equation.alternative.text
+            : '',
+    )
     .join('');
   return captioned.label === null ? own : `${captioned.label} ${own}`;
 }
@@ -2594,7 +2751,25 @@ function paragraphXml(paragraph: Paragraph, sectionProperties?: string): string 
       : `<w:r>${paragraph.box.open}` +
         paragraph.box.paragraphs.map((each) => paragraphXml(each)).join('') +
         `${paragraph.box.close}</w:r>`;
-  return `<w:p><w:pPr>${properties}</w:pPr>${box}${paragraph.content}</w:p>`;
+  return `<w:p><w:pPr>${properties}</w:pPr>${box}${inLine(paragraph.content)}</w:p>`;
+}
+
+/**
+ * A paragraph's content, where an equation in a line is all it prints, with a zero-width space before
+ * it: Word displays an `m:oMath` alone in its paragraph - a fraction at full size in a table's cell,
+ * where the PDF set it in the line - and a character beside it keeps it in the line (measured in Word
+ * 16; an empty run did not). A displayed equation is an `m:oMathPara`, and left as it is.
+ */
+function inLine(content: string): string {
+  if (!content.includes('<m:oMath>') || content.includes('<m:oMathPara>')) return content;
+  if (
+    /<w:(t|tab|br|drawing|footnoteReference)[ />]/.test(
+      content.replace(/<m:oMath>.*?<\/m:oMath>/gs, ''),
+    )
+  ) {
+    return content;
+  }
+  return `<w:r><w:t>${ZERO_WIDTH_SPACE}</w:t></w:r>${content}`;
 }
 
 /** A paragraph's indents as `w:ind`. */
@@ -2805,7 +2980,8 @@ function settingsXml(
     '<w:compat><w:doNotUseHTMLParagraphAutoSpacing/>' +
     '<w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/>' +
     '</w:compat>' +
-    `<m:mathPr><m:mathFont m:val="${escapeXml(wordFamily(theme.maths))}"/></m:mathPr>` +
+    `<m:mathPr><m:mathFont m:val="${escapeXml(wordFamily(theme.maths))}"/>` +
+    '<m:dispDef/><m:defJc m:val="center"/><m:wrapIndent m:val="1440"/></m:mathPr>' +
     `<w:themeFontLang w:val="${tag}"${document.direction === 'rtl' ? ` w:bidi="${tag}"` : ''}/>` +
     '</w:settings>'
   );

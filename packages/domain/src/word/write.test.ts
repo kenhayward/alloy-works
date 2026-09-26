@@ -14,6 +14,7 @@ import {
 } from '../publishing/assemble.js';
 import { defaultLayout, parseLayout, type Layout } from '../publishing/layout.js';
 import type { PublishingFormat } from '../publishing/layout.js';
+import { mathsTree } from '../publishing/maths.js';
 import type { PublishedDocument } from '../publishing/published.js';
 import { OUTLINE_SCHEMA_VERSION, parseOutlineDocument } from '../structure/outline.js';
 import type { ResolvedTheme } from '../theme/read.js';
@@ -22,6 +23,7 @@ import { defaultInputs, resolved, type ThemeInputs } from '../theme/theme.fixtur
 
 import { syntheticFace } from './face.fixture.js';
 import { fontKey, obfuscateFont } from './fonts.js';
+import { omml } from './omml.js';
 import { writeDocx, WORD_WRITER_VERSION } from './write.js';
 
 // ---------------------------------------------------------------------------------------------------
@@ -1261,7 +1263,7 @@ describe('writeDocx: the report (ruling R13)', () => {
     expect(written({}, ['pdf', 'docx']).report).toEqual([{ kind: 'pages_cite_the_pdf' }]);
   });
 
-  it('reports no substitution for a face the text is not set in: the maths face sets nothing in Word 1', () => {
+  it('reports no substitution for a face the text is not set in: the maths face, where no equation is set', () => {
     expect(plain.report.some((each) => each.kind === 'face_substituted')).toBe(false);
   });
 });
@@ -3518,71 +3520,438 @@ describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; 
   });
 });
 
-describe('writeDocx: equations, which Word 4 writes (task 1)', () => {
-  const X = '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"><mi>x</mi></math>';
-  const equationBlock = (name: string, numbered = false) => ({
+describe('writeDocx: equations (Word 4, rulings R4 and R5)', () => {
+  /** x squared plus a y a script level smaller, which the converter sizes from the text's size. */
+  const MATHML =
+    '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x squared plus a small y">' +
+    '<msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><mstyle scriptlevel="1"><mi>y</mi></mstyle></math>';
+  const converted = mathsTree(MATHML);
+  if (!converted.ok) throw new Error('the fixture is refused');
+  const TREE = converted.tree;
+  const inline = { type: 'equation', mathml: MATHML };
+  const displayed = (name: string, numbered = false, mathml = MATHML) => ({
     type: 'equation',
     id: name,
-    mathml: X,
+    mathml,
     numbered,
   });
-  /** A document of one component holding these blocks. */
-  const holding = (...content: unknown[]) => ({
-    outline: parseOutlineDocument({
-      schemaVersion: OUTLINE_SCHEMA_VERSION,
-      title: 'The dosing report',
-      language: 'en-GB',
-      direction: 'ltr',
-      nodes: [section('intro', 'Introduction', [reference('calc', 9)])],
-    }),
-    occurrences: new Map([[id('calc'), component('Calculation', content)]]),
+  const xref = (name: string, target: object, display = 'number') => ({
+    type: 'crossReference',
+    id: name,
+    target,
+    display,
   });
-  /** A document whose one section's title holds an equation, and a reference where `referring`. */
-  const titled = (referring: boolean) => ({
-    outline: parseOutlineDocument({
-      schemaVersion: OUTLINE_SCHEMA_VERSION,
-      title: 'The dosing report',
-      language: 'en-GB',
-      direction: 'ltr',
-      nodes: [
-        section('intro', 'Introduction'),
-        section('method', 'Method', [], {
-          title: [
-            text('Method for '),
-            { type: 'equation', mathml: X },
-            ...(referring
-              ? [
-                  {
-                    type: 'crossReference',
-                    id: 'x1',
-                    target: { kind: 'node', node: id('intro') },
-                    display: 'number',
-                  },
-                ]
-              : []),
-          ],
-        }),
-      ],
-    }),
-    occurrences: new Map(),
+  const toBlock = (block: string) => ({ kind: 'block', block });
+  const quote = (name: string, blocks: unknown[], attribution: unknown[]) => ({
+    type: 'blockquote',
+    id: name,
+    content: blocks,
+    attribution,
   });
-  const listing = layoutWith((layout) => {
+  /**
+   * An equation in a line wherever the PDF sets one - a paragraph's text, a list's item, a term, an
+   * attribution, a table's caption, cell and note, a footnote's text and a section's title - displayed
+   * and numbered at the top level, in a list's item and in a quotation, and displayed with no number;
+   * in every matter, so that each numbers as its rule does; references to a numbered one and to one
+   * with no number; and the list of equations after the contents.
+   */
+  const CALCULATION = component('Calculation', [
+    paragraph('p1', text('Let '), inline, text(' hold.')),
+    displayed('e1', true),
+    displayed('e2'),
+    list('L1', 'ordered', [
+      item(paragraph('li', text('Take '), inline)),
+      item(displayed('e4', true)),
+    ]),
+    list('D1', 'definition', [{ term: [text('Square '), inline], content: [said('of x')] }]),
+    quote('q1', [displayed('e3', true)], [text('After '), inline]),
+    {
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Values of '), inline],
+      headerRows: 0,
+      headerColumns: 0,
+      note: [text('Where '), inline],
+      rows: [{ cells: [{ content: [paragraph('c1', inline)], colspan: 1, rowspan: 1 }] }],
+    },
+    paragraph('p2', text('Noted'), {
+      type: 'footnote',
+      id: 'n1',
+      anchor: { kind: 'span' },
+      content: [paragraph('n1a', text('As '), inline)],
+    }),
+    paragraph(
+      'p3',
+      xref('r0', toBlock('e1')),
+      text(' / '),
+      xref('r1', toBlock('e1'), 'page'),
+      text(' / '),
+      xref('r2', toBlock('e1'), 'relative'),
+      text(' / '),
+      xref('r3', toBlock('e2'), 'relative'),
+    ),
+    said('after'),
+  ]);
+  const LISTING = layoutWith((layout) => {
     layout.matter.lists = [...layout.matter.lists, { sequence: 'equation', title: 'Equations' }];
   });
+  const equated = (over: Parameters<typeof written>[0] = {}): Written =>
+    written({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        nodes: [
+          reference('preface', 1, { matter: 'front' }),
+          section('intro', 'Introduction', [reference('calc', 9)]),
+          { ...section('method', 'Method'), title: [text('Method for '), inline] },
+          section('annex', 'Annex', [reference('derived', 10)], { matter: 'appendix' }),
+        ],
+      }),
+      occurrences: new Map([
+        [id('preface'), component('Preface by Ada', [displayed('f1', true)])],
+        [id('calc'), CALCULATION],
+        [id('derived'), component('Derivation', [displayed('a1', true), displayed('a2', true)])],
+      ]),
+      layout: LISTING,
+      ...over,
+    });
+  const equations = equated();
+  const document = () => equations.docx.xml('word/document.xml');
+  const xml = (docx: Package, name: string) => strFromU8(docx.files[name]!);
+  const BS = String.fromCharCode(92);
+  /** What the converter writes of the tree at a size, in a line or displayed. */
+  const converter = (size: number, display = false) =>
+    omml(TREE, { display, size, face: 'Cambria Math' });
+  /** The half points the converter states on the small y, at the text's size. */
+  const small = (size: number) => String(Math.round(size * 0.73 * 2));
+  const sizeOf = (styleId: string) => DEFAULT_THEME.paragraphStyles.get(styleId)!.properties.size;
+  /** Every equation in a line in this element, not a displayed one's. */
+  const inLine = (element: Element): Element[] =>
+    kids(element).flatMap((child): Element[] =>
+      child.name === 'm:oMathPara' ? [] : child.name === 'm:oMath' ? [child] : inLine(child),
+    );
+  const displays = (element: Element) => all(element, 'm:oMathPara');
+  /** The numbered equations' rows, in document order. */
+  const rows = () => all(document(), 'w:tbl').filter((table) => displays(table).length > 0);
+  /** The one table that is a table. */
+  const table = () => all(document(), 'w:tbl').find((each) => displays(each).length === 0)!;
+  const measure = () => {
+    const { page, margins, gutter } = equations.word.format;
+    return page.width - margins.inside - margins.outside - gutter;
+  };
+  /** How wide the invented faces set words, at a size, in points. */
+  const widthOf = (words: string, size: number) =>
+    ([...words].reduce((sum, each) => sum + (ADVANCES.get(each.codePointAt(0)!) ?? 1024), 0) /
+      2048) *
+    size;
+  /** The cells' first paragraphs of a numbered equation's row: its equation's, then its label's. */
+  const cellsOf = (row: Element) => rowsOf(row)[0]!.map((cell) => first(cell, 'w:p')!);
 
-  it("throws on an equation wherever assemble publishes one for Word, rather than drop it, until Word 4's converter and writer write it: a block, one in a line, one in a section's title, and the list of equations", () => {
-    const cases: [string, Partial<AssembleInput> & { readonly layout?: Layout }][] = [
-      ['a block', holding(equationBlock('e1'))],
-      ['a numbered block', holding(equationBlock('e1', true))],
-      ['one in a line', holding(paragraph('p1', text('Let '), { type: 'equation', mathml: X }))],
-      ["one in a section's title", titled(false)],
-      ["one in a section's title beside a reference", titled(true)],
-      ['the list of equations', { ...holding(equationBlock('e1', true)), layout: listing }],
-    ];
-    for (const [what, over] of cases) {
-      expect(() => written(over), what).toThrow(
-        'The Word writer does not write an equation yet: Word 4 writes them',
+  it("PUB-067 writes every equation as Word's own, the converter's OMML of the maths tree the PDF sets - in a line an m:oMath where its run stands, displayed an m:oMathPara - never an image and never the MathML", () => {
+    const text = xml(equations.docx, 'word/document.xml');
+    const said = paragraphSaying(equations.docx, 'Let  hold.');
+    // In its run's place, between the words either side of it.
+    expect(kids(said).map((each) => each.name)).toEqual(['w:pPr', 'w:r', 'm:oMath', 'w:r']);
+    expect(text).toContain(`<m:oMath>${converter(sizeOf('body'))}</m:oMath>`);
+    expect(text).toContain(
+      `<m:oMathPara><m:oMath>${converter(sizeOf('body'), true)}</m:oMath></m:oMathPara>`,
+    );
+    for (const part of ['word/document.xml', 'word/footnotes.xml']) {
+      expect(xml(equations.docx, part)).not.toContain('<math');
+      // Its alternative only where a table's title names it by its words.
+      expect(xml(equations.docx, part).match(/x squared plus a small y/g) ?? []).toHaveLength(
+        part === 'word/document.xml' ? 1 : 0,
+      );
+      expect(equations.docx.xml(part).attrs['xmlns:m']).toBe(
+        'http://schemas.openxmlformats.org/officeDocument/2006/math',
       );
     }
+    expect(all(document(), 'w:drawing')).toEqual([]);
+  });
+
+  it("sets an equation in a line wherever its run stands - a paragraph, a list's item, a term, an attribution, a table's caption, cell and note, a footnote and a section's title and its contents entry - sized from its text's size", () => {
+    const { at } = bodyOf(equations.docx);
+    const titles = paragraphs(equations.docx).filter((each) => textOf(each) === 'Method for ');
+    const placed: [Element, string][] = [
+      [at('Let  hold.'), 'body'],
+      [at('Take '), 'body'],
+      [at('Square '), 'body'],
+      [at('After '), 'attribution'],
+      [
+        paragraphs(equations.docx)
+          .filter((each) => textOf(each) === 'Table 1.1 Values of ')
+          .at(-1)!,
+        'caption',
+      ],
+      [at('Where '), 'table-note'],
+      [first(table(), 'w:p')!, 'table-cell'],
+      [titles.at(-1)!, 'heading-1'],
+    ];
+    for (const [paragraph, style] of placed) {
+      const [equation, ...more] = inLine(paragraph);
+      expect(more, style).toEqual([]);
+      expect(first(equation!, 'w:sz')?.attrs['w:val'], style).toBe(small(sizeOf(style)));
+    }
+    // In the note, as its own text.
+    const note = all(equations.docx.xml('word/footnotes.xml'), 'w:footnote').at(-1)!;
+    expect(first(inLine(note)[0]!, 'w:sz')?.attrs['w:val']).toBe(small(sizeOf('footnote')));
+    // The contents' entry for the section, as Word's update rebuilds it from the heading.
+    const entry = paragraphs(equations.docx).find((each) => textOf(each) === '2 Method for ')!;
+    expect(inLine(entry)).toHaveLength(1);
+  });
+
+  it("R5 reports the maths face set as Word's own, STIX Two Math as Cambria Math, where the document sets an equation, and names Word's maths face with the display defaults the PDF's display matches", () => {
+    expect(equations.report).toContainEqual({
+      kind: 'face_substituted',
+      family: 'STIX Two Math',
+      wordFamily: 'Cambria Math',
+    });
+    const settings = equations.docx.xml('word/settings.xml');
+    expect(
+      kids(first(settings, 'm:mathPr')!).map((each) => [each.name, each.attrs['m:val']]),
+    ).toEqual([
+      ['m:mathFont', 'Cambria Math'],
+      ['m:dispDef', undefined],
+      ['m:defJc', 'center'],
+      ['m:wrapIndent', '1440'],
+    ]);
+  });
+
+  it("sets an equation's text in the maths face's Word face, as the PDF sets it in the maths face (Word 4's ledger)", () => {
+    const worded = writtenOf([
+      displayed('e1', false, MATHML.replace('<mo>+</mo>', '<mtext>if</mtext>')),
+    ]);
+    const run = all(worded.docx.xml('word/document.xml'), 'm:r').find(
+      (each) => all(each, 'm:nor').length > 0,
+    )!;
+    expect(first(run, 'w:rFonts')?.attrs['w:ascii']).toBe('Cambria Math');
+  });
+
+  it("displays an equation with no number as an m:oMathPara in a paragraph of its own, in the style of the text of the place it stands in, as the PDF's display block", () => {
+    const alone = blocksOf(equations.docx).filter(
+      (each) => each.name === 'w:p' && displays(each).length > 0,
+    );
+    expect(alone).toHaveLength(1);
+    const [e2] = alone;
+    expect(styleOf(e2!)).toBe('body');
+    // Its bookmark first, holding nothing, as any block's.
+    expect(kids(e2!).map((each) => each.name)).toEqual([
+      'w:pPr',
+      'w:bookmarkStart',
+      'w:bookmarkEnd',
+      'm:oMathPara',
+    ]);
+    expect(kids(displays(e2!)[0]!).map((each) => each.name)).toEqual(['m:oMath']);
+  });
+
+  it('numbers a displayed equation in a borderless row of two cells (WO-H, M17): the equation in the wide cell, centred on the measure, and its label at the right of a fixed cell as wide as the label and an em, as the PDF sets it', () => {
+    const [f1, e1] = rows();
+    const width = measure();
+    const number = widthOf('Equation 1', 11) + 11;
+    const properties = stated(e1!, 'w:tblPr');
+    expect(Object.keys(properties)).toEqual([
+      'w:tblW',
+      'w:tblBorders',
+      'w:tblLayout',
+      'w:tblCellMar',
+      'w:tblLook',
+    ]);
+    expect(properties['w:tblW']).toEqual({ 'w:w': twips(width), 'w:type': 'dxa' });
+    expect(properties['w:tblLayout']).toEqual({ 'w:type': 'fixed' });
+    // No rule anywhere, and no header row, first column or band for a reader to take it by.
+    const borders = kids(kids(e1!, 'w:tblPr')[0]!, 'w:tblBorders')[0]!;
+    expect(kids(borders).map((each) => [each.name, each.attrs['w:val']])).toEqual([
+      ['w:top', 'nil'],
+      ['w:left', 'nil'],
+      ['w:bottom', 'nil'],
+      ['w:right', 'nil'],
+      ['w:insideH', 'nil'],
+      ['w:insideV', 'nil'],
+    ]);
+    const margins = kids(kids(e1!, 'w:tblPr')[0]!, 'w:tblCellMar')[0]!;
+    expect(kids(margins).map((each) => [each.name, each.attrs['w:w']])).toEqual([
+      ['w:left', '0'],
+      ['w:right', '0'],
+    ]);
+    expect(properties['w:tblLook']).toEqual({
+      'w:val': '0600',
+      'w:firstRow': '0',
+      'w:lastRow': '0',
+      'w:firstColumn': '0',
+      'w:lastColumn': '0',
+      'w:noHBand': '1',
+      'w:noVBand': '1',
+    });
+    expect(all(e1!, 'w:tblHeader')).toEqual([]);
+    expect(all(e1!, 'w:gridCol').map((each) => each.attrs['w:w'])).toEqual([
+      String(Math.round(width * 20) - Math.round(number * 20)),
+      String(Math.round(number * 20)),
+    ]);
+    for (const cell of rowsOf(e1!)[0]!) {
+      expect(stated(cell, 'w:tcPr')['w:vAlign']).toEqual({ 'w:val': 'center' });
+    }
+    expect(kids(first(e1!, 'w:trPr')!).map((each) => each.name)).toEqual(['w:cantSplit']);
+    // The equation in the wide cell, stood in by the number's cell so it centres on the measure.
+    const [shown, numbered] = cellsOf(e1!) as [Element, Element];
+    expect(displays(shown)).toHaveLength(1);
+    expect(styleOf(shown)).toBe('body');
+    expect(indents(shown)).toEqual({
+      'w:left': String(Math.round(number * 20)),
+      'w:right': '0',
+      'w:firstLine': '0',
+    });
+    // The label at the right, in the layout's words, left to right.
+    expect(textOf(numbered)).toBe('Equation 1');
+    expect(styleOf(numbered)).toBe('body');
+    expect(kids(pPr(numbered)!, 'w:jc')[0]?.attrs['w:val']).toBe('right');
+    expect(indents(numbered)).toEqual({ 'w:left': '0', 'w:right': '0', 'w:firstLine': '0' });
+    expect(all(numbered, 'w:bidi')).toEqual([]);
+    expect(textOf(cellsOf(f1!)[1]!)).toBe('Equation i');
+  });
+
+  it("numbers each equation by Word's fields as captionField says in every matter, each prefilled with the numbering table's label: the front's roman, the body's counting from 1 again, the appendix's by its chapter (Word 4's Ruling 3)", () => {
+    const labels = rows().map((row) => cellsOf(row)[1]!);
+    expect(labels.map(textOf)).toEqual([
+      'Equation i',
+      'Equation 1',
+      'Equation 2',
+      'Equation 3',
+      'Equation A.1',
+      'Equation A.2',
+    ]);
+    expect(labels.map(fieldCodes)).toEqual([
+      [`SEQ Equation ${BS}* roman ${BS}s 1`],
+      [`SEQ Equation ${BS}* arabic ${BS}s 1`],
+      [`SEQ Equation ${BS}* arabic`],
+      [`SEQ Equation ${BS}* arabic`],
+      [`STYLEREF 1 ${BS}s`, `SEQ Equation ${BS}* arabic ${BS}s 1`],
+      [`STYLEREF 1 ${BS}s`, `SEQ Equation ${BS}* arabic ${BS}s 1`],
+    ]);
+  });
+
+  it("stands a numbered equation's row where its place stands it - a list's item, a quotation - as wide as what is left of the measure, its cells at their edges", () => {
+    const [, , inList, inQuotation] = rows();
+    const quotation = DEFAULT_THEME.paragraphStyles.get('quotation')!.properties;
+    const properties = stated(inQuotation!, 'w:tblPr');
+    expect(properties['w:tblInd']).toEqual({
+      'w:w': twips(quotation.startIndent),
+      'w:type': 'dxa',
+    });
+    expect(properties['w:tblW']).toEqual({
+      'w:w': twips(measure() - quotation.startIndent - quotation.endIndent),
+      'w:type': 'dxa',
+    });
+    expect(stated(inList!, 'w:tblPr')['w:tblInd']).toBeDefined();
+    const [shown, numbered] = cellsOf(inQuotation!) as [Element, Element];
+    expect(styleOf(shown)).toBe('quotation');
+    expect(styleOf(numbered)).toBe('quotation');
+    expect(indents(numbered)).toEqual({ 'w:left': '0', 'w:right': '0', 'w:firstLine': '0' });
+  });
+
+  it("turns contextual spacing off in both of a numbered equation's cells where their style asks for it, since Word dropped the space after the equation's paragraph facing the label's, of its style, and set the label a line above the equation (measured)", () => {
+    const [, e1, , inQuotation] = rows();
+    for (const cell of cellsOf(inQuotation!)) expect(contextual(cell)).toBe('0');
+    // The text's style asks for none, and nothing is stated over it.
+    for (const cell of cellsOf(e1!)) expect(contextual(cell)).toBeUndefined();
+  });
+
+  it('keeps an equation alone in its paragraph in the line, as the PDF sets it, by a zero-width space before it: Word displays an m:oMath with nothing else in its paragraph (measured)', () => {
+    const ZWSP = String.fromCharCode(0x200b);
+    const alone = first(table(), 'w:p')!;
+    expect(kids(alone).map((each) => each.name)).toEqual(['w:pPr', 'w:r', 'm:oMath']);
+    expect(textOf(alone)).toBe(ZWSP);
+    // Beside words, nothing added.
+    expect(textOf(paragraphSaying(equations.docx, 'Let  hold.'))).not.toContain(ZWSP);
+    // A displayed one is displayed already.
+    for (const each of blocksOf(equations.docx)) {
+      if (each.name === 'w:p' && displays(each).length > 0) expect(textOf(each)).toBe('');
+    }
+  });
+
+  it("R6 spaces a numbered equation's row as the PDF spaces its display block, the same space in both cells so the number stays on the equation's middle, and nothing more on the paragraph after it", () => {
+    // The text's style with a space before, so that an item's equation, a line below its number,
+    // states the space it drops.
+    const spaced = equated({
+      theme: themeWith((inputs) => {
+        inputs.catalogues.paragraph.styles = inputs.catalogues.paragraph.styles.map((each) =>
+          each.id === 'body'
+            ? { ...each, properties: { ...each.properties, spaceBefore: 4 } }
+            : each,
+        );
+      }),
+    });
+    const blocks = blocksOf(spaced.docx);
+    const [, e1, inList] = blocks.filter(
+      (each) => each.name === 'w:tbl' && displays(each).length > 0,
+    );
+    const [shown, numbered] = cellsOf(e1!) as [Element, Element];
+    expect(spacing(numbered)).toEqual(spacing(shown));
+    // An item's number on an empty paragraph of its own, a line above its equation, as for a table.
+    for (const cell of cellsOf(inList!)) expect(spacing(cell)).toEqual({ 'w:before': '0' });
+    // The paragraph after it spaced by its own space before, the row's after in its cells.
+    const after = blocks[blocks.indexOf(e1!) + 1]!;
+    expect(displays(after)).toHaveLength(1);
+    expect(spacing(after)).toBeUndefined();
+  });
+
+  it("names a numbered equation for a reference by a hidden bookmark around its label, and one with no number by one where its paragraph begins, holding nothing; a reference to either is a field at it, in Word 3's forms", () => {
+    const [, e1] = rows();
+    const label = cellsOf(e1!)[1]!;
+    expect(all(label, 'w:bookmarkStart').map((each) => each.attrs['w:name'])).toEqual([
+      '_Ref000000001',
+    ]);
+    // Around the label's word and its field.
+    const held = kids(label).map((each) => each.name);
+    expect(held[1]).toBe('w:bookmarkStart');
+    expect(held.at(-1)).toBe('w:bookmarkEnd');
+    const unnumbered = blocksOf(equations.docx).find(
+      (each) => each.name === 'w:p' && displays(each).length > 0,
+    )!;
+    expect(all(unnumbered, 'w:bookmarkStart').map((each) => each.attrs['w:name'])).toEqual([
+      '_Ref000000002',
+    ]);
+    const referring = paragraphSaying(equations.docx, 'Equation 1 /  / above / above');
+    expect(fieldCodes(referring)).toEqual([
+      `REF _Ref000000001 ${BS}h`,
+      `PAGEREF _Ref000000001 ${BS}h`,
+      `REF _Ref000000001 ${BS}p ${BS}h`,
+      `REF _Ref000000002 ${BS}p ${BS}h`,
+    ]);
+  });
+
+  it('lists the numbered equations after the contents as the lists of figures and tables are: a TOC field over the SEQ Equation labels, prefilled with each label and no page', () => {
+    const [, front] = sections(equations.docx);
+    const shown = front!.paragraphs.map(textOf);
+    const listed = front!.paragraphs.slice(shown.indexOf('Equations'));
+    expect(listed.map(textOf)).toEqual([
+      'Equations',
+      'Equation i',
+      'Equation 1',
+      'Equation 2',
+      'Equation 3',
+      'Equation A.1',
+      'Equation A.2',
+    ]);
+    expect(fieldCodes({ name: 'list', attrs: {}, children: listed })).toEqual([
+      `TOC ${BS}h ${BS}z ${BS}c "Equation"`,
+    ]);
+    for (const entry of listed.slice(1)) expect(styleOf(entry)).toBe('TableofFigures');
+  });
+
+  it("prefills a list's entry for a caption holding an equation with the equation, and names the table by its caption's words with the equation's alternative among them", () => {
+    const [, front] = sections(equations.docx);
+    const entry = front!.paragraphs.find((each) => textOf(each) === 'Table 1.1 Values of ')!;
+    expect(inLine(entry)).toHaveLength(1);
+    expect(stated(table(), 'w:tblPr')['w:tblCaption']).toEqual({
+      'w:val': 'Table 1.1 Values of x squared plus a small y',
+    });
+  });
+
+  it('reports no substitution of the maths face, and writes no equation, where the document sets none', () => {
+    expect(plain.report.some((each) => each.kind === 'face_substituted')).toBe(false);
+    expect(xml(plain.docx, 'word/document.xml')).not.toContain('<m:oMath');
   });
 });

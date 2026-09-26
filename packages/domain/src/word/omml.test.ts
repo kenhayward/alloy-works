@@ -18,7 +18,7 @@ interface Element {
 
 /** The converter's output inside the `m:oMath` the writer puts it in, as a tree. */
 function read(tree: MathsTree, options: Partial<OmmlOptions> = {}): Element {
-  const xml = omml(tree, { display: true, size: 11, ...options });
+  const xml = omml(tree, { display: true, size: 11, face: 'Cambria Math', ...options });
   const root: Element = { name: '#root', attrs: {}, children: [] };
   const stack: Element[] = [root];
   for (const event of scanXml(`<m:oMath>${xml}</m:oMath>`)) {
@@ -129,13 +129,37 @@ describe('the converter from the maths tree to OMML (Word 4, ruling R3)', () => 
       expect(shape(row(n('2.5'), o('+'), o('mod')))).toBe("'2.5'[p] '+' 'mod'[p]");
     });
 
-    it("sets text as Word's normal text, its spaces kept, and names no face on any run", () => {
-      const equation = read(row(i('x'), { k: 'text', t: ' if ' }, i('y')));
+    it("sets text as Word's normal text in the maths face's Word face, its spaces kept, as the PDF sets text in the maths face; no maths run names a face", () => {
+      const equation = read(row(i('x'), { k: 'text', t: ' if ' }, i('y')), {
+        face: 'Cambria Math',
+      });
 
       expect(sketch(equation)).toBe("'x'[i] ' if '[nor] 'y'[i]");
       expect(all(equation, 'm:t').every((t) => t.attrs['xml:space'] === 'preserve')).toBe(true);
-      // Cambria Math is m:mathPr's, the writer's (M11): no run says a face.
-      expect(all(equation, 'w:rFonts')).toEqual([]);
+      // Word sets normal text in the body face unless the run names one (measured, task 2); the maths
+      // runs take Cambria Math from m:mathPr (M11) and name none.
+      const [x, words, y] = kids(equation, 'm:r');
+      expect(first(words!, 'w:rFonts')?.attrs).toEqual({
+        'w:ascii': 'Cambria Math',
+        'w:hAnsi': 'Cambria Math',
+        'w:cs': 'Cambria Math',
+        'w:eastAsia': 'Cambria Math',
+      });
+      expect([x, y].flatMap((run) => all(run!, 'w:rFonts'))).toEqual([]);
+    });
+
+    it("names the face on a text run before the size a script level states, in CT_RPr's order", () => {
+      const equation = read(row({ k: 'script', body: row({ k: 'text', t: 'if' }) }), {
+        face: 'Cambria Math',
+        size: 11,
+      });
+      const [words] = all(equation, 'm:r');
+
+      expect(kids(first(words!, 'w:rPr')!).map((each) => each.name)).toEqual([
+        'w:rFonts',
+        'w:sz',
+        'w:szCs',
+      ]);
     });
 
     it('escapes what it sets, so every string is a value and never markup', () => {
@@ -143,6 +167,7 @@ describe('the converter from the maths tree to OMML (Word 4, ruling R3)', () => 
       const xml = omml(row(...strings.map((t) => ({ k: 'text', t }) as MathsNode)), {
         display: true,
         size: 11,
+        face: 'Cambria Math',
       });
 
       expect(xml).not.toContain('<m:r><m:r>');

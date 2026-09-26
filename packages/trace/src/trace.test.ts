@@ -501,8 +501,14 @@ describe('the citations in the committed model', () => {
   // word/omml.test.ts, where an equation holding every kind of maths node, read by mathsTree from one
   // stored MathML, is written as OMML objects alone - no image, no second reading of the MathML -
   // inline and displayed; Word 16 opened it as two OMaths in Cambria Math, measured by hand.
+  // 334, from 332 (2026-09-26): Word 4's writer cites PUB-067 in packages/domain's word/write.test.ts,
+  // where every equation is the converter's OMML of the published tree, in a line an m:oMath and
+  // displayed an m:oMathPara, never an image or the MathML; and CNT-045 in apps/worker's word.test.ts,
+  // where one publication sets each stored MathML's one maths tree in the PDF, a Formula saying its
+  // words, and in Word as that tree's OMML - the editor's own tests drawing it on screen. Word 16 set
+  // every placement in Cambria Math, measured by hand for this task.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(332);
+    expect(model.citations).toHaveLength(334);
   });
 
   it('cites no identifier the corpus does not hold', () => {

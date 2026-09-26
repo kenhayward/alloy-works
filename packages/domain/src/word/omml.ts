@@ -37,6 +37,13 @@ export interface OmmlOptions {
   readonly display: boolean;
   /** The size in points of the text the equation stands in: what a smaller script level is taken from. */
   readonly size: number;
+  /**
+   * The Word family text inside the equation is set in: the maths face's Word face, as the PDF sets
+   * text in the maths face (Word 4's ledger, correcting the design's body face). Word sets normal text
+   * in the body face unless its run names another (measured, task 2), where it sets maths runs in
+   * `m:mathPr`'s face without one (M11).
+   */
+  readonly face: string;
 }
 
 /**
@@ -159,6 +166,8 @@ interface Context {
   readonly halfPoints?: number;
   /** Whether this stands in an equation array, where Word reads an ampersand as an alignment point. */
   readonly array: boolean;
+  /** The Word family normal text is set in (`OmmlOptions.face`). */
+  readonly face: string;
 }
 
 /**
@@ -166,7 +175,13 @@ interface Context {
  * deterministic; every string escaped.
  */
 export function omml(tree: MathsTree, options: OmmlOptions): string {
-  return argument(tree, { display: options.display, size: options.size, depth: 0, array: false });
+  return argument(tree, {
+    display: options.display,
+    size: options.size,
+    depth: 0,
+    array: false,
+    face: options.face,
+  });
 }
 
 /** A node where an argument stands: a row of one where it is not a row. */
@@ -408,14 +423,21 @@ function variant(v: Extract<MathsNode, { k: 'i' }>['v']): string {
 }
 
 /**
- * A run: its maths properties, its size where a script level states one, and its text, spaces kept.
- * In an equation array Word reads an ampersand in a maths run as an alignment point, so a run the
- * content holds with one in it is written as normal text there, which Word sets as it is (measured).
+ * A run: its maths properties, its face where it is normal text, its size where a script level states
+ * one, and its text, spaces kept. In an equation array Word reads an ampersand in a maths run as an
+ * alignment point, so a run the content holds with one in it is written as normal text there, which
+ * Word sets as it is (measured).
  */
 function run(text: string, properties: string, context: Context): string {
   const own = context.array && text.includes('&') ? '<m:nor/>' : properties;
+  const family = escapeXml(context.face);
+  const face =
+    own === '<m:nor/>'
+      ? `<w:rFonts w:ascii="${family}" w:hAnsi="${family}" w:cs="${family}" w:eastAsia="${family}"/>`
+      : '';
+  const stated = face + size(context);
   return (
-    `<m:r>${own === '' ? '' : `<m:rPr>${own}</m:rPr>`}${sized(context)}` +
+    `<m:r>${own === '' ? '' : `<m:rPr>${own}</m:rPr>`}${stated === '' ? '' : `<w:rPr>${stated}</w:rPr>`}` +
     `<m:t xml:space="preserve">${escapeXml(text)}</m:t></m:r>`
   );
 }
@@ -425,10 +447,16 @@ const AMPERSAND = '<m:r><m:t>&amp;</m:t></m:r>';
 
 /** A size stated on a run or in an object's control properties, where a script level set one. */
 function sized(context: Context): string {
-  const size = context.halfPoints;
-  return size === undefined
+  const stated = size(context);
+  return stated === '' ? '' : `<w:rPr>${stated}</w:rPr>`;
+}
+
+/** The size a script level states, as `w:rPr`'s children, or nothing. */
+function size(context: Context): string {
+  const halfPoints = context.halfPoints;
+  return halfPoints === undefined
     ? ''
-    : `<w:rPr><w:sz w:val="${size}"/><w:szCs w:val="${size}"/></w:rPr>`;
+    : `<w:sz w:val="${halfPoints}"/><w:szCs w:val="${halfPoints}"/>`;
 }
 
 /**
