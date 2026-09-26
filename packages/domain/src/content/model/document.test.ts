@@ -299,7 +299,7 @@ describe('the content document', () => {
     const held = 'x = "\u{1d400}"\t# \u{1f600}\nend';
     expect(parseContentDocument(pre(held)).content[0]).toMatchObject({ text: held });
     // A bell, a carriage return, a next line and a line separator are refused.
-    for (const refused of ['\u0007', '\r', '\u0085', ' ']) {
+    for (const refused of ['\u0007', '\r', '\u0085', String.fromCharCode(0x2028)]) {
       expect(() => parseContentDocument(pre(`a${refused}b`)), JSON.stringify(refused)).toThrow();
     }
   });

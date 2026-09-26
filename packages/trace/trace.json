@@ -10551,7 +10551,7 @@
     {
       "id": "STR-070",
       "area": "STR",
-      "statement": "Every figure and table must be numbered in the sequence for its kind; a block equation must be numbered unless it is explicitly unnumbered (CNT-047); and a caption in front or appendix matter before that matter's first numbered section, where the scheme's rule wants a prefix there is none of, takes no number and uses up none",
+      "statement": "Every figure and table must be numbered in the sequence for its kind; a block equation must be numbered unless it is explicitly unnumbered (CNT-047); and a caption in front or appendix matter before that matter's first numbered section, where the scheme's rule wants a prefix there is none of, takes no number and uses up none; what a reader who may not read an occurrence is shown of its numbers is IAM-073's",
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
@@ -15291,7 +15291,7 @@
         },
         {
           "id": "CNT-173",
-          "howItIsMet": "Text is JSON strings, so every character but U+0000 is storable in running text - Postgres cannot hold U+0000 in `jsonb`, and the store refuses it - and read back in the NFC CNT-056 requires, the astral planes included. Preformatted text refuses the C0 and C1 controls but the tab and the line feed, and the line and paragraph separators, each invisible or a second spelling of a line break (`forbiddenInPreformatted`). The editor holds and shows it through the same mapping and saves what is typed among it whole. A publish judges each character a whole code point at a time and refuses one no face can set as `glyph_missing`, naming it, for the PDF and Word alike, since `assemble` serves both (STY-049's check)"
+          "howItIsMet": "Text is JSON strings, so every character but U+0000 is storable in running text - Postgres cannot hold U+0000 in `jsonb`, and the store refuses it - and read back in the NFC CNT-056 requires, the astral planes included. Preformatted text refuses the C0 controls but the tab and the line feed, U+007F and the C1 controls, and the line and paragraph separators, each invisible or a second spelling of a line break (`forbiddenInPreformatted`). The editor holds and shows it through the same mapping and saves what is typed among it whole. A publish judges each character a whole code point at a time and refuses one no face can set as `glyph_missing`, naming it, for the PDF and Word alike, since `assemble` serves both (STY-049's check)"
         },
         {
           "id": "CNT-063",
@@ -16841,7 +16841,7 @@
     {
       "id": "API-061",
       "file": "apps/web/src/api.test.ts",
-      "line": 146,
+      "line": 197,
       "kind": "title"
     },
     {

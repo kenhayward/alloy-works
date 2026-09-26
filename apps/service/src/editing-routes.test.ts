@@ -282,7 +282,7 @@ describe('writing in an editing session through the service', () => {
       ]);
     });
 
-    it('CNT-173 stores characters outside the Basic Multilingual Plane and gives them back exactly', async () => {
+    it('CNT-173 stores characters outside the Basic Multilingual Plane and gives them back whole, in NFC', async () => {
       const made = await component();
       const session = randomUUID();
       await call('ada', 'POST', `/v1/components/${made.id}/lock`, { session });
