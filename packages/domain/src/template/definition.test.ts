@@ -174,6 +174,51 @@ describe('a template definition', () => {
     ).toBe(false);
   });
 
+  it('refuses matter set below the top level, as an outline does: a nested section is body', () => {
+    for (const matter of ['front', 'appendix']) {
+      expect(
+        parses(
+          template({
+            outline: {
+              sections: [section('method', 'Method', {}, [section('aside', 'Aside', { matter })])],
+            },
+          }),
+        ),
+        matter,
+      ).toBe(false);
+    }
+  });
+
+  it('refuses a cross-reference anywhere in a starting title, a footnote in it included', () => {
+    const inNote = {
+      ...section('intro', 'Introduction'),
+      title: [
+        ...title('Introduction'),
+        {
+          type: 'footnote',
+          id: 'n1',
+          anchor: { kind: 'span' },
+          content: [
+            {
+              type: 'paragraph',
+              id: 'p1',
+              style: 'body',
+              content: [
+                {
+                  type: 'crossReference',
+                  id: 'x1',
+                  target: { kind: 'node', node: 'aaaaaaaaaaaaaaaaaaaaaaaaaa' },
+                  display: 'number',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    expect(parses(template({ outline: { sections: [inNote] } }))).toBe(false);
+  });
+
   it('refuses front matter after the body, as an outline does', () => {
     expect(
       parses(

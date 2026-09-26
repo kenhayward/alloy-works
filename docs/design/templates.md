@@ -90,10 +90,12 @@ StartingSection = {
 }
 ```
 
-`checkTemplate` holds what the schema cannot: keys unique across the tree, front matter first as the
-outline's own rule (STR-064) requires, each title passing the section title's inline rules, one
-assignment per schema and level, and `requires` naming no field twice. It checks nothing that needs
-another artifact; that is resolution's.
+`checkTemplate` - the definition schema's own refinement, not a function beside it - holds what the
+schema's members cannot: keys unique across the tree; matter as an outline holds it (STR-064), set at
+the top level with front matter first there and every section below it body; each title passing the
+section title's inline rules with no cross-reference anywhere in it, a footnote's paragraphs
+included; one assignment per schema and level; and `requires` naming no field twice. It checks
+nothing that needs another artifact; that is resolution's.
 
 **A key, not a node identifier.** A starting section is not a node of any document. The key names it
 across the template's versions and in every document made from one, so a required section is found

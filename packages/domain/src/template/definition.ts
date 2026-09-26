@@ -32,11 +32,23 @@ export type StartingSection = {
   readonly children: readonly StartingSection[];
 };
 
+/** Whether inline content holds a cross-reference anywhere, a footnote's paragraphs included. */
+function refers(inlines: readonly InlineNode[]): boolean {
+  return inlines.some(
+    (inline) =>
+      inline.type === 'crossReference' ||
+      (inline.type === 'footnote' &&
+        (inline.content as { content?: InlineNode[] }[]).some((paragraph) =>
+          refers(paragraph.content ?? []),
+        )),
+  );
+}
+
 export const startingSectionSchema: z.ZodType<StartingSection> = z.lazy(() =>
   z.strictObject({
     key,
     title: sectionTitleSchema.refine(
-      (title) => title.every((inline) => inline.type !== 'crossReference'),
+      (title) => !refers(title),
       'A starting section title holds no cross-reference: it has nothing yet to point at',
     ),
     required: z.boolean(),
@@ -86,19 +98,26 @@ export const templateDefinitionSchema = z
   })
   .superRefine((template, context) => {
     const keys = new Set<string>();
+    // Matter as an outline holds it (STR-064): set at the top level, front matter first there, and
+    // every section below it body, since a subtree takes its top-level section's matter.
+    const top = template.outline.sections;
+    const firstNotFront = top.findIndex((each) => each.matter !== 'front');
+    if (firstNotFront >= 0 && top.slice(firstNotFront).some((each) => each.matter === 'front')) {
+      context.addIssue({
+        code: 'custom',
+        path: ['outline', 'sections'],
+        message: 'Front matter comes before the rest of the outline',
+      });
+    }
     const walk = (sections: readonly StartingSection[], path: (string | number)[]) => {
-      const firstNotFront = sections.findIndex((each) => each.matter !== 'front');
-      if (
-        firstNotFront >= 0 &&
-        sections.slice(firstNotFront).some((each) => each.matter === 'front')
-      ) {
-        context.addIssue({
-          code: 'custom',
-          path,
-          message: 'Front matter comes before the rest of the outline',
-        });
-      }
       sections.forEach((each, index) => {
+        if (path.length > 2 && each.matter !== 'body') {
+          context.addIssue({
+            code: 'custom',
+            path: [...path, index, 'matter'],
+            message: "A section below the top level is body matter: it takes its top section's",
+          });
+        }
         if (keys.has(each.key)) {
           context.addIssue({
             code: 'custom',
