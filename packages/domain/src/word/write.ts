@@ -411,8 +411,11 @@ interface Bookmark {
  * **The bookmarks a target a reference names is given** (Word 3, ruling R3; M4), by what it is: a
  * heading's around its title's words, whose number `REF \r` reads from the heading's list; a footnote's
  * around its mark, which `NOTEREF` reads; a block's where its first paragraph begins, holding nothing;
- * and a caption's two, around its label - where it has one - and around its words, so a number and a
- * title are each a field of their own; and a floated figure's a third, holding nothing, where its box
+ * and a caption's two, around its label and around its words, so a number and a title are each a
+ * field of their own - or, where it has no label, holding nothing where the caption begins, since a
+ * relative field in the caption naming the bookmark around its words, which holds that field, printed
+ * Word's "Error! Not a valid bookmark self-reference." (M1 of Word 3's final review); and a floated
+ * figure's a third, holding nothing, where its box
  * is anchored in the text, which above and below are read from (Word 3's check: Word's `REF \p` to a
  * bookmark in a text box prints the bookmark's words, as it does across the notes).
  */
@@ -420,7 +423,8 @@ type Bookmarked =
   | { readonly kind: 'heading' | 'footnote' | 'block'; readonly at: Bookmark }
   | {
       readonly kind: 'caption';
-      readonly label: Bookmark | null;
+      /** Around its label, or holding nothing where the caption begins where it has none. */
+      readonly place: Bookmark;
       readonly words: Bookmark;
       readonly anchored: Bookmark | null;
     };
@@ -468,11 +472,11 @@ function bookmarksOf(document: PublishedDocument): Map<string, Bookmarked> {
       case 'table':
       case 'figure':
         if (each.anchor !== null) {
-          const label = each.label === null ? null : next();
+          const place = next();
           const words = next();
           // A floated figure's in its anchor's paragraph, after the box that holds its caption.
           const anchored = each.type === 'figure' && each.placement === 'float' ? next() : null;
-          named.set(each.anchor, { kind: 'caption', label, words, anchored });
+          named.set(each.anchor, { kind: 'caption', place, words, anchored });
         }
         if (each.type === 'table') {
           for (const row of each.rows) for (const cell of row.cells) cell.blocks.forEach(block);
@@ -504,9 +508,9 @@ function bookmarked(bookmark: Bookmark | null | undefined, content: string): str
   );
 }
 
-/** Where a page or a relative reference finds a target: a caption's label, or its words without one. */
+/** Where a number, a page or a relative reference finds a target: a caption's label, or its place. */
 function placeOf(target: Bookmarked): Bookmark {
-  return target.kind === 'caption' ? (target.label ?? target.words) : target.at;
+  return target.kind === 'caption' ? target.place : target.at;
 }
 
 export function writeDocx(input: WordWriting): WrittenDocx {
@@ -1636,8 +1640,8 @@ class Writer {
       // No number of Word's to compute: the label as the PDF prints it, where there is one.
       return (
         (captioned.label === null
-          ? ''
-          : bookmarked(target?.label, this.runs(captioned.label, this.words)) +
+          ? bookmarked(target?.place, '')
+          : bookmarked(target?.place, this.runs(captioned.label, this.words)) +
             this.runs(' ', passage)) + own
       );
     }
@@ -1652,7 +1656,7 @@ class Writer {
     });
     return (
       bookmarked(
-        target?.label,
+        target?.place,
         captionLabel(field, entry.number, counter, (text) => this.runs(text, this.words)),
       ) +
       this.runs(' ', passage) +

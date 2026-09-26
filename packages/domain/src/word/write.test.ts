@@ -3347,4 +3347,82 @@ describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; 
       { code: REF(2, 'h'), result: 'Blue on top' },
     ]);
   });
+
+  it("names a caption with no label's place by a bookmark holding nothing where the caption begins, since Word's REF \\p inside the bookmark around its words printed Word's self-reference error (measured, M1 of Word 3's final review)", () => {
+    // An appendix without a number, before any with one: the scheme gives its table and its figure
+    // no number, so their captions have no label.
+    const unlabelled = written({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        nodes: [
+          section('early', 'Early annex', [reference('blocks', 9)], {
+            matter: 'appendix',
+            numbered: false,
+          }),
+        ],
+      }),
+      occurrences: new Map([
+        [
+          id('blocks'),
+          component('Blocks', [
+            said('before'),
+            {
+              type: 'table',
+              id: 'u1',
+              style: 'table',
+              caption: [
+                text('Early, see '),
+                xref('u0', toBlock('u1'), 'relative'),
+                text(' on '),
+                xref('u2', toBlock('u1'), 'page'),
+              ],
+              headerRows: 0,
+              headerColumns: 0,
+              rows: [{ cells: [cellOf('c1', text('x'))] }],
+            },
+            figure('f1', RED, 'Shapes', {
+              caption: [text('Shapes '), xref('u3', toBlock('f1'), 'relative')],
+            }),
+            paragraph(
+              'p1',
+              xref('u4', toBlock('u1'), 'relative'),
+              text(' '),
+              xref('u5', toBlock('f1'), 'page'),
+            ),
+          ]),
+        ],
+      ]),
+      assets: IMAGES,
+    });
+    const captioned = (words: string) =>
+      paragraphs(unlabelled.docx).find((each) => textOf(each) === words)!;
+    const table = captioned('Early, see above on ');
+    // The place first, holding nothing, then the words, holding the references to the place.
+    expect(
+      kids(table)
+        .map((each) => each.name)
+        .slice(0, 4),
+    ).toEqual(['w:pPr', 'w:bookmarkStart', 'w:bookmarkEnd', 'w:bookmarkStart']);
+    expect(bookmarksOf(table).map(({ name, text }) => [name, text])).toEqual([
+      [name(1), ''],
+      [name(2), 'Early, see above on '],
+    ]);
+    expect(referencesIn(table)).toEqual([
+      { code: REF(1, 'p'), result: 'above' },
+      { code: `PAGEREF ${name(1)}`, result: '' },
+    ]);
+    const figured = captioned('Shapes above');
+    expect(bookmarksOf(figured).map(({ name, text }) => [name, text])).toEqual([
+      [name(3), ''],
+      [name(4), 'Shapes above'],
+    ]);
+    expect(referencesIn(figured)).toEqual([{ code: REF(3, 'p'), result: 'above' }]);
+    expect(referencesIn(captioned('above '))).toEqual([
+      { code: REF(1, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(3), result: '' },
+    ]);
+  });
 });
