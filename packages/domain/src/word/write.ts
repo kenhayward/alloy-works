@@ -508,6 +508,17 @@ function bookmarked(bookmark: Bookmark | null | undefined, content: string): str
   );
 }
 
+/**
+ * Characters of a script written right to left - Hebrew, Arabic, Syriac, Thaana, N'Ko and the rest of
+ * their blocks, and their presentation forms - by block, which is near enough to Unicode's strong
+ * right-to-left classes for the words a reference prints.
+ */
+const RIGHT_TO_LEFT =
+  /[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufeff\u{10800}-\u{10fff}\u{1e800}-\u{1efff}]/u;
+
+/** Whether words hold nothing written right to left: a number, a page, or a left-to-right language's. */
+const ltr = (words: string | null): boolean => !RIGHT_TO_LEFT.test(words ?? '');
+
 /** Where a number, a page or a relative reference finds a target: a caption's label, or its place. */
 function placeOf(target: Bookmarked): Bookmark {
   return target.kind === 'caption' ? target.place : target.at;
@@ -843,7 +854,10 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   );
   put('word/settings.xml', settingsXml(document, theme, format, notes.length > 0));
   if (notes.length > 0) {
-    put('word/footnotes.xml', footnotesXml(notes, theme.places.footnote));
+    put(
+      'word/footnotes.xml',
+      footnotesXml(notes, theme.places.footnote, document.direction === 'rtl'),
+    );
     if (noteRelationships.xml.length > 0) {
       put('word/_rels/footnotes.xml.rels', relationshipsXml(noteRelationships.xml));
     }
@@ -2073,7 +2087,17 @@ class Writer {
         linking = href;
       }
       const kinds = run.marks.map((mark) => mark.kind);
-      xml += this.textRun(run.text, kinds, styleId, passage, language, strong);
+      const between =
+        passage.rtl &&
+        /^\s+$/u.test(run.text) &&
+        this.fieldLtr(runs, index - 1, site, 'end') &&
+        this.fieldLtr(runs, index + 1, site, 'start');
+      xml += between
+        ? runXml(
+            run.text,
+            this.runProperties(kinds, styleId, passage, language, strong).replace('<w:rtl/>', ''),
+          )
+        : this.textRun(run.text, kinds, styleId, passage, language, strong);
     }
     if (linking !== null) xml += '</w:hyperlink>';
     return xml;
@@ -2180,8 +2204,18 @@ class Writer {
         return number();
       case 'title':
         return title();
+      // The space between the two as one between two references (`fieldLtr`).
       case 'numberAndTitle':
-        return number() + runXml(' ', properties) + title();
+        return (
+          number() +
+          runXml(
+            ' ',
+            passage.rtl && ltr(form.label) && ltr(form.title)
+              ? properties.replace('<w:rtl/>', '')
+              : properties,
+          ) +
+          title()
+        );
       case 'relative':
         return field(
           `REF ${(target.kind === 'caption' ? (target.anchored ?? place) : place).name} ${BACKSLASH}p`,
@@ -2259,6 +2293,29 @@ class Writer {
       '</pic:pic></a:graphicData></a:graphic>' +
       '</wp:inline></w:drawing>'
     );
+  }
+
+  /**
+   * Whether the run at `at` is a reference whose field nearest the `side` of it facing a space prints
+   * nothing written right to left: a number and a title's number at its start and its title at its
+   * end, as the two fields stand. **A space between two such, in a right-to-left passage, is written
+   * without its direction** (M2 of Word 3's final review; measured in Word 16): Word resolves a space
+   * in a right-to-left run as right to left, so each field stood apart in reading order - "1 above 1 1
+   * above Table 1.1" read from the left - where the PDF's bidi algorithm sets them as one left-to-right
+   * run, "Table 1.1 above 1 1 above 1"; written without it, Word sets them as the PDF does. The fields
+   * keep their direction, which measured the same either way.
+   */
+  private fieldLtr(
+    runs: readonly PublishedInline[],
+    at: number,
+    site: ReferenceSite | null,
+    side: 'start' | 'end',
+  ): boolean {
+    const run = runs[at];
+    if (run === undefined || !('reference' in run) || site === null) return false;
+    const form = this.numbers.references.get(inlineReferenceKey(this.at, site, at));
+    if (form?.display !== 'numberAndTitle') return ltr(run.reference.text);
+    return ltr(side === 'start' ? form.label : form.title);
   }
 
   private textRun(
@@ -2860,16 +2917,19 @@ const FOOTNOTE_REFERENCE_STYLE =
 /**
  * **The footnotes part** (Word 3, ruling R2; M5): the separator and the continuation separator Word
  * requires, `-1` and `0`, which the settings name, each a paragraph of the footnote place's style with
- * no space about it, as Word writes its own; then each note, by its identifier, in the order the text
- * met its mark.
+ * no space about it, as Word writes its own - right to left in a right-to-left document, where Word
+ * then draws its line at the right, as the PDF does, and at the left without it (M2 of Word 3's final
+ * review; measured in Word 16); then each note, by its identifier, in the order the text met its mark.
  */
 function footnotesXml(
   notes: readonly { readonly id: number; readonly paragraphs: readonly Paragraph[] }[],
   place: string,
+  rtl: boolean,
 ): string {
   const separator = (type: string, id: number, element: string) =>
     `<w:footnote w:type="${type}" w:id="${id}"><w:p><w:pPr><w:pStyle w:val="${place}"/>` +
-    `<w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:${element}/></w:r></w:p></w:footnote>`;
+    `${rtl ? '<w:bidi/>' : ''}<w:spacing w:before="0" w:after="0"/></w:pPr>` +
+    `<w:r><w:${element}/></w:r></w:p></w:footnote>`;
   return (
     `${DECLARATION}<w:footnotes ${DOCUMENT_NAMESPACES}>` +
     separator('separator', -1, 'separator') +

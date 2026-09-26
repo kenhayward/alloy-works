@@ -2800,6 +2800,29 @@ describe('writeDocx: footnotes (Word 3, ruling R2; M5)', () => {
     ).toMatchObject({ Type: `${REL}hyperlink`, Target: REPORT, TargetMode: 'External' });
   });
 
+  it("stands the notes' separators at the start of a right-to-left document's lines, its right, where the PDF draws its line, and at the left in a left-to-right one, whatever direction a note is in (measured, M2 of Word 3's final review)", () => {
+    const separators = (written: Written) =>
+      kids(written.docx.xml('word/footnotes.xml'), 'w:footnote')
+        .slice(0, 2)
+        .map((each) => first(kids(each, 'w:p')[0]!, 'w:bidi') !== undefined);
+    // The Hebrew note stands in a left-to-right document.
+    expect(separators(noted)).toEqual([false, false]);
+    const hebrew = written({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: SEFER,
+        language: 'he-IL',
+        direction: 'rtl',
+        nodes: [reference('hebrew', 4)],
+      }),
+      occurrences: new Map([[id('hebrew'), HEBREW_NOTE]]),
+      layout: layoutWith((layout) => {
+        layout.matter.lists = [];
+      }),
+    });
+    expect(separators(hebrew)).toEqual([true, true]);
+  });
+
   it('sets a note in the language and direction where its mark stands, as the PDF does', () => {
     const [german] = noteAt(6);
     const words = all(german!, 'w:r').find((run) => textOf(run) === 'Eine Anmerkung.')!;
@@ -3307,6 +3330,74 @@ describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; 
       ['REF \\p \\h', true, true],
       ['REF \\h', true, true],
     ]);
+  });
+
+  it("writes the space between two references' fields that print left to right in a right-to-left passage without its direction, so Word sets them as one left-to-right run, as the PDF does, where each stood apart in reading order (measured, M2 of Word 3's final review)", () => {
+    const hebrew = written({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: SEFER,
+        language: 'he-IL',
+        direction: 'rtl',
+        nodes: [section('rtlbody', SEFER, [reference('rtlpart', 4)])],
+      }),
+      occurrences: new Map([
+        [
+          id('rtlpart'),
+          component(
+            SEFER,
+            [
+              paragraph('r0', text(SHALOM), note('rn', paragraph('rna', text(SEFER)))),
+              {
+                type: 'table',
+                id: 't1',
+                style: 'table',
+                caption: [text('Readings')],
+                headerRows: 0,
+                headerColumns: 0,
+                rows: [{ cells: [cellOf('c1', text('1'))] }],
+              },
+              paragraph(
+                'r1',
+                text(`${SHALOM} `),
+                xref('x0', toNode('rtlbody')),
+                text(' '),
+                xref('x1', toBlock('rn')),
+                text(' '),
+                xref('x2', toBlock('r0'), 'page'),
+                text(' '),
+                xref('x3', toBlock('r0'), 'relative'),
+                text(' '),
+                xref('x4', toNode('rtlbody'), 'numberAndTitle'),
+                text(' '),
+                xref('x5', toNode('rtlbody'), 'title'),
+                text(' '),
+                xref('x6', toBlock('r0'), 'relative'),
+                text(' '),
+                xref('x7', toBlock('t1'), 'numberAndTitle'),
+                text(' '),
+                xref('x8', toBlock('r0'), 'relative'),
+              ),
+            ],
+            { language: 'he-IL', direction: 'rtl' },
+          ),
+        ],
+      ]),
+    });
+    const [, cites] = all(hebrew.docx.xml('word/document.xml'), 'w:p').filter((each) =>
+      textOf(each).startsWith(SHALOM),
+    );
+    // Each run of text, outside the fields, and whether it is right to left.
+    const texts = kids(cites!, 'w:r')
+      .filter((run) => first(run, 'w:t') !== undefined && first(run, 'w:instrText') === undefined)
+      .map((run) => [textOf(run), first(run, 'w:rtl') !== undefined]);
+    const spaces = texts.filter(([words]) => words === ' ').map(([, rtl]) => rtl);
+    // Between a number, a note's number, a page and "above", none, and before a number and a title,
+    // which the number begins; beside the Hebrew title, whether between two references or inside
+    // one, the passage's; between a table's label and its Latin words, inside the reference and after
+    // it, none. And the words before them the passage's.
+    expect(spaces).toEqual([false, false, false, false, true, true, true, false, false, false]);
+    expect(texts[0]).toEqual([`${SHALOM} `, true]);
   });
 
   it("names a floated figure's place for above and below where its box is anchored in the text, since Word's REF \\p to its caption in the box prints the caption's words (measured by the Word check); its number, title and page at its caption", () => {
