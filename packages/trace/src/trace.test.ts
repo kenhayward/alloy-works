@@ -507,8 +507,15 @@ describe('the citations in the committed model', () => {
   // where one publication sets each stored MathML's one maths tree in the PDF, a Formula saying its
   // words, and in Word as that tree's OMML - the editor's own tests drawing it on screen. Word 16 set
   // every placement in Cambria Math, measured by hand for this task.
+  // 337, from 334 (2026-09-26): Word 4's last citations. CNT-045 in apps/web's editor/equationView.test.ts,
+  // where the editor draws the stored MathML whole, element for element, beside the worker's test of
+  // the PDF and Word from its one tree; PUB-065 in apps/worker's publish.test.ts, where one job carries
+  // a document's content, numbers and cross-references into Word as fields, breaks no page the layout
+  // does not declare and records that a page cites the PDF; and PUB-023 in apps/worker's word.test.ts,
+  // where one document holding every construct a T1 document can hold is written as Word's own
+  // structures, flattened nowhere and dropped nowhere unsaid. The Word check measured them in Word.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(334);
+    expect(model.citations).toHaveLength(337);
   });
 
   it('cites no identifier the corpus does not hold', () => {

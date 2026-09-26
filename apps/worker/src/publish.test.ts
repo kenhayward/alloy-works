@@ -46,6 +46,7 @@ import { publishJob } from './jobs/publish.js';
 import { PUBLICATION_TEMPLATE } from './template.js';
 import { checkOoxml } from './testing/ooxml.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
+import { askedOf } from './testing/word.js';
 import { checkPdfUa1, type VeraPdfVerdict } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath, type Typst } from './typst.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
@@ -1051,6 +1052,197 @@ describe('publishing a document, from the request to the stored PDF', () => {
       { kind: 'face_substituted', family: 'STIX Two Math', wordFamily: 'Cambria Math' },
       { kind: 'pages_cite_the_pdf' },
     ]);
+  }, 180_000);
+
+  it("PUB-065 carries the resolved document's content, numbering and cross-references into Word and leaves its pagination to Word, the PDF the output a page number cites and the record saying so", async () => {
+    const words = (xml: string) =>
+      [...xml.matchAll(/<w:t xml:space="preserve">([^<]*)<\/w:t>/g)].map((m) => m[1]).join('');
+    const text = (value: string) => ({ type: 'text', value, marks: [] });
+    const xref = (name: string, target: object, display: string) => ({
+      type: 'crossReference',
+      id: name,
+      target,
+      display,
+    });
+    // A chapter of several pages holding a numbered table, a numbered equation and a footnote, and a
+    // reference in every form it offers to each, to a section and to an appendix; then the appendix.
+    const scope = section('Scope', []);
+    const annex = { ...section('Annex', []), matter: 'appendix' as const };
+    const forms = (name: string, target: object, displays: readonly string[]) =>
+      displays.flatMap((display, at) => [
+        ...(at === 0 ? [] : [text(', ')]),
+        xref(`${name}${at}`, target, display),
+      ]);
+    const id = await requested(
+      async (trx) => {
+        const holder = await component(trx, general, 'Calibration', LONG.slice(0, 40), [
+          {
+            type: 'table',
+            id: 't1',
+            style: 'table',
+            caption: [text('Readings at noon')],
+            headerRows: 1,
+            headerColumns: 0,
+            rows: [
+              {
+                cells: [
+                  {
+                    content: [
+                      { type: 'paragraph', id: 'h1', style: 'body', content: [text('Site')] },
+                    ],
+                    colspan: 1,
+                    rowspan: 1,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'equation',
+            id: 'e1',
+            mathml:
+              '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"><mi>x</mi></math>',
+            numbered: true,
+          },
+          {
+            type: 'paragraph',
+            id: 'n1',
+            style: 'body',
+            content: [
+              text('Grace checks the readings.'),
+              {
+                type: 'footnote',
+                id: 'f1',
+                anchor: { kind: 'span' },
+                content: [
+                  { type: 'paragraph', id: 'f1a', style: 'body', content: [text('Twice.')] },
+                ],
+              },
+            ],
+          },
+          ...LONG.slice(40).map((line, at) => ({
+            type: 'paragraph',
+            id: `l${at}`,
+            style: 'body',
+            content: [text(line)],
+          })),
+          {
+            type: 'paragraph',
+            id: 'r1',
+            style: 'body',
+            content: [
+              ...forms('a', { kind: 'node', node: scope.id }, [
+                'number',
+                'title',
+                'numberAndTitle',
+                'relative',
+                'page',
+              ]),
+              text('; '),
+              ...forms('b', { kind: 'block', block: 't1' }, ['number', 'relative', 'page']),
+              text('; '),
+              ...forms('c', { kind: 'block', block: 'e1' }, ['number', 'relative', 'page']),
+              text('; '),
+              ...forms('d', { kind: 'block', block: 'f1' }, ['number', 'relative', 'page']),
+              text('; '),
+              xref('e0', { kind: 'node', node: annex.id }, 'number'),
+            ],
+          },
+        ]);
+        return [section('Method', [scope, reference(holder)]), annex];
+      },
+      ['pdf', 'docx'],
+    );
+    const inputs = await service.withTenant(tenant, (trx) => publicationInputs(trx, id));
+    expect(await work()).toBe('done');
+    const [pdf, docx, ...rest] = await outputsOf(id);
+    expect(rest).toEqual([]);
+
+    // The PDF is the output a page cites; the Word document's record says so.
+    expect(pdf).toMatchObject({ format: 'pdf', standard: 'ua-1', report: [] });
+    expect(docx!.format).toBe('docx');
+    expect(docx!.report).toContainEqual({ kind: 'pages_cite_the_pdf' });
+    const read = await readDocx(docx!);
+    expect(read.errors).toEqual([]);
+    const parts = unzipSync(new Uint8Array(await pdfOf(docx!.object_key)));
+    const document = strFromU8(parts['word/document.xml']!);
+    const notes = strFromU8(parts['word/footnotes.xml']!);
+    const styles = strFromU8(parts['word/styles.xml']!);
+
+    // What Word is asked to carry, as the one assembly both outputs were made from resolved it.
+    const assembled = assemble({
+      formats: ['pdf', 'docx'],
+      outline: inputs!.outline,
+      occurrences: new Map([...inputs!.occurrences].map(([node, each]) => [node, each.content])),
+      refused: inputs!.refused,
+      layout: inputs!.layout?.layout ?? null,
+      theme: inputs!.theme?.theme ?? null,
+      revision: inputs!.revision,
+      covers: fonts.covers,
+      assets: inputs!.assets,
+    });
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const published = assembled.document;
+    // Under a layout, as every request since layouts is.
+    if (!('front' in published)) throw new Error('published without a layout');
+    const { entries } = assembled.numbering;
+
+    // Content: every paragraph's words, the note's among them.
+    for (const line of LONG) expect(document).toContain(`>${line}<`);
+    expect(words(notes)).toContain('Twice.');
+
+    // Numbering: each heading's number Word's own, from its style's numbering, and never in its text;
+    // each caption's and the equation's a SEQ field Word counts, prefilled with the numbering table's.
+    const headings = [
+      ...document.matchAll(/<w:p><w:pPr><w:pStyle w:val="(heading-\d)"\/>.*?<\/w:p>/g),
+    ];
+    expect(headings.map((m) => words(m[0]))).toEqual(['Method', 'Scope', 'Calibration', 'Annex']);
+    for (const style of new Set(headings.map((m) => m[1]!))) {
+      expect(styles).toMatch(
+        new RegExp(`<w:style w:type="paragraph" w:styleId="${style}">.*?<w:numPr>.*?</w:style>`),
+      );
+    }
+    const numbered = entries.filter(
+      (entry) =>
+        entry.label !== null && (entry.sequence === 'table' || entry.sequence === 'equation'),
+    );
+    expect(numbered.map((entry) => entry.label)).toEqual(['Table 1.1', 'Equation 1']);
+    const sequences = [
+      ...document.matchAll(
+        /<w:instrText xml:space="preserve"> SEQ (Table|Equation) [^<]*<\/w:instrText>((?:(?!fldCharType="end").)*)/g,
+      ),
+    ].map(([, name, rest]) => [name, words(rest!.split('fldCharType="separate"')[1]!)]);
+    expect(sequences).toEqual([
+      ['Table', '1'],
+      ['Equation', '1'],
+    ]);
+
+    // Cross-references: each a field prefilled with what the PDF prints, and a page left for Word.
+    const { asked } = askedOf(published, assembled.word!, entries);
+    const fields = [
+      ...document.matchAll(
+        /<w:instrText xml:space="preserve"> ((?:REF|NOTEREF|PAGEREF) _Ref\d{9}[^<]*?) <\/w:instrText>((?:(?!fldCharType="end").)*)/g,
+      ),
+    ].map(([, code, rest]) => {
+      const [name, , ...switches] = code!.split(' ');
+      const own = switches.map((each) => each.slice(1)).filter((each) => each !== 'h');
+      return [[name, ...own].join(' '), words(rest!.split('fldCharType="separate"')[1]!)];
+    });
+    expect(fields).toEqual(asked.map((each) => [each.field, each.text ?? '']));
+    expect(new Set(asked.map((each) => each.field))).toEqual(
+      new Set(['REF', 'REF r', 'REF p', 'NOTEREF', 'PAGEREF']),
+    );
+
+    // Pagination Word's: no page broken but where the layout declares one - each list after the
+    // contents starting a page - and the contents' entries and every page reference holding no page.
+    expect(document).not.toContain('<w:br w:type="page"/>');
+    const broken = [
+      ...document.matchAll(/<w:p><w:pPr>(?:(?!<\/w:p>).)*?<w:pageBreakBefore\/>.*?<\/w:p>/g),
+    ];
+    expect(broken.map((m) => words(m[0]))).toEqual(published.front.lists.map((list) => list.title));
+    const contents = [...document.matchAll(/<w:p><w:pPr><w:pStyle w:val="TOC\d"\/>.*?<\/w:p>/g)];
+    expect(contents.length).toBeGreaterThan(0);
+    for (const [entry] of contents) expect(entry).not.toContain('<w:tab/>');
   }, 180_000);
 
   it('publishes a figure to Word alone under the default layout: its image read from the store, held to its hash, written into the document once, described, and listed after the contents', async () => {

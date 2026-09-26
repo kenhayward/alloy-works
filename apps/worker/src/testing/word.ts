@@ -32,9 +32,15 @@ export interface Noted {
   readonly label: string;
 }
 
-/** Where Word sets a target: the heading, the caption or the footnote so many in, or a paragraph by its words. */
+/**
+ * Where Word sets a target: the heading, the caption, the footnote or the displayed equation so many in
+ * (Word 4), or a paragraph by its words.
+ */
 export type Target =
-  | { readonly kind: 'heading' | 'caption' | 'footnote' | 'note'; readonly index: number }
+  | {
+      readonly kind: 'heading' | 'caption' | 'footnote' | 'note' | 'equation';
+      readonly index: number;
+    }
   | { readonly kind: 'paragraph'; readonly text: string };
 
 /** Every node in document order, the outline's depth first. */
@@ -90,6 +96,13 @@ export function askedOf(
   );
   captioned.forEach((block, index) => {
     if (block.anchor !== null) targets[block.anchor] = { kind: 'caption', index };
+  });
+  // Every equation that stands on its own, numbered or not, in the order Word displays them.
+  const displayed = walk(document.nodes).flatMap((node) =>
+    blocksOf(node.blocks).filter((block) => block.type === 'equation'),
+  );
+  displayed.forEach((block, index) => {
+    if (block.anchor !== null) targets[block.anchor] = { kind: 'equation', index };
   });
   const asked: Asked[] = [];
   const footnotes: Noted[] = [];

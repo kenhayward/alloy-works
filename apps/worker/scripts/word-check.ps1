@@ -23,7 +23,11 @@
 # page it stands on and the page its bookmark begins on; every bookmark as opened, and how many a person
 # sees who does not ask for hidden ones; and every footnote, with the pages its mark and its note begin
 # on, and - on the reopened copy, which is never saved - its number, as Word's own NOTEREF to its mark
-# reads it, since COM gives a mark's text only as a code point 2.
+# reads it, since COM gives a mark's text only as a code point 2. And what Word 4 writes (ruling R6),
+# after the update: every equation in the text and the notes, whether Word displays it or sets it in its
+# line, the face it is set in, the page and the lines it starts and ends on, and whether it stands in
+# the contents or a list after it; and with every paragraph, the contents' entries and the lists', the
+# text each equation in it gives, so that a test can tell the words around an equation from its maths.
 #
 # Tracks the WINWORD process it started and stops only that one, if Quit leaves it running. Where
 # starting Word started no process of its own, it attached to one somebody else runs, and it closes
@@ -35,6 +39,7 @@ $ErrorActionPreference = 'Stop'
 $wdActiveEndSectionNumber = 2
 $wdFootnotesStory = 2
 $wdCollapseStart = 1
+$wdCollapseEnd = 0
 $wdActiveEndPageNumber = 3
 $wdVerticalPositionRelativeToPage = 6
 $wdStatisticPages = 2
@@ -51,6 +56,14 @@ function Clean([string]$s) {
   return (($s -replace "[\r\a\x0b\x0c]", ' ').Trim())
 }
 
+# The text each equation in a range gives, in order: what the range's own text holds of it, which is
+# neither the equation's source nor anything a reader is told of it, so a test takes it out by this.
+function Maths($range) {
+  $list = @()
+  foreach ($m in $range.OMaths) { $list += (Clean $m.Range.Text) }
+  return , $list
+}
+
 # A colour as COM gives it, blue-green-red in an integer, as the PDF's #rrggbb less its hash; or auto.
 function Rgb([int]$c) {
   if ($c -eq -16777216) { return 'auto' }
@@ -63,7 +76,7 @@ function ReadFigureLists($doc) {
   foreach ($t in $doc.TablesOfFigures) {
     $list = @()
     foreach ($para in $t.Range.Paragraphs) {
-      $list += [ordered]@{ text = (Clean $para.Range.Text); style = [string]$para.Style.NameLocal }
+      $list += [ordered]@{ text = (Clean $para.Range.Text); style = [string]$para.Style.NameLocal; maths = (Maths $para.Range) }
     }
     $lists += , $list
   }
@@ -151,6 +164,7 @@ function ReadParagraph($para, [bool]$boxed) {
     page = $r.Information($wdActiveEndPageNumber); section = $r.Information($wdActiveEndSectionNumber)
     top = $r.Information($wdVerticalPositionRelativeToPage); images = $r.InlineShapes.Count
     anchors = $(if ($boxed) { 0 } else { $r.ShapeRange.Count }); boxed = $boxed
+    maths = (Maths $r)
   }
 }
 
@@ -171,7 +185,7 @@ function ReadContents($doc) {
   $list = @()
   if ($doc.TablesOfContents.Count -gt 0) {
     foreach ($para in $doc.TablesOfContents.Item(1).Range.Paragraphs) {
-      $list += [ordered]@{ text = (Clean $para.Range.Text); style = [string]$para.Style.NameLocal }
+      $list += [ordered]@{ text = (Clean $para.Range.Text); style = [string]$para.Style.NameLocal; maths = (Maths $para.Range) }
     }
   }
   return , $list
@@ -213,6 +227,36 @@ function ReadNotes($doc) {
     $list += [ordered]@{
       section = $mark.Information($wdActiveEndSectionNumber); mark = $mark.Information($wdActiveEndPageNumber)
       note = $start.Information($wdActiveEndPageNumber); text = (Clean $fn.Range.Text)
+    }
+  }
+  return , $list
+}
+
+function ReadEquations($doc) {
+  # Every equation in the text, then every one in the notes, each in its story's order: Word's type for
+  # it (0 displayed, 1 in its line), the face it is set in, its page, the lines its start and its end
+  # stand on, and - in the text - whether it stands in the contents or a list after it, which Word made
+  # again from a heading's or a caption's as it updated them.
+  $listed = @()
+  foreach ($t in $doc.TablesOfContents) { $listed += , @($t.Range.Start, $t.Range.End) }
+  foreach ($t in $doc.TablesOfFigures) { $listed += , @($t.Range.Start, $t.Range.End) }
+  $stories = @([pscustomobject]@{ story = 'text'; maths = $doc.OMaths })
+  if ($doc.Footnotes.Count -gt 0) {
+    $stories += [pscustomobject]@{ story = 'footnotes'; maths = $doc.StoryRanges.Item($wdFootnotesStory).OMaths }
+  }
+  $list = @()
+  foreach ($each in $stories) {
+    foreach ($m in $each.maths) {
+      $r = $m.Range
+      $end = $r.Duplicate
+      $end.Collapse($wdCollapseEnd)
+      $inList = $false
+      foreach ($span in $listed) { if ($each.story -eq 'text' -and $r.Start -ge $span[0] -and $r.Start -lt $span[1]) { $inList = $true } }
+      $list += [ordered]@{
+        story = $each.story; type = [int]$m.Type; font = [string]$r.Font.Name; text = (Clean $r.Text)
+        page = $r.Information($wdActiveEndPageNumber); top = $r.Information($wdVerticalPositionRelativeToPage)
+        bottom = $end.Information($wdVerticalPositionRelativeToPage); listed = $inList
+      }
     }
   }
   return , $list
@@ -288,6 +332,7 @@ try {
       $out.floats = (ReadFloats $doc)
       $out.references = (ReadReferences $doc)
       $out.notes = (ReadNotes $doc)
+      $out.equations = (ReadEquations $doc)
       # Each path cast to a plain string: Join-Path's answer reaches COM wrapped, and Word then waits
       # forever inside ExportAsFixedFormat or SaveAs2 rather than failing.
       $pdf = [string](Join-Path $Folder "$name.pdf")
