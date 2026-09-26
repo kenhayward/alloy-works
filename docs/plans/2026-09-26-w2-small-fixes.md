@@ -232,6 +232,8 @@ makes a heading a paragraph, naming it` - the measured fixture, extended with a 
 - publishing.md's CNT-054 row: a citation fails as `inline_not_publishable`, not
   `citation_unresolved`.
 - publishing.md's "Where the code lives": veraPDF runs in the worker's suite, not its job.
+- publishing.md's PUB-074 row: the refusal is `page_reference_without_pdf`, not
+  `page_citation_without_pdf` (found by W2.2's final review).
 - docs/features.md: the document page shows the text in reading order, each component opening in
   place; "no document view" means no view that renders the document as it will publish. Say it once
   and consistently.
@@ -274,6 +276,19 @@ review asked for the nested sink and the lift with siblings after it to be press
 derived; both now are, each seen to fail under a break. Its re-review found Delete at the end of a nested definition
 list's last item stopping at that item, before the guard, and handing the key on to select the item
 after; the climb now carries on to the item holding the list, and the test asserts the caret too.
+
+**W2.2 (PR #252).** API-003's undeclared status is held to the one error shape rather than refused
+outright: the published contract already declares that shape as every route's `default`, so a
+refusal at an unlisted status still reaches the caller and anything else becomes a 500. The routes
+are held to the contract's through an `onRoute` callback on the HTTP options. API-006's rules come
+from one table beside the wire codes, found with `pnpm trace show`, and a dotted refusal becomes an
+error only through `refused()`, which carries it; codes no requirement refuses name none, each
+listed. A bytes-over-the-limit refusal shares `asset_too_large` with the pixel bound and names no rule,
+since no requirement sets that limit. API-037 needed the store's publication refusal to carry the
+current version's heading, never its content (IAM-073), and a release, which cuts, is held to it as
+well as a save and a cut. API-047's header had to be written on the event stream's own head, which
+bypasses the hook, and the not-found test's byte-for-byte header comparison now leaves the identifier
+out, as it does the body's trace id.
 
 ## Done when
 

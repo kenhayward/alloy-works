@@ -137,6 +137,7 @@ export {
   latestVersion,
   versionContents,
   readVersion,
+  headingOf,
   recordVersion,
   substanceOf,
   type Authorship,
@@ -144,6 +145,7 @@ export {
   type NextVersion,
   type RecordAnswer,
   type StoredVersion,
+  type VersionHeading,
 } from './versions.js';
 export { createRole, findRole, type Role, type RoleAnswer } from './roles.js';
 export {

@@ -3667,7 +3667,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `version_precondition`: the document has a newer version than the one named */
+            /** @description `version_precondition`: the document has a newer version than the one named, which `current` names */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3682,6 +3682,16 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                        /** @description version_precondition: the version the document is at */
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
                     };
                 };
             };

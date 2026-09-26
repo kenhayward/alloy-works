@@ -383,12 +383,15 @@ describe('routes that check a permission', () => {
     const missing = await get(`/v1/access?target=artifact:${MISSING}`, 'grace');
     expect(unreadable.statusCode).toBe(404);
     expect(missing.statusCode).toBe(404);
-    // Byte for byte but for the trace id, which is every request's own, and the date, which is
-    // every response's own; no header carries the trace id.
+    // Byte for byte but for the trace id, which is every request's own - in the body and in the
+    // request identifier header (API-047), which is the same value - and the date, which is every
+    // response's own.
     const untracedBody = (body: Record<string, string>) =>
       Object.fromEntries(Object.entries(body).filter(([member]) => member !== 'traceId'));
     const untracedHeaders = (headers: Record<string, unknown>) =>
-      Object.fromEntries(Object.entries(headers).filter(([name]) => name !== 'date'));
+      Object.fromEntries(
+        Object.entries(headers).filter(([name]) => name !== 'date' && name !== 'x-request-id'),
+      );
     const refused = untracedBody(unreadable.json());
     const absent = untracedBody(missing.json());
     expect(refused).toEqual(absent);

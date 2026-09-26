@@ -1,5 +1,6 @@
 import type { Tenant, TenantDatabase, TenantEvent, TenantListener } from '@alloy-works/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { REQUEST_ID_HEADER } from './http.js';
 
 /** How long a browser waits before coming back, and how often we prove the connection is alive. */
 export const STREAM_RETRY_MS = 5000;
@@ -31,6 +32,8 @@ export async function streamToViewer(options: {
     connection: 'keep-alive',
     // Proxies that buffer would hold every frame until the stream ended.
     'x-accel-buffering': 'no',
+    // A hijacked reply skips the hook that gives every other response its identifier (API-047).
+    [REQUEST_ID_HEADER]: request.id,
   });
   const send = (event: string, data: unknown) => {
     raw.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);

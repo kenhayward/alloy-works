@@ -13,7 +13,7 @@ import {
   listSpacesFor,
   readLock,
   type LockState,
-  type StoredVersion,
+  type VersionHeading,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -22,7 +22,7 @@ import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
-import { wireCode } from './wire-codes.js';
+import { refused } from './wire-codes.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const PAGE = 50;
@@ -39,7 +39,7 @@ export function lockView(lock: LockState, caller: string) {
 }
 
 /** A version as the API names it: `revision.version`, its author, and when. */
-export function versionView(version: StoredVersion) {
+export function versionView(version: VersionHeading) {
   return {
     id: version.id,
     number: `${version.revision}.${version.version}`,
@@ -105,16 +105,16 @@ export function componentHandlers(
       // between; answered as absent either way, never as a refusal that says it exists.
       if (answer.answer === 'space.missing') throw notFound();
       if (answer.answer === 'component_type.missing') {
-        throw new AppError(
+        throw refused(
           409,
-          wireCode('component_type.missing'),
+          'component_type.missing',
           'There is no such component type in this environment.',
         );
       }
       if (answer.answer === 'content.invalid') {
-        throw new AppError(
+        throw refused(
           400,
-          wireCode('content.invalid'),
+          'content.invalid',
           'A component needs a title and a language tag such as en-GB.',
         );
       }

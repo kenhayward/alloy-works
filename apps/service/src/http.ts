@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { ErrorBody } from '@alloy-works/api-contract';
 import type { Writable } from 'node:stream';
 import Fastify, {
   LogController,
@@ -14,6 +15,25 @@ export interface HttpOptions {
   readonly logLevel: LogLevel;
   /** Where log lines go; standard output unless a test captures them. */
   readonly logStream?: Writable;
+  /**
+   * Told of every route as it is registered, a HEAD beside each GET included: how a test holds the
+   * routes served to the contract's, both ways (API-003). Registered first, so it hears every one.
+   */
+  readonly onRoute?: (route: { readonly method: string; readonly url: string }) => void;
+}
+
+/** The header a request identifier travels in, both ways (API-047). */
+export const REQUEST_ID_HEADER = 'x-request-id';
+
+/**
+ * A caller's own request identifier, where it is one to keep: a plain token of at most 128
+ * characters. Anything else is not taken - it would be written into the log as it came - and the
+ * request is given a fresh one, as one that sent none is.
+ */
+const CALLERS_OWN = /^[A-Za-z0-9._:-]{1,128}$/;
+
+export function requestIdOf(header: string | string[] | undefined): string {
+  return typeof header === 'string' && CALLERS_OWN.test(header) ? header : randomUUID();
 }
 
 /** What answers an address no route claims: the API saying, in its own shape, that there is none. */
@@ -49,9 +69,24 @@ export function createHttp(
       },
       ...(options.logStream ? { stream: options.logStream } : {}),
     },
-    genReqId: () => randomUUID(),
+    // The trace id every log line and every error carries, and the header every response does.
+    genReqId: (request) => requestIdOf(request.headers[REQUEST_ID_HEADER]),
     // Fastify 5.12 deprecates the top-level requestIdLogLabel option, with a warning on stderr.
     logController: new LogController({ requestIdLogLabel: 'traceId' }),
+  });
+
+  if (options.onRoute) {
+    const told = options.onRoute;
+    app.addHook('onRoute', (route) => {
+      for (const method of [route.method].flat()) told({ method, url: route.url });
+    });
+  }
+
+  // On every response, whatever answered it - a route, a refusal, the not-found handler, the
+  // renderer - so a caller can quote it whether or not anything went wrong (API-047).
+  app.addHook('onSend', async (request, reply, payload) => {
+    void reply.header(REQUEST_ID_HEADER, request.id);
+    return payload;
   });
 
   app.setValidatorCompiler(({ schema }) => (data) => {
@@ -66,6 +101,18 @@ export function createHttp(
       (data) =>
         JSON.stringify((schema as z.ZodType).parse(data)),
   );
+
+  // Every status a route does not list is declared as the one error shape, as the published contract
+  // declares it (`default`), so a status the contract does not name is serialised against that
+  // shape: an error body goes out as one, with nothing it does not name, and anything else is the
+  // service failing, never sent as it came (API-003, issue #240). A route declaring no responses at
+  // all - the renderer's files - is left alone.
+  app.addHook('onRoute', (route) => {
+    const response = route.schema?.response as Record<string, unknown> | undefined;
+    if (response !== undefined && !('default' in response)) {
+      route.schema!.response = { ...response, default: ErrorBody };
+    }
+  });
 
   app.setErrorHandler((error, request, reply) => {
     const { status, body } = toErrorBody(error, request.id);

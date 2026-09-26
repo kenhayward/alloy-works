@@ -62,7 +62,7 @@ describe('publishing a document through the service', () => {
 
   const call = (
     as: string | undefined,
-    method: 'GET' | 'POST' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     url: string,
     payload?: Json,
     through: FastifyInstance = app,
@@ -336,6 +336,77 @@ describe('publishing a document through the service', () => {
     expect(await codes('grace')).toEqual(['occurrence_unreadable']);
   });
 
+  it('API-037 refuses every mutation from a stale version, naming the version the resource is at', async () => {
+    const component = await componentIn(general, 'Scope');
+    const document = await documentReferencing([component.id]);
+    // A version of neither: what a caller holds when somebody else has moved the resource on.
+    const stale = '00000000-0000-4000-8000-0000000000aa';
+    const session = '00000000-0000-4000-8000-0000000000bb';
+    const claimed = await call('grace', 'POST', `/v1/components/${component.id}/lock`, { session });
+    expect(claimed.statusCode, claimed.body).toBe(200);
+    const content = {
+      schemaVersion: 1,
+      title: 'Scope',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [{ type: 'paragraph', id: 'p1', style: 'body', content: [] }],
+    };
+    const componentAt = { id: component.version, number: '0.1' };
+    const documentAt = (await call('grace', 'GET', `/v1/documents/${document.id}`)).json<{
+      version: { id: string; number: string };
+    }>().version;
+    expect(documentAt.id).toBe(document.version);
+
+    const refusals = [
+      [
+        'save',
+        await call('grace', 'PUT', `/v1/components/${component.id}/iterations/${session}/1`, {
+          openedFrom: stale,
+          content,
+        }),
+        { current: componentAt },
+      ],
+      [
+        'cut',
+        await call('grace', 'POST', `/v1/components/${component.id}/versions`, {
+          session,
+          openedFrom: stale,
+        }),
+        { current: componentAt },
+      ],
+      [
+        'release',
+        await call(
+          'grace',
+          'DELETE',
+          `/v1/components/${component.id}/lock?session=${session}&openedFrom=${stale}`,
+        ),
+        { current: componentAt },
+      ],
+      [
+        'outline',
+        await call('grace', 'POST', `/v1/documents/${document.id}/outline`, {
+          openedFrom: stale,
+          operation: { operation: 'remove', node: document.nodes[0]! },
+        }),
+        { current: { version: documentAt } },
+      ],
+      [
+        'publish',
+        await publish('grace', { id: document.id, version: stale }),
+        { current: documentAt },
+      ],
+    ] as const;
+    for (const [mutation, answer, names] of refusals) {
+      expect(answer.statusCode, `${mutation}: ${answer.body}`).toBe(409);
+      expect(answer.json(), mutation).toMatchObject({
+        code: 'version_precondition',
+        rule: 'API-037',
+        ...names,
+      });
+    }
+  });
+
   it('refuses a reader who may not publish, a stale version, a format it cannot make, and an unknown document', async () => {
     const document = await documentReferencing([]);
     const reader = await publish('alice', document);
@@ -355,10 +426,10 @@ describe('publishing a document through the service', () => {
     const older = { id: other.id, version: document.version };
     const stale = await publish('grace', older);
     expect(stale.statusCode).toBe(409);
-    expect(stale.json()).toMatchObject({ code: 'version_precondition' });
+    expect(stale.json()).toMatchObject({ code: 'version_precondition', rule: 'API-037' });
     const html = await publish('grace', other, ['html']);
     expect(html.statusCode).toBe(400);
-    expect(html.json()).toMatchObject({ code: 'format_unsupported' });
+    expect(html.json()).toMatchObject({ code: 'format_unsupported', rule: 'PUB-014' });
     // A format named twice is a malformed request, not one the template cannot make.
     const twice = await publish('grace', other, ['pdf', 'pdf']);
     expect(twice.statusCode).toBe(400);
@@ -375,6 +446,7 @@ describe('publishing a document through the service', () => {
     expect(answer.statusCode, answer.body).toBe(400);
     expect(answer.json()).toEqual({
       code: 'layout_language',
+      rule: 'PUB-095',
       message:
         'This document is in fr, and its layout is written in en. It can be published only under a layout in its own language.',
       traceId: expect.any(String),
@@ -389,6 +461,7 @@ describe('publishing a document through the service', () => {
     expect(answer.statusCode, answer.body).toBe(400);
     expect(answer.json()).toEqual({
       code: 'format_unsupported',
+      rule: 'PUB-014',
       message: 'The layout this document is published under does not make html.',
       traceId: expect.any(String),
     });
@@ -445,6 +518,7 @@ describe('publishing a document through the service', () => {
     expect(answer.statusCode, answer.body).toBe(400);
     expect(answer.json()).toEqual({
       code: 'page_reference_without_pdf',
+      rule: 'PUB-074',
       message:
         'This document refers to a page, and only the PDF has the pages it refers to. Publish it as a PDF as well.',
       traceId: expect.any(String),

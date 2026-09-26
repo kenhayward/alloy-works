@@ -1,3 +1,5 @@
+import { AppError } from './errors.js';
+
 /**
  * The store's dotted refusal codes, as the wire spells them (Ken's decision F): every API error `code`
  * uses an underscore, never a dot. Mapped here, at the one place, so a handler never builds a wire
@@ -35,7 +37,43 @@ const WIRE_CODES = {
 
 export type DottedCode = keyof typeof WIRE_CODES;
 
+/** Every dotted code the table spells, for a test to hold each one to a decision about its rule. */
+export const DOTTED_CODES = Object.keys(WIRE_CODES) as DottedCode[];
+
+/**
+ * The requirement each refusal enforces, where one is the rule that refuses (API-006): what the
+ * error's `rule` names, so a caller can look up why as well as what. A code absent here refuses by no
+ * requirement - a reference to nothing, a stale save, a guard of the design's own - and names none
+ * rather than one that reads well - nor does the cap on what an external principal may be given,
+ * which refuses more than IAM-057 names and which access.md leaves IAM-057 unclaimed for.
+ * `refusals.test.ts` holds every code to one side or the other.
+ */
+const RULES: Partial<Record<DottedCode, string>> = {
+  'lock.held': 'API-039',
+  'lock.required': 'COL-005',
+  'version.precondition': 'API-037',
+  'format.unsupported': 'PUB-014',
+  'page_reference.without_pdf': 'PUB-074',
+  'layout.language': 'PUB-095',
+  'grant.external_at_tenant': 'IAM-071',
+  'grant.external_past_cap': 'IAM-049',
+};
+
 /** The wire's spelling of a store's dotted answer. */
 export function wireCode(code: DottedCode): string {
   return WIRE_CODES[code];
+}
+
+/**
+ * A refusal of the store's, as the wire carries it: its code spelled for the wire, and the rule that
+ * refuses it where a requirement does. The one way a dotted answer becomes an error, so no refusal can
+ * be sent without the rule its code carries.
+ */
+export function refused(
+  status: number,
+  code: DottedCode,
+  message: string,
+  members: Readonly<Record<string, unknown>> = {},
+): AppError {
+  return new AppError(status, WIRE_CODES[code], message, RULES[code], members);
 }

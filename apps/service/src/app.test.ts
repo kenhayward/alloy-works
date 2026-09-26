@@ -39,6 +39,8 @@ describe('the service', () => {
   let app: FastifyInstance;
   let production: Tenant;
   const lines: string[] = [];
+  // Every route the app registers, as Fastify registers it, a HEAD beside each GET included.
+  const registered: { method: string; url: string }[] = [];
 
   beforeAll(async () => {
     db = await freshDatabase();
@@ -68,6 +70,7 @@ describe('the service', () => {
       logStream,
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets({}),
+      onRoute: (route) => registered.push(route),
     });
   });
 
@@ -75,6 +78,19 @@ describe('the service', () => {
     await app.close();
     await tenantDb.close();
     await db.drop();
+  });
+
+  it('API-003 registers exactly the routes the contract declares, and no other', async () => {
+    await app.ready();
+    const key = (method: string, url: string) => `${method} ${url}`;
+    const declared = allRoutes.map((route) =>
+      key(route.method, route.path.replace(/\{(\w+)\}/g, ':$1')),
+    );
+    // HEAD is Fastify's own, answered beside every GET; it is no route of the service's.
+    const served = registered
+      .filter((route) => route.method !== 'HEAD')
+      .map((route) => key(route.method, route.url));
+    expect(served.sort()).toEqual(declared.sort());
   });
 
   it('serves every route the contract declares', async () => {

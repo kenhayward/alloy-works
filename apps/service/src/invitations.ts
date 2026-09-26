@@ -17,8 +17,8 @@ import {
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { afterCursor, cursorAfter, pageLimit } from './components.js';
-import { AppError } from './errors.js';
-import { wireCode } from './wire-codes.js';
+import type { AppError } from './errors.js';
+import { refused } from './wire-codes.js';
 
 /** An invitation as the API shows it, lapsed or not by the clock of the transaction it was read in. */
 export function invitationView(stored: StoredInvitation, now: Date): InvitationView {
@@ -52,7 +52,7 @@ const REFUSALS = new Map<InvitationRefusal | 'invitation.accepted', string>([
 ]);
 
 function refuse(refusal: InvitationRefusal | 'invitation.accepted'): AppError {
-  return new AppError(409, wireCode(refusal), REFUSALS.get(refusal)!);
+  return refused(409, refusal, REFUSALS.get(refusal)!);
 }
 
 async function transactionNow(trx: Authorised['trx']): Promise<Date> {

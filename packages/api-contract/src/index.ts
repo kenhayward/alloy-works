@@ -68,6 +68,7 @@ export {
   PublicationList,
   PublicationParams,
   PublicationRequestParams,
+  PublicationRefusal,
   PublicationRequestView,
   PublicationSummary,
   PublicationView,

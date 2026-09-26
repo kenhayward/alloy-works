@@ -513,6 +513,7 @@ describe('documents through the service', () => {
     expect(stale.statusCode).toBe(409);
     expect(stale.json()).toMatchObject({
       code: 'version_precondition',
+      rule: 'API-037',
       current: { version: second.version, outline: { nodes: [{ id: introduction }] } },
     });
     // And from the outline that came back, the same act lands.
@@ -538,6 +539,7 @@ describe('documents through the service', () => {
       expect(answer.statusCode).toBe(409);
       expect(answer.json()).toMatchObject({
         code: 'version_precondition',
+        rule: 'API-037',
         current: { id: mine.id, version: mine.version },
       });
     }
@@ -555,7 +557,7 @@ describe('documents through the service', () => {
     expect([first.statusCode, second.statusCode].sort()).toEqual([200, 409]);
     const refused = first.statusCode === 409 ? first : second;
     const recorded = (first.statusCode === 409 ? second : first).json<DocumentBody>();
-    expect(refused.json()).toMatchObject({ code: 'version_precondition' });
+    expect(refused.json()).toMatchObject({ code: 'version_precondition', rule: 'API-037' });
     // Refused against the current outline: the refusal carries the winner's outline as it now stands.
     expect(refused.json<{ current: DocumentBody }>().current).toEqual(recorded);
     // And nothing was overwritten: the chain holds 0.1 and the winner's version only, and the

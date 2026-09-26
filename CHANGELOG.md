@@ -3,6 +3,29 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.75.0 - 2026-09-26 (PR #252)
+
+### Added
+
+- **Every response from the API carries a request identifier** in `X-Request-Id`: your own, where
+  you sent one that is a plain token of up to 128 characters, and one made for the request
+  otherwise. It is the identifier the service's log and any error body quote, so a problem can be
+  traced from either end.
+- **A refusal names the requirement that refused it** in the error's `rule`, where one did: a lock
+  held by someone else, a stale version, a format or language the layout cannot publish, an
+  external grant beyond what is allowed, and an image that is not a PNG or JPEG, is too large, or is
+  not a complete file.
+- **Publishing from a version that is no longer the latest names the version the document is at**,
+  as a save, a cut and an outline change already did.
+- The API's own description now tells callers to ignore fields they do not know, since fields are
+  only ever added within an API version.
+
+### Fixed
+
+- A response the API sent with a status its contract does not list went out unchecked, carrying
+  whatever the handler put in it. It is now held to the one error shape, and anything else is
+  answered as the service failing (issue #240).
+
 ## 0.74.1 - 2026-09-26 (PR #251)
 
 ### Fixed

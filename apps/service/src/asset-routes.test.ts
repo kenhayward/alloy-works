@@ -220,6 +220,7 @@ describe('uploading an image through the service (figures 1)', () => {
     const answer = await fill('grace', id, gif);
     expect(answer.statusCode).toBe(400);
     expect(code(answer)).toBe('asset_format_not_permitted');
+    expect(answer.json()).toMatchObject({ rule: 'AST-001' });
     expect(await upload('grace', id)).toMatchObject({ state: 'refused', reason: 'not_permitted' });
     // Refused rather than stored: the upload names no bytes at all.
     const stored = await tenantDb.withTenant(tenant, (trx) => readAssetUpload(trx, id));
@@ -269,6 +270,7 @@ describe('uploading an image through the service (figures 1)', () => {
     const tooMany = await fill('grace', huge, png(8000, 8000).subarray(0, 33));
     expect(tooMany.statusCode).toBe(413);
     expect(code(tooMany)).toBe('asset_too_large');
+    expect(tooMany.json()).toMatchObject({ rule: 'AST-040' });
     expect(await upload('grace', huge)).toMatchObject({
       state: 'refused',
       reason: 'too_many_pixels',
@@ -280,6 +282,8 @@ describe('uploading an image through the service (figures 1)', () => {
     const answer = await fill('grace', id, Buffer.alloc(25_000_001));
     expect(answer.statusCode).toBe(413);
     expect(code(answer)).toBe('asset_too_large');
+    // A limit of the service's own on what it will read, and no requirement's: no rule is named.
+    expect(answer.json()).not.toHaveProperty('rule');
     expect(await upload('grace', id)).toMatchObject({ state: 'awaiting' });
   });
 

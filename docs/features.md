@@ -63,7 +63,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   telling them apart by the address in the browser's bar, and keeps each one's data in a schema only
   that environment's database role may reach. It serves the renderer beside its API, so a page and
   the calls it makes are one address. One command runs the whole of it: the database, the
-  object store, a stand-in sign-in provider, the service and a worker.
+  object store, a stand-in sign-in provider, the service and a worker. Every answer the API gives
+  carries a request identifier, the caller's own where it sent one, which is the one its log and any
+  error quote; an error names the requirement that refused where one did; a change made from a
+  version that is no longer the latest is refused naming the version that is; and the API's own
+  document tells a caller to ignore any field it does not know, since fields are only ever added.
 
 - **A packaged desktop build.** `pnpm --filter @alloy-works/desktop package` produces a Windows
   installer. Nothing is signed, notarised or published.

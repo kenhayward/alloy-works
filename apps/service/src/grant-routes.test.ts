@@ -287,6 +287,7 @@ describe('making, listing and removing grants through the service', () => {
     await expect(refusal({ role: roles.Reader, level: 'tenant' })).resolves.toMatchObject({
       status: 409,
       code: 'grant_external_at_tenant',
+      rule: 'IAM-071',
     });
     await expect(
       refusal({ role: roles.Author, level: `space:${clinical}` }),

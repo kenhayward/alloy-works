@@ -28,7 +28,7 @@ import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import { defaultTheme, themeAt } from './themes.js';
-import { latestVersion } from './versions.js';
+import { headingOf, latestVersion, type VersionHeading } from './versions.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -320,10 +320,11 @@ export type PublicationRequestAnswer =
     }
   /**
    * The document is not at the version the caller named: they would publish what they have not seen.
-   * The current version by its id alone - its outline names components and pinned versions the
-   * caller may not read, so it is never handed back from here (IAM-073).
+   * The current version by its heading alone, so the caller is told which version it is at (API-037)
+   * - its outline names components and pinned versions the caller may not read, so that is never
+   * handed back from here (IAM-073).
    */
-  | { readonly answer: 'version.precondition'; readonly current: string }
+  | { readonly answer: 'version.precondition'; readonly current: VersionHeading }
   /**
    * A format the layout the request would be made under does not make (PUB-014), each named once,
    * refused rather than approximated. No format, or one named twice, is refused naming none.
@@ -365,7 +366,9 @@ export async function requestPublication(
 ): Promise<PublicationRequestAnswer> {
   const latest = await latestVersion(trx, input.documentId);
   if (!latest || latest.kind !== 'document') return { answer: 'document.missing' };
-  if (latest.id !== input.version) return { answer: 'version.precondition', current: latest.id };
+  if (latest.id !== input.version) {
+    return { answer: 'version.precondition', current: headingOf(latest) };
+  }
 
   // Made under the environment's declared layout at its latest version, recorded by its key: the job
   // publishes under that version, whatever the layout becomes before it runs.
