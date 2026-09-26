@@ -579,7 +579,9 @@ export function joinDefinitionItems(direction: 'backward' | 'forward'): Command 
         // Only from the very end of an item: the caret's block is the last thing in each level.
         if ($at.index(depth) !== node.childCount - 1) return false;
         if (node.type === definitionItemNode) {
-          if ($at.index(depth - 1) + 1 >= $at.node(depth - 1).childCount) return false;
+          // The last item of a list nested in a definition: the caret is at the end of the item
+          // holding that list too, so the question is that item's, further up (issue #250).
+          if ($at.index(depth - 1) + 1 >= $at.node(depth - 1).childCount) continue;
           itemStart = $at.after(depth);
           break;
         }

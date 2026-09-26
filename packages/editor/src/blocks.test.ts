@@ -1911,12 +1911,18 @@ describe('Backspace and Delete between two definition items (issue #160)', () =>
         });
         return found;
       };
-      const back = press(at(doc, termOf(1)), 'Backspace');
+      // Nothing at all: the document as it was, and the caret where it was rather than a selection
+      // of the item after it, which is what the key would otherwise hand on to.
+      const before = at(doc, termOf(1));
+      const back = press(before, 'Backspace');
       expect(back.handled, kind).toBe(true);
       expect(back.next.doc.eq(doc), kind).toBe(true);
-      const forward = press(at(doc, inside(doc, 'b9') + 'Note.'.length), 'Delete');
+      expect(back.next.selection.eq(before.selection), kind).toBe(true);
+      const end = at(doc, inside(doc, 'b9') + 'Note.'.length);
+      const forward = press(end, 'Delete');
       expect(forward.handled, kind).toBe(true);
       expect(forward.next.doc.eq(doc), kind).toBe(true);
+      expect(forward.next.selection.eq(end.selection), kind).toBe(true);
     }
   });
 

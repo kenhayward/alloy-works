@@ -271,7 +271,9 @@ review found the join from a term reaching into a list that ends the definition 
 since issue #160 and on `main` too (issue #250): it asked the nearest text whether it was a
 paragraph, and a list's last line is one. It now asks the item above's own last block. The same
 review asked for the nested sink and the lift with siblings after it to be pressed rather than
-derived; both now are, each seen to fail under a break.
+derived; both now are, each seen to fail under a break. Its re-review found Delete at the end of a nested definition
+list's last item stopping at that item, before the guard, and handing the key on to select the item
+after; the climb now carries on to the item holding the list, and the test asserts the caret too.
 
 ## Done when
 
