@@ -2917,6 +2917,45 @@ describe('cross-references, published (cross-references 2)', () => {
     ]);
   });
 
+  it('numbers, lists and refers to what the conditions leave, never to what they take out (issue #253)', () => {
+    const blocks = [
+      table('t1'),
+      table('t2', [text('Pressures')]),
+      paragraph('b1', text('See '), xref('x1', toBlock('t2'), 'numberAndTitle')),
+    ];
+    const plain = assemble(inIntro(...blocks));
+    // Standing in for REU's conditions (T4): the first table is in a passage a condition hides.
+    const hidden = assemble({
+      ...inIntro(...blocks),
+      conditionContent: (_node, content) => ({
+        ...content,
+        content: content.content.filter((block) => block.id !== 't1'),
+      }),
+    });
+    expect(publishedOf(plain).references.map((each) => each.text)).toEqual(['Table 1.2 Pressures']);
+    // Counted from what survives: the table a condition takes out takes no number, is not
+    // published, and is in no list - the one left is Table 1.1, and is referred to as that.
+    expect(publishedOf(hidden).references.map((each) => each.text)).toEqual([
+      'Table 1.1 Pressures',
+    ]);
+    expect(publishedOf(hidden).anchors).not.toContain(B('calib', 't1'));
+    // And the tables published, which the list of tables is made from, carry the numbers counted.
+    const labels = (assembled: typeof hidden) => {
+      if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+      const found: (string | null)[] = [];
+      const walk = (nodes: readonly PublishedNode[]) => {
+        for (const node of nodes) {
+          for (const each of node.blocks) if (each.type === 'table') found.push(each.label);
+          walk(node.children);
+        }
+      };
+      walk(assembled.document.nodes);
+      return found;
+    };
+    expect(labels(plain)).toEqual(['Table 1.1', 'Table 1.2']);
+    expect(labels(hidden)).toEqual(['Table 1.1']);
+  });
+
   it("prints above and below in the layout's own words", () => {
     const worded = layoutWith((layout) => {
       layout.words.above = 'earlier';

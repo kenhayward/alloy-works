@@ -102,6 +102,13 @@ export interface AssembleInput {
   readonly formats: readonly [PublishingFormat, ...PublishingFormat[]];
   readonly outline: OutlineDocument;
   readonly occurrences: ReadonlyMap<string, ContentDocument>;
+  /**
+   * The order's second stage (publishing.md, "The order"; PUB-003): what of an occurrence's content
+   * survives its conditions. REU's, in T4, and the identity until then. **Every later stage reads what
+   * this answers** - contributions, numbering, references, the lists, the checks and the published
+   * text - so a figure a condition takes out takes no number and is in no list (issue #253).
+   */
+  readonly conditionContent?: (node: string, content: ContentDocument) => ContentDocument;
   readonly refused: readonly PublishFailure[];
   /**
    * The layout, whose scheme numbers the document (STR-013). **Null for a request made before
@@ -344,7 +351,17 @@ export function assemble(
   input: AssembleInput & { readonly layout: null },
 ): Assembled<PublishedDocument1>;
 export function assemble(input: AssembleInput): Assembled;
-export function assemble(input: AssembleInput): Assembled {
+export function assemble(given: AssembleInput): Assembled {
+  // Conditions first, over each occurrence's content, and nothing downstream reads the content as it
+  // was stored: `input` is the conditioned document from here on (issue #253).
+  const condition =
+    given.conditionContent ?? ((_node: string, content: ContentDocument) => content);
+  const input: AssembleInput = {
+    ...given,
+    occurrences: new Map(
+      [...given.occurrences].map(([node, content]) => [node, condition(node, content)] as const),
+    ),
+  };
   const { layout, theme } = input;
   if ((layout === null) !== (theme === null)) {
     // A caller's defect, never the document's: every request since layouts is made under a theme too
@@ -401,7 +418,8 @@ export function assemble(input: AssembleInput): Assembled {
   const wordReferences = new Map<string, WordReference>();
   const wordTitles = new Map<string, readonly WordTitleRun[]>();
 
-  // resolve and conditions: what each readable occurrence contributes, then REU's stage (#148).
+  // contribute: what each readable occurrence contributes, read from its conditioned content, and
+  // then the outline's own condition stage, which `number` requires (STR-051).
   const contributions = new Map<string, readonly Contribution[]>();
   for (const [node, content] of input.occurrences)
     contributions.set(node, contributionsOf(content));
