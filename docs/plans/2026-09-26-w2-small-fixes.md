@@ -290,6 +290,18 @@ well as a save and a cut. API-047's header had to be written on the event stream
 bypasses the hook, and the not-found test's byte-for-byte header comparison now leaves the identifier
 out, as it does the body's trace id.
 
+**W2.3 (PR #255).** PUB-003's order: `assemble` conditions each occurrence's content first, through
+an optional `conditionContent` on its input that REU will fill, and every later stage reads what that
+answers; a test stands in a condition hiding a table and holds its number, its reference and its
+publication to what survives (issue #253). The adjacent-swap tests are left for when PUB-003 is cited,
+with REU (W2-C), since until conditions do anything the order is carried by the stages' types. Word's
+clipboard capture was not in the repository after all, so it was measured again from Word 16 through
+COM, its words invented and no local path left in it; it also showed that Word's lists arrive as list
+paragraphs, which the reader already read. CNT-167's reader reads each anchor where it stands and
+skips Word's note list; a missing note or an anchor inside a note is reported, with a new report
+subject, `footnote`. The stale text included two passages of features.md saying a component opens on
+its own, where it opens in place.
+
 ## Done when
 
 - CNT-075, CNT-175, CNT-074, API-003, API-006, API-012, API-037, API-047 and CNT-167 Covered; CNT-069

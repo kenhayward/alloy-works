@@ -15298,6 +15298,10 @@
           "howItIsMet": "A Markdown reader feeds the same pipeline, through the HTML reader: every structure a component can hold is kept, a heading kept as a paragraph, and the report names what was rewritten or dropped"
         },
         {
+          "id": "CNT-167",
+          "howItIsMet": "Word's paste is read from the HTML Word puts on the clipboard, by the HTML reader in `packages/readers`, not by an OOXML reader: its list paragraphs as lists, its tables, its emphasis, and each footnote as a footnote where its anchor stands, holding its note's paragraphs with their marks, read from Word's note list; a heading is kept as a paragraph, and a note that cannot be found or an anchor inside a note is left out and named in the report"
+        },
+        {
           "id": "CNT-172",
           "howItIsMet": "An HTML reader feeds the same pipeline and keeps every structure a component can hold, definition lists included; a heading is kept as a paragraph, and the report names what was rewritten or dropped"
         },
@@ -15601,7 +15605,7 @@
         },
         {
           "id": "PUB-074",
-          "howItIsMet": "A request whose formats exclude `pdf` is refused `page_citation_without_pdf` where the resolved document holds a `page` cross-reference; otherwise the absence of a PDF is the record that no output is page-cited"
+          "howItIsMet": "A request whose formats exclude `pdf` is refused `page_reference_without_pdf` where the resolved document holds a `page` cross-reference; otherwise the absence of a PDF is the record that no output is page-cited"
         },
         {
           "id": "PUB-079",
@@ -15645,7 +15649,7 @@
         },
         {
           "id": "CNT-054",
-          "howItIsMet": "A citation resolves against a bibliography entry, and in T1 there are none (LIB is T6), so every citation fails `citation_unresolved`, naming its entry, its block and its component"
+          "howItIsMet": "A citation resolves against a bibliography entry, and in T1 there are none (LIB is T6): the built publish fails every citation as `inline_not_publishable`, detail `citation`, naming its block and its component. Resolution, with LIB, fails one whose entry cannot be resolved as `citation_unresolved`, naming the citation, its entry, its block and its component"
         },
         {
           "id": "CNT-084",
@@ -18361,13 +18365,13 @@
     {
       "id": "CNT-049",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3771,
+      "line": 3810,
       "kind": "title"
     },
     {
       "id": "CNT-081",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3587,
+      "line": 3626,
       "kind": "title"
     },
     {
@@ -18421,55 +18425,55 @@
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3563,
+      "line": 3602,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3287,
+      "line": 3326,
       "kind": "title"
     },
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3670,
+      "line": 3709,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3181,
+      "line": 3220,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3210,
+      "line": 3249,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3233,
+      "line": 3272,
       "kind": "title"
     },
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4851,
+      "line": 4890,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4851,
+      "line": 4890,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4875,
+      "line": 4914,
       "kind": "title"
     },
     {
@@ -18961,13 +18965,19 @@
     {
       "id": "CNT-130",
       "file": "packages/readers/src/html.test.ts",
-      "line": 368,
+      "line": 369,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-167",
+      "file": "packages/readers/src/html.test.ts",
+      "line": 558,
       "kind": "title"
     },
     {
       "id": "CNT-172",
       "file": "packages/readers/src/html.test.ts",
-      "line": 460,
+      "line": 461,
       "kind": "title"
     },
     {

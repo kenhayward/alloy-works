@@ -71,6 +71,7 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1458);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 447, from 446 (2026-09-26): W2.3 - content-model.md claims CNT-167.
     // 446, from 444 (2026-09-26): W2.2 - service-foundations.md claims API-037 and API-047.
     // 444, from 443 (2026-09-26): W2.1b - component-editor.md claims CNT-175.
     // 443, from 441 (2026-09-26): W2.1 - component-editor.md claims CNT-075 and CNT-074.
@@ -189,7 +190,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(446);
+    ).toBe(447);
   });
 });
 
@@ -534,6 +535,7 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 392, from 391 (2026-09-26): W2.3 - CNT-167, in the HTML reader's test.
   // 391, from 373 (2026-09-26): W2.2 - in titles API-003 (http and app), API-006, API-012, API-037
   // and API-047 (http and stream); as refusals' rules asserted by the route tests, API-037 in three
   // files, API-039, COL-005, IAM-071, AST-001, AST-040, PUB-014, PUB-074 and PUB-095.
@@ -549,7 +551,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(391);
+    expect(model.citations).toHaveLength(392);
   });
 
   it('cites no identifier the corpus does not hold', () => {

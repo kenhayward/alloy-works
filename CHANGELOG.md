@@ -3,6 +3,23 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.76.0 - 2026-09-26 (PR #255)
+
+### Added
+
+- **Footnotes pasted from Word arrive as footnotes**, each where its mark stood and holding its note
+  with its formatting, beside the lists, tables and emphasis Word's paste already kept. A footnote
+  whose note cannot be found is left out and named in the paste report, and a table, list or
+  quotation in a note is kept as the note's paragraphs, which the report says (issue #254).
+
+### Fixed
+
+- A publication counts figures, tables, equations and footnotes from what a document's conditions
+  leave, so the day conditions hide a passage, nothing in it will take a number, appear in a list or
+  be referred to (issue #253). No publication made today changes.
+- The document page's description now says it shows the text in reading order with each component
+  opening in place, and the publishing design names each refusal as the code sends it.
+
 ## 0.75.0 - 2026-09-26 (PR #252)
 
 ### Added

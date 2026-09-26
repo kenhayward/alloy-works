@@ -49,6 +49,8 @@ export const reportMessages = {
     image: 'An image was left out. Images cannot be pasted yet.',
     mathematics: 'An equation was left out. Equations cannot be pasted yet.',
     rule: 'A horizontal line was left out.',
+    footnote:
+      'A footnote was left out, because its note could not be found or it stood inside another note.',
     control: 'Invisible control characters were removed.',
   },
   rewritten: {
@@ -71,6 +73,8 @@ export const reportMessages = {
     table: 'A table inside a table cell was kept as its text, one paragraph for each cell.',
     tableShape: "A table's rows were made the same length.",
     cellBlocks: 'A quotation or preformatted text in a table cell was kept as paragraphs.',
+    footnoteBlocks:
+      'A table, list, quotation or preformatted text in a footnote was kept as paragraphs.',
   },
   /**
    * Kept exactly as it arrived, and worth the author knowing: nothing was removed or changed, so it
