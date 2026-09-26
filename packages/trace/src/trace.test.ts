@@ -487,8 +487,12 @@ describe('the citations in the committed model', () => {
   // Word document holding everything Word 2 writes is read for each thing the design says makes it
   // accessible - every heading at its outline level, every image described or flagged decorative,
   // every table's header rows marked and its caption its title, and every run in its language.
+  // 329, from 328 (2026-09-26): Word 3's footnotes cite PUB-025 in packages/domain's
+  // word/write.test.ts, where every footnote is a w:footnoteReference where it stands, in text, a
+  // table's cell and a header row, with no mark of its own, and each note opens with Word's own number,
+  // w:footnoteRef; Word 16 numbered them as the PDF does, measured by hand for this slice.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(328);
+    expect(model.citations).toHaveLength(329);
   });
 
   it('cites no identifier the corpus does not hold', () => {

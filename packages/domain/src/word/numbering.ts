@@ -175,63 +175,39 @@ interface Sectioned {
   readonly children: readonly Sectioned[];
 }
 
-/** The sections the writer makes of an outline, as its footnotes are counted in them. */
-export interface FootnoteSections {
-  /** Each section's matter, in order: a run of top-level nodes of one matter is one section. */
-  readonly matters: readonly OutlineMatter[];
-  /** Whether each section starts Word's count again (`eachSect`) or carries it on (`continuous`). */
-  readonly restarts: readonly boolean[];
-  /** The section each node stands in, by the node's identifier. */
-  readonly sectionOf: ReadonlyMap<string, number>;
-}
-
 /**
- * **Where Word's footnote count starts again** (Word 3, ruling R2; measured, M5): the sections the
- * writer makes of `nodes` - each run of top-level nodes of one matter - and whether each restarts its
- * footnotes (`eachSect`) or carries on from the section before (`continuous`). The scheme counts
- * each matter's footnotes on counters of its own, from 1, so the first section of a matter that holds
- * a footnote starts again; every other carries on - a section holding none, so that a matter entered
- * again after it counts on from its own earlier footnotes, as the scheme does, which
- * `footnotesNotInWord` refuses where a footnote of another matter stands between.
+ * **The sections the writer makes of an outline** (Word 3, ruling R2): each run of top-level nodes of
+ * one matter, in order, by its matter, and the section each node stands in, by its identifier - where
+ * Word counts its footnotes from 1 again (`footnoteProperties`).
  */
-export function footnoteSections(
-  nodes: readonly Sectioned[],
-  table: NumberingTable,
-): FootnoteSections {
+export function footnoteSections(nodes: readonly Sectioned[]): {
+  readonly matters: readonly OutlineMatter[];
+  readonly sectionOf: ReadonlyMap<string, number>;
+} {
   const matters: OutlineMatter[] = [];
   const sectionOf = new Map<string, number>();
   for (const top of nodes) {
     if (matters[matters.length - 1] !== top.matter) matters.push(top.matter);
     walkOutline([top], (node) => sectionOf.set(node.id, matters.length - 1));
   }
-  const holding = new Set<number>();
-  for (const entry of table.entries) {
-    const at = sectionOf.get(entry.node);
-    if (entry.sequence === 'footnote' && at !== undefined) holding.add(at);
-  }
-  const restarts = matters.map(
-    (matter, at) =>
-      holding.has(at) &&
-      !matters.some((other, before) => before < at && other === matter && holding.has(before)),
-  );
-  return { matters, restarts, sectionOf };
+  return { matters, sectionOf };
 }
 
 /**
- * **A section's footnote numbering** (Word 3, ruling R2; measured, M5), as `w:sectPr` holds it: the
- * format of the matter's footnote rule's own counter, its last, as Word's number format, and whether
- * the section starts its count again (`footnoteSections`). `w:numStart` is left at Word's 1.
+ * **A matter's section's footnote numbering** (Word 3, ruling R2; measured, M5 and for this slice), as
+ * `w:sectPr` holds it: the format of the matter's footnote rule's own counter, its last, as Word's
+ * number format, and Word's count started again at the section (`eachSect`), since the scheme counts
+ * each matter's footnotes from 1 on counters of its own. Never `continuous`: measured in Word 16, a
+ * continuous section numbers a note by its place among every note in the document, not on from the
+ * section before - the body entered again after an appendix printed 5 where the scheme counts 3 - so
+ * it is the scheme's count only where it is the restarting section's too. `w:numStart` is Word's 1.
  */
-export function footnoteProperties(
-  scheme: NumberingScheme,
-  matter: OutlineMatter,
-  restart: boolean,
-): string {
+export function footnoteProperties(scheme: NumberingScheme, matter: OutlineMatter): string {
   const rule = scheme.sequences['footnote']![matter];
   return (
     '<w:footnotePr>' +
     `<w:numFmt w:val="${WORD_FORMATS[rule.format[rule.format.length - 1]!]}"/>` +
-    `<w:numRestart w:val="${restart ? 'eachSect' : 'continuous'}"/>` +
+    '<w:numRestart w:val="eachSect"/>' +
     '</w:footnotePr>'
   );
 }
@@ -239,15 +215,15 @@ export function footnoteProperties(
 /**
  * **What Word's footnote count computes, followed through the document** (Word 3, ruling R2; measured,
  * M5), held to what the scheme wrote. Word numbers real footnotes itself, in document order - a
- * table's cells among the text - one count through a section, started again where a section says so
- * (`footnoteSections`), in the section's number format and with nothing beside the number. So a
+ * table's cells among the text - one count through each of the writer's sections, started again at
+ * each (`footnoteProperties`), in the section's number format and with nothing beside the number. So a
  * footnote is refused, `footnote:<matter>:<why>`, once per matter and naming the first footnote that
  * meets it, where:
  *
  * - `label`: its rule writes a word before the number, which Word's mark cannot carry;
  * - `prefix`: the scheme writes its chapter's number before its own, which Word's cannot either;
  * - `restart`: Word's count is not the scheme's - a rule restarting at a chapter, where Word's
- *   section is the whole matter, or a matter entered again after a footnote in another;
+ *   section is the whole run of the matter, or a matter entered again whose count carries on;
  * - `letters` and `roman`: its counter, as a heading's is judged.
  *
  * A footnote the scheme cannot number yet (`value` null) is `assemble`'s to refuse, and is not asked.
@@ -257,7 +233,7 @@ function footnotesNotInWord(
   table: NumberingTable,
   outline: NumberableOutline,
 ): WordNumberingProblem[] {
-  const { restarts, sectionOf } = footnoteSections(outline.nodes, table);
+  const { sectionOf } = footnoteSections(outline.nodes);
   const problems: WordNumberingProblem[] = [];
   const said = new Set<string>();
   const say = (entry: NumberingEntry, why: string) => {
@@ -271,9 +247,8 @@ function footnotesNotInWord(
   for (const entry of table.entries) {
     if (entry.sequence !== 'footnote' || entry.value === null) continue;
     const at = sectionOf.get(entry.node) ?? section;
-    // Every section entered since the last footnote that starts its count again, starts it.
-    for (let next = section + 1; next <= at; next += 1) if (restarts[next]) count = 0;
-    section = Math.max(section, at);
+    if (at !== section) count = 0;
+    section = at;
     count += 1;
     const rule = scheme.sequences['footnote']![entry.matter];
     const format = rule.format[rule.format.length - 1]!;

@@ -65,6 +65,7 @@ import {
 } from './lists.js';
 import {
   captionField,
+  footnoteProperties,
   HEADING_LISTS,
   numberingXml,
   sequenceName,
@@ -92,8 +93,9 @@ import { spacingOverrides, type SpacingOverride } from './spacing.js';
  * preformatted text, each stood in and spaced as the PDF sets it (rulings R4 to R6), tables in
  * their table styles, captioned by Word's fields (R1, R7), and figures and images in a line, each
  * drawn from its own image's bytes at the size `assemble` gave it against the Word page (R3, R8).
- * `assemble` refuses equations, footnotes and cross-references by name for Word (`word_not_yet`), so
- * meeting one here throws.
+ * Word 3 writes footnotes as Word's own, numbered by Word (ruling R2). `assemble` refuses equations by
+ * name for Word (`word_not_yet`), so meeting one here throws; a cross-reference, which `assemble`
+ * publishes for Word since Word 3's first task, throws until the writer writes one as a field.
  */
 
 /**
@@ -194,6 +196,28 @@ const HEADINGS = [
   'heading5',
   'heading6',
 ] as const satisfies readonly Role[];
+
+/**
+ * The footnote reference style, by its identifier: Word's own, as Word names it, so that a footnote a
+ * recipient adds is marked in it too (Word 3, ruling R2; M5).
+ */
+const FOOTNOTE_REFERENCE = 'FootnoteReference';
+
+/**
+ * What stands between a note's number and its text, in ems of the note: the pinned Typst's footnote
+ * entry's gap, measured in template 13's PDF (0.47pt at the default theme's 9.35pt note) - narrower
+ * than a space, which is a quarter of an em in Liberation Serif, and wider than nothing.
+ */
+const NOTE_NUMBER_GAP = 0.05;
+
+/** The parts the text is written into, each relating its own links and images (Word 3, ruling R2). */
+type Story = 'document' | 'footnotes';
+
+/** What a part relates to: its links by target, and its images by path, each with its identifier. */
+interface Related {
+  readonly links: Map<string, string>;
+  readonly media: Map<string, string>;
+}
 
 /** A heading or a paragraph taken off every list, where its style would number it. */
 const NO_NUMBER = '<w:numPr><w:ilvl w:val="0"/><w:numId w:val="0"/></w:numPr>';
@@ -363,6 +387,11 @@ interface Section {
   readonly furniture: Furniture;
   /** `w:pgNumType`, or none: the cover carries no number (M16). */
   readonly pageNumbering: string | null;
+  /**
+   * The matter whose footnotes Word numbers in it (`footnoteProperties`); none for the cover's and the
+   * contents', which hold no footnote.
+   */
+  readonly footnotes: OutlineMatter | null;
 }
 
 export function writeDocx(input: WordWriting): WrittenDocx {
@@ -443,6 +472,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       cover: true,
       furniture: coverFurniture,
       pageNumbering: null,
+      footnotes: null,
     });
   }
   const contents = document.front.contents;
@@ -467,6 +497,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       cover: false,
       furniture: contentsFurniture,
       pageNumbering: pageNumbering('front'),
+      footnotes: null,
     });
   }
   for (const segment of segmentsOf(document.nodes)) {
@@ -485,15 +516,18 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       cover: false,
       furniture: runningFurniture,
       pageNumbering: pageNumbering(segment.matter),
+      footnotes: segment.matter,
     });
   }
   if (front !== null) front.push(...writer.listsAfterContents(generated, front.length > 0));
 
+  const notes = writer.notes;
   const relationships = new Relationships();
   relationships.add('styles', 'styles.xml');
   relationships.add('numbering', 'numbering.xml');
   relationships.add('settings', 'settings.xml');
   relationships.add('fontTable', 'fontTable.xml');
+  if (notes.length > 0) relationships.add('footnotes', 'footnotes.xml');
   const partIds = new Map(
     headerParts.parts.map((part) => [part.name, relationships.add(part.kind, part.name)]),
   );
@@ -509,7 +543,8 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     const own = writer.properties(next.theme).spaceBefore;
     next.wanted = { ...next.wanted, before: (next.wanted?.before ?? own) + after };
   });
-  for (const run of paragraphRuns(inOrder)) {
+  /** A run of paragraphs Word reads as neighbours, spaced and parted as the PDF sets them. */
+  const settle = (run: Paragraph[]) => {
     // The spaces a container decides, stated over the styles where Word would read them otherwise
     // (Word 2, ruling R6), among paragraphs Word reads as neighbours: a table stands between the
     // paragraphs either side of it, and a cell's are its own.
@@ -556,10 +591,30 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       const indent = paragraph.indent ?? writer.ownIndent(paragraph.theme);
       paragraph.indent = { ...indent, left: indent.left + 1, right: indent.right + 1 };
     });
-  }
+  };
+  for (const run of paragraphRuns(inOrder)) settle(run);
+  // Two notes stand apart as two blocks of the footnote place's style do, two containers, whose
+  // spaces add whether or not the style asks for contextual spacing (template 13's `apart`, the gap
+  // between its footnote entries); a note's own paragraphs as its flow spaced them. The footnotes part
+  // is a run of its own, its notes' paragraphs one after another as Word reads them.
+  const noteStyle = writer.properties(theme.places.footnote);
+  notes.forEach((note, index) => {
+    const next = notes[index + 1]?.paragraphs[0];
+    const last = note.paragraphs[note.paragraphs.length - 1]!;
+    if (next === undefined) return;
+    last.wanted = { ...last.wanted, after: noteStyle.spaceAfter };
+    next.wanted = { ...next.wanted, before: noteStyle.spaceBefore };
+  });
+  settle(notes.flatMap((note) => note.paragraphs));
   const body = sections
     .map((section, index) => {
-      const properties = sectionProperties(section, format, partIds);
+      const numbered = section.footnotes;
+      const properties = sectionProperties(
+        section,
+        format,
+        partIds,
+        notes.length === 0 || numbered === null ? '' : footnoteProperties(word.scheme, numbered),
+      );
       const last = index === sections.length - 1;
       const items = section.body;
       // Word ends a section, and the body, with a paragraph: after a table, one a point high.
@@ -579,15 +634,22 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     })
     .join('');
   // The images the text places, each once, in the order the text first meets them; then the text's
-  // links, each named in the order the text first meets its target.
-  const media = [...writer.media].map(([path, id]) => {
-    const bytes = input.images.get(path);
-    if (bytes === undefined) throw new Error(`No bytes for the image ${path}`);
-    const name = path.slice(path.lastIndexOf('/') + 1);
-    relationships.add('image', `media/${name}`, id);
-    return { name, bytes, extension: name.slice(name.lastIndexOf('.') + 1) };
-  });
-  for (const [href, id] of writer.links) relationships.external(id, 'hyperlink', href);
+  // links, each named in the order the text first meets its target. The notes' likewise, related from
+  // the footnotes part, and an image placed in both written once.
+  const media = new Map<string, { name: string; bytes: Uint8Array; extension: string }>();
+  const relate = (related: Related, from: Relationships) => {
+    for (const [path, id] of related.media) {
+      const bytes = input.images.get(path);
+      if (bytes === undefined) throw new Error(`No bytes for the image ${path}`);
+      const name = path.slice(path.lastIndexOf('/') + 1);
+      from.add('image', `media/${name}`, id);
+      media.set(path, { name, bytes, extension: name.slice(name.lastIndexOf('.') + 1) });
+    }
+    for (const [href, id] of related.links) from.external(id, 'hyperlink', href);
+  };
+  relate(writer.related.document, relationships);
+  const noteRelationships = new Relationships();
+  relate(writer.related.footnotes, noteRelationships);
 
   const fonts = fontParts(theme, writer.used, input.faces);
   const files: Zippable = {};
@@ -601,6 +663,9 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     ['/word/numbering.xml', `${WML}numbering+xml`],
     ['/word/settings.xml', `${WML}settings+xml`],
     ['/word/fontTable.xml', `${WML}fontTable+xml`],
+    ...(notes.length === 0
+      ? []
+      : [['/word/footnotes.xml', `${WML}footnotes+xml`] satisfies [string, string]]),
     ...headerParts.parts.map((part): [string, string] => [
       `/word/${part.name}`,
       `${WML}${part.kind}+xml`,
@@ -615,7 +680,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       (fonts.files.length === 0
         ? ''
         : '<Default Extension="odttf" ContentType="application/vnd.openxmlformats-officedocument.obfuscatedFont"/>') +
-      imageTypes(media.map((each) => each.extension)) +
+      imageTypes([...media.values()].map((each) => each.extension)) +
       overrides
         .map(([part, type]) => `<Override PartName="${part}" ContentType="${type}"/>`)
         .join('') +
@@ -634,7 +699,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     `${DECLARATION}<w:document ${DOCUMENT_NAMESPACES}><w:body>${body}</w:body></w:document>`,
   );
   put('word/_rels/document.xml.rels', relationshipsXml(relationships.xml));
-  for (const each of media) put(`word/media/${each.name}`, each.bytes);
+  for (const each of media.values()) put(`word/media/${each.name}`, each.bytes);
   put(
     'word/styles.xml',
     projectStylesXml(
@@ -646,6 +711,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
           ...ownHeadingStyles(theme),
           ...(contents === null ? [] : contentsStyles(theme, contents.depth)),
           ...(generated.length === 0 ? [] : [listEntryStyle(theme)]),
+          ...(notes.length === 0 ? [] : [FOOTNOTE_REFERENCE_STYLE]),
         ],
       },
     ),
@@ -654,7 +720,13 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     'word/numbering.xml',
     numberingXml(word.scheme, headingLinks(theme), writer.lists.map(listNumberingXml)),
   );
-  put('word/settings.xml', settingsXml(document, theme, format));
+  put('word/settings.xml', settingsXml(document, theme, format, notes.length > 0));
+  if (notes.length > 0) {
+    put('word/footnotes.xml', footnotesXml(notes, theme.places.footnote));
+    if (noteRelationships.xml.length > 0) {
+      put('word/_rels/footnotes.xml.rels', relationshipsXml(noteRelationships.xml));
+    }
+  }
   put('word/fontTable.xml', fonts.table);
   if (fonts.files.length > 0) {
     put(
@@ -689,13 +761,24 @@ export function writeDocx(input: WordWriting): WrittenDocx {
 class Writer {
   /** Each face the text is set in, by its identifier, with every weight and posture it is set at. */
   readonly used = new Map<string, Set<string>>();
-  /** Each link's target, with its relationship's identifier, in the order the text meets them. */
-  readonly links = new Map<string, string>();
   /**
-   * Each image the text places, by its path, with its relationship's identifier, in the order the text
-   * first meets it: one part however often it is placed (Word 2, ruling R8).
+   * What each part the text is written into relates to, the document's and the footnotes' (Word 3,
+   * ruling R2), since a link or an image in a note is related from the part the note is in: each link's
+   * target with its relationship's identifier, in the order the text meets them; and each image the
+   * text places, by its path, with its relationship's identifier, in the order the text first meets it,
+   * one part however often it is placed (Word 2, ruling R8).
    */
-  readonly media = new Map<string, string>();
+  readonly related: Readonly<Record<Story, Related>> = {
+    document: { links: new Map(), media: new Map() },
+    footnotes: { links: new Map(), media: new Map() },
+  };
+  /** The part the text is being written into: a note's is the footnotes part. */
+  private story: Story = 'document';
+  /**
+   * Each footnote, in the order the text meets its mark, which is the order Word numbers them in: its
+   * identifier, from 1, and its paragraphs (Word 3, ruling R2).
+   */
+  readonly notes: { readonly id: number; readonly paragraphs: Paragraph[] }[] = [];
   /** How many drawings the text has placed: each one's number is the next, in document order. */
   private drawings = 0;
   /** Each list Word numbers, in the order the text meets them (Word 2, ruling R4). */
@@ -1764,6 +1847,13 @@ class Writer {
         xml += `<w:r>${this.drawing(run.image.path, size, run.image.alternative)}</w:r>`;
         continue;
       }
+      if ('footnote' in run) {
+        // The mark is no part of a link before it, as in the PDF it links to its note alone.
+        if (linking !== null) xml += '</w:hyperlink>';
+        linking = null;
+        xml += this.footnote(run.footnote, passage, strong);
+        continue;
+      }
       if ('reference' in run) {
         // `assemble` publishes a reference for Word since Word 3's first task, and the writer writes
         // one as a field from its third: until then a Word document is refused rather than written
@@ -1771,7 +1861,7 @@ class Writer {
         throw new Error('The Word writer does not write a cross-reference yet');
       }
       if (!('text' in run)) {
-        // A footnote and an equation are Word 3's and Word 4's.
+        // An equation is Word 4's.
         throw new Error('The Word writer does not write this run, which assemble refuses for Word');
       }
       let href: string | null = null;
@@ -1792,6 +1882,61 @@ class Writer {
     return xml;
   }
 
+  /**
+   * **A footnote** (Word 3, ruling R2; measured, M5): a real Word footnote, numbered by Word, whose
+   * mark is a `w:footnoteReference` run in the footnote reference style where the footnote stands -
+   * bold in a header row, as template 13 sets a header's text and its mark with it - and whose note is
+   * written into the footnotes part, its identifier the next in the order the text meets them. The
+   * note's paragraphs are written as the text's are - their styles, which `assemble` resolved to the
+   * `footnote` place's, their runs, marks, links and images - in the language and direction where the
+   * mark stands, as template 13 sets a note at the foot of the page (footnotes 2), and spaced as its
+   * flow spaces them. Its first opens with Word's number, `w:footnoteRef`, in the same style, as the
+   * engine sets the note: an em of the footnote place's style in, then the number, then a twentieth of
+   * an em before the text - a space, scaled to that width by the face's own advance (`w:w`), since
+   * Word set the text straight after the number where the number's run asked for character spacing
+   * (measured against the PDF in Word 16).
+   */
+  private footnote(
+    footnote: Extract<PublishedInline, { footnote: unknown }>['footnote'],
+    passage: Passage,
+    strong: boolean,
+  ): string {
+    const id = this.notes.length + 1;
+    const story = this.story;
+    this.story = 'footnotes';
+    const paragraphs = this.flow(footnote.paragraphs, TOP_LEVEL, passage).flatMap(
+      (block) => block.body as Paragraph[],
+    );
+    this.story = story;
+    const place = this.theme.places.footnote;
+    // A note holds a paragraph at least: `assemble` refuses one with nothing in it.
+    const [opening = this.paragraph(place, '', { bidi: passage.rtl }), ...rest] = paragraphs;
+    const style = this.style(place);
+    const em = style.properties.size;
+    // Word sets the note at the nearest half point, and its space by the face's advance.
+    const space = this.advancesOf(style).width(' ') * (Math.round(em * 2) / 2);
+    const scale = Math.min(600, Math.max(1, Math.round((100 * NOTE_NUMBER_GAP * em) / space)));
+    const number =
+      `<w:r><w:rPr><w:rStyle w:val="${FOOTNOTE_REFERENCE}"/></w:rPr><w:footnoteRef/></w:r>` +
+      `<w:r><w:rPr><w:w w:val="${scale}"/></w:rPr><w:t xml:space="preserve"> </w:t></w:r>`;
+    const indent = opening.indent ?? this.ownIndent(opening.theme);
+    this.notes.push({
+      id,
+      paragraphs: [
+        {
+          ...opening,
+          content: number + opening.content,
+          indent: { left: indent.left, right: indent.right, firstLine: twips(em) },
+        },
+        ...rest,
+      ],
+    });
+    return (
+      `<w:r><w:rPr><w:rStyle w:val="${FOOTNOTE_REFERENCE}"/>${strong ? toggle('b', true) : ''}` +
+      `</w:rPr><w:footnoteReference w:id="${id}"/></w:r>`
+    );
+  }
+
   /** An image's size against the Word page, as `assemble` gave it (Word 2, ruling R3). */
   private imageSize(key: string): WordImage {
     const size = this.numbers.images.get(key);
@@ -1810,10 +1955,11 @@ class Writer {
     size: WordImage,
     alternative: PublishedFigure['alternative'],
   ): string {
-    let relationship = this.media.get(path);
+    const { media } = this.related[this.story];
+    let relationship = media.get(path);
     if (relationship === undefined) {
-      relationship = `rIdImage${this.media.size + 1}`;
-      this.media.set(path, relationship);
+      relationship = `rIdImage${media.size + 1}`;
+      media.set(path, relationship);
     }
     this.drawings += 1;
     const number = this.drawings;
@@ -1863,12 +2009,13 @@ class Writer {
     );
   }
 
-  /** A link's relationship, one per target however often it is linked. */
+  /** A link's relationship from the part being written, one per target however often it is linked. */
   private link(href: string): string {
-    let id = this.links.get(href);
+    const { links } = this.related[this.story];
+    let id = links.get(href);
     if (id === undefined) {
-      id = `rIdLink${this.links.size + 1}`;
-      this.links.set(href, id);
+      id = `rIdLink${links.size + 1}`;
+      links.set(href, id);
     }
     return id;
   }
@@ -2193,7 +2340,8 @@ function textBlockWidth(format: PageFormat): number {
 const twips = (points: number) => Math.round(points * 20);
 
 /**
- * A section's properties (R8; measured, M8 and M16): its header and footer, a new page, the Word page
+ * A section's properties (R8; measured, M8 and M16): its header and footer, its footnotes' numbering
+ * where the document has a footnote (Word 3, ruling R2), a new page, the Word page
  * - its size turned where it is landscape, the inside margin on the left and the outside on the right,
  * which `w:mirrorMargins` alternates where they differ, the header and footer halfway into their
  * margins - its page numbering, and the cover's title page.
@@ -2202,6 +2350,7 @@ function sectionProperties(
   section: Section,
   format: PageFormat,
   parts: ReadonlyMap<string, string>,
+  footnotes: string,
 ): string {
   const header = parts.get(section.furniture.header)!;
   const footer = parts.get(section.furniture.footer)!;
@@ -2217,6 +2366,7 @@ function sectionProperties(
   return (
     '<w:sectPr>' +
     references +
+    footnotes +
     '<w:type w:val="nextPage"/>' +
     `<w:pgSz w:w="${twips(width)}" w:h="${twips(height)}"${landscape ? ' w:orient="landscape"' : ''}/>` +
     `<w:pgMar w:top="${twips(top)}" w:right="${twips(outside)}" w:bottom="${twips(bottom)}" ` +
@@ -2231,13 +2381,15 @@ function sectionProperties(
 /**
  * The document's settings (R6), in CT_Settings' order: its faces embedded, the margins mirrored where
  * the inside and the outside differ, hyphenation where a style hyphenates, the fields updated as it
- * opens, compatibility mode 15 with spaces that add (M1), the maths face Word sets equations in (R10),
- * and the document's language.
+ * opens, the separator and the continuation separator its footnotes are set under where it has a
+ * footnote (Word 3, ruling R2; M5), compatibility mode 15 with spaces that add (M1), the maths face
+ * Word sets equations in (R10), and the document's language.
  */
 function settingsXml(
   document: PublishedDocument,
   theme: ResolvedTheme,
   format: PageFormat,
+  footnotes: boolean,
 ): string {
   const mirrored = format.margins.inside !== format.margins.outside || format.gutter > 0;
   const hyphenates = [...theme.paragraphStyles.values()].some(
@@ -2250,6 +2402,9 @@ function settingsXml(
     (mirrored ? '<w:mirrorMargins/>' : '') +
     (hyphenates ? '<w:autoHyphenation/>' : '') +
     '<w:updateFields w:val="true"/>' +
+    (footnotes
+      ? '<w:footnotePr><w:footnote w:id="-1"/><w:footnote w:id="0"/></w:footnotePr>'
+      : '') +
     '<w:compat><w:doNotUseHTMLParagraphAutoSpacing/>' +
     '<w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/>' +
     '</w:compat>' +
@@ -2374,6 +2529,47 @@ function listEntryStyle(theme: ResolvedTheme): string {
     `<w:style w:type="paragraph" w:styleId="${LIST_ENTRY_STYLE}">` +
     `<w:name w:val="table of figures"/><w:basedOn w:val="${theme.roles.listEntry}"/>` +
     '<w:uiPriority w:val="99"/><w:unhideWhenUsed/></w:style>'
+  );
+}
+
+/**
+ * **The footnote reference style** (Word 3, ruling R2; M5): Word's own, by its name and identifier,
+ * superscript as template 13 sets a footnote's mark in the text and its number in the note, the rest
+ * the text's where the mark stands. Measured in Word 16 against the PDF of one document: in 11pt text
+ * Word's mark is 6.96pt raised 4.56 where the engine's is 7.15 raised 4.98, and in a 9.35pt note its
+ * number 6.00 raised 3.48 against 6.08 and 4.24, each standing where the engine's does to 0.03pt.
+ */
+const FOOTNOTE_REFERENCE_STYLE =
+  `<w:style w:type="character" w:styleId="${FOOTNOTE_REFERENCE}">` +
+  '<w:name w:val="footnote reference"/><w:uiPriority w:val="99"/><w:unhideWhenUsed/>' +
+  '<w:rPr><w:vertAlign w:val="superscript"/></w:rPr></w:style>';
+
+/**
+ * **The footnotes part** (Word 3, ruling R2; M5): the separator and the continuation separator Word
+ * requires, `-1` and `0`, which the settings name, each a paragraph of the footnote place's style with
+ * no space about it, as Word writes its own; then each note, by its identifier, in the order the text
+ * met its mark.
+ */
+function footnotesXml(
+  notes: readonly { readonly id: number; readonly paragraphs: readonly Paragraph[] }[],
+  place: string,
+): string {
+  const separator = (type: string, id: number, element: string) =>
+    `<w:footnote w:type="${type}" w:id="${id}"><w:p><w:pPr><w:pStyle w:val="${place}"/>` +
+    `<w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:${element}/></w:r></w:p></w:footnote>`;
+  return (
+    `${DECLARATION}<w:footnotes ${DOCUMENT_NAMESPACES}>` +
+    separator('separator', -1, 'separator') +
+    separator('continuationSeparator', 0, 'continuationSeparator') +
+    notes
+      .map(
+        (note) =>
+          `<w:footnote w:id="${note.id}">` +
+          note.paragraphs.map((paragraph) => paragraphXml(paragraph)).join('') +
+          '</w:footnote>',
+      )
+      .join('') +
+    '</w:footnotes>'
   );
 }
 

@@ -46,6 +46,13 @@ const paragraph = (name: string, ...inlines: unknown[]) => ({
   style: 'body',
   content: inlines,
 });
+/** A footnote holding these paragraphs, anchored where it stands. */
+const footnote = (name: string, ...paragraphs: unknown[]) => ({
+  type: 'footnote',
+  id: name,
+  anchor: { kind: 'span' },
+  content: paragraphs,
+});
 const component = (title: string, content: unknown[], over: object = {}): ContentDocument =>
   parseContentDocument({
     schemaVersion: 1,
@@ -186,7 +193,20 @@ const READINGS = component('Readings', [
     rows: [
       { cells: [cell('Station', { rowspan: 2 }), cell('Readings', { colspan: 2 })] },
       { cells: [cell('Morning'), cell('Evening')] },
-      { cells: [cell('York', { rowspan: 2 }), cell('y1'), cell('y2')] },
+      {
+        cells: [
+          cell('York', { rowspan: 2 }),
+          // Word 3: a footnote in a table's cell.
+          {
+            content: [
+              paragraph('c-y1', text('y1'), footnote('n3', paragraph('n3a', text('Late.')))),
+            ],
+            colspan: 1,
+            rowspan: 1,
+          },
+          cell('y2'),
+        ],
+      },
       { cells: [cell('y3'), cell('y4')] },
       ...Array.from({ length: BODY_ROWS }, (_, at) => ({
         cells: [cell(`Site ${at}`), cell(`a${at}`), cell(`b${at}`)],
@@ -386,12 +406,38 @@ const input: AssembleInput & { readonly layout: Layout } = {
           text('la mesure', { type: 'language', id: 'k10', tag: 'fr-FR' }),
           text('.'),
         ),
-        paragraph('m2', text('Grace checked the readings.')),
+        // Word 3: a footnote in running text, of two paragraphs, one holding a link and a mark.
+        paragraph(
+          'm2',
+          text('Grace checked the readings.'),
+          footnote(
+            'n1',
+            paragraph('n1a', text('Twice, as Ada asked.')),
+            paragraph(
+              'n1b',
+              text('See '),
+              text('the log', { type: 'hyperlink', id: 'k11', href: 'https://example.test/log' }),
+              text(' and '),
+              text('its notes', { type: 'emphasis', id: 'k12' }),
+              text('.'),
+            ),
+          ),
+        ),
       ]),
     ],
     [
       id('german'),
-      component('Grüße', [paragraph('g1', text('Grüße aus Berlin.'))], { language: 'de-DE' }),
+      component(
+        'Grüße',
+        [
+          paragraph(
+            'g1',
+            text('Grüße aus Berlin.'),
+            footnote('n2', paragraph('n2a', text('Eine Anmerkung.'))),
+          ),
+        ],
+        { language: 'de-DE' },
+      ),
     ],
     [
       id('hebrew'),
@@ -413,7 +459,7 @@ const input: AssembleInput & { readonly layout: Layout } = {
   assets: ASSETS,
 };
 
-describe("a publication in Word, written from the worker's own faces (Word 1, Word 2)", () => {
+describe("a publication in Word, written from the worker's own faces (Word 1 to Word 3)", () => {
   it('writes a document the Open XML SDK finds nothing wrong with', async () => {
     const assembled = assemble(input);
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
@@ -480,6 +526,71 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
     expect(document.match(/<adec:decorative /g)).toHaveLength(1);
     expect(Object.keys(parts).filter((name) => name.startsWith('word/media/'))).toEqual(
       [...IMAGES.keys()].map((path) => `word/media/${path.slice('assets/'.length)}`),
+    );
+  });
+
+  it("writes each footnote as Word's own - in text, in a cell and, for Word alone, in a table's header row, which the PDF refuses - which the Open XML SDK finds nothing wrong with (Word 3)", async () => {
+    // The readings table with a footnote in its second header row, whose engine sets it on every page.
+    const headed = parseContentDocument(
+      JSON.parse(
+        JSON.stringify(READINGS).replace(
+          '{"type":"text","value":"Morning","marks":[]}',
+          JSON.stringify(text('Morning')) +
+            ',' +
+            JSON.stringify(footnote('n4', paragraph('n4a', text('Early.')))),
+        ),
+      ),
+    );
+    const alone: AssembleInput & { readonly layout: Layout } = {
+      ...input,
+      formats: ['docx'],
+      occurrences: new Map([...input.occurrences, [id('readings'), headed]]),
+    };
+    const refused = assemble({ ...alone, formats: ['pdf', 'docx'] });
+    expect(refused.ok ? [] : refused.failures.map((each) => each.code)).toEqual([
+      'footnote_not_publishable_here',
+    ]);
+    const assembled = assemble(alone);
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const { bytes } = writeDocx({
+      document: assembled.document,
+      numbering: assembled.numbering,
+      word: assembled.word!,
+      formats: alone.formats,
+      faces,
+      images: IMAGES,
+    });
+    expect(await checkOoxml(bytes)).toEqual([]);
+    const parts = unzipSync(bytes);
+    const document = strFromU8(parts['word/document.xml']!);
+    const footnotes = strFromU8(parts['word/footnotes.xml']!);
+    // Each mark in document order - the header row's before the body row's - and each note by it.
+    expect(
+      [...document.matchAll(/<w:footnoteReference w:id="(\d+)"\/>/g)].map((m) => m[1]),
+    ).toEqual(['1', '2', '3', '4']);
+    const notes = [...footnotes.matchAll(/<w:footnote w:id="(\d+)">(.*?)<\/w:footnote>/g)].map(
+      (m) => [
+        m[1],
+        [...m[2]!.matchAll(/<w:t xml:space="preserve">([^<]*)<\/w:t>/g)]
+          .map((t) => t[1])
+          .join('')
+          .trim(),
+      ],
+    );
+    expect(notes).toEqual([
+      ['1', 'Twice, as Ada asked.See the log and its notes.'],
+      ['2', 'Eine Anmerkung.'],
+      ['3', 'Early.'],
+      ['4', 'Late.'],
+    ]);
+    // The header row's mark stands in the header row Word repeats on every page the table reaches.
+    const table = document.slice(document.indexOf('<w:tbl>'), document.indexOf('</w:tbl>'));
+    const header = table.split('<w:tr>')[2]!;
+    expect(header).toContain('<w:tblHeader/>');
+    expect(header).toContain('<w:footnoteReference w:id="3"/>');
+    // The note's link is related from the footnotes part.
+    expect(strFromU8(parts['word/_rels/footnotes.xml.rels']!)).toContain(
+      'Target="https://example.test/log" TargetMode="External"',
     );
   });
 
@@ -677,12 +788,14 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
     );
 
     // Languages: the document's in its defaults and its settings, and every run of text in the body
-    // in the language it is written in - a component's, or a marked phrase's - as the PDF tags it.
+    // and in its footnotes (Word 3) in the language it is written in - a component's, or a marked
+    // phrase's, a note's the language where its mark stands - as the PDF tags it.
     expect(styles).toContain('<w:rPrDefault><w:rPr>');
     expect(/<w:rPrDefault>.*?<w:lang w:val="en-GB"\/>/.exec(styles)).not.toBeNull();
     expect(strFromU8(parts['word/settings.xml']!)).toContain('<w:themeFontLang w:val="en-GB"/>');
     const spoken = new Map<string, Set<string>>();
-    for (const m of body.matchAll(
+    const notes = strFromU8(parts['word/footnotes.xml']!);
+    for (const m of (body + notes).matchAll(
       /<w:r>(?:<w:rPr>(.*?)<\/w:rPr>)?((?:<w:t xml:space="preserve">[^<]*<\/w:t>|<w:tab\/>|<w:br\/>)+)<\/w:r>/g,
     )) {
       const properties = m[1] ?? '';
@@ -698,7 +811,10 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
     // contents is prefilled with it - which is the layout's words too, whatever the caption's own
     // language. The PDF tags a label in its caption's language: word-output.md says why Word does not.
     const labels = assembled.numbering.entries.flatMap((entry) =>
-      entry.block === null || entry.label === null || entry.number === null
+      entry.block === null ||
+      entry.sequence === 'footnote' ||
+      entry.label === null ||
+      entry.number === null
         ? []
         : [entry.label, entry.label.slice(0, -entry.number.length), ...entry.number.split(/(\.)/)],
     );
@@ -711,7 +827,8 @@ describe("a publication in Word, written from the worker's own faces (Word 1, Wo
         ...labels,
       ]),
     );
-    expect(spoken.get('de-DE')).toEqual(new Set(['Grüße', 'Grüße aus Berlin.']));
+    expect(spoken.get('de-DE')).toEqual(new Set(['Grüße', 'Grüße aus Berlin.', 'Eine Anmerkung.']));
+    expect(spoken.get('en-GB')).toContain('Twice, as Ada asked.');
     expect(spoken.get('he-IL')).toEqual(new Set([SEFER, `${SHALOM} Ada ${SEFER} 2026.`]));
     expect(spoken.get('fr-FR')).toEqual(new Set(['la mesure']));
   });

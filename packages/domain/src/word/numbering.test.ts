@@ -464,13 +464,15 @@ describe('a footnote rule Word cannot compute (Word 3, ruling R2)', () => {
     ]);
   });
 
-  it('carries on a matter entered a second time where no footnote stands between, as a continuous section does, and refuses it where one does', () => {
+  it("counts a matter entered a second time from 1 again, as Word's section does: passing where the matter's earlier sections held none, and refusing it where they did", () => {
+    // Measured in Word 16: the body entered again after an appendix printed its note 5, its place
+    // among every note, where its section carried on (`continuous`); each section restarts instead.
     const carried = [
       holding('intro', 'body', ['n1', 'n2']),
       holding('tables', 'appendix'),
       holding('method', 'body', ['n3']),
     ];
-    expect(captioned(carried).problems).toEqual([]);
+    expect(captioned(carried).problems).toEqual([problem('method', 'n3', 'footnote:body:restart')]);
     // A matter whose footnotes begin in the second section it holds starts its count there.
     const late = [
       holding('intro', 'body'),
@@ -478,13 +480,6 @@ describe('a footnote rule Word cannot compute (Word 3, ruling R2)', () => {
       holding('method', 'body', ['n2']),
     ];
     expect(captioned(late).problems).toEqual([]);
-    // Word's second body section carries on from the appendix's note; the scheme from the body's.
-    const between = [
-      holding('intro', 'body', ['n1', 'n2']),
-      holding('tables', 'appendix', ['n3']),
-      holding('method', 'body', ['n4']),
-    ];
-    expect(captioned(between).problems).toEqual([problem('method', 'n4', 'footnote:body:restart')]);
   });
 
   it('refuses a restart Word would not make, where it meets a footnote, and passes one that never does', () => {
@@ -537,32 +532,29 @@ describe('a footnote rule Word cannot compute (Word 3, ruling R2)', () => {
 });
 
 describe('the footnote numbering each section is written with (Word 3, ruling R2; M5)', () => {
-  it('restarts the first section of each matter that holds a footnote, and carries on every other, as a run of top-level nodes of one matter is a section', () => {
+  it('makes a section of each run of top-level nodes of one matter, which every node beneath them stands in', () => {
     const nodes = [
-      holding('preface', 'front', ['n1']),
+      holding('preface', 'front'),
       holding('intro', 'body', [], [holding('scope', 'body')]),
-      holding('tables', 'appendix', ['n2']),
-      holding('method', 'body', [], [holding('design', 'body', ['n3'])]),
-      holding('results', 'body', ['n4']),
-      holding('values', 'appendix', ['n5']),
+      holding('tables', 'appendix'),
+      holding('method', 'body', [], [holding('design', 'body')]),
+      holding('results', 'body'),
     ];
-    const { table } = captioned(nodes);
-    const sections = footnoteSections(nodes, table);
-    expect(sections.matters).toEqual(['front', 'body', 'appendix', 'body', 'appendix']);
-    expect(sections.restarts).toEqual([true, false, true, true, false]);
+    const sections = footnoteSections(nodes);
+    expect(sections.matters).toEqual(['front', 'body', 'appendix', 'body']);
     expect(sections.sectionOf.get('scope')).toBe(1);
     expect(sections.sectionOf.get('design')).toBe(3);
     expect(sections.sectionOf.get('results')).toBe(3);
   });
 
-  it("writes the matter's format as Word's number format, and eachSect or continuous", () => {
+  it("writes the matter's format as Word's number format, and Word's count started again at each section", () => {
     const scheme = structuredClone(defaultNumberingScheme);
     scheme.sequences['footnote']!.appendix.format = ['decimal', 'lowerAlpha'];
-    expect(footnoteProperties(scheme, 'front', true)).toBe(
+    expect(footnoteProperties(scheme, 'front')).toBe(
       '<w:footnotePr><w:numFmt w:val="decimal"/><w:numRestart w:val="eachSect"/></w:footnotePr>',
     );
-    expect(footnoteProperties(scheme, 'appendix', false)).toBe(
-      '<w:footnotePr><w:numFmt w:val="lowerLetter"/><w:numRestart w:val="continuous"/></w:footnotePr>',
+    expect(footnoteProperties(scheme, 'appendix')).toBe(
+      '<w:footnotePr><w:numFmt w:val="lowerLetter"/><w:numRestart w:val="eachSect"/></w:footnotePr>',
     );
   });
 });

@@ -302,9 +302,11 @@ const DEFAULT_THEME = resolved();
 /**
  * The advances every invented face sets its characters at, in 2048ths of an em: Liberation Serif's for
  * the characters a list's markers are made of - a figure half an em, a full stop a quarter, a disc
- * 0.35 - and none of its own for anything else, which takes the missing glyph's half an em.
+ * 0.35 - and for a space, a quarter, which a note's number is set apart from its text by; and none of
+ * its own for anything else, which takes the missing glyph's half an em.
  */
 const ADVANCES = new Map<number, number>([
+  [0x20, 512],
   ...[...'0123456789'].map((digit): [number, number] => [digit.codePointAt(0)!, 1024]),
   [0x2e, 512],
   [0x61, 909],
@@ -2615,5 +2617,279 @@ describe('writeDocx: cross-references (Word 3)', () => {
     expect(() => writtenOf(referring)).toThrow(
       'The Word writer does not write a cross-reference yet',
     );
+  });
+});
+
+describe('writeDocx: footnotes (Word 3, ruling R2; M5)', () => {
+  const note = (name: string, ...paragraphs: unknown[]) => ({
+    type: 'footnote',
+    id: name,
+    anchor: { kind: 'span' },
+    content: paragraphs,
+  });
+  const noteCell = (name: string, ...content: unknown[]) => ({
+    content: [paragraph(name, ...content)],
+    colspan: 1,
+    rowspan: 1,
+  });
+  /** Notes in running text, in a table's cell and in its header row, a German one and a Hebrew one. */
+  const NOTED = component('Notes', [
+    paragraph('p1', text('A claim'), note('n1', paragraph('n1a', text('The first note.')))),
+    paragraph(
+      'p2',
+      text('Linked', link),
+      note(
+        'n2',
+        paragraph('n2a', text('See '), text('the report', { ...link, id: 'k20' }), text('.')),
+        paragraph(
+          'n2b',
+          text('Its '),
+          text('second', { type: 'emphasis', id: 'e1' }),
+          text(' paragraph.'),
+        ),
+      ),
+      text(' and on'),
+    ),
+    {
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Readings')],
+      headerRows: 1,
+      headerColumns: 0,
+      rows: [
+        { cells: [noteCell('h1', text('Site'), note('n3', paragraph('n3a', text('Headed.'))))] },
+        { cells: [noteCell('c1', text('York'), note('n4', paragraph('n4a', text('In a cell.'))))] },
+      ],
+    },
+  ]);
+  const GERMAN_NOTE = component(
+    'Grüße',
+    [paragraph('g1', text('Grüße'), note('n5', paragraph('n5a', text('Eine Anmerkung.'))))],
+    { language: 'de-DE' },
+  );
+  const HEBREW_NOTE = component(
+    SEFER,
+    [paragraph('r1', text(SHALOM), note('n6', paragraph('n6a', text(SEFER))))],
+    { language: 'he-IL', direction: 'rtl' },
+  );
+  const noted = written({
+    // A table style whose header is bold, as template 13 sets its text and its mark.
+    theme: themeWith((inputs) => {
+      inputs.catalogues.table.styles[0]!.headerRow.bold = true;
+    }),
+    layout: layoutWith((layout) => {
+      layout.matter.lists = [];
+    }),
+    outline: parseOutlineDocument({
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
+      title: 'The dosing report',
+      language: 'en-GB',
+      direction: 'ltr',
+      nodes: [
+        reference('preface', 1, { matter: 'front' }),
+        reference('noted', 2),
+        reference('german', 3),
+        reference('hebrew', 4),
+        reference('values', 5, { matter: 'appendix' }),
+      ],
+    }),
+    occurrences: new Map([
+      [id('preface'), PREFACE],
+      [id('noted'), NOTED],
+      [id('german'), GERMAN_NOTE],
+      [id('hebrew'), HEBREW_NOTE],
+      [id('values'), VALUES],
+    ]),
+  });
+  const body = () => first(noted.docx.xml('word/document.xml'), 'w:body')!;
+  const notes = () => kids(noted.docx.xml('word/footnotes.xml'), 'w:footnote');
+  /** The paragraphs of the note at this place in the part, its separators counted. */
+  const noteAt = (at: number) => kids(notes()[at]!, 'w:p');
+  const WML = 'application/vnd.openxmlformats-officedocument.wordprocessingml.';
+  const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/';
+
+  it('writes the footnotes part, typed and related from the document, with the separator and continuation separator Word requires and every note after them, numbered in document order', () => {
+    const types = noted.docx.xml('[Content_Types].xml');
+    expect(
+      all(types, 'Override').find((each) => each.attrs['PartName'] === '/word/footnotes.xml')
+        ?.attrs['ContentType'],
+    ).toBe(`${WML}footnotes+xml`);
+    const related = [...relationships(noted.docx, 'word/_rels/document.xml.rels').values()];
+    expect(related.filter((each) => each['Type'] === `${REL}footnotes`)).toEqual([
+      expect.objectContaining({ Target: 'footnotes.xml' }),
+    ]);
+    expect(notes().map((each) => [each.attrs['w:type'], each.attrs['w:id']])).toEqual([
+      ['separator', '-1'],
+      ['continuationSeparator', '0'],
+      ...['1', '2', '3', '4', '5', '6'].map((each) => [undefined, each]),
+    ]);
+    expect(all(notes()[0]!, 'w:separator')).toHaveLength(1);
+    expect(all(notes()[1]!, 'w:continuationSeparator')).toHaveLength(1);
+    // Settings name the two, after the fields' update and before the compatibility settings.
+    const settings = noted.docx.xml('word/settings.xml');
+    const names = kids(settings).map((each) => each.name);
+    expect(names.indexOf('w:footnotePr')).toBe(names.indexOf('w:updateFields') + 1);
+    expect(
+      kids(first(settings, 'w:footnotePr')!).map((each) => [each.name, each.attrs['w:id']]),
+    ).toEqual([
+      ['w:footnote', '-1'],
+      ['w:footnote', '0'],
+    ]);
+  });
+
+  it("PUB-025 writes every footnote as a real Word footnote, numbered by Word: a reference run in the footnote reference style where it stands - in text, in a cell and in a header row - and Word's own number at the head of its note, never a number of the PDF's", () => {
+    expect(all(body(), 'w:footnoteReference').map((each) => each.attrs['w:id'])).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+    ]);
+    const runs = all(body(), 'w:r').filter((run) => kids(run, 'w:footnoteReference').length > 0);
+    for (const run of runs) {
+      expect(first(run, 'w:rStyle')!.attrs['w:val']).toBe('FootnoteReference');
+    }
+    // Word's number, never the numbering table's label: no mark of its own follows a reference, and
+    // each note opens with Word's number of it.
+    for (const run of runs) expect(textOf(run)).toBe('');
+    expect(strFromU8(noted.docx.files['word/document.xml']!)).not.toContain('customMarkFollows');
+    for (const each of notes().slice(2)) {
+      expect(kids(kids(each, 'w:p')[0]!, 'w:r')[0]!.children).toContainEqual(
+        expect.objectContaining({ name: 'w:footnoteRef' }),
+      );
+    }
+    // A header row sets its text bold, as template 13 does, and its mark with it.
+    expect(first(runs[2]!, 'w:b')?.attrs['w:val']).toBe('1');
+    expect(first(runs[3]!, 'w:b')).toBeUndefined();
+    // The link before the mark is closed first: the mark is no part of it.
+    const linked = paragraphSaying(noted.docx, 'Linked and on');
+    expect(all(linked, 'w:hyperlink').map(textOf)).toEqual(['Linked']);
+    expect(all(first(linked, 'w:hyperlink')!, 'w:footnoteReference')).toEqual([]);
+    // The one in the header row and the one in the body row are in the table's cells.
+    const table = first(body(), 'w:tbl')!;
+    expect(all(table, 'w:footnoteReference').map((each) => each.attrs['w:id'])).toEqual(['3', '4']);
+  });
+
+  it('defines the footnote reference style as Word names its own, superscript as the PDF sets the mark', () => {
+    const styles = noted.docx.xml('word/styles.xml');
+    const style = all(styles, 'w:style').find(
+      (each) => each.attrs['w:styleId'] === 'FootnoteReference',
+    )!;
+    expect(style.attrs['w:type']).toBe('character');
+    expect(first(style, 'w:name')!.attrs['w:val']).toBe('footnote reference');
+    expect(first(style, 'w:vertAlign')!.attrs['w:val']).toBe('superscript');
+    // Written only where a footnote is.
+    expect(strFromU8(plain.docx.files['word/styles.xml']!)).not.toContain('FootnoteReference');
+  });
+
+  it("opens each note with its number in the same style, an em in and a twentieth of an em from its text, as the PDF sets it, and sets its paragraphs in the footnote place's style", () => {
+    const [only] = noteAt(2);
+    expect(styleOf(only!)).toBe('footnote');
+    const [number, gap] = kids(only!, 'w:r');
+    expect(kids(number!).map((each) => each.name)).toEqual(['w:rPr', 'w:footnoteRef']);
+    expect(kids(kids(number!, 'w:rPr')[0]!).map((each) => each.name)).toEqual(['w:rStyle']);
+    expect(first(number!, 'w:rStyle')!.attrs['w:val']).toBe('FootnoteReference');
+    // Then a space, scaled to 0.05em of the footnote place's 9.35pt: the engine's gap after the number,
+    // a fifth of the face's quarter-em space at Word's 9.5pt.
+    expect(textOf(gap!)).toBe(' ');
+    expect(first(gap!, 'w:w')!.attrs['w:val']).toBe('20');
+    // Its first line an em in, of 9.35pt; its later paragraphs where the style stands them.
+    expect(first(pPr(only!)!, 'w:ind')!.attrs['w:firstLine']).toBe('187');
+    expect(textOf(only!)).toBe(' The first note.');
+    const [opening, second] = noteAt(3);
+    expect(first(pPr(opening!)!, 'w:ind')!.attrs['w:firstLine']).toBe('187');
+    expect(first(pPr(second!)!, 'w:ind')).toBeUndefined();
+    expect(all(second!, 'w:footnoteRef')).toEqual([]);
+    expect(styleOf(second!)).toBe('footnote');
+  });
+
+  it("writes a note's runs as the text's: its marks by their character styles and its links related from the footnotes part", () => {
+    const [opening, second] = noteAt(3);
+    expect(textOf(second!)).toBe('Its second paragraph.');
+    const emphasised = all(second!, 'w:r').find((run) => textOf(run) === 'second')!;
+    expect(first(emphasised, 'w:rStyle')!.attrs['w:val']).toBe('mark-emphasis');
+    const [hyperlink] = all(opening!, 'w:hyperlink');
+    expect(textOf(hyperlink!)).toBe('the report');
+    expect(
+      relationships(noted.docx, 'word/_rels/footnotes.xml.rels').get(hyperlink!.attrs['r:id']!),
+    ).toMatchObject({ Type: `${REL}hyperlink`, Target: REPORT, TargetMode: 'External' });
+  });
+
+  it('sets a note in the language and direction where its mark stands, as the PDF does', () => {
+    const [german] = noteAt(6);
+    const words = all(german!, 'w:r').find((run) => textOf(run) === 'Eine Anmerkung.')!;
+    expect(first(words, 'w:lang')!.attrs).toEqual({ 'w:val': 'de-DE' });
+    const [hebrew] = noteAt(7);
+    expect(properties(hebrew!)).toContain('w:bidi');
+    const own = all(hebrew!, 'w:r').find((run) => textOf(run) === SEFER)!;
+    expect(first(own, 'w:rtl')).toBeDefined();
+    expect(first(own, 'w:lang')!.attrs).toEqual({ 'w:bidi': 'he-IL' });
+  });
+
+  it("numbers each matter's section's footnotes by Word, in its rule's format, from 1 again at each (footnoteProperties)", () => {
+    const numbered = sections(noted.docx).map((each) => {
+      const stated = first(each.properties, 'w:footnotePr');
+      return stated === undefined
+        ? null
+        : kids(stated).map((child) => [child.name, child.attrs['w:val']]);
+    });
+    const restarted = [
+      ['w:numFmt', 'decimal'],
+      ['w:numRestart', 'eachSect'],
+    ];
+    // The cover and the contents hold no footnote.
+    expect(numbered).toEqual([null, null, restarted, restarted, restarted]);
+    // After the header and footer references, where CT_SectPr puts it.
+    const [, , front] = sections(noted.docx);
+    const names = kids(front!.properties).map((each) => each.name);
+    expect(names.indexOf('w:footnotePr')).toBe(names.lastIndexOf('w:footerReference') + 1);
+  });
+
+  it('writes nothing of footnotes where the document has none', () => {
+    expect(Object.keys(plain.docx.files)).not.toContain('word/footnotes.xml');
+    expect(strFromU8(plain.docx.files['word/settings.xml']!)).not.toContain('footnotePr');
+    expect(strFromU8(plain.docx.files['word/document.xml']!)).not.toContain('footnotePr');
+  });
+
+  it('spaces two notes apart by both their spaces, as the PDF sets two notes: nothing stated under the default theme, whose footnote style adds them, and M1 d8 where the style asks for contextual spacing', () => {
+    for (const each of notes()
+      .slice(2)
+      .flatMap((one) => kids(one, 'w:p'))) {
+      expect(properties(each)).not.toContain('w:spacing');
+      expect(properties(each)).not.toContain('w:contextualSpacing');
+    }
+    const contextual = themeWith((inputs) => {
+      const footnote = inputs.catalogues.paragraph.styles.find((each) => each.id === 'footnote')!;
+      footnote.properties = { ...footnote.properties, spaceBefore: 1, contextualSpacing: true };
+    });
+    const spaced = writtenOf(
+      [
+        paragraph(
+          'p1',
+          text('One'),
+          note('n1', paragraph('n1a', text('A.')), paragraph('n1b', text('B.'))),
+          text('Two'),
+          note('n2', paragraph('n2a', text('C.')), paragraph('n2b', text('D.'))),
+        ),
+      ],
+      { theme: contextual },
+    );
+    const said = kids(spaced.docx.xml('word/footnotes.xml'), 'w:footnote')
+      .flatMap((one) => kids(one, 'w:p'))
+      .slice(2)
+      .map((each) => ({
+        contextual: first(pPr(each)!, 'w:contextualSpacing')?.attrs['w:val'],
+        spacing: first(pPr(each)!, 'w:spacing')?.attrs,
+      }));
+    // Within a note its style's contextual spacing stands; between two, M1's d8: off on the pair, and
+    // the space it drops within each note dropped by hand.
+    expect(said).toEqual([
+      { contextual: undefined, spacing: undefined },
+      { contextual: '0', spacing: { 'w:before': '0' } },
+      { contextual: '0', spacing: { 'w:after': '0' } },
+      { contextual: undefined, spacing: undefined },
+    ]);
   });
 });
