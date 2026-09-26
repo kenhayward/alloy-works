@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.73.1 - 2026-09-26 (PR #239)
+
+### Changed
+
+- **The test run is several minutes shorter.** The accessibility checker every published PDF is
+  tested against is now started once for a whole run and kept ready, where it used to start afresh
+  for each of about thirty checks at roughly eleven seconds apiece; and the publishing tests now run
+  side by side instead of one file at a time. On a developer's machine the publishing suite takes
+  under a minute.
+- **CI shows each suite's output as it runs**, instead of holding it until the suite ends, so a long
+  suite no longer looks stuck.
+
 ## 0.73.0 - 2026-09-26 (PR #238)
 
 ### Added
