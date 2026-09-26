@@ -209,10 +209,15 @@ describe('the citations in the committed model', () => {
     expect(cited.has('IAM-054')).toBe(true);
     expect(cited.has('STY-050')).toBe(true);
 
-    // IAM-018 is deliberately absent. apps/service/src/http.test.ts used it as the sample rule in a
-    // fixture refusal, so the scan read a test about error envelopes as verification of a permission
-    // requirement. The fixture names ZZZ-001 now, which the scan ignores.
-    expect(cited.has('IAM-018')).toBe(false);
+    // IAM-018 was once cited by accident: apps/service/src/http.test.ts used it as the sample rule in
+    // a fixture refusal, so the scan read a test about error envelopes as verification of a
+    // permission requirement. The fixture names ZZZ-001 now, which the scan ignores. Since W4.1 it is
+    // cited, by the test that decides a template by a grant made on it - and by nothing else.
+    expect(
+      model.citations
+        .filter((citation) => citation.id === 'IAM-018')
+        .map((citation) => citation.file),
+    ).toEqual(['apps/service/src/template-routes.test.ts']);
     expect(cited.size).toBeGreaterThan(5);
   });
 
