@@ -32,7 +32,14 @@ describe('the OpenAPI document', () => {
     }
   });
 
-  it('publishes response objects open, so a field added later never breaks a client', () => {
+  it('API-012 tells callers to ignore fields they do not know, and publishes every response open', () => {
+    // Said where a caller reads first, as the contract of the whole API version: adding a field
+    // breaks nobody who ignores what they do not know, and nothing a caller relies on is removed.
+    expect(document.info.description).toMatch(/must ignore any field it does not know/);
+    expect(document.info.description).toMatch(
+      /Within an API version no field is removed and none changes its meaning/,
+    );
+    // And every response published open, so a caller's own validator never refuses a new field.
     // Scoped to responses: a request body is published closed on purpose (an unknown member is
     // refused, not silently dropped), and openapi.ts's own requestBody() test covers that.
     for (const byMethod of Object.values(document.paths)) {

@@ -2,7 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Alloy Works",
-    "version": "1"
+    "version": "1",
+    "description": "Adding a field to a response is never a breaking change, so a caller must ignore any field it does not know. Within an API version no field is removed and none changes its meaning."
   },
   "components": {
     "securitySchemes": {

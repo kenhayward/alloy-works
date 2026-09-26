@@ -7,7 +7,7 @@ type Json = Record<string, unknown>;
 
 export interface OpenApiDocument {
   readonly openapi: '3.1.0';
-  readonly info: { readonly title: string; readonly version: string };
+  readonly info: { readonly title: string; readonly version: string; readonly description: string };
   readonly components: { readonly securitySchemes: Record<string, unknown> };
   readonly paths: Record<string, Record<string, unknown>>;
 }
@@ -106,6 +106,15 @@ function requestBody(body: z.ZodObject): Json {
   return { required: true, content: { 'application/json': { schema: json } } };
 }
 
+/**
+ * What a caller may rely on across an API version (API-012), said where every caller reads first.
+ * Callers are told, not only published open: an open schema permits a new field, and this is what
+ * makes ignoring one the caller's side of the bargain.
+ */
+const COMPATIBILITY =
+  'Adding a field to a response is never a breaking change, so a caller must ignore any field it ' +
+  'does not know. Within an API version no field is removed and none changes its meaning.';
+
 export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument {
   const paths: Record<string, Record<string, unknown>> = {};
   const ordered = [...routes].sort(
@@ -151,7 +160,7 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
   }
   return {
     openapi: '3.1.0',
-    info: { title: 'Alloy Works', version: API_VERSION },
+    info: { title: 'Alloy Works', version: API_VERSION, description: COMPATIBILITY },
     components: {
       securitySchemes: { session: { type: 'apiKey', in: 'cookie', name: SESSION_COOKIE } },
     },
