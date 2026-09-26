@@ -864,7 +864,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       format: 'docx',
       standard: null,
       producer: 'word',
-      producer_version: 'word/3',
+      producer_version: 'word/4',
       report: [{ kind: 'no_page_cited_output' }, { kind: 'pages_cite_the_pdf' }],
     });
     // Kept once, as a Word document.
@@ -901,7 +901,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       format: 'docx',
       standard: null,
       producer: 'word',
-      producer_version: 'word/3',
+      producer_version: 'word/4',
       report: [{ kind: 'pages_cite_the_pdf' }],
     });
     expect(kept.get(pdf!.object_key)).toBe(OUTPUT_CONTENT_TYPES.pdf);
