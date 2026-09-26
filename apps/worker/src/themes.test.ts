@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   addThemeVersion,
-  bootstrapCluster,
+  prepareDatabase,
   createComponent,
   createDocument,
   createJobQueue,
@@ -22,7 +22,7 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import { freshDatabase, type TestDatabase } from '@alloy-works/db/testing';
 import {
   assemble,
   blockIdentifierFrom,
@@ -1389,7 +1389,7 @@ describe('publishing under a theme it must refuse, from the request to the recor
     engine = createTypst({ binary: typstBinaryPath(), fonts: pinnedFonts });
     db = await freshDatabase();
     objects = await testObjectStore();
-    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    await prepareDatabase(db.adminUrl);
     await migrate(db.migratorUrl);
     tenant = await createTenant(db.adminUrl, db.migratorUrl, {
       organisation: { id: 'acme', name: 'Acme' },

@@ -1,5 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { bootstrapCluster } from './bootstrap.js';
+import pg from 'pg';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { bootstrapCluster, bootstrapLoginRoles, prepareDatabase } from './bootstrap.js';
+import { migrate } from './migrate.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 
 describe('bootstrapCluster', () => {
@@ -63,5 +65,44 @@ describe('bootstrapCluster', () => {
 
   it('is safe to run again', async () => {
     await expect(bootstrapCluster(db.adminUrl, TEST_PASSWORDS)).resolves.toBeUndefined();
+  });
+});
+
+describe('prepareDatabase', () => {
+  let db: TestDatabase;
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapLoginRoles(db.adminUrl, TEST_PASSWORDS);
+  });
+
+  afterAll(() => db.drop());
+
+  // What lets a suite set the login roles up once and prepare a database per file in parallel: a
+  // database's preparation sends no statement that writes a role. Watched at the client rather than
+  // read from pg_authid, which every other suite on the cluster is writing at the same time.
+  it('makes a database ready to migrate without writing a login role', async () => {
+    const query = vi.spyOn(pg.Client.prototype, 'query');
+    try {
+      await prepareDatabase(db.adminUrl);
+      // A statement may be sent as a string or as `{ text }`; both are read.
+      const sent = query.mock.calls.map(([statement]) =>
+        typeof statement === 'string'
+          ? statement
+          : String((statement as { text?: unknown } | undefined)?.text ?? ''),
+      );
+      // A role's attributes, and one role's membership of another (`grant aw_tenant to ...`), are
+      // the cluster's rows; a privilege granted on a schema is this database's.
+      const writesARole = (text: string) =>
+        /\b(create|alter|drop)\s+role\b/i.test(text) ||
+        /^\s*grant\s+[\w"]+\s+to\b/i.test(text) ||
+        /^\s*revoke\s+[\w"]+\s+from\b/i.test(text);
+
+      expect(sent.some((text) => /create schema if not exists platform/i.test(text))).toBe(true);
+      expect(sent.filter(writesARole)).toEqual([]);
+    } finally {
+      query.mockRestore();
+    }
+    await migrate(db.migratorUrl);
   });
 });

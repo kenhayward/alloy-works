@@ -1699,7 +1699,9 @@ faces, images })`, pure and deterministic - a fixed zip time, the parts in a fix
 - **The regression corpus and veraPDF.** `apps/worker/src/regression.test.ts` builds each case as an
   outline, through `assemble` and the publication template, and compiles it with the pinned Typst; the
   checker (`apps/worker/src/testing/verapdf.ts`) runs the pinned `verapdf/cli` image, pulled by digest
-  (`pnpm --filter @alloy-works/worker fetch-verapdf`), against each PDF's PDF/UA-1 profile. This runs
+  (`pnpm --filter @alloy-works/worker fetch-verapdf`), against each PDF's PDF/UA-1 profile - one
+  process for the whole run, in veraPDF's server mode, started on the first check by the suite's global
+  setup and reached by every test file over 127.0.0.1 (`testing/verapdf-server.ts`). This runs
   in the worker's own test suite, on every change to the template, the engine or `assemble` - not yet
   per publication, which is a later slice's. `apps/worker/src/marks.test.ts` is the same pattern over
   a marked document: every mark set, the links reaching the page, a quoted phrase given no quotation

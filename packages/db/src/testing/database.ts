@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { sql } from 'kysely';
 import pg from 'pg';
+import { bootstrapLoginRoles } from '../bootstrap.js';
 import type { Tenant } from '../provision.js';
 import type { TenantTransaction } from '../tables.js';
 import type { TenantDatabase } from '../tenant-database.js';
@@ -135,6 +136,29 @@ export interface TestDatabase {
   drop(): Promise<void>;
 }
 
+/**
+ * The login roles every test database's connections use, set on the test server once. A suite whose
+ * files run in parallel calls this from its global setup and `prepareDatabase` from each file, so no
+ * two files write the same role at once.
+ */
+export async function bootstrapTestLoginRoles(): Promise<void> {
+  const server = serverUrl();
+  try {
+    await bootstrapLoginRoles(server, TEST_PASSWORDS);
+  } catch (error) {
+    throw (error as { code?: unknown }).code === 'ECONNREFUSED' ? noPostgres(server, error) : error;
+  }
+}
+
+/** What a suite says when there is no Postgres to test against, and how to start one. */
+function noPostgres(server: string, error: unknown): Error {
+  return new Error(
+    `No Postgres at ${new URL(server).host}. Start it with \`docker compose -f deploy/compose.yaml up -d --wait postgres\`, ` +
+      `or point ALLOY_TEST_DATABASE_URL at one. (${(error as Error).message})`,
+    { cause: error },
+  );
+}
+
 function serverUrl(): string {
   return process.env.ALLOY_TEST_DATABASE_URL ?? DEFAULT_SERVER_URL;
 }
@@ -173,11 +197,7 @@ export async function freshDatabase(): Promise<TestDatabase> {
   try {
     await admin.connect();
   } catch (error) {
-    throw new Error(
-      `No Postgres at ${new URL(server).host}. Start it with \`docker compose -f deploy/compose.yaml up -d --wait postgres\`, ` +
-        `or point ALLOY_TEST_DATABASE_URL at one. (${(error as Error).message})`,
-      { cause: error },
-    );
+    throw noPostgres(server, error);
   }
   try {
     await admin.query(`create database ${name}`);

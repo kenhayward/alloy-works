@@ -30,6 +30,9 @@ jobs:
           --health-retries 30
     env:
       ALLOY_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+      # Turbo holds each task's output until the task ends when it detects CI, so the slowest suite
+      # looked like a hang. Streamed, every line arrives as it is printed, prefixed with its task.
+      TURBO_LOG_ORDER: stream
     steps:
       - uses: actions/checkout@v5
 
@@ -133,6 +136,8 @@ jobs:
   end-to-end:
     name: The whole system
     runs-on: ubuntu-latest
+    env:
+      TURBO_LOG_ORDER: stream
     steps:
       - uses: actions/checkout@v5
 

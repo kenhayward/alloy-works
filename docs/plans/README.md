@@ -547,9 +547,10 @@ not yet covered at 0.69.0 against the code and moved out of T1 what depends on a
 map below orders what is left as fourteen workstreams; each gets its own plan here when its turn
 comes.
 
-| #   | Plan                                         | Builds                                                                                    | Status      |
-| --- | -------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------- |
-| 1   | [The rest of T1](2026-09-25-t1-remainder.md) | The workstreams left in T1 after the rescoping, their order, and the week's share of them | In progress |
+| #   | Plan                                                                   | Builds                                                                                                                                                                                               | Status      |
+| --- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 1   | [The rest of T1](2026-09-25-t1-remainder.md)                           | The workstreams left in T1 after the rescoping, their order, and the week's share of them                                                                                                            | In progress |
+| 2   | [W1: Test debt, and CI's test time](2026-09-26-w1-test-debt-and-ci.md) | Turbo's logs streamed in CI, one warm veraPDF for the worker's run and its files in parallel; tests for the built requirements the audit found uncited, and design claims for the four that had none | In progress |
 
 ## Publishing
 

@@ -4,9 +4,12 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
-    // Login roles are cluster-wide, so two files bootstrapping them at once would race. Each file
-    // has a database of its own; they simply take turns.
-    fileParallelism: false,
+    // The login roles set once for the run, so each file prepares only its own database and the
+    // files run side by side; and one veraPDF kept warm for the run (src/testing/verapdf-server.ts),
+    // not one started per check.
+    globalSetup: ['src/testing/database-setup.ts', 'src/testing/verapdf-setup.ts'],
+    // `maxWorkers` is left to vitest, which takes one fewer than the machine's cores: three on CI's
+    // four. The suite was measured at three before the files were let run side by side.
     testTimeout: 30_000,
     hookTimeout: 30_000,
     // Pinned rather than left implicit: the default reporter varies by platform, and a run

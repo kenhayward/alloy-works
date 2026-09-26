@@ -1,5 +1,5 @@
 import {
-  bootstrapCluster,
+  prepareDatabase,
   createJobQueue,
   createTenant,
   createTenantDatabase,
@@ -11,7 +11,7 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import { freshDatabase, queryAs, type TestDatabase } from '@alloy-works/db/testing';
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import pino from 'pino';
@@ -42,7 +42,7 @@ describe('the sample job, from the queue to the store', () => {
     typst = createTypst({ binary: typstBinaryPath(), fonts });
     db = await freshDatabase();
     store = await testObjectStore();
-    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    await prepareDatabase(db.adminUrl);
     await migrate(db.migratorUrl);
     tenant = await createTenant(db.adminUrl, db.migratorUrl, {
       organisation: { id: 'acme', name: 'Acme' },

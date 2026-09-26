@@ -55,6 +55,14 @@ tripping it. This is not hypothetical: the generic `test` task and desktop's ove
 a warm run. Do not add caching back to a `test` task without giving it its own way to produce a
 `.trace-results` report Turborepo can account for.
 
+### Turborepo's logs are streamed
+
+Both jobs set `TURBO_LOG_ORDER: stream`. Left to itself, Turborepo detects CI and switches to
+`grouped`, holding each task's output until that task ends - so while the worker's suite ran its
+nine minutes, the log showed the other suites finishing and then nothing, which reads as a hang.
+Streamed, every line arrives as it is printed, prefixed with its task, and interleaved with the
+others: read one package's run by filtering the log on its prefix, such as `@alloy-works/worker:test:`.
+
 ## Why the checks are advisory right now
 
 The repo has no baseline. Turning a check into a gate before there is agreement on what it should
