@@ -199,6 +199,12 @@
   font-weight: bold;
 }
 
+/* A definition is set as the blocks it holds, under its term, without the indent a browser gives a
+ * `dd` of its own accord - which the surface would otherwise gain from the element alone. */
+.aw-text dd {
+  margin: 0;
+}
+
 /* Preformatted text (CNT-018): whitespace kept exactly, as the stored text keeps it, and tab stops
  * every eight columns - the stops the published PDF expands tabs to (decision E), so the author sees
  * on screen the columns the page will print. Framed by a border as well as a tint, so the block is

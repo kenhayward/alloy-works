@@ -48,17 +48,18 @@ const inSequence = (node: Node) =>
  *
  * **A sequence is the children that are in the `block` group, and that is read off the schema rather
  * than from a list of type names** - the same rule `identified` follows in `identity.ts`, and for a
- * sharper reason here. A `definitionItem` is `term block+`, so a walk over a node's children meets a
- * `term` standing where the stored model has no sequence member at all: an item's term belongs to
- * the item and its blocks are a sequence of their own (`checkBlock` in `packages/domain`). Asking
+ * sharper reason here. A `definitionItem` is `term definition`, so a walk over a node's children
+ * meets a `term` and a `definition` standing where the stored model has no sequence member at all:
+ * an item's term belongs to the item and its blocks, the definition's children, are a sequence of
+ * their own (`checkBlock` in `packages/domain`). Asking
  * the schema which children are blocks is what makes the editor's sequence the same sequence the
  * stored model's rule runs over, rather than the same one by the coincidence that a term is not
  * called `paragraph`. It also means a blockquote, a table cell and a footnote are walked the day
  * they are declared, without being remembered here.
  *
  * Two things hold that, because **no shape this schema can make reaches the filter today**: a
- * `definitionItem` is `term block+`, so its one non-block child can only stand first, and the
- * emptiness test below never pairs with a term anyway. `schema.test.ts` pins that `term` is outside
+ * `definitionItem`'s two children are neither of them blocks, and the emptiness test below never
+ * pairs with a term anyway. `schema.test.ts` pins that `term` is outside
  * the group, which is what keeps the emptiness test's answer the stored model's answer; and
  * `state.test.ts` reaches the filter itself through a schema of its own, which is where the rule it
  * applies - a child outside the group is no member of the sequence, so it neither pairs nor
@@ -482,10 +483,11 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       // the component (ADR-0023, CNT-004).
       keymap(commandKeymap(options.newIdentifier, options.onPrompt)),
       // **Every deleting binding answers the depth rule, ahead of the one that does the work.**
-      // Backspace and Delete build a list level, which nothing about either key suggests: two
-      // `definitionItem`s cannot merge, because the content is `term block+`, so `deleteBarrier`
-      // wraps the following item in a new definition list inside the previous one rather than
-      // joining them. At the limit that is a document the store refuses, from one press.
+      // Backspace and Delete built a list level, which nothing about either key suggests: while a
+      // `definitionItem` was `term block+`, `deleteBarrier` wrapped the following item in a new
+      // definition list inside the previous one rather than joining them - at the limit a document
+      // the store refuses, from one press. The join below answers first, and `term definition`
+      // leaves the wrap no place (`refusePastTheLimit`); the guard stays for the rule's sake.
       //
       // The bindings are found by **identity** against `baseKeymap`'s own commands rather than
       // typed out, because the same command is bound under several names and they differ by

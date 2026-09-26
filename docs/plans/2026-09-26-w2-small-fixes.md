@@ -111,8 +111,7 @@ is - so nothing is migrated: `mapping.ts` is where the two spellings meet, and g
 - **Paste needs nothing.** A component pasted into another travels as the product's own type
   (`PRODUCT_CLIPBOARD_TYPE`), not as HTML. `packages/readers` already reads `dl > div > dt + dd` and
   never read the old `div > dt + p` body (it skips a `p` there, measured), so the editor's own HTML,
-  pasted into anything that reads HTML as a browser does, now carries its definitions where it did
-  not.
+  read back without the product's type, now keeps its definitions where it did not.
 - **Test** (`packages/editor`): `CNT-175 exposes a component's lists, tables and footnotes to
 assistive technology as structure` - the view's DOM and `renderContent`'s alike: a list `ul`/`ol`
   of `li`, a definition list `dl` of `dt` and `dd` (each `div` holding exactly one `dt` then one
@@ -256,6 +255,18 @@ test now measures the route. A card also says so where the reader holds the comp
 window, says nothing of a hold whose time has passed, and hears changes when its window is returned
 to. The state is decided for every component the caller may read, including an occurrence with no
 version to show.
+
+**W2.1b (PR #250).** Built as Task 2 says, with three things the plan did not foresee.
+`prosemirror-schema-list`'s sink and lift put and look for a sublist after an item's last child,
+which is now the definition, so `sinkDefinitionItem` and a lift beside it are the product's, one level
+deeper; a Backspace or Delete join from a term with words leaves the emptied item behind, since a
+deletion cannot move a whole `definition`, so the join takes its definition's blocks in a second
+deletion; and upstream Backspace and Delete can no longer nest one item in another - nothing may
+follow a definition, measured - so the comments saying they do were corrected and the depth guard on
+them kept. ADR-0025 named `term block+` as its decision, so ADR-0026 restates it with the new shape
+and supersedes it. The mapping refuses an item whose blocks stand outside a definition, by name. The
+old `div > dt + p` body was also losing data in the HTML reader - a definition read back from the
+editor's HTML came back empty with nothing in the report - which the new shape ends.
 
 ## Done when
 

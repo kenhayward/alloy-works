@@ -656,29 +656,35 @@ fallback. Requests are answered one at a time, since the engine holds one locale
 that fails is not kept: the next request tries again. Its Node
 path reaches `require` through `eval`, which the build warns of and a browser never runs.
 
-**Five editor node types for the model's one `list`, and the mapping is where they meet.**
+**Six editor node types for the model's one `list`, and the mapping is where they meet.**
 `list` (`listItem+`, `kind` ordered or unordered, with `start` and `format`), `listItem` (`block+`),
-`definitionList` (`definitionItem+`), `definitionItem` (`term block+`) and `term` (`text*`, marks
-allowed). The stored model holds one `list` of three kinds whose item is `{ term?, content }`; a
-ProseMirror content expression is fixed per type, so no single item type can be `block+` for two kinds
-and `term block+` for the third -
-[ADR-0025](decisions/0025-the-editor-schema-is-not-the-stored-model-one-for-one.md). `definitionItem`
-is never relaxed to `term? block+`: an item without its term is then unrepresentable rather than
-merely refused. `start` and `format` reach the rendered `ol` as `start` and `data-format`, and are
+`definitionList` (`definitionItem+`), `definitionItem` (`term definition`), `term` (inline, marks
+allowed) and `definition` (`block+`). The stored model holds one `list` of three kinds whose item is
+`{ term?, content }`, its `content` the definition's children; a ProseMirror content expression is
+fixed per type, so no single item type can be `block+` for two kinds and open with a term for the
+third - [ADR-0025](decisions/0025-the-editor-schema-is-not-the-stored-model-one-for-one.md), superseded
+by [ADR-0026](decisions/0026-a-definition-is-its-own-editor-node.md), which gave the definition its
+own node so that the list renders `dl > div > dt + dd` and a screen reader is told what each
+definition defines (CNT-175). `definitionItem` is never relaxed to `term? definition`: an item without
+its term is then unrepresentable rather than merely refused. `start` and `format` reach the rendered `ol` as `start` and `data-format`, and are
 read back judged rather than trusted, because the stylesheet takes the marker from one and the browser
 takes the first number from the other - without them an author setting **Start at 5, a b c** would see
 `1.` on the surface and `e.` in the PDF.
 
-**Four commands come from `prosemirror-schema-list` and two are ours, because that package declines
-where a definition item begins with a term.** `wrapInList`, `splitListItem`, `sinkListItem` and
-`liftListItem` drive the stored-shaped schema unchanged. `splitListItem(definitionItem)` returns false
-from the term and from the body alike, measured - a split's remainder is a paragraph, which cannot be
-an item's first child where that must be a term - so `splitDefinitionItem` is ours: from the term
-Enter moves into the body, and from the body it makes a new item with an empty term, built as one
-`Transform.split` step so every position before the cursor maps forward and the blocks already in the
-item keep the identifiers they had. `liftListItem(definitionItem)` returns false at the top level of a
-definition list for the same reason, so `outOfDefinitionList` is ours too, or an author who pressed
-Enter in a fresh definition item would have no key that leaves the list. `Enter` is one chain -
+**Four commands come from `prosemirror-schema-list`, and a definition list's are ours where that
+package assumes an item's blocks are its own children.** `wrapInList`, `splitListItem`,
+`sinkListItem` and `liftListItem` drive the counted lists unchanged. `splitListItem(definitionItem)`
+returns false from the term and from the definition alike, measured - a split's remainder is a
+paragraph, which cannot be an item's first child where that must be a term - so `splitDefinitionItem`
+is ours: from the term Enter moves into the definition, and from the definition it makes a new item
+with an empty term, built as one `Transform.split` step so every position before the cursor maps
+forward and the blocks already in the item keep the identifiers they had.
+`liftListItem(definitionItem)` returns false at the top level of a definition list for the same
+reason, so `outOfDefinitionList` is ours too, or an author who pressed Enter in a fresh definition
+item would have no key that leaves the list. `sinkListItem` and `liftListItem` put and look for a
+sublist after an item's last child, which in a definition item is its definition, so
+`sinkDefinitionItem` and a lift beside it build the same `ReplaceAroundStep`s one level deeper, inside
+the definition. `Enter` is one chain -
 `splitDefinitionItem`, then `splitListItem`, then the lift - and it stands **ahead of** the
 empty-paragraph `Enter`, which returns true and does nothing in an empty paragraph and would
 otherwise shadow every list-aware answer; the order is held by a test that presses the key through
@@ -689,16 +695,18 @@ named shortcut, and Tab outside a list still lets the focus leave.
 **Everything that would build a level declines past the depth the content model admits.** Thirty
 levels, measured against `fromEditor` rather than chosen, and asked of the document the command would
 make rather than of the cursor's ancestry - so a deep list in one part of a component does not freeze
-Tab in a shallow one. **Five routes can build one**, found by sweeping every textblock of five
+Tab in a shallow one. **Five routes could build one**, found by sweeping every textblock of five
 fixtures at both ends with every keymap: **Nest item**; **Definition list** over any paragraph;
-**Bulleted list** or **Numbered list** over a paragraph inside a definition item, where they wrap
-instead of toggling; and **`Backspace` at the start of a definition item's term** or **`Delete` at the
-end of the item before it**, which cannot join two items - `definitionItem` is `term block+`, so
-`deleteBarrier` wraps the following item in a new definition list inside the previous one - and so
-nest where an author expected a deletion. The three commands decline, the toolbar shows the control
+**Bulleted list** or **Numbered list** over a paragraph inside a definition, where they wrap instead
+of toggling; and **`Backspace` at the start of a definition item's term** or **`Delete` at the end of
+the item before it**, which could not join two items while `definitionItem` was `term block+` -
+`deleteBarrier` wrapped the following item in a new definition list inside the previous one - and so
+nested where an author expected a deletion. Since ADR-0026 nothing may follow an item's definition,
+so the wrap finds no place, measured; the keys stay guarded so the depth rule rests on neither fact. The three commands decline, the toolbar shows the control
 unavailable and Tab hands the key back to the browser. The two keys now **join the two items**, at any
 depth (`joinDefinitionItems`, issue #160): the second term runs on at the end of the first item's last
-paragraph and its body follows, or, after an empty term, the body's first paragraph joins instead,
+paragraph and its definition's blocks join the first item's, or, after an empty term, the
+definition's first paragraph joins instead,
 which is the inverse of `Enter` in a definition. A join makes nothing deeper, and where the item before
 ends in something that is not a paragraph the key is taken and does nothing. Every deleting binding in
 `baseKeymap` is guarded, found by identity against its own commands rather than typed out, so a
@@ -708,7 +716,7 @@ save afterwards, and the author kept typing into a page that said it was saving.
 
 **Both descending plugins descend.** Identity walks every block at any depth, so a block made inside
 a list item is named like any other; adjacency is held in every sequence of blocks the editor can
-make, which is the top level and the two kinds of item. Identity is registered **before** adjacency,
+make, which is the top level, a list item and a definition. Identity is registered **before** adjacency,
 and that is a preference rather than a rule: ProseMirror re-runs every `appendTransaction` over
 whatever any of them appends, so each sees the document the other left however they are ordered, and
 swapping them changes no outcome. What the order buys is that a paragraph about to be removed is

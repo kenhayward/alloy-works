@@ -457,8 +457,10 @@ describe('the mapping carries a list, both ways', () => {
       editorSchema.node('definitionList', { id: 'D1' }, [
         editorSchema.node('definitionItem', null, [
           editorSchema.node('term', null, []),
-          editorSchema.node('paragraph', { id: 'b1', style: 'body' }, [
-            editorSchema.text('The greatest stress a material bears.'),
+          editorSchema.node('definition', null, [
+            editorSchema.node('paragraph', { id: 'b1', style: 'body' }, [
+              editorSchema.text('The greatest stress a material bears.'),
+            ]),
           ]),
         ]),
       ]),
@@ -545,13 +547,18 @@ describe('the mapping carries a list, both ways', () => {
   });
 
   it('refuses to store a definition item that does not open with its term', () => {
-    // Built with `copy`, which does not check content: `term block+` refuses this today. Without
-    // the guard the paragraph standing where the term should is read as the term and then skipped
-    // as the term would be - the author's first paragraph stored as a word and lost as a block.
+    // Built with `copy`, which does not check content: `term definition` refuses this today.
+    // Without the guard the paragraph standing where the term should is read as the term and then
+    // skipped as the term would be - the author's first paragraph stored as a word and lost as a
+    // block.
     const item = editorSchema
       .node('definitionItem', null, [
         editorSchema.node('term', null, [editorSchema.text('Tensile strength')]),
-        editorSchema.node('paragraph', { id: 'b1', style: 'body' }, [editorSchema.text('Stress.')]),
+        editorSchema.node('definition', null, [
+          editorSchema.node('paragraph', { id: 'b1', style: 'body' }, [
+            editorSchema.text('Stress.'),
+          ]),
+        ]),
       ])
       .copy(
         Fragment.fromArray([
@@ -567,6 +574,33 @@ describe('the mapping carries a list, both ways', () => {
       editorSchema.node('definitionList', { id: 'D1' }, [item]),
     ]);
     expect(() => fromEditor(doc)).toThrow(/does not open with its term/);
+  });
+
+  it('refuses to store a definition item whose blocks do not stand in its definition', () => {
+    // Built with `copy`, as above: `term definition` refuses this today. Without the guard the
+    // paragraph standing where the definition should is walked as a definition would be, and its
+    // text read as the blocks it holds - refused, if at all, under a name that says nothing of why.
+    const item = editorSchema
+      .node('definitionItem', null, [
+        editorSchema.node('term', null, [editorSchema.text('Tensile strength')]),
+        editorSchema.node('definition', null, [
+          editorSchema.node('paragraph', { id: 'b1', style: 'body' }, [
+            editorSchema.text('Stress.'),
+          ]),
+        ]),
+      ])
+      .copy(
+        Fragment.fromArray([
+          editorSchema.node('term', null, [editorSchema.text('Tensile strength')]),
+          editorSchema.node('paragraph', { id: 'b1', style: 'body' }, [
+            editorSchema.text('Stress.'),
+          ]),
+        ]),
+      );
+    const doc = editorSchema.node('doc', root, [
+      editorSchema.node('definitionList', { id: 'D1' }, [item]),
+    ]);
+    expect(() => fromEditor(doc)).toThrow(/Item 0\.0 holds its blocks outside a definition/);
   });
 
   it('refuses to store a block inside a list item that the editor has not identified', () => {
@@ -588,8 +622,10 @@ describe('the mapping carries a list, both ways', () => {
       editorSchema.node('definitionList', { id: 'D1' }, [
         editorSchema.node('definitionItem', null, [
           editorSchema.node('term', null, [editorSchema.text('Tensile strength')]),
-          editorSchema.node('paragraph', { id: null, style: 'body' }, [
-            editorSchema.text('The greatest stress a material bears.'),
+          editorSchema.node('definition', null, [
+            editorSchema.node('paragraph', { id: null, style: 'body' }, [
+              editorSchema.text('The greatest stress a material bears.'),
+            ]),
           ]),
         ]),
       ]),

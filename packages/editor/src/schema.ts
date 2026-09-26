@@ -230,21 +230,35 @@ export const editorSchema = new Schema({
       toDOM: () => ['dl', 0],
     },
     /**
-     * `term block+`, not `block+`: a definition item's first child is the term it defines, and that
-     * is the whole reason a definition list is its own node type here rather than a third `kind` of
-     * `list`. Relaxing this to `block+` or `term? block+` would make the item representable without
-     * its term and is the one change this shape exists to forbid.
+     * `term definition`, not `block+`: a definition item's first child is the term it defines, and
+     * that is the whole reason a definition list is its own node type here rather than a third `kind`
+     * of `list`. Relaxing this to `block+` or `term? definition` would make the item representable
+     * without its term and is the one change this shape exists to forbid.
      *
      * A term that has not been typed yet is still a `term` node, empty - an author who writes the
      * definition before the word must be able to. What is optional is what reaches the store: the
      * stored item omits `term` entirely when it is empty (`checkBlock` in `packages/domain`), which
      * is the same bargain the content model strikes for an empty paragraph under CNT-124.
      *
-     * `div` rather than `dt`+`dd` siblings, because an item is one node and `dl` admits no wrapper
-     * in HTML that carries both - the surface is styled, and the published structure is the
-     * template's business, not this schema's.
+     * Rendered `div`, which HTML admits as the one wrapper in a `dl` grouping a term with its
+     * definition: `dl > div > dt + dd`, so assistive technology is told each definition is the
+     * definition of its term (CNT-175, issue #246).
      */
-    definitionItem: { content: 'term block+', defining: true, toDOM: () => ['div', 0] },
+    definitionItem: { content: 'term definition', defining: true, toDOM: () => ['div', 0] },
+    /**
+     * A definition item's body, the blocks that define its term, rendered `dd`. Its own node because
+     * a `dd` must hold them and nothing else: when the body's blocks were the item's own children,
+     * beside the term, they rendered as paragraphs in an unlabelled group (CNT-175, issue #246). No
+     * attributes, as a `listItem` has none - the stored model's item carries no identifier, and the
+     * blocks inside carry their own. It is `block+` as a list item is, so a definition holds
+     * paragraphs and lists of either kind to whatever depth the content model allows.
+     */
+    definition: {
+      content: 'block+',
+      defining: true,
+      parseDOM: [{ tag: 'dd' }],
+      toDOM: () => ['dd', 0],
+    },
     /**
      * The term is a textblock, so it is an editable region of its own carrying its own marks - which
      * is what makes a term inline content rather than a string.

@@ -53,7 +53,10 @@ const term = (text: string) =>
     : editorSchema.node('term', null, [editorSchema.text(text)]);
 
 const definitionItem = (word: string, ...blocks: Node[]) =>
-  editorSchema.node('definitionItem', null, [term(word), ...blocks]);
+  editorSchema.node('definitionItem', null, [
+    term(word),
+    editorSchema.node('definition', null, blocks),
+  ]);
 
 const definitionList = (id: string, ...items: Node[]) =>
   editorSchema.node('definitionList', { id }, items);
@@ -301,7 +304,10 @@ describe('making a list of a paragraph, and taking one back out', () => {
     expect(handled).toBe(true);
     expect(shapeOf(next.doc)).toEqual([
       'doc',
-      ['definitionList', ['definitionItem', 'term', ['paragraph', 'The greatest stress.']]],
+      [
+        'definitionList',
+        ['definitionItem', 'term', ['definition', ['paragraph', 'The greatest stress.']]],
+      ],
     ]);
     // The term is what an author types first, so that is where the cursor goes.
     expect(next.selection.$from.parent.type.name).toBe('term');
@@ -343,8 +349,8 @@ describe('the Enter chain', () => {
   });
 
   it('leaves a definition list when Enter is pressed in an item with no term and nothing written', () => {
-    // `liftListItem(definitionItem)` returns false here, measured: an item is `term block+` and a
-    // term has no home outside the list, so the generic lift cannot answer this one.
+    // `liftListItem(definitionItem)` returns false here, measured: an item opens with its term and
+    // a term has no home outside the list, so the generic lift cannot answer this one.
     const doc = documentOf(
       definitionList(
         'D1',
@@ -356,7 +362,10 @@ describe('the Enter chain', () => {
     expect(handled).toBe(true);
     expect(shapeOf(next.doc)).toEqual([
       'doc',
-      ['definitionList', ['definitionItem', ['term', 'Creep'], ['paragraph', 'Slow strain.']]],
+      [
+        'definitionList',
+        ['definitionItem', ['term', 'Creep'], ['definition', ['paragraph', 'Slow strain.']]],
+      ],
       'paragraph',
     ]);
     expect(() => stored(next.doc)).not.toThrow();
@@ -374,11 +383,18 @@ describe('the Enter chain', () => {
     const { next } = press(stateOf(doc, 'b2'), 'Enter');
     expect(shapeOf(next.doc)).toEqual([
       'doc',
-      ['definitionList', ['definitionItem', ['term', 'Creep'], ['paragraph', 'Slow strain.']]],
+      [
+        'definitionList',
+        ['definitionItem', ['term', 'Creep'], ['definition', ['paragraph', 'Slow strain.']]],
+      ],
       'paragraph',
       [
         'definitionList',
-        ['definitionItem', ['term', 'Yield'], ['paragraph', 'The greatest stress.']],
+        [
+          'definitionItem',
+          ['term', 'Yield'],
+          ['definition', ['paragraph', 'The greatest stress.']],
+        ],
       ],
     ]);
     // Two lists, and no two blocks in the component carrying one identifier (CNT-002).
@@ -422,7 +438,7 @@ describe('the Enter chain', () => {
       definitionList('D1', definitionItem('Creep', paragraph('b1', 'Slow strain.'))),
     );
     const state = stateOf(doc, 'b1');
-    // After "Slow", so the remainder goes to the new item's body.
+    // After "Slow", so the remainder goes to the new item's definition.
     const cut = state.apply(
       state.tr.setSelection(TextSelection.create(state.doc, state.selection.$from.start() + 4)),
     );
@@ -431,8 +447,8 @@ describe('the Enter chain', () => {
       'doc',
       [
         'definitionList',
-        ['definitionItem', ['term', 'Creep'], ['paragraph', 'Slow']],
-        ['definitionItem', 'term', ['paragraph', ' strain.']],
+        ['definitionItem', ['term', 'Creep'], ['definition', ['paragraph', 'Slow']]],
+        ['definitionItem', 'term', ['definition', ['paragraph', ' strain.']]],
       ],
     ]);
     // The raw `splitListItem` duplicates an identifier here rather than leaving one absent, and the
@@ -510,8 +526,8 @@ describe('the Enter chain', () => {
       'doc',
       [
         'definitionList',
-        ['definitionItem', 'term', ['paragraph', 'Slow strain.'], 'paragraph'],
-        ['definitionItem', 'term', 'paragraph'],
+        ['definitionItem', 'term', ['definition', ['paragraph', 'Slow strain.'], 'paragraph']],
+        ['definitionItem', 'term', ['definition', 'paragraph']],
       ],
     ]);
     expect(() => stored(next.doc)).not.toThrow();
@@ -667,10 +683,17 @@ describe('nesting an item and lifting it back', () => {
             [
               'definitionItem',
               ['term', 'Creep'],
-              ['paragraph', 'Slow strain.'],
               [
-                'definitionList',
-                ['definitionItem', ['term', 'Yield'], ['paragraph', 'The greatest stress.']],
+                'definition',
+                ['paragraph', 'Slow strain.'],
+                [
+                  'definitionList',
+                  [
+                    'definitionItem',
+                    ['term', 'Yield'],
+                    ['definition', ['paragraph', 'The greatest stress.']],
+                  ],
+                ],
               ],
             ],
           ],
@@ -1014,10 +1037,10 @@ describe('what a list panel reads and changes', () => {
 describe('a delete key that would deepen a list past what the model admits (issue #160)', () => {
   /**
    * Counted lists down to the level below, and a **definition list of two items** as the last one -
-   * which is the shape the route needs. Two `definitionItem`s cannot merge, because the content is
-   * `term block+`, so `deleteBarrier` wraps the following item in a new definition list inside the
-   * previous one rather than joining them: one more level, from a key nobody thinks of as one that
-   * builds anything.
+   * which is the shape the route needed. While a `definitionItem` was `term block+`, two could not
+   * merge, so `deleteBarrier` wrapped the following item in a new definition list inside the previous
+   * one rather than joining them: one more level, from a key nobody thinks of as one that builds
+   * anything. The join answers both keys now, and these hold it to that at the limit.
    */
   const definitionAt = (levels: number): Node => {
     let built: Node = definitionList(
@@ -1703,9 +1726,12 @@ describe('Backspace and Delete between two definition items (issue #160)', () =>
         [
           'definitionItem',
           ['term', 'Creep'],
-          ['paragraph', 'Slow strain.Yield'],
-          ['paragraph', 'Under load.'],
-          ['paragraph', 'Over time.'],
+          [
+            'definition',
+            ['paragraph', 'Slow strain.Yield'],
+            ['paragraph', 'Under load.'],
+            ['paragraph', 'Over time.'],
+          ],
         ],
       ],
     ]);
@@ -1724,8 +1750,7 @@ describe('Backspace and Delete between two definition items (issue #160)', () =>
         [
           'definitionItem',
           ['term', 'Creep'],
-          ['paragraph', 'Slow strain.Under load.'],
-          ['paragraph', 'Over time.'],
+          ['definition', ['paragraph', 'Slow strain.Under load.'], ['paragraph', 'Over time.']],
         ],
       ],
     ]);
@@ -1743,9 +1768,12 @@ describe('Backspace and Delete between two definition items (issue #160)', () =>
         [
           'definitionItem',
           ['term', 'Creep'],
-          ['paragraph', 'Slow strain.Yield'],
-          ['paragraph', 'Under load.'],
-          ['paragraph', 'Over time.'],
+          [
+            'definition',
+            ['paragraph', 'Slow strain.Yield'],
+            ['paragraph', 'Under load.'],
+            ['paragraph', 'Over time.'],
+          ],
         ],
       ],
     ]);

@@ -19,11 +19,12 @@ export function newBlockIdentifier(): string {
  * list item holds blocks, so a block can be made at any depth, and a walk over the top level alone
  * leaves every one of them carrying `id: null` - which `fromEditor` throws on, out of the save path,
  * where the service answers with a fixed message an author cannot act on. The nodes with no `id`
- * attribute - `listItem`, `definitionItem`, `term`, and the text inside them - are walked **through**
- * and never named: the stored model gives an item and a term no identifier, because an item is not a
- * block and a term is inline content belonging to one (content-model.md). Reading that from
- * `type.spec.attrs` rather than naming the three types is what keeps a node type added later from
- * having to be remembered here.
+ * attribute - `listItem`, `definitionItem`, `term`, `definition`, and the text inside them - are
+ * walked **through** and never named: the stored model gives an item, a term and a definition no
+ * identifier, because an item is not a block, a term is inline content belonging to one, and a
+ * definition is the item's own sequence of blocks (content-model.md). Reading that from
+ * `type.spec.attrs` rather than naming the types is what keeps a node type added later from having
+ * to be remembered here - `definition` was added without this walk being touched.
  */
 function identified(doc: Node): { readonly id: unknown; readonly pos: number }[] {
   const found: { id: unknown; pos: number }[] = [];

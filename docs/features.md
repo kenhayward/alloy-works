@@ -135,7 +135,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the next one; `Enter` in an item where you have written nothing leaves the list, coming up one level
   if you are nested and out of the list altogether if you are not. A definition list's term is a piece
   of the document like any other, so it can be emphasised, linked or marked with its own language, and
-  `Enter` in a term moves into its definition rather than splitting the term in two. While the cursor
+  `Enter` in a term moves into its definition rather than splitting the term in two. A screen reader
+  is told each definition is its term's, in the editor and on a document's page. While the cursor
   is in a numbered list a **List** panel appears beside the toolbar, offering its kind, the number to
   **Start at** and a **Numbering** of `1, 2, 3`, `a, b, c` or `i, ii, iii`; `F6` reaches it like the
   other regions, and it goes away again when you leave the list. A start that cannot be used is

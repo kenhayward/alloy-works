@@ -14953,6 +14953,10 @@
           "howItIsMet": "A component's text carries one class, `TEXT_CLASS`, wherever it is shown - the editing surface and a document's read text alike - and the editor's stylesheet sets all of that class's typography once - spaces kept as typed, no ligatures, the size, leading and every block's spacing - while its rules for the surface alone set only the caret, the selection and a placeholder. The read text is `renderContent`, the same schema's own rendering, so opening a component moves nothing"
         },
         {
+          "id": "CNT-175",
+          "howItIsMet": "The surface's structure is the elements that say so: a list is `ul` or `ol` of `li`; a definition list is `dl > div > dt + dd`, each definition its own node rendered `dd` ([ADR-0026](../decisions/0026-a-definition-is-its-own-editor-node.md)); a table is a `table` of `th` and `td` in a `figure` captioned by its `figcaption`; and a footnote is a marker named _Footnote_ whose text opens in an editor named _Footnote text_. A document's read text renders the same schema, so it carries the same lists and tables"
+        },
+        {
           "id": "CNT-174",
           "howItIsMet": "The session never promotes an iteration on its own; iterations are rows the storage design keeps immutable and timestamped, and read by no one but the editor whose session wrote them, through recovery (VER-001 to VER-003). CNT-089, which it supersedes, also asked for retention, which is VER-003's"
         },
@@ -16979,6 +16983,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-175",
+      "file": "apps/web/src/editor/renderContent.test.ts",
+      "line": 243,
+      "kind": "title"
+    },
+    {
       "id": "CNT-066",
       "file": "apps/web/src/editor/session.test.ts",
       "line": 223,
@@ -18697,7 +18707,7 @@
     {
       "id": "CNT-025",
       "file": "packages/editor/src/equations.test.ts",
-      "line": 457,
+      "line": 455,
       "kind": "title"
     },
     {
@@ -18733,7 +18743,7 @@
     {
       "id": "CNT-002",
       "file": "packages/editor/src/identity.test.ts",
-      "line": 236,
+      "line": 237,
       "kind": "title"
     },
     {
@@ -18757,13 +18767,13 @@
     {
       "id": "CNT-014",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 997,
+      "line": 1033,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 637,
+      "line": 673,
       "kind": "title"
     },
     {
@@ -18817,13 +18827,13 @@
     {
       "id": "CNT-023",
       "file": "packages/editor/src/state.test.ts",
-      "line": 367,
+      "line": 369,
       "kind": "title"
     },
     {
       "id": "CNT-147",
       "file": "packages/editor/src/state.test.ts",
-      "line": 644,
+      "line": 647,
       "kind": "title"
     },
     {
