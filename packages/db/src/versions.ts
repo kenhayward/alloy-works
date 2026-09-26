@@ -7,6 +7,7 @@ import {
   parseContentDocument,
   parseAssetVersion,
   parseLayout,
+  templateDefinitionSchema,
   parseOutlineDocument,
   type CatalogueSubstance,
   type DefinitionRef,
@@ -69,11 +70,17 @@ export interface Authorship {
 export type NewArtifact = Authorship &
   (
     | {
-        readonly substance: Extract<VersionSubstance, { kind: 'component' | 'document' | 'asset' }>;
+        readonly substance: Extract<
+          VersionSubstance,
+          { kind: 'component' | 'document' | 'asset' | 'template' }
+        >;
         readonly spaceId: string;
       }
     | {
-        readonly substance: Exclude<VersionSubstance, { kind: 'component' | 'document' | 'asset' }>;
+        readonly substance: Exclude<
+          VersionSubstance,
+          { kind: 'component' | 'document' | 'asset' | 'template' }
+        >;
       }
   );
 
@@ -129,6 +136,10 @@ function prepare(substance: VersionSubstance): VersionSubstance {
   if (substance.kind === 'layout') {
     // A layout carries no `id` either: it is a definition in no space, identified by its artifact row.
     return { kind: 'layout', content: parseLayout(substance.content) };
+  }
+  if (substance.kind === 'template') {
+    // Nor does a template: it is in a space, and identified by its artifact row (templates.md).
+    return { kind: 'template', content: templateDefinitionSchema.parse(substance.content) };
   }
   if (substance.kind === 'asset') {
     // Nor does an asset version: an asset is in a space, as content is (docs/design/assets.md).
@@ -222,7 +233,10 @@ export async function createArtifact(
   const artifact = await trx
     .insertInto('artifact')
     .values(
-      substance.kind === 'component' || substance.kind === 'document' || substance.kind === 'asset'
+      substance.kind === 'component' ||
+        substance.kind === 'document' ||
+        substance.kind === 'asset' ||
+        substance.kind === 'template'
         ? { kind: substance.kind, space_id: 'spaceId' in input ? input.spaceId : null }
         : { id: substance.content.id, kind: substance.kind, space_id: null },
     )

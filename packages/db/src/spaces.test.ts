@@ -85,9 +85,9 @@ describe('spaces and artifacts', () => {
     await expect(
       service.withTenant(production, (trx) =>
         // Not 'document' any more: 0016 made it a kind the chain holds, so it now fails
-        // artifact_space_by_kind instead. A template is the next kind to arrive, by a migration
-        // widening this check (TPL's plan).
-        sql`insert into artifact (kind) values ('template')`.execute(trx),
+        // artifact_space_by_kind instead - and not 'template' either, which 0028 added (W4.1). A
+        // glossary is no kind the chain holds.
+        sql`insert into artifact (kind) values ('glossary')`.execute(trx),
       ),
     ).rejects.toThrow(/artifact_kind_check/);
   });

@@ -252,6 +252,16 @@ export {
   type OutlineAnswer,
   type StoredDocument,
 } from './documents.js';
+export {
+  createTemplate,
+  listReadableTemplates,
+  readTemplate,
+  recordTemplateVersion,
+  templateReferences,
+  type StoredTemplate,
+  type TemplateAnswer,
+  type TemplateSummary,
+} from './templates.js';
 export { numberingInputs, type NumberingInputs, type OccurrenceResolution } from './numbering.js';
 export {
   createComponent,
