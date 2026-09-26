@@ -637,6 +637,33 @@ describe('assemble', () => {
     expect(refusedByAssemble).toEqual(['zh-Hans', 'es-419', 'sr-Latn', 'sl-rozaj']);
   });
 
+  // Not cited as CNT-166 ("the full Unicode range must be storable"): U+0000 is refused, since
+  // Postgres cannot store it, and text is kept in NFC (CNT-056), so a code point NFC replaces is
+  // stored as its canonical equivalent. Whether CNT-166 is reworded to say so is Ken's (W1's plan).
+  it('refuses a character the faces cannot set, astral ones included, naming each by its code point, for the PDF and for Word', () => {
+    // Mathematical bold capital A and a grinning face, both outside the Basic Multilingual Plane.
+    const astral = oneParagraph(text('Mass \u{1d400} \u{1f600}'));
+    const refused = (detail: string) => ({
+      stage: 'compose',
+      code: 'glyph_missing',
+      node: id('calib'),
+      block: 'b1',
+      detail,
+    });
+    for (const formats of [['pdf'], ['docx'], ['pdf', 'docx']] as const) {
+      expect(failuresOf(assemble({ ...astral, formats: [...formats] })), formats.join()).toEqual([
+        refused('U+1D400'),
+        refused('U+1F600'),
+      ]);
+    }
+    // Judged a whole character at a time, never half of one: a face that has the capital sets it.
+    const withCapital = assemble({
+      ...astral,
+      covers: (point) => latin(point) || point === 0x1d400,
+    });
+    expect(failuresOf(withCapital)).toEqual([refused('U+1F600')]);
+  });
+
   it('checks a marked run against the pinned faces as it checks an unmarked one', () => {
     const result = assemble(oneParagraph(marked('Tray \u{4e2d}', { type: 'emphasis', id: 'm1' })));
     expect(failuresOf(result)).toEqual([

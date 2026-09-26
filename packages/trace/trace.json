@@ -15415,8 +15415,16 @@
           "howItIsMet": "Compose resolves each figure's alternative text - its own, decorative, or inherited from the asset version's default - and a figure with none fails `alternative_missing`, naming the occurrence and block"
         },
         {
+          "id": "PUB-031",
+          "howItIsMet": "Blocks are published in the document's order and tagged in it. Two things are drawn elsewhere, and each is tagged where the document has it: a figure its style floats, drawn at the head or the foot of its page, is read between the blocks either side of it, and in Word its text box is anchored in a paragraph of its own at the same place; a footnote, drawn at the foot of its page, is read inside the paragraph it stands in, where its anchor is. In Word a footnote is Word's own, and where Word reads it is Word's. That a table's header repeated on a later page is not read again is TAB-050's. Measured (W1.3)"
+        },
+        {
           "id": "PUB-034",
           "howItIsMet": "The published document carries the document's language, each occurrence's base language where it differs and each `language` mark; the template sets `text(lang)` for each, and the Word writer sets `w:lang` ([word-output.md](word-output.md))"
+        },
+        {
+          "id": "PUB-069",
+          "howItIsMet": "Each run carries its passage's language to the engine - a component's own, a language mark's - and in Word it is the run's `w:lang`, which Word hyphenates by where the document asks it to. Typst hyphenates by it, and a language it has no patterns for is not hyphenated at all, never as the document's. It breaks lines by it too: Croatian, Czech, Polish, Portuguese, Slovak and Spanish repeat a hyphen already in the text at the start of the next line, and CJK breaks by its own rules, which no pinned face sets in T1 (STY-075). Otherwise the lines were the same in every language probed - English, French, German, Welsh, Turkish, Greek, Russian, Ukrainian, Serbian and Hebrew, with the pinned faces, compared line by line at 52 measures. Measured on Typst 0.15.1 over Latin text: patterns for Afrikaans, Albanian, Catalan, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Hungarian, Icelandic, Italian, Kurdish, Latin, Lithuanian, Norwegian (`no`, `nb`, `nn`), Polish, Portuguese, Slovak, Slovenian, Spanish, Swedish, Turkish and Turkmen; none for Basque, Breton, Esperanto, Frisian, Galician, Indonesian, Irish, Latvian, Luxembourgish, Malay, Maltese, Northern Sami, Occitan, Romanian, Scottish Gaelic, Swahili, Vietnamese or Welsh. Patterns for scripts other than Latin were not probed (W1.3)"
         },
         {
           "id": "PUB-091",
@@ -16177,6 +16185,10 @@
           "howItIsMet": "The model's `numbered` decides whether a block equation takes from the equation sequence; an unnumbered one is walked and never increments it"
         },
         {
+          "id": "CNT-160",
+          "howItIsMet": "A reference's `mode` - the latest version, or one pinned - is a switch an outline `set` changes, and every act on an outline is recorded as a new version of the document in the version chain, naming its author and when it was made, with the whole outline as it then stood: so which version a document referenced before a change and after it are both read back from the chain. The audited act is CNT-161's (T3)"
+        },
+        {
           "id": "IAM-073",
           "howItIsMet": "Numbering never reads a component the reader may not read (`numberingInputs`), so its occurrence is unknown and `number` answers `null` for each number it could have moved: every counter in its matter, until that counter next restarts, whatever it holds ([Who is shown what](#who-is-shown-what)). A section number depends on the outline alone"
         },
@@ -16566,33 +16578,39 @@
       "kind": "title"
     },
     {
+      "id": "CNT-160",
+      "file": "apps/service/src/document-routes.test.ts",
+      "line": 385,
+      "kind": "title"
+    },
+    {
       "id": "STR-054",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 240,
+      "line": 242,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 475,
+      "line": 548,
       "kind": "title"
     },
     {
       "id": "STR-061",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 212,
+      "line": 214,
       "kind": "title"
     },
     {
       "id": "API-039",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 285,
+      "line": 314,
       "kind": "title"
     },
     {
       "id": "CNT-071",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 341,
+      "line": 370,
       "kind": "title"
     },
     {
@@ -16706,91 +16724,91 @@
     {
       "id": "AST-015",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3550,
+      "line": 3579,
       "kind": "title"
     },
     {
       "id": "AST-039",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3468,
+      "line": 3497,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3153,
+      "line": 3182,
       "kind": "title"
     },
     {
       "id": "CNT-036",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3915,
+      "line": 3944,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4034,
+      "line": 4063,
       "kind": "title"
     },
     {
       "id": "CNT-044",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4702,
+      "line": 4731,
       "kind": "title"
     },
     {
       "id": "CNT-048",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4730,
+      "line": 4759,
       "kind": "title"
     },
     {
       "id": "CNT-063",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 490,
+      "line": 519,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2965,
+      "line": 2994,
       "kind": "title"
     },
     {
       "id": "CNT-080",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4775,
+      "line": 4804,
       "kind": "title"
     },
     {
       "id": "CNT-087",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3773,
+      "line": 3802,
       "kind": "title"
     },
     {
       "id": "CNT-098",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2082,
+      "line": 2111,
       "kind": "title"
     },
     {
       "id": "CNT-147",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2092,
+      "line": 2121,
       "kind": "title"
     },
     {
       "id": "CNT-152",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2483,
+      "line": 2512,
       "kind": "title"
     },
     {
       "id": "CNT-169",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 1257,
+      "line": 1286,
       "kind": "title"
     },
     {
@@ -17076,6 +17094,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-031",
+      "file": "apps/worker/src/table-and-image-styles.test.ts",
+      "line": 829,
+      "kind": "title"
+    },
+    {
       "id": "STY-013",
       "file": "apps/worker/src/table-and-image-styles.test.ts",
       "line": 502,
@@ -17084,7 +17108,7 @@
     {
       "id": "STY-018",
       "file": "apps/worker/src/table-and-image-styles.test.ts",
-      "line": 757,
+      "line": 776,
       "kind": "title"
     },
     {
@@ -17120,7 +17144,13 @@
     {
       "id": "PUB-019",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1446,
+      "line": 1539,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-069",
+      "file": "apps/worker/src/themes.test.ts",
+      "line": 1130,
       "kind": "title"
     },
     {
@@ -17144,13 +17174,13 @@
     {
       "id": "STY-042",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1446,
+      "line": 1539,
       "kind": "title"
     },
     {
       "id": "STY-074",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1122,
+      "line": 1215,
       "kind": "title"
     },
     {
@@ -18008,127 +18038,127 @@
     {
       "id": "AST-014",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2038,
+      "line": 2065,
       "kind": "title"
     },
     {
       "id": "CNT-037",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2609,
+      "line": 2636,
       "kind": "title"
     },
     {
       "id": "CNT-042",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2567,
+      "line": 2594,
       "kind": "title"
     },
     {
       "id": "CNT-049",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3747,
+      "line": 3774,
       "kind": "title"
     },
     {
       "id": "CNT-081",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3563,
+      "line": 3590,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1243,
+      "line": 1270,
       "kind": "title"
     },
     {
       "id": "PUB-033",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2038,
+      "line": 2065,
       "kind": "title"
     },
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 674,
+      "line": 701,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 949,
+      "line": 976,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 753,
+      "line": 780,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 842,
+      "line": 869,
       "kind": "title"
     },
     {
       "id": "STR-024",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 869,
+      "line": 896,
       "kind": "title"
     },
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3539,
+      "line": 3566,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3263,
+      "line": 3290,
       "kind": "title"
     },
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3646,
+      "line": 3673,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3157,
+      "line": 3184,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3186,
+      "line": 3213,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3209,
+      "line": 3236,
       "kind": "title"
     },
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4827,
+      "line": 4854,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4827,
+      "line": 4854,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4851,
+      "line": 4878,
       "kind": "title"
     },
     {
@@ -18434,13 +18464,19 @@
     {
       "id": "PUB-025",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2726,
+      "line": 2763,
       "kind": "title"
     },
     {
       "id": "PUB-026",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3143,
+      "line": 3180,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-031",
+      "file": "packages/domain/src/word/write.test.ts",
+      "line": 2445,
       "kind": "title"
     },
     {
@@ -18452,13 +18488,19 @@
     {
       "id": "PUB-067",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3661,
+      "line": 3698,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-069",
+      "file": "packages/domain/src/word/write.test.ts",
+      "line": 1116,
       "kind": "title"
     },
     {
       "id": "STY-052",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1182,
+      "line": 1205,
       "kind": "title"
     },
     {

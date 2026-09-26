@@ -323,6 +323,35 @@ describe('the component editor', () => {
     expect(onSpace).toHaveBeenCalledWith({ id: 's1', name: 'General' });
   });
 
+  // Not cited as CNT-166 ("the full Unicode range must be storable"): U+0000 is refused, since
+  // Postgres cannot store it, and text is kept in NFC (CNT-056), so a code point NFC replaces is
+  // stored as its canonical equivalent. Whether CNT-166 is reworded to say so is Ken's (W1's plan).
+  it('shows characters outside the Basic Multilingual Plane, and saves one typed among them whole', async () => {
+    // Mathematical bold capital A and a grinning face: each two UTF-16 units, one character.
+    const held = 'Mass \u{1d400} and \u{1f600}.';
+    const { asked, surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened({ content: content(held) })),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+    });
+    const view = await surface();
+    // Shown on the surface as stored.
+    expect(view.dom.textContent).toBe(held);
+
+    // A Linear B syllable typed between the two, just after the capital: its position is counted in
+    // UTF-16 units, as ProseMirror counts, so the capital's two units are both passed.
+    view.dispatch(view.state.tr.insertText(' \u{10000}', 1 + 'Mass \u{1d400}'.length));
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain(
+        'PUT /v1/components/{id}/iterations/{session}/1',
+      ),
+    );
+    const saved = asked.find((each) => each.route.startsWith('PUT'))!.body as {
+      content: ReturnType<typeof content>;
+    };
+    expect(saved.content).toEqual(content('Mass \u{1d400} \u{10000} and \u{1f600}.'));
+  });
+
   it('claims the lock with the first change, saves it, and cuts a version when asked', async () => {
     const { asked, surface } = open({
       'GET /v1/components/{id}': () => json(200, opened()),

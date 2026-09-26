@@ -345,7 +345,7 @@ const reference = (name: string, children: unknown[] = []) => ({
 const compile = async (
   theme: ResolvedTheme,
   layout: Layout,
-  components: readonly { name: string; title: string; content: unknown[] }[],
+  components: readonly { name: string; title: string; content: unknown[]; language?: string }[],
 ) => {
   const assembled = assemble({
     formats: ['pdf'],
@@ -357,12 +357,12 @@ const compile = async (
       nodes: components.map(({ name }) => reference(name)),
     }),
     occurrences: new Map(
-      components.map(({ name, title, content }) => [
+      components.map(({ name, title, content, language = 'en-GB' }) => [
         id(name),
         parseContentDocument({
           schemaVersion: 1,
           title,
-          language: 'en-GB',
+          language,
           direction: 'ltr',
           content,
         }) as ContentDocument,
@@ -1092,6 +1092,99 @@ const fillersToTheFoot = async (
   const lines = Math.floor((288 - 10) / 12) + 1;
   return lines - Math.round(line);
 };
+
+describe("hyphenation by the passage's language", () => {
+  /** A long compound, repeated so a line in the measure has to break inside it, again and again. */
+  const COMPOUNDS = Array.from(
+    { length: 8 },
+    () => 'Donaudampfschifffahrtsgesellschaftskapitaenswitwe',
+  ).join(' ');
+  const SOFT_HYPHEN = String.fromCharCode(0xad);
+  /**
+   * Where the engine broke the words of one paragraph of the compounds, under Ledger (whose running
+   * text hyphenates) in a component in English: each piece set before a hyphen it added, in order.
+   */
+  const breaksIn = async (tag: string | null, component = 'en-GB') => {
+    const marks = tag === null ? [] : [{ type: 'language', id: 'k1', tag }];
+    const { paint } = await compile(ledger, bare, [
+      {
+        name: 'specimen',
+        title: 'Specimen',
+        content: [para('p1', text(COMPOUNDS, ...marks))],
+        language: component,
+      },
+    ]);
+    const drawn = paint.texts.filter((each) => !each.artifact);
+    return (
+      drawn
+        .flatMap((each, index) =>
+          each.text === SOFT_HYPHEN && index > 0 ? [drawn[index - 1]!.text.trim()] : [],
+        )
+        // The paragraph's own lines, not the draft notice's, which the engine hyphenates as well.
+        .filter((line) => COMPOUNDS.includes(line))
+        // The piece of a compound each line ends with, before the hyphen the engine added.
+        .map((line) => line.split(' ').at(-1)!)
+    );
+  };
+
+  it("PUB-069 breaks a line at a hyphen in the text as the passage's language does, repeating it where that language does", async () => {
+    // Words already holding hyphens, so lines break at them.
+    const HYPHENED = Array.from({ length: 40 }, (_, at) => `re-entry${at} co-operation`).join(' ');
+    /** How many of the paragraph's lines begin with a hyphen, set in a component in this language. */
+    const repeatedIn = async (language: string) => {
+      const { paint } = await compile(ledger, bare, [
+        { name: 'specimen', title: 'Specimen', content: [para('p1', text(HYPHENED))], language },
+      ]);
+      const drawn = paint.texts.filter((each) => !each.artifact);
+      return drawn.filter(
+        (each, at) =>
+          (at === 0 ||
+            drawn[at - 1]!.page !== each.page ||
+            Math.abs(drawn[at - 1]!.y - each.y) > 1) &&
+          each.text.startsWith('-'),
+      ).length;
+    };
+
+    // English breaks after the hyphen and starts the next line with the rest of the word; Polish and
+    // Spanish repeat the hyphen at the start of the next line, as their typesetting does.
+    expect(await repeatedIn('en-GB')).toBe(0);
+    expect(await repeatedIn('pl-PL')).toBeGreaterThan(0);
+    expect(await repeatedIn('es-ES')).toBeGreaterThan(0);
+  }, 120_000);
+
+  it("PUB-069 hyphenates a passage by its own language, and one the engine has no patterns for not at all - never by the document's", async () => {
+    // English, the document's and the component's language: its own patterns' points.
+    expect(await breaksIn(null)).toEqual([
+      'Donaudampf',
+      'Donaudampfschifffahrtsge',
+      'Donaudampfschifffahrtsgesellschaftskapi',
+      'Donau',
+      'Donaudampfschifffahrts',
+      'Donaudampfschifffahrtsgesellschaftskapi',
+    ]);
+    // The same words marked German, in the same English document: German's points, not English's.
+    expect(await breaksIn('de-DE')).toEqual([
+      'Donaudampf',
+      'Donaudampfschifffahrtsgesell',
+      'Donaudampfschifffahrtsgesellschaftskapitaens',
+      'Donaudampf',
+      'Donaudampfschifffahrtsgesell',
+      'Donaudampfschifffahrtsgesellschaftskapitaens',
+    ]);
+    // And a component written in German, unmarked, in the English document: its own language's.
+    expect(await breaksIn(null, 'de-DE')).toEqual([
+      'Donaudampf',
+      'Donaudampfschifffahrtsgesell',
+      'Donaudampfschifffahrtsgesellschaftskapitaens',
+      'Donaudampf',
+      'Donaudampfschifffahrtsgesell',
+      'Donaudampfschifffahrtsgesellschaftskapitaens',
+    ]);
+    // Marked Welsh, which the pinned engine has no patterns for: broken at spaces alone, rather than
+    // hyphenated as English because the document is.
+    expect(await breaksIn('cy-GB')).toEqual([]);
+  }, 120_000);
+});
 
 describe("the pinned faces' own files (themes 1)", () => {
   const pinned = async (sha256: string) => {
