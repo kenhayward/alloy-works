@@ -44,6 +44,13 @@ export interface OmmlOptions {
    * `m:mathPr`'s face without one (M11).
    */
   readonly face: string;
+  /**
+   * Whether the style the equation stands in is bold - a heading's. Word draws maths in its own weight
+   * there, as the PDF does, but gives the style's bold to every maths run as it saves the document, so
+   * the copy it saved opens with the maths bold (measured by the Word check, Word 4). So each run states
+   * bold off, which Word keeps, but a run bold by its own variant, whose style says so already.
+   */
+  readonly boldStyle?: boolean;
 }
 
 /**
@@ -168,6 +175,8 @@ interface Context {
   readonly array: boolean;
   /** The Word family normal text is set in (`OmmlOptions.face`). */
   readonly face: string;
+  /** Whether the style it stands in is bold (`OmmlOptions.boldStyle`). */
+  readonly boldStyle: boolean;
 }
 
 /**
@@ -181,6 +190,7 @@ export function omml(tree: MathsTree, options: OmmlOptions): string {
     depth: 0,
     array: false,
     face: options.face,
+    boldStyle: options.boldStyle === true,
   });
 }
 
@@ -423,10 +433,11 @@ function variant(v: Extract<MathsNode, { k: 'i' }>['v']): string {
 }
 
 /**
- * A run: its maths properties, its face where it is normal text, its size where a script level states
- * one, and its text, spaces kept. In an equation array Word reads an ampersand in a maths run as an
- * alignment point, so a run the content holds with one in it is written as normal text there, which
- * Word sets as it is (measured).
+ * A run: its maths properties, its face where it is normal text, bold off where the style around it is
+ * bold, its size where a script level states one, and its text, spaces kept - `w:rPr`'s children in
+ * CT_RPr's order. In an equation array Word reads an ampersand in a maths run as an alignment point, so
+ * a run the content holds with one in it is written as normal text there, which Word sets as it is
+ * (measured).
  */
 function run(text: string, properties: string, context: Context): string {
   const own = context.array && text.includes('&') ? '<m:nor/>' : properties;
@@ -435,7 +446,8 @@ function run(text: string, properties: string, context: Context): string {
     own === '<m:nor/>'
       ? `<w:rFonts w:ascii="${family}" w:hAnsi="${family}" w:cs="${family}" w:eastAsia="${family}"/>`
       : '';
-  const stated = face + size(context);
+  const unbolded = context.boldStyle && !/<m:sty m:val="bi?"\/>/.test(own);
+  const stated = face + (unbolded ? '<w:b w:val="0"/><w:bCs w:val="0"/>' : '') + size(context);
   return (
     `<m:r>${own === '' ? '' : `<m:rPr>${own}</m:rPr>`}${stated === '' ? '' : `<w:rPr>${stated}</w:rPr>`}` +
     `<m:t xml:space="preserve">${escapeXml(text)}</m:t></m:r>`

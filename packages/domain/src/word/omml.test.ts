@@ -162,6 +162,35 @@ describe('the converter from the maths tree to OMML (Word 4, ruling R3)', () => 
       ]);
     });
 
+    it("states bold off on every run of an equation in a bold style - but a run bold by its own variant - in CT_RPr's order, since Word gives the style's bold to the maths as it saves the document, where the PDF sets maths in its own weight (the Word check, Word 4)", () => {
+      const tree = row(
+        i('x'),
+        o('+'),
+        { k: 'script', body: row({ k: 'text', t: 'if' }) },
+        { k: 'i', t: 'v', v: 'bold' },
+        { k: 'i', t: 'w', v: 'bold-italic' },
+      );
+      const bold = read(tree, { boldStyle: true, size: 11 });
+      const [x, plus, words, v, w] = all(bold, 'm:r');
+
+      for (const run of [x!, plus!]) {
+        expect(kids(first(run, 'w:rPr')!).map((each) => [each.name, each.attrs['w:val']])).toEqual([
+          ['w:b', '0'],
+          ['w:bCs', '0'],
+        ]);
+      }
+      expect(kids(first(words!, 'w:rPr')!).map((each) => each.name)).toEqual([
+        'w:rFonts',
+        'w:b',
+        'w:bCs',
+        'w:sz',
+        'w:szCs',
+      ]);
+      expect([v, w].flatMap((run) => all(run!, 'w:b'))).toEqual([]);
+      // In a style that is not bold, nothing is stated.
+      expect(all(read(tree, { size: 11 }), 'w:b')).toEqual([]);
+    });
+
     it('escapes what it sets, so every string is a value and never markup', () => {
       const strings = ['<m:r>', '&amp;', 'a"b', "'", ']]>'];
       const xml = omml(row(...strings.map((t) => ({ k: 'text', t }) as MathsNode)), {

@@ -3703,6 +3703,23 @@ describe('writeDocx: equations (Word 4, rulings R4 and R5)', () => {
     expect(inLine(entry)).toHaveLength(1);
   });
 
+  it("sets an equation in a bold style - a heading's - with bold off on its runs, as the PDF sets maths in its own weight, since Word gives the heading's bold to its maths as it saves the document (the Word check, Word 4)", () => {
+    const { at } = bodyOf(equations.docx);
+    const heading = paragraphs(equations.docx)
+      .filter((each) => textOf(each) === 'Method for ')
+      .at(-1)!;
+    const bold = (paragraph: Element) =>
+      all(inLine(paragraph)[0]!, 'm:r').map((run) =>
+        all(run, 'w:b').map((each) => each.attrs['w:val']),
+      );
+    expect(styleOf(heading)).toBe('heading-1');
+    expect(bold(heading)).toEqual([['0'], ['0'], ['0'], ['0']]);
+    // Nowhere else: the body's style is not bold, nor the contents entry Word rebuilds from the heading.
+    expect(bold(at('Let  hold.'))).toEqual([[], [], [], []]);
+    const entry = paragraphs(equations.docx).find((each) => textOf(each) === '2 Method for ')!;
+    expect(bold(entry)).toEqual([[], [], [], []]);
+  });
+
   it("R5 reports the maths face set as Word's own, STIX Two Math as Cambria Math, where the document sets an equation, and names Word's maths face with the display defaults the PDF's display matches", () => {
     expect(equations.report).toContainEqual({
       kind: 'face_substituted',

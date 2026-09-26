@@ -2186,13 +2186,19 @@ class Writer {
     return `<m:oMath>${this.maths(equation, styleId, false)}</m:oMath>`;
   }
 
-  /** An equation's content as the converter writes it, in a line or displayed, sized by a style. */
+  /**
+   * An equation's content as the converter writes it, in a line or displayed, sized by a style, and
+   * its runs' bold stated off where the style is bold, which Word would otherwise give them as it saves
+   * the document (the Word check, Word 4).
+   */
   private maths(equation: PublishedEquation, styleId: string, display: boolean): string {
     this.use(this.theme.maths, false, false);
+    const { size, bold } = this.properties(styleId);
     return omml(equation.tree, {
       display,
-      size: this.properties(styleId).size,
+      size,
       face: wordFamily(this.theme.maths),
+      boldStyle: bold,
     });
   }
 
