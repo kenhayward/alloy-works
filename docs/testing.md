@@ -216,7 +216,9 @@ not Typst source: it goes through `assemble`, under the default layout, and the 
 pdf.js, not by our own parser, through `apps/worker/src/testing/pdf.ts`: the bookmarks; per page, the
 text in artifacts, such as the draft notice at the top of each page, which a screen reader skips, and
 the text in tagged content, which it reads; the structure roles after the role map, which is what a
-screen reader is told a thing is; whether it is marked tagged; its PDF/UA part, title and language;
+screen reader is told a thing is, and every structure element in the tree's order with the text it
+holds on each page, which is the order it is told them in (a table on two pages is read twice, a row
+set on the other page empty on this one); whether it is marked tagged; its PDF/UA part, title and language;
 and the page as it is set - each page's label as a reader's page box shows it, each page's width and
 height in points, and the least x and the extreme baselines of each page's tagged text, which is
 where its margins are. It holds three cases today: nine heading levels; a PDF not made to PDF/UA-1, which proves the checker can say no; and

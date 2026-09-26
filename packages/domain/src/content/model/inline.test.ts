@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { MATHML_NAMESPACE } from '../admission/mathml.js';
 
+import { blockNodeSchema } from './blocks.js';
 import { alternativeSchema, inlineNodeSchema } from './inline.js';
 
 const text = (value: string, marks: unknown[] = []) => ({ type: 'text', value, marks });
@@ -51,6 +52,25 @@ describe('the inline vocabulary', () => {
   it('CNT-030 carries a query reference and no value on a binding', () => {
     expect(inlineNodeSchema.parse({ type: 'binding', query: 'q-2' }).type).toBe('binding');
     expect(() => inlineNodeSchema.parse({ type: 'binding', query: 'q-2', value: '42' })).toThrow();
+  });
+
+  it('CNT-026 makes a footnote anchor an inline node in each of its four kinds, and never a block', () => {
+    const note = (anchor: unknown) => ({
+      type: 'footnote',
+      id: 'f1',
+      anchor,
+      content: [{ type: 'paragraph', id: 'n1', style: 'body', content: [text('A note.')] }],
+    });
+    const anchors = [
+      { kind: 'span' },
+      { kind: 'cell', key: 'k1' },
+      { kind: 'cellPosition', row: 0, column: 1 },
+      { kind: 'table' },
+    ];
+    for (const anchor of anchors) {
+      expect(inlineNodeSchema.safeParse(note(anchor)).success).toBe(true);
+      expect(blockNodeSchema.safeParse(note(anchor)).success).toBe(false);
+    }
   });
 
   it('CNT-043 stores an equation as MathML, with the LaTeX typed kept beside it', () => {

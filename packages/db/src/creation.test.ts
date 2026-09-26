@@ -78,7 +78,7 @@ describe('creating a component', () => {
       }),
     );
 
-  it('writes version 0.1 holding exactly one empty paragraph, with a fresh identifier', async () => {
+  it('CNT-124 writes version 0.1 holding exactly one empty paragraph, with a fresh identifier', async () => {
     const answer = await make({ title: 'Replace the toner' });
     expect(answer.answer).toBe('created');
     if (answer.answer !== 'created') return;

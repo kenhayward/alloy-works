@@ -110,3 +110,48 @@ describe("the paint of a PDF's pages: its text's faces, sizes and colours, and i
     expect(paint.embedded).toEqual(['LiberationMono', 'LiberationSerif', 'LiberationSerif-Bold']);
   });
 });
+
+describe('the order a reader is given a PDF in', () => {
+  let read: ReadPdf;
+  let directory: string;
+
+  beforeAll(async () => {
+    const fonts = await loadPinnedFonts();
+    directory = await mkdtemp(join(tmpdir(), 'aw-order-'));
+    await writeFile(
+      join(directory, 'order.typ'),
+      [
+        '#set document(title: "Order")',
+        '#set text(font: "Liberation Serif", lang: "en", fallback: false)',
+        '= First',
+        'Before the table.',
+        '#table(columns: 2, table.header[Name][Value], [one], [1], [two], [2])',
+        'After the table.',
+        '',
+      ].join(String.fromCharCode(10)),
+    );
+    const typst = createTypst({ binary: typstBinaryPath(), fonts });
+    const pdf = await typst.compile(
+      join(directory, 'order.typ'),
+      '{}',
+      new Date('2026-09-26T00:00:00Z'),
+    );
+    read = await readPdf(pdf);
+  });
+  afterAll(() => rm(directory, { recursive: true, force: true }));
+
+  it('reads every structure element in the order the tree gives it, each with the text it holds', () => {
+    const shown = read.reading
+      .filter((element) => ['H1', 'P', 'Table', 'TR'].includes(element.role))
+      .map((element) => `${element.role}:${element.text}`);
+    expect(shown).toEqual([
+      'H1:First',
+      'P:Before the table.',
+      'Table:Name Valueone 1two 2',
+      'TR:Name Value',
+      'TR:one 1',
+      'TR:two 2',
+      'P:After the table.',
+    ]);
+  });
+});

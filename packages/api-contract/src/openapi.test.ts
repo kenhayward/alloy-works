@@ -19,15 +19,17 @@ describe('the OpenAPI document', () => {
   });
 
   it('gives every operation the one error shape as its default response', () => {
-    const operation = document.paths['/v1/tenant']?.get as {
-      responses: Record<string, { content: Record<string, { schema: Record<string, unknown> }> }>;
-    };
-    const schema = operation.responses.default?.content['application/json']?.schema;
-    expect(schema).toMatchObject({
-      type: 'object',
-      required: ['code', 'message', 'traceId'],
-      properties: { code: { type: 'string' }, rule: { type: 'string' } },
-    });
+    for (const route of allRoutes) {
+      const operation = document.paths[route.path]?.[route.method.toLowerCase()] as {
+        responses: Record<string, { content: Record<string, { schema: Record<string, unknown> }> }>;
+      };
+      const schema = operation.responses.default?.content['application/json']?.schema;
+      expect(schema, route.operationId).toMatchObject({
+        type: 'object',
+        required: ['code', 'message', 'traceId'],
+        properties: { code: { type: 'string' }, rule: { type: 'string' } },
+      });
+    }
   });
 
   it('publishes response objects open, so a field added later never breaks a client', () => {

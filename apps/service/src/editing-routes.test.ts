@@ -234,6 +234,54 @@ describe('writing in an editing session through the service', () => {
       });
     });
 
+    it('VER-009 numbers each version cut next in its revision, and presents the pair as revision.version', async () => {
+      const made = await component();
+      const session = randomUUID();
+      await call('ada', 'POST', `/v1/components/${made.id}/lock`, { session });
+
+      // Opened at 0.1; two versions cut in one session. Only revision 0 exists until a revision is
+      // designated (T4), so "within their revision" is shown within that one.
+      const opened = await call('ada', 'GET', `/v1/components/${made.id}`);
+      const numbers = [opened.json<{ version: { number: string } }>().version.number];
+      let openedFrom = made.openedFrom;
+      for (const [sequence, text] of [
+        [1, 'Unbox the printer.'],
+        [2, 'Unbox the printer and keep the box.'],
+      ] as const) {
+        await call('ada', 'PUT', `/v1/components/${made.id}/iterations/${session}/${sequence}`, {
+          openedFrom,
+          content: paragraphs(text, `Step ${sequence}.`),
+        });
+        const cut = await call('ada', 'POST', `/v1/components/${made.id}/versions`, {
+          session,
+          openedFrom,
+        });
+        const { version } = cut.json<{ version: { id: string; number: string } }>();
+        numbers.push(version.number);
+        // The session goes on from the version it cut.
+        openedFrom = version.id;
+      }
+
+      expect(numbers).toEqual(['0.1', '0.2', '0.3']);
+      expect((await call('grace', 'GET', `/v1/components/${made.id}`)).json()).toMatchObject({
+        version: { number: '0.3' },
+      });
+      // What is stored is the pair, numbered 1, 2, 3 within revision 0.
+      const stored = await tenantDb.withTenant(tenant, (trx) =>
+        trx
+          .selectFrom('artifact_version')
+          .select(['revision_no', 'version_no'])
+          .where('artifact_id', '=', made.id)
+          .orderBy('version_no')
+          .execute(),
+      );
+      expect(stored).toEqual([
+        { revision_no: 0, version_no: 1 },
+        { revision_no: 0, version_no: 2 },
+        { revision_no: 0, version_no: 3 },
+      ]);
+    });
+
     it('API-039 refuses every write to a component another identity holds, naming the holder and when it is expected back', async () => {
       const made = await component();
       const session = randomUUID();

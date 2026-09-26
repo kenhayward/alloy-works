@@ -66,6 +66,14 @@ export interface ReadPdf {
    */
   readonly elements: Readonly<Record<string, number>>;
   /**
+   * Every structure element each page's tree holds, in the order the tree gives it - the order a
+   * reader is told the document in, whatever the layout moved - with the text it holds on that page,
+   * page after page. pdf.js answers a page's tree with the whole of every element the page reaches,
+   * so a table on two pages is here twice, every row under it each time, and a row set on the other
+   * page holds no text on this one.
+   */
+  readonly reading: readonly { readonly role: string; readonly text: string }[];
+  /**
    * Every `Figure` structure element in the file, in the order it is written: its `/Alt`, its
    * `/Lang` where it declares one of its own (the engine writes none where the language is its
    * parent's), and its layout box, `[left, bottom, right, top]` in points on its page.
@@ -407,6 +415,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
     };
     const languages: TaggedLanguage[][] = [];
     const roles: string[] = [];
+    const reading: { role: string; text: string }[] = [];
     const pageSizes: (readonly [number, number])[] = [];
     const textLeft: (number | null)[] = [];
     const textBaselines: ({ top: number; bottom: number } | null)[] = [];
@@ -545,6 +554,13 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
         node.type === 'content'
           ? (held.get(node.id ?? '') ?? '')
           : (node.children ?? []).map(textOf).join('');
+      const inOrder = (node: StructNode) => {
+        if (node.role !== undefined && node.role !== 'Root') {
+          reading.push({ role: node.role, text: textOf(node) });
+        }
+        for (const child of node.children ?? []) if (child.type !== 'content') inOrder(child);
+      };
+      if (tree) inOrder(tree);
       const boxOf = (node: StructNode): Box | null => {
         const boxes: Box[] =
           node.type === 'content'
@@ -600,6 +616,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       languages,
       roles,
       elements: structureElements(text),
+      reading,
       figures: taggedFigures(text),
       notes: taggedNotes(text),
       formulas,

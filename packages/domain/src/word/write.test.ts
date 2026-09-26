@@ -1054,7 +1054,7 @@ describe('writeDocx: text (ruling R9)', () => {
     return found.rPr;
   };
 
-  it("sets each paragraph in its resolved style, each mark by its character style and what Word's reading would lose pinned", () => {
+  it("CNT-085 sets each paragraph in its resolved style, each mark by its character style and what Word's reading would lose pinned", () => {
     expect(styleOf(marked)).toBe('body');
     expect(run(marked, 'Set ')).toEqual({});
     expect(run(marked, 'strong')).toEqual({ 'w:rStyle': 'mark-strong' });

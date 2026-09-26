@@ -1254,6 +1254,70 @@ describe('the component editor', () => {
     expect(view.state.selection.from).toBe(at);
   });
 
+  it('CNT-169 undo reaches back past neither the version opened nor a version cut in the session', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      'POST /v1/components/{id}/versions': () =>
+        json(200, {
+          outcome: 'cut',
+          version: {
+            id: 'v2',
+            number: '0.2',
+            author: ADA,
+            createdAt: '2026-09-16T09:05:00.000Z',
+            note: null,
+          },
+        }),
+    });
+    const view = await surface();
+    // `Mod-z` through the key handlers the view's state was built with, as a real keydown reaches it.
+    const mac = /Mac|iP(hone|[oa]d)/.test(navigator.platform);
+    const undo = () =>
+      view.someProp('handleKeyDown', (handle) =>
+        handle(view, {
+          key: 'z',
+          keyCode: 90,
+          ctrlKey: !mac,
+          metaKey: mac,
+          altKey: false,
+          shiftKey: false,
+        } as never),
+      ) ?? false;
+
+    // The version the session opened from: there is nothing before it to go back to - and undo is
+    // there, taking back what is typed as far as the version and no further.
+    const openedWith = view.state.doc.textContent;
+    expect(undo()).toBe(false);
+    view.dispatch(view.state.tr.insertText(' Mind the cable.', 19));
+    expect(view.state.doc.textContent).not.toBe(openedWith);
+    expect(undo()).toBe(true);
+    expect(view.state.doc.textContent).toBe(openedWith);
+    expect(undo()).toBe(false);
+    expect(view.state.doc.textContent).toBe(openedWith);
+
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save version' })).not.toBeDisabled(),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save version' }));
+    await screen.findByText('Version 0.2 saved.');
+
+    // The version cut: what it holds stays, however often undo is pressed; what is typed after it
+    // undoes back to it, and no further.
+    const cut = view.state.doc.textContent;
+    expect(cut).toContain('Keep the box.');
+    expect(undo()).toBe(false);
+    expect(view.state.doc.textContent).toBe(cut);
+    view.dispatch(view.state.tr.insertText(' Then wait.', view.state.doc.content.size - 1));
+    expect(view.state.doc.textContent).not.toBe(cut);
+    expect(undo()).toBe(true);
+    expect(view.state.doc.textContent).toBe(cut);
+    expect(undo()).toBe(false);
+    expect(view.state.doc.textContent).toBe(cut);
+  });
+
   it('edits the title, the language and the direction above the surface, and sends them', async () => {
     // The first edit claims the lock at once, from `reading` (session.ts, `changed()`), so a service
     // that answers no lock route refuses the claim - and a refused claim puts the surface straight
@@ -4650,7 +4714,10 @@ describe('equations in the editor (equations 1)', () => {
     const drawn = drawnIn(dialog)!;
     expect(drawn.namespaceURI).toBe(NS);
     expect(drawn.querySelector('mfrac')!.namespaceURI).toBe(NS);
-    await waitFor(() => expect(descriptionOf(dialog)).toHaveValue(SPOKEN));
+    // The first description in this file loads the engine's rules, which can take longer than
+    // `waitFor`'s second on CI's runner: wait for the engine itself (issue #242).
+    await described();
+    expect(descriptionOf(dialog)).toHaveValue(SPOKEN);
     await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
 
     expect(screen.queryByRole('dialog')).toBeNull();

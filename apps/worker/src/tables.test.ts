@@ -148,6 +148,28 @@ describe('a table in the PDF (tables 2)', () => {
     expect(read.roles[read.roles.indexOf('Table') + 1]).toBe('Caption');
   }, 120_000);
 
+  it('TAB-050 tags the table as one table, read row by row and cell by cell in stored order across the page it breaks at', () => {
+    // One table in the whole file, though it reaches a second page, and a Table is what a reader is
+    // told.
+    expect(pageOf(read, `Site ${BODY_ROWS - 1}`)).toBeGreaterThan(pageOf(read, 'Site 0'));
+    expect(read.elements).toMatchObject({ Table: 1 });
+    expect(read.roles).toContain('Table');
+    // Every row once, in the order it is stored, each cell left to right: the repeated header at the
+    // top of the second page is an artifact, not a row read again. Each page's tree names every row,
+    // those set on another page holding no text there, so a row is read where it holds text; and the
+    // spaces between cells are the engine's to choose, so they are left out of the comparison.
+    const rows = read.reading
+      .filter((element) => element.role === 'TR')
+      .map((element) => element.text.replace(/\s+/g, ''))
+      .filter((row) => row !== '');
+    expect(rows).toEqual([
+      'SiteValues',
+      'Yorky1y2',
+      'y3y4',
+      ...Array.from({ length: BODY_ROWS }, (_, at) => `Site${at}a${at}b${at}`),
+    ]);
+  });
+
   it("sets the caption above the table, after number's label", () => {
     const page = pageOf(read, 'Site 0');
     const said = spoken(read.taggedText[page]!);

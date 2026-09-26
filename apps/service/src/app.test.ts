@@ -1,6 +1,7 @@
 import { Writable } from 'node:stream';
 import { allRoutes } from '@alloy-works/api-contract';
 import {
+  addHostnames,
   bootstrapCluster,
   createTenant,
   createTenantDatabase,
@@ -102,6 +103,19 @@ describe('the service', () => {
       headers: { host: 'ACME.alloy.test:8080' },
     });
     expect(production.json()).toEqual({ name: 'Production' });
+  });
+
+  it("IAM-053 reaches each environment at its own hostname, two-level names included, and a customer's own domain once it is added, with no restart", async () => {
+    const at = (host: string) => app.inject({ url: '/v1/tenant', headers: { host } });
+    // An environment under the customer's name, and the customer's name itself.
+    expect((await at('dev.acme.alloy.test')).json()).toEqual({ name: 'Development' });
+    expect((await at('acme.alloy.test')).json()).toEqual({ name: 'Production' });
+
+    // A domain of the customer's own: unknown, then added to the running service's database - no
+    // code, no configuration and no restart - and answered by the environment it was added to.
+    expect((await at('docs.customer.example')).statusCode).toBe(404);
+    await addHostnames(db.adminUrl, production.id, ['docs.customer.example']);
+    expect((await at('docs.customer.example')).json()).toEqual({ name: 'Production' });
   });
 
   it('refuses a hostname that serves no environment, before any tenant data is touched', async () => {

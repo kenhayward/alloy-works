@@ -451,7 +451,7 @@ describe('projectStylesXml, character styles', () => {
     }
   });
 
-  it("writes a mark's underline, position and face, the face as Word's where the typeface declares one", () => {
+  it("CNT-085 writes a mark's underline, position and face, the face as Word's where the typeface declares one", () => {
     expect(attrs('mark-underline', 'w:u')).toEqual({ 'w:val': 'single' });
     expect(attrs('mark-subscript', 'w:vertAlign')).toEqual({ 'w:val': 'subscript' });
     expect(attrs('mark-superscript', 'w:vertAlign')).toEqual({ 'w:val': 'superscript' });

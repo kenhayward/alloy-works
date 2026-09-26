@@ -17,7 +17,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
-import { readPdf, type ReadPdf } from './testing/pdf.js';
+import { readPaint, readPdf, type ReadPdf } from './testing/pdf.js';
 import { defaultTheme } from './testing/theme.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath } from './typst.js';
@@ -271,6 +271,36 @@ describe('the PDF a marked document makes', () => {
     const verdict = await checkPdfUa1(pdf);
     expect(verdict.failures).toEqual([]);
     expect(verdict.compliant).toBe(true);
+  }, 120_000);
+
+  it('CNT-085 draws an underlined run with a rule beneath it, and no other run with one', async () => {
+    const { pdf } = await compileOne(markedDocument());
+    const paint = await readPaint(pdf);
+    const underlined = paint.texts.find((each) => each.text === 'underline' && !each.artifact)!;
+
+    // One rule in the whole document, and it is the underline: from the run's first glyph to its
+    // last, just beneath its baseline.
+    expect(paint.strokes).toHaveLength(1);
+    const [rule] = paint.strokes;
+    const [left, bottom, right, top] = rule!.box;
+    expect(rule!.page).toBe(underlined.page);
+    expect(left).toBeCloseTo(underlined.x, 1);
+    expect(right).toBeCloseTo(underlined.x + underlined.width, 1);
+    expect(top).toBeLessThan(underlined.y);
+    expect(underlined.y - bottom).toBeLessThan(2);
+    // No other run on its line reaches under it: the emphasis and the strong beside it have none.
+    const others = paint.texts.filter(
+      (each) =>
+        each.page === underlined.page &&
+        each !== underlined &&
+        Math.abs(each.y - underlined.y) < 1 &&
+        each.text.trim() !== '',
+    );
+    expect(others.map((each) => each.text)).toEqual(expect.arrayContaining(['emphasis', 'strong']));
+    for (const each of others) {
+      const overlap = Math.min(right, each.x + each.width) - Math.max(left, each.x);
+      expect(overlap, each.text).toBeLessThan(0.5);
+    }
   }, 120_000);
 
   it('keeps a run that is code and emphasised whatever order its marks arrive in', async () => {

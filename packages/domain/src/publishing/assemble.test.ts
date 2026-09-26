@@ -866,6 +866,86 @@ describe('assemble', () => {
     expect(numbered(defaultLayout)).toEqual({ scheme: 'default/1', numbers: ['1', '2', '1.1'] });
   });
 
+  it("STR-024 takes a caption's label and its number's form from the layout, and its words from the component", () => {
+    const RED = '00000000-0000-4000-8000-00000000a551';
+    const assets = new Map([
+      [
+        RED,
+        {
+          object: `t_acme/sha256/${'ab'.repeat(32)}`,
+          format: 'png' as const,
+          width: 800,
+          height: 600,
+          alternative: { text: 'Two red squares', language: 'en-GB' },
+        },
+      ],
+    ]);
+    const captioned = [
+      {
+        type: 'figure',
+        id: 'f1',
+        asset: RED,
+        imageStyle: 'figure',
+        caption: [text('Shapes')],
+        alternative: { kind: 'inherited' },
+      },
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [text('Readings')],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [{ cells: [{ content: [paragraph('c1', text('12'))], colspan: 1, rowspan: 1 }] }],
+      },
+    ];
+    const abbreviated = layoutWith((layout) => {
+      layout.scheme.id = 'abbreviated/1';
+      // The word, the counter's form and the separator, each the layout's own.
+      for (const matter of ['front', 'body', 'appendix'] as const) {
+        Object.assign(layout.scheme.sequences['figure']![matter], {
+          label: 'Fig.',
+          // Two forms, of which the counter is written in the last.
+          format: ['upperRoman', 'lowerAlpha'],
+          separator: '-',
+        });
+        Object.assign(layout.scheme.sequences['table']![matter], {
+          label: 'Tab.',
+          format: ['upperRoman'],
+          separator: '/',
+        });
+      }
+    });
+    const captionsUnder = (layout: Layout) => {
+      const assembled = assemble(
+        input({
+          layout,
+          outline: outline([section('intro', 'Introduction', [reference('calib')])]),
+          occurrences: new Map([[id('calib'), component(captioned)]]),
+          assets,
+        }),
+      );
+      if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+      const blocks = assembled.document.nodes[0]?.children[0]?.blocks ?? [];
+      return blocks.map((block) =>
+        block.type === 'figure' || block.type === 'table'
+          ? { label: block.label, caption: block.caption }
+          : null,
+      );
+    };
+    const words = (value: string) => [{ text: value, marks: [] }];
+
+    expect(captionsUnder(abbreviated)).toEqual([
+      { label: 'Fig. 1-a', caption: words('Shapes') },
+      { label: 'Tab. 1/I', caption: words('Readings') },
+    ]);
+    // The same component under the default layout: the words stay, the label is the layout's.
+    expect(captionsUnder(defaultLayout)).toEqual([
+      { label: 'Figure 1.1', caption: words('Shapes') },
+      { label: 'Table 1.1', caption: words('Readings') },
+    ]);
+  });
+
   it('PUB-079 publishes an empty document as the cover its layout declares, and refuses one whose layout declares nothing with something to show', () => {
     const empty = assemble(input({ outline: outline([]) }));
     expect(empty.ok).toBe(true);
@@ -3478,6 +3558,89 @@ describe('cross-references, published (cross-references 2)', () => {
         section('intro', 'Introduction', [reference('calib')]),
       ]),
     ).toEqual([printed(B('calib', 't1'), 'Table 3.1')]);
+  });
+
+  it('CNT-081 gives a figure, a table and a block equation an identity of their own, so a reference follows each to its new number', () => {
+    const RED = '00000000-0000-4000-8000-00000000a551';
+    const assets = new Map([
+      [
+        RED,
+        {
+          object: `t_acme/sha256/${'ab'.repeat(32)}`,
+          format: 'png' as const,
+          width: 800,
+          height: 600,
+          alternative: { text: 'Two red squares', language: 'en-GB' },
+        },
+      ],
+    ]);
+    const figure = (name: string) => ({
+      type: 'figure',
+      id: name,
+      asset: RED,
+      imageStyle: 'figure',
+      caption: [text('Shapes')],
+      alternative: { kind: 'inherited' },
+    });
+    const equation = (name: string) => ({
+      type: 'equation',
+      id: name,
+      mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"><mi>x</mi></math>',
+      numbered: true,
+    });
+    const pointing = paragraph(
+      'p1',
+      xref('x1', toBlock('f1')),
+      text(', '),
+      xref('x2', toBlock('t1')),
+      text(', '),
+      xref('x3', toBlock('e1')),
+    );
+    /** What each reference prints, with `before` ahead of the three it names and `after` after them. */
+    const printedWith = (before: unknown[], after: unknown[] = []) =>
+      publishedOf(
+        assemble(
+          input({
+            outline: outline([section('intro', 'Introduction', [reference('calib')])]),
+            occurrences: new Map([
+              [
+                id('calib'),
+                component([
+                  ...before,
+                  figure('f1'),
+                  table('t1'),
+                  equation('e1'),
+                  ...after,
+                  pointing,
+                ]),
+              ],
+            ]),
+            assets,
+          }),
+        ),
+      ).references.map((each) => [each.anchor, each.text]);
+
+    const at = (block: string) => B('calib', block);
+    // Identifiers that sort neither first nor last, so no rule by order could pick the targets out.
+    const others = [figure('fz'), table('ta'), equation('eq')];
+    expect(printedWith([])).toEqual([
+      [at('f1'), 'Figure 1.1'],
+      [at('t1'), 'Table 1.1'],
+      [at('e1'), 'Equation 1'],
+    ]);
+    // One of each put ahead of them: each reference still names its own target, now numbered second.
+    expect(printedWith(others)).toEqual([
+      [at('f1'), 'Figure 1.2'],
+      [at('t1'), 'Table 1.2'],
+      [at('e1'), 'Equation 2'],
+    ]);
+    // And one of each put after them: its own target, still first. Neither the first nor the last of
+    // a kind is what a reference names, but the block it names.
+    expect(printedWith([], others)).toEqual([
+      [at('f1'), 'Figure 1.1'],
+      [at('t1'), 'Table 1.1'],
+      [at('e1'), 'Equation 1'],
+    ]);
   });
 
   it('STR-031 prints the number the outline gives when it is published, after the outline is reordered', () => {

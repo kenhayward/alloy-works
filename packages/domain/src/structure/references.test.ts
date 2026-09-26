@@ -727,6 +727,28 @@ describe('resolving a reference in the document that publishes it', () => {
     expect(resolver(node('elsewhere'), reading)).toEqual(missing);
   });
 
+  it('STR-068 targets an outline node, a caption-bearing block and a footnote, each by its identity', () => {
+    const resolver = resolving([stored('method', 'Method', [placed('ada', ADA)])], { ada });
+    const reading = { node: id('ada') };
+    const found = (name: string, kind: ReferenceKind, label: string | null, title: string | null) =>
+      bound({ node: id('ada'), block: name, kind, label, title });
+
+    // An outline node, by the node's identifier.
+    expect(resolver({ kind: 'node', node: id('method') }, reading)).toEqual(
+      bound({ node: id('method'), block: null, kind: 'section', label: '1', title: 'Method' }),
+    );
+    // Each kind of caption-bearing block, by the block's identifier.
+    expect(resolver(block('f1'), reading)).toEqual(found('f1', 'figure', 'Figure 1.1', 'Readings'));
+    expect(resolver(block('t1'), reading)).toEqual(found('t1', 'table', 'Table 1.1', 'Totals'));
+    expect(resolver(block('e1'), reading)).toEqual(found('e1', 'equation', 'Equation 1', null));
+    // A footnote, by the note's own identifier.
+    expect(resolver(block('n1'), reading)).toEqual(found('n1', 'footnote', '1', null));
+    // By identity alone: a caption's words, a printed number or a position names nothing.
+    for (const name of ['Readings', 'Figure 1.1', '1', '0']) {
+      expect(resolver(block(name), reading), name).toEqual(missing);
+    }
+  });
+
   it("CNT-125 finds a block that takes no number anywhere in the occurrence, a paragraph at depth in a list's item among them", () => {
     const resolver = resolving([placed('ada', ADA)], { ada });
     const reading = { node: id('ada') };

@@ -1,6 +1,8 @@
 import { parseContentDocument, type Mark } from '@alloy-works/domain';
 import {
   createEditorState,
+  EDITOR_COMMANDS,
+  editorSchema,
   fromEditor,
   mountEditor,
   Selection,
@@ -641,5 +643,88 @@ describe('the formatting toolbar', () => {
     }
     await userEvent.click(screen.getByRole('button', { name: 'Link' }));
     expect(prompt).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * A chord pressed on the mounted view, through the key handlers its state was built with: the same
+ * route a real keydown takes, without a synthetic event's missing key code deciding the answer.
+ */
+function press(target: EditorView, key: string, keyCode: number, shift: boolean): boolean {
+  const mac = /Mac|iP(hone|[oa]d)/.test(navigator.platform);
+  const event = { key, keyCode, ctrlKey: !mac, metaKey: mac, altKey: false, shiftKey: shift };
+  return target.someProp('handleKeyDown', (handle) => handle(target, event as never)) ?? false;
+}
+
+/** The seven marks an author applies directly, each with its button's label and its chord. */
+const DIRECT = [
+  { label: 'Strong', mark: 'strong', key: 'b', keyCode: 66, shift: false },
+  { label: 'Emphasis', mark: 'emphasis', key: 'i', keyCode: 73, shift: false },
+  { label: 'Underline', mark: 'underline', key: 'u', keyCode: 85, shift: false },
+  { label: 'Subscript', mark: 'subscript', key: ',', keyCode: 188, shift: false },
+  { label: 'Superscript', mark: 'superscript', key: '.', keyCode: 190, shift: false },
+  { label: 'Inline code', mark: 'inlineCode', key: 'e', keyCode: 69, shift: false },
+  { label: 'Quoted phrase', mark: 'quotedPhrase', key: 'Q', keyCode: 81, shift: true },
+] as const;
+
+describe('the marks an author applies directly', () => {
+  /** The mark types on the paragraph's first run, which the fixture's selection covers. */
+  const first = (target: EditorView) => {
+    const [run] = runsOf(target);
+    return run?.type === 'text' ? run.marks.map((mark) => mark.type) : [];
+  };
+
+  it('CNT-164 applies and removes each of the seven marks by its button and by its shortcut', async () => {
+    const { view: mounted } = renderToolbar({ range: [1, 6] });
+    for (const { label, mark, key, keyCode, shift } of DIRECT) {
+      const button = screen.getByRole('button', { name: label });
+
+      await userEvent.click(button);
+      expect(first(mounted), label).toEqual([mark]);
+      await userEvent.click(button);
+      expect(first(mounted), label).toEqual([]);
+
+      expect(press(mounted, key, keyCode, shift), label).toBe(true);
+      expect(first(mounted), label).toEqual([mark]);
+      expect(press(mounted, key, keyCode, shift), label).toBe(true);
+      expect(first(mounted), label).toEqual([]);
+    }
+  });
+
+  it('CNT-164 offers no control over typeface, font size or colour', () => {
+    renderToolbar();
+    const toolbar = screen.getByRole('toolbar', { name: 'Formatting' });
+    const appearance = /font|typeface|size|colou?r|highlight/i;
+
+    // Every control the toolbar holds, whatever its kind - a button, a list to choose from, a field,
+    // a colour well - and what each says of itself.
+    const controls = [...toolbar.querySelectorAll('button, select, input, textarea, [role]')];
+    expect(controls.filter((each) => each.tagName === 'BUTTON')).toHaveLength(LABELS.length);
+    expect(
+      controls.filter((each) => each.tagName !== 'BUTTON' && !each.hasAttribute('data-icon')),
+    ).toEqual([]);
+    for (const each of controls) {
+      const said = ['aria-label', 'title', 'name', 'type']
+        .map((name) => each.getAttribute(name) ?? '')
+        .join(' ');
+      expect(said).not.toMatch(appearance);
+    }
+
+    // And nothing a key can do: every command, the toolbar's and the keyboard's alike, applies a mark
+    // or makes a block, and the editor holds no mark for a face, a size or a colour to apply.
+    // A closed list, so a mark added later is read against this statement before the test passes.
+    for (const command of EDITOR_COMMANDS) expect(command.label).not.toMatch(appearance);
+    expect(Object.keys(editorSchema.marks).sort()).toEqual([
+      'definedTerm',
+      'emphasis',
+      'hyperlink',
+      'inlineCode',
+      'language',
+      'quotedPhrase',
+      'strong',
+      'subscript',
+      'superscript',
+      'underline',
+    ]);
   });
 });
