@@ -6,7 +6,7 @@
 > 3 left it: equations, and with them Word as a first-class output. Ken agreed the design's
 > recommendations on 2026-09-25, and kept Word 3's two refusals on 2026-09-26.
 >
-> **Built** (PR #PRNUM). [What the build changed](#what-the-build-changed) records where it departed
+> **Built** (PR #238). [What the build changed](#what-the-build-changed) records where it departed
 > from the rulings below.
 
 **Goal:** every equation reaches Word as a native Word equation - OMML built from the same maths tree
