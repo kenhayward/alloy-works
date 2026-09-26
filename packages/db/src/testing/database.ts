@@ -142,7 +142,21 @@ export interface TestDatabase {
  * two files write the same role at once.
  */
 export async function bootstrapTestLoginRoles(): Promise<void> {
-  await bootstrapLoginRoles(serverUrl(), TEST_PASSWORDS);
+  const server = serverUrl();
+  try {
+    await bootstrapLoginRoles(server, TEST_PASSWORDS);
+  } catch (error) {
+    throw (error as { code?: unknown }).code === 'ECONNREFUSED' ? noPostgres(server, error) : error;
+  }
+}
+
+/** What a suite says when there is no Postgres to test against, and how to start one. */
+function noPostgres(server: string, error: unknown): Error {
+  return new Error(
+    `No Postgres at ${new URL(server).host}. Start it with \`docker compose -f deploy/compose.yaml up -d --wait postgres\`, ` +
+      `or point ALLOY_TEST_DATABASE_URL at one. (${(error as Error).message})`,
+    { cause: error },
+  );
 }
 
 function serverUrl(): string {
@@ -183,11 +197,7 @@ export async function freshDatabase(): Promise<TestDatabase> {
   try {
     await admin.connect();
   } catch (error) {
-    throw new Error(
-      `No Postgres at ${new URL(server).host}. Start it with \`docker compose -f deploy/compose.yaml up -d --wait postgres\`, ` +
-        `or point ALLOY_TEST_DATABASE_URL at one. (${(error as Error).message})`,
-      { cause: error },
-    );
+    throw noPostgres(server, error);
   }
   try {
     await admin.query(`create database ${name}`);

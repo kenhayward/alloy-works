@@ -26,6 +26,8 @@ export interface VeraPdfAnswer {
 
 /** One veraPDF JVM in server mode, started on the first check and kept until closed. */
 export interface WarmVeraPdf {
+  /** The container's name, which its temporary directory's name begins with. */
+  readonly name: string;
   check(pdf: Uint8Array): Promise<VeraPdfAnswer>;
   close(): Promise<void>;
 }
@@ -62,10 +64,12 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
     readonly process: ChildProcessWithoutNullStreams;
     readonly directory: string;
     readonly line: () => Promise<string>;
+    /** The tail of what veraPDF has said on stderr since it became ready. */
+    readonly stderr: () => string;
   }
 
   const start = async (): Promise<Started> => {
-    const directory = await mkdtemp(join(tmpdir(), 'aw-verapdf-'));
+    const directory = await mkdtemp(join(tmpdir(), `${name}-`));
     // The image runs as uid 100, not the host's user: on Linux a bind mount keeps the host's
     // permissions, and mkdtemp's 0700 would leave veraPDF unable to read what is written here.
     await chmod(directory, 0o755);
@@ -115,17 +119,23 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
       end(new Error(`veraPDF ${name} exited (${signal ?? code}): ${stderr.trim()}`)),
     );
 
+    // A write after the JVM has gone is an error on stdin, not an exit: the check waiting on it fails.
+    child.stdin.on('error', (error) =>
+      end(new Error(`veraPDF ${name} stopped reading: ${error.message}`)),
+    );
+
     const line = () =>
       new Promise<string>((resolve, reject) => {
         const buffered = lines.shift();
         if (buffered !== undefined) return resolve(buffered);
         if (ended !== null) return reject(ended);
         const timer = setTimeout(() => {
-          const at = waiting.findIndex((waiter) => waiter.resolve === done);
-          if (at >= 0) waiting.splice(at, 1);
-          reject(
+          // Its answer may still come, and would then be taken for the next check's: once one
+          // answer is missing, no later one can be trusted, so the process goes.
+          end(
             new Error(`veraPDF ${name} answered nothing in ${CHECK_TIMEOUT} ms: ${stderr.trim()}`),
           );
+          child.kill();
         }, CHECK_TIMEOUT);
         const done = (value: string) => {
           clearTimeout(timer);
@@ -140,9 +150,17 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
         });
       });
 
-    const ready = await line();
-    await report(ready);
-    return { process: child, directory, line };
+    try {
+      const ready = await line();
+      await report(ready);
+    } catch (error) {
+      child.kill();
+      await rm(directory, { recursive: true, force: true });
+      throw error;
+    }
+    // What the empty start-up run said ("There are no files to process") is no check's business.
+    stderr = '';
+    return { process: child, directory, line, stderr: () => stderr.trim() };
   };
 
   /** A report's text, read and removed inside the container that wrote it. */
@@ -162,7 +180,7 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
 
   const once = async (pdf: Uint8Array): Promise<VeraPdfAnswer> => {
     started ??= start();
-    const { directory, process: child, line } = await started;
+    const { directory, process: child, line, stderr } = await started;
     const file = `${++count}.pdf`;
     await writeFile(join(directory, file), pdf, { mode: 0o644 });
     try {
@@ -170,6 +188,14 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
       // Taken before anything is awaited, so this check's answer is the next one in line.
       const answered = line();
       const stdout = await report(await answered);
+      // A PDF veraPDF could not open still gets a report path, and an empty report.
+      if (stdout.trim() === '') throw new Error(`veraPDF could not check ${file}: ${stderr()}`);
+      const checked = reportOf(stdout).report?.jobs?.[0]?.itemDetails?.name;
+      if (checked !== `/checked/${file}`) {
+        throw new Error(
+          `veraPDF answered for ${checked ?? 'nothing'} where it was asked for ${file}`,
+        );
+      }
       return { stdout, exit: compliant(stdout) ? 0 : 1 };
     } finally {
       await rm(join(directory, file), { force: true });
@@ -177,22 +203,31 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
   };
 
   return {
+    name,
     check: once,
     async close() {
       if (started === null) return;
       const up = await started.catch(() => null);
-      if (up !== null) {
-        const exited = new Promise<void>((resolve) => {
-          if (up.process.exitCode !== null || up.process.signalCode !== null) resolve();
-          else up.process.once('exit', () => resolve());
-        });
-        up.process.stdin.end();
-        const timer = new Promise<'late'>((resolve) => setTimeout(() => resolve('late'), 10_000));
-        if ((await Promise.race([exited, timer])) === 'late') {
+      started = null;
+      if (up === null) return;
+      const exited = new Promise<void>((resolve) => {
+        if (up.process.exitCode !== null || up.process.signalCode !== null) resolve();
+        else up.process.once('exit', () => resolve());
+      });
+      up.process.stdin.end();
+      let timer: NodeJS.Timeout | undefined;
+      const late = new Promise<'late'>((resolve) => {
+        timer = setTimeout(() => resolve('late'), 10_000);
+      });
+      try {
+        if ((await Promise.race([exited, late])) === 'late') {
           await run('docker', ['rm', '-f', name]).catch(() => undefined);
         }
-        await rm(up.directory, { recursive: true, force: true });
+      } finally {
+        // Left running, it would hold the whole test run open ten seconds after its last test.
+        clearTimeout(timer);
       }
+      await rm(up.directory, { recursive: true, force: true });
     },
   };
 }
@@ -203,10 +238,19 @@ export function startWarmVeraPdf(options: { readonly image?: string } = {}): War
  * answers 1, and `verdictOf` then refuses it by name.
  */
 function compliant(stdout: string): boolean {
-  const report = JSON.parse(stdout) as {
-    report?: { jobs?: { validationResult?: { compliant?: boolean }[] }[] };
+  return reportOf(stdout).report?.jobs?.[0]?.validationResult?.[0]?.compliant === true;
+}
+
+/** The parts of veraPDF's JSON report this module reads: which file, and whether it complied. */
+function reportOf(stdout: string): {
+  report?: {
+    jobs?: {
+      itemDetails?: { name?: string };
+      validationResult?: { compliant?: boolean }[];
+    }[];
   };
-  return report.report?.jobs?.[0]?.validationResult?.[0]?.compliant === true;
+} {
+  return JSON.parse(stdout) as ReturnType<typeof reportOf>;
 }
 
 /**

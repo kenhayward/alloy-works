@@ -202,7 +202,8 @@ the binary is the thing being pinned.
 are cluster-wide, so two files bootstrapping at once would write the same rows; the worker's global
 setup (`apps/worker/src/testing/database-setup.ts`) sets them once for the run with
 `bootstrapTestLoginRoles`, and each file prepares only its own database with `prepareDatabase`, which
-writes no role. `bootstrapCluster` is still the two together, for everything else.
+creates and alters no role (the one cluster-wide row it can write, an existing tenant's membership of
+`aw_tenant`, a fresh database never has). `bootstrapCluster` is still the two together, for everything else.
 
 ## The regression corpus and veraPDF
 

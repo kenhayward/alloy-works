@@ -57,8 +57,9 @@ export async function bootstrapLoginRoles(
 
 /**
  * The half of `bootstrapCluster` that is this database's, once the login roles exist: its schemas,
- * pgvector, and its tenants' membership of `aw_tenant`. It writes no role, so databases can be
- * prepared side by side.
+ * pgvector, and its tenants' membership of `aw_tenant`. It creates and alters no role, so databases
+ * can be prepared side by side; the one cluster-wide row it may write is an existing tenant's
+ * membership of `aw_tenant`, and a fresh database has no tenant.
  */
 export async function prepareDatabase(adminUrl: string): Promise<void> {
   await retryOnRoleConflict(() =>

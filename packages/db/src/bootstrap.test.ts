@@ -1,4 +1,5 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import pg from 'pg';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { bootstrapCluster, bootstrapLoginRoles, prepareDatabase } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
@@ -78,20 +79,19 @@ describe('prepareDatabase', () => {
   afterAll(() => db.drop());
 
   // What lets a suite set the login roles up once and prepare a database per file in parallel: a
-  // database's preparation writes no row every other database shares.
+  // database's preparation sends no statement that writes a role. Watched at the client rather than
+  // read from pg_authid, which every other suite on the cluster is writing at the same time.
   it('makes a database ready to migrate without writing a login role', async () => {
-    const roles = () =>
-      queryAs(
-        db.adminUrl,
-        `select rolname, xmin::text as xmin from pg_authid
-          where rolname in ('aw_service', 'aw_worker', 'aw_migrator', 'aw_tenant') order by rolname`,
-      ).then((result) => result.rows);
-    const before = await roles();
+    const query = vi.spyOn(pg.Client.prototype, 'query');
+    try {
+      await prepareDatabase(db.adminUrl);
+      const sent = query.mock.calls.map(([text]) => (typeof text === 'string' ? text : ''));
 
-    await prepareDatabase(db.adminUrl);
+      expect(sent.some((text) => /create schema if not exists platform/i.test(text))).toBe(true);
+      expect(sent.filter((text) => /\b(create|alter|drop)\s+role\b/i.test(text))).toEqual([]);
+    } finally {
+      query.mockRestore();
+    }
     await migrate(db.migratorUrl);
-
-    expect(before).toHaveLength(4);
-    expect(await roles()).toEqual(before);
   });
 });

@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -72,6 +72,17 @@ describe('a warm veraPDF, one process for the run', () => {
     expect(verdictOf(pass.stdout, pass.exit).compliant).toBe(true);
     expect(verdictOf(fail.stdout, fail.exit).compliant).toBe(false);
   }, 120_000);
+
+  // A timer left behind by `close` holds the run open after its last test, on every run that checks.
+  it('closes leaving no timer to hold the run open', async () => {
+    const timers = () =>
+      process.getActiveResourcesInfo().filter((kind) => kind === 'Timeout').length;
+    const before = timers();
+
+    await warm.close();
+
+    expect(timers()).toBeLessThanOrEqual(before);
+  }, 60_000);
 });
 
 describe('a warm veraPDF that cannot run', () => {
@@ -90,5 +101,8 @@ describe('a warm veraPDF that cannot run', () => {
     } finally {
       await warm.close();
     }
+    // Nothing of a start that failed is left in the temporary directory.
+    const left = (await readdir(tmpdir())).filter((entry) => entry.startsWith(`${warm.name}-`));
+    expect(left).toEqual([]);
   }, 60_000);
 });
