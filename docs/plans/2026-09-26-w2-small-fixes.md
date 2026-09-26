@@ -1,0 +1,214 @@
+# W2: Small fixes found by the audit
+
+> **A sketch**, built a task at a time, with one final whole-branch review before each pull request
+> that is asked for a break of its own against every citation, as W1's were. It builds W2 of
+> [the rest of T1](2026-09-25-t1-remainder.md): the defects and gaps
+> [the T1 audit](<../reviews/T1 - Audit against the code.md>) found in what is built, and the design
+> text it found stale.
+
+**Goal:** what is built does what its requirements say, each shown by a test, and the design text says
+what the code does.
+
+**Three pull requests**, each on its own:
+
+| PR   | Holds                                                                                                                                                 |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W2.1 | The editor: CNT-075 read-only text set as the editor sets it, CNT-175 a definition list as one, CNT-074 who may edit and why, CNT-069's history depth |
+| W2.2 | The API: API-003 (issue #240), API-006, API-012, API-037, API-047                                                                                     |
+| W2.3 | Publishing and paste: PUB-003's order, CNT-167 Word's footnotes kept on paste, and the stale design text                                              |
+
+Each bumps the version by CLAUDE.md's rule at the time: a PR that adds what an author or a caller can
+see or use (CNT-074's card state, API-047's header, Word's footnotes on paste) is a functional
+enhancement, and the rest are fixes.
+
+**Every defect starts as an issue** describing what somebody sees, filed before its fix, and closed by
+the PR's body (CLAUDE.md). The defects are CNT-075, CNT-175's `dd`, CNT-074's missing release time,
+CNT-069's depth, PUB-003's order and #240; the rest are gaps against a requirement, not defects.
+
+**Claims to add first**, each only for what its task demonstrates: CNT-075, CNT-175 and CNT-074 in
+component-editor.md; API-037 and API-047 in service-foundations.md; CNT-167 in content-model.md.
+
+## Measured before planning
+
+**Word's clipboard HTML for footnotes** (Word 16 through COM, copying two paragraphs with a footnote
+each, one note's words part bold). Each anchor is an `<a>` in the text whose style names
+`mso-footnote-id:ftnN` and whose `href` is `#_ftnN`, holding the printed number inside Word's
+conditional comments (`<![if !supportFootnotes]>`). The notes follow the last paragraph in
+`<div style='mso-element:footnote-list'>`, one `<div style='mso-element:footnote' id=ftnN>` each,
+whose `MsoFootnoteText` paragraphs open with a back-anchor to `#_ftnrefN` and then hold the note's
+words, marks included. The capture is kept as the reader's test fixture, its words invented.
+
+## Decisions for Ken
+
+| #    | Decision                                                                                                                                                                                                                                                                                  | Recommendation                                                                                                                                                                          |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W2-A | **How far back undo reaches.** ProseMirror's history keeps 100 events by default, so a long session cannot undo back to where it opened (CNT-069). The history is already cleared at every version cut (CNT-169)                                                                          | **No limit on depth.** A session's history lives until the next cut or Done; its steps are text-sized. CNT-069 stays uncited until W11 makes it survive a reload                        |
+| W2-B | **Whether the document page's cards say who may edit each component now** (CNT-074: "whether this user may edit it right now, and when they may not, why - naming who holds the lock and when it is expected to release"). Today only an open editor says so, and never the release time  | **Now, in W2.1:** the texts route answers each occurrence's permission and lock; a card says "Read only" or "Grace is editing, expected back 14:30" before it is opened. W9 restyles it |
+| W2-C | **PUB-003's citation.** The order is fixed here (conditions before contributions, as publishing.md states) and swap tests cover the stages that exist. But `conditions` is the identity until REU (T4), so no output can differ when it moves, and "every part of it" cannot yet be shown | **Cite PUB-003 when REU gives conditions a meaning.** The claim stands; its prose says which swaps are tested now and which wait                                                        |
+
+## Global constraints
+
+- Test titles cite only what they show (`pnpm trace show <ID>` beside the title), in a literal title:
+  an `it.each` title cites nothing.
+- Each test is watched fail: a new test before the fix, or, where the code exists, by breaking it.
+- No em or en dash in user-facing text.
+- `pnpm typecheck`, `pnpm lint`, `pnpm format`, the affected suites, then `pnpm trace generate` after
+  prettier and `pnpm trace pins`.
+
+---
+
+## W2.1: The editor
+
+### Task 1: CNT-075, the read-only text set as the editor sets it
+
+**Issue first:** a document's text, read before a component is opened, differs from the same text
+once it opens: ligatures (fi, fl) join in one and not the other, runs of spaces collapse in one and
+not the other, and the paragraphs sit at different distances.
+
+- Move the editing surface's typographic rules (`font-variant-ligatures: none`,
+  `font-feature-settings: 'liga' 0`, `white-space: break-spaces`, the paragraph margins) from
+  `packages/editor/style.css`'s `.ProseMirror` into one class both the surface and the read-only text
+  (`renderContent`'s container, `DocumentText.module.css`'s `.body`) carry.
+- **Test** (`apps/web`): `CNT-075 sets a component's read-only text with the editing surface's own
+typography` - the read-only card and the open editor both carry the shared class, and the
+  stylesheet gives that class every rule the surface had (read from the CSS, as the colours test
+  reads tokens). **Break:** drop the class from the read-only container.
+- **Claim** CNT-075 in component-editor.md.
+
+### Task 2: CNT-175, a definition list as one
+
+**Issue first:** a screen reader reading a definition list in the editor, or in a document's text,
+hears each definition as a plain paragraph in an unlabelled group, not as the definition of its term.
+
+- `definitionItem` renders its body as `dd` (`dl > dt + dd`, the grouping `div` kept only as HTML
+  allows it: `dl > div > dt + dd`), in the editor's schema and in `renderContent`; the parse rules
+  read both the new shape and the old, so a paste of the editor's own HTML still reads.
+- **Test** (`packages/editor`): `CNT-175 exposes a component's lists, tables and footnotes as
+structure` - rendered DOM: a list is `ul`/`ol` > `li`, a definition list `dl` with `dt` and `dd`, a
+  table `table` with `caption`, `th` and `td`, a footnote anchor an element carrying its note, and no
+  structure made of styled `div`s. **Break:** the old `div > p` body.
+- **Claim** CNT-175 in component-editor.md.
+
+### Task 3: CNT-074, who may edit and why
+
+**Issue first:** when somebody else holds a component, its notice names them but never says when the
+lock is expected to be released, though the service says.
+
+- The editor's notice: "Grace is editing this component, expected back at 14:30." from the lock's
+  `expectedRelease`, in the reader's time (W2-B's words decided in the task).
+- The texts route (W2-B) answers, per occurrence, `mayEdit` and `lock` (`holder`, `expectedRelease`,
+  or null), from the same decision and lock the component route reads; the card shows "Read only",
+  or who holds it and until when, and nothing where the reader may edit it now.
+- **Tests:** service - `getDocumentTexts` answers each occurrence's permission and lock, and nothing
+  of an occurrence the caller may not read; web - `CNT-074 says of the component being edited, and of
+every card, whether the reader may edit it now, and when not, why, naming who holds it and when it is
+expected back`. **Breaks:** the release time dropped; the card ignoring the lock.
+- **Claim** CNT-074 in component-editor.md.
+
+### Task 4: CNT-069's depth
+
+**Issue first:** after a long session, undo stops short of the text the component opened with.
+
+- `history({ depth: Infinity })` (W2-A), with a comment on why unbounded is safe here.
+- **Test** (`packages/editor`): 150 separate edits, then 150 undos, reach the opened text. Not cited:
+  CNT-069's reload half is W11's. **Break:** the default depth.
+
+---
+
+## W2.2: The API
+
+### Task 5: API-003, the contract held both ways (issue #240)
+
+- Fastify's serialiser for a route refuses a status the route does not declare: answered as the
+  service failing (500, `internal`), as a body that breaks its schema already is.
+- **Tests:** `http.test.ts` - `API-003 answers a status the contract does not declare as a failure,
+sending nothing undeclared`; `app.test.ts` - `API-003 registers exactly the routes the contract
+declares`, collected with `onRoute` and compared with `allRoutes` both ways (health and the
+  renderer's routes named as the only others). **Breaks:** the undeclared-status guard removed; an
+  extra route registered.
+- `Fixes #240`.
+
+### Task 6: API-006, the rule behind every refusal
+
+- Every refusal a rule makes carries `rule`: grant refusals, invitation refusals, `lock_held`
+  (API-039), `version_precondition` (API-037), `format_unsupported` (PUB-014), `layout_language`,
+  `component_type_missing`, `outline_invalid`, `asset_too_large` - each rule's identifier found with
+  `pnpm trace search`, and one only where a requirement is the rule.
+- **Test** (`apps/service`): `API-006 names what failed and the rule that refused it, for every
+refusal a rule makes` - one table over each route's refusal, in one literal test. **Break:** one
+  refusal's `rule` dropped.
+
+### Task 7: API-012, callers told to ignore what they do not know
+
+- The OpenAPI document's `info.description` says a caller must ignore a field it does not know, and
+  may rely on no field being removed within the API version.
+- **Test** (`packages/api-contract`): `API-012 tells callers to ignore fields they do not know, and
+publishes every response open`. **Break:** the sentence removed.
+
+### Task 8: API-037, a stale precondition names the version it is at
+
+- Every mutating route on a versioned resource refuses a stale precondition with
+  `version_precondition` naming the current version: the outline act, the iteration and the cut, the
+  publication request (whose 409 names none today - a contract change, regenerated).
+- **Test:** `API-037 refuses every mutation from a stale version, naming the version the resource is
+at` - one literal test over each route. **Break:** the publication request's current version
+  dropped.
+- **Claim** API-037 in service-foundations.md.
+
+### Task 9: API-047, a request identifier on every response
+
+- Every response carries `X-Request-Id`: the caller's own where it sent one that is a plain token of
+  at most 128 characters, and a fresh one otherwise; it is the log's `traceId` and the error body's.
+- **Test:** `API-047 answers every response with its request identifier, the caller's where given,
+and logs it and reports it in an error`. **Breaks:** the header on success only; the caller's
+  ignored.
+- **Claim** API-047 in service-foundations.md.
+
+---
+
+## W2.3: Publishing and paste
+
+### Task 10: PUB-003's order
+
+**Issue first:** the publish computes what each component contributes to the numbering before it
+applies conditions, the order publishing.md says is wrong: a figure a condition removes would still
+take a number the day conditions do anything.
+
+- `assemble` runs `conditions` over each occurrence's content before `contributionsOf`
+  (assemble.ts:407-408).
+- **Tests** (`packages/domain`): one document whose output differs under each adjacent swap of the
+  stages that exist - number before references, references before generated matter, generated matter
+  before the checks - and a test that contributions are read from what conditions answer (a
+  conditions function standing in for REU, where the stage takes one). Uncited (W2-C). **Break:** the
+  old order.
+
+### Task 11: CNT-167, Word's footnotes kept on paste
+
+**Issue first:** pasting from Word text that holds footnotes gives the notes' numbers as `[1]` in the
+text and the notes as paragraphs at the end, not as footnotes (confirm the exact result first, against
+the fixture).
+
+- The HTML reader reads an `mso-footnote-id` anchor as a `footnote` at its place, holding the
+  paragraphs of the `mso-element:footnote` whose `id` it names, their marks kept and the back-anchor
+  dropped; the footnote list is not read as text. A note that cannot be found, or an anchor in a place
+  a footnote may not stand (CNT-129), is reported (CNT-064).
+- **Test** (`packages/readers`): `CNT-167 keeps Word's lists, tables, footnotes and emphasis, and
+makes a heading a paragraph, naming it` - the measured fixture, extended with a list, a table and a
+  heading, through admission, both halves asserted. **Break:** the footnote list read as text.
+- **Claim** CNT-167 in content-model.md, and its "Left unclaimed" row goes.
+
+### Task 12: The stale design text
+
+- publishing.md's CNT-054 row: a citation fails as `inline_not_publishable`, not
+  `citation_unresolved`.
+- publishing.md's "Where the code lives": veraPDF runs in the worker's suite, not its job.
+- docs/features.md: the document page shows the text in reading order, each component opening in
+  place; "no document view" means no view that renders the document as it will publish. Say it once
+  and consistently.
+
+## Done when
+
+- CNT-075, CNT-175, CNT-074, API-003, API-006, API-012, API-037, API-047 and CNT-167 Covered; CNT-069
+  waiting on W11 and PUB-003 on REU, each saying so.
+- Issues #240 and the six filed here closed by their PRs.
+- The remainder plan's W2 row reads Built with the three PR numbers.
