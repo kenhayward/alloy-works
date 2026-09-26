@@ -3,6 +3,14 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.76.1 - 2026-09-27 (PR #256)
+
+### Changed
+
+- **Templates are designed.** A template names a document's starting sections, which of them are
+  required, what an author may change, its theme and layout, and the metadata it asks for at the
+  document's level and its sections'. Nothing in the product changes yet; the building follows.
+
 ## 0.76.0 - 2026-09-26 (PR #255)
 
 ### Added
