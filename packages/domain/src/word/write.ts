@@ -106,9 +106,10 @@ import { spacingOverrides, type SpacingOverride } from './spacing.js';
 /**
  * What the job records as the output's producer version (R12). A version names the writer that made
  * the file, so it moves whenever what the writer writes does: `word/2` is Word 2's, which writes lists,
- * quotations, preformatted text, tables and figures where `word/1` refused them.
+ * quotations, preformatted text, tables and figures where `word/1` refused them, and `word/3` is Word
+ * 3's, which writes footnotes and cross-references where `word/2` refused them.
  */
-export const WORD_WRITER_VERSION = 'word/2';
+export const WORD_WRITER_VERSION = 'word/3';
 
 /** What the writer is given: `assemble`'s answer for Word, the formats asked for, and the faces. */
 export interface WordWriting {
