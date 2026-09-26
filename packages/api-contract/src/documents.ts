@@ -1,6 +1,6 @@
 import { outlineMatterSchema, outlineOperationSchema } from '@alloy-works/domain';
 import { z } from 'zod';
-import { CreateComponentBody, SpaceParams, VersionSummary } from './components.js';
+import { CreateComponentBody, Lock, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
@@ -158,7 +158,18 @@ export const DocumentTextsView = z.object({
   document: z.string(),
   version: z.object({ id: z.string(), number: z.string() }),
   occurrences: z
-    .array(z.object({ node: z.string(), version: z.string().nullable() }))
+    .array(
+      z.object({
+        node: z.string(),
+        version: z.string().nullable(),
+        mayEdit: z
+          .boolean()
+          .describe('Whether the caller may edit the component: false where they may not read it'),
+        lock: Lock.nullable().describe(
+          'Who holds the component now and until when: null where nobody does, or where the caller may not read it',
+        ),
+      }),
+    )
     .describe(
       'Each component reference, in outline order, and the version it resolved to: null where the ' +
         'caller may not read the component, where it waits on revisions, or where its content does not read',

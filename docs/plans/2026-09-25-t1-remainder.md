@@ -115,7 +115,7 @@ This table is updated as each workstream lands.
 | #   | Workstream                         | Status                                                                                     |
 | --- | ---------------------------------- | ------------------------------------------------------------------------------------------ |
 | W1  | Test debt                          | Built (PRs #239, #241, #243); the rewordings cited in PR #244; API-003 waits on #240 in W2 |
-| W2  | Small fixes                        | Not started                                                                                |
+| W2  | Small fixes                        | In progress ([plan](2026-09-26-w2-small-fixes.md))                                         |
 | W3  | Word output                        | Built (PRs #231, #236, #237, #238)                                                         |
 | W4  | Templates                          | Not started                                                                                |
 | W5  | Definitions and the metadata panel | Not started                                                                                |

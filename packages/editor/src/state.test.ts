@@ -1,6 +1,6 @@
 import { parseContentDocument } from '@alloy-works/domain';
 import { joinBackward, splitBlock } from 'prosemirror-commands';
-import { redo, undo } from 'prosemirror-history';
+import { closeHistory, redo, undo } from 'prosemirror-history';
 import { Schema, Slice, type Node } from 'prosemirror-model';
 import { EditorState, Selection, TextSelection, type Transaction } from 'prosemirror-state';
 import { DecorationSet, type Decoration } from 'prosemirror-view';
@@ -815,5 +815,22 @@ describe('the gap cursor (equations 1, ruling R5)', () => {
     const past = arrow(inCell, 'ArrowDown');
     expect(past.selection.toJSON()).toEqual({ type: 'gapcursor', pos: past.doc.content.size });
     expect(past.doc.eq(state.doc)).toBe(true);
+  });
+});
+
+describe('how far back undo reaches', () => {
+  // Uncited: CNT-069 also asks that the history survive a reload, which recovery (W11) builds.
+  it('undoes every separate edit of a long session, back to the text it opened with', () => {
+    let state = stateOf([['b1', 'Start.']]);
+    const opened = state.doc.textContent;
+    for (let at = 0; at < 150; at += 1) {
+      // Each its own step: closed, as a pause between keystrokes closes one.
+      state = state.apply(closeHistory(state.tr.insertText('x', state.doc.content.size - 1)));
+    }
+    expect(state.doc.textContent).toBe(`Start.${'x'.repeat(150)}`);
+    let undone = 0;
+    while (undo(state, (tr) => (state = state.apply(tr)))) undone += 1;
+    expect(undone).toBe(150);
+    expect(state.doc.textContent).toBe(opened);
   });
 });

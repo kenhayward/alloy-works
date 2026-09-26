@@ -11,9 +11,16 @@ import {
   type OutlineViewNode,
   type SectionViewNode,
 } from '@alloy-works/domain';
-import { drawEquation, renderContent, type ReferenceContext } from '@alloy-works/editor';
+import {
+  drawEquation,
+  renderContent,
+  TEXT_CLASS,
+  type ReferenceContext,
+} from '@alloy-works/editor';
+import '@alloy-works/editor/style.css';
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { heldSentence } from '../editor/held.js';
 import { textOffsetIn } from '../editor/caret.js';
 
 import { Lozenge } from '../states/Lozenge.js';
@@ -89,6 +96,47 @@ function offsetOfClick(root: HTMLElement, x: number, y: number): number | null {
   return null;
 }
 
+/** Whether the reader may edit an occurrence's component now, and who holds it (CNT-074). */
+export interface Editable {
+  readonly mayEdit: boolean;
+  readonly lock: {
+    readonly holder: { readonly name: string | null };
+    readonly expectedRelease: string;
+    readonly yours: boolean;
+  } | null;
+}
+
+/**
+ * What a card says of its component before it is opened (CNT-074): who holds it and when they are
+ * expected back, that the reader holds it themselves in another window, or that they may read it
+ * and not edit it - and nothing where they may edit it now, where the page has not heard, or where
+ * the same component is open on this page already. A hold past its expected release holds nothing:
+ * it lapses as that time passes, and the next claim takes it.
+ */
+function EditableState({ state, openHere }: { state: Editable | undefined; openHere: boolean }) {
+  if (state === undefined) return null;
+  const lock =
+    state.lock !== null && new Date(state.lock.expectedRelease).getTime() > Date.now()
+      ? state.lock
+      : null;
+  if (lock?.yours) {
+    return openHere ? null : (
+      <p className={styles['state']}>You are editing this component in another window.</p>
+    );
+  }
+  if (lock !== null) {
+    return (
+      <p className={styles['state']}>
+        {heldSentence({ name: lock.holder.name, expectedRelease: lock.expectedRelease })}
+      </p>
+    );
+  }
+  if (!state.mayEdit) {
+    return <p className={styles['state']}>You may read this component but not edit it.</p>;
+  }
+  return null;
+}
+
 /**
  * A component's text, rendered once for its content and set into the card: markup, not a view.
  * Given `onOpen`, the text is the way into the component's editor (interface slice 13): a click
@@ -115,11 +163,11 @@ function RenderedText({
     return () => host.replaceChildren();
   }, [rendered]);
   if (rendered === null) return <p className={styles['cannot']}>{CANNOT_SHOW}</p>;
-  if (!onOpen) return <div ref={place} className={styles['body']} />;
+  if (!onOpen) return <div ref={place} className={`${styles['body']} ${TEXT_CLASS}`} />;
   return (
     <div
       ref={place}
-      className={styles['body']}
+      className={`${styles['body']} ${TEXT_CLASS}`}
       data-opens="true"
       tabIndex={0}
       title="Click to edit"
@@ -198,6 +246,7 @@ export function DocumentText({
   editing = null,
   onEdit,
   editor,
+  editable,
   contributions = NOTHING_KNOWN,
 }: {
   outline: OutlineView;
@@ -209,6 +258,8 @@ export function DocumentText({
   texts?: ReadonlyMap<string, unknown>;
   /** The occurrence whose component is open for editing in place, if any: one at a time. */
   editing?: string | null;
+  /** Whether the reader may edit each occurrence's component now, and who holds it, by node. */
+  editable?: ReadonlyMap<string, Editable>;
   /** Asked to open a component in place, or with null to close it. */
   onEdit?: (node: string | null) => void;
   /** The editor for a component, put in its card in place of its text, where it stands. */
@@ -237,6 +288,19 @@ export function DocumentText({
     () => referenceContexts(outline, scheme, contributions, words),
     [outline, scheme, contributions, words],
   );
+
+  // The component open in place on this page, whichever occurrence it was opened from.
+  const openComponent = useMemo(() => {
+    const find = (nodes: readonly OutlineViewNode[]): string | null => {
+      for (const node of nodes) {
+        if (node.id === editing) return node.type === 'reference' ? node.component : null;
+        const within = find(node.children);
+        if (within !== null) return within;
+      }
+      return null;
+    };
+    return editing === null ? null : find(outline.nodes);
+  }, [editing, outline]);
 
   const titled = (node: OutlineViewNode, depth: number) => {
     const at = numbers.get(node.id);
@@ -281,6 +345,12 @@ export function DocumentText({
                   </span>
                 )}
               </div>
+            )}
+            {node.component !== null && editing !== node.id && (
+              <EditableState
+                state={editable?.get(node.id)}
+                openHere={openComponent !== null && openComponent === node.component}
+              />
             )}
             {node.component !== null &&
               (editing === node.id && editor

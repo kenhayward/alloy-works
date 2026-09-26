@@ -23,7 +23,7 @@ import { PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, useStatus } from '../shell/Status.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
-import { DocumentText, type Place } from './DocumentText.js';
+import { DocumentText, type Editable, type Place } from './DocumentText.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { nodeLink } from './links.js';
 import { OutlineRail, OutlineTabs, tabIds, useOutlineTab } from './OutlineTabs.js';
@@ -360,6 +360,8 @@ export function DocumentPage({
   // Each occurrence's content, by node, from one call for the whole document (interface slice 9),
   // read again for every version the page shows and whenever a component edited in place closes.
   const [texts, setTexts] = useState<ReadonlyMap<string, unknown>>(new Map());
+  // Whether the reader may edit each occurrence's component now, and who holds it (CNT-074).
+  const [editable, setEditable] = useState<ReadonlyMap<string, Editable>>(new Map());
   const [textsAttempt, setTextsAttempt] = useState(0);
   // The one occurrence whose component is open in place: one editor, and so one lock, at a time.
   const [editing, setEditing] = useState<string | null>(null);
@@ -373,6 +375,14 @@ export function DocumentPage({
         if (!current || !data) return;
         const contents = new Map(data.versions.map((version) => [version.id, version.content]));
         const byNode = new Map<string, unknown>();
+        setEditable(
+          new Map(
+            data.occurrences.map((occurrence) => [
+              occurrence.node,
+              { mayEdit: occurrence.mayEdit, lock: occurrence.lock },
+            ]),
+          ),
+        );
         for (const occurrence of data.occurrences) {
           if (occurrence.version === null) continue;
           const content = contents.get(occurrence.version);
@@ -387,6 +397,12 @@ export function DocumentPage({
       current = false;
     };
   }, [client, id, shownVersion, textsAttempt]);
+  // Who holds what changes while the page is in another window's shadow: returning to it hears it.
+  useEffect(() => {
+    const again = () => setTextsAttempt((attempt) => attempt + 1);
+    window.addEventListener('focus', again);
+    return () => window.removeEventListener('focus', again);
+  }, []);
   const [attempt, setAttempt] = useState(0);
   const [undo, setUndo] = useState<readonly OutlineOperation[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
@@ -749,6 +765,7 @@ export function DocumentPage({
             words={document.words}
             names={names}
             texts={texts}
+            editable={editable}
             // What each occurrence holds, as the lists beside it number it: what a reference in the
             // text, and in the editor opened in place, is numbered from (cross-references 1). The
             // editor takes its context through its place, and is told again as this is read again.

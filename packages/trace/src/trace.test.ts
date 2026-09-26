@@ -71,6 +71,7 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1458);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 443, from 441 (2026-09-26): W2.1 - component-editor.md claims CNT-075 and CNT-074.
     // 441, from 435 (2026-09-26): the rewordings claim CNT-171, CNT-172, CNT-173, STR-070, MET-042
     // and API-061; CNT-174 and STY-078 take CNT-089's and STY-019's claims.
     // 435, from 432 (2026-09-26): W1.3 - publishing.md claims PUB-031 and PUB-069, and structure.md
@@ -186,7 +187,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(441);
+    ).toBe(443);
   });
 });
 
@@ -531,6 +532,7 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 372, from 370 (2026-09-26): W2.1 - CNT-075 and CNT-074, each in the document page's test.
   // 370, from 357 (2026-09-26): the rewordings - CNT-173 in four files, MET-042 in two, and CNT-171,
   // CNT-172, STR-070, STY-078, API-061, IAM-039 and IAM-024 in one each.
   // 357, from 352 (2026-09-26): W1.3 - PUB-069 and PUB-031 in two files each, the PDF's and Word's;
@@ -541,7 +543,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(370);
+    expect(model.citations).toHaveLength(372);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -1,3 +1,4 @@
+import { heldSentence } from './held.js';
 import type { ContentDocument } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 
@@ -323,7 +324,7 @@ describe('the editing session', () => {
     expect(session.view()).toMatchObject({
       phase: 'reading',
       holder,
-      notice: 'Grace is editing this component.',
+      notice: heldSentence(holder),
     });
     expect(refused).toEqual([holder]);
     expect(service.saved).toEqual([]);

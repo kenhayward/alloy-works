@@ -426,7 +426,10 @@ export function createEditorState(options: EditorStateOptions): EditorState {
     doc: options.doc,
     ...(options.selection ? { selection: options.selection } : {}),
     plugins: [
-      history(),
+      // No limit on depth (W2-A): a session's history lasts until the next version is cut or the
+      // component is closed (CNT-169), and undo must reach back to where it opened (CNT-069). Its
+      // steps are text-sized, so an unbounded one costs what the session typed.
+      history({ depth: Infinity }),
       keymap({
         'Mod-z': undo,
         'Mod-y': redo,

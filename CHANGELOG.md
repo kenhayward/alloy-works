@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.74.0 - 2026-09-26 (PR #249)
+
+### Added
+
+- **A document's page says, for each component, whether you may edit it now**, before you open it:
+  "You may read this component but not edit it.", who is editing it and when they are expected
+  back, in your own time, or that you are editing it yourself in another window. Nothing is said
+  where you may edit it now, and a hold whose expected time has passed is not mentioned. Returning to
+  the page's window brings what it says up to date.
+
+### Fixed
+
+- A component's text, read on its document's page, is now set exactly as the editor sets it once
+  opened: ligatures and runs of spaces no longer change as it opens (issue #245).
+- When somebody else is editing a component, the notice now says when they are expected back, as
+  well as who they are (issue #247).
+- Undo now reaches back to the text a component was opened with, however long the session, instead
+  of stopping after about a hundred steps (issue #248).
+
 ## 0.73.4 - 2026-09-26 (PR #244)
 
 ### Changed

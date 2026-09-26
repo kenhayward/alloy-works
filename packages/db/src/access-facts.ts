@@ -227,6 +227,58 @@ export async function loadFacts(
 }
 
 /**
+ * The facts for each of many artifacts, as loadFacts gives them one at a time, from one read of the
+ * principal and of the grants reaching any of them; an artifact the tenant does not hold is absent,
+ * and every artifact is absent when the tenant holds no such principal.
+ */
+export async function loadFactsFor(
+  trx: TenantTransaction,
+  principalId: string,
+  artifactIds: readonly string[],
+): Promise<Map<string, AccessFacts>> {
+  const now = await holdAccess(trx);
+  const who = await principalOf(trx, principalId);
+  const ids = [...new Set(artifactIds)];
+  if (!who || ids.length === 0) return new Map();
+  const artifacts = await trx
+    .selectFrom('artifact')
+    .select(['id', 'space_id'])
+    .where('id', 'in', ids)
+    .execute();
+  const chains = new Map<string, Level[]>(
+    artifacts.map((row) => [
+      row.id,
+      [
+        { kind: 'artifact', id: row.id },
+        ...(row.space_id === null ? [] : [{ kind: 'space', id: row.space_id } as const]),
+        { kind: 'tenant' },
+      ],
+    ]),
+  );
+  const levels = [...chains.values()].flat();
+  const grants =
+    levels.length === 0 ? [] : await grantsReaching(trx, principalId, who.groups, now, levels);
+  const on = (level: Level, chain: readonly Level[]) =>
+    chain.some(
+      (link) =>
+        link.kind === level.kind &&
+        ('id' in link ? link.id : null) === ('id' in level ? level.id : null),
+    );
+  return new Map(
+    [...chains].map(([id, chain]) => [
+      id,
+      {
+        principal: who.principal,
+        groups: who.groups,
+        chain,
+        grants: grants.filter((reached) => on(reached.level, chain)),
+        now,
+      },
+    ]),
+  );
+}
+
+/**
  * The readable set for a principal (access.md, "The readable set"), from every grant reaching them,
  * under the same lock; undefined when the tenant holds no such principal.
  */

@@ -99,7 +99,7 @@ export {
   titleAccepted,
   type ComponentHeader,
 } from './header.js';
-export { mountEditor, type MountOptions } from './view.js';
+export { mountEditor, TEXT_CLASS, type MountOptions } from './view.js';
 // A section title's field: one line of text and inline equations (equations 3, ruling R1).
 export { titleFromEditor, titleSchema, titleToEditor, type TitleRun } from './title.js';
 export { mountTitleEditor, type TitleEditor, type TitleEditorOptions } from './titleView.js';

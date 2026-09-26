@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createApiClient } from '@alloy-works/api-client';
 import {
   applyOutlineOperation,
@@ -27,6 +28,7 @@ import {
   Selection,
   toEditor,
   type EditorView,
+  TEXT_CLASS,
 } from '@alloy-works/editor';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -3074,7 +3076,14 @@ describe('the address of every node', () => {
         return json(200, {
           document: DOCUMENT,
           version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
-          occurrences: [{ node: REFERENCE, version: 'vvvvvvvv-0000-4000-8000-000000000001' }],
+          occurrences: [
+            {
+              node: REFERENCE,
+              version: 'vvvvvvvv-0000-4000-8000-000000000001',
+              mayEdit: true,
+              lock: null,
+            },
+          ],
           versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: printer }],
         });
       }
@@ -3123,6 +3132,273 @@ describe('the address of every node', () => {
     // Read again on closing, so the card shows what was saved.
     await waitFor(() => expect(textsAsked).toBeGreaterThan(reads));
     expect(await within(text).findByText('Unbox the printer.')).toBeInTheDocument();
+  });
+
+  it('CNT-074 says of each component whether the reader may edit it now, and when not, why, naming who holds it and when it is expected back; and which one is open', async () => {
+    const user = userEvent.setup();
+    const [FREE, READ_ONLY, HELD, LAPSED, MINE, MINE_AGAIN] = [
+      'kkkkkkkkkkkkkkkkkkkkkkkkka',
+      'kkkkkkkkkkkkkkkkkkkkkkkkkb',
+      'kkkkkkkkkkkkkkkkkkkkkkkkkc',
+      'kkkkkkkkkkkkkkkkkkkkkkkkkd',
+      'kkkkkkkkkkkkkkkkkkkkkkkkke',
+      'kkkkkkkkkkkkkkkkkkkkkkkkkf',
+    ];
+    const components = {
+      [FREE]: 'cccccccc-0000-4000-8000-00000000000a',
+      [READ_ONLY]: 'cccccccc-0000-4000-8000-00000000000b',
+      [HELD]: 'cccccccc-0000-4000-8000-00000000000c',
+      [LAPSED]: 'cccccccc-0000-4000-8000-00000000000d',
+      [MINE]: 'cccccccc-0000-4000-8000-00000000000e',
+      // The same component a second time, further on.
+      [MINE_AGAIN]: 'cccccccc-0000-4000-8000-00000000000e',
+    };
+    const fake = service(
+      outline(
+        [FREE, READ_ONLY, HELD, LAPSED, MINE, MINE_AGAIN].map((node) =>
+          referenceTo(node, components[node]!),
+        ),
+      ),
+    );
+    const text = (words: string) => ({
+      schemaVersion: 1,
+      title: words,
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: words, marks: [] }],
+        },
+      ],
+    });
+    const version = (at: number) => `vvvvvvvv-0000-4000-8000-00000000000${at}`;
+    const back = new Date(Date.now() + 45 * 60_000).toISOString();
+    const grace = (expectedRelease: string) => ({
+      holder: { id: 'grace', name: 'Grace' },
+      expectedRelease,
+      yours: false,
+      session: null,
+    });
+    // Held by this reader, in a session this page did not open.
+    const mine = {
+      holder: { id: ADA, name: 'Ada' },
+      expectedRelease: back,
+      yours: true,
+      session: 'ssssssss-0000-4000-8000-000000000001',
+    };
+    let released = false;
+    const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      if (path === `/v1/documents/${DOCUMENT}/texts`) {
+        return json(200, {
+          document: DOCUMENT,
+          version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
+          occurrences: [
+            { node: FREE, version: version(1), mayEdit: true, lock: null },
+            { node: READ_ONLY, version: version(2), mayEdit: false, lock: null },
+            { node: HELD, version: version(3), mayEdit: true, lock: released ? null : grace(back) },
+            {
+              node: LAPSED,
+              version: version(4),
+              mayEdit: true,
+              lock: grace(new Date(Date.now() - 60_000).toISOString()),
+            },
+            { node: MINE, version: version(5), mayEdit: true, lock: mine },
+            { node: MINE_AGAIN, version: version(5), mayEdit: true, lock: mine },
+          ],
+          versions: [
+            { id: version(1), content: text('Unbox the printer.') },
+            { id: version(2), content: text('Read the manual.') },
+            { id: version(3), content: text('Load the paper.') },
+            { id: version(4), content: text('Close the lid.') },
+            { id: version(5), content: text('Print a page.') },
+          ],
+        });
+      }
+      if (path === `/v1/components/${components[MINE]}`) {
+        return json(200, {
+          id: components[MINE],
+          space: { id: SPACE, name: 'General' },
+          version: {
+            id: version(5),
+            number: '0.1',
+            author: ADA,
+            createdAt: '2026-09-18T09:00:00.000Z',
+            note: null,
+          },
+          content: text('Print a page.'),
+          mayEdit: true,
+          lock: null,
+        });
+      }
+      return fake.fetch(request);
+    }) as typeof globalThis.fetch;
+    render(
+      <StrictMode>
+        <DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />
+      </StrictMode>,
+    );
+    const page = await screen.findByRole('region', { name: "The document's text" });
+    const card = (node: string) => page.querySelector<HTMLElement>(`[data-node="${node}"]`)!;
+    await within(page).findByText('Load the paper.');
+    const said = (node: string) => within(card(node)).queryByText(/this component/);
+
+    // Before anything is opened: nothing where the reader may edit now; why not, where not - the
+    // holder by name and the time on the reader's own clock, and the day where it is not today.
+    const clock = new Date(back).toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const day =
+      new Date(back).toDateString() === new Date().toDateString()
+        ? ''
+        : ` on ${new Date(back).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`;
+    const graceBack = `Grace is editing this component, expected back at ${clock}${day}.`;
+    expect(said(FREE)).toBeNull();
+    expect(said(READ_ONLY)).toHaveTextContent('You may read this component but not edit it.');
+    expect(said(HELD)).toHaveTextContent(graceBack);
+    // A hold whose time has passed holds nothing: nobody is expected back at a time already gone.
+    expect(said(LAPSED)).toBeNull();
+    // What the reader holds elsewhere, they are told they hold.
+    expect(said(MINE)).toHaveTextContent('You are editing this component in another window.');
+    expect(said(MINE_AGAIN)).toHaveTextContent('You are editing this component in another window.');
+
+    // The one the cursor goes into is the one open, in its card; the others still say theirs, but
+    // of the same component open on this page, nothing more.
+    await user.click(within(card(MINE)).getByText('Print a page.'));
+    expect(
+      await within(card(MINE)).findByRole('textbox', { name: 'Content of Print a page.' }),
+    ).toBeInTheDocument();
+    expect(card(MINE).querySelector('[data-editing="true"]')).not.toBeNull();
+    expect(card(READ_ONLY).querySelector('[data-editing="true"]')).toBeNull();
+    expect(said(MINE_AGAIN)).toBeNull();
+    expect(said(HELD)).toHaveTextContent(graceBack);
+
+    // Returning to the window hears what has changed since: Grace has let hers go.
+    released = true;
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    await waitFor(() => expect(said(HELD)).toBeNull());
+    expect(said(READ_ONLY)).toHaveTextContent('You may read this component but not edit it.');
+  });
+
+  it("CNT-075 sets a component's text, read before it opens, with the editing surface's own typography", async () => {
+    const user = userEvent.setup();
+    const REFERENCE = 'kkkkkkkkkkkkkkkkkkkkkkkkkk';
+    const fake = service(outline([{ ...reference(REFERENCE, 'latest') }]));
+    const printer = {
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: 'Unbox the printer.', marks: [] }],
+        },
+      ],
+    };
+    const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      if (path === `/v1/documents/${DOCUMENT}/texts`) {
+        return json(200, {
+          document: DOCUMENT,
+          version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
+          occurrences: [
+            {
+              node: REFERENCE,
+              version: 'vvvvvvvv-0000-4000-8000-000000000001',
+              mayEdit: true,
+              lock: null,
+            },
+          ],
+          versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: printer }],
+        });
+      }
+      if (path === `/v1/components/${PRINTER}`) {
+        return json(200, {
+          id: PRINTER,
+          space: { id: SPACE, name: 'General' },
+          version: {
+            id: 'vvvvvvvv-0000-4000-8000-000000000001',
+            number: '0.3',
+            author: ADA,
+            createdAt: '2026-09-18T09:00:00.000Z',
+            note: null,
+          },
+          content: printer,
+          mayEdit: false,
+          lock: null,
+        });
+      }
+      return fake.fetch(request);
+    }) as typeof globalThis.fetch;
+    render(
+      <StrictMode>
+        <DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />
+      </StrictMode>,
+    );
+
+    const text = await screen.findByRole('region', { name: "The document's text" });
+    const read = (await within(text).findByText('Unbox the printer.')).closest(`.${TEXT_CLASS}`);
+    expect(read).not.toBeNull();
+
+    await user.click(within(text).getByText('Unbox the printer.'));
+    const surface = await within(text).findByRole('textbox', {
+      name: 'Content of Install the printer',
+    });
+    expect(surface).toHaveClass(TEXT_CLASS);
+
+    // How text looks is the class's alone. Every rule in the editor's stylesheet or the editor's own
+    // module that reaches the surface and not the class may set only what editing needs - where the
+    // caret stands, what is selected, a placeholder's word - and no typography, so the read text and
+    // the surface cannot differ in how either is set.
+    const sheet = (path: string) =>
+      readFileSync(new URL(path, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const TYPOGRAPHY =
+      /^(font|line-height|white-space|letter-spacing|word-spacing|text-|margin|padding|border|list-style|quotes|counter|background|color|width|height|tab-size|hyphens|direction)/;
+    const surfaceTypography = [
+      sheet('../../../../packages/editor/style.css'),
+      sheet('../editor/ComponentEditor.module.css'),
+    ].flatMap((css) =>
+      [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)].flatMap(([, selectors, body]) => {
+        const surface = selectors!
+          .split(',')
+          .map((selector) => selector.trim())
+          .filter((selector) => /\.ProseMirror(?![-\w])/.test(selector));
+        // A placeholder's word and how it looks are the editing surface's own, as a caret is.
+        const placeholder = surface.every((selector) => selector.endsWith('.aw-empty::before'));
+        const declared = body!
+          .split(';')
+          .map((declaration) => declaration.split(':')[0]!.trim())
+          .filter((property) => property !== '' && TYPOGRAPHY.test(property));
+        return surface.length > 0 && !placeholder && declared.length > 0
+          ? [`${surface.join(', ')}: ${declared.join(', ')}`]
+          : [];
+      }),
+    );
+    expect(surfaceTypography).toEqual([]);
+
+    // And the class carries it: spaces kept as typed, no ligatures, the body's size and leading.
+    const own =
+      /\.aw-text\s*\{([^}]*)\}/.exec(sheet('../../../../packages/editor/style.css'))?.[1] ?? '';
+    for (const declaration of [
+      'white-space: break-spaces',
+      'font-variant-ligatures: none',
+      "font-feature-settings: 'liga' 0",
+      'font-size: var(--size-body)',
+      'line-height: 1.6',
+    ]) {
+      expect(own, declaration).toContain(declaration);
+    }
   });
 
   it("puts the outline, the document's text and the chosen part's details in three columns", async () => {
@@ -3729,7 +4005,14 @@ describe('a cross-reference in the document page (cross-references 1)', () => {
         return json(200, {
           document: DOCUMENT,
           version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
-          occurrences: [{ node: RESULTS, version: 'vvvvvvvv-0000-4000-8000-000000000001' }],
+          occurrences: [
+            {
+              node: RESULTS,
+              version: 'vvvvvvvv-0000-4000-8000-000000000001',
+              mayEdit: true,
+              lock: null,
+            },
+          ],
           versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: referring }],
         });
       }
@@ -3847,7 +4130,14 @@ describe('a cross-reference in the document page (cross-references 1)', () => {
         return json(200, {
           document: DOCUMENT,
           version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
-          occurrences: [{ node: RESULTS, version: 'vvvvvvvv-0000-4000-8000-000000000001' }],
+          occurrences: [
+            {
+              node: RESULTS,
+              version: 'vvvvvvvv-0000-4000-8000-000000000001',
+              mayEdit: true,
+              lock: null,
+            },
+          ],
           versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: relative }],
         });
       }

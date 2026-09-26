@@ -1,14 +1,26 @@
 /*
- * What a ProseMirror surface needs from CSS, as prosemirror-view's own stylesheet says: without
- * `white-space: pre-wrap` a browser collapses the spaces an author types, and the view warns.
+ * A component's text, set one way wherever it is shown (CNT-075): the editing surface and the text a
+ * document's page reads before it is opened both carry this class, so opening a component moves
+ * nothing. It is what a ProseMirror surface needs from CSS, as prosemirror-view's own stylesheet says:
+ * without `white-space: pre-wrap` a browser collapses the spaces an author types, and the view warns;
+ * and a ligature the surface does not draw would join letters in the read text alone.
  */
-.ProseMirror {
-  position: relative;
+.aw-text {
+  font-size: var(--size-body);
+  line-height: 1.6;
   word-wrap: break-word;
   white-space: pre-wrap;
   white-space: break-spaces;
   font-variant-ligatures: none;
   font-feature-settings: 'liga' 0;
+}
+
+.aw-text p {
+  margin: 0 0 var(--space-10);
+}
+
+.ProseMirror {
+  position: relative;
 }
 
 .ProseMirror:focus-visible {
@@ -55,30 +67,30 @@
  * `sup` need no rule of their own; the browser default already matches CNT's intent for them, and
  * they are named here anyway so the test proves every mark was considered.
  */
-.ProseMirror em {
+.aw-text em {
   font-style: italic;
 }
 
-.ProseMirror strong {
+.aw-text strong {
   font-weight: bold;
 }
 
-.ProseMirror u {
+.aw-text u {
   text-decoration: underline;
 }
 
-.ProseMirror sub {
+.aw-text sub {
   vertical-align: sub;
 }
 
-.ProseMirror sup {
+.aw-text sup {
   vertical-align: super;
 }
 
 /* The generic `monospace` keyword: publishing sets inline code and preformatted text in the pinned
  * Liberation Mono since editor 5 (decision B), but the renderer ships no face of its own, so the
  * surface promises a fixed pitch and not a particular typeface. */
-.ProseMirror code {
+.aw-text code {
   font-family: monospace;
 }
 
@@ -87,11 +99,11 @@
  * pair would print a second one around it. The editor is the authority the PDF template is made to
  * agree with (F16), not the other way round.
  */
-.ProseMirror q {
+.aw-text q {
   quotes: none;
 }
 
-.ProseMirror dfn {
+.aw-text dfn {
   font-style: normal;
 }
 
@@ -101,7 +113,7 @@
  * is a custom property from the renderer's apps/web/src/theme/tokens.css, the only file that writes
  * one.
  */
-.ProseMirror a[href] {
+.aw-text a[href] {
   color: var(--accent);
   text-decoration: underline;
 }
@@ -111,7 +123,7 @@
  * document, never from the mark alone (CNT-147, packages/editor/src/state.ts), so this rule sets
  * nothing. It stays in the file so schema.test.ts proves the mark was considered, not forgotten.
  */
-.ProseMirror .aw-language {
+.aw-text .aw-language {
 }
 
 /*
@@ -130,42 +142,42 @@
  * reason to move the marker into a named style rather than keep two lists of rules in step by hand.
  * `schema.test.ts` pins every level the cycle covers, from the tag `toDOM` actually renders.
  */
-.ProseMirror ul,
-.ProseMirror ol {
+.aw-text ul,
+.aw-text ol {
   padding-inline-start: 1.5em;
 }
 
-.ProseMirror ul,
-.ProseMirror ul ul ul ul {
+.aw-text ul,
+.aw-text ul ul ul ul {
   list-style-type: disc;
 }
 
-.ProseMirror ul ul,
-.ProseMirror ul ul ul ul ul {
+.aw-text ul ul,
+.aw-text ul ul ul ul ul {
   list-style-type: circle;
 }
 
-.ProseMirror ul ul ul,
-.ProseMirror ul ul ul ul ul ul {
+.aw-text ul ul ul,
+.aw-text ul ul ul ul ul ul {
   list-style-type: square;
 }
 
 /* Decimal is what the template gives an ordered list with no format of its own; `data-format`
  * (schema.ts) carries the author's own choice through to here exactly as it carries through to the
  * PDF, so the numbering an author sees while editing is the numbering that publishes. */
-.ProseMirror ol {
+.aw-text ol {
   list-style-type: decimal;
 }
 
-.ProseMirror ol[data-format='alphabetic'] {
+.aw-text ol[data-format='alphabetic'] {
   list-style-type: lower-alpha;
 }
 
-.ProseMirror ol[data-format='roman'] {
+.aw-text ol[data-format='roman'] {
   list-style-type: lower-roman;
 }
 
-.ProseMirror li {
+.aw-text li {
   margin-block: 0.25em;
 }
 
@@ -173,17 +185,17 @@
  * indentation step, applied once per level of nesting rather than left to the browser's own default
  * - which differs between `ul` and `ol` and would put the surface's indent out of step with the
  * PDF's fixed one. */
-.ProseMirror li li {
+.aw-text li li {
   margin-inline-start: 1.5em;
 }
 
-.ProseMirror dl {
+.aw-text dl {
   margin-block: 0.5em 0;
 }
 
 /* A term is set apart from its own definition by weight, not by colour alone - a reader who cannot
  * see colour still has to be able to tell the two apart. */
-.ProseMirror dt {
+.aw-text dt {
   font-weight: bold;
 }
 
@@ -191,7 +203,7 @@
  * every eight columns - the stops the published PDF expands tabs to (decision E), so the author sees
  * on screen the columns the page will print. Framed by a border as well as a tint, so the block is
  * set apart for a reader who cannot see the tint. */
-.ProseMirror pre {
+.aw-text pre {
   font-family: monospace;
   white-space: pre;
   tab-size: 8;
@@ -203,14 +215,14 @@
 }
 
 /* The label is shown above the text it names, read from the attribute the node renders. */
-.ProseMirror pre[data-language]::before {
+.aw-text pre[data-language]::before {
   content: attr(data-language);
   display: block;
   font-family: sans-serif;
   font-size: 0.8em;
 }
 
-.ProseMirror blockquote {
+.aw-text blockquote {
   margin-block: 0.5em;
   margin-inline: 0;
   padding-inline-start: 1em;
@@ -219,7 +231,7 @@
 
 /* The attribution closes its quotation, aligned to the end as the PDF sets it, and carries no
  * character of its own before it: the author types whatever they want before a name (decision D). */
-.ProseMirror footer.aw-attribution {
+.aw-text footer.aw-attribution {
   text-align: end;
 }
 
@@ -234,11 +246,11 @@
 /* A table: its caption above it, as the published one stands (publishing.md, "Tables"), and a grid
  * of cells ruled on every side. Header cells are told apart by weight and a fill, not by colour
  * alone. The widths are the theme's once there is one; until then the columns share the measure. */
-.ProseMirror figure.aw-table {
+.aw-text figure.aw-table {
   margin: 0.75em 0;
 }
 
-.ProseMirror figcaption {
+.aw-text figcaption {
   font-weight: 600;
   margin-bottom: 0.25em;
 }
@@ -249,27 +261,27 @@
   font-weight: normal;
 }
 
-.ProseMirror table {
+.aw-text table {
   border-collapse: collapse;
   table-layout: fixed;
   width: 100%;
 }
 
-.ProseMirror td,
-.ProseMirror th {
+.aw-text td,
+.aw-text th {
   border: 1px solid var(--input-border);
   padding: 0.25em 0.5em;
   vertical-align: top;
 }
 
-.ProseMirror th {
+.aw-text th {
   font-weight: 600;
   text-align: start;
   background: var(--chip-bg);
 }
 
-.ProseMirror td p,
-.ProseMirror th p {
+.aw-text td p,
+.aw-text th p {
   margin: 0;
 }
 

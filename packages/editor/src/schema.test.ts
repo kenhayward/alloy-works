@@ -381,7 +381,7 @@ describe('the editor stylesheet', () => {
     };
 
     for (const name of Object.keys(editorSchema.marks)) {
-      const selector = `.ProseMirror ${selectorOf(name)}`;
+      const selector = `.aw-text ${selectorOf(name)}`;
       expect(ruleSelectors, selector).toContain(selector);
     }
   });
@@ -425,23 +425,23 @@ describe('the editor stylesheet', () => {
     // nested inside itself is that many copies of its own tag, chained by descendant combinators,
     // because that is what a real nested list looks like in the DOM.
     for (let depth = 1; depth <= 6; depth += 1) {
-      expectSelector(`.ProseMirror ${Array(depth).fill(ulTag).join(' ')}`);
+      expectSelector(`.aw-text ${Array(depth).fill(ulTag).join(' ')}`);
     }
 
     // A list item holding another list is `li` inside `li` in the DOM: the selector a nested list's
     // indentation step needs.
-    expectSelector(`.ProseMirror ${liTag}`);
-    expectSelector(`.ProseMirror ${liTag} ${liTag}`);
+    expectSelector(`.aw-text ${liTag}`);
+    expectSelector(`.aw-text ${liTag} ${liTag}`);
 
     // An ordered list takes its marker from the node's own `format`, not from the browser's default
     // numbering, so the surface and the PDF agree on what an author set in the panel.
     const orderedList = (format: string | null) =>
       list({ id: 'L2', kind: 'ordered', format }, listItem('b3'));
     const olTag = tagOf(editorSchema.nodes.list.spec.toDOM!(orderedList(null)));
-    expectSelector(`.ProseMirror ${olTag}`);
+    expectSelector(`.aw-text ${olTag}`);
     for (const format of ['alphabetic', 'roman'] as const) {
       const value = formatOf(editorSchema.nodes.list.spec.toDOM!(orderedList(format)));
-      expectSelector(`.ProseMirror ${olTag}[data-format='${value}']`);
+      expectSelector(`.aw-text ${olTag}[data-format='${value}']`);
     }
 
     // The term: set apart from its own definition without colour alone.
@@ -455,9 +455,9 @@ describe('the editor stylesheet', () => {
         ]),
       ),
     );
-    expectSelector(`.ProseMirror ${dlTag}`);
+    expectSelector(`.aw-text ${dlTag}`);
     const dtTag = tagOf(editorSchema.nodes.term.spec.toDOM!(editorSchema.node('term', null)));
-    expectSelector(`.ProseMirror ${dtTag}`);
+    expectSelector(`.aw-text ${dtTag}`);
   });
 });
 
@@ -533,7 +533,7 @@ describe('the editor stylesheet, for preformatted text (editor 5)', () => {
       /\/\*[\s\S]*?\*\//g,
       '',
     );
-    const rule = /\.ProseMirror pre\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    const rule = /\.aw-text pre\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
     expect(rule).toMatch(/tab-size:\s*8;/);
     expect(rule).toMatch(/white-space:\s*pre;/);
     expect(css).toMatch(/\.ProseMirror footer\.aw-empty::before\s*\{[^}]*content:\s*'Attribution'/);
@@ -545,6 +545,6 @@ describe('the editor stylesheet, for preformatted text (editor 5)', () => {
       '',
     );
     expect(css).toMatch(/\.ProseMirror figcaption\.aw-empty::before\s*\{[^}]*content:\s*'Caption'/);
-    expect(css).toMatch(/\.ProseMirror th\s*\{/);
+    expect(css).toMatch(/\.aw-text th\s*\{/);
   });
 });

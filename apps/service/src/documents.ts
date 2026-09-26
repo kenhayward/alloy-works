@@ -10,7 +10,9 @@ import {
   defaultLayout,
   editOutline,
   listReadableDocuments,
+  loadFactsFor,
   numberingInputs,
+  readLocks,
   versionContents,
   readableComponents,
   readDocument,
@@ -33,7 +35,7 @@ import {
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
-import { versionView } from './components.js';
+import { lockView, versionView } from './components.js';
 import { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 import { wireCode } from './wire-codes.js';
@@ -290,10 +292,39 @@ export function documentHandlers(
         ),
       ];
       const contents = await versionContents(trx, resolved);
+      // Whether the caller may edit each component now, and who holds it (CNT-074), decided as the
+      // component's own route decides it - of every component the caller may read, whether or not
+      // its occurrence has a version to show, and said of no component they may not. The facts and
+      // the locks are each read once for the whole document, not once per component.
+      const componentOf = new Map<string, string>();
+      walkOutline(outline.nodes, (node) => {
+        if (node.type === 'reference') componentOf.set(node.id, node.component);
+      });
+      const facts = await loadFactsFor(trx, principalId, [...componentOf.values()]);
+      const readable = [...facts].flatMap(([component, known]) =>
+        decide('read', known).allowed ? [component] : [],
+      );
+      const locks = await readLocks(trx, readable);
+      const editing = new Map(
+        readable.map((component) => {
+          const lock = locks.get(component);
+          return [
+            component,
+            {
+              mayEdit: decide('edit', facts.get(component)!).allowed,
+              lock: lock ? lockView(lock, principalId) : null,
+            },
+          ] as const;
+        }),
+      );
       return {
         document: id,
         version: { id: document.version.id, number: versionView(document.version).number },
-        occurrences: inputs.occurrences.map((occurrence) => ({ ...occurrence })),
+        occurrences: inputs.occurrences.map((occurrence) => {
+          const component = componentOf.get(occurrence.node);
+          const known = component === undefined ? undefined : editing.get(component);
+          return { ...occurrence, mayEdit: known?.mayEdit ?? false, lock: known?.lock ?? null };
+        }),
         versions: resolved.flatMap((version) => {
           const content = contents.get(version);
           return content === undefined

@@ -41,6 +41,12 @@ export interface MountOptions {
 }
 
 /**
+ * The class a component's text carries wherever it is shown - the editing surface and a document's
+ * read text alike - so both are set by one rule in `style.css` (CNT-075).
+ */
+export const TEXT_CLASS = 'aw-text';
+
+/**
  * One view over one component (ADR-0023). The surface checks spelling as the author types (CNT-098),
  * carries the component's language and direction, and **takes a paste only through the admission
  * pipeline** (component-editor.md, "Identity, by operation"): the view reads the clipboard itself
@@ -66,6 +72,7 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
     // A function, so the document above and the tab index below are re-read whenever the view
     // updates or its props are set.
     attributes: () => ({
+      class: TEXT_CLASS,
       role: 'textbox',
       'aria-multiline': 'true',
       'aria-label': options.label,

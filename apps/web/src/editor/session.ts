@@ -1,4 +1,5 @@
 import type { ContentDocument } from '@alloy-works/domain';
+import { heldSentence } from './held.js';
 
 /** Who holds a component, as a refusal names them. */
 export interface Holder {
@@ -570,7 +571,7 @@ export function createSession(options: SessionOptions): Session {
       holder = result.holder;
       notice = result.holder.yours
         ? 'You are editing this component in another window.'
-        : `${result.holder.name ?? 'Someone else'} is editing this component.`;
+        : heldSentence(result.holder);
       publish();
       options.onRefused(result.holder, hadPending);
       return;

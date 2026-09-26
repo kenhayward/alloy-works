@@ -111,6 +111,12 @@ interface Contributions {
   versions: { id: string; contributions: { sequence: string }[] }[];
 }
 
+/** What the texts route answers, as far as this test reads it. */
+interface Texts {
+  occurrences: { node: string; version: string | null; mayEdit: boolean }[];
+  versions: { id: string }[];
+}
+
 /** What the numbering route answers, as far as this test reads it. */
 interface Numbering {
   entries: { sequence: string; number: string | null }[];
@@ -352,6 +358,20 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
     report.contributionsBytes = answered.body.length;
     await measure('contributions', task.meta, () =>
       timed(() => call('GET', `/v1/documents/${document}/contributions`)),
+    );
+  });
+
+  it("answers every occurrence's text, and whether it may be edited now, within the budget", async ({
+    task,
+  }) => {
+    const answered = await call('GET', `/v1/documents/${document}/texts`);
+    const texts = answered.json<Texts>();
+    expect(texts.occurrences).toHaveLength(400);
+    expect(texts.occurrences.filter((each) => each.version === null || !each.mayEdit)).toEqual([]);
+    expect(texts.versions).toHaveLength(COMPONENTS);
+    report.textsBytes = answered.body.length;
+    await measure('texts', task.meta, () =>
+      timed(() => call('GET', `/v1/documents/${document}/texts`)),
     );
   });
 

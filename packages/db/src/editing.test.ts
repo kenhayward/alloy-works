@@ -17,6 +17,7 @@ import {
   iterationDigest,
   LOCK_PERIOD_MINUTES,
   readLock,
+  readLocks,
   saveIteration,
 } from './editing.js';
 import { migrate } from './migrate.js';
@@ -161,6 +162,25 @@ describe('editing a component: its lock and its iterations', () => {
   });
 
   describe('the lock', () => {
+    it("reads many components' locks in one call, answering each as readLock does", async () => {
+      const [held, free, other] = [
+        await newComponent(),
+        await newComponent(),
+        await newComponent(),
+      ];
+      await service.withTenant(production, async (trx) => {
+        await claimLock(trx, { artifactId: held.id, principal: ada, session: randomUUID() });
+        await claimLock(trx, { artifactId: other.id, principal: grace, session: randomUUID() });
+      });
+      const ids = [held.id, free.id, other.id, 'not-an-artifact'];
+      const [many, each] = await service.withTenant(production, async (trx) => [
+        await readLocks(trx, ids),
+        await Promise.all(ids.map((id) => readLock(trx, id))),
+      ]);
+      expect([...many.keys()].sort()).toEqual([held.id, other.id].sort());
+      ids.forEach((id, at) => expect(many.get(id), id).toEqual(each[at]));
+    });
+
     it('is claimed by a session nobody else holds it against, and names that session', async () => {
       const component = await newComponent();
       const session = randomUUID();
