@@ -6,7 +6,7 @@
 > 2 left it: footnotes and cross-references, with their bookmarks named Word's way. Ken agreed the
 > design's recommendations on 2026-09-25.
 >
-> **Built** (PR #PRNUM). [What the build changed](#what-the-build-changed) records where it departed
+> **Built** (PR #237). [What the build changed](#what-the-build-changed) records where it departed
 > from the rulings below.
 
 **Goal:** a Word document carries every footnote as a real Word footnote, numbered by Word, and every
