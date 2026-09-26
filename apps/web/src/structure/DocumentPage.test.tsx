@@ -28,11 +28,12 @@ import {
   toEditor,
   type EditorView,
 } from '@alloy-works/editor';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { describeEquation } from '../editor/speech.js';
 import { shimRangeMeasurement } from '../test/range.js';
 import { DocumentList } from './DocumentList.js';
 import { DocumentPage } from './DocumentPage.js';
@@ -42,6 +43,19 @@ import { OutlinePanel } from './OutlinePanel.js';
 
 // A section's title is a ProseMirror view since equations 3, which scrolls its selection into view.
 shimRangeMeasurement();
+
+/**
+ * Waits out every description an equation dialog has asked for, however long the speech engine takes:
+ * it answers one request after another, so one asked for now is answered only after them. The first
+ * in a file loads the engine's rules, which on CI's runner can take longer than `waitFor`'s second.
+ */
+const described = () =>
+  act(() =>
+    describeEquation(
+      '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math>',
+      'en',
+    ).then(() => {}),
+  );
 
 /** A node of an editor's document, named through the view since this app has no ProseMirror of its own. */
 type ProseMirrorNode = EditorView['state']['doc'];
@@ -1820,10 +1834,14 @@ describe("a section's title holding an equation (equations 3)", () => {
     ({ ...section(id, 'unused'), title }) as OutlineNode;
 
   const opens = () => screen.findByRole('dialog', { name: 'Equation' });
-  /** LaTeX given as an author pastes it, since userEvent reads a brace it types as a key's name. */
+  /**
+   * LaTeX given as an author pastes it, since userEvent reads a brace it types as a key's name, and
+   * then the description the dialog asks the speech engine for, however long the engine takes.
+   */
   const write = async (dialog: HTMLElement, latex: string) => {
     await userEvent.clear(within(dialog).getByLabelText('LaTeX'));
     await userEvent.paste(latex);
+    await described();
   };
 
   it('retitles a section whose title holds an equation, keeping it, and draws it as MathML in the field and on the page', async () => {
@@ -1962,7 +1980,7 @@ describe("a section's title holding an equation (equations 3)", () => {
     expect(within(dialog).queryByRole('group', { name: 'Place as' })).toBeNull();
     await write(dialog, '\\frac{a+b}{c}');
     // Written in the document's language, which is English here.
-    await waitFor(() => expect(within(dialog).getByLabelText('Description')).toHaveValue(SPOKEN));
+    expect(within(dialog).getByLabelText('Description')).toHaveValue(SPOKEN);
     await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
 
     expect(
@@ -2272,7 +2290,8 @@ describe('an equation in every context (equations 3)', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Equation' });
     await userEvent.clear(within(dialog).getByLabelText('LaTeX'));
     await userEvent.paste('e');
-    await waitFor(() => expect(within(dialog).getByLabelText('Description')).not.toHaveValue(''));
+    await described();
+    expect(within(dialog).getByLabelText('Description')).not.toHaveValue('');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 

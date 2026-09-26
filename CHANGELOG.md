@@ -14,6 +14,12 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   table broken across pages is read as one table, row by row; and every error the service gives has
   a stable code beside its message.
 
+### Fixed
+
+- Two equation tests no longer fail on a slow machine. They gave the speech engine one second to
+  write an equation's description, and its first description on a page can take longer; they now
+  wait for it however long it takes (issue #242).
+
 ## 0.73.1 - 2026-09-26 (PR #239)
 
 ### Changed

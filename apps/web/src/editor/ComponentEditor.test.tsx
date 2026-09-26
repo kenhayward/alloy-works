@@ -4714,7 +4714,10 @@ describe('equations in the editor (equations 1)', () => {
     const drawn = drawnIn(dialog)!;
     expect(drawn.namespaceURI).toBe(NS);
     expect(drawn.querySelector('mfrac')!.namespaceURI).toBe(NS);
-    await waitFor(() => expect(descriptionOf(dialog)).toHaveValue(SPOKEN));
+    // The first description in this file loads the engine's rules, which can take longer than
+    // `waitFor`'s second on CI's runner: wait for the engine itself (issue #242).
+    await described();
+    expect(descriptionOf(dialog)).toHaveValue(SPOKEN);
     await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
 
     expect(screen.queryByRole('dialog')).toBeNull();
