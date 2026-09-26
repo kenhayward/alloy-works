@@ -2603,23 +2603,6 @@ describe('writeDocx: the lists after the contents (Word 2, M9)', () => {
   });
 });
 
-describe('writeDocx: cross-references (Word 3)', () => {
-  it('throws on a cross-reference, which it does not write yet, rather than dropping it from the document', () => {
-    const referring = [
-      paragraph('p1', text('Set.')),
-      paragraph('p2', text('See '), {
-        type: 'crossReference',
-        id: 'x1',
-        target: { kind: 'block', block: 'p1' },
-        display: 'page',
-      }),
-    ];
-    expect(() => writtenOf(referring)).toThrow(
-      'The Word writer does not write a cross-reference yet',
-    );
-  });
-});
-
 describe('writeDocx: footnotes (Word 3, ruling R2; M5)', () => {
   const note = (name: string, ...paragraphs: unknown[]) => ({
     type: 'footnote',
@@ -2891,5 +2874,367 @@ describe('writeDocx: footnotes (Word 3, ruling R2; M5)', () => {
       { contextual: '0', spacing: { 'w:after': '0' } },
       { contextual: undefined, spacing: undefined },
     ]);
+  });
+});
+
+describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; M4)', () => {
+  const xref = (name: string, target: object, display = 'number') => ({
+    type: 'crossReference',
+    id: name,
+    target,
+    display,
+  });
+  const toNode = (name: string) => ({ kind: 'node', node: id(name) });
+  const toBlock = (block: string) => ({ kind: 'block', block });
+  const note = (name: string, ...paragraphs: unknown[]) => ({
+    type: 'footnote',
+    id: name,
+    anchor: { kind: 'span' },
+    content: paragraphs,
+  });
+  const cellOf = (name: string, ...content: unknown[]) => ({
+    content: [paragraph(name, ...content)],
+    colspan: 1,
+    rowspan: 1,
+  });
+  const EVERY = ['number', 'title', 'numberAndTitle', 'relative', 'page'];
+  /** A reference to `target` in each of `forms`, a slash between each two. */
+  const inEach = (name: string, target: object, forms: readonly string[] = EVERY) =>
+    forms.flatMap((display, at) => [
+      ...(at === 0 ? [] : [text(' / ')]),
+      xref(`${name}${at}`, target, display),
+    ]);
+  /**
+   * References of every form to every kind of target: a section, a table, a figure, a footnote and a
+   * paragraph; a section three deep in the body, one three deep in an appendix and a component in the
+   * front matter; and references in a table's header row, its caption and its note, a footnote's text,
+   * a section's title and a German passage.
+   */
+  const CITING = component('Citing', [
+    paragraph('p1', text('Methods: '), ...inEach('a', toNode('methods'))),
+    {
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Readings')],
+      headerRows: 1,
+      headerColumns: 0,
+      rows: [
+        { cells: [cellOf('h1', text('Site '), xref('h0', toBlock('p1'), 'relative'))] },
+        { cells: [cellOf('c1', text('York'))] },
+      ],
+    },
+    figure('f1', RED, 'Shapes'),
+    paragraph('p2', text('Table: '), ...inEach('b', toBlock('t1'))),
+    paragraph('p3', text('Figure: '), ...inEach('q', toBlock('f1'))),
+    paragraph(
+      'p4',
+      text('Noted'),
+      note('n1', paragraph('n1a', text('Back on '), xref('c0', toBlock('p1'), 'page'))),
+    ),
+    paragraph(
+      'p5',
+      ...inEach('d', toBlock('n1'), ['number', 'relative', 'page']),
+      text(' / '),
+      ...inEach('e', toBlock('p1'), ['relative', 'page']),
+      text(' / '),
+      xref('g0', toNode('deeper')),
+      text(' / '),
+      xref('g1', toNode('annexc')),
+      text(' / '),
+      xref('g2', toNode('front')),
+    ),
+    {
+      type: 'table',
+      id: 't2',
+      style: 'table',
+      caption: [text('Cited in '), xref('k0', toNode('methods'))],
+      headerRows: 0,
+      headerColumns: 0,
+      note: [text('See '), xref('k1', toBlock('t1'), 'relative')],
+      rows: [{ cells: [cellOf('c2', text('x'))] }],
+    },
+  ]);
+  const GERMAN_CITING = component(
+    'Verweise',
+    [paragraph('g1', text('Siehe '), xref('r0', toNode('methods'), 'relative'))],
+    { language: 'de-DE' },
+  );
+  const CITING_OUTLINE = parseOutlineDocument({
+    schemaVersion: OUTLINE_SCHEMA_VERSION,
+    title: 'The dosing report',
+    language: 'en-GB',
+    direction: 'ltr',
+    nodes: [
+      reference('front', 1, { matter: 'front' }),
+      section('methods', 'Methods', [
+        reference('citing', 2),
+        section('deep', 'Deep', [section('deeper', 'Deeper')]),
+      ]),
+      {
+        ...section('results', 'Results', [reference('german', 3)]),
+        title: [text('After '), xref('t0', toNode('methods')), text(' ended')],
+      },
+      section('annex', 'Annex', [section('annexb', 'Annex B', [section('annexc', 'Annex C')])], {
+        matter: 'appendix',
+      }),
+    ],
+  });
+  const citing = (): Written =>
+    written({
+      outline: CITING_OUTLINE,
+      occurrences: new Map([
+        [id('front'), PREFACE],
+        [id('citing'), CITING],
+        [id('german'), GERMAN_CITING],
+      ]),
+      assets: IMAGES,
+    });
+  const cited = citing();
+  const document = () => cited.docx.xml('word/document.xml');
+  const footnotes = () => cited.docx.xml('word/footnotes.xml');
+  /** The last body paragraph printing exactly this: a caption's, after its list's entry. */
+  const saying = (words: string): Element => {
+    const found = paragraphs(cited.docx).filter((each) => textOf(each) === words);
+    if (found.length === 0) throw new Error(`no paragraph says ${JSON.stringify(words)}`);
+    return found[found.length - 1]!;
+  };
+  const name = (n: number) => `_Ref${String(n).padStart(9, '0')}`;
+  const REF = (n: number, ...switches: string[]) =>
+    ['REF', name(n), ...switches.map((each) => `\\${each}`)].join(' ');
+  const PAGEREF = (n: number) => `PAGEREF ${name(n)} \\h`;
+
+  /** Every element beneath this one, in document order. */
+  const inOrder = (element: Element): Element[] =>
+    kids(element).flatMap((child) => [child, ...inOrder(child)]);
+
+  /**
+   * Each bookmark in a part or a paragraph, in the order they begin: its name and identifier, the text
+   * it holds - field results included - whether it holds a footnote's mark, and whether it ends.
+   */
+  const bookmarksOf = (element: Element) => {
+    const found: { name: string; id: string; text: string; mark: boolean; ended: boolean }[] = [];
+    const open: (typeof found)[number][] = [];
+    for (const each of inOrder(element)) {
+      if (each.name === 'w:bookmarkStart') {
+        const bookmark = {
+          name: each.attrs['w:name']!,
+          id: each.attrs['w:id']!,
+          text: '',
+          mark: false,
+          ended: false,
+        };
+        found.push(bookmark);
+        open.push(bookmark);
+      } else if (each.name === 'w:bookmarkEnd') {
+        const at = open.findIndex((bookmark) => bookmark.id === each.attrs['w:id']);
+        open[at]!.ended = true;
+        open.splice(at, 1);
+      } else if (each.name === 'w:t') {
+        for (const bookmark of open) bookmark.text += each.children.join('');
+      } else if (each.name === 'w:footnoteReference') {
+        for (const bookmark of open) bookmark.mark = true;
+      }
+    }
+    return found;
+  };
+
+  /** Each field at the top of a paragraph or a part: its instruction, trimmed, and what it shows. */
+  const fieldsOf = (element: Element) => {
+    const found: { code: string; result: string }[] = [];
+    const open: { code: string; result: string; separated: boolean }[] = [];
+    for (const run of all(element, 'w:r')) {
+      for (const child of kids(run)) {
+        const kind = child.attrs['w:fldCharType'];
+        const top = open[open.length - 1];
+        if (child.name === 'w:instrText') top!.code += child.children.join('');
+        else if (kind === 'begin') open.push({ code: '', result: '', separated: false });
+        else if (kind === 'separate') top!.separated = true;
+        else if (kind === 'end') {
+          const field = open.pop()!;
+          if (open.length === 0) found.push({ code: field.code.trim(), result: field.result });
+        } else if (child.name === 'w:t' && top?.separated === true) {
+          top.result += child.children.join('');
+        }
+      }
+    }
+    return found;
+  };
+  /** The references among a paragraph's fields: those that name a bookmark. */
+  const referencesIn = (paragraph: Element) =>
+    fieldsOf(paragraph).filter((field) => /^(REF|NOTEREF|PAGEREF) /.test(field.code));
+  const P1 = 'Methods: 1 / Methods / 1 Methods / above / ';
+
+  it("names each target's hidden bookmarks _Ref and nine digits, in document order, one set however many references name it, and the same names for the same document", () => {
+    const marked = [...bookmarksOf(document()), ...bookmarksOf(footnotes())];
+    // The front matter's component, Methods, the paragraph, the table's two, the figure's two, the
+    // footnote, the section three deep and the appendix's three deep.
+    expect(marked.map((each) => [each.name, each.id])).toEqual(
+      Array.from({ length: 10 }, (_, at) => [name(at + 1), String(at + 1)]),
+    );
+    for (const each of marked) {
+      expect(each.name).toMatch(/^_Ref[0-9]{9}$/);
+      expect(each.ended).toBe(true);
+    }
+    // Written again, the same bytes.
+    expect(citing().bytes).toEqual(cited.bytes);
+  });
+
+  it("sets a heading's bookmark around its title's words, a caption's two around its label and its words, a footnote's around its mark and a block's where it begins, holding nothing, since a page or above and below is all a block is named for and Word refuses a relative field inside its own bookmark (measured)", () => {
+    const [
+      front,
+      methods,
+      p1,
+      tableLabel,
+      tableWords,
+      figureLabel,
+      figureWords,
+      mark,
+      deeper,
+      annex,
+    ] = bookmarksOf(document());
+    expect(front!.text).toBe('Preface by Ada');
+    // Word's number is the heading's list's, which `REF \r` reads: no text of the heading's own.
+    expect(methods!.text).toBe('Methods');
+    expect(deeper!.text).toBe('Deeper');
+    expect(annex!.text).toBe('Annex C');
+    expect(bookmarksOf(saying('Methods')).map((each) => each.name)).toEqual([name(2)]);
+    expect(p1!.text).toBe('');
+    // Begun and ended before anything the paragraph holds.
+    const held = kids(saying(P1)).map((each) => each.name);
+    expect(held.slice(0, 3)).toEqual(['w:pPr', 'w:bookmarkStart', 'w:bookmarkEnd']);
+    expect(tableLabel!.text).toBe('Table 1.1');
+    expect(tableWords!.text).toBe('Readings');
+    expect(figureLabel!.text).toBe('Figure 1.1');
+    expect(figureWords!.text).toBe('Shapes');
+    expect(mark).toMatchObject({ text: '', mark: true });
+  });
+
+  it("PUB-026 writes every cross-reference as a field Word can update - REF, NOTEREF or PAGEREF at its target's bookmark - prefilled with what the PDF prints, and each page empty until Word lays the page out", () => {
+    expect(referencesIn(saying(P1))).toEqual([
+      { code: REF(2, 'r', 'h'), result: '1' },
+      { code: REF(2, 'h'), result: 'Methods' },
+      { code: REF(2, 'r', 'h'), result: '1' },
+      { code: REF(2, 'h'), result: 'Methods' },
+      { code: REF(2, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(2), result: '' },
+    ]);
+    expect(
+      referencesIn(saying('Table: Table 1.1 / Readings / Table 1.1 Readings / above / ')),
+    ).toEqual([
+      { code: REF(4, 'h'), result: 'Table 1.1' },
+      { code: REF(5, 'h'), result: 'Readings' },
+      { code: REF(4, 'h'), result: 'Table 1.1' },
+      { code: REF(5, 'h'), result: 'Readings' },
+      { code: REF(4, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(4), result: '' },
+    ]);
+    expect(
+      referencesIn(saying('Figure: Figure 1.1 / Shapes / Figure 1.1 Shapes / above / ')),
+    ).toEqual([
+      { code: REF(6, 'h'), result: 'Figure 1.1' },
+      { code: REF(7, 'h'), result: 'Shapes' },
+      { code: REF(6, 'h'), result: 'Figure 1.1' },
+      { code: REF(7, 'h'), result: 'Shapes' },
+      { code: REF(6, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(6), result: '' },
+    ]);
+    expect(referencesIn(saying('1 / above /  / above /  / 1.2.1 / A.1.1 / i'))).toEqual([
+      { code: `NOTEREF ${name(8)} \\h`, result: '1' },
+      { code: REF(8, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(8), result: '' },
+      { code: REF(3, 'p', 'h'), result: 'above' },
+      { code: PAGEREF(3), result: '' },
+      { code: REF(9, 'r', 'h'), result: '1.2.1' },
+      { code: REF(10, 'r', 'h'), result: 'A.1.1' },
+      { code: REF(1, 'r', 'h'), result: 'i' },
+    ]);
+    // In a footnote's text, a paragraph's, and a link as the PDF's is.
+    expect(referencesIn(footnotes())).toEqual([{ code: PAGEREF(3), result: '' }]);
+  });
+
+  it("links a reference only where the PDF does - a paragraph's text - and writes the same field without its link in a header row, a caption, a table's note and a section's title (XR-D)", () => {
+    const [header] = all(first(document(), 'w:tbl')!, 'w:p');
+    expect(referencesIn(header!)).toEqual([{ code: REF(3, 'p'), result: 'above' }]);
+    expect(referencesIn(saying('Table 1.2 Cited in 1'))).toEqual([
+      { code: REF(2, 'r'), result: '1' },
+    ]);
+    expect(referencesIn(saying('See above'))).toEqual([{ code: REF(4, 'p'), result: 'above' }]);
+    // The section's title: its words, and the reference among them, as the PDF sets them.
+    const results = saying('After 1 ended');
+    expect(isHeading(results)).toBe(true);
+    expect(referencesIn(results)).toEqual([{ code: REF(2, 'r'), result: '1' }]);
+  });
+
+  it("sets a relative reference in the passage's language, whose words Word's update prints (WO-C), prefilled with the layout's", () => {
+    const german = saying('Siehe above');
+    expect(referencesIn(german)).toEqual([{ code: REF(2, 'p', 'h'), result: 'above' }]);
+    const runs = all(german, 'w:r').slice(1);
+    expect(runs.length).toBeGreaterThan(0);
+    for (const run of runs) expect(first(run, 'w:lang')?.attrs).toEqual({ 'w:val': 'de-DE' });
+  });
+
+  it('keeps the place of a target that publishes nothing as a bookmark holding nothing: at the end of the paragraph before it, else at the start of the one after it, else in an empty paragraph of its own, which carries a list item its number', () => {
+    const pointing = (...blocks: string[]) =>
+      paragraph(
+        'refs',
+        ...blocks.flatMap((block, at) => [
+          text(at === 0 ? 'See ' : ', '),
+          xref(`r${at}`, toBlock(block), 'page'),
+        ]),
+      );
+    const blank = (name: string) => paragraph(name);
+    const marked = writtenOf([
+      said('before'),
+      blank('e1'),
+      { type: 'blockquote', id: 'q1', content: [blank('e2'), said('quoted')] },
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [text('Readings')],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [cellOf('c1', text('York')), { content: [blank('e3')], colspan: 1, rowspan: 1 }],
+          },
+        ],
+      },
+      list('L1', 'ordered', [item(blank('e4')), item(said('second'))]),
+      pointing('e1', 'e2', 'e3', 'e4'),
+    ]);
+    const { body, at } = bodyOf(marked.docx);
+    const names = (paragraph: Element) =>
+      kids(paragraph)
+        .filter((each) => each.name === 'w:bookmarkStart')
+        .map((each) => each.attrs['w:name']);
+    const ends = (paragraph: Element) => kids(paragraph).map((each) => each.name);
+    // After the paragraph before it, holding nothing.
+    expect(names(at('before'))).toEqual([name(1)]);
+    expect(ends(at('before')).slice(-2)).toEqual(['w:bookmarkStart', 'w:bookmarkEnd']);
+    // First in a quotation, before the paragraph after it.
+    expect(names(at('quoted'))).toEqual([name(2)]);
+    expect(ends(at('quoted')).slice(0, 3)).toEqual(['w:pPr', 'w:bookmarkStart', 'w:bookmarkEnd']);
+    // Alone in a cell, in the cell's one paragraph.
+    const [, cell] = rowsOf(first(marked.docx.xml('word/document.xml'), 'w:tbl')!)[0]!;
+    const [holder, ...none] = kids(cell!, 'w:p');
+    expect(none).toEqual([]);
+    expect(names(holder!)).toEqual([name(3)]);
+    expect(styleOf(holder!)).toBe(marked.theme.places.tableCell);
+    // Alone in a list's item, in the one paragraph that carries the item's number.
+    const second = body.indexOf(at('second'));
+    const items = body.slice(second - 1, second + 1);
+    expect(items.map((each) => [textOf(each), styleOf(each)])).toEqual([
+      ['', marked.theme.places.listItem],
+      ['second', marked.theme.places.listItem],
+    ]);
+    expect(names(items[0]!)).toEqual([name(4)]);
+    for (const each of items) expect(first(pPr(each)!, 'w:numPr')).toBeDefined();
+    // And no other paragraph for it: the caption before the table stands before it.
+    expect(textOf(body[second - 2]!)).toBe('Table 1.1 Readings');
+    expect(referencesIn(at('See , , , '))).toEqual(
+      [1, 2, 3, 4].map((n) => ({ code: PAGEREF(n), result: '' })),
+    );
   });
 });

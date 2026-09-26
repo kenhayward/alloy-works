@@ -459,6 +459,115 @@ const input: AssembleInput & { readonly layout: Layout } = {
   assets: ASSETS,
 };
 
+const xref = (name: string, target: object, display = 'number') => ({
+  type: 'crossReference',
+  id: name,
+  target,
+  display,
+});
+const toNode = (name: string) => ({ kind: 'node', node: id(name) });
+const toBlock = (block: string) => ({ kind: 'block', block });
+/** A reference to `target` in each of `forms`, a comma between each two. */
+const inEach = (
+  name: string,
+  target: object,
+  forms: readonly string[] = ['number', 'title', 'numberAndTitle', 'relative', 'page'],
+) =>
+  forms.flatMap((display, at) => [
+    ...(at === 0 ? [] : [text(', ')]),
+    xref(`${name}${at}`, target, display),
+  ]);
+
+/**
+ * What Word 3's third task writes: references of every form to a section, a table, a figure, a
+ * footnote and a paragraph, and to an appendix's section; in a paragraph's text and a note's, a table's
+ * caption, header row and note, a section's title and a German passage.
+ */
+const CITING = component('Checks', [
+  paragraph(
+    'r1',
+    ...inEach('a', toNode('reading')),
+    text('; '),
+    ...inEach('b', toBlock('rt')),
+    text('; '),
+    ...inEach('c', toBlock('rf')),
+  ),
+  {
+    type: 'table',
+    id: 'rt',
+    style: 'table',
+    caption: [text('Checks as in '), xref('d0', toNode('fitting'))],
+    headerRows: 1,
+    headerColumns: 0,
+    note: [text('See '), xref('d1', toBlock('r1'), 'relative')],
+    rows: [
+      {
+        cells: [
+          {
+            content: [paragraph('rh', text('Check '), xref('d2', toBlock('r1'), 'relative'))],
+            colspan: 1,
+            rowspan: 1,
+          },
+        ],
+      },
+      { cells: [cell('Tray')] },
+    ],
+  },
+  figure('rf', RED, 'Marks'),
+  paragraph(
+    'r2',
+    text('Checked'),
+    footnote(
+      'rn',
+      paragraph(
+        'rna',
+        text('Back on '),
+        xref('e0', toBlock('r1'), 'page'),
+        text(', in '),
+        xref('e1', toNode('reading')),
+      ),
+    ),
+  ),
+  paragraph(
+    'r3',
+    ...inEach('f', toBlock('rn'), ['number', 'relative', 'page']),
+    text('; '),
+    ...inEach('g', toBlock('r1'), ['relative', 'page']),
+    text('; '),
+    xref('g9', toNode('tables')),
+  ),
+]);
+
+/** The document of `input` with a section of references beside its own, titled by one. */
+const cited: AssembleInput & { readonly layout: Layout } = {
+  ...input,
+  outline: parseOutlineDocument({
+    ...input.outline,
+    nodes: [
+      ...input.outline.nodes.slice(0, 3),
+      {
+        ...section('checking', 'Checking', [reference('checks', 9), reference('verweise', 10)]),
+        title: [text('After '), xref('t0', toNode('fitting'))],
+      },
+      ...input.outline.nodes.slice(3),
+    ],
+  }),
+  occurrences: new Map([
+    ...input.occurrences,
+    [id('checks'), CITING],
+    [
+      id('verweise'),
+      component(
+        'Verweise',
+        [paragraph('v1', text('Siehe '), xref('h0', toNode('reading'), 'relative'))],
+        {
+          language: 'de-DE',
+        },
+      ),
+    ],
+  ]),
+};
+
 describe("a publication in Word, written from the worker's own faces (Word 1 to Word 3)", () => {
   it('writes a document the Open XML SDK finds nothing wrong with', async () => {
     const assembled = assemble(input);
@@ -592,6 +701,112 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     expect(strFromU8(parts['word/_rels/footnotes.xml.rels']!)).toContain(
       'Target="https://example.test/log" TargetMode="External"',
     );
+  });
+
+  it("writes every cross-reference as a field at a hidden bookmark named Word's way - every form, to a section, a table, a figure, a footnote and a paragraph, in a paragraph, a note, a caption, a header row, a table's note, a section's title and a German passage - which the Open XML SDK finds nothing wrong with (Word 3)", async () => {
+    const assembled = assemble(cited);
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const { bytes } = writeDocx({
+      document: assembled.document,
+      numbering: assembled.numbering,
+      word: assembled.word!,
+      formats: cited.formats,
+      faces,
+      images: IMAGES,
+    });
+    expect(await checkOoxml(bytes)).toEqual([]);
+    const parts = unzipSync(bytes);
+    const document = strFromU8(parts['word/document.xml']!);
+    const footnotes = strFromU8(parts['word/footnotes.xml']!);
+    const codes = (xml: string) =>
+      [
+        ...xml.matchAll(
+          /<w:instrText xml:space="preserve"> ((?:REF|NOTEREF|PAGEREF) [^<]*) <\/w:instrText>/g,
+        ),
+      ].map((match) => match[1]!.replace(/_Ref\d{9}/, '_Ref'));
+    // Every form of every target kind, linked in a paragraph's text and a note's, and the same field
+    // unlinked in a header row, a caption, a table's note and a section's title. A number and a title
+    // are two fields, a heading's number `\r`, a caption's by its label.
+    const forms = (number: string, title: string) => [
+      number,
+      title,
+      number,
+      title,
+      'REF _Ref \\p \\h',
+      'PAGEREF _Ref \\h',
+    ];
+    expect(codes(document)).toEqual([
+      // The section's title.
+      'REF _Ref \\r',
+      ...forms('REF _Ref \\r \\h', 'REF _Ref \\h'),
+      ...forms('REF _Ref \\h', 'REF _Ref \\h'),
+      ...forms('REF _Ref \\h', 'REF _Ref \\h'),
+      // The caption, the header row and the table's note.
+      'REF _Ref \\r',
+      'REF _Ref \\p',
+      'REF _Ref \\p',
+      // The footnote, the paragraph and the appendix.
+      'NOTEREF _Ref \\h',
+      'REF _Ref \\p \\h',
+      'PAGEREF _Ref \\h',
+      'REF _Ref \\p \\h',
+      'PAGEREF _Ref \\h',
+      'REF _Ref \\r \\h',
+      // The German passage.
+      'REF _Ref \\p \\h',
+    ]);
+    expect(codes(footnotes)).toEqual(['PAGEREF _Ref \\h', 'REF _Ref \\r \\h']);
+    // Each target's bookmarks hidden and named in document order, one set whoever names it: the two
+    // sections, the paragraph, the table's two, the figure's two, the footnote and the appendix.
+    const names = [
+      ...(document + footnotes).matchAll(/<w:bookmarkStart w:id="(\d+)" w:name="([^"]+)"\/>/g),
+    ];
+    expect(names.map((match) => match[2])).toEqual(
+      Array.from({ length: 9 }, (_, at) => `_Ref${String(at + 1).padStart(9, '0')}`),
+    );
+    for (const [, id] of names)
+      expect(document + footnotes).toContain(`<w:bookmarkEnd w:id="${id}"/>`);
+    // A page is left empty, for Word to fill as it lays the pages out.
+    expect(document).not.toMatch(/PAGEREF [^<]*<\/w:instrText>(?:(?!fldCharType="end").)*<w:t/);
+  });
+
+  it("PUB-066 writes the contents, the lists of figures and of tables and every page reference as fields Word refreshes as the document opens, and never a page number of the PDF's", () => {
+    const assembled = assemble(cited);
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const { bytes } = writeDocx({
+      document: assembled.document,
+      numbering: assembled.numbering,
+      word: assembled.word!,
+      formats: cited.formats,
+      faces,
+      images: IMAGES,
+    });
+    const parts = unzipSync(bytes);
+    expect(strFromU8(parts['word/settings.xml']!)).toContain('<w:updateFields w:val="true"/>');
+    const document = strFromU8(parts['word/document.xml']!);
+    const footnotes = strFromU8(parts['word/footnotes.xml']!);
+    const instructions = [...document.matchAll(/<w:instrText[^>]*> ([^<]*) <\/w:instrText>/g)].map(
+      (match) => match[1]!,
+    );
+    // The contents, and the list of figures and the list of tables, each one TOC field.
+    expect(instructions.filter((code) => code.startsWith('TOC '))).toEqual([
+      'TOC \\o &quot;1-3&quot; \\h \\z \\u',
+      'TOC \\z \\c &quot;Figure&quot;',
+      'TOC \\h \\z \\c &quot;Table&quot;',
+    ]);
+    // Their entries prefilled with numbers and words alone, never a page: an entry's page stands after
+    // a tab, and none is written.
+    const entries = [
+      ...document.matchAll(/<w:p><w:pPr><w:pStyle w:val="(?:TOC\d|TableofFigures)"\/>.*?<\/w:p>/g),
+    ].map((match) => match[0]);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const entry of entries) expect(entry).not.toContain('<w:tab/>');
+    // And every page reference a PAGEREF field with no result until Word lays the pages out.
+    for (const xml of [document, footnotes]) {
+      const pages = [...xml.matchAll(/PAGEREF [^<]*<\/w:instrText>(.*?)fldCharType="end"/g)];
+      expect(pages.length).toBeGreaterThan(0);
+      for (const [, result] of pages) expect(result).not.toContain('<w:t');
+    }
   });
 
   it("TAB-039 TAB-049 associates a table's caption and its header rows with it in both outputs of one publication, its header column in the PDF, and names the table whose header column Word cannot mark", async () => {

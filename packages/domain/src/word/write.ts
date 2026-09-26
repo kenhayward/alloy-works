@@ -5,9 +5,13 @@ import { escapeXml } from '../content/ooxml/xml.js';
 import {
   figureImageKey,
   inlineImageKey,
+  inlineReferenceKey,
+  type ReferenceSite,
   type RunsSite,
   type WordImage,
   type WordInput,
+  type WordReference,
+  type WordTitleRun,
 } from '../publishing/assemble.js';
 import type { PageFormat, PublishingFormat, SlotPart } from '../publishing/layout.js';
 import { columnsOf } from '../publishing/measure.js';
@@ -28,6 +32,7 @@ import type {
   PublishedNode,
   PublishedPreformatted,
   PublishedQuotation,
+  PublishedReferenceRun,
   PublishedTable,
   PublishedTitleRun,
 } from '../publishing/published.js';
@@ -93,9 +98,9 @@ import { spacingOverrides, type SpacingOverride } from './spacing.js';
  * preformatted text, each stood in and spaced as the PDF sets it (rulings R4 to R6), tables in
  * their table styles, captioned by Word's fields (R1, R7), and figures and images in a line, each
  * drawn from its own image's bytes at the size `assemble` gave it against the Word page (R3, R8).
- * Word 3 writes footnotes as Word's own, numbered by Word (ruling R2). `assemble` refuses equations by
- * name for Word (`word_not_yet`), so meeting one here throws; a cross-reference, which `assemble`
- * publishes for Word since Word 3's first task, throws until the writer writes one as a field.
+ * Word 3 writes footnotes as Word's own, numbered by Word (ruling R2), and every cross-reference as a
+ * field Word updates, at a hidden bookmark on its target named Word's way (rulings R3 and R4).
+ * `assemble` refuses equations by name for Word (`word_not_yet`), so meeting one here throws.
  */
 
 /**
@@ -237,7 +242,8 @@ interface Paragraph {
   readonly style: string;
   /** The theme's style its spaces are read from: its own, or the one a style of the writer's is based on. */
   readonly theme: string;
-  readonly content: string;
+  /** What it holds; a bookmark of a target that publishes nothing is added to it (Word 3, R3). */
+  content: string;
   /**
    * Kept on the page with what follows it, over its style: a table's caption (Word 2, ruling R7), and a
    * figure's image, whose caption stands below it (R8).
@@ -394,6 +400,104 @@ interface Section {
   readonly footnotes: OutlineMatter | null;
 }
 
+/** A hidden bookmark: its name, Word's way, and its identifier, the number the name ends in. */
+interface Bookmark {
+  readonly id: number;
+  readonly name: string;
+}
+
+/**
+ * **The bookmarks a target a reference names is given** (Word 3, ruling R3; M4), by what it is: a
+ * heading's around its title's words, whose number `REF \r` reads from the heading's list; a footnote's
+ * around its mark, which `NOTEREF` reads; a block's where its first paragraph begins, holding nothing;
+ * and a caption's two, around its label - where it has one - and around its words, so a number and a
+ * title are each a field of their own.
+ */
+type Bookmarked =
+  | { readonly kind: 'heading' | 'footnote' | 'block'; readonly at: Bookmark }
+  | { readonly kind: 'caption'; readonly label: Bookmark | null; readonly words: Bookmark };
+
+/**
+ * **Every target's bookmarks, by the anchor the published document gives it** (Word 3, ruling R3):
+ * `_Ref` and nine digits, numbered in the order the document holds them - a node where its heading
+ * stands, before its blocks and its children; a block where it begins, before what it holds; a
+ * footnote where its mark stands, before its paragraphs - which is the order the writer writes them in.
+ * Deterministic, so the same document makes the same names, and 13 characters, inside the 40 Word keeps
+ * (M4). The published document carries an anchor exactly where a reference names it, so every target
+ * is named once however many references name it, and nothing else is.
+ */
+function bookmarksOf(document: PublishedDocument): Map<string, Bookmarked> {
+  const named = new Map<string, Bookmarked>();
+  let count = 0;
+  const next = (): Bookmark => {
+    count += 1;
+    return { id: count, name: `_Ref${String(count).padStart(9, '0')}` };
+  };
+  const add = (anchor: string | null, kind: 'heading' | 'footnote' | 'block') => {
+    if (anchor !== null) named.set(anchor, { kind, at: next() });
+  };
+  const runs = (inlines: readonly PublishedInline[]) => {
+    for (const run of inlines) {
+      if (!('footnote' in run)) continue;
+      add(run.footnote.anchor, 'footnote');
+      run.footnote.paragraphs.forEach(block);
+    }
+  };
+  const block = (each: PublishedBlock): void => {
+    switch (each.type) {
+      case 'paragraph':
+        add(each.anchor, 'block');
+        runs(each.runs);
+        return;
+      case 'list':
+        add(each.anchor, 'block');
+        for (const item of each.items) item.blocks.forEach(block);
+        return;
+      case 'blockquote':
+        add(each.anchor, 'block');
+        each.blocks.forEach(block);
+        return;
+      case 'table':
+      case 'figure':
+        if (each.anchor !== null) {
+          const label = each.label === null ? null : next();
+          named.set(each.anchor, { kind: 'caption', label, words: next() });
+        }
+        if (each.type === 'table') {
+          for (const row of each.rows) for (const cell of row.cells) cell.blocks.forEach(block);
+        }
+        return;
+      case 'preformatted':
+      case 'equation':
+      case 'marker':
+        add(each.anchor, 'block');
+        return;
+    }
+  };
+  const node = (each: PublishedNode) => {
+    add(each.anchor, 'heading');
+    each.blocks.forEach(block);
+    each.children.forEach(node);
+  };
+  document.nodes.forEach(node);
+  return named;
+}
+
+/** Content inside a bookmark, where there is one. */
+function bookmarked(bookmark: Bookmark | null | undefined, content: string): string {
+  if (bookmark === null || bookmark === undefined) return content;
+  return (
+    `<w:bookmarkStart w:id="${bookmark.id}" w:name="${bookmark.name}"/>` +
+    content +
+    `<w:bookmarkEnd w:id="${bookmark.id}"/>`
+  );
+}
+
+/** Where a page or a relative reference finds a target: a caption's label, or its words without one. */
+function placeOf(target: Bookmarked): Bookmark {
+  return target.kind === 'caption' ? (target.label ?? target.words) : target.at;
+}
+
 export function writeDocx(input: WordWriting): WrittenDocx {
   const { document, word } = input;
   const theme = word.theme;
@@ -403,6 +507,8 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     scheme: word.scheme,
     format,
     images: word.images,
+    references: word.references,
+    titles: word.titles,
   });
 
   // The page's furniture: the cover's header and footer, the running ones, and the contents' where its
@@ -803,6 +909,8 @@ class Writer {
   private readonly advances = new Map<string, FaceAdvances>();
   /** The node whose blocks are being written: a caption's number and a report's place are by it. */
   private at = '';
+  /** Every target's bookmarks, by its anchor (Word 3, ruling R3). */
+  private readonly bookmarks: ReadonlyMap<string, Bookmarked>;
 
   constructor(
     private readonly published: PublishedDocument,
@@ -813,8 +921,11 @@ class Writer {
       readonly scheme: NumberingScheme;
       readonly format: PageFormat;
       readonly images: ReadonlyMap<string, WordImage>;
+      readonly references: ReadonlyMap<string, WordReference>;
+      readonly titles: ReadonlyMap<string, readonly WordTitleRun[]>;
     },
   ) {
+    this.bookmarks = bookmarksOf(published);
     this.document = {
       tag: wordLanguage(published.language),
       rtl: published.direction === 'rtl',
@@ -872,9 +983,16 @@ class Writer {
         `<w:numPr><w:ilvl w:val="${depth - 1}"/>` +
         `<w:numId w:val="${HEADING_LISTS[node.matter]}"/></w:numPr>`;
     }
+    // A title holding a reference is carried beside the document as runs, each reference a field
+    // (Word 3); a heading a reference names is bookmarked around its words (R3).
+    const title = this.numbers.titles.get(node.id);
+    const words =
+      title === undefined
+        ? this.titleRuns(node.title, style.theme, passage)
+        : this.inlineRuns(title, style.theme, passage, { kind: 'title' });
     const heading = this.paragraph(
       style.theme,
-      this.titleRuns(node.title, style.theme, passage),
+      bookmarked(this.bookmarkOf(node.anchor, 'heading'), words),
       { ...(numbering === undefined ? {} : { numbering }), bidi: passage.rtl },
       style.id,
     );
@@ -914,11 +1032,24 @@ class Writer {
   ): (WrittenBlock & Last)[] {
     const written: (WrittenBlock & Last)[] = [];
     let last = above;
+    /** Bookmarks of targets that publish nothing, waiting for the next paragraph to hold them. */
+    let pending = '';
     for (const block of blocks) {
+      if (block.type === 'marker') {
+        // A target that publishes nothing (XR-D) keeps its place as a bookmark holding nothing: at the
+        // end of the paragraph before it, else at the start of the next (Word 3, ruling R3).
+        const at = this.bookmarkOf(block.anchor, 'block');
+        const marker = bookmarked(at, '');
+        if (last !== null && !isTable(last.paragraph)) last.paragraph.content += marker;
+        else pending += marker;
+        continue;
+      }
       const each = this.block(block, place, passage);
       // A table begins with its caption: a block's top is always a paragraph.
       const top = each.body[0] as Paragraph | undefined;
       if (top === undefined) continue;
+      top.content = pending + top.content;
+      pending = '';
       if (last !== null) {
         this.space(last.paragraph, last.style, top, each.top, !last.container && !each.container);
       }
@@ -928,6 +1059,20 @@ class Writer {
         container: each.container,
       };
       written.push({ ...each, ...last });
+    }
+    if (pending !== '') {
+      // Nothing else in the flow to hold them: an empty paragraph of the place's does, as a cell's
+      // empty paragraph would.
+      const style = this.theme.places[place.at];
+      const holder = this.paragraph(style, pending, { bidi: passage.rtl });
+      written.push({
+        body: [holder],
+        top: style,
+        bottom: style,
+        container: false,
+        paragraph: holder,
+        style,
+      });
     }
     return written;
   }
@@ -958,6 +1103,23 @@ class Writer {
   }
 
   private block(block: PublishedBlock, place: Place, passage: Passage): WrittenBlock {
+    const written = this.unmarked(block, place, passage);
+    // A block a reference names is bookmarked where its first paragraph begins, holding nothing (R3):
+    // a page and above or below are all a block is named for, and Word refuses a relative field
+    // inside the bookmark it names, which one in the block's own first paragraph would be (measured
+    // in Word 16: "Error! Not a valid bookmark self-reference"). A table and a figure are bookmarked
+    // around their caption's label and words, where the caption is written.
+    if (block.type !== 'table' && block.type !== 'figure' && block.type !== 'marker') {
+      const at = this.bookmarkOf(block.anchor, 'block');
+      const opening = written.body.find((each): each is Paragraph => !isTable(each));
+      if (at !== null && opening !== undefined) {
+        opening.content = bookmarked(at, '') + opening.content;
+      }
+    }
+    return written;
+  }
+
+  private unmarked(block: PublishedBlock, place: Place, passage: Passage): WrittenBlock {
     switch (block.type) {
       case 'paragraph':
         return {
@@ -989,8 +1151,8 @@ class Writer {
       case 'figure':
         return this.figure(block, place, passage);
       default:
-        // A block equation is Word 4's and a marker, which only a cross-reference makes, Word 3's:
-        // `assemble` refuses each for Word until then.
+        // A block equation is Word 4's, which `assemble` refuses for Word until then; a marker is
+        // written by the flow it stands in.
         throw new Error(`The Word writer does not write a ${block.type} yet`);
     }
   }
@@ -1072,10 +1234,12 @@ class Writer {
         const numbering =
           `<w:numPr><w:ilvl w:val="${numbered.level}"/>` +
           `<w:numId w:val="${numbered.id}"/></w:numPr>`;
-        const first = each.blocks[0];
-        if (opening !== undefined && first?.type === 'paragraph') {
+        // What the item opens with, a target that publishes nothing aside: its bookmark stands in
+        // the paragraph after it, or in one of its own where nothing follows.
+        const first = each.blocks.find((block) => block.type !== 'marker');
+        if (opening !== undefined && (first === undefined || first.type === 'paragraph')) {
           opening.numbering = numbering;
-          opening.indent = this.indent(first.style, within, numbered.marker);
+          opening.indent = this.indent(opening.theme, within, numbered.marker);
         } else {
           own.push(
             this.paragraph(itemStyle, '', {
@@ -1450,14 +1614,20 @@ class Writer {
       (each) => each.node === this.at && each.block === captioned.id,
     );
     const field = entry === undefined ? null : captionField(this.numbers.scheme, entry);
+    // Where a reference names it, its label and its words each inside a bookmark (Word 3, R3).
+    const target = this.bookmarkOf(captioned.anchor, 'caption');
     // A caption holds no image: `assemble` refuses one (`image_in_caption`).
-    const own = this.inlineRuns(captioned.caption, role, passage, null);
+    const own = bookmarked(
+      target?.words,
+      this.inlineRuns(captioned.caption, role, passage, { kind: 'caption', block: captioned.id }),
+    );
     if (entry === undefined || field === null || entry.number === null || entry.value === null) {
       // No number of Word's to compute: the label as the PDF prints it, where there is one.
       return (
         (captioned.label === null
           ? ''
-          : this.runs(captioned.label, this.words) + this.runs(' ', passage)) + own
+          : bookmarked(target?.label, this.runs(captioned.label, this.words)) +
+            this.runs(' ', passage)) + own
       );
     }
     const rule = this.numbers.scheme.sequences[entry.sequence]![entry.matter];
@@ -1470,7 +1640,10 @@ class Writer {
       floated,
     });
     return (
-      captionLabel(field, entry.number, counter, (text) => this.runs(text, this.words)) +
+      bookmarked(
+        target?.label,
+        captionLabel(field, entry.number, counter, (text) => this.runs(text, this.words)),
+      ) +
       this.runs(' ', passage) +
       own
     );
@@ -1828,19 +2001,20 @@ class Writer {
    * pinned (R9) - its language where it differs, and consecutive runs linked to one target as one
    * `w:hyperlink` to an external relationship. A quoted phrase adds nothing but its style: its text is
    * what the author wrote, marks and all. An image among them is a drawing in a run of its own, at the
-   * size `assemble` gave it for the Word page under its place among `site`'s runs (Word 2, ruling R8).
+   * size `assemble` gave it for the Word page under its place among `site`'s runs (Word 2, ruling R8);
+   * a cross-reference a field, in the form `assemble` kept for it there (Word 3, ruling R4).
    */
   private inlineRuns(
     runs: readonly PublishedInline[],
     styleId: string,
     passage: Passage,
-    site: RunsSite | null,
+    site: ReferenceSite | null,
     strong = false,
   ): string {
     let xml = '';
     let linking: string | null = null;
     for (const [index, run] of runs.entries()) {
-      if ('image' in run && site !== null) {
+      if ('image' in run && site !== null && site.kind !== 'title') {
         if (linking !== null) xml += '</w:hyperlink>';
         linking = null;
         const size = this.imageSize(inlineImageKey(this.at, site, index));
@@ -1855,10 +2029,17 @@ class Writer {
         continue;
       }
       if ('reference' in run) {
-        // `assemble` publishes a reference for Word since Word 3's first task, and the writer writes
-        // one as a field from its third: until then a Word document is refused rather than written
-        // without it.
-        throw new Error('The Word writer does not write a cross-reference yet');
+        // A field of its own, no part of a link before it: where it links, it links to its target.
+        if (linking !== null) xml += '</w:hyperlink>';
+        linking = null;
+        const form =
+          site === null
+            ? undefined
+            : this.numbers.references.get(inlineReferenceKey(this.at, site, index));
+        if (form === undefined)
+          throw new Error(`No form for a reference to ${run.reference.anchor}`);
+        xml += this.reference(run.reference, form, styleId, passage, strong);
+        continue;
       }
       if (!('text' in run)) {
         // An equation is Word 4's.
@@ -1931,10 +2112,81 @@ class Writer {
         ...rest,
       ],
     });
-    return (
+    // A footnote a reference names is bookmarked around its mark, which `NOTEREF` reads (R3).
+    return bookmarked(
+      this.bookmarkOf(footnote.anchor, 'footnote'),
       `<w:r><w:rPr><w:rStyle w:val="${FOOTNOTE_REFERENCE}"/>${strong ? toggle('b', true) : ''}` +
-      `</w:rPr><w:footnoteReference w:id="${id}"/></w:r>`
+        `</w:rPr><w:footnoteReference w:id="${id}"/></w:r>`,
     );
+  }
+
+  /**
+   * **A cross-reference as a field Word updates** (Word 3, ruling R4; M4), at its target's bookmark and
+   * prefilled with what the PDF prints, so a reader who never updates sees the PDF's words and one who
+   * does sees Word's: a number a heading's `REF \r` - the number of the heading's list, which is the
+   * number it prints - a caption's `REF` on its label and a footnote's `NOTEREF`; a title `REF` on the
+   * heading's or the caption's words; both, the two fields a space apart, as the PDF joins them; a
+   * relative one `REF \p`, prefilled with the layout's word, which Word's update replaces with its own
+   * in the language of the passage the field stands in (WO-C); and a page `PAGEREF`, left empty until
+   * Word lays the page out, since a page copied from the PDF would be wrong the moment Word reflows
+   * (PUB-066). Each is a link to its target, `\h`, where the PDF's is one - a paragraph's text - and
+   * the same field without it anywhere else (XR-D). Its runs are set as the text around it.
+   */
+  private reference(
+    run: PublishedReferenceRun['reference'],
+    form: WordReference,
+    styleId: string,
+    passage: Passage,
+    strong: boolean,
+  ): string {
+    const target = this.bookmarks.get(run.anchor);
+    if (target === undefined) throw new Error(`No bookmark for the target ${run.anchor}`);
+    const properties = this.runProperties([], styleId, passage, null, strong);
+    const field = (code: string, result: string) =>
+      referenceField(`${code}${run.link ? ` ${BACKSLASH}h` : ''}`, result, properties);
+    const place = placeOf(target);
+    const number = () =>
+      target.kind === 'footnote'
+        ? field(`NOTEREF ${place.name}`, form.label ?? '')
+        : target.kind === 'heading'
+          ? field(`REF ${place.name} ${BACKSLASH}r`, form.label ?? '')
+          : field(`REF ${place.name}`, form.label ?? '');
+    const title = () =>
+      field(`REF ${(target.kind === 'caption' ? target.words : place).name}`, form.title ?? '');
+    switch (form.display) {
+      case 'number':
+        return number();
+      case 'title':
+        return title();
+      case 'numberAndTitle':
+        return number() + runXml(' ', properties) + title();
+      case 'relative':
+        return field(`REF ${place.name} ${BACKSLASH}p`, run.text ?? '');
+      case 'page':
+        return field(`PAGEREF ${place.name}`, '');
+    }
+  }
+
+  /**
+   * A target's bookmarks, where a reference names it, as the kind of thing it was named as; a caption's
+   * as a caption's. Named by the same walk the writer makes, so a target's kind cannot differ.
+   */
+  private bookmarkOf(
+    anchor: string | null,
+    kind: 'heading' | 'footnote' | 'block',
+  ): Bookmark | null;
+  private bookmarkOf(
+    anchor: string | null,
+    kind: 'caption',
+  ): Extract<Bookmarked, { kind: 'caption' }> | null;
+  private bookmarkOf(
+    anchor: string | null,
+    kind: Bookmarked['kind'],
+  ): Bookmark | Extract<Bookmarked, { kind: 'caption' }> | null {
+    const named = anchor === null ? undefined : this.bookmarks.get(anchor);
+    if (named === undefined) return null;
+    if (named.kind !== kind) throw new Error(`The target ${anchor} is a ${named.kind}`);
+    return named.kind === 'caption' ? named : named.at;
   }
 
   /** An image's size against the Word page, as `assemble` gave it (Word 2, ruling R3). */
@@ -1993,19 +2245,30 @@ class Writer {
     strong = false,
     closer = 0,
   ): string {
+    return runXml(text, this.runProperties(marks, styleId, passage, language, strong, closer));
+  }
+
+  /** What a run of text states over its paragraph's style, the face it is set in counted as used. */
+  private runProperties(
+    marks: readonly StyledMark[],
+    styleId: string,
+    passage: Passage,
+    language: PublishedLanguage | null,
+    strong = false,
+    closer = 0,
+  ): string {
     const style = this.style(styleId);
     const rendered = runFormat(this.theme, style, marks);
     this.use(rendered.typeface, rendered.bold || strong, rendered.italic);
     // A definition list's term, which the engine sets bold whatever its style and marks say.
     const run = wordRun(this.theme, style, marks);
-    return runXml(
-      text,
+    return (
       pinned(strong ? { ...run, pins: { ...run.pins, bold: true } } : run, closer) +
-        languageProperties(
-          passage,
-          language === null ? null : wordLanguage(language),
-          this.document.tag,
-        ),
+      languageProperties(
+        passage,
+        language === null ? null : wordLanguage(language),
+        this.document.tag,
+      )
     );
   }
 
@@ -2136,6 +2399,7 @@ function tableXml(table: WordTable): string {
 /** What a caption holds, as the table's and the list's caption fields and Word's title read it. */
 interface Captioned {
   readonly id: string;
+  readonly anchor: string | null;
   readonly label: string | null;
   readonly caption: readonly PublishedInline[];
 }
@@ -2145,9 +2409,14 @@ function leading(properties: ResolvedParagraphStyle['properties']): number {
   return properties.lineSpacing - properties.size;
 }
 
-/** A caption's words, its label's and its own, as the PDF prints them: a table's title in Word. */
+/**
+ * A caption's words, its label's and its own, as the PDF prints them - a reference among them as what
+ * it printed, and a page as nothing, which only the page knows: a table's title in Word.
+ */
 function captionText(captioned: Captioned): string {
-  const own = captioned.caption.map((run) => ('text' in run ? run.text : '')).join('');
+  const own = captioned.caption
+    .map((run) => ('text' in run ? run.text : 'reference' in run ? (run.reference.text ?? '') : ''))
+    .join('');
   return captioned.label === null ? own : `${captioned.label} ${own}`;
 }
 
@@ -2301,6 +2570,25 @@ function fieldChar(kind: 'begin' | 'separate' | 'end'): string {
 /** Part of a field's instruction, as a run of its own, its spaces kept. */
 function instruction(code: string): string {
   return `<w:r><w:instrText xml:space="preserve">${escapeXml(code)}</w:instrText></w:r>`;
+}
+
+/**
+ * **A cross-reference's field** (Word 3, ruling R4): every run of it - its marks, its instruction and
+ * its result - stating `properties`, the text's around it, since Word sets an updated result as the
+ * instruction's first character is set and reads a relative field's words in that run's language
+ * (M4); its result `result`, or none.
+ */
+function referenceField(code: string, result: string, properties: string): string {
+  const stated = properties === '' ? '' : `<w:rPr>${properties}</w:rPr>`;
+  const mark = (kind: 'begin' | 'separate' | 'end') =>
+    `<w:r>${stated}<w:fldChar w:fldCharType="${kind}"/></w:r>`;
+  return (
+    mark('begin') +
+    `<w:r>${stated}<w:instrText xml:space="preserve"> ${escapeXml(code)} </w:instrText></w:r>` +
+    mark('separate') +
+    runXml(result, properties) +
+    mark('end')
+  );
 }
 
 /**

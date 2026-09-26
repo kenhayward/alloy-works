@@ -491,8 +491,14 @@ describe('the citations in the committed model', () => {
   // word/write.test.ts, where every footnote is a w:footnoteReference where it stands, in text, a
   // table's cell and a header row, with no mark of its own, and each note opens with Word's own number,
   // w:footnoteRef; Word 16 numbered them as the PDF does, measured by hand for this slice.
+  // 331, from 329 (2026-09-26): Word 3's cross-references cite PUB-026 in packages/domain's
+  // word/write.test.ts, where every form of reference to every kind of target is a REF, NOTEREF or
+  // PAGEREF field at a hidden bookmark, prefilled with what the PDF prints; and PUB-066 in apps/worker's
+  // word.test.ts, where the contents, the lists of figures and of tables and every page reference are
+  // fields updated as the document opens, and none holds a page. Word 16 updated every field to what
+  // the PDF prints and every page to the page it laid the target on, measured by hand for this slice.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(329);
+    expect(model.citations).toHaveLength(331);
   });
 
   it('cites no identifier the corpus does not hold', () => {
