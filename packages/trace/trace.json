@@ -14945,6 +14945,14 @@
           "howItIsMet": "A version is cut by **Save version** or **Done editing** and by nothing else - not a keystroke, a timer, a lost connection or a timeout"
         },
         {
+          "id": "CNT-074",
+          "howItIsMet": "Which component the cursor is in is the one open in its card, the others shown as read text. Whether the reader may edit each now is said before it opens: the texts route answers each readable occurrence's `mayEdit` and lock, decided and read as the component's own route decides and reads them, and a card says \"You may read this component but not edit it.\" or who holds it and when they are expected back, in the reader's own time (`heldSentence`); the open editor's notice says the same"
+        },
+        {
+          "id": "CNT-075",
+          "howItIsMet": "A component's text carries one class, `TEXT_CLASS`, wherever it is shown - the editing surface and a document's read text alike - and the editor's stylesheet sets that class's typography once: spaces kept as typed, no ligatures. The read text is `renderContent`, the same schema's own rendering, so opening a component moves nothing"
+        },
+        {
           "id": "CNT-174",
           "howItIsMet": "The session never promotes an iteration on its own; iterations are rows the storage design keeps immutable and timestamped, and read by no one but the editor whose session wrote them, through recovery (VER-001 to VER-003). CNT-089, which it supersedes, also asked for retention, which is VER-003's"
         },
@@ -16847,97 +16855,97 @@
     {
       "id": "AST-015",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3576,
+      "line": 3580,
       "kind": "title"
     },
     {
       "id": "AST-039",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3494,
+      "line": 3498,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3179,
+      "line": 3183,
       "kind": "title"
     },
     {
       "id": "CNT-036",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3941,
+      "line": 3945,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4060,
+      "line": 4064,
       "kind": "title"
     },
     {
       "id": "CNT-044",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4728,
+      "line": 4732,
       "kind": "title"
     },
     {
       "id": "CNT-048",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4756,
+      "line": 4760,
       "kind": "title"
     },
     {
       "id": "CNT-063",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 516,
+      "line": 520,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2991,
+      "line": 2995,
       "kind": "title"
     },
     {
       "id": "CNT-080",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4801,
+      "line": 4805,
       "kind": "title"
     },
     {
       "id": "CNT-087",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3799,
+      "line": 3803,
       "kind": "title"
     },
     {
       "id": "CNT-098",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2108,
+      "line": 2112,
       "kind": "title"
     },
     {
       "id": "CNT-147",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2118,
+      "line": 2122,
       "kind": "title"
     },
     {
       "id": "CNT-152",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2509,
+      "line": 2513,
       "kind": "title"
     },
     {
       "id": "CNT-169",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 1283,
+      "line": 1287,
       "kind": "title"
     },
     {
       "id": "CNT-173",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 326,
+      "line": 330,
       "kind": "title"
     },
     {
@@ -16973,61 +16981,73 @@
     {
       "id": "CNT-066",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 222,
+      "line": 223,
       "kind": "title"
     },
     {
       "id": "CNT-070",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 259,
+      "line": 260,
       "kind": "title"
     },
     {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2234,
+      "line": 2238,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-074",
+      "file": "apps/web/src/structure/DocumentPage.test.tsx",
+      "line": 3139,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-075",
+      "file": "apps/web/src/structure/DocumentPage.test.tsx",
+      "line": 3246,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3308,
+      "line": 3514,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 481,
+      "line": 485,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3512,
+      "line": 3718,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3348,
+      "line": 3554,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2944,
+      "line": 2948,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2990,
+      "line": 2994,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 861,
+      "line": 865,
       "kind": "title"
     },
     {

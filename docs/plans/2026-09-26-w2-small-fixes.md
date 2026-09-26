@@ -212,6 +212,14 @@ makes a heading a paragraph, naming it` - the measured fixture, extended with a 
   place; "no document view" means no view that renders the document as it will publish. Say it once
   and consistently.
 
+## What the build changed
+
+**W2.1 (PR #249).** CNT-175 moved to W2.1b on Ken's word (above). CNT-075's fix is one exported class,
+`TEXT_CLASS`, carrying the surface's typography, which the surface and the read text both wear. The
+cards' state is a line beneath the card's head, "You may read this component but not edit it." or
+`heldSentence`'s, which the open editor's notices share; the texts route says nothing of an occurrence
+the caller may not read. Undo's depth is unbounded.
+
 ## Done when
 
 - CNT-075, CNT-175, CNT-074, API-003, API-006, API-012, API-037, API-047 and CNT-167 Covered; CNT-069

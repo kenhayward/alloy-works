@@ -3261,12 +3261,10 @@ describe('the address of every node', () => {
         },
       ],
     };
-    let textsAsked = 0;
     const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const request = input instanceof Request ? input : new Request(String(input), init);
       const path = new URL(request.url).pathname;
       if (path === `/v1/documents/${DOCUMENT}/texts`) {
-        textsAsked += 1;
         return json(200, {
           document: DOCUMENT,
           version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
