@@ -101,7 +101,7 @@ describe('creating a component', () => {
     expect(again.content[0]?.id).not.toBe(document.content[0]?.id);
   });
 
-  it('takes the environment default when no type is named, and the named one when there is', async () => {
+  it('MET-042 takes the environment default when no type is named, and the named one when there is', async () => {
     const byDefault = await make();
     if (byDefault.answer !== 'created') throw new Error('not created');
     expect(byDefault.version.definitions).toEqual([

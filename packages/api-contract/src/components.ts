@@ -26,7 +26,7 @@ export const ComponentTypeList = z.object({
     z.object({
       id: z.string(),
       name: z.string(),
-      isDefault: z.boolean().describe("The environment's default, preselected (MET-011, MET-012)"),
+      isDefault: z.boolean().describe("The environment's default, preselected (MET-011, MET-042)"),
     }),
   ),
 });

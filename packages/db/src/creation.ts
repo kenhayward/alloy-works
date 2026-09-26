@@ -20,13 +20,13 @@ import { createArtifact, latestVersion, type StoredVersion } from './versions.js
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /**
- * The component type 0015 gives every environment: Topic, assigning no schemas (MET-012). Fixed, so a
+ * The component type 0015 gives every environment: Topic, assigning no schemas (MET-042). Fixed, so a
  * development database made before 0015 keeps the one `pnpm dev:setup` has been making rather than
  * gaining a second beside it.
  */
 export const STARTER_COMPONENT_TYPE_ID = '5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01';
 
-/** The component type this environment declares as its default (MET-012). */
+/** The component type this environment declares as its default (MET-042). */
 export async function defaultComponentType(trx: TenantTransaction): Promise<string | undefined> {
   const row = await trx
     .selectFrom('component_type_default')
@@ -146,7 +146,7 @@ export async function currentDefinitionsFor(
 
 export interface NewComponent {
   readonly spaceId: string;
-  /** Absent: the environment's default (MET-011, MET-012). */
+  /** Absent: the environment's default (MET-011, MET-042). */
   readonly componentTypeId?: string;
   readonly title: string;
   readonly language: string;

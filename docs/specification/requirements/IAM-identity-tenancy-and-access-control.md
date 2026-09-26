@@ -215,7 +215,7 @@ asked, and section 15 says why.
 
 | ID          | Requirement                                                                                                                                                                                                                            | Tranche    | Status    |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **IAM-024** | Permissions must inherit down the hierarchy in section 6                                                                                                                                                                               | T1         | Specified |
+| **IAM-024** | Permissions must inherit from the tenant to each space, and from a space to the artifacts in it; no artifact inherits from another                                                                                                     | T1         | Specified |
 | **IAM-025** | An explicit grant or denial at any level must override what that level inherits                                                                                                                                                        | T1         | Specified |
 | **IAM-026** | Where a grant and a denial apply at the same level, the denial must win                                                                                                                                                                | Constraint | Specified |
 | **IAM-027** | Inheritance must be computed at the point of the decision, never copied downwards when a permission is set                                                                                                                             | Constraint | Specified |
@@ -264,11 +264,11 @@ calling it as somebody, and that somebody's permissions are what stop the conver
 
 ## 10. Sessions
 
-| ID          | Requirement                                                                                         | Tranche | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **IAM-038** | Session lifetime and idle timeout must be configurable per tenant                                   | T2      | Specified |
-| **IAM-039** | Signing out must invalidate the session everywhere it is active, not only in the browser that asked | T1      | Specified |
-| **IAM-040** | A user must be able to see their own active sessions and end any of them                            | T3      | Specified |
+| ID          | Requirement                                                                                                                                          | Tranche | Status    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| **IAM-038** | Session lifetime and idle timeout must be configurable per tenant                                                                                    | T2      | Specified |
+| **IAM-039** | Signing out must end the session at the service, so that its token is refused wherever it is presented, not only cleared from the browser that asked | T1      | Specified |
+| **IAM-040** | A user must be able to see their own active sessions and end any of them                                                                             | T3      | Specified |
 
 ## 11. External participation
 
@@ -480,3 +480,19 @@ changes; a row split by tranche is superseded by its T1 half, and the rest becom
 | Requirements     | 74, of which 2 superseded and 1 withdrawn | 79, of which 4 superseded and 1 withdrawn |
 | Non-requirements | 6                                         | 6                                         |
 | Open questions   | 9                                         | 9                                         |
+
+### Ken's answer to the T1 audit's rewordings, 2026-09-26
+
+[The T1 audit](<../../reviews/T1 - Audit against the code.md>) asked Ken to rule on rewordings that
+make a statement testable or true (K7), and the test debt that followed found three more. Ken
+agreed each as recommended. A change to what is required gets a new identifier; a clarification
+is an edit.
+
+| What was found                                                                                                                                                                                                                              | Change                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| "Everywhere it is active" could be read as ending every session the person holds, which is IAM-040's, in T3; the design and the test read it as ending this session at the service (T1 audit, K7)                                           | **IAM-039 reworded** - the session ended at the service and its token refused wherever presented; no change to what is required   |
+| Section 6 lists five levels and defines no hierarchy between them; read as tenant, space, template, document, component it would ask for inheritance the design rules out (TPL-006, and a component reused across documents) (T1 audit, K7) | **IAM-024 reworded** - tenant to space to artifact, and no artifact inheriting from another; no change to what the design answers |
+
+| Counts       | Before                                    | After                                     |
+| ------------ | ----------------------------------------- | ----------------------------------------- |
+| Requirements | 79, of which 4 superseded and 1 withdrawn | 79, of which 4 superseded and 1 withdrawn |

@@ -51,7 +51,7 @@ describe('the component type every environment starts with', () => {
     await db?.drop();
   });
 
-  it('is declared as the default in every environment, at 0.1 and authored by nobody', async () => {
+  it('MET-042 is declared as the default in every environment, at 0.1 and authored by nobody', async () => {
     for (const tenant of [acme, other]) {
       const found = await service.withTenant(tenant, async (trx) => {
         const declared = await defaultComponentType(trx);
@@ -67,6 +67,12 @@ describe('the component type every environment starts with', () => {
       expect(found.version.revision_no).toBe(0);
       expect(found.version.version_no).toBe(1);
       expect(found.version.component_type_version_id).toBeNull();
+      // A default that assigns no schemas, which the statement allows.
+      const read = readDefinition('componentType', found.version.content, {
+        artifact: STARTER_COMPONENT_TYPE_ID,
+        version: found.version.id,
+      });
+      expect(read.ok && read.definition).toMatchObject({ assignments: [] });
     }
   });
 

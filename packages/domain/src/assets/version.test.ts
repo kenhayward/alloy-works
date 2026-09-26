@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalJson } from '../stored/canonical.js';
 import { canonicaliseVersionContent } from '../version/substance.js';
-import { ASSET_SCHEMA_VERSION, assetAlternativeSchema, parseAssetVersion } from './version.js';
+import {
+  ASSET_SCHEMA_VERSION,
+  assetAlternativeSchema,
+  assetVersionSchema,
+  parseAssetVersion,
+} from './version.js';
 
 const KEY = `t_acme/sha256/${'a'.repeat(64)}`;
 const version = (over: Record<string, unknown> = {}) => ({
@@ -28,6 +33,22 @@ describe("an asset version's stored shape (figures 1)", () => {
       alternative: null,
       resolution: 300,
     });
+  });
+
+  it('STY-078 refuses a version without its intrinsic width or height, so an image style always has them', () => {
+    for (const missing of ['width', 'height']) {
+      const without: Record<string, unknown> = version();
+      delete without[missing];
+      expect(() => parseAssetVersion(without), missing).toThrow();
+      // Refused for the member it lacks, not for anything the missing value would break later.
+      const refused = assetVersionSchema.safeParse(without);
+      expect(refused.success, missing).toBe(false);
+      expect(
+        refused.error?.issues.map((issue) => issue.path.join('.')),
+        missing,
+      ).toContain(missing);
+    }
+    expect(parseAssetVersion(version())).toMatchObject({ width: 500, height: 800 });
   });
 
   it('refuses a member it does not name, and every member out of its range', () => {

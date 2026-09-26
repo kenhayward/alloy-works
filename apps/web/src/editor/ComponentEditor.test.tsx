@@ -323,10 +323,7 @@ describe('the component editor', () => {
     expect(onSpace).toHaveBeenCalledWith({ id: 's1', name: 'General' });
   });
 
-  // Not cited as CNT-166 ("the full Unicode range must be storable"): U+0000 is refused, since
-  // Postgres cannot store it, and text is kept in NFC (CNT-056), so a code point NFC replaces is
-  // stored as its canonical equivalent. Whether CNT-166 is reworded to say so is Ken's (W1's plan).
-  it('shows characters outside the Basic Multilingual Plane, and saves one typed among them whole', async () => {
+  it('CNT-173 shows characters outside the Basic Multilingual Plane, and saves one typed among them whole', async () => {
     // Mathematical bold capital A and a grinning face: each two UTF-16 units, one character.
     const held = 'Mass \u{1d400} and \u{1f600}.';
     const { asked, surface } = open({

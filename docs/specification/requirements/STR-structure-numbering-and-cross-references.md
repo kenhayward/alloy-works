@@ -136,11 +136,12 @@ has as many correct numberings as it has profiles, and none of them can be store
 
 ## 5. Captions
 
-| ID          | Requirement                                                                                                                       | Tranche | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **STR-023** | Every caption-bearing block (CNT-081) must be numbered in the sequence for its kind                                               | T1      | Specified |
-| **STR-024** | A caption's text must come from the component; its label and number - "Figure 3" - must come from the layout and be computed here | T1      | Specified |
-| **STR-025** | Caption placement relative to its block must be a property of the style, not of the content (**STY**)                             | T1      | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                                                               | Tranche | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **STR-023** | Every caption-bearing block (CNT-081) must be numbered in the sequence for its kind                                                                                                                                                                                                                                                                                                                                       | T1      | Superseded by STR-070 |
+| **STR-070** | Every figure and table must be numbered in the sequence for its kind; a block equation must be numbered unless it is explicitly unnumbered (CNT-047); and a caption in front or appendix matter before that matter's first numbered section, where the scheme's rule wants a prefix there is none of, takes no number and uses up none; what a reader who may not read an occurrence is shown of its numbers is IAM-073's | T1      | Specified             |
+| **STR-024** | A caption's text must come from the component; its label and number - "Figure 3" - must come from the layout and be computed here                                                                                                                                                                                                                                                                                         | T1      | Specified             |
+| **STR-025** | Caption placement relative to its block must be a property of the style, not of the content (**STY**)                                                                                                                                                                                                                                                                                                                     | T1      | Specified             |
 
 ## 6. Cross-references
 
@@ -401,3 +402,18 @@ changes; a row split by tranche is superseded by its T1 half, and the rest becom
 | Requirements     | 64, of which 3 superseded | 69, of which 6 superseded |
 | Non-requirements | 5                         | 5                         |
 | Open questions   | 4                         | 4                         |
+
+### Ken's answer to the T1 audit's rewordings, 2026-09-26
+
+[The T1 audit](<../../reviews/T1 - Audit against the code.md>) asked Ken to rule on rewordings that
+make a statement testable or true (K7), and the test debt that followed found three more. Ken
+agreed each as recommended. A change to what is required gets a new identifier; a clarification
+is an edit.
+
+| What was found                                                                                                                                                                                                                                                                                      | Change                                                                                                                                                                                          |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CNT-047 lets a block equation be unnumbered, and the scheme withholds a number from a caption in front matter before any numbered front section; "every caption-bearing block" allowed neither (T1 audit, K7). Explicitly unnumbered figures and tables are issue #129, a feature, not this wording | **STR-023 superseded by STR-070** - every figure and table, a block equation unless explicitly unnumbered, and none for a caption in front or appendix matter before its first numbered section |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 69, of which 6 superseded | 70, of which 7 superseded |

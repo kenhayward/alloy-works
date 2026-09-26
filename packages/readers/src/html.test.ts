@@ -455,11 +455,9 @@ const receiving = () => {
 };
 
 describe('HTML pasted whole', () => {
-  // Not cited as CNT-062 ("paste from HTML must preserve structure"): a component holds no heading -
-  // a heading is a section of the outline - so a heading is kept as a paragraph and said so, and the
-  // statement makes no such exception. CNT-167 was reworded to say so for Word; whether CNT-061 and
-  // CNT-062 are reworded the same way is Ken's decision (W1's plan, "What the build changed").
-  it('keeps every structure a component can hold, and says what it changed and left out', () => {
+  // A component holds no heading - a heading is a section of the outline - so paste keeps one as a
+  // paragraph and says so, as the statement requires.
+  it('CNT-172 keeps every structure a component can hold, and says what it changed and left out', () => {
     const outcome = admit(
       read(`<h2>Setting up</h2>
 <p><strong>Unbox</strong> the <em>printer</em>, <u>carefully</u>, as H<sub>2</sub>O and x<sup>2</sup> say; run <code>lpr</code>, <q>gently</q>, and see <a href="https://example.com/manual">the manual</a>.</p>

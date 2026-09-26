@@ -12740,7 +12740,7 @@
                           },
                           "isDefault": {
                             "type": "boolean",
-                            "description": "The environment's default, preselected (MET-011, MET-012)"
+                            "description": "The environment's default, preselected (MET-011, MET-042)"
                           }
                         },
                         "required": [

@@ -89,7 +89,7 @@ function blockContributions(block: BlockNode): Contribution[] {
 }
 
 /**
- * What a component's content contributes to the sequences, in document order (STR-023): every figure
+ * What a component's content contributes to the sequences, in document order (STR-070): every figure
  * and table, every block equation with whether it is numbered, and every footnote, wherever each is
  * nested - a list item, a blockquote, a table cell. Pure, and linear in the content. It reads content
  * that has already been through `parseContentDocument`, so it recurses no deeper than that parse did.

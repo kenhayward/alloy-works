@@ -184,9 +184,9 @@ const receiving = () => {
 };
 
 describe('Markdown pasted whole', () => {
-  // Not cited as CNT-061, for the reason html.test.ts gives CNT-062: a heading is kept as a paragraph
-  // and said so, and the statement makes no such exception until Ken decides its wording.
-  it('keeps every structure a component can hold, and says what it changed and left out', () => {
+  // A component holds no heading - a heading is a section of the outline - so paste keeps one as a
+  // paragraph and says so, as the statement requires.
+  it('CNT-171 keeps every structure a component can hold, and says what it changed and left out', () => {
     const fence = '`'.repeat(3);
     const outcome = admit(
       read(
