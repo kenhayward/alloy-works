@@ -15,7 +15,6 @@ describe('the rule behind a refusal', () => {
       ['page_reference.without_pdf', 'page_reference_without_pdf', 'PUB-074'],
       ['layout.language', 'layout_language', 'PUB-095'],
       ['grant.external_at_tenant', 'grant_external_at_tenant', 'IAM-071'],
-      ['grant.external_capped', 'grant_external_capped', 'IAM-057'],
       ['grant.external_past_cap', 'grant_external_past_cap', 'IAM-049'],
     ];
     for (const [dotted, code, rule] of ruled) {
@@ -38,6 +37,8 @@ describe('the rule behind a refusal', () => {
       'grant.role_missing',
       'grant.subject_missing',
       'grant.last_administrator',
+      // Refuses more than IAM-057 names, which access.md therefore does not claim.
+      'grant.external_capped',
       'invitation.signed_in',
       'invitation.kind_differs',
       'invitation.accepted',

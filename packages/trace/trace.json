@@ -15957,7 +15957,7 @@
         },
         {
           "id": "API-003",
-          "howItIsMet": "CI regenerates the document and fails on any difference; Fastify validates every response against its schema in tests"
+          "howItIsMet": "CI regenerates the document and fails on any difference; Fastify validates every response against its schema, and a status a route does not list against the one error shape the document declares as its `default`, so nothing undeclared is sent; a test holds the routes served to the contract's, both ways"
         },
         {
           "id": "API-005",
@@ -15966,6 +15966,10 @@
         {
           "id": "API-006",
           "howItIsMet": "The error shape names what failed and, where a rule refused it, the rule's identifier"
+        },
+        {
+          "id": "API-037",
+          "howItIsMet": "Every mutation of a versioned resource names the version it was read at - the outline act and the publication request the document's, a save, a cut and a release the component's - and a mismatch is refused `409 version_precondition`, naming the version the resource is at now: the document with its outline for the outline act, the version's heading alone for a publication request, whose outline may name what the caller may not read (IAM-073), and the version's heading for a component"
         },
         {
           "id": "API-007",
@@ -15981,7 +15985,11 @@
         },
         {
           "id": "API-012",
-          "howItIsMet": "Response schemas are open - generated clients ignore fields they do not know - and adding a field is never a new version"
+          "howItIsMet": "Response schemas are open - generated clients ignore fields they do not know - and adding a field is never a new version; the document's description tells every caller to ignore a field it does not know, and that no field is removed within the version"
+        },
+        {
+          "id": "API-047",
+          "howItIsMet": "Every response carries `X-Request-Id`: the caller's own where it sent a plain token of at most 128 characters, a fresh one otherwise, set on every response by one hook and on the event stream's own head. It is the request's trace id, so every log line and every error body carries the same value"
         }
       ]
     },
@@ -16635,10 +16643,22 @@
       "kind": "title"
     },
     {
+      "id": "API-003",
+      "file": "apps/service/src/app.test.ts",
+      "line": 83,
+      "kind": "title"
+    },
+    {
       "id": "IAM-053",
       "file": "apps/service/src/app.test.ts",
-      "line": 108,
+      "line": 124,
       "kind": "title"
+    },
+    {
+      "id": "AST-001",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 223,
+      "kind": "rule"
     },
     {
       "id": "AST-001",
@@ -16655,13 +16675,13 @@
     {
       "id": "AST-026",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 301,
+      "line": 305,
       "kind": "title"
     },
     {
       "id": "AST-035",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 286,
+      "line": 290,
       "kind": "title"
     },
     {
@@ -16673,7 +16693,13 @@
     {
       "id": "AST-040",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 267,
+      "line": 273,
+      "kind": "rule"
+    },
+    {
+      "id": "AST-040",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 268,
       "kind": "title"
     },
     {
@@ -16695,6 +16721,12 @@
       "kind": "title"
     },
     {
+      "id": "API-037",
+      "file": "apps/service/src/document-routes.test.ts",
+      "line": 516,
+      "kind": "rule"
+    },
+    {
       "id": "CNT-160",
       "file": "apps/service/src/document-routes.test.ts",
       "line": 385,
@@ -16709,7 +16741,7 @@
     {
       "id": "STR-059",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 548,
+      "line": 550,
       "kind": "title"
     },
     {
@@ -16717,6 +16749,18 @@
       "file": "apps/service/src/document-routes.test.ts",
       "line": 214,
       "kind": "title"
+    },
+    {
+      "id": "API-037",
+      "file": "apps/service/src/editing-routes.test.ts",
+      "line": 447,
+      "kind": "rule"
+    },
+    {
+      "id": "API-039",
+      "file": "apps/service/src/editing-routes.test.ts",
+      "line": 343,
+      "kind": "rule"
     },
     {
       "id": "API-039",
@@ -16727,7 +16771,7 @@
     {
       "id": "CNT-071",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 370,
+      "line": 371,
       "kind": "title"
     },
     {
@@ -16735,6 +16779,12 @@
       "file": "apps/service/src/editing-routes.test.ts",
       "line": 285,
       "kind": "title"
+    },
+    {
+      "id": "COL-005",
+      "file": "apps/service/src/editing-routes.test.ts",
+      "line": 412,
+      "kind": "rule"
     },
     {
       "id": "VER-009",
@@ -16785,9 +16835,27 @@
       "kind": "title"
     },
     {
+      "id": "IAM-071",
+      "file": "apps/service/src/grant-routes.test.ts",
+      "line": 290,
+      "kind": "rule"
+    },
+    {
+      "id": "API-003",
+      "file": "apps/service/src/http.test.ts",
+      "line": 138,
+      "kind": "title"
+    },
+    {
       "id": "API-005",
       "file": "apps/service/src/http.test.ts",
-      "line": 170,
+      "line": 226,
+      "kind": "title"
+    },
+    {
+      "id": "API-047",
+      "file": "apps/service/src/http.test.ts",
+      "line": 165,
       "kind": "title"
     },
     {
@@ -16809,15 +16877,51 @@
       "kind": "title"
     },
     {
+      "id": "API-037",
+      "file": "apps/service/src/publication-routes.test.ts",
+      "line": 404,
+      "kind": "rule"
+    },
+    {
+      "id": "API-037",
+      "file": "apps/service/src/publication-routes.test.ts",
+      "line": 339,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-014",
+      "file": "apps/service/src/publication-routes.test.ts",
+      "line": 432,
+      "kind": "rule"
+    },
+    {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 566,
+      "line": 640,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 508,
+      "line": 582,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-074",
+      "file": "apps/service/src/publication-routes.test.ts",
+      "line": 521,
+      "kind": "rule"
+    },
+    {
+      "id": "PUB-095",
+      "file": "apps/service/src/publication-routes.test.ts",
+      "line": 449,
+      "kind": "rule"
+    },
+    {
+      "id": "API-006",
+      "file": "apps/service/src/refusals.test.ts",
+      "line": 7,
       "kind": "title"
     },
     {
@@ -16837,6 +16941,12 @@
       "file": "apps/service/src/sign-in.test.ts",
       "line": 153,
       "kind": "rule"
+    },
+    {
+      "id": "API-047",
+      "file": "apps/service/src/stream.test.ts",
+      "line": 215,
+      "kind": "title"
     },
     {
       "id": "IAM-030",
@@ -17373,6 +17483,12 @@
       "kind": "title"
     },
     {
+      "id": "API-012",
+      "file": "packages/api-contract/src/openapi.test.ts",
+      "line": 35,
+      "kind": "title"
+    },
+    {
       "id": "IAM-014",
       "file": "packages/db/src/access-facts.test.ts",
       "line": 220,
@@ -17489,25 +17605,25 @@
     {
       "id": "PUB-014",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 323,
+      "line": 326,
       "kind": "title"
     },
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 936,
+      "line": 939,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 415,
+      "line": 418,
       "kind": "title"
     },
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 802,
+      "line": 805,
       "kind": "title"
     },
     {

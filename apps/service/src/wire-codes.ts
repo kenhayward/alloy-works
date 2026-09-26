@@ -44,7 +44,9 @@ export const DOTTED_CODES = Object.keys(WIRE_CODES) as DottedCode[];
  * The requirement each refusal enforces, where one is the rule that refuses (API-006): what the
  * error's `rule` names, so a caller can look up why as well as what. A code absent here refuses by no
  * requirement - a reference to nothing, a stale save, a guard of the design's own - and names none
- * rather than one that reads well. `refusals.test.ts` holds every code to one side or the other.
+ * rather than one that reads well - nor does the cap on what an external principal may be given,
+ * which refuses more than IAM-057 names and which access.md leaves IAM-057 unclaimed for.
+ * `refusals.test.ts` holds every code to one side or the other.
  */
 const RULES: Partial<Record<DottedCode, string>> = {
   'lock.held': 'API-039',
@@ -54,7 +56,6 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'page_reference.without_pdf': 'PUB-074',
   'layout.language': 'PUB-095',
   'grant.external_at_tenant': 'IAM-071',
-  'grant.external_capped': 'IAM-057',
   'grant.external_past_cap': 'IAM-049',
 };
 

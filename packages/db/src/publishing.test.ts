@@ -283,11 +283,14 @@ describe('requesting and recording a publication', () => {
           formats,
           requester: ada,
         });
-      // The current version by its id alone: its outline names components the caller may not read.
-      expect(await asked(older.id, ['pdf'])).toEqual({
-        answer: 'version.precondition',
-        current: version.id,
-      });
+      // The current version by its heading alone: its outline names components the caller may not
+      // read, so none of what it holds comes back.
+      const stale = await asked(older.id, ['pdf']);
+      expect(stale).toMatchObject({ answer: 'version.precondition', current: { id: version.id } });
+      if (stale.answer !== 'version.precondition') throw new Error(stale.answer);
+      expect(Object.keys(stale.current).sort()).toEqual(
+        ['author', 'createdAt', 'id', 'note', 'revision', 'version'].sort(),
+      );
       expect((await asked(version.id, ['html'])).answer).toBe('format.unsupported');
       expect((await asked(version.id, ['pdf', 'html'])).answer).toBe('format.unsupported');
       const requests = await trx

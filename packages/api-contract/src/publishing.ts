@@ -1,6 +1,7 @@
 import { outputReportSchema, publishFailureCodes } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
+import { VersionSummary } from './components.js';
 import { DocumentParams } from './documents.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
@@ -22,6 +23,18 @@ export const RequestPublicationBody = z.strictObject({
     ),
 });
 export type RequestPublicationBody = z.infer<typeof RequestPublicationBody>;
+
+/**
+ * A request refused because the document has moved on (API-037): the version it is at now, by its
+ * heading alone. Not its outline, as the outline route's refusal carries - the outline names
+ * components the caller may not read (IAM-073).
+ */
+export const PublicationRefusal = ErrorBody.extend({
+  current: VersionSummary.optional().describe(
+    'version_precondition: the version the document is at',
+  ),
+});
+export type PublicationRefusal = z.infer<typeof PublicationRefusal>;
 
 export const PublicationRequestParams = z.object({ id: LowercaseUuid });
 export type PublicationRequestParams = z.infer<typeof PublicationRequestParams>;
@@ -158,8 +171,9 @@ export const publishingRoutes = {
         schema: ErrorBody,
       },
       409: {
-        description: '`version_precondition`: the document has a newer version than the one named',
-        schema: ErrorBody,
+        description:
+          '`version_precondition`: the document has a newer version than the one named, which `current` names',
+        schema: PublicationRefusal,
       },
     },
   },

@@ -291,7 +291,7 @@ describe('making, listing and removing grants through the service', () => {
     });
     await expect(
       refusal({ role: roles.Author, level: `space:${clinical}` }),
-    ).resolves.toMatchObject({ status: 409, code: 'grant_external_capped', rule: 'IAM-057' });
+    ).resolves.toMatchObject({ status: 409, code: 'grant_external_capped' });
     // Given no expiry, an allow takes the environment's default, and says when.
     const defaulted = await refusal({ role: roles.Reader, level: `space:${clinical}` });
     expect(defaulted).toMatchObject({ status: 200, grant: { expiresAt: expect.any(String) } });

@@ -22,6 +22,21 @@ import type { TenantTransaction } from './tables.js';
 import { versionDigests } from './version-digest.js';
 
 /** A version as the chain holds it. `content` is exactly what was written, never migrated. */
+/**
+ * A version by its heading alone - which it is, its number, who cut it, when, and its note - and none
+ * of what it holds: what a refusal may name when the content names things its reader may not read.
+ */
+export type VersionHeading = Pick<
+  StoredVersion,
+  'id' | 'revision' | 'version' | 'author' | 'createdAt' | 'note'
+>;
+
+/** A version's heading, and nothing of what it holds. */
+export function headingOf(version: StoredVersion): VersionHeading {
+  const { id, revision, version: number, author, createdAt, note } = version;
+  return { id, revision, version: number, author, createdAt, note };
+}
+
 export interface StoredVersion {
   readonly id: string;
   readonly artifactId: string;

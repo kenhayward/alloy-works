@@ -62,7 +62,7 @@ describe('publishing a document through the service', () => {
 
   const call = (
     as: string | undefined,
-    method: 'GET' | 'POST' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     url: string,
     payload?: Json,
     through: FastifyInstance = app,
@@ -334,6 +334,77 @@ describe('publishing a document through the service', () => {
     // And once Grace may no longer read Quality, neither can she.
     await tenantDb.withTenant(tenant, (trx) => removeGrant(trx, grants.graceQuality!));
     expect(await codes('grace')).toEqual(['occurrence_unreadable']);
+  });
+
+  it('API-037 refuses every mutation from a stale version, naming the version the resource is at', async () => {
+    const component = await componentIn(general, 'Scope');
+    const document = await documentReferencing([component.id]);
+    // A version of neither: what a caller holds when somebody else has moved the resource on.
+    const stale = '00000000-0000-4000-8000-0000000000aa';
+    const session = '00000000-0000-4000-8000-0000000000bb';
+    const claimed = await call('grace', 'POST', `/v1/components/${component.id}/lock`, { session });
+    expect(claimed.statusCode, claimed.body).toBe(200);
+    const content = {
+      schemaVersion: 1,
+      title: 'Scope',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [{ type: 'paragraph', id: 'p1', style: 'body', content: [] }],
+    };
+    const componentAt = { id: component.version, number: '0.1' };
+    const documentAt = (await call('grace', 'GET', `/v1/documents/${document.id}`)).json<{
+      version: { id: string; number: string };
+    }>().version;
+    expect(documentAt.id).toBe(document.version);
+
+    const refusals = [
+      [
+        'save',
+        await call('grace', 'PUT', `/v1/components/${component.id}/iterations/${session}/1`, {
+          openedFrom: stale,
+          content,
+        }),
+        { current: componentAt },
+      ],
+      [
+        'cut',
+        await call('grace', 'POST', `/v1/components/${component.id}/versions`, {
+          session,
+          openedFrom: stale,
+        }),
+        { current: componentAt },
+      ],
+      [
+        'release',
+        await call(
+          'grace',
+          'DELETE',
+          `/v1/components/${component.id}/lock?session=${session}&openedFrom=${stale}`,
+        ),
+        { current: componentAt },
+      ],
+      [
+        'outline',
+        await call('grace', 'POST', `/v1/documents/${document.id}/outline`, {
+          openedFrom: stale,
+          operation: { operation: 'remove', node: document.nodes[0]! },
+        }),
+        { current: { version: documentAt } },
+      ],
+      [
+        'publish',
+        await publish('grace', { id: document.id, version: stale }),
+        { current: documentAt },
+      ],
+    ] as const;
+    for (const [mutation, answer, names] of refusals) {
+      expect(answer.statusCode, `${mutation}: ${answer.body}`).toBe(409);
+      expect(answer.json(), mutation).toMatchObject({
+        code: 'version_precondition',
+        rule: 'API-037',
+        ...names,
+      });
+    }
   });
 
   it('refuses a reader who may not publish, a stale version, a format it cannot make, and an unknown document', async () => {

@@ -23,6 +23,7 @@ import {
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
+import { versionView } from './components.js';
 import { storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
@@ -89,13 +90,15 @@ export function publishingHandlers(
         // a document.
         case 'document.missing':
           throw notFound();
-        // By its code alone: the current version's outline names components the caller may not read,
-        // so it is never carried here (IAM-073), unlike the outline route's refusal.
+        // Naming the current version (API-037) by its heading: its outline names components the
+        // caller may not read, so it is never carried here (IAM-073), unlike the outline route's
+        // refusal.
         case 'version.precondition':
           throw refused(
             409,
             'version.precondition',
             'This document has a newer version than the one this page opened.',
+            { current: versionView(answer.current) },
           );
         case 'format.unsupported':
           // The contract refuses an empty or repeated formats list at the door (PUB-014); the store's

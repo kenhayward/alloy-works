@@ -7551,7 +7551,7 @@
             }
           },
           "409": {
-            "description": "`version_precondition`: the document has a newer version than the one named",
+            "description": "`version_precondition`: the document has a newer version than the one named, which `current` names",
             "content": {
               "application/json": {
                 "schema": {
@@ -7572,6 +7572,42 @@
                     "traceId": {
                       "type": "string",
                       "description": "Quote this when reporting a problem"
+                    },
+                    "current": {
+                      "description": "version_precondition: the version the document is at",
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`, as `0.2`"
+                        },
+                        "author": {
+                          "description": "The principal who cut it; null for a starter definition",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number",
+                        "author",
+                        "createdAt",
+                        "note"
+                      ]
                     }
                   },
                   "required": [

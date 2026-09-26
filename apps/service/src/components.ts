@@ -14,6 +14,7 @@ import {
   readLock,
   type LockState,
   type StoredVersion,
+  type VersionHeading,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -39,7 +40,7 @@ export function lockView(lock: LockState, caller: string) {
 }
 
 /** A version as the API names it: `revision.version`, its author, and when. */
-export function versionView(version: StoredVersion) {
+export function versionView(version: VersionHeading) {
   return {
     id: version.id,
     number: `${version.revision}.${version.version}`,
