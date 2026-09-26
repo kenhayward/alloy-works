@@ -99,7 +99,7 @@ describe('numbering an outline', () => {
     expect([...sectionNumbers(numbered).values()]).toEqual(['1', '2', '2.1', '2.2', '2.2.1', '3']);
   });
 
-  it('numbers every caption-bearing block in the sequence for its kind, wherever it is nested', () => {
+  it('STR-070 numbers every caption-bearing block in the sequence for its kind, wherever it is nested', () => {
     const figure = (block: string) => ({
       type: 'figure',
       id: block,
@@ -150,7 +150,7 @@ describe('numbering an outline', () => {
     ]);
   });
 
-  it('CNT-047 gives an unnumbered block equation no number, and the next one the number it would have taken', () => {
+  it('CNT-047 STR-070 gives an unnumbered block equation no number, and the next one the number it would have taken', () => {
     const content = parseContentDocument({
       schemaVersion: 1,
       title: 'Maths',
@@ -426,7 +426,7 @@ describe('numbering an outline', () => {
     ]);
   });
 
-  it('withholds a front caption before any numbered front section, spending no value', () => {
+  it('STR-070 withholds a front caption before any numbered front section, spending no value', () => {
     const outline = [
       section('dedication', [reference('p')], { matter: 'front', numbered: false }),
       section('foreword', [reference('q')], { matter: 'front' }),

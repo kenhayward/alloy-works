@@ -37,7 +37,8 @@ document's change history says so.
 code**, not a document against itself: every T1 requirement not yet `Covered` at 0.69.0, with a
 verdict for each, and a recommendation for what leaves T1. It is answered by a **From the T1 audit
 against the code** subsection in the change history of each requirements document it changed, and
-by [the T1 remainder plan](../plans/2026-09-25-t1-remainder.md).
+by [the T1 remainder plan](../plans/2026-09-25-t1-remainder.md). Its K7 rewordings, agreed on 2026-09-26, are
+answered by a **Ken's answer to the T1 audit's rewordings** subsection in each document they changed.
 
 **They are not edited to match what happened.** A review is evidence of what was visible at the time
 it was written, and rewriting it afterwards would destroy exactly that. Where a reviewer was wrong,

@@ -48,7 +48,7 @@ conformance suite.
 | **STY-016** | The other dimension is derived from the asset's intrinsic proportions at resolution, never declared                                                                                                                                                                                                                  |
 | **STY-017** | An image style declares a maximum for the free dimension; exceeding it re-derives from that dimension instead                                                                                                                                                                                                        |
 | **STY-018** | Placement - inline, block, floated - and alignment are image style properties                                                                                                                                                                                                                                        |
-| **STY-019** | Resolution fails, naming the asset, where the asset has no recorded intrinsic dimensions                                                                                                                                                                                                                             |
+| **STY-078** | An asset version cannot be stored without its intrinsic width and height - AST records them on ingest, and the stored shape refuses a version without them - so resolution always has them. STY-019, which it supersedes, asked for a named failure that could not arise                                             |
 | **STY-024** | A theme binds one catalogue of each kind, a set of typefaces, and a paper colour, and is itself an artifact                                                                                                                                                                                                          |
 | **STY-025** | The theme a document uses is the one its template binds; the resolver is given it, never chooses                                                                                                                                                                                                                     |
 | **STY-026** | Changing a document's theme is a template-level act, audited through the lifecycle log                                                                                                                                                                                                                               |
@@ -205,8 +205,8 @@ label appears and how it is set ([TH-I](#decisions-for-ken)).
 The fixed dimension and its value, as points or as a fraction of the measure; a maximum for the other
 dimension; placement and alignment (STY-015 to STY-018), floated meaning a band at the page's head or
 foot, the only float the engine has ([TH-J](#decisions-for-ken)). Resolution derives the free dimension from the
-asset's intrinsic proportions, re-derives from the maximum where it would be exceeded, and fails
-naming the asset where no dimensions are recorded (STY-019). Because the editor's column is the
+asset's intrinsic proportions and re-derives from the maximum where it would be exceeded. It always
+has them: an asset version cannot be stored without them (STY-078). Because the editor's column is the
 layout's measure (below), an image styled at "column width" is the width it will print.
 
 ### Admonition styles
@@ -629,10 +629,9 @@ things here:
   catalogue keeps the old look**: 0025 moves only the product's own unchanged chain, each on its own,
   and its theme stays 0.1, set by the reader's upgrade as template 12 set it. A `catalogue/1` saved again
   unchanged answers unchanged, judged on the version as the reader reads it.
-- **STY-019 is claimed and not cited.** An asset version cannot be stored without its dimensions - AST
-  records them on ingest - so the named failure it asks for cannot arise, and a test could only pretend
-  to reach it. The claim stands on that, and on `assemble` having nothing to size an image by but those
-  dimensions.
+- **STY-019 was claimed and not cited.** An asset version cannot be stored without its dimensions - AST
+  records them on ingest - so the named failure it asked for could not arise. Ken superseded it with
+  STY-078, the invariant itself, on 2026-09-26, which the asset version's own test cites.
 
 ## Safety
 

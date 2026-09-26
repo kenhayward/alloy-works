@@ -131,9 +131,9 @@ The runtime role may read it and insert into it, and may not update, delete or t
 service changes an environment's default yet, and a table restricted to the writes something actually
 makes is the same treatment 0011, 0012 and 0014 give theirs.
 
-**MET-012 is not claimed**, and this is the gap: nothing lets a tenant change that row. The store is here
-and the default is real; "a tenant must declare a default component type" is answered when the
-definitions-management design ships the route that sets it, and that design claims MET-012 then.
+**MET-012 was not claimed**, because nothing lets a tenant change that row. Ken superseded it on
+2026-09-26 with MET-042, "every tenant must have a declared default component type", which
+[metadata.md](metadata.md) claims. A tenant setting its own default would be a requirement of its own.
 
 **`iteration`** is the separate ephemeral store. Same substance, different lifecycle: editor, timestamp, content, metadata values, `expires_at`. **No foreign key points at it from anywhere**, which is how VER-005
 is enforced rather than asserted - a row nothing can reference cannot appear in comparison, in audit,

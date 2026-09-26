@@ -67,9 +67,12 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1449);
+    // 1458, from 1449 (2026-09-26): the rewordings Ken agreed after the T1 audit (K7, and W1's three): CNT-171 to CNT-175, STR-070, MET-042, STY-078 and API-061 supersede the rows they reword.
+    expect(model.requirements).toHaveLength(1458);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 441, from 435 (2026-09-26): the rewordings claim CNT-171, CNT-172, CNT-173, STR-070, MET-042
+    // and API-061; CNT-174 and STY-078 take CNT-089's and STY-019's claims.
     // 435, from 432 (2026-09-26): W1.3 - publishing.md claims PUB-031 and PUB-069, and structure.md
     // CNT-160, each measured and demonstrated before it was claimed. CNT-166 stays unclaimed: U+0000
     // is refused and text is kept in NFC, which "the full Unicode range" does not allow for.
@@ -183,7 +186,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(435);
+    ).toBe(441);
   });
 });
 
@@ -528,6 +531,8 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 369, from 357 (2026-09-26): the rewordings - CNT-173 in three files, MET-042 in two, and CNT-171,
+  // CNT-172, STR-070, STY-078, API-061, IAM-039 and IAM-024 in one each.
   // 357, from 352 (2026-09-26): W1.3 - PUB-069 and PUB-031 in two files each, the PDF's and Word's;
   // CNT-160 in one. CNT-166's three tests stay uncited until it is reworded.
   // 352, from 335 (2026-09-26): W1.2, the test debt the T1 audit found - one file each for CNT-014,
@@ -536,7 +541,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(357);
+    expect(model.citations).toHaveLength(369);
   });
 
   it('cites no identifier the corpus does not hold', () => {

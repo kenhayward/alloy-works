@@ -235,6 +235,50 @@ describe('the facts a decision reads', () => {
     ).rejects.toThrow(/access_grant_space_id_fkey/);
   });
 
+  it('IAM-024 inherits from the tenant to each space and from a space to what is in it, and never from one artifact to another', async () => {
+    const made = await service.withTenant(production, async (trx) => {
+      const place = (await createSpace(trx, 'Inheritance')).id;
+      const elsewhere = (await createSpace(trx, 'Elsewhere')).id;
+      const documentIn = (space: string) =>
+        trx
+          .insertInto('artifact')
+          .values({ kind: 'document', space_id: space })
+          .returning('id')
+          .executeTakeFirstOrThrow()
+          .then((row) => row.id);
+      return {
+        tenantReader: await principal(trx, 'reader-at-the-tenant'),
+        spaceReader: await principal(trx, 'reader-at-the-space'),
+        documentReader: await principal(trx, 'reader-of-one-document'),
+        report: await documentIn(place),
+        component: await artifact(trx, place),
+        away: await documentIn(elsewhere),
+        place,
+      };
+    });
+    const reader = (who: string, level: Level) =>
+      give({ roleId: roles.Reader!, subject: { principal: who }, level, effect: 'allow' });
+    await reader(made.tenantReader, { kind: 'tenant' });
+    await reader(made.spaceReader, { kind: 'space', id: made.place });
+    await reader(made.documentReader, { kind: 'artifact', id: made.report });
+    const reads = (who: string, id: string) => may(who, 'read', { kind: 'artifact', id });
+
+    // From the tenant, through each space, to every artifact in it: a document and a component.
+    for (const id of [made.report, made.component, made.away]) {
+      await expect(reads(made.tenantReader, id), id).resolves.toBe(true);
+    }
+    // From a space to what is in it, and to nothing in another space.
+    await expect(reads(made.spaceReader, made.report)).resolves.toBe(true);
+    await expect(reads(made.spaceReader, made.component)).resolves.toBe(true);
+    await expect(reads(made.spaceReader, made.away)).resolves.toBe(false);
+    // From one artifact to nothing else, though it stands in the same space.
+    await expect(reads(made.documentReader, made.report)).resolves.toBe(true);
+    await expect(reads(made.documentReader, made.component)).resolves.toBe(false);
+    await expect(may(made.documentReader, 'read', { kind: 'space', id: made.place })).resolves.toBe(
+      false,
+    );
+  });
+
   it("IAM-027 answers from the grants as they are, so changing a role changes every holder's next decision", async () => {
     await expect(may(ada, 'edit', { kind: 'artifact', id: dosing })).resolves.toBe(true);
     await service.withTenant(production, (trx) =>

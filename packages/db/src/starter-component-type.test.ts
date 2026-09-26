@@ -51,7 +51,7 @@ describe('the component type every environment starts with', () => {
     await db?.drop();
   });
 
-  it('is declared as the default in every environment, at 0.1 and authored by nobody', async () => {
+  it('MET-042 is declared as the default in every environment, at 0.1 and authored by nobody', async () => {
     for (const tenant of [acme, other]) {
       const found = await service.withTenant(tenant, async (trx) => {
         const declared = await defaultComponentType(trx);

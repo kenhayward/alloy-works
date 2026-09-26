@@ -3,6 +3,22 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.73.4 - 2026-09-26 (PR #244)
+
+### Changed
+
+- **Eleven requirements now say exactly what the product does, and nine of them are shown by a
+  test.** Nothing the product does changes; the wording did. Paste from Markdown and from web pages
+  keeps every structure a component can hold and turns a heading into a paragraph, saying so. Every
+  character but the null character is stored, in one normal form. Figures and tables are always
+  numbered, an equation unless it is marked unnumbered. Every environment has a default component
+  type. An image's width and height are always recorded. The interface reads and changes what is
+  stored only through the API. Signing out ends the session wherever it is used, and permissions
+  pass from the environment to each space and on to what is in it, never from one item to another.
+- Two of the rewordings wait for work still to come before a test can show them: who may read an
+  editing session's saved steps (with recovery), and the editor's structure for assistive
+  technology (with the next round of small fixes).
+
 ## 0.73.3 - 2026-09-26 (PR #243)
 
 ### Changed

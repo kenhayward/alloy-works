@@ -177,13 +177,14 @@ importing one from Word both need a type to take. A declared default that may as
 keeps the rule total without forcing a choice nobody can make yet - the same move TPL-046 makes for a
 template that needs no prompt library.
 
-| ID          | Requirement                                                                                                                                                                                                    | Tranche    | Status    |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **MET-010** | A component type must be a named, versioned, tenant-wide definition assigning zero or more metadata schemas, and must be distinct from the kinds of content a component holds                                  | T1         | Specified |
-| **MET-011** | Every component must be of exactly one component type, chosen when it is created                                                                                                                               | T1         | Specified |
-| **MET-012** | A tenant must declare a default component type, which may assign no schemas, so that creating or importing a component always has a type to take                                                               | T1         | Specified |
-| **MET-013** | A component's fields must come from its component type and never from a document that references it, so that a component referenced by documents made from different templates carries the same fields in each | Constraint | Specified |
-| **MET-014** | Changing a component's type must be an explicit, audited act, taking effect from the component's next version. Versions already cut must keep the type they were cut under                                     | T2         | Specified |
+| ID          | Requirement                                                                                                                                                                                                    | Tranche    | Status                |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| **MET-010** | A component type must be a named, versioned, tenant-wide definition assigning zero or more metadata schemas, and must be distinct from the kinds of content a component holds                                  | T1         | Specified             |
+| **MET-011** | Every component must be of exactly one component type, chosen when it is created                                                                                                                               | T1         | Specified             |
+| **MET-012** | A tenant must declare a default component type, which may assign no schemas, so that creating or importing a component always has a type to take                                                               | T1         | Superseded by MET-042 |
+| **MET-042** | Every tenant must have a declared default component type, which may assign no schemas, so that creating a component always has a type to take                                                                  | T1         | Specified             |
+| **MET-013** | A component's fields must come from its component type and never from a document that references it, so that a component referenced by documents made from different templates carries the same fields in each | Constraint | Specified             |
+| **MET-014** | Changing a component's type must be an explicit, audited act, taking effect from the component's next version. Versions already cut must keep the type they were cut under                                     | T2         | Specified             |
 
 ## 6. Values, versions and change
 
@@ -378,3 +379,18 @@ changes; a row split by tranche is superseded by its T1 half, and the rest becom
 | Requirements     | 37     | 41, of which 3 superseded |
 | Non-requirements | 5      | 5                         |
 | Open questions   | 4      | 4                         |
+
+### Ken's answer to the T1 audit's rewordings, 2026-09-26
+
+[The T1 audit](<../../reviews/T1 - Audit against the code.md>) asked Ken to rule on rewordings that
+make a statement testable or true (K7), and the test debt that followed found three more. Ken
+agreed each as recommended. A change to what is required gets a new identifier; a clarification
+is an edit.
+
+| What was found                                                                                                               | Change                                                                                                                              |
+| ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| The product provisions each tenant's default; nothing lets a tenant declare one, and importing does not exist (T1 audit, K7) | **MET-012 superseded by MET-042** - every tenant has a declared default; a tenant setting its own would be a requirement of its own |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 41, of which 3 superseded | 42, of which 4 superseded |
