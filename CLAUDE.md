@@ -77,18 +77,20 @@ a web application and a desktop application**.
 > embedded, and its lists, quotations, preformatted text, tables in their table styles, figures and
 > images in a line spaced and sized as the PDF sets them, its figures' and tables' captions numbered
 > by Word's fields and listed after the contents, its footnotes as Word's own, numbered by Word
-> afresh in each matter, and its cross-references as fields Word updates at hidden `_Ref` bookmarks,
-> prefilled with what the PDF prints and a page left for Word, and what Word cannot carry of a table
-> named in its report, each output recorded with its producer and a report by migration 0027,
-> checked by the Open XML SDK in the worker's suite and in Word itself by the Word check against the
-> PDF of the same document, and equations, a reference to one and the list of equations still
-> refused for Word by name, as is a reference Word's field would print otherwise than the PDF - and
-> nothing else authors or
+> afresh in each matter, its cross-references as fields Word updates at hidden `_Ref` bookmarks,
+> prefilled with what the PDF prints and a page left for Word, and its equations as native Word
+> equations, OMML from the maths tree the PDF sets, `omml` in `packages/domain/src/word/`, a numbered
+> one beside its number in a borderless row of two cells and listed after the contents, and what Word
+> cannot carry of a table named in its report, each output recorded with its producer and a report by
+> migration 0027, checked by the Open XML SDK in the worker's suite and in Word itself by the Word
+> check against the PDF of the same document - everything a document holds, but a numbering Word
+> cannot compute and a reference Word's field would print otherwise than the PDF, which are refused
+> for Word by name - and nothing else authors or
 > publishes content: no image or equation pasted from outside the product, no metadata panel,
 > no making a component type, no defined term written or resolved, no
 > document view, no list of equations in the default layout, no
 > choosing or editing a layout or a theme, no theme in the editor, no style to choose for a paragraph,
-> a table or an image, no preview, and no equation in Word. The single
+> a table or an image, and no preview. The single
 > `Component` in `packages/domain` is the scaffolding's, and nothing renders it any more.
 > [`docs/features.md`](docs/features.md) lists what does and does not exist.
 

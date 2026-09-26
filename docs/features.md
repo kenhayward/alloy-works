@@ -13,8 +13,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > Footnotes, a table's note, cross-references and equations are written and published, and every
 > publication is set from the environment's theme and records it, its tables and images from the
 > theme's table and image styles. A document can be published to Word as well, or instead, as a
-> Word document in the theme's styles with its headings, figures, tables and footnotes numbered by
-> Word and its cross-references fields Word updates; its equations do not reach Word yet.
+> Word document in the theme's styles with its headings, figures, tables, footnotes and equations
+> numbered by Word, its cross-references fields Word updates and its equations Word's own.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -516,14 +516,38 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   caption of a figure whose image style floats it; a caption's own words named inside that caption; and a caption's words named where they themselves
   hold a reference that prints anything but a number. So is a layout whose footnote numbering Word would count otherwise -
   a word before the number, a chapter's number before it, or a count that starts again part-way
-  through a part - and a part entered a second time after its first run held notes. **Equations do
-  not reach Word yet**: a document holding one, or a reference to one, is refused for Word, naming
-  each one and where it stands, and can still be published as a PDF alone. So can a layout whose
-  numbering Word would count differently - letters past _z_, say - and a list nested past the ninth
-  level or numbered in letters past _aa_, which Word would number otherwise; the default layout's
-  numbering is inside what Word counts. The Word documents the product's tests make are checked
-  against the file format's own rules, and opened in Word itself before any change to how Word
-  documents are written lands.
+  through a part - and a part entered a second time after its first run held notes.
+
+  **Equations reach Word** as Word's own equations, which a recipient can edit in Word's equation
+  editor, made from the same mathematics the PDF prints - never a picture of it. One in a line of
+  text stays in its line, wherever the PDF prints one: running text, a list, a quotation, a term, an
+  attribution, a table's cell, header rows and note, a caption, a footnote and a section's title,
+  its heading and the contents. A block equation stands in its own paragraph, centred. A numbered one
+  has its number at the right, beside it in a row of two cells with no borders, numbered by Word -
+  _Equation i_ in front matter, from 1 in the body and _Equation A.1_ in an appendix under the default
+  layout - so moving one renumbers the rest; a cross-reference to it is a field Word updates, and a
+  layout's list of equations follows the contents as the lists of figures and tables do. Word sets
+  its equations in Cambria Math, since STIX Two Math cannot be carried in a Word document, and the
+  publication's page says so; Word reads its equations to a screen reader itself, so the description
+  written in the editor is not needed there. Some things look different from the PDF: in a line of
+  text, the limits of a sum stand beside it in Word rather than above and below; a numbered equation
+  too wide for its line breaks over lines beside its number in Word, where the PDF runs it past the
+  margin with its number below; two numbered equations in a row read to a screen reader as one table
+  of two rows, since a numbered equation is a row of a table in Word; lines aligned together in a
+  line of text are centred on it in Word; and a running head naming a section whose title holds an
+  equation shows it as plain text. An equation the typesetter cannot set is refused for Word as for
+  the PDF.
+
+  **Everything a document holds now reaches Word.** What is refused for Word is refused by name, can
+  still be published as a PDF alone, and is of three kinds, each something Word would print
+  otherwise than the PDF: numbering Word would count differently - a layout's letters past _z_, say,
+  a word or a chapter's number before a footnote's number, or equations counted on through a part
+  that comes back after an appendix, and a list nested past the ninth level or numbered in letters
+  past _aa_; _above_ or _below_ across a footnote's or a floated figure's boundary; and a caption's
+  words named as a title inside that caption, or where they hold a reference printing anything but a
+  number. The default layout's numbering is inside what Word counts. The Word documents the
+  product's tests make are checked against the file format's own rules, and opened in Word itself
+  before any change to how Word documents are written lands.
 
   **A document is published only under a layout written in its own language.** Where the two do not
   agree the page says so, naming both, before anything is queued; an English layout publishes an
@@ -660,7 +684,7 @@ Named explicitly so nobody has to read the source to find out:
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
   published PDF of a document's paragraphs, lists, quotations, preformatted text, tables, figures,
   images in a line of text, footnotes, cross-references and equations, and a published Word document
-  of all of that but its equations. The one sample document is a
+  of all of that. The one sample document is a
   fixed template with no content of yours in it.
 - No way to make, change or choose between component types: every environment has one, named Topic, and
   nothing yet lets an administrator add another or change which is the default.
@@ -670,9 +694,9 @@ Named explicitly so nobody has to read the source to find out:
   make a figure or a table unnumbered: every one takes a number.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
   quotations, preformatted text, tables and their notes, figures, images in a line of text,
-  footnotes, cross-references and equations, and a Word document of all of that but its equations:
-  no definition-list structure of PDF's own, no list of equations under the one layout, no equation
-  in Word yet, no preview, and no way
+  footnotes, cross-references and equations, and a Word document of all of that: no
+  definition-list structure of PDF's own, no list of equations under the one layout, no preview, and
+  no way
   to approve a
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,

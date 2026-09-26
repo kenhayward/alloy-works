@@ -368,6 +368,16 @@ a number - are Word's fields printing other words, and are refused by name as
 language's only where the Word opening the document has words for it: in a Hebrew passage the one
 Word 16 measured, with an English interface, printed the English ones.
 
+**What building Word 4 found, 2026-09-26.** WO-E and WO-H stand as agreed, and
+[What was built](#what-was-built) says where Word 4 departed from its plan. The table under
+[Equations](#equations) is the design's and stands as it was, and three of its lines are not what was
+built: text in an equation is an `m:nor` run naming the maths face's Word face, since Word sets one
+that names none in the body face, where the PDF sets text in the maths face; an italic identifier
+states `m:sty i`, not the bare run; and a sum is known by its character as well as by the tree's
+mark, since Temml never marks one. A numbered equation's label is template 13's, _Equation 1_, not
+M17's _(1)_. And a matter's first equation restarts Word's one sequence where the scheme's rule never
+restarts, since the scheme counts each matter apart and Word's sequence counts through them all.
+
 **What Word 1 to Word 4 claim and cite.** Word 1: PUB-023 once the rest have landed rather than
 first, PUB-027 (themes.md), PUB-034's and CNT-084's Word halves, CNT-128's, PUB-092's, PUB-012, PUB-065
 and PUB-074, STY-052's report. Word 2: TAB-039's and TAB-049's Word halves, PUB-035. Word 3: PUB-024,
@@ -985,21 +995,272 @@ test shows both. It stays Designed, to be cited in the job's Word test once Word
 "carry" is read as "never drop in silence", which the refusals by name already meet. PUB-067, CNT-045
 and PUB-023 are Word 4's.
 
-**Left for Word 4.** Equations - inline and displayed, numbered in a row of two cells (WO-H) - a
-reference to one, which is `word_not_yet` today with `detail` `crossReference`, and the list of
-equations, the last list after the contents still refused; deciding which of the maths tree's refusals
-Word sets and undoing the trap for the rest; reporting the maths face's substitution; PUB-067 and
-CNT-045, then PUB-023, and PUB-065 as above; and PUB-035's test extended to equations. **Not measured in Word**, tested for
-its XML only: a floated figure whose box Word sets on another page than its anchor, whose relative
-place would then be its anchor's. The final review measured the rest this list held: a reference in
-a definition's term or an attribution and a target that publishes nothing (its empty bookmark), each
-printing as the PDF, and a reference inside a floated figure's caption, whose relative form is now
-refused, `relative:float`. The fixtures of Word 3's checks are compared with the
-resolved document rather than a compiled PDF, since what the PDF prints and where it links is the
-published run's, which the template's own tests hold. Still open from Word 1 and 2: how a reader who
-declines the prompt sees the contents, a cover running to a second page, and a matter entered twice,
-which for footnotes is now refused where its earlier run held notes. Word 2's known differences
-stand.
+**Word 4 is built**, by [Word 4](../plans/2026-09-26-word-04-equations.md): the last of WO-M's
+slices. Every equation reaches Word as Word's own - OMML the converter makes from the maths tree the
+published document carries, the one template 13 sets, never an image and never a second reading of
+the MathML - in a line wherever the PDF sets one, displayed in a paragraph of its own, numbered by
+Word's field in a borderless row of two cells (WO-H), referenced by a field and listed after the
+contents. The writer is `word/4`. Building it changed these things here:
+
+- **Off `word_not_yet`, which now names nothing.** A block equation, numbered or not, an equation in
+  a line wherever the PDF prints one - a paragraph, a list item, a term, an attribution, a quotation,
+  a table's caption, header row, cells and note, a figure's caption, a footnote and a section's
+  title - a reference to one and the list of equations are written, and `assemble` makes the same
+  published document for Word as for the PDF, byte for byte. **`word_not_yet` is kept, producing
+  nothing**: a request refused under it since Word 1 still holds its failures, read back through the
+  closed list of codes, so the code, its place in the contract and the web's sentences for it stay,
+  as Word 2 kept `listOf:figure`; removing it would make those stored rows unreadable, and a later
+  cleanup would need a migration rewriting them. `WordInput.titles` now carries a title's equations
+  in their places, each published once and shared with the PDF's title, so its failures are said
+  once.
+- **Every `equation_unrenderable` reason is refused for both formats**, where Word 1 had made all but
+  `unreadable`, `merror` and `empty` the PDF's own. A refusal is the absence of a maths tree, and
+  Word, like the PDF, is written from the tree alone (PUB-067), so no refused equation has anything
+  for Word to set, and none can take the trap Word 1 described: with this, no refusal of the PDF's
+  drops its construct from a Word-only publication. Each reason was ruled on. `element`, `text` and
+  `space` are malformed or meaningless whatever sets them - structure the strict reader keeps but
+  cannot stand, text outside a token, a space no line holds. `rtl`, `multiscripts`, `voffset`,
+  `spanningCell` and `accent` are constructs OMML has no place for either - maths with no direction,
+  one pair of scripts a side, no raised box that stays maths, no cell span, an accent of one
+  character - read from ECMA-376's schema, not measured, and not load-bearing, since the tree cannot
+  carry them whatever Word can. `mathvariant` and `attribute` take in a little Word could set - bold
+  fraktur, bold script and the sans-serif combinations as `m:scr` with `m:sty`, a bold number - which
+  the tree does not hold, so a Word-only request refuses them until it does. **`alternative_missing`
+  stays for every format**, though Word needs none of our words: the published document drops an
+  equation without one, so making it the PDF's alone would drop it from Word in silence; the editor
+  always writes one. **`math_glyph_missing` is still judged against STIX Two Math for Word**: Word
+  sets equations in Cambria Math, which the worker does not hold, so its coverage cannot be asked. A
+  character STIX lacks and Cambria Math has is refused for Word, and one Cambria Math lacks is Word's
+  own fallback.
+- **An equation's number is `SEQ Equation`**, one sequence across every matter as a caption's is,
+  written by `captionField` - `STYLEREF n \s` and the separator where the rule prefixes it - and
+  prefilled with the numbering table's label; `numbering_not_in_word` follows it through the
+  document as it follows captions, `detail` `equation:<matter>:<why>`. **One difference from
+  captions: where a matter's rule never restarts, its first equation carries `\s 1`.** The scheme
+  counts each matter on counters of its own, and Word's one sequence counts through every matter, so
+  under the default scheme a preface's _Equation i_ and _ii_ would have made the body's first
+  _Equation 3_. A matter's first equation always stands after its first top-level node, which Word
+  reads as a first-level heading, numbered or not, so `\s 1` there starts Word's count again where
+  the scheme's starts and every later field counts on; a recipient's inserted equation renumbers as
+  Word counts. **Measured**: every field prefilled "9", Word updated them to _Equation i_, _1_, _2_,
+  _3_, _A.1_ and _A.2_, the PDF's labels, and the references and the list of equations with them. The
+  default scheme passes in every matter. Still refused: a matter entered a second time whose count
+  carries on (`restart`: the body after an appendix, as Word 3 refused for footnotes), and every
+  caption reason - a prefix Word finds elsewhere, a restart past the ninth level, letters past _z_
+  and roman past 3999. Captions could take the same first-of-matter restart, which would pass a
+  layout's continuous figure rule across matters that is refused today; not taken, since it changes
+  Word 2's output.
+- **The converter, `omml` in `word/omml.ts`**, pure and tested node by node, maps every kind of
+  `MathsNode` as M11 measured: identifiers with `m:sty` and, for their variants, `m:scr`; numbers and
+  operators upright; fractions, stacks and binomials as `m:f`, `noBar` for a stack; roots as
+  `m:rad`; scripts, and prescripts as `m:sPre`; accents as `m:acc` with the combining form of the
+  tree's spacing accent, since an arrow written as its spacing character was drawn through its base,
+  measured; lines as `m:bar`; braces as `m:groupChr` with their labels in `m:limUpp` or `m:limLow`;
+  fences as `m:d` with empty sides and one-character `mid`s as its separators; matrices as `m:m`
+  with `plcHide` and each column's alignment, ragged rows padded; an aligned equation as `m:eqArr`
+  joined by `&`; phantoms as `m:phant`; primes as characters. An italic identifier states `m:sty i`
+  rather than M11's bare run, as the PDF forces italic, and Word then italicises Greek capitals as
+  Typst does. No maths run names a face: `m:mathPr` sets them all in Cambria Math (M11, measured
+  again).
+  - **The operand rule, as built.** A large operator alone, or as the base of an attach with only
+    limits, becomes `m:nary`, and a named operator `m:func`; each takes the next node in its row as
+    its operand or argument. **Rows are read spliced**, a group's nodes as the row's own, since
+    Temml writes `\sin x` as a group of the name and a space, then the `x`: read literally, the
+    sibling rule gave `\sin` its own trailing space as its argument. Spaces before the operand go
+    into `m:e` with it; an opening bracket takes everything to its matching close - a bar matches
+    itself, an unclosed bracket takes the rest of the row - so `\sum (a+b)` and `\sin(x)` are whole;
+    and an operator as the operand is taken with what it takes, so `\sum_i \sum_j a_{ij}` nests. With
+    nothing after it a large operator keeps an empty `m:e`, for which Word prints no placeholder
+    (measured), and a named operator is written as its name alone. A bare large operator with no
+    limits is an `m:nary` too, large in a display as the PDF sets it; one with corner scripts or
+    primes is its character with the scripts, since `m:nary` has no place for them.
+  - **N-ary by character.** Temml never writes `largeop`, so every `\sum` reaches the tree as a plain
+    operator, checked against every Temml fixture's tree. A large operator is known by the tree's
+    `large` **or** by its character - Unicode's n-ary operators - as Typst knows one by its class.
+  - **Sizes and spaces.** `display` and `inline` decide only where limits stand (`limLoc`, or
+    `m:limLow` and `m:limUpp` rather than scripts), since OMML has no style per part. `script` and
+    `sscript` state each run's size from the surrounding text's by Cambria Math's own script scales,
+    73% and 60% from its MATH table, at Word's script depth 0 only, since Word sets deeper parts
+    smaller itself. A space is the fewest Cambria Math space characters to the nearest eighteenth of
+    an em; a negative space is dropped, Word having none, so `\!` loses its kerning. Cases place each
+    cell by `&` into the next column of its side, since Word's own `x, & x>=0` right-aligns the first
+    column (measured); a centred cases column is set left; a literal `&` in an equation array is an
+    `m:nor` run, which Word sets as itself.
+- **Text in an equation is set in the maths face**, correcting the table under
+  [Equations](#equations), which gave text as `m:nor` and nothing more: Word sets a normal-text run in
+  the body face unless it names another (measured, Times standing in for Liberation Serif), where the
+  PDF sets text in the maths face. So an `m:nor` run names the maths face's Word face in `w:rFonts`,
+  Cambria Math under the default theme, and keeps Word's normal-text reading - its spaces, and `&`
+  never an alignment point. Measured: Word's PDF sets _if_ in an equation in Cambria Math and embeds
+  no other face for the maths.
+- **The writer.** In a line an equation is an `m:oMath` where its run stands, sized from the style it
+  is set in; a link before it closes, since it carries no mark. **An equation alone in its paragraph
+  has a zero-width space before it**: Word displays an `m:oMath` that is all its paragraph holds - a
+  fraction alone in a table's cell was set at display size, 11.04pt, where the PDF sets it in its
+  line - and a U+200B run kept it in the line, its numerator 8.04pt against the PDF's 7.70, where an
+  empty run did not. The character is invisible, zero width and read by no screen reader; text copied
+  from Word carries it. Displayed, an equation is an `m:oMathPara` in a paragraph in its place's
+  style, never `w:bidi`, since OMML has no direction and the PDF sets maths left to right.
+  `settings.xml`'s `m:mathPr` names the maths face's Word face with M11's `dispDef`, `defJc center`
+  and `wrapIndent 1440`, in every document, so an equation a recipient adds follows it; `dispDef`
+  off, `wrapRight` and `centerGroup` were measured beside it, and each moved the too-wide equation's
+  lines. The list of equations is `TOC \h \z \c "Equation"`, prefilled with each label; a list
+  entry's prefill is now runs, so a caption holding an equation is prefilled with it, and a table's
+  `w:tblCaption` gives an equation's alternative among the caption's words, since a title is words. A
+  document that sets an equation reports `face_substituted`, STIX Two Math set in Cambria Math
+  (STY-052, WO-E); one that sets none reports nothing for the maths face, as Word 1 left it.
+- **A numbered equation is a borderless row of two cells** (WO-H, M17): a table as wide as the
+  measure less its place's indents, no borders, fixed layout, no cell margins at the sides, no table
+  style, header, first column or banding, its row `cantSplit` and both cells centred vertically. The
+  label's cell is as wide as the label in its style's face and an em, template 13's `room`, the label
+  right-aligned, and the equation's paragraph stands in from its cell's start by the same width, so
+  the equation centres on the measure as the PDF's does and Word breaks it where the PDF would put its
+  number below. The label is template 13's, _Equation 1_, not M17's _(1)_, written by the same
+  `labelRuns` a caption's label is, in the layout's words, left to right, inside the equation's
+  hidden `_Ref` bookmark, so a number reference is `REF _Ref \h`, a page `PAGEREF` and above or below
+  `REF \p`; an equation offers no title form. **The row's space is stated on both cells' paragraphs
+  alike**, not moved to the paragraph after as a table's is, so the label stays centred on its
+  equation; and **both cells turn contextual spacing off where their style asks for it**: in a
+  quotation Word dropped the equation paragraph's space after, which faced the label's paragraph of
+  the same style, and set the label 6.24pt above the equation; with it off, the label stands on the
+  equation's baseline. Measured, a short equation's number starts 475.42pt across the page against
+  the PDF's 475.32, on the equation's baseline where the PDF's stands 1.38 above it.
+- **A heading's equation is kept regular when Word saves it**, found by the Word check. Word draws
+  maths in a bold style - a heading's - regular, as the PDF does, but gives the style's bold to every
+  maths run as it saves, so the copy it saved reopened with the heading's _x_ + 10 in bold italic and
+  bold digits where it had opened regular. Every maths run in a bold style now states bold off, but a
+  run bold by its own variant, whose style says so already; Word keeps it, and the saved copy reads
+  regular. An italic style holding an equation, which the default theme has none of, is not
+  measured.
+- **An equation's language and alternative go nowhere in Word**: Word reads its own maths aloud
+  ([Accessibility](#accessibility-pub-035)), and the alternative appears only among a table caption's
+  words in `w:tblCaption`.
+- **The Word check** gained a fixture of equations, compiled through template 13 beside it, and two
+  checks: now twelve documents and 25 checks, all green in Word 16 on the final code. It holds the
+  every-kind equation in a line and displayed; equations in a line in a paragraph, a table's caption,
+  header row and cells - one alone in its cell - a table's note, a figure's caption, a footnote and a
+  level-one section's title; numbered ones in front matter, the body, one of them too wide, and an
+  appendix; references to them in every form an equation offers; and the list of equations, every
+  number prefilled "9". Every equation is Word's own, displayed or in its line as published, in
+  Cambria Math, and again where Word rebuilds the contents and the lists from a heading or a caption
+  holding one; every number is the numbering table's after the update, starting across the page
+  within 0.7pt of the PDF's (_i_ 477.94 against 477.76, _1_ 475.42 against 475.32, _A.1_ 464.62
+  against 465.23), on its equation's line, and the too-wide one breaks inside its cell with its
+  number beside it. Its first run found the heading's bold above, and that COM's horizontal reading
+  of a line is Word's layout grid, 11pt from where Word draws the text, so the number's place is read
+  from Word's own PDF. [`docs/testing.md`](../testing.md#the-word-check) lists what it checks.
+
+**What Word showed that the design did not foresee**, measured in Word 16 against the PDF of the same
+document compiled through template 13:
+
+- **A sum's limits in a line stand beside it in Word**, where the PDF sets them above and below: Word
+  sets an `m:nary` in a line with its limits beside whatever `limLoc` says, as M11 found. The PDF's
+  line grows to hold them and Word's does not (heading to line 22.13 and line to line 19.89 in the
+  PDF, 18.60 and 17.64 in Word).
+- **A numbered equation too wide for its line breaks inside its cell in Word**, at its operators into
+  three lines, the later ones indented by `wrapIndent`, its number at the right beside the middle
+  line; the PDF sets one line running past both edges of the page and its number beneath it at the
+  right. By design (WO-H, M17): Word's is the one that fits.
+- **Two numbered equations in a row read as one table of two rows.** Two `w:tbl`s with nothing between
+  them are one table to Word - COM counts one - each row keeping its own grid and space and each label
+  on its equation, and a screen reader meets one table of two rows. A paragraph between would add a
+  line the PDF does not have; left.
+- **An equation array in a line is centred on the line** in Word, the words either side at its middle
+  row, where the PDF stands it on the line, its last row on the baseline and the words beside that.
+- **A running head naming a title that holds an equation prints the maths as linear text**: Word's
+  `STYLEREF` copies its characters, the _x_ in Cambria Math and the _+10_ in the head's body face,
+  with no maths spacing, where the PDF sets _x + 10_ in STIX with its spacing.
+- **Smaller things.** An inline-style fraction in a displayed equation is set at display size in
+  Word, and a matrix or cases in a line at full size, where the PDF sets them smaller; text in an
+  equation keeps its spaces in Word where the PDF drops them; cases' column gap is narrower, and the
+  bar between a bracket's parts unspaced; Cambria Math's limits stand further from a displayed sum
+  than STIX Two Math's (16.44 above and 14.16 below, against 13.40 and 11.82). A list item that opens
+  with a numbered equation carries its number on a paragraph of its own above the row, Word 2's rule
+  for an item opening with anything but a paragraph, 14.4pt lower than the PDF, which sets the marker
+  beside the equation.
+
+**What each claim now stands on**, as `pnpm trace show` reports it; the citations pin moved from 331
+to 337:
+
+| ID          | Claimed by    | Cited                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PUB-067** | this document | Two tests, the converter's half and the writer's: `word/omml.test.ts`, an equation holding every kind of maths node, read by `mathsTree` from one stored MathML, written as OMML objects alone, in a line and displayed; and `word/write.test.ts`, every equation in the document exactly `omml`'s OMML of its published tree in an `m:oMath` or an `m:oMathPara`, with no MathML and no drawing                                                                                 |
+| **CNT-045** | this document | Two tests for its three renderings: `apps/web`'s `editor/equationView.test.ts`, the editor drawing the stored MathML whole, element for element - on screen; and `apps/worker/src/word.test.ts`, one publication setting each stored MathML's one maths tree in the PDF, a `Formula` saying its words, and in Word as that tree's OMML                                                                                                                                           |
+| **PUB-065** | this document | `apps/worker/src/publish.test.ts`, one job publishing a chapter of several pages to the PDF and to Word: every paragraph's words, headings numbered by their style and never in their text, every caption's and equation's number a `SEQ` field and every reference to a section, a table, an equation, a footnote and an appendix a field prefilled with the PDF's words, no page break the layout does not declare, and the Word output's report saying a page cites the PDF   |
+| **PUB-023** | this document | `apps/worker/src/word.test.ts`, over one document holding every construct a T1 document can hold: every block kind and matter, the cover, the running heads and feet, every heading, mark, link, language, list, quotation, preformatted block, table, image, figure, footnote, cross-reference, caption's and numbered equation's number, contents and list after it, and every equation, each Word's own structure, validated, and the report's kinds exactly the losses named |
+| **PUB-035** | this document | `apps/worker/src/word.test.ts`, extended as Word 3 said it must be: over Word 4's document too, every displayed equation an `m:oMathPara` and every equation an `m:oMath`, no MathML, no drawing but the figure's, no equation's alternative but among a table caption's words, a `SEQ Equation` per numbered equation, each label in the layout's language, and a heading holding an equation still at its outline level; and every list item on one of Word's lists            |
+
+**PUB-023, the argument.** This document reads "first-class, not a convenience export" as every
+construct a native Word construct, nothing flattened to formatted text
+([Requirements owned](#requirements-owned)). With Word 4 nothing a T1 document holds is refused for
+Word but what Word's fields would print otherwise than the PDF, each by name
+([Word output as it stands](#word-output-as-it-stands)), and the test shows every other construct
+written as Word's own structure, validated, with every loss the writer knows of named in the report;
+the Word check shows Word itself numbering, updating and setting them as the PDF does (PUB-029). That
+a Word output comes from the same job and the same assembly as the PDF, recorded with its own
+producer and version, is the job's tests', which do not cite it. A reader who took "first-class" to
+ask for the PDF's pages too would disagree, and PUB-065 rules that out.
+
+**PUB-035, the argument, and what Word has no structure for.** It stands whole on this document's
+terms - headings at their levels, images described or decorative, header rows marked, every run in
+its language, and native equations read by Word's own maths reading, needing no image and no
+alternative of ours - now that nothing a T1 document holds is refused for Word but the named
+refusals, and so nothing reaches a reader of Word inaccessibly by being left out. What Word has no
+structure for is named rather than hidden: **a numbered equation is a table** of one row and two
+cells, which a screen reader announces as a table, and two in a row one table of two rows, since
+OOXML has no mark that a table only lays things out; **a quotation and preformatted text are
+styles**, where the PDF tags `BlockQuote` and `Code`, and a quoted phrase is its words and its
+quotation marks, where the PDF tags a quotation; and, as before, a description's language, which Word
+has nowhere to put, and a header column, which the report names. A reviewer who reads "on the same
+terms" as asking for those structures would disagree; Word cannot give them.
+
+**Not cited, and why.** The Word check cites PUB-029 alone, as before, since CI skips it. PUB-092 and
+STY-053 wait for Word's pagination and its style properties to be measured where Word runs, PUB-073
+for T3's baselines, and PUB-028, review in Word, is T6.
+
+**Left, for anyone after T1.** Nothing of WO-M is left. Open: the two questions under
+[Open questions](#open-questions) - whether recipients accept Word's prompt to update fields, and
+whether review comes by default; how a reader who declines the prompt sees the contents, which the
+check cannot see, since Word hidden updates on opening; and whether a Word with Hebrew words prints
+Hebrew ones for above and below. **Not measured in Word**, each tested for its XML only: a cover
+running to a second page; a matter entered twice, whose pages Word continues where the PDF resumes,
+and whose footnotes and equations are refused where Word's count would differ; right to left, a
+list, a table's cells, a figure and an equation's row, whose number stays at the right; a table, a
+figure or a floated figure in a list item or a quotation, and preformatted text narrowed inside one;
+a header cell spanning into the body; an unnumbered figure in the PDF's list; a floated figure whose
+box Word sets on another page than its anchor; punctuation between two references in a
+right-to-left passage; an italic style holding an equation; a numbered equation at a page's foot,
+kept whole by `cantSplit`; a large operator whose limits stay above and below in a line, which M11
+predicts Word sets beside; and a part set two script levels down inside a script, a level larger in
+Word than in the PDF by construction. **Known and left**, each said above in its slice's part: the
+pages Word sets, which differ from the PDF's by design (PUB-065); a kept row taller than a page; a
+term's step, a cell's top margin and a line holding an image; a caption's label's language; the
+equations' differences above; and `apps/web/src/publishing/failures.ts` still wording
+`word_not_yet`, `listOf:figure` and `listOf:table`, which stored failures may name.
+
+#### Word output as it stands
+
+A Word publication is a first-class output, made by the job that makes the PDF, from the same
+assembly, in the theme's styles as Word styles: its headings numbered by Word from the layout's
+scheme; the cover, the contents and the lists after it, the running heads and feet and **Not
+approved** on every page; its marks, links and languages, the Liberation faces embedded; its lists,
+quotations, preformatted text, tables in their table styles, figures and images; its footnotes as
+Word's own; its cross-references as fields Word updates at hidden bookmarks; and its equations as
+Word's own maths. Every number is a field prefilled with what the PDF prints and every page is left
+for Word, and a report names what Word cannot carry - a header column, a repeated header, a
+continuation label, a substituted face - and that a page cites the PDF. It refuses by name, and the
+PDF still publishes, only what Word's fields would print otherwise than the PDF: **a number Word
+cannot compute** (`numbering_not_in_word`, and `list_not_in_word` for a list past Word's nine levels
+or its letters and numerals); **a relative reference across a story's boundary**, a footnote's or a
+floated figure's (`relative:footnote`, `relative:float`); and **a caption's words named as a title
+where Word reads them otherwise**, inside the caption itself or holding a reference that prints
+anything but a number (`title:caption`, `title:nested` and their `numberAndTitle` forms). Ken kept
+the last two, W3-A and W3-B, on 2026-09-26. How each slice built its part, what Word showed and what
+each requirement is cited by are in the parts above, one a slice:
+[Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md),
+[Word 2](../plans/2026-09-25-word-02-lists-tables-and-figures.md),
+[Word 3](../plans/2026-09-26-word-03-footnotes-and-cross-references.md) and
+[Word 4](../plans/2026-09-26-word-04-equations.md).
 
 ## Open questions
 
