@@ -163,7 +163,7 @@ false, a `remove` of a section when `remove` is false, and a `move` of a section
 
 - **A document's values** are the version's `metadata_values`, the column a component's already use.
   Four things hold them to components today, and each widens to documents: the column's constraint
-  `artifact_version_values_by_kind` (migration 0028), `DocumentSubstance`, which gains `values`,
+  `artifact_version_values_by_kind` (migration 0029), `DocumentSubstance`, which gains `values`,
   `canonicaliseVersion`, which reads a document's values into the digest's `values` member as it
   reads a component's (ADR-0024), and `insertVersion` and `substanceOf`, which write and read them. A
   document version made before templates has none, so its digest is unchanged: the member was the
@@ -211,18 +211,19 @@ nothing is queued to fail.
 
 ## Where the code lives
 
-| Where                                              | What                                                                                                                               |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `domain: src/template/`                            | The definition's schema, `checkTemplate`, `resolveTemplate`, and the starting outline's materialising                              |
-| `domain: src/structure/`                           | `origin`, outline schema 3, and `changes` passed to `applyOutlineOperation`                                                        |
-| `db: migrations/tenant/0028_templates.sql`         | The kind, the space rule, `document_template`, and documents' values                                                               |
-| `db: src/templates.ts`                             | Making, reading and versioning a template; instantiating a document; a document's template                                         |
-| `service: src/templates.ts`                        | The template routes; the documents and publishing handlers read a document's template                                              |
-| `domain: src/version/substance.ts`                 | `DocumentSubstance.values`, and `canonicaliseVersion` digesting them                                                               |
-| `db: src/versions.ts`                              | `insertVersion` and `substanceOf` writing and reading a document's values                                                          |
-| `db: src/publishing.ts`, `layouts.ts`, `themes.ts` | `requestPublication` reading the document's template's layout and theme, `layoutLatest` and `themeLatest`, and the two door checks |
-| `service: src/wire-codes.ts`                       | `template.unresolved`, `section.required` and `metadata.invalid`, with their rules TPL-004, TPL-013 and TPL-055 (API-006)          |
-| `web: src/structure/NewDocument.tsx`               | The template to start from                                                                                                         |
+| Where                                               | What                                                                                                                               |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: src/template/`                             | The definition's schema, `checkTemplate`, `resolveTemplate`, and the starting outline's materialising                              |
+| `domain: src/structure/`                            | `origin`, outline schema 3, and `changes` passed to `applyOutlineOperation`                                                        |
+| `db: migrations/tenant/0028_templates.sql`          | The kind, its space rule, and its versions authored                                                                                |
+| `db: migrations/tenant/0029_document_templates.sql` | `document_template`, and documents' values                                                                                         |
+| `db: src/templates.ts`                              | Making, reading and versioning a template; instantiating a document; a document's template                                         |
+| `service: src/templates.ts`                         | The template routes; the documents and publishing handlers read a document's template                                              |
+| `domain: src/version/substance.ts`                  | `DocumentSubstance.values`, and `canonicaliseVersion` digesting them                                                               |
+| `db: src/versions.ts`                               | `insertVersion` and `substanceOf` writing and reading a document's values                                                          |
+| `db: src/publishing.ts`, `layouts.ts`, `themes.ts`  | `requestPublication` reading the document's template's layout and theme, `layoutLatest` and `themeLatest`, and the two door checks |
+| `service: src/wire-codes.ts`                        | `template.unresolved`, `section.required` and `metadata.invalid`, with their rules TPL-004, TPL-013 and TPL-055 (API-006)          |
+| `web: src/structure/NewDocument.tsx`                | The template to start from                                                                                                         |
 
 ## Verification
 

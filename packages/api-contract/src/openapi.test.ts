@@ -49,6 +49,27 @@ describe('the OpenAPI document', () => {
     }
   });
 
+  it('resolves every reference inside the document, a recursive schema included', () => {
+    // A recursive schema - a template's starting sections nest - is written with a reference to a
+    // definition of its own; wherever it is embedded, the reference has to name a place in this
+    // document, or no client can be generated from it.
+    const refs = [...JSON.stringify(document).matchAll(/"\$ref":"([^"]+)"/g)].map(
+      (match) => match[1]!,
+    );
+    expect(refs.length).toBeGreaterThan(0);
+    for (const ref of refs) {
+      expect(ref, ref).toMatch(/^#\//);
+      const target = ref
+        .slice(2)
+        .split('/')
+        .reduce<unknown>(
+          (node, part) => (node as Record<string, unknown> | undefined)?.[part.replace(/~1/g, '/')],
+          document,
+        );
+      expect(target, ref).toBeDefined();
+    }
+  });
+
   it('carries no JSON Schema dialect markers inside the document', () => {
     expect(JSON.stringify(document)).not.toContain('$schema');
   });

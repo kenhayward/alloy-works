@@ -536,6 +536,9 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 404, from 392 (2026-09-27): W4.1 - in titles TPL-059, TPL-012, TPL-013, TPL-015 and TPL-054 (the
+  // definition), TPL-053 (resolution), TPL-001 and VER-056 (the store), TPL-006 and IAM-018 (the
+  // routes); as rules the route tests assert, TPL-004 and API-037.
   // 392, from 391 (2026-09-26): W2.3 - CNT-167, in the HTML reader's test.
   // 391, from 373 (2026-09-26): W2.2 - in titles API-003 (http and app), API-006, API-012, API-037
   // and API-047 (http and stream); as refusals' rules asserted by the route tests, API-037 in three
@@ -552,7 +555,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(392);
+    expect(model.citations).toHaveLength(404);
   });
 
   it('cites no identifier the corpus does not hold', () => {

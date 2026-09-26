@@ -376,6 +376,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   one is shown and not changed, with a sentence saying why - and a document's own title, language and
   direction cannot be changed once it is made.
 
+- **Templates, through the API.** A template is made in a space by somebody who may design there - the
+  Designer role, which Ada and Grace hold on General in development - and names the sections a
+  document starts with, which of them a document may not publish without, whether an author may add,
+  remove or reorder sections, the theme and layout it is set in, and the metadata schemas it asks for
+  at the document's level or its sections'. It is versioned like everything else, and refused by name
+  where anything it names does not exist. Development's General holds one, **Report**: Introduction
+  and Conclusion required, Method and Results beside them, in that order. Templates are made and
+  changed through the API, `/v1/spaces/{space}/templates` and `/v1/templates`; nothing in the pages
+  makes, changes or uses one yet.
+
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath
   its outline, and before it a choice of **PDF**, **Word** or **PDF and Word**, PDF unless they choose

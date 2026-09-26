@@ -6,6 +6,7 @@ import { editingRoutes } from './editing.js';
 import { invitationRoutes } from './invitations.js';
 import { managingAccessRoutes } from './managing-access.js';
 import { publishingRoutes } from './publishing.js';
+import { templateRoutes } from './templates.js';
 import {
   AccessAnswers,
   AccessExplanation,
@@ -250,6 +251,7 @@ export const routes = {
   ...managingAccessRoutes,
   ...invitationRoutes,
   ...assetRoutes,
+  ...templateRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

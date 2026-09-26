@@ -11,6 +11,7 @@ import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import { listReadableTemplates } from './templates.js';
 import { latestVersion } from './versions.js';
 
 const ISSUER = 'http://127.0.0.1:9090';
@@ -74,8 +75,8 @@ describe('the development content', () => {
       expect(decide('read', facts!).allowed).toBe(false);
 
       const grants = await trx.selectFrom('access_grant').select('id').execute();
-      // Author and Publisher on General, for each of Ada and Grace.
-      expect(grants).toHaveLength(4);
+      // Author, Publisher and Designer on General, for each of Ada and Grace.
+      expect(grants).toHaveLength(6);
     });
   });
 
@@ -168,5 +169,33 @@ describe('the development content', () => {
     );
     expect(grace.id).not.toBe(stray);
     expect(grace.issuer).toBe(ISSUER);
+  });
+
+  it('makes one template in General, Report, with its required sections, however often it runs', async () => {
+    const run = () =>
+      service.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: ISSUER }));
+    await run();
+    await run();
+    const templates = await service.withTenant(tenant, async (trx) => {
+      const ada = await trx
+        .selectFrom('principal')
+        .select('id')
+        .where('subject', '=', 'ada')
+        .executeTakeFirstOrThrow();
+      return (await listReadableTemplates(trx, ada.id))!.items;
+    });
+    expect(templates.map((each) => [each.name, each.space.name])).toEqual([['Report', 'General']]);
+    const report = await service.withTenant(tenant, (trx) => latestVersion(trx, templates[0]!.id));
+    const definition = report!.content as {
+      outline: { sections: { key: string; required: boolean }[] };
+      changes: { reorder: boolean };
+    };
+    expect(definition.outline.sections.map((each) => [each.key, each.required])).toEqual([
+      ['introduction', true],
+      ['method', false],
+      ['results', false],
+      ['conclusion', true],
+    ]);
+    expect(definition.changes.reorder).toBe(false);
   });
 });

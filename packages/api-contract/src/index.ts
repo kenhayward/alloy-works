@@ -75,6 +75,15 @@ export {
   PublishFailureView,
   RequestPublicationBody,
 } from './publishing.js';
+export {
+  CreateTemplateBody,
+  TemplateList,
+  TemplateParams,
+  TemplateRefusal,
+  TemplateSummary,
+  TemplateVersionBody,
+  TemplateView,
+} from './templates.js';
 export { allRoutes, API_VERSION, routes, SESSION_COOKIE } from './routes.js';
 export {
   AccessAnswers,

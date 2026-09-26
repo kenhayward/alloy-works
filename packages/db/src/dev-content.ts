@@ -1,9 +1,16 @@
-import { definitionsFor } from '@alloy-works/domain';
+import {
+  DEFINITION_SCHEMA_VERSION,
+  TEMPLATE_SCHEMA_VERSION,
+  definitionsFor,
+} from '@alloy-works/domain';
 import { currentDefinitionsFor, defaultComponentType } from './creation.js';
 import { grant } from './grants.js';
+import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
-import { createArtifact } from './versions.js';
+import { createTemplate } from './templates.js';
+import { DEFAULT_THEME_ID } from './themes.js';
+import { createArtifact, latestVersion } from './versions.js';
 
 // The starter component type's identifier lives in `creation.ts` and is exported from there directly
 // (`@alloy-works/db`'s `index.ts`), since 0015 gives every environment one at migration time rather
@@ -107,6 +114,23 @@ export async function seedDevelopmentContent(
     }
   }
 
+  // Designer on General too, so either may make and change a template there (TPL-006).
+  const designer = await findRole(trx, 'Designer');
+  if (!designer) throw new Error('This environment has no Designer role to grant');
+  for (const principal of [ada, grace]) {
+    const answer = await grant(trx, {
+      roleId: designer.id,
+      subject: { principal },
+      level: { kind: 'space', id: general.id },
+      effect: 'allow',
+      grantedBy: grace,
+    });
+    if ('refused' in answer && answer.refused !== 'grant.duplicate') {
+      throw new Error(`Designer on General was refused: ${answer.refused}`);
+    }
+  }
+  await seedReportTemplate(trx, general.id, grace);
+
   // Already run: the component in General, not the component type, which 0015 now writes for every
   // environment before anything here runs.
   const seeded = await trx
@@ -162,4 +186,82 @@ export async function seedDevelopmentContent(
     },
   });
   return { componentId: component.artifactId, created: true };
+}
+
+/** Development's Review schema and its one field, and the template assigning it. Fixed, so a rerun finds them. */
+const REVIEWER_FIELD = '0d5e7a11-0000-4000-8000-00000000f1e1';
+const REVIEW_SCHEMA = '0d5e7a11-0000-4000-8000-00000000c4e3';
+
+/**
+ * A template in General to make a document from (templates.md): Report, whose Introduction and
+ * Conclusion a document may not publish without and whose sections keep their order, over the
+ * environment's theme and layout, assigning Review at the document's level with nothing required -
+ * a field no page can fill in yet (W5) must not stop a document publishing. Made once.
+ */
+async function seedReportTemplate(trx: TenantTransaction, space: string, designer: string) {
+  const exists = await trx
+    .selectFrom('artifact')
+    .select('id')
+    .where('kind', '=', 'template')
+    .where('space_id', '=', space)
+    .executeTakeFirst();
+  if (exists) return;
+  const identity = (id: string, name: string) =>
+    ({ schemaVersion: DEFINITION_SCHEMA_VERSION, id, name }) as const;
+  if (!(await latestVersion(trx, REVIEWER_FIELD))) {
+    await createArtifact(trx, {
+      author: designer,
+      substance: {
+        kind: 'field',
+        content: {
+          ...identity(REVIEWER_FIELD, 'Reviewer'),
+          dataType: 'text',
+          multiplicity: 'one',
+          validation: {},
+        },
+      },
+    });
+  }
+  if (!(await latestVersion(trx, REVIEW_SCHEMA))) {
+    await createArtifact(trx, {
+      author: designer,
+      substance: {
+        kind: 'metadataSchema',
+        content: {
+          ...identity(REVIEW_SCHEMA, 'Review'),
+          entries: [{ field: REVIEWER_FIELD, required: false, fixed: false }],
+        },
+      },
+    });
+  }
+  const section = (key: string, words: string, required: boolean) => ({
+    key,
+    title: [{ type: 'text' as const, value: words, marks: [] }],
+    required,
+    numbered: true,
+    matter: 'body' as const,
+    pageBreak: 'none' as const,
+    children: [],
+  });
+  const made = await createTemplate(trx, {
+    spaceId: space,
+    author: designer,
+    definition: {
+      schemaVersion: TEMPLATE_SCHEMA_VERSION,
+      name: 'Report',
+      theme: DEFAULT_THEME_ID,
+      layout: DEFAULT_LAYOUT_ID,
+      schemas: [{ schema: REVIEW_SCHEMA, level: 'document', requires: [] }],
+      outline: {
+        sections: [
+          section('introduction', 'Introduction', true),
+          section('method', 'Method', false),
+          section('results', 'Results', false),
+          section('conclusion', 'Conclusion', true),
+        ],
+      },
+      changes: { add: true, remove: true, reorder: false },
+    },
+  });
+  if (made.answer !== 'created') throw new Error(`The Report template was refused: ${made.answer}`);
 }

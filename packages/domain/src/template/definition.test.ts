@@ -95,7 +95,8 @@ describe('a template definition', () => {
     );
     expect(parsed.outline.sections.map((each) => each.required)).toEqual([true, false]);
     // Required is said, never assumed: a section that does not say is refused.
-    const { required: _, ...unsaid } = section('introduction', 'Introduction');
+    const unsaid: Record<string, unknown> = { ...section('introduction', 'Introduction') };
+    delete unsaid.required;
     expect(parses(template({ outline: { sections: [unsaid] } }))).toBe(false);
   });
 

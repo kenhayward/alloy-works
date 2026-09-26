@@ -33,6 +33,7 @@ const WIRE_CODES = {
   'format.unsupported': 'format_unsupported',
   'page_reference.without_pdf': 'page_reference_without_pdf',
   'layout.language': 'layout_language',
+  'template.unresolved': 'template_unresolved',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -57,6 +58,9 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'layout.language': 'PUB-095',
   'grant.external_at_tenant': 'IAM-071',
   'grant.external_past_cap': 'IAM-049',
+  // Refused when a template is made or changed as well as when a document is made from it: a template
+  // naming what does not resolve could make no document (TPL-004, templates.md TE-L).
+  'template.unresolved': 'TPL-004',
 };
 
 /** The wire's spelling of a store's dotted answer. */
