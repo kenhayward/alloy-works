@@ -25,8 +25,8 @@ import {
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { lockView, versionView } from './components.js';
-import { AppError } from './errors.js';
-import { wireCode } from './wire-codes.js';
+import type { AppError } from './errors.js';
+import { refused } from './wire-codes.js';
 
 /** Every refusal a session's write can meet from the store. */
 type Refusal =
@@ -45,44 +45,35 @@ type Refusal =
 function refuse(refusal: Refusal): AppError {
   switch (refusal.answer) {
     case 'lock.held':
-      return new AppError(
-        409,
-        wireCode('lock.held'),
-        'This component is being edited in another session.',
-        undefined,
-        {
-          holder: { id: refusal.lock.holder, name: refusal.lock.holderName },
-          expectedRelease: refusal.lock.expiresAt.toISOString(),
-        },
-      );
+      return refused(409, 'lock.held', 'This component is being edited in another session.', {
+        holder: { id: refusal.lock.holder, name: refusal.lock.holderName },
+        expectedRelease: refusal.lock.expiresAt.toISOString(),
+      });
     case 'lock.required':
-      return new AppError(
+      return refused(
         409,
-        wireCode('lock.required'),
+        'lock.required',
         'This session does not hold the lock on this component.',
       );
     case 'version.precondition':
-      return new AppError(
+      return refused(
         409,
-        wireCode('version.precondition'),
+        'version.precondition',
         'This component has a newer version than the one this session opened.',
-        undefined,
         { current: versionView(refusal.current) },
       );
     case 'iteration.stale':
-      return new AppError(
+      return refused(
         409,
-        wireCode('iteration.stale'),
+        'iteration.stale',
         'A later save from this session has already been accepted.',
-        undefined,
         { latest: refusal.latest },
       );
     case 'iteration.conflict':
-      return new AppError(
+      return refused(
         409,
-        wireCode('iteration.conflict'),
+        'iteration.conflict',
         'This save repeats an accepted one with different content.',
-        undefined,
         { latest: refusal.latest },
       );
     case 'artifact.missing':
@@ -125,9 +116,9 @@ export function editingHandlers() {
         if (!hasText(content.title) || !storableEverywhere(content)) throw new Error('unstorable');
       } catch {
         // A fixed message: what failed to parse is the author's content, and never goes back as prose.
-        throw new AppError(
+        throw refused(
           400,
-          wireCode('content.invalid'),
+          'content.invalid',
           'The content is not a document this product can store.',
         );
       }

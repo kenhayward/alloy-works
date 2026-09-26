@@ -340,6 +340,7 @@ describe('writing in an editing session through the service', () => {
         expect(response.statusCode).toBe(409);
         expect(response.json()).toMatchObject({
           code: 'lock_held',
+          rule: 'API-039',
           holder: { id: ids.ada, name: 'Ada' },
           expectedRelease,
         });
@@ -379,7 +380,11 @@ describe('writing in an editing session through the service', () => {
         { openedFrom: made.openedFrom, content: paragraphs('From the other window') },
       );
       expect(elsewhere.statusCode).toBe(409);
-      expect(elsewhere.json()).toMatchObject({ code: 'lock_held', holder: { id: ids.ada } });
+      expect(elsewhere.json()).toMatchObject({
+        code: 'lock_held',
+        rule: 'API-039',
+        holder: { id: ids.ada },
+      });
 
       const moved = await call('ada', 'POST', `/v1/components/${made.id}/lock`, {
         session: second,
@@ -392,7 +397,11 @@ describe('writing in an editing session through the service', () => {
         content: paragraphs('From the first window'),
       });
       expect(stranded.statusCode).toBe(409);
-      expect(stranded.json()).toMatchObject({ code: 'lock_held', holder: { id: ids.ada } });
+      expect(stranded.json()).toMatchObject({
+        code: 'lock_held',
+        rule: 'API-039',
+        holder: { id: ids.ada },
+      });
 
       const unheld = await component();
       const nobody = await call('ada', 'PUT', `/v1/components/${unheld.id}/iterations/${first}/1`, {
@@ -400,7 +409,7 @@ describe('writing in an editing session through the service', () => {
         content: paragraphs('Never claimed'),
       });
       expect(nobody.statusCode).toBe(409);
-      expect(nobody.json()).toMatchObject({ code: 'lock_required' });
+      expect(nobody.json()).toMatchObject({ code: 'lock_required', rule: 'COL-005' });
     });
 
     it('refuses a stale sequence, a conflicting one and a version that has moved on, with what the author needs', async () => {
@@ -435,6 +444,7 @@ describe('writing in an editing session through the service', () => {
       expect(moved.statusCode).toBe(409);
       expect(moved.json()).toMatchObject({
         code: 'version_precondition',
+        rule: 'API-037',
         current: { id: made.openedFrom, number: '0.1' },
       });
     });

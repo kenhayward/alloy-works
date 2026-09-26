@@ -36,9 +36,9 @@ import {
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { lockView, versionView } from './components.js';
-import { AppError } from './errors.js';
+import type { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
-import { wireCode } from './wire-codes.js';
+import { refused } from './wire-codes.js';
 
 /** Who a document is being shown to, in the transaction their permission was decided in. */
 interface Viewer {
@@ -118,11 +118,10 @@ async function documentView(
 
 /** The precondition's refusal, carrying the document as it now stands so the caller can look again. */
 function stale(current: DocumentView): AppError {
-  return new AppError(
+  return refused(
     409,
-    wireCode('version.precondition'),
+    'version.precondition',
     'This document has a newer version than the one this page opened.',
-    undefined,
     { current },
   );
 }
@@ -199,9 +198,9 @@ export function documentHandlers(
       // between; answered as absent either way, never as a refusal that says it exists.
       if (answer.answer === 'space.missing') throw notFound();
       if (answer.answer === 'content.invalid') {
-        throw new AppError(
+        throw refused(
           400,
-          wireCode('content.invalid'),
+          'content.invalid',
           'A document needs a title and a language tag such as en-GB.',
         );
       }
@@ -418,11 +417,10 @@ export function documentHandlers(
           if (current.version.id !== body.openedFrom) throw stale(current);
           // A fixed message; the reason is one of the domain's own constants, never an exception's
           // text (operations.ts), so it is safe to carry as a member.
-          throw new AppError(
+          throw refused(
             400,
-            wireCode('outline.invalid'),
+            'outline.invalid',
             'This change does not apply to the outline as it stands.',
-            undefined,
             { reason: answer.reason },
           );
         }

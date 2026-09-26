@@ -25,8 +25,8 @@ import { formatLevel } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { afterCursor, cursorAfter, pageLimit } from './components.js';
-import { AppError } from './errors.js';
-import { wireCode } from './wire-codes.js';
+import type { AppError } from './errors.js';
+import { refused } from './wire-codes.js';
 
 /** A grant as the API shows it: its level spelled as a target, and its times as ISO strings. */
 export function grantView(listed: ListedGrant): GrantView {
@@ -76,7 +76,7 @@ const REFUSALS = new Map<GrantRefusal | 'grant.last_administrator', string>([
 
 /** A refusal where a grant is made or removed, as 409 with the wire's spelling of the store's answer. */
 function refuse(refusal: GrantRefusal | 'grant.last_administrator'): AppError {
-  return new AppError(409, wireCode(refusal), REFUSALS.get(refusal)!);
+  return refused(409, refusal, REFUSALS.get(refusal)!);
 }
 
 /**

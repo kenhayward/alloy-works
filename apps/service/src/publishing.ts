@@ -23,9 +23,9 @@ import {
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
-import { AppError, storageUnavailable } from './errors.js';
+import { storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
-import { wireCode } from './wire-codes.js';
+import { refused } from './wire-codes.js';
 
 /** Five minutes: long enough to follow a link, short enough that a copy is worth little. */
 export const DOWNLOAD_SECONDS = 300;
@@ -92,9 +92,9 @@ export function publishingHandlers(
         // By its code alone: the current version's outline names components the caller may not read,
         // so it is never carried here (IAM-073), unlike the outline route's refusal.
         case 'version.precondition':
-          throw new AppError(
+          throw refused(
             409,
-            wireCode('version.precondition'),
+            'version.precondition',
             'This document has a newer version than the one this page opened.',
           );
         case 'format.unsupported':
@@ -106,22 +106,22 @@ export function publishingHandlers(
               'A format refusal named no format: the contract should have refused it',
             );
           }
-          throw new AppError(
+          throw refused(
             400,
-            wireCode('format.unsupported'),
+            'format.unsupported',
             `The layout this document is published under does not make ${answer.formats.join(', ')}.`,
           );
         // Nothing of where it cites a page: the requester is told what to add, which answers it.
         case 'page_reference.without_pdf':
-          throw new AppError(
+          throw refused(
             400,
-            wireCode('page_reference.without_pdf'),
+            'page_reference.without_pdf',
             'This document refers to a page, and only the PDF has the pages it refers to. Publish it as a PDF as well.',
           );
         case 'layout.language':
-          throw new AppError(
+          throw refused(
             400,
-            wireCode('layout.language'),
+            'layout.language',
             `This document is in ${answer.document}, and its layout is written in ${answer.layout}. It can be published only under a layout in its own language.`,
           );
         case 'requested': {

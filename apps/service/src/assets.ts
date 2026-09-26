@@ -42,22 +42,29 @@ const uploadView = (upload: StoredAssetUpload): AssetUploadView => ({
   assetVersion: upload.assetVersionId,
 });
 
-/** What each refusal at the door is on the wire, and what the upload records. */
-const REFUSED_AT_THE_DOOR = {
+/**
+ * What each refusal at the door is on the wire, and what the upload records, with the asset rule
+ * that refuses it (API-006): the format list, the bound on what a file expands to, and the strict
+ * parse of its structure.
+ */
+export const REFUSED_AT_THE_DOOR = {
   not_permitted: {
     status: 400,
     code: 'asset_format_not_permitted',
     message: 'This is not a PNG or a JPEG image. Only those can be placed in a component.',
+    rule: 'AST-001',
   },
   too_many_pixels: {
     status: 413,
     code: 'asset_too_large',
     message: 'This image has more than 50 million pixels, which is more than an image may have.',
+    rule: 'AST-040',
   },
   malformed: {
     status: 400,
     code: 'asset_unreadable',
     message: 'This is not a complete PNG or JPEG image.',
+    rule: 'AST-051',
   },
 } as const satisfies Partial<Record<AssetUploadReason, object>>;
 
@@ -158,8 +165,8 @@ export function assetHandlers(
         return { upload: received } as const;
       });
       if ('refused' in outcome) {
-        const { status, code, message } = outcome.refused;
-        throw new AppError(status, code, message);
+        const { status, code, message, rule } = outcome.refused;
+        throw new AppError(status, code, message, rule);
       }
       return uploadView(outcome.upload);
     },

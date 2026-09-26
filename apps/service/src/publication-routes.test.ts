@@ -355,10 +355,10 @@ describe('publishing a document through the service', () => {
     const older = { id: other.id, version: document.version };
     const stale = await publish('grace', older);
     expect(stale.statusCode).toBe(409);
-    expect(stale.json()).toMatchObject({ code: 'version_precondition' });
+    expect(stale.json()).toMatchObject({ code: 'version_precondition', rule: 'API-037' });
     const html = await publish('grace', other, ['html']);
     expect(html.statusCode).toBe(400);
-    expect(html.json()).toMatchObject({ code: 'format_unsupported' });
+    expect(html.json()).toMatchObject({ code: 'format_unsupported', rule: 'PUB-014' });
     // A format named twice is a malformed request, not one the template cannot make.
     const twice = await publish('grace', other, ['pdf', 'pdf']);
     expect(twice.statusCode).toBe(400);
@@ -375,6 +375,7 @@ describe('publishing a document through the service', () => {
     expect(answer.statusCode, answer.body).toBe(400);
     expect(answer.json()).toEqual({
       code: 'layout_language',
+      rule: 'PUB-095',
       message:
         'This document is in fr, and its layout is written in en. It can be published only under a layout in its own language.',
       traceId: expect.any(String),
@@ -389,6 +390,7 @@ describe('publishing a document through the service', () => {
     expect(answer.statusCode, answer.body).toBe(400);
     expect(answer.json()).toEqual({
       code: 'format_unsupported',
+      rule: 'PUB-014',
       message: 'The layout this document is published under does not make html.',
       traceId: expect.any(String),
     });
@@ -445,6 +447,7 @@ describe('publishing a document through the service', () => {
     expect(answer.statusCode, answer.body).toBe(400);
     expect(answer.json()).toEqual({
       code: 'page_reference_without_pdf',
+      rule: 'PUB-074',
       message:
         'This document refers to a page, and only the PDF has the pages it refers to. Publish it as a PDF as well.',
       traceId: expect.any(String),
