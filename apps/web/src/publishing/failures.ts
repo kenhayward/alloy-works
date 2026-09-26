@@ -57,13 +57,14 @@ const NOT_YET_IN_WORD: Readonly<Record<string, string>> = {
 
 /**
  * What `numbering_not_in_word` names (Word 1, ruling R7; Word 2, ruling R1): `detail` is
- * `<sequence>:<matter>:<why>` - the headings', the figures' or the tables' numbers, the matter the
+ * `<sequence>:<matter>:<why>` - the headings', the figures', the tables' or the footnotes' numbers, the matter the
  * layout numbers them in, and what in its rule Word would number otherwise.
  */
 const NUMBERED: Readonly<Record<string, string>> = {
   section: 'the headings',
   figure: 'the figures',
   table: 'the tables',
+  footnote: 'the footnotes',
 };
 const NUMBERED_IN: Readonly<Record<string, string>> = {
   front: 'in front matter',
@@ -82,6 +83,17 @@ const NOT_IN_WORD_BECAUSE: Readonly<Record<string, string>> = {
 };
 /** A caption's separator is words between Word's fields, where only a control character fails. */
 const CAPTION_SEPARATOR = 'its separator holds a character Word cannot write';
+/**
+ * Word 3's ruling R2: Word numbers a footnote itself, with nothing beside the number, and starts the
+ * count again only where a matter's section begins.
+ */
+const FOOTNOTE_NOT_IN_WORD_BECAUSE: Readonly<Record<string, string>> = {
+  label: 'a word stands before the number, which Word does not write beside a footnote',
+  prefix:
+    "a chapter's number stands before the number, which Word does not write beside a footnote",
+  restart:
+    'they start again or carry on where Word would not, since Word starts them again only where front matter, the body or the appendices begin',
+};
 
 /** The sentence for `numbering_not_in_word`: the layout's to change, and the PDF can be made. */
 function notInWord(detail: string | null): string {
@@ -89,7 +101,11 @@ function notInWord(detail: string | null): string {
   const numbered = NUMBERED[sequence] ?? 'the headings';
   const where = NUMBERED_IN[matter] === undefined ? numbered : `${numbered} ${NUMBERED_IN[matter]}`;
   const because =
-    why === 'separator' && sequence !== 'section' ? CAPTION_SEPARATOR : NOT_IN_WORD_BECAUSE[why];
+    sequence === 'footnote' && FOOTNOTE_NOT_IN_WORD_BECAUSE[why] !== undefined
+      ? FOOTNOTE_NOT_IN_WORD_BECAUSE[why]
+      : why === 'separator' && sequence !== 'section'
+        ? CAPTION_SEPARATOR
+        : NOT_IN_WORD_BECAUSE[why];
   return (
     `The layout numbers ${where} in a way Word cannot${because === undefined ? '' : `: ${because}`}. ` +
     'Publish this document as a PDF only, or under a layout Word can number.'

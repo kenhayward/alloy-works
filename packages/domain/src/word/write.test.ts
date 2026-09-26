@@ -2600,3 +2600,20 @@ describe('writeDocx: the lists after the contents (Word 2, M9)', () => {
     expect(textOf(body!.paragraphs[0]!)).toBe('Blocks');
   });
 });
+
+describe('writeDocx: cross-references (Word 3)', () => {
+  it('throws on a cross-reference, which it does not write yet, rather than dropping it from the document', () => {
+    const referring = [
+      paragraph('p1', text('Set.')),
+      paragraph('p2', text('See '), {
+        type: 'crossReference',
+        id: 'x1',
+        target: { kind: 'block', block: 'p1' },
+        display: 'page',
+      }),
+    ];
+    expect(() => writtenOf(referring)).toThrow(
+      'The Word writer does not write a cross-reference yet',
+    );
+  });
+});

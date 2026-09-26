@@ -17,7 +17,13 @@ import {
   type NumberingScheme,
 } from '../structure/scheme.js';
 
-import { captionField, numberingNotInWord, numberingXml } from './numbering.js';
+import {
+  captionField,
+  footnoteProperties,
+  footnoteSections,
+  numberingNotInWord,
+  numberingXml,
+} from './numbering.js';
 
 /** A numbered section node, and the nodes beneath it. */
 const node = (
@@ -417,7 +423,7 @@ describe('a caption rule Word cannot compute (Word 2, ruling R1)', () => {
     ]);
   });
 
-  it('asks nothing of equations and footnotes, which Word does not number yet', () => {
+  it('asks nothing of equations, which Word does not number yet', () => {
     const scheme = withRules('equation', (rules) => {
       rules.body = { ...rules.body, prefix: 12, restartAt: 12 };
     });
@@ -426,6 +432,138 @@ describe('a caption rule Word cannot compute (Word 2, ruling R1)', () => {
       holding('interlude', 'body', ['e2', 'n2'], [], false),
     ];
     expect(captioned(outline, scheme).problems).toEqual([]);
+  });
+});
+
+describe('a footnote rule Word cannot compute (Word 3, ruling R2)', () => {
+  /** The default scheme with its footnote rules changed, held to the scheme's own parse. */
+  const withFootnotes = (change: (rules: NumberingScheme['sequences'][string]) => void) => {
+    const scheme = structuredClone(defaultNumberingScheme);
+    change(scheme.sequences['footnote']!);
+    return numberingSchemeSchema.parse(scheme);
+  };
+  const notes = (from: number, count: number) =>
+    Array.from({ length: count }, (_, index) => `n${from + index}`);
+
+  it('finds nothing in the default scheme: each matter counts from 1, as Word does restarting each section', () => {
+    const { table, problems } = captioned([
+      holding('preface', 'front', ['n1', 'n2']),
+      holding('intro', 'body', ['n3'], [holding('scope', 'body', ['n4'])]),
+      holding('method', 'body', ['n5'], [], false),
+      holding('tables', 'appendix', ['n6']),
+    ]);
+    expect(problems).toEqual([]);
+    const footnotes = table.entries.filter((entry) => entry.sequence === 'footnote');
+    expect(footnotes.map((entry) => [entry.block, entry.label])).toEqual([
+      ['n1', '1'],
+      ['n2', '2'],
+      ['n3', '1'],
+      ['n4', '2'],
+      ['n5', '3'],
+      ['n6', '1'],
+    ]);
+  });
+
+  it('carries on a matter entered a second time where no footnote stands between, as a continuous section does, and refuses it where one does', () => {
+    const carried = [
+      holding('intro', 'body', ['n1', 'n2']),
+      holding('tables', 'appendix'),
+      holding('method', 'body', ['n3']),
+    ];
+    expect(captioned(carried).problems).toEqual([]);
+    // A matter whose footnotes begin in the second section it holds starts its count there.
+    const late = [
+      holding('intro', 'body'),
+      holding('tables', 'appendix', ['n1']),
+      holding('method', 'body', ['n2']),
+    ];
+    expect(captioned(late).problems).toEqual([]);
+    // Word's second body section carries on from the appendix's note; the scheme from the body's.
+    const between = [
+      holding('intro', 'body', ['n1', 'n2']),
+      holding('tables', 'appendix', ['n3']),
+      holding('method', 'body', ['n4']),
+    ];
+    expect(captioned(between).problems).toEqual([problem('method', 'n4', 'footnote:body:restart')]);
+  });
+
+  it('refuses a restart Word would not make, where it meets a footnote, and passes one that never does', () => {
+    const scheme = withFootnotes((rules) => {
+      rules.body = { ...rules.body, restartAt: 1 };
+    });
+    // One chapter holding footnotes: the scheme's restart and Word's section agree.
+    expect(captioned([holding('intro', 'body', ['n1', 'n2'])], scheme).problems).toEqual([]);
+    expect(
+      captioned([holding('intro', 'body', ['n1']), holding('method', 'body', ['n2'])], scheme)
+        .problems,
+    ).toEqual([problem('method', 'n2', 'footnote:body:restart')]);
+  });
+
+  it("refuses a number Word cannot write at all: a word before it, or its chapter's number, where the scheme writes one", () => {
+    const labelled = withFootnotes((rules) => {
+      rules.front = { ...rules.front, label: 'Note' };
+    });
+    expect(captioned([holding('preface', 'front', ['n1', 'n2'])], labelled).problems).toEqual([
+      problem('preface', 'n1', 'footnote:front:label'),
+    ]);
+    const prefixed = withFootnotes((rules) => {
+      rules.body = { ...rules.body, prefix: 1 };
+    });
+    // Before the body's first chapter the scheme writes no prefix, and nothing is refused.
+    expect(captioned([holding('opening', 'body', ['n1'], [], false)], prefixed).problems).toEqual(
+      [],
+    );
+    expect(captioned([holding('intro', 'body', ['n1', 'n2'])], prefixed).problems).toEqual([
+      problem('intro', 'n1', 'footnote:body:prefix'),
+    ]);
+  });
+
+  it('refuses letters past z and a roman numeral past 3999, naming the first footnote and once', () => {
+    const lettered = withFootnotes((rules) => {
+      rules.body = { ...rules.body, format: ['lowerAlpha'] };
+    });
+    expect(captioned([holding('intro', 'body', notes(1, 27))], lettered).problems).toEqual([]);
+    expect(captioned([holding('intro', 'body', notes(1, 30))], lettered).problems).toEqual([
+      problem('intro', 'n28', 'footnote:body:letters'),
+    ]);
+    const roman = withFootnotes((rules) => {
+      rules.appendix = { ...rules.appendix, format: ['upperRoman'] };
+    });
+    expect(captioned([holding('tables', 'appendix', notes(1, 3999))], roman).problems).toEqual([]);
+    expect(captioned([holding('tables', 'appendix', notes(1, 4001))], roman).problems).toEqual([
+      problem('tables', 'n4000', 'footnote:appendix:roman'),
+    ]);
+  });
+});
+
+describe('the footnote numbering each section is written with (Word 3, ruling R2; M5)', () => {
+  it('restarts the first section of each matter that holds a footnote, and carries on every other, as a run of top-level nodes of one matter is a section', () => {
+    const nodes = [
+      holding('preface', 'front', ['n1']),
+      holding('intro', 'body', [], [holding('scope', 'body')]),
+      holding('tables', 'appendix', ['n2']),
+      holding('method', 'body', [], [holding('design', 'body', ['n3'])]),
+      holding('results', 'body', ['n4']),
+      holding('values', 'appendix', ['n5']),
+    ];
+    const { table } = captioned(nodes);
+    const sections = footnoteSections(nodes, table);
+    expect(sections.matters).toEqual(['front', 'body', 'appendix', 'body', 'appendix']);
+    expect(sections.restarts).toEqual([true, false, true, true, false]);
+    expect(sections.sectionOf.get('scope')).toBe(1);
+    expect(sections.sectionOf.get('design')).toBe(3);
+    expect(sections.sectionOf.get('results')).toBe(3);
+  });
+
+  it("writes the matter's format as Word's number format, and eachSect or continuous", () => {
+    const scheme = structuredClone(defaultNumberingScheme);
+    scheme.sequences['footnote']!.appendix.format = ['decimal', 'lowerAlpha'];
+    expect(footnoteProperties(scheme, 'front', true)).toBe(
+      '<w:footnotePr><w:numFmt w:val="decimal"/><w:numRestart w:val="eachSect"/></w:footnotePr>',
+    );
+    expect(footnoteProperties(scheme, 'appendix', false)).toBe(
+      '<w:footnotePr><w:numFmt w:val="lowerLetter"/><w:numRestart w:val="continuous"/></w:footnotePr>',
+    );
   });
 });
 

@@ -1764,8 +1764,14 @@ class Writer {
         xml += `<w:r>${this.drawing(run.image.path, size, run.image.alternative)}</w:r>`;
         continue;
       }
+      if ('reference' in run) {
+        // `assemble` publishes a reference for Word since Word 3's first task, and the writer writes
+        // one as a field from its third: until then a Word document is refused rather than written
+        // without it.
+        throw new Error('The Word writer does not write a cross-reference yet');
+      }
       if (!('text' in run)) {
-        // A footnote, a cross-reference and an equation are Word 3's and Word 4's.
+        // A footnote and an equation are Word 3's and Word 4's.
         throw new Error('The Word writer does not write this run, which assemble refuses for Word');
       }
       let href: string | null = null;

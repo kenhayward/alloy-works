@@ -324,11 +324,11 @@ export function assemble(input: AssembleInput): Assembled {
    * wide, a figure whose caption leaves it no room, an image too wide for its line, a header cell
    * spanning the body and a table asking for a label all publish, so that where no PDF is asked for
    * Word writes them whole; where one is, the refusal fails the publish and nothing is made from the
-   * document. Three still leave their construct out, each one Word does not write yet and so refuses by
-   * name where Word alone is asked for: a footnote in a header row and a reference to a target there
-   * (Word 3), and an equation the maths tree cannot set (Word 4). The slice that takes one of those
-   * off Word 1's R3 list must publish it for Word whatever its PDF failures say, or Word would lose it
-   * in silence.
+   * document. Since Word 3 (ruling R1) so do a footnote in a header row and a reference to a target
+   * there, which Word writes once where the PDF's engine would set them on every page. One still leaves
+   * its construct out, and Word refuses it by name, `word_not_yet`, where Word alone is asked for: an
+   * equation the maths tree cannot set (Word 4). The slice that takes it off that list must publish it
+   * for Word whatever its PDF failures say, or Word would lose it in silence.
    */
   const pdfsOwn = new Set<PublishFailure>();
   const pdfOnly = (next: PublishFailure): PublishFailure => {
@@ -362,9 +362,9 @@ export function assemble(input: AssembleInput): Assembled {
   // number: with the scheme the layout declares (STR-013), and never a number worked out here.
   const numbering = number(conditioned, layout?.scheme ?? defaultNumberingScheme);
   const numbers = sectionNumbers(numbering);
-  // Where Word is asked for, a heading's, a figure's or a table's number the scheme writes and Word
-  // would compute differently is refused by name before anything is written (Word 1, ruling R7; Word 2,
-  // ruling R1): Word's number would replace the PDF's.
+  // Where Word is asked for, a heading's, a figure's, a table's or a footnote's number the scheme
+  // writes and Word would compute differently is refused by name before anything is written (Word 1,
+  // ruling R7; Word 2, ruling R1; Word 3, ruling R2): Word's number would replace the PDF's.
   if (docx && layout !== null) {
     const outline = conditioned.resolved.outline;
     for (const problem of numberingNotInWord(layout.scheme, numbering, outline)) {
@@ -613,7 +613,8 @@ export function assemble(input: AssembleInput): Assembled {
    * **So is a footnote, in a paragraph's runs alone** (footnotes 2, FN-B): `inParagraph` says the runs
    * are a paragraph's, with the table the paragraph stands in, if any, which a footnote anchored to a
    * cell resolves against. Anywhere else - a caption, a term, an attribution, a table's note - one is
-   * refused by name, naming `block`.
+   * refused by name, naming `block`. One in a table's header row is refused for the PDF alone, and
+   * published all the same, for Word (Word 3, ruling R1).
    *
    * **And so is a cross-reference, as `resolveReferences` printed it** (cross-references 2): a link to
    * its target in a paragraph's text - `inParagraph`, a footnote's paragraphs among them - outside a
@@ -643,24 +644,29 @@ export function assemble(input: AssembleInput): Assembled {
     const runs: PublishedInline[] = [];
     const caption = site === 'caption';
     for (const inline of content) {
-      if (WORD_NOT_YET_INLINES.has(inline.type)) wordNotYet(node, block, inline.type);
+      if (inline.type === 'equation') wordNotYet(node, block, inline.type);
       if (inline.type === 'footnote' && layout !== null) {
         // A table's header rows repeat on every page it reaches, and the engine refuses a footnote in
         // a repeated header outright - a link in an artifact - naming nothing (final review of
         // footnotes 2). Refused always, since whether a table crosses a page is not known here: the
         // PDF engine's own refusal, where one anywhere else but a paragraph's text is every format's
-        // (FN-B).
-        if (inParagraph === null || inParagraph.heading) {
-          const refused = failure('compose', 'footnote_not_publishable_here', node, block, null);
-          failOnce(inParagraph === null ? refused : pdfOnly(refused));
+        // (FN-B). Word writes a header row's footnote once, as a real footnote in the first row, so
+        // it is published for Word (Word 3, ruling R1).
+        const refused = failure('compose', 'footnote_not_publishable_here', node, block, null);
+        if (inParagraph === null) {
+          failOnce(refused);
           continue;
         }
+        if (inParagraph.heading) failOnce(pdfOnly(refused));
         const published = publishedFootnote(inline, node, block, inParagraph.table, families);
         if (published !== null) runs.push(published);
         continue;
       }
       if (inline.type === 'crossReference' && layout !== null) {
-        const printed = resolved.printed.get(referenceKey(node, inline.id));
+        const key = referenceKey(node, inline.id);
+        // A reference to an equation is Word 4's, as the equation is (Word 3, ruling R1).
+        if (resolved.toEquations.has(key)) wordNotYet(node, block, inline.type);
+        const printed = resolved.printed.get(key);
         // A header row is set again on every page the table reaches, as an artifact, where the engine
         // refuses a link; a caption, a term, an attribution and a note are set again or read apart.
         const link = inParagraph !== null && !inParagraph.heading;
@@ -1589,9 +1595,13 @@ export function assemble(input: AssembleInput): Assembled {
     };
 
     if (node.type === 'section') {
-      // Word 1 writes a title's words alone (R3): what else it holds is named by the section.
+      // Word 1 writes a title's words alone (R3): what else it holds is named by the section. A
+      // title's reference is published as the words it prints, which the writer cannot tell from the
+      // title's own, so it stays Word's to refuse until the writer writes it as a field (Word 3).
       for (const inline of node.title) {
-        if (WORD_NOT_YET_INLINES.has(inline.type)) wordNotYet(node.id, null, inline.type);
+        if (inline.type === 'equation' || inline.type === 'crossReference') {
+          wordNotYet(node.id, null, inline.type);
+        }
       }
       // A title's reference is its number in the title's words (R6), set again in the contents and the
       // running heads. One that failed has said so and prints nothing. An equation in it is published
@@ -1869,17 +1879,6 @@ const EQUATIONS_OWN: ReadonlySet<MathsRefusal['reason']> = new Set([
   'empty',
 ] as const);
 
-/**
- * The inlines Word does not write yet (Word 1, ruling R3; Word 2, ruling R2, which took the image off
- * it), refused by name where Word is asked for, wherever they stand - a paragraph, a caption, a term, a
- * footnote, a section's title - by their stored type.
- */
-const WORD_NOT_YET_INLINES: ReadonlySet<InlineNode['type']> = new Set([
-  'equation',
-  'footnote',
-  'crossReference',
-] as const);
-
 /** A cross-reference as the content model stores it. */
 type ReferenceNode = Extract<InlineNode, { type: 'crossReference' }>;
 
@@ -1906,6 +1905,8 @@ interface ResolvedReferences {
   readonly failures: readonly PublishFailure[];
   /** Those of `failures` that are the PDF engine's own (Word 1, ruling R2), by identity. */
   readonly pdfsOwn: ReadonlySet<PublishFailure>;
+  /** Each reference that resolved to an equation, by `referenceKey`: Word 4's to write (Word 3, R1). */
+  readonly toEquations: ReadonlySet<string>;
 }
 
 /** Nothing resolved: a request made before layouts, which refuses a reference where it stands. */
@@ -1914,6 +1915,7 @@ const NO_REFERENCES: ResolvedReferences = {
   named: new Set(),
   failures: [],
   pdfsOwn: new Set(),
+  toEquations: new Set(),
 };
 
 /**
@@ -1983,8 +1985,9 @@ interface Found {
  *   header row again on every page the table reaches, the target's label with it, and a label set
  *   twice refuses the compile - "label occurs multiple times" - wherever the table happens to break,
  *   which only the engine knows. Refused wherever it breaks, as a footnote there is, and only where a
- *   PDF is asked for, since it is the PDF engine's own refusal (Word 1, ruling R2). A header
- *   column is set once, and is published;
+ *   PDF is asked for, since it is the PDF engine's own refusal (Word 1, ruling R2) - and printed and
+ *   named all the same, for Word, which sets a header row once (Word 3, ruling R1). A header column is
+ *   set once, and is published;
  * - **every other** prints its form: the label, the title, both with a space between, the layout's
  *   word for above or below, or nothing for a page, which the template prints - and its target's
  *   anchor is named.
@@ -2154,6 +2157,7 @@ function resolveReferences(
   const named = new Set<string>();
   const failures: PublishFailure[] = [];
   const pdfsOwn = new Set<PublishFailure>();
+  const toEquations = new Set<string>();
   for (const { node, reference, inTitle, at: where } of found) {
     const key = referenceKey(node, reference.id);
     const resolution = resolutions.get(key)!;
@@ -2170,6 +2174,7 @@ function resolveReferences(
       continue;
     }
     const target = published(resolution.target);
+    if (target.kind === 'equation') toEquations.add(key);
     const { display } = reference;
     const anchor =
       target.block === null ? nodeAnchor(target.node) : blockAnchor(target.node, target.block);
@@ -2186,9 +2191,11 @@ function resolveReferences(
         display,
       );
       failures.push(refused);
-      // A target in a table's header rows is refused for the PDF's engine alone (Word 1, R2).
-      if (!lacking) pdfsOwn.add(refused);
-      continue;
+      if (lacking) continue;
+      // A target in a table's header rows is refused for the PDF's engine alone (Word 1, R2), and
+      // printed all the same, for Word, which sets a header row once (Word 3, ruling R1): where a PDF
+      // is asked for, the refusal fails the publish before anything is made from the document.
+      pdfsOwn.add(refused);
     }
     named.add(anchor);
     // Found by the same walk, so every target resolution reaches has its place.
@@ -2208,7 +2215,7 @@ function resolveReferences(
         : { anchor, text: text[display], page: false, relative: display === 'relative' },
     );
   }
-  return { printed, named, failures, pdfsOwn };
+  return { printed, named, failures, pdfsOwn, toEquations };
 }
 
 /** A stored table, as a footnote's cell anchor resolves against one. */

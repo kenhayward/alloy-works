@@ -1020,9 +1020,9 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(await reportOf(both)).not.toContainEqual({ kind: 'no_page_cited_output' });
   }, 120_000);
 
-  it('refuses a footnote for the PDF and Word by name, as Word cannot carry one yet, records nothing, and publishes it as a PDF alone', async () => {
+  it('refuses an equation for the PDF and Word by name, as Word cannot carry one yet, records nothing, and publishes it as a PDF alone', async () => {
     const kept = new Map<string, string>();
-    // Word 2 writes lists; a footnote is Word 3's.
+    // Word 3 writes footnotes; an equation is Word 4's.
     const noted = (trx: TenantTransaction) =>
       component(
         trx,
@@ -1035,19 +1035,11 @@ describe('publishing a document, from the request to the stored PDF', () => {
             id: 'b1',
             style: 'body',
             content: [
-              { type: 'text', value: 'Set the tray.', marks: [] },
+              { type: 'text', value: 'Set the tray to ', marks: [] },
               {
-                type: 'footnote',
-                id: 'n1',
-                anchor: { kind: 'span' },
-                content: [
-                  {
-                    type: 'paragraph',
-                    id: 'n1p',
-                    style: 'body',
-                    content: [{ type: 'text', value: 'Level it first.', marks: [] }],
-                  },
-                ],
+                type: 'equation',
+                mathml:
+                  '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"><mi>x</mi></math>',
               },
             ],
           },
@@ -1064,7 +1056,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
         code: 'word_not_yet',
         node: expect.any(String),
         block: 'b1',
-        detail: 'footnote',
+        detail: 'equation',
       },
     ]);
     // Refused before either output was made: nothing kept, nothing recorded.
