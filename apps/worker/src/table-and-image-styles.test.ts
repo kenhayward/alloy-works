@@ -673,7 +673,11 @@ describe('an image placed and sized by its style (themes 2)', () => {
           {
             name: 'head',
             matter: 'appendix',
-            content: [para('h1', 'Headword opens.'), figure('fe', 'float-end', 'Floatend')],
+            content: [
+              para('h1', 'Headword opens.'),
+              figure('fe', 'float-end', 'Floatend'),
+              para('h2', 'Headafter closes.'),
+            ],
           },
           {
             name: 'foot',
@@ -805,6 +809,37 @@ describe('an image placed and sized by its style (themes 2)', () => {
     expect(press.x + press.width).toBeLessThanOrEqual(left + 0.5);
     expect(item(read, 'to start').x).toBeGreaterThanOrEqual(right - 0.5);
     expect(bottom).toBeLessThanOrEqual(press.y + 0.5);
+  }, 120_000);
+
+  it('PUB-031 tags a floated figure where the document puts it, not where it is drawn', async () => {
+    const { read } = await figures();
+    // The order a reader is told the paragraphs and the figures in: each figure by its caption.
+    const told = read.reading
+      .filter((each) => each.role === 'P' || each.role === 'Div')
+      .map((each) => each.text);
+    const at = (words: string) => {
+      const index = told.indexOf(words);
+      expect(index, words).toBeGreaterThanOrEqual(0);
+      return index;
+    };
+
+    // Floated to the head of its page, drawn above the paragraph before it and the one after it...
+    const head = boxOf(read, 'fe');
+    expect(item(read, 'Headword').y).toBeLessThan(head[1]);
+    expect(item(read, 'Headafter').y).toBeLessThan(head[1]);
+    // ...and read between them, where the document has it.
+    expect(at('Headword opens.')).toBeLessThan(at('Figure B.1 Floatend'));
+    expect(at('Figure B.1 Floatend')).toBeLessThan(at('Headafter closes.'));
+
+    // Floated to the foot of its page, drawn below the paragraph after it, and read before it.
+    for (const [name, caption, after] of [
+      ['fc', 'Figure C.1 Floatcentre', 'Footafter closes.'],
+      ['fs', 'Figure D.1 Floatstart', 'Startafter closes.'],
+    ] as const) {
+      expect(item(read, after.split(' ')[0]!).y, name).toBeGreaterThan(boxOf(read, name)[3]);
+      expect(at(caption), name).toBeLessThan(at(after));
+      expect(at(caption), name).toBeGreaterThan(at(after) - 2);
+    }
   }, 120_000);
 
   it('prints a fixed width and a fixed height each held to its maximum, the proportion kept, at the size assemble gave it', async () => {

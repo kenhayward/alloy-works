@@ -1093,6 +1093,60 @@ const fillersToTheFoot = async (
   return lines - Math.round(line);
 };
 
+describe("hyphenation by the passage's language", () => {
+  /** A long compound, repeated so a line in the measure has to break inside it, again and again. */
+  const COMPOUNDS = Array.from(
+    { length: 8 },
+    () => 'Donaudampfschifffahrtsgesellschaftskapitaenswitwe',
+  ).join(' ');
+  const SOFT_HYPHEN = String.fromCharCode(0xad);
+  /**
+   * Where the engine broke the words of one paragraph of the compounds, under Ledger (whose running
+   * text hyphenates) in a component in English: each piece set before a hyphen it added, in order.
+   */
+  const breaksIn = async (tag: string | null) => {
+    const marks = tag === null ? [] : [{ type: 'language', id: 'k1', tag }];
+    const { paint } = await compile(ledger, bare, [
+      { name: 'specimen', title: 'Specimen', content: [para('p1', text(COMPOUNDS, ...marks))] },
+    ]);
+    const drawn = paint.texts.filter((each) => !each.artifact);
+    return (
+      drawn
+        .flatMap((each, index) =>
+          each.text === SOFT_HYPHEN && index > 0 ? [drawn[index - 1]!.text.trim()] : [],
+        )
+        // The paragraph's own lines, not the draft notice's, which the engine hyphenates as well.
+        .filter((line) => COMPOUNDS.includes(line))
+        // The piece of a compound each line ends with, before the hyphen the engine added.
+        .map((line) => line.split(' ').at(-1)!)
+    );
+  };
+
+  it("PUB-069 hyphenates a passage by its own language, and one the engine has no patterns for not at all - never by the document's", async () => {
+    // English, the document's and the component's language: its own patterns' points.
+    expect(await breaksIn(null)).toEqual([
+      'Donaudampf',
+      'Donaudampfschifffahrtsge',
+      'Donaudampfschifffahrtsgesellschaftskapi',
+      'Donau',
+      'Donaudampfschifffahrts',
+      'Donaudampfschifffahrtsgesellschaftskapi',
+    ]);
+    // The same words marked German, in the same English document: German's points, not English's.
+    expect(await breaksIn('de-DE')).toEqual([
+      'Donaudampf',
+      'Donaudampfschifffahrtsgesell',
+      'Donaudampfschifffahrtsgesellschaftskapitaens',
+      'Donaudampf',
+      'Donaudampfschifffahrtsgesell',
+      'Donaudampfschifffahrtsgesellschaftskapitaens',
+    ]);
+    // Marked Welsh, which the pinned engine has no patterns for: broken at spaces alone, rather than
+    // hyphenated as English because the document is.
+    expect(await breaksIn('cy-GB')).toEqual([]);
+  }, 120_000);
+});
+
 describe("the pinned faces' own files (themes 1)", () => {
   const pinned = async (sha256: string) => {
     const file = PINNED_FONT_FILES.find((each) => each.sha256 === sha256);

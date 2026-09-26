@@ -1113,6 +1113,29 @@ describe('writeDocx: text (ruling R9)', () => {
     expect(first(plain.docx.xml('docProps/core.xml'), 'dc:language')!.children).toEqual(['en-GB']);
   });
 
+  it("PUB-069 asks Word to hyphenate where the style does, and gives each passage its own language to hyphenate by, never the document's alone", () => {
+    const hyphenating = written({
+      theme: themeWith((inputs) => {
+        inputs.catalogues.paragraph.base.hyphenate = true;
+      }),
+    }).docx;
+    // Word hyphenates automatically, and the running text's style does not suppress it.
+    expect(all(hyphenating.xml('word/settings.xml'), 'w:autoHyphenation')).toHaveLength(1);
+    const body = all(hyphenating.xml('word/styles.xml'), 'w:style').find(
+      (each) => each.attrs['w:styleId'] === 'body',
+    )!;
+    expect(first(first(body, 'w:pPr')!, 'w:suppressAutoHyphens')!.attrs['w:val']).toBe('0');
+    // What Word hyphenates a passage by is the language its run carries: a marked French phrase,
+    // a German component, each its own, in a document in English.
+    const french = paragraphSaying(
+      hyphenating,
+      'Set strong, both, under, H2O, x2, printer.cfg, "measure twice" and la mesure.',
+    );
+    expect(run(french, 'la mesure')['w:lang']).toEqual({ 'w:val': 'fr-FR' });
+    const german = paragraphSaying(hyphenating, 'Grüße aus Berlin.');
+    expect(run(german, 'Grüße aus Berlin.')['w:lang']).toEqual({ 'w:val': 'de-DE' });
+  });
+
   it("sets a right-to-left passage right to left: the paragraph by w:bidi, each run by w:rtl and its language as a complex script's (M12)", () => {
     const hebrew = paragraphSaying(plain.docx, `${SHALOM} Ada ${SEFER}.`);
     expect(properties(hebrew)).toEqual(['w:pStyle', 'w:bidi']);
@@ -2417,6 +2440,20 @@ describe('writeDocx: figures and images (Word 2, ruling R8)', () => {
     expect(textOf(caption)).toBe('Figure 1.3 Blue on top');
     expect(fieldCodes(caption)).toEqual(['STYLEREF 1 \\s', 'SEQ Figure \\* arabic \\s 1']);
     expect(all(document, 'w:framePr')).toEqual([]);
+  });
+
+  it('PUB-031 anchors a floated figure where the document puts it, between the blocks either side of it, wherever Word draws it', () => {
+    const anchored = body.find((each) => all(each, 'wp:anchor').length > 0)!;
+    // The box holds the figure - its image and its caption - and is drawn against the page...
+    const box = first(anchored, 'w:txbxContent')!;
+    expect(textOf(kids(box, 'w:p')[1]!)).toBe('Figure 1.3 Blue on top');
+    expect(first(first(anchored, 'wp:anchor')!, 'wp:positionV')!.attrs['relativeFrom']).not.toBe(
+      'paragraph',
+    );
+    // ...but it stands in the document, which is what Word reads it in, where the figure stands:
+    // after the figure before it and before the paragraph after it.
+    expect(textOf(before(anchored))).toBe('Figure 1.2 A border');
+    expect(textOf(body[body.indexOf(anchored) + 1]!)).toBe('Press  to start.');
   });
 
   it("spaces a floated figure's box as the PDF's band: the image at its head, the caption its style's space before below it, and its anchor taking no room in the flow", () => {
