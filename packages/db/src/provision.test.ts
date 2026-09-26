@@ -41,6 +41,54 @@ describe('provisionTenant', () => {
     expect(hostnames.rows).toEqual([{ hostname: 'acme.alloy.test' }]);
   });
 
+  it('IAM-078 groups several tenants under one organisation, which holds no content of its own', async () => {
+    const organisation = { id: 'globex', name: 'Globex' };
+    const environments = [
+      { id: db.newTenantId(), name: 'Production', hostname: 'globex.alloy.test' },
+      { id: db.newTenantId(), name: 'Sandbox', hostname: 'sandbox.globex.alloy.test' },
+      { id: db.newTenantId(), name: 'Validation', hostname: 'validation.globex.alloy.test' },
+    ];
+    for (const each of environments) {
+      await provisionTenant(db.adminUrl, {
+        organisation,
+        tenant: { id: each.id, name: each.name },
+        hostnames: [each.hostname],
+      });
+    }
+
+    // Three environments of one customer, each a tenant with a schema of its own.
+    const grouped = await queryAs(
+      db.adminUrl,
+      'select name, schema_name from platform.tenant where organisation_id = $1 order by name',
+      [organisation.id],
+    );
+    expect(grouped.rows).toEqual(
+      environments.map((each) => ({ name: each.name, schema_name: `t_${each.id}` })),
+    );
+    // The organisation is its identity and its name, and nothing but its tenants points at it: no
+    // content is kept at the organisation, and none of a tenant's own tables refers to it.
+    const columns = await queryAs(
+      db.adminUrl,
+      `select column_name from information_schema.columns
+        where table_schema = 'platform' and table_name = 'organisation' order by ordinal_position`,
+    );
+    expect(columns.rows.map((row: { column_name: string }) => row.column_name)).toEqual([
+      'id',
+      'name',
+      'created_at',
+    ]);
+    const referring = await queryAs(
+      db.adminUrl,
+      `select tc.table_schema, tc.table_name
+         from information_schema.table_constraints tc
+         join information_schema.constraint_column_usage ccu
+           on ccu.constraint_schema = tc.constraint_schema and ccu.constraint_name = tc.constraint_name
+        where tc.constraint_type = 'FOREIGN KEY'
+          and ccu.table_schema = 'platform' and ccu.table_name = 'organisation'`,
+    );
+    expect(referring.rows).toEqual([{ table_schema: 'platform', table_name: 'tenant' }]);
+  });
+
   it('lets the login roles assume the tenant role but never inherit it', async () => {
     const id = db.newTenantId();
     await provisionTenant(db.adminUrl, input(id, [`${id}.acme.alloy.test`]));

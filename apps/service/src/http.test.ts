@@ -39,6 +39,9 @@ function testApp() {
     { schema: { params: z.object({ id: z.uuid() }), response: { 200: Named } } },
     async (request) => ({ name: request.params.id }),
   );
+  app.post('/named', { schema: { body: Named, response: { 200: Named } } }, async (request) => ({
+    name: request.body.name,
+  }));
   // The rule identifier is invented: ZZZ is the area reserved for fixtures, and the traceability
   // scan ignores it. A real one here would read as a citation - this test verifies the shape of a
   // refusal, not whatever requirement the identifier names.
@@ -136,4 +139,56 @@ describe('the HTTP layer', () => {
     expect(lines.length).toBeGreaterThan(0);
     for (const line of lines) expect(line.traceId).toMatch(TRACE);
   });
+});
+
+describe('the shape of every failure', () => {
+  const failures = [
+    {
+      said: 'a request that fails its schema',
+      url: '/items/not-an-id',
+      status: 400,
+      code: 'invalid_request',
+    },
+    { said: 'a refusal', url: '/refused', status: 403, code: 'forbidden' },
+    { said: 'an unexpected failure', url: '/broken', status: 500, code: 'internal' },
+    {
+      said: 'a response that breaks its own schema',
+      url: '/malformed',
+      status: 500,
+      code: 'internal',
+    },
+    { said: 'an unknown route', url: '/nowhere', status: 404, code: 'not_found' },
+    {
+      said: 'a body that is not JSON',
+      url: '/named',
+      body: '{"name": ',
+      status: 400,
+      code: 'invalid_request',
+    },
+  ] as const;
+
+  it.each(failures)(
+    'API-005 answers $said with a stable code beside a message, and a trace id',
+    async (failure) => {
+      const { app } = testApp();
+      const response = await app.inject(
+        'body' in failure
+          ? {
+              method: 'POST',
+              url: failure.url,
+              headers: { 'content-type': 'application/json' },
+              payload: failure.body,
+            }
+          : { url: failure.url },
+      );
+      expect(response.statusCode).toBe(failure.status);
+      const body = response.json<Record<string, unknown>>();
+      // The code is the machine's, the same on every answer of this kind; the message is a person's.
+      expect(body.code).toBe(failure.code);
+      expect(typeof body.message).toBe('string');
+      expect(body.message).not.toBe('');
+      expect(body.message).not.toBe(body.code);
+      expect(body.traceId).toMatch(TRACE);
+    },
+  );
 });
