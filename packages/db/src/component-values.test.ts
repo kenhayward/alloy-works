@@ -3,11 +3,15 @@ import { DEFINITION_SCHEMA_VERSION, type ContentDocument } from '@alloy-works/do
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
+import { createDocument, editOutline } from './documents.js';
+import { grant } from './grants.js';
 import { createDefinition, recordDefinitionVersion, type StoredDefinition } from './definitions.js';
 import { claimLock, saveIteration } from './editing.js';
 import { migrate } from './migrate.js';
 import { cutVersion } from './promotion.js';
+import { requestPublication } from './publishing.js';
 import { createTenant, type Tenant } from './provision.js';
+import { findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
@@ -68,6 +72,17 @@ describe("a component's values, written with its iterations", () => {
           .where('name', '=', 'General')
           .executeTakeFirstOrThrow()
       ).id;
+      // An Author and a Publisher in General, so what Ada places she may read and publish.
+      for (const name of ['Author', 'Publisher']) {
+        const role = await findRole(trx, name);
+        await grant(trx, {
+          roleId: role!.id,
+          subject: { principal: ada },
+          level: { kind: 'space', id: general },
+          effect: 'allow',
+          grantedBy: ada,
+        });
+      }
     });
     const define = (definition: object) =>
       made(run((trx) => createDefinition(trx, { kind: 'field', definition, author: ada })));
@@ -258,5 +273,67 @@ describe("a component's values, written with its iterations", () => {
     ).toBe('accepted');
     const answer = await cut(at);
     expect(answer.answer).toBe('recorded');
+  });
+
+  it('MET-023 fails a publication whose component holds a missing or invalid value, and never refuses a cut for one', async () => {
+    const at = await opened();
+    // The required code missing and the owner given: saved, and cut.
+    expect(
+      (await save(at, 1, { [fields.market!]: 'uk', [fields.owner!]: { user: ada } })).answer,
+    ).toBe('accepted');
+    const cut_ = await cut(at);
+    if (cut_.answer !== 'recorded') throw new Error(cut_.answer);
+    // A document placing it, asked to be published.
+    const made = await run((trx) =>
+      createDocument(trx, {
+        spaceId: general,
+        title: 'Dosing',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const placed = await run((trx) =>
+      editOutline(trx, {
+        artifactId: made.version.artifactId,
+        openedFrom: made.version.id,
+        author: ada,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position: 0,
+          node: { type: 'reference', component: at.version.artifactId, mode: { kind: 'latest' } },
+        },
+      }),
+    );
+    if (placed.answer !== 'recorded') throw new Error(placed.answer);
+    const node = (placed.version.content as { nodes: { id: string }[] }).nodes[0]!.id;
+    const failures = await run(async (trx) => {
+      const requested = await requestPublication(trx, {
+        documentId: made.version.artifactId,
+        version: placed.version.id,
+        formats: ['pdf'],
+        requester: ada,
+      });
+      if (requested.answer !== 'requested') throw new Error(requested.answer);
+      return (
+        await trx
+          .selectFrom('publication_request')
+          .select('failures')
+          .where('id', '=', requested.request.id)
+          .executeTakeFirstOrThrow()
+      ).failures;
+    });
+    // Failed at the request, naming the node and the field, which the job then fails it for.
+    expect(failures).toEqual([
+      {
+        stage: 'resolve',
+        code: 'component_metadata_invalid',
+        node,
+        block: null,
+        detail: 'Code: Code is required',
+      },
+    ]);
   });
 });

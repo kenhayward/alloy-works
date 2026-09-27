@@ -201,6 +201,10 @@ export function failureWords(failure: Failure): string {
   switch (failure.code) {
     case 'occurrence_unreadable':
       return 'A component you may not read is placed here. Only someone who may read every component can publish this document.';
+    // MET-023: `detail` is the field's name and what is wrong with it, as the definitions word it -
+    // never the value, which is the component's.
+    case 'component_metadata_invalid':
+      return `This component's fields are not filled in as its type asks: ${failure.detail ?? 'a field'}. Put it right in the component, and publish again.`;
     case 'occurrence_unresolved':
       return 'This reference waits on an approved version, and nothing can approve one yet.';
     case 'title_not_publishable':

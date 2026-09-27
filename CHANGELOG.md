@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.85.0 - 2026-09-27 (PR #268)
+
+### Added
+
+- **A document is not published while a component in it is missing a value its fields require, or
+  holds one they refuse.** The publication's page names the component, the field and what is wrong.
+  The fields are checked as they were when that component's version was saved, and saving a version
+  never stops for them.
+
 ## 0.84.0 - 2026-09-27 (PR #267)
 
 ### Added

@@ -16,6 +16,11 @@ export const publishFailureCodes = [
   // at all - the two told apart no more than an occurrence's are, and naming the figure, never the
   // image (issue #143).
   'asset_unreadable',
+  // resolve, from definitions (W5.5, MET-023): a component version the request resolves whose values
+  // its recorded definitions refuse - a required field missing, a value its field refuses - naming the
+  // node, and in `detail` the field's name and what is wrong, as the definitions word it: never a
+  // value, which is the component's.
+  'component_metadata_invalid',
   // compose: in `assemble`, before Typst is started.
   'title_not_publishable',
   'block_not_publishable',
