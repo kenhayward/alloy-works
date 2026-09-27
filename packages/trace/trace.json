@@ -2732,7 +2732,7 @@
       "area": "CNT",
       "statement": "Preview must be fast enough to use while writing rather than as a separate step, against the budget in CNT-151, tested",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Withdrawn",
       "document": "CNT-content-and-authoring.md",
       "line": 479
     },
@@ -2758,7 +2758,7 @@
       "id": "CNT-151",
       "area": "CNT",
       "statement": "Preview must reflect a saved edit within one second of the save being recorded, with no measured sample above two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)",
-      "tranche": "T1",
+      "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
       "line": 482
@@ -2770,7 +2770,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-154",
       "document": "CNT-content-and-authoring.md",
-      "line": 488
+      "line": 491
     },
     {
       "id": "CNT-154",
@@ -2779,7 +2779,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 489
+      "line": 492
     },
     {
       "id": "CNT-155",
@@ -2788,7 +2788,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 490
+      "line": 493
     },
     {
       "id": "CNT-105",
@@ -2797,7 +2797,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 491
+      "line": 494
     },
     {
       "id": "CNT-106",
@@ -2806,7 +2806,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-156",
       "document": "CNT-content-and-authoring.md",
-      "line": 492
+      "line": 495
     },
     {
       "id": "CNT-156",
@@ -2815,7 +2815,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 493
+      "line": 496
     },
     {
       "id": "CNT-157",
@@ -2824,7 +2824,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 494
+      "line": 497
     },
     {
       "id": "CNT-108",
@@ -2833,7 +2833,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-158",
       "document": "CNT-content-and-authoring.md",
-      "line": 500
+      "line": 503
     },
     {
       "id": "CNT-158",
@@ -2842,7 +2842,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 501
+      "line": 504
     },
     {
       "id": "CNT-159",
@@ -2851,7 +2851,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 502
+      "line": 505
     },
     {
       "id": "CNT-109",
@@ -2860,7 +2860,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-160",
       "document": "CNT-content-and-authoring.md",
-      "line": 503
+      "line": 506
     },
     {
       "id": "CNT-160",
@@ -2869,7 +2869,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 504
+      "line": 507
     },
     {
       "id": "CNT-161",
@@ -2878,7 +2878,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 505
+      "line": 508
     },
     {
       "id": "CNT-110",
@@ -2887,7 +2887,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-141",
       "document": "CNT-content-and-authoring.md",
-      "line": 506
+      "line": 509
     },
     {
       "id": "CNT-141",
@@ -2896,7 +2896,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-162",
       "document": "CNT-content-and-authoring.md",
-      "line": 507
+      "line": 510
     },
     {
       "id": "CNT-162",
@@ -2905,7 +2905,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 508
+      "line": 511
     },
     {
       "id": "CNT-163",
@@ -2914,7 +2914,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 509
+      "line": 512
     },
     {
       "id": "CNT-111",
@@ -2923,7 +2923,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 510
+      "line": 513
     },
     {
       "id": "CNT-112",
@@ -2932,7 +2932,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 511
+      "line": 514
     },
     {
       "id": "CNT-113",
@@ -2941,7 +2941,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 512
+      "line": 515
     },
     {
       "id": "CNT-077",
@@ -2950,7 +2950,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 553
+      "line": 556
     },
     {
       "id": "CNT-078",
@@ -2959,7 +2959,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 554
+      "line": 557
     },
     {
       "id": "CNT-079",
@@ -2968,7 +2968,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-175",
       "document": "CNT-content-and-authoring.md",
-      "line": 555
+      "line": 558
     },
     {
       "id": "CNT-175",
@@ -2977,7 +2977,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 556
+      "line": 559
     },
     {
       "id": "CNT-080",
@@ -2986,7 +2986,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 557
+      "line": 560
     },
     {
       "id": "CNT-137",
@@ -2995,7 +2995,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 558
+      "line": 561
     },
     {
       "id": "CNT-138",
@@ -3004,7 +3004,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 559
+      "line": 562
     },
     {
       "id": "CNT-139",
@@ -3013,7 +3013,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 560
+      "line": 563
     },
     {
       "id": "COL-001",
@@ -8293,7 +8293,7 @@
       "id": "PUB-080",
       "area": "PUB",
       "statement": "Where a preview is untagged by design (PUB-061), the reading context must say so to assistive technology as well as on screen, and must name the tagged output as the accessible path. A preview that is hostile on purpose must not be silently hostile",
-      "tranche": "T1",
+      "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
       "line": 144
@@ -13212,61 +13212,61 @@
       "id": "CNT-N01",
       "statement": "**No typeface, font size or colour _chosen by the author_.** The editor renders the theme's typefaces at the theme's sizes (CNT-097) - what the author cannot do is pick a different one. Narrower than \"no styling\" on purpose - see CNT-035",
       "document": "CNT-content-and-authoring.md",
-      "line": 578
+      "line": 581
     },
     {
       "id": "CNT-N02",
       "statement": "**No page geometry in content.** Page size, margins, running heads and columns belong to the publishing layout. Whether a forced page break is an exception is **CNT-Q07**",
       "document": "CNT-content-and-authoring.md",
-      "line": 579
+      "line": 582
     },
     {
       "id": "CNT-N03",
       "statement": "**No free-form drawing or diagramming.** A figure references a managed asset produced elsewhere",
       "document": "CNT-content-and-authoring.md",
-      "line": 580
+      "line": 583
     },
     {
       "id": "CNT-N04",
       "statement": "**No embedded spreadsheets or live formulas.** Computation belongs in the query layer",
       "document": "CNT-content-and-authoring.md",
-      "line": 581
+      "line": 584
     },
     {
       "id": "CNT-N05",
       "statement": "**No arbitrary HTML or raw markup escape hatch.** It would defeat every guarantee in section 3",
       "document": "CNT-content-and-authoring.md",
-      "line": 582
+      "line": 585
     },
     {
       "id": "CNT-N06",
       "statement": "**No per-author formatting preferences.** Two authors editing one document must produce content that looks the same",
       "document": "CNT-content-and-authoring.md",
-      "line": 583
+      "line": 586
     },
     {
       "id": "CNT-N07",
       "statement": "**No tables or images inside footnotes** (CNT-129, which superseded CNT-040)",
       "document": "CNT-content-and-authoring.md",
-      "line": 584
+      "line": 587
     },
     {
       "id": "CNT-N08",
       "statement": "**No per-document override of a theme's styles.** Where a document needs a different look it uses a different theme, which an administrator configures. Otherwise every document drifts into being its own theme",
       "document": "CNT-content-and-authoring.md",
-      "line": 585
+      "line": 588
     },
     {
       "id": "CNT-N09",
       "statement": "**No headings in component content.** A component carries no heading, because the outline owns structure and its titles (**STR**) - and because a component that knew its own heading level could not be used at two depths. A decision, not an omission",
       "document": "CNT-content-and-authoring.md",
-      "line": 586
+      "line": 589
     },
     {
       "id": "CNT-N10",
       "statement": "**No link to content inside the product expressed as a URL.** An internal target is a cross-reference (CNT-027), which survives a move, a rename and a renumber. A URL to a component would be a second, weaker way of doing the same thing",
       "document": "CNT-content-and-authoring.md",
-      "line": 587
+      "line": 590
     },
     {
       "id": "COL-N01",
@@ -13973,105 +13973,105 @@
       "question": "**What is the canonical equation representation (CNT-043)?** MathML, LaTeX, or a structured form",
       "settledBy": "The publishing engine decision - it constrains what can be rendered to PDF faithfully",
       "document": "CNT-content-and-authoring.md",
-      "line": 593
+      "line": 596
     },
     {
       "id": "CNT-Q02",
       "question": "**Is the three-level vocabulary in section 11 adopted, and what are the interim saves called?**",
       "settledBy": "**Settled.** Adopted as iteration / version / revision in [ADR-0006](../../decisions/0006-iteration-version-revision.md); the scope, the domain package and the spike findings are reconciled",
       "document": "CNT-content-and-authoring.md",
-      "line": 594
+      "line": 597
     },
     {
       "id": "CNT-Q03",
       "question": "**What exactly is the boundary that cuts a version (CNT-070)?**",
       "settledBy": "**Settled.** A positive act only - an explicit save or a deliberate lock release. Never inactivity: a version records that somebody decided something, and time passing is not a decision. Iterations are retained until the next version, so nothing is lost when a lock times out",
       "document": "CNT-content-and-authoring.md",
-      "line": 595
+      "line": 598
     },
     {
       "id": "CNT-Q04",
       "question": "**Does the mark vocabulary need an extension point?** CNT-006 closes it, which may not survive a real customer",
       "settledBy": "The first customer requirement that cannot be expressed with the closed set",
       "document": "CNT-content-and-authoring.md",
-      "line": 596
+      "line": 599
     },
     {
       "id": "CNT-Q05",
       "question": "**How is an authored table's cell identified for a footnote anchor (CNT-037)?**",
       "settledBy": "**Settled.** An authored table is data too: it may declare key columns, and anchoring then works exactly as it does for a bound table (CNT-107). Positional fallback where no key is declared, marked as the weaker form",
       "document": "CNT-content-and-authoring.md",
-      "line": 597
+      "line": 600
     },
     {
       "id": "CNT-Q06",
       "question": "**May a document override the theme's resolution of an image's size (CNT-088)?**",
       "settledBy": "**Settled: no.** Only styles the configuration provides. An administrator adds a style; a document picks one. See CNT-N08",
       "document": "CNT-content-and-authoring.md",
-      "line": 598
+      "line": 601
     },
     {
       "id": "CNT-Q07",
       "question": "**Is a forced page break content or structure?** \"This section starts on a new page\" reads like an outline property; \"keep these two blocks together\" reads like a content one. Recommendation: the first in **STR**, the second here",
       "settledBy": "A decision in **STR**, since the outline is where the first half would live",
       "document": "CNT-content-and-authoring.md",
-      "line": 599
+      "line": 602
     },
     {
       "id": "CNT-Q09",
       "question": "**Do style catalogues need their own capability area?**",
       "settledBy": "**Settled: yes.** Added as `STY`, the eighteenth area, with scope §7.18. Style catalogues span the editor and the publisher and belonged to neither",
       "document": "CNT-content-and-authoring.md",
-      "line": 600
+      "line": 603
     },
     {
       "id": "CNT-Q10",
       "question": "**How do review and authoring interact for a user who may do both?** Note what is _not_ open: suggestions with accept and reject are settled by scope decision 4 and specified in §7.7 and CNT-033. What is open is whether a reviewer who also holds authoring rights may edit directly instead of suggesting, and whether an author may suggest to themselves rather than simply typing",
       "settledBy": "A decision in **COL**, informed by whether review in this market is expected to be a separate pass or a mode anyone can drop into",
       "document": "CNT-content-and-authoring.md",
-      "line": 601
+      "line": 604
     },
     {
       "id": "CNT-Q11",
       "question": "**Which area owns a document being created from a template?**",
       "settledBy": "**Settled: a new one.** Added as `TPL`, the nineteenth area, with scope §7.19 - template authoring, the metadata schema and structure outline definitions nothing else owned, declared parameters, instantiation, divergence, and what happens when a template changes after documents exist",
       "document": "CNT-content-and-authoring.md",
-      "line": 602
+      "line": 605
     },
     {
       "id": "CNT-Q12",
       "question": "**Who owns a component's own metadata - its title, its tags?** **TPL** owns the metadata schema a document declares and **SCH** searches the values, but no area states where a component's own title and values live, or what validates them",
       "settledBy": "**Settled** by [MET](MET-metadata-and-component-types.md). A component is of exactly one component type (MET-011), which assigns the schemas its fields come from, and a component never takes fields from a document that references it (MET-013), so transclusion into documents from different templates changes nothing. CNT-145 adds the type to the attributes every component carries",
       "document": "CNT-content-and-authoring.md",
-      "line": 603
+      "line": 606
     },
     {
       "id": "CNT-Q13",
       "question": "**What is the reference configuration the preview budget is measured on (CNT-151)?** Two seconds on what, rendering what content",
       "settledBy": "The first performance harness, which has to name a machine before it can report a number. A budget with no baseline can be neither confirmed nor refuted",
       "document": "CNT-content-and-authoring.md",
-      "line": 604
+      "line": 607
     },
     {
       "id": "CNT-Q14",
       "question": "**What happens when content carrying a condition arrives in a space whose axis does not exist (CNT-132 to CNT-135)?**",
       "settledBy": "A decision in **REU**, which owns axes. Three candidates - refuse the paste, drop the condition and report it, or create the axis - and the third is how a taxonomy quietly becomes whatever anybody pasted",
       "document": "CNT-content-and-authoring.md",
-      "line": 605
+      "line": 608
     },
     {
       "id": "CNT-Q15",
       "question": "**Should CNT-091 to CNT-093 be superseded by their STY equivalents?** They said what STY-016, STY-017, STY-029 and STY-030 say, and two owners of one rule is how the two drift apart",
       "settledBy": "**Settled: yes.** CNT-091, CNT-092 and CNT-093 are superseded by STY-016, STY-017 and STY-029. This area keeps what content carries - a named style and no absolute dimension (CNT-121, CNT-123) - and **STY** owns how a style resolves. `docs/design/themes.md` claims the STY requirements directly",
       "document": "CNT-content-and-authoring.md",
-      "line": 606
+      "line": 609
     },
     {
       "id": "CNT-Q08",
       "question": "**Is block alignment ever the author's?**",
       "settledBy": "**Settled.** Alignment comes from a named style, chosen from a catalogue - and so do paragraph, table, image and citation appearance generally (CNT-094)",
       "document": "CNT-content-and-authoring.md",
-      "line": 607
+      "line": 610
     },
     {
       "id": "COL-Q01",
@@ -14489,7 +14489,7 @@
     {
       "id": "PUB-Q04",
       "question": "**How is preview made fast enough (CNT-096) while using the same pipeline (PUB-006)?**",
-      "settledBy": "**Settled.** Typst compiles incrementally, reusing unchanged layout between compiles: an edit reaches page 40 of a 300-page document in under half a second, whatever page it is on. The one difference is PUB-061. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)",
+      "settledBy": "**Settled.** Typst compiles incrementally, reusing unchanged layout between compiles: an edit reaches page 40 of a 300-page document in under half a second, whatever page it is on. The one difference is PUB-061. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md). Since [ADR-0027](../../decisions/0027-the-warm-range-preview-leaves-t1.md) this answers T3's warm preview; T1's is the whole document, compiled cold, and CNT-096 is withdrawn",
       "document": "PUB-publishing-and-output.md",
       "line": 301
     },
@@ -15531,15 +15531,19 @@
         },
         {
           "id": "PUB-005",
-          "howItIsMet": "A preview reads the document's latest version and each occurrence's current resolution, and says **Preview - not approved** on every page and once in the tagged text, and in its title"
+          "howItIsMet": "A preview reads the document's latest version and each occurrence's current resolution, and says **Preview - not approved** on every page and once, as its sentence, at the start of the tagged text, in the layout's words ([Preview](#preview), PV-D)"
         },
         {
           "id": "PUB-006",
-          "howItIsMet": "A preview is a request of kind `preview` run by the same job, the same `assemble`, template and engine; the differences are listed under [Preview](#preview) and none of them is in what the pages show"
+          "howItIsMet": "A preview is a request of kind `preview` run by the publish job, the same `assemble`, template and engine; the differences are listed under [Preview](#preview) and none of them is in what the pages show but the notice"
+        },
+        {
+          "id": "CNT-150",
+          "howItIsMet": "**Preview** on the document page asks for a preview of the version the page holds and opens it in a pane beside the text, the PDF in the browser's own viewer, so an author sees the pages without leaving the text or an editor open in it (PV-G)"
         },
         {
           "id": "PUB-061",
-          "howItIsMet": "A publication is always compiled with `--pdf-standard ua-1`; the publication path has no page-range parameter to pass, and Typst refuses `--pages` with `ua-1`. Only the warm range preview omits tagging, and it is images, never a PDF"
+          "howItIsMet": "A publication is always compiled with `--pdf-standard ua-1`; the publication path has no page-range parameter to pass, and Typst refuses `--pages` with `ua-1`. T1's preview is the whole document, tagged; only the warm range preview, T3's, omits tagging, and it is images, never a PDF"
         },
         {
           "id": "PUB-062",
@@ -15547,7 +15551,7 @@
         },
         {
           "id": "PUB-080",
-          "howItIsMet": "A range preview's pages are images whose alternative text says each is an untagged preview page and names the tagged PDF; the panel says the same on screen and offers the tagged PDF beside it"
+          "howItIsMet": "A range preview's pages are images whose alternative text says each is an untagged preview page and names the tagged PDF; the panel says the same on screen and offers the tagged PDF beside it. T3's since ADR-0027"
         },
         {
           "id": "PUB-007",

@@ -476,10 +476,13 @@ checked are the author's browser's.
 | **CNT-115** | The editing view must set text at the measure of the document's publishing layout, scaled to the screen and zoomable, so that line lengths and relative image sizes are those of the output                                                                                                        | T1      | Specified             |
 | **CNT-095** | An author must be able to preview the document as it will be published, in a selectable output format, without leaving the editor                                                                                                                                                                  | T1      | Superseded by CNT-150 |
 | **CNT-150** | An author must be able to preview the document as it will be published to PDF, without leaving the editor                                                                                                                                                                                          | T1      | Specified             |
-| **CNT-096** | Preview must be fast enough to use while writing rather than as a separate step, against the budget in CNT-151, tested                                                                                                                                                                             | T1      | Specified             |
+| **CNT-096** | Preview must be fast enough to use while writing rather than as a separate step, against the budget in CNT-151, tested                                                                                                                                                                             | T1      | Withdrawn             |
 | **CNT-114** | Preview must reflect an edit within one second, and never more than two, in a 300-page document - a provisional budget, to be confirmed against real content                                                                                                                                       | T1      | Superseded by CNT-136 |
 | **CNT-136** | Preview must reflect an edit within one second, and never more than two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)                                           | T1      | Superseded by CNT-151 |
-| **CNT-151** | Preview must reflect a saved edit within one second of the save being recorded, with no measured sample above two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**) | T1      | Specified             |
+| **CNT-151** | Preview must reflect a saved edit within one second of the save being recorded, with no measured sample above two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**) | T3      | Specified             |
+
+**CNT-096 is withdrawn: a preview fast enough to use while writing is what CNT-151's budget measures.**
+Two rows saying one thing would be claimed and cited twice; ADR-0027 moved CNT-151 to T3.
 
 ### Read, review and author
 
@@ -519,8 +522,8 @@ a prospect judges.
 **CNT-097 and CNT-150 are not the same requirement, and both are needed.** The editor can show
 the theme's type, spacing and styles, so an author sees the words a reader will see. It cannot show
 pagination, because a continuous scroll has no pages - where a table breaks, whether a heading
-strands, what lands on page 12. That is what preview is for, and it is why preview has to be fast
-enough to use while writing (CNT-096) rather than being a publish step in disguise.
+strands, what lands on page 12. That is what preview is for. A preview fast enough to follow the
+writing (CNT-151) is T3's since ADR-0027; T1's is the whole document, asked for and waited on.
 
 **The three modes (CNT-104 to CNT-106) are an interface consequence of a permission model.** A
 reader wants no editing affordances at all; a reviewer wants to comment and suggest but must not
@@ -858,3 +861,20 @@ is an edit.
 | Counts       | Before                      | After                       |
 | ------------ | --------------------------- | --------------------------- |
 | Requirements | 170, of which 25 superseded | 175, of which 30 superseded |
+
+### Ken's answer to the warm range preview (K2), 2026-09-27
+
+[The T1 audit](<../../reviews/T1 - Audit against the code.md>) asked whether the warm range preview
+belongs in T1 (K2). Ken took it out, recorded by
+[ADR-0027](../../decisions/0027-the-warm-range-preview-leaves-t1.md). A row moving tranche whole keeps
+its identifier.
+
+| What was found                                                                                                                                                                      | Change                                                                    |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Meeting CNT-151 keeps a compilation warm for every open document, about half a gigabyte for 300 pages, and its number waits on a reference configuration nobody has named (CNT-Q13) | **CNT-151 moved to T3**, with CNT-Q13; T1's preview is the whole document |
+| CNT-096 asks for a preview fast enough to use while writing, against CNT-151's budget, which is CNT-151 again                                                                       | **CNT-096 withdrawn**                                                     |
+| CNT-150 is untouched: the whole-document preview keeps T1's promise                                                                                                                 | Not changed                                                               |
+
+| Counts       | Before                      | After                                       |
+| ------------ | --------------------------- | ------------------------------------------- |
+| Requirements | 175, of which 30 superseded | 175, of which 30 superseded and 1 withdrawn |
