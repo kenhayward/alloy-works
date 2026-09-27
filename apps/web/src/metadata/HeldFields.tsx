@@ -50,9 +50,14 @@ export function HeldFields(props: HeldFieldsProps) {
     setDrawn((count) => count + 1);
   }, [stored]);
 
+  // Torn down with something typed and not yet sent - another section chosen, the page left inside
+  // the pause - it is sent now rather than dropped (W5.4 review).
   useEffect(
     () => () => {
       if (timer.current !== null) clearTimeout(timer.current);
+      const values = waiting.current;
+      waiting.current = null;
+      if (values !== null) void save.current(values);
     },
     [],
   );

@@ -151,7 +151,10 @@ the outline's `set` - tries again while another act is in flight, and takes the 
 only where they differ from what it holds, compared canonically because Postgres reorders an object's
 members, so the answer to its own save never redraws the form under the author. The document's fields
 stand in the page's side column; a section's in the outline panel beside its other settings, for
-those who may edit the outline. Definitions are read, and
+those who may edit the outline. The review found a section's typed value dropped when another section
+was chosen inside the pause - the fields are torn down with the selection - so a waiting save is sent
+as they go; and a section's value refused showed a generic sentence, where the page now says the
+service's own, as it does for the document's. Definitions are read, and
 places listed, by name, so a refusal lists them in the same order every time. The body that makes a
 definition is one object whose payload is read by its kind's schema in a refinement, because a route's
 body must be an object schema; a version's payload is read against the definition's own kind by the

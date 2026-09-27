@@ -137,10 +137,12 @@ async function templateView(viewer: Viewer, document: string): Promise<DocumentV
  * an answer. **Never a fallback to the product's default scheme** - that
  * would show numbers no publish could produce, which is the one thing this is here to prevent.
  *
- * The read costs four indexed reads and a parse on every document answer - the declaration, the
- * latest version's id, its row, and its definitions - measured at one to two milliseconds. It is not
- * cached: a layout may be revised between two requests, and a page showing numbers from a scheme that
- * has since moved would be showing numbers that will not publish.
+ * The layout costs four indexed reads and a parse on every document answer - the declaration, the
+ * latest version's id, its row, and its definitions - measured at one to two milliseconds before
+ * templates. A document made from a template adds the read of its link and its template version for
+ * the layout, again for its fields, and its schemas' and fields' latest versions (W5.4); none of it is
+ * cached: a layout, a template or a field may be revised between two requests, and a page showing
+ * numbers or fields that have since moved would show what no publish or save would use.
  */
 async function documentView(
   viewer: Viewer,

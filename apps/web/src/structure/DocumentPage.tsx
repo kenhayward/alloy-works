@@ -242,6 +242,15 @@ function componentsIn(items: readonly unknown[]): ComponentChoice[] {
  * which the author cannot correct and trying again cannot fix.
  */
 function doesNotApply(refusal: unknown): string {
+  // A section's value refused (definitions.md): the service's own sentence says which kind of thing
+  // did not fit, and is one of its fixed messages, never an exception's text.
+  if (
+    isRecord(refusal) &&
+    (refusal.code === 'values_invalid' || refusal.code === 'values_unresolved') &&
+    typeof refusal.message === 'string'
+  ) {
+    return refusal.message;
+  }
   if (!isRecord(refusal) || refusal.code !== 'outline_invalid') {
     return 'The change could not be made.';
   }

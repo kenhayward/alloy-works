@@ -4298,11 +4298,11 @@ describe("a document's fields and its sections'", () => {
   };
 
   /** A document made from a template applying Review at both levels, answering what it is sent. */
-  function templated() {
+  function templated(options: { refuseSet?: boolean } = {}) {
     const sent: { url: string; method: string; body: unknown }[] = [];
     let version = 1;
     let values: Record<string, unknown> = {};
-    let nodes: OutlineNode[] = [section(INTRODUCTION, 'Introduction')];
+    let nodes: OutlineNode[] = [section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')];
     const view = () => ({
       id: DOCUMENT,
       space: { id: SPACE, name: 'General' },
@@ -4334,6 +4334,14 @@ describe("a document's fields and its sections'", () => {
         return json(200, view());
       }
       if (url === `/v1/documents/${DOCUMENT}/outline`) {
+        if (options.refuseSet) {
+          return json(400, {
+            code: 'values_invalid',
+            message: 'A value does not fit its field.',
+            traceId: 't',
+            failures: [],
+          });
+        }
         const { operation } = body as {
           operation: { node: string; values?: Record<string, unknown> };
         };
@@ -4389,5 +4397,29 @@ describe("a document's fields and its sections'", () => {
         operation: { operation: 'set', node: INTRODUCTION, values: { [REVIEWER]: 'Grace' } },
       }),
     );
+  });
+
+  it('saves what was typed into a section before another is chosen', async () => {
+    const { fetch, sent } = templated();
+    open(fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: /Introduction/ }));
+    const fields = await screen.findByRole('region', { name: 'Fields of Introduction' });
+    await userEvent.type(within(fields).getByRole('textbox', { name: /^Reviewer/ }), 'Grace');
+    // Chosen at once, inside the pause: what was typed goes all the same.
+    await userEvent.click(screen.getByRole('treeitem', { name: /Method/ }));
+    await waitFor(() =>
+      expect(sent.find((each) => each.url.endsWith('/outline'))?.body).toMatchObject({
+        operation: { operation: 'set', node: INTRODUCTION, values: { [REVIEWER]: 'Grace' } },
+      }),
+    );
+  });
+
+  it("says what the service said of a section's value it refused", async () => {
+    const { fetch } = templated({ refuseSet: true });
+    open(fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: /Introduction/ }));
+    const fields = await screen.findByRole('region', { name: 'Fields of Introduction' });
+    await userEvent.type(within(fields).getByRole('textbox', { name: /^Reviewer/ }), 'Grace');
+    expect(await screen.findByText('A value does not fit its field.')).toBeInTheDocument();
   });
 });
