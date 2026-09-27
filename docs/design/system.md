@@ -16,7 +16,8 @@ of record. The service keeps everything in PostgreSQL, one schema per tenant: co
 history, search, relationships, presence and locks, and the fan-out that keeps screens live. Binary
 files - assets, fonts, published outputs - are objects in S3-compatible storage. Anything heavy runs
 in workers: publishing is a job claimed from a queue in Postgres, run through a pinned Typst binary
-and our own Word writer, and previews are Typst kept warm per open document. The rules that matter -
+and our own Word writer; a preview is the same pipeline asked for the whole document, and a preview kept
+warm per open document is T3's (ADR-0027). The rules that matter -
 what a component is, how a theme resolves, how Word is written - live once, in `packages/domain`,
 and the renderer, the service and the workers all import them.
 

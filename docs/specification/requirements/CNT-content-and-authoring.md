@@ -481,6 +481,9 @@ checked are the author's browser's.
 | **CNT-136** | Preview must reflect an edit within one second, and never more than two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)                                           | T1      | Superseded by CNT-151 |
 | **CNT-151** | Preview must reflect a saved edit within one second of the save being recorded, with no measured sample above two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**) | T3      | Specified             |
 
+**CNT-096 is withdrawn: a preview fast enough to use while writing is what CNT-151's budget measures.**
+Two rows saying one thing would be claimed and cited twice; ADR-0027 moved CNT-151 to T3.
+
 ### Read, review and author
 
 | ID          | Requirement                                                                                                                                                                            | Tranche | Status                |
