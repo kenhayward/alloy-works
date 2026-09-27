@@ -1,4 +1,10 @@
-import type { DefinitionKind, Permission, PrincipalKind } from '@alloy-works/domain';
+import type {
+  DefinitionKind,
+  Permission,
+  PrincipalKind,
+  SearchConfiguration,
+  SearchKind,
+} from '@alloy-works/domain';
 import type { ColumnType, Generated, Transaction } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
 import type { AssetUploadTable } from './assets-tables.js';
@@ -329,6 +335,33 @@ export interface DefinitionNameTable {
   name_key: ColumnType<string, string, string>;
 }
 
+/** Search's projection: one row per thing found (0031; docs/design/search.md). Derived, never a record. */
+export interface SearchEntryTable {
+  id: Generated<string>;
+  artifact_id: string;
+  kind: SearchKind;
+  node: string | null;
+  version_id: string;
+  space_id: string | null;
+  title: string;
+  owner: string | null;
+  changed_at: Date;
+  component_type: string | null;
+  field_values: ColumnType<Record<string, unknown>, string, string>;
+  configuration: SearchConfiguration;
+  body: string;
+  vector: ColumnType<string, never, never>;
+}
+
+/** One place in a search entry and its words; `vector` is generated from them (0031). */
+export interface SearchTextTable {
+  entry_id: string;
+  place: string;
+  body: string;
+  configuration: SearchConfiguration;
+  vector: ColumnType<string, never, never>;
+}
+
 export interface TenantTables {
   component_lock: ComponentLockTable;
   iteration: IterationTable;
@@ -366,6 +399,8 @@ export interface TenantTables {
   publication_request_asset: PublicationRequestAssetTable;
   publication_asset: PublicationAssetTable;
   asset_upload: AssetUploadTable;
+  search_entry: SearchEntryTable;
+  search_text: SearchTextTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

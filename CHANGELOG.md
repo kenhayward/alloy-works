@@ -3,6 +3,20 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.86.0 - 2026-09-27 (PR #270)
+
+### Added
+
+- **Everything you write is now indexed for search**, ready for the search page that follows: a
+  component's title, text, captions, image descriptions, footnotes and field values; a document's
+  title and each of its sections; publications, templates, images, fields, schemas and component
+  types. A change is indexed as it is saved, and an existing environment is indexed in full when it is
+  upgraded.
+
+### Fixed
+
+- The search design's note on publications read as a stray list item.
+
 ## 0.85.1 - 2026-09-27 (PR #269)
 
 ### Changed

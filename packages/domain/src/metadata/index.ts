@@ -15,6 +15,7 @@ export type { DefinitionKind, DefinitionOf, DefinitionReadOutcome } from './migr
 export { canonicaliseDecimal } from './lexical.js';
 export type { MetadataFailure, MetadataRule } from './failure.js';
 export type { MetadataValues, UserValue } from './values.js';
+export { isUserValue } from './values.js';
 
 export { checkValue } from './check-value.js';
 export {

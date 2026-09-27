@@ -56,6 +56,9 @@ export * from './theme/index.js';
 // The Word writer: a publication as a .docx (docs/design/word-output.md; Word 1).
 export * from './word/index.js';
 
+// Search's projection: what a version is found by, place by place (docs/design/search.md; W6).
+export * from './search/index.js';
+
 // Whether Postgres can store a value's every string, promoted so a route refuses what the store
 // would fail on as the caller's content rather than as its own failure (issue #127).
 export { storableEverywhere } from './stored/storable.js';

@@ -1,6 +1,9 @@
 import { readdir, readFile } from 'node:fs/promises';
+import { Kysely, PostgresDialect, type PostgresPool } from 'kysely';
 import pg from 'pg';
 import { assertTenantRole } from './names.js';
+import { reindexSearch } from './search.js';
+import type { TenantTables, TenantTransaction } from './tables.js';
 
 export interface MigrationReport {
   readonly platform: readonly string[];
@@ -18,6 +21,32 @@ interface Migration {
 }
 
 const DEFAULT_DIR = new URL('../migrations/', import.meta.url);
+
+/**
+ * The tenant migrations after which search's projection is made again from the chain, in the same
+ * transaction: 0031, which makes it. A later migration that changes what the projection holds, or how a
+ * version is read into it, is added here, so every environment's is rebuilt by the run that applies it
+ * (search.md, "Written with the version").
+ */
+const REINDEXED_BY = new Set(['0031_search']);
+
+/**
+ * The migration's own connection, as a tenant transaction: the one `applyAll` opened, as the tenant's
+ * owner role on its search path, so work a run does in TypeScript after its SQL commits or rolls back
+ * with it. Never a pool: every statement goes to this one client, and releasing it releases nothing.
+ */
+function transactionOver(client: pg.Client): TenantTransaction {
+  const pool = {
+    connect: async () => ({
+      query: (...args: Parameters<pg.Client['query']>) => client.query(...args),
+      release: () => undefined,
+    }),
+    end: async () => undefined,
+  } as unknown as PostgresPool;
+  return new Kysely<TenantTables>({
+    dialect: new PostgresDialect({ pool }),
+  }) as unknown as TenantTransaction;
+}
 const FILE = /^\d{4}_[a-z0-9_]+\.sql$/;
 
 async function load(dir: URL, kind: 'platform' | 'tenant'): Promise<Migration[]> {
@@ -68,7 +97,16 @@ export async function migrate(
       const role = assertTenantRole(tenant.role_name);
       tenants[tenant.id] = await applyAll(
         client,
-        { schema: assertTenantRole(tenant.schema_name), owner: `${role}_owner`, runtime: role },
+        {
+          schema: assertTenantRole(tenant.schema_name),
+          owner: `${role}_owner`,
+          runtime: role,
+          after: async (applied) => {
+            if (applied.some((version) => REINDEXED_BY.has(version))) {
+              await reindexSearch(transactionOver(client));
+            }
+          },
+        },
         tenantMigrations,
       );
     }
@@ -83,6 +121,8 @@ interface Target {
   /** For a tenant: the owner role the migrations run as, and the runtime role kept from history. */
   readonly owner?: string;
   readonly runtime?: string;
+  /** Run after this run's migrations and before they commit, given the ones it applied. */
+  readonly after?: (applied: readonly string[]) => Promise<void>;
 }
 
 async function applyAll(
@@ -117,6 +157,7 @@ async function applyAll(
       await client.query('insert into schema_migration (version) values ($1)', [migration.version]);
       now.push(migration.version);
     }
+    await target.after?.(now);
     await client.query('commit');
     return now;
   } catch (error) {

@@ -17931,6 +17931,18 @@
       "kind": "title"
     },
     {
+      "id": "SCH-054",
+      "file": "packages/db/src/search.test.ts",
+      "line": 125,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-066",
+      "file": "packages/db/src/search.test.ts",
+      "line": 283,
+      "kind": "title"
+    },
+    {
       "id": "MET-042",
       "file": "packages/db/src/starter-component-type.test.ts",
       "line": 54,
@@ -18419,7 +18431,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 303,
+      "line": 310,
       "kind": "title"
     },
     {
@@ -18786,6 +18798,12 @@
       "id": "PUB-012",
       "file": "packages/domain/src/publishing/layout.test.ts",
       "line": 181,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-002",
+      "file": "packages/domain/src/search/entries.test.ts",
+      "line": 56,
       "kind": "title"
     },
     {
