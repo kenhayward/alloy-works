@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.78.0 - 2026-09-27 (PR #258)
+
+### Added
+
+- **New document can start from a template.** Choose **Blank** or any template you may read: the
+  document begins with the template's sections, in its order, and with the default values its
+  metadata gives the document and each section. It is shown, numbered and published under the
+  template's theme and layout, and it remembers which template, and which version of it, it came
+  from. From then on the outline is the document's own - changing it changes no template, and a
+  template's next version changes no document already made. A template naming something that no
+  longer exists is refused with a sentence saying so.
+
 ## 0.77.0 - 2026-09-27 (PR #257)
 
 ### Added

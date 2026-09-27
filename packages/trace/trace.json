@@ -17012,25 +17012,25 @@
     {
       "id": "API-037",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 233,
+      "line": 245,
       "kind": "rule"
     },
     {
       "id": "IAM-018",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 193,
+      "line": 205,
       "kind": "title"
     },
     {
       "id": "TPL-004",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 221,
+      "line": 233,
       "kind": "rule"
     },
     {
       "id": "TPL-006",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 167,
+      "line": 179,
       "kind": "title"
     },
     {
@@ -17204,19 +17204,19 @@
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3137,
+      "line": 3214,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3290,
+      "line": 3367,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3584,
+      "line": 3661,
       "kind": "title"
     },
     {
@@ -17228,25 +17228,25 @@
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3788,
+      "line": 3865,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3624,
+      "line": 3701,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2946,
+      "line": 3023,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2992,
+      "line": 3069,
       "kind": "title"
     },
     {
@@ -17631,6 +17631,30 @@
       "id": "STY-024",
       "file": "packages/db/src/default-theme.test.ts",
       "line": 89,
+      "kind": "title"
+    },
+    {
+      "id": "STY-025",
+      "file": "packages/db/src/document-template.test.ts",
+      "line": 352,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-004",
+      "file": "packages/db/src/document-template.test.ts",
+      "line": 383,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-025",
+      "file": "packages/db/src/document-template.test.ts",
+      "line": 168,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-027",
+      "file": "packages/db/src/document-template.test.ts",
+      "line": 240,
       "kind": "title"
     },
     {
@@ -18212,7 +18236,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 290,
+      "line": 292,
       "kind": "title"
     },
     {
@@ -18704,37 +18728,37 @@
     {
       "id": "STR-001",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 79,
+      "line": 80,
       "kind": "title"
     },
     {
       "id": "STR-002",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 94,
+      "line": 95,
       "kind": "title"
     },
     {
       "id": "STR-048",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 128,
+      "line": 129,
       "kind": "title"
     },
     {
       "id": "STR-049",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 141,
+      "line": 142,
       "kind": "title"
     },
     {
       "id": "STR-058",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 170,
+      "line": 171,
       "kind": "title"
     },
     {
       "id": "STR-064",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 679,
+      "line": 692,
       "kind": "title"
     },
     {
@@ -18777,6 +18801,18 @@
       "id": "TPL-059",
       "file": "packages/domain/src/template/definition.test.ts",
       "line": 40,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-012",
+      "file": "packages/domain/src/template/materialise.test.ts",
+      "line": 97,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-062",
+      "file": "packages/domain/src/template/materialise.test.ts",
+      "line": 118,
       "kind": "title"
     },
     {
