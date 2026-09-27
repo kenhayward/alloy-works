@@ -17,8 +17,11 @@ import { storableEverywhere, storableText } from '../stored/storable.js';
  * schema 1 outline this product wrote reads as schema 2 member for member: schema 1's parse refused
  * `front`, so it holds none. A schema 1 row that holds some anyway was never written by this product,
  * and the migration refuses it rather than adopting it as front matter.
+ *
+ * Schema 3 adds a section's optional `origin`, the key of the template's starting section it was made
+ * from (templates.md, TE-E). A schema 2 outline holds none, so it reads as schema 3 as it stands.
  */
-export const OUTLINE_SCHEMA_VERSION = 2;
+export const OUTLINE_SCHEMA_VERSION = 3;
 
 /**
  * Where a top-level node sits in a published document, inherited by its subtree (STR-016): front
@@ -58,6 +61,12 @@ export type SectionNode = {
   readonly matter: OutlineMatter;
   readonly pageBreak: 'none' | 'page' | 'recto';
   readonly values: Record<string, unknown>;
+  /**
+   * The template's starting section this section was written from (templates.md, "Where each
+   * section came from"; schema 3): its key, which a required section is found by however it is
+   * retitled or moved. Absent on a section an author added, and never written by an outline act.
+   */
+  readonly origin?: string | undefined;
   readonly children: readonly OutlineNode[];
 };
 
@@ -139,6 +148,10 @@ export const sectionNodeSchema = z.strictObject({
   type: z.literal('section'),
   ...positional,
   title: sectionTitleSchema,
+  origin: z
+    .string()
+    .regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/)
+    .optional(),
   children: z.array(outlineNodeSchema),
 });
 
@@ -391,6 +404,9 @@ export const outlineMigrationChain: MigrationChain = {
       refuseFrontInSchema1(value.nodes);
       return value;
     },
+    // Schema 3 added `origin`, optional and written only when a document is made from a template,
+    // so a schema 2 outline is a schema 3 outline as it stands, restamped as schema 1's was.
+    2: (value) => value,
   },
 };
 
@@ -500,6 +516,8 @@ function canonicaliseOutlineNode(node: OutlineNode): string {
           ['id', canonicalJson(node.id)],
           ['matter', canonicalJson(node.matter)],
           ['numbered', canonicalJson(node.numbered)],
+          // Only where there is one: an outline stored before schema 3 digests as it always has.
+          ...(node.origin === undefined ? [] : ([['origin', canonicalJson(node.origin)]] as const)),
           ['pageBreak', canonicalJson(node.pageBreak)],
           ['title', canonicaliseTitle(node.title)],
           ['type', canonicalJson(node.type)],

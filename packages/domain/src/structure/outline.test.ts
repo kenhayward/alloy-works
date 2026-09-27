@@ -7,6 +7,7 @@ import { contentDocumentSchema } from '../content/model/document.js';
 import { crossReferenceTargetSchema } from '../content/model/inline.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { canonicaliseVersion, canonicaliseVersionContent } from '../version/substance.js';
+import { applyOutlineOperation, outlineOperationSchema } from './operations.js';
 
 import {
   canonicaliseOutline,
@@ -258,7 +259,18 @@ describe('the outline a document version holds', () => {
     expect(readOutline({}, { artifact: 'a', version: 'v' })).toMatchObject({ ok: false });
   });
 
-  it('reads a stored schema 1 outline as schema 2, member for member', () => {
+  it('reads a stored schema 2 outline as schema 3, member for member: no section says where it came from', () => {
+    // Schema 3 adds `origin`, optional, which only making a document from a template writes, so a
+    // schema 2 outline is a schema 3 outline as it stands, bar the version it says it is.
+    const stored: Record<string, unknown> = JSON.parse(
+      readFileSync(join(fixtures, 'v2', 'every-node.json'), 'utf8'),
+    );
+    const outcome = readOutline(stored, { artifact: 'a', version: 'v' });
+    expect(outcome).toEqual({ ok: true, outline: { ...stored, schemaVersion: 3 } });
+    expect(OUTLINE_SCHEMA_VERSION).toBe(3);
+  });
+
+  it('reads a stored schema 1 outline as schema 3, member for member', () => {
     // Schema 1 could not hold front matter, so a schema 1 outline this product wrote holds none, and
     // the step to schema 2 changes nothing else: the stored bytes read back as they were written, bar
     // the version they say they are. One holding front matter anyway is refused (the next test).
@@ -266,8 +278,7 @@ describe('the outline a document version holds', () => {
       readFileSync(join(fixtures, 'v1', 'every-node.json'), 'utf8'),
     );
     const outcome = readOutline(stored, { artifact: 'a', version: 'v' });
-    expect(outcome).toEqual({ ok: true, outline: { ...stored, schemaVersion: 2 } });
-    expect(OUTLINE_SCHEMA_VERSION).toBe(2);
+    expect(outcome).toEqual({ ok: true, outline: { ...stored, schemaVersion: 3 } });
   });
 
   it('refuses a stored schema 1 outline holding front matter, which schema 1 could never store', () => {
@@ -374,7 +385,9 @@ describe('the outline a document version holds', () => {
     const outline = parseOutlineDocument({
       ...empty,
       nodes: [
+        // A section made from a template's starting section, so every member it may hold is present.
         section(NODE, {
+          origin: 'introduction',
           children: [
             {
               type: 'reference',
@@ -800,5 +813,47 @@ describe('an outline as a reader is shown it', () => {
     expect(readOutlineView({ ...view, title: ' ' }, { artifact: 'a', version: 'v' }).ok).toBe(
       false,
     );
+  });
+});
+
+describe('where a section came from', () => {
+  it('keeps the starting section a section was made from through every act, and no act writes one', () => {
+    const outline = parseOutlineDocument({
+      ...empty,
+      nodes: [section(NODE, { origin: 'introduction' }), section(OTHER)],
+    });
+    // An act cannot name one: an inserted section, and a set, have no such member.
+    for (const operation of [
+      {
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: {
+          type: 'section',
+          title: [{ type: 'text', value: 'Forged', marks: [] }],
+          origin: 'introduction',
+        },
+      },
+      { operation: 'set', node: OTHER, origin: 'introduction' },
+    ]) {
+      expect(outlineOperationSchema.safeParse(operation).success, operation.operation).toBe(false);
+    }
+    // And retitling or moving the section it is on keeps it.
+    const newIdentifier = () => 'z'.repeat(26);
+    const retitled = applyOutlineOperation(
+      outline,
+      { operation: 'retitle', node: NODE, title: [{ type: 'text', value: 'Opening', marks: [] }] },
+      newIdentifier,
+    );
+    if (!retitled.applied) throw new Error(retitled.reason);
+    const moved = applyOutlineOperation(
+      retitled.outline,
+      { operation: 'move', node: NODE, parent: null, position: 1 },
+      newIdentifier,
+    );
+    if (!moved.applied) throw new Error(moved.reason);
+    expect(
+      moved.outline.nodes.map((node) => (node.type === 'section' ? node.origin : undefined)),
+    ).toEqual([undefined, 'introduction']);
   });
 });

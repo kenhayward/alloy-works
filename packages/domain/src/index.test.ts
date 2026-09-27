@@ -283,6 +283,8 @@ describe('the domain package', () => {
         'startingSectionSchema',
         'templateAssignmentSchema',
         'templateDefinitionSchema',
+        // And the outline a document made from one starts with (templates.md, W4.2).
+        'materialiseTemplate',
       ].sort(),
     );
   });
