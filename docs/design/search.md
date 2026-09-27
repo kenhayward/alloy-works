@@ -236,15 +236,27 @@ same way.
 `title:word`, `Reviewer:Ada`, `"Due date":2026` - lifted out, and the rest handed to Postgres's
 `websearch_to_tsquery`. What cannot be searched is answered by name, never run (SCH-039):
 
-| Outcome            | When                                                              | Says                                                                 |
-| ------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `empty`            | Nothing but spaces                                                | Type what to look for                                                |
-| `nothing_to_match` | Only exclusions, or only words the language's configuration drops | What was excluded, and that it needs something to look for beside it |
-| `unknown_field`    | A scope naming neither `title` nor a field the reader can see     | The name, and that no field is called that                           |
-| `results`          | Anything else, a page of none included                            | The results, the count and whether it is a lower bound               |
+| Outcome            | When                                                             | Says                                                                 |
+| ------------------ | ---------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `empty`            | Nothing but spaces                                               | Type what to look for                                                |
+| `nothing_to_match` | Only exclusions, or nothing a search can use - punctuation alone | What was excluded, and that it needs something to look for beside it |
+| `unknown_field`    | A scope naming neither `title` nor a field the reader can see    | The name, and that no field is called that                           |
+| `results`          | Anything else, a page of none included                           | The results, the count and whether it is a lower bound               |
 
 An open quote is closed at the end of the query rather than refused, which is what
-`websearch_to_tsquery` does and what a reader means.
+`websearch_to_tsquery` does and what a reader means. A colon makes a scope only after a name - a word
+starting with a letter, or a phrase - so `12:30` is a word. `title` is the title's scope whatever else
+is so named: a field called Title is found by its words, not scoped to. A field's name is resolved by
+`nameKey`, as `definition_name` holds it, and only for a reader with the tenant's `read`; to anybody
+else every field is a name no field has, which says nothing of what one holds.
+
+A word a language's configuration drops - _the_ in English - is not refused: it is kept by `simple`,
+which every definition's words are in, so the query is run and answers with what matches, which may be
+nothing. Only a query no configuration keeps anything of is `nothing_to_match`.
+
+The free words are matched against the entry's own `tsvector`, every place's words together, so two
+words in two places find it; a scoped term against its place's row alone. The best place is the row
+ranked highest against every term looked for, joined by `or`, and the passage is marked with the same.
 
 ### One query
 

@@ -90,6 +90,7 @@ describe('the domain package', () => {
         'SEARCH_CONFIGURATIONS',
         'configurationFor',
         'entriesOf',
+        'parseQuery',
         'searchKinds',
         'canonicaliseVersion',
         'canonicaliseVersionContent',

@@ -616,6 +616,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Everything the caller may read that holds these words, a page at a time */
+        get: operations["search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sign-in/google": {
         parameters: {
             query?: never;
@@ -7573,6 +7590,131 @@ export interface operations {
             };
             /** @description No such sample in this environment */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    search: {
+        parameters: {
+            query?: {
+                q?: string;
+                offset?: string;
+                limit?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The results, or by name why there are none to give */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        outcome: "empty";
+                        /** @description The outcome in a sentence, for the reader */
+                        message: string;
+                    } | {
+                        /** @constant */
+                        outcome: "nothing_to_match";
+                        /** @description What the query left out, with nothing to look for */
+                        excluded: string[];
+                        /** @description The outcome in a sentence, for the reader */
+                        message: string;
+                    } | {
+                        /** @constant */
+                        outcome: "unknown_field";
+                        name: string;
+                        /** @description The outcome in a sentence, for the reader */
+                        message: string;
+                    } | {
+                        /** @constant */
+                        outcome: "results";
+                        /** @description How many match, up to 1,000 */
+                        count: number;
+                        /** @description Whether more match than the count, which is then a lower bound */
+                        capped: boolean;
+                        items: {
+                            /** @enum {string} */
+                            kind: "component" | "document" | "section" | "publication" | "template" | "asset" | "field" | "metadataSchema" | "componentType";
+                            artifactId: string;
+                            /** @description A section's outline node; null for anything else */
+                            node: string | null;
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            } | null;
+                            changedAt: string;
+                            /** @description Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields` or `schemas` */
+                            place: string | null;
+                            /** @description Words from that place, about thirty, each matched word a piece of its own */
+                            passage: {
+                                text: string;
+                                matched: boolean;
+                            }[];
+                        }[];
+                        /** @description The outcome in a sentence, for the reader */
+                        message: string;
+                    };
+                };
+            };
+            /** @description An offset or a limit out of range */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

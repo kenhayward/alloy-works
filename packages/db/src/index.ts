@@ -292,3 +292,11 @@ export {
   type StoredDefinition,
 } from './definitions.js';
 export { componentFieldsNow, listPeople, unstorableValues } from './component-values.js';
+export { indexPublication, indexVersion, reindexSearch } from './search.js';
+export {
+  SEARCH_COUNT_CAP,
+  searchWords,
+  type PassagePiece,
+  type SearchAnswer,
+  type SearchResult,
+} from './search-words.js';

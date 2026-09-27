@@ -18171,6 +18171,350 @@
         }
       }
     },
+    "/v1/search": {
+      "get": {
+        "operationId": "search",
+        "summary": "Everything the caller may read that holds these words, a page at a time",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "What to look for: words, a phrase in quotes, `-` excluding, `or`, and `name:word` looked for only in the title or a field of that name",
+              "type": "string",
+              "maxLength": 1000
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "How many results to pass over, 0 when absent",
+              "type": "string",
+              "pattern": "^(?:0|[1-9][0-9]{0,2}|1000)$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "At most this many, 20 when absent",
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-4][0-9]|50)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The results, or by name why there are none to give",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "outcome": {
+                          "type": "string",
+                          "const": "empty"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "The outcome in a sentence, for the reader"
+                        }
+                      },
+                      "required": [
+                        "outcome",
+                        "message"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "outcome": {
+                          "type": "string",
+                          "const": "nothing_to_match"
+                        },
+                        "excluded": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "What the query left out, with nothing to look for"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "The outcome in a sentence, for the reader"
+                        }
+                      },
+                      "required": [
+                        "outcome",
+                        "excluded",
+                        "message"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "outcome": {
+                          "type": "string",
+                          "const": "unknown_field"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "The outcome in a sentence, for the reader"
+                        }
+                      },
+                      "required": [
+                        "outcome",
+                        "name",
+                        "message"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "outcome": {
+                          "type": "string",
+                          "const": "results"
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "How many match, up to 1,000"
+                        },
+                        "capped": {
+                          "type": "boolean",
+                          "description": "Whether more match than the count, which is then a lower bound"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "component",
+                                  "document",
+                                  "section",
+                                  "publication",
+                                  "template",
+                                  "asset",
+                                  "field",
+                                  "metadataSchema",
+                                  "componentType"
+                                ]
+                              },
+                              "artifactId": {
+                                "type": "string"
+                              },
+                              "node": {
+                                "description": "A section's outline node; null for anything else",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "space": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "changedAt": {
+                                "type": "string"
+                              },
+                              "place": {
+                                "description": "Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields` or `schemas`",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "passage": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "text": {
+                                      "type": "string"
+                                    },
+                                    "matched": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "text",
+                                    "matched"
+                                  ]
+                                },
+                                "description": "Words from that place, about thirty, each matched word a piece of its own"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "artifactId",
+                              "node",
+                              "title",
+                              "space",
+                              "changedAt",
+                              "place",
+                              "passage"
+                            ]
+                          }
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "The outcome in a sentence, for the reader"
+                        }
+                      },
+                      "required": [
+                        "outcome",
+                        "count",
+                        "capped",
+                        "items",
+                        "message"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An offset or a limit out of range",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sign-in/google": {
       "get": {
         "operationId": "startGoogleSignIn",
