@@ -8,9 +8,12 @@ import {
   createAssetUpload,
   createDocument,
   createRole,
+  createTemplate,
   createSpace,
   createTenant,
   createTenantDatabase,
+  DEFAULT_LAYOUT_ID,
+  DEFAULT_THEME_ID,
   findRole,
   grant,
   migrate,
@@ -25,6 +28,7 @@ import {
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
 import {
   DEFINITION_SCHEMA_VERSION,
+  TEMPLATE_SCHEMA_VERSION,
   definitionsFor,
   type ComponentTypeDefinition,
 } from '@alloy-works/domain';
@@ -40,6 +44,29 @@ import { signIn } from './test/sign-in.js';
 const HOST = 'acme.alloy.test';
 const MISSING = '00000000-0000-4000-8000-000000000000';
 
+/** A template definition any environment resolves: the default theme and layout, one section. */
+const aTemplate = () => ({
+  schemaVersion: TEMPLATE_SCHEMA_VERSION,
+  name: 'Plan',
+  theme: DEFAULT_THEME_ID,
+  layout: DEFAULT_LAYOUT_ID,
+  schemas: [],
+  outline: {
+    sections: [
+      {
+        key: 'introduction',
+        title: [{ type: 'text', value: 'Introduction', marks: [] }],
+        required: false,
+        numbered: true,
+        matter: 'body',
+        pageBreak: 'none',
+        children: [],
+      },
+    ],
+  },
+  changes: { add: true, remove: true, reorder: true },
+});
+
 describe('routes that check a permission', () => {
   let db: TestDatabase;
   let idp: StandInProvider;
@@ -54,6 +81,7 @@ describe('routes that check a permission', () => {
   let audit: string;
   let report: string;
   let reportPublication: string;
+  let plan: string;
   let clinicalImage: string;
   let graceAuthors: string;
 
@@ -193,6 +221,14 @@ describe('routes that check a permission', () => {
       });
       if (!recorded) throw new Error('The publication was not recorded');
       reportPublication = recorded;
+      // And a template in Clinical, which a route reading or changing it must refuse to name.
+      const template = await createTemplate(trx, {
+        spaceId: clinical,
+        definition: aTemplate(),
+        author: ids.ada!,
+      });
+      if (template.answer !== 'created') throw new Error(`refused: ${template.answer}`);
+      plan = template.template.id;
       // And an image in Clinical, made as the `ingest` job makes one, over an object that need not
       // exist: a route reading it must refuse before it reads the store.
       const upload = await createAssetUpload(trx, {
@@ -598,6 +634,17 @@ describe('routes that check a permission', () => {
     }),
     listPublications: () => ({ url: `/v1/documents/${report}/publications`, status: 404 }),
     getPublication: () => ({ url: `/v1/publications/${reportPublication}`, status: 404 }),
+    createTemplate: () => ({
+      url: `/v1/spaces/${clinical}/templates`,
+      status: 404,
+      payload: { definition: aTemplate() },
+    }),
+    getTemplate: () => ({ url: `/v1/templates/${plan}`, status: 404 }),
+    recordTemplateVersion: () => ({
+      url: `/v1/templates/${plan}/versions`,
+      status: 404,
+      payload: { openedFrom: MISSING, definition: aTemplate() },
+    }),
     claimLock: () => ({
       url: `/v1/components/${dosing}/lock`,
       status: 404,

@@ -717,6 +717,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/spaces/{space}/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Make a template in this space, at version 0.1 */
+        post: operations["createTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/stream": {
         parameters: {
             query?: never;
@@ -728,6 +745,57 @@ export interface paths {
         get: operations["openStream"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The templates the caller may read, each with its name, space and latest version */
+        get: operations["listTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A template at its latest version */
+        get: operations["getTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/templates/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cut a template's next version from the one the caller opened */
+        post: operations["recordTemplateVersion"];
         delete?: never;
         options?: never;
         head?: never;
@@ -754,7 +822,320 @@ export interface paths {
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: never;
+    schemas: {
+        createTemplateBody_schema0: {
+            key: string;
+            title: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                query: string;
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            required: boolean;
+            numbered: boolean;
+            /** @enum {string} */
+            matter: "front" | "body" | "appendix";
+            /** @enum {string} */
+            pageBreak: "none" | "page" | "recto";
+            children: components["schemas"]["createTemplateBody_schema0"][];
+        };
+        recordTemplateVersionBody_schema0: {
+            key: string;
+            title: ({
+                /** @constant */
+                type: "text";
+                value: string;
+                /** @default [] */
+                marks: ({
+                    /** @constant */
+                    type: "emphasis";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "strong";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "underline";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "subscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "superscript";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "inlineCode";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "quotedPhrase";
+                    id: string;
+                } | {
+                    /** @constant */
+                    type: "definedTerm";
+                    id: string;
+                    term: string;
+                } | {
+                    /** @constant */
+                    type: "condition";
+                    id: string;
+                    axis: string;
+                    values: string[];
+                } | {
+                    /** @constant */
+                    type: "suggestion";
+                    id: string;
+                    /** @enum {string} */
+                    operation: "insert" | "delete" | "replace";
+                    author: string;
+                } | {
+                    /** @constant */
+                    type: "comment";
+                    id: string;
+                    threadId: string;
+                } | {
+                    /** @constant */
+                    type: "hyperlink";
+                    id: string;
+                    href: string;
+                    title?: string;
+                } | {
+                    /** @constant */
+                    type: "language";
+                    id: string;
+                    tag: string;
+                })[];
+            } | {
+                /** @constant */
+                type: "equation";
+                mathml: string;
+                latex?: string;
+            } | {
+                /** @constant */
+                type: "footnote";
+                id: string;
+                anchor: {
+                    /** @constant */
+                    kind: "span";
+                } | {
+                    /** @constant */
+                    kind: "cell";
+                    key: string;
+                } | {
+                    /** @constant */
+                    kind: "cellPosition";
+                    row: number;
+                    column: number;
+                } | {
+                    /** @constant */
+                    kind: "table";
+                };
+                content: unknown[];
+            } | {
+                /** @constant */
+                type: "crossReference";
+                id: string;
+                target: {
+                    /** @constant */
+                    kind: "block";
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "component";
+                    component: string;
+                    block: string;
+                } | {
+                    /** @constant */
+                    kind: "node";
+                    node: string;
+                };
+                /** @enum {string} */
+                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                /** @enum {string} */
+                withoutPages?: "number" | "title" | "numberAndTitle";
+            } | {
+                /** @constant */
+                type: "citation";
+                entry: string;
+                locator?: string;
+            } | {
+                /** @constant */
+                type: "variable";
+                name: string;
+            } | {
+                /** @constant */
+                type: "binding";
+                query: string;
+            } | {
+                /** @constant */
+                type: "image";
+                asset: string;
+                imageStyle: string;
+                alternative: {
+                    /** @constant */
+                    kind: "own";
+                    text: string;
+                } | {
+                    /** @constant */
+                    kind: "inherited";
+                } | {
+                    /** @constant */
+                    kind: "decorative";
+                };
+            })[];
+            required: boolean;
+            numbered: boolean;
+            /** @enum {string} */
+            matter: "front" | "body" | "appendix";
+            /** @enum {string} */
+            pageBreak: "none" | "page" | "recto";
+            children: components["schemas"]["recordTemplateVersionBody_schema0"][];
+        };
+    };
     responses: never;
     parameters: never;
     requestBodies: never;
@@ -6477,6 +6858,198 @@ export interface operations {
             };
         };
     };
+    createTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    definition: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        /** Format: uuid */
+                        theme: string;
+                        /** Format: uuid */
+                        layout: string;
+                        schemas: {
+                            schema: string;
+                            requires: string[];
+                            /** @enum {string} */
+                            level: "document" | "section";
+                        }[];
+                        outline: {
+                            sections: components["schemas"]["createTemplateBody_schema0"][];
+                        };
+                        changes: {
+                            add: boolean;
+                            remove: boolean;
+                            reorder: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Made, at version 0.1 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's definition (templates.md, "The definition"), as stored */
+                        definition: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Whether the caller may change the template */
+                        mayDesign: boolean;
+                    };
+                };
+            };
+            /** @description `template_unresolved`: a theme, layout, schema or field it names does not resolve */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            id: string;
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's definition (templates.md, "The definition"), as stored */
+                            definition: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Whether the caller may change the template */
+                            mayDesign: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the space but may not design in it */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     openStream: {
         parameters: {
             query?: never;
@@ -6528,6 +7101,432 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            name: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's definition (templates.md, "The definition"), as stored */
+                        definition: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Whether the caller may change the template */
+                        mayDesign: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a template the caller may not read is not found */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such template in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    recordTemplateVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    openedFrom: string & (unknown & unknown);
+                    definition: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        /** Format: uuid */
+                        theme: string;
+                        /** Format: uuid */
+                        layout: string;
+                        schemas: {
+                            schema: string;
+                            requires: string[];
+                            /** @enum {string} */
+                            level: "document" | "section";
+                        }[];
+                        outline: {
+                            sections: components["schemas"]["recordTemplateVersionBody_schema0"][];
+                        };
+                        changes: {
+                            add: boolean;
+                            remove: boolean;
+                            reorder: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The template at its latest version: the one cut, or the one before where nothing changed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's definition (templates.md, "The definition"), as stored */
+                        definition: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Whether the caller may change the template */
+                        mayDesign: boolean;
+                    };
+                };
+            };
+            /** @description `template_unresolved`: a theme, layout, schema or field it names does not resolve */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            id: string;
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's definition (templates.md, "The definition"), as stored */
+                            definition: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Whether the caller may change the template */
+                            mayDesign: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the template but may not change it */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such template in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version_precondition`: the template has a newer version than the one named */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            id: string;
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's definition (templates.md, "The definition"), as stored */
+                            definition: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Whether the caller may change the template */
+                            mayDesign: boolean;
+                        };
                     };
                 };
             };

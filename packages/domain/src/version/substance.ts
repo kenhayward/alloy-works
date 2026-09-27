@@ -1,4 +1,4 @@
-import { canonicalise } from '../content/model/canonical.js';
+import { canonicalise, marksAsASet } from '../content/model/canonical.js';
 import type { ContentDocument } from '../content/model/document.js';
 import type { NotCarried } from '../metadata/carry.js';
 import type { DefinitionKind, DefinitionOf } from '../metadata/migrate.js';
@@ -12,6 +12,7 @@ import type { AssetVersionContent } from '../assets/version.js';
 import type { Layout } from '../publishing/layout.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { canonicaliseOutline, type OutlineDocument } from '../structure/outline.js';
+import type { TemplateDefinition } from '../template/definition.js';
 import type { Catalogue, Catalogue1, Theme } from '../theme/schema.js';
 
 /**
@@ -69,8 +70,16 @@ export type CatalogueSubstance = {
   readonly content: Catalogue | Catalogue1;
 };
 
+/**
+ * A template version says its definition, and nothing else (templates.md): the outline it owns and the
+ * references it makes, all in its payload. Its starting sections' titles are inline content, whose
+ * marks are a set, so it is canonicalised with the content model's rule for them, as an outline is.
+ */
+export type TemplateSubstance = { readonly kind: 'template'; readonly content: TemplateDefinition };
+
 export type VersionSubstance =
   | ComponentSubstance
+  | TemplateSubstance
   | DefinitionSubstance
   | DocumentSubstance
   | LayoutSubstance
@@ -106,6 +115,8 @@ export function canonicaliseVersionContent(substance: VersionSubstance): string 
   // A section title is inline content and marks are a set, so an outline takes the content model's
   // rule too. The shared rule below is for a definition's payload, where no array is a set.
   if (substance.kind === 'document') return canonicaliseOutline(substance.content);
+  // Only a starting title holds a `marks` array in a template, so the rule reaches nothing else.
+  if (substance.kind === 'template') return canonicalJson(substance.content, marksAsASet);
   return canonicalJson(substance.content);
 }
 

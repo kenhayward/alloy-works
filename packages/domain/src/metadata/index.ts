@@ -17,7 +17,11 @@ export type { MetadataFailure, MetadataRule } from './failure.js';
 export type { MetadataValues, UserValue } from './values.js';
 
 export { checkValue } from './check-value.js';
-export { resolveComponentFields, DefinitionConflictError } from './resolve.js';
+export {
+  resolveAssignedFields,
+  resolveComponentFields,
+  DefinitionConflictError,
+} from './resolve.js';
 export type { EffectiveField } from './resolve.js';
 export { checkAssignment } from './check-assignment.js';
 export { validate } from './validate.js';

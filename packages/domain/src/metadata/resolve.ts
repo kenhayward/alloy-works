@@ -1,5 +1,5 @@
 import { checkValue } from './check-value.js';
-import type { ComponentTypeDefinition } from './component-type.js';
+import type { Assignment, ComponentTypeDefinition } from './component-type.js';
 import { indexDefinitions, requireDefinition } from './definition-index.js';
 import type { MetadataRule } from './failure.js';
 import type { FieldDefinition } from './field.js';
@@ -73,15 +73,30 @@ export function resolveComponentFields(
   schemas: readonly MetadataSchemaDefinition[],
   fields: readonly FieldDefinition[],
 ): EffectiveField[] {
+  return resolveAssignedFields(`Component type ${type.id}`, type.assignments, schemas, fields);
+}
+
+/**
+ * The effective fields a list of assignments gives, by the rules above - what a component type's
+ * assignments give a component, and what a template's at one level give a document or its sections
+ * (templates.md, "Resolving a template"). `owner` names who assigns, for the message a missing
+ * definition throws.
+ */
+export function resolveAssignedFields(
+  owner: string,
+  assignments: readonly Assignment[],
+  schemas: readonly MetadataSchemaDefinition[],
+  fields: readonly FieldDefinition[],
+): EffectiveField[] {
   const schemaById = indexDefinitions('schema', schemas, (schema) => schema.id);
   const fieldById = indexDefinitions('field', fields, (field) => field.id);
   const drafts = new Map<string, Draft>();
 
-  for (const assignment of type.assignments) {
+  for (const assignment of assignments) {
     const schema = requireDefinition(
       schemaById,
       assignment.schema,
-      `Component type ${type.id} assigns schema ${assignment.schema}`,
+      `${owner} assigns schema ${assignment.schema}`,
     );
     for (const entry of schema.entries) {
       const field = requireDefinition(

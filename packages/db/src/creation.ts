@@ -86,7 +86,7 @@ export async function listComponentTypes(
  * identifier is refused politely, where a payload that does not read at all is a broken store and
  * throws.
  */
-async function currentDefinition<K extends DefinitionKind>(
+export async function currentDefinition<K extends DefinitionKind>(
   trx: TenantTransaction,
   kind: K,
   id: string,

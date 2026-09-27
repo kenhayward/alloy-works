@@ -274,6 +274,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0025_table_and_image_styles',
       '0026_word',
       '0027_word_layout_and_outputs',
+      '0028_templates',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -873,6 +874,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0026_word',
       '0027_word_layout_and_outputs',
+      '0028_templates',
     ]);
 
     // The theme is at 0.3, under its fixed identifier, unauthored, on top of 0.2; and it binds the
@@ -931,6 +933,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0026_word',
       '0027_word_layout_and_outputs',
+      '0028_templates',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -965,6 +968,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0025_table_and_image_styles',
       '0026_word',
       '0027_word_layout_and_outputs',
+      '0028_templates',
     ]);
 
     const chain = await themeChain(tenant);

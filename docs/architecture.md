@@ -398,6 +398,7 @@ version and each structural act records the next (see
 | `migrations/tenant/0025_table_and_image_styles`        | The default theme's 0.2 - its paragraph, table and image catalogues at `catalogue/2` and the theme naming them - and the default layout's 0.5 at layout schema 4, each inserted only where its own chain is still the product's unchanged version before (see [publishing](#publishing))                                                                                                          |
 | `migrations/tenant/0026_word`                          | The default theme's 0.3, STIX Two Math declaring Cambria Math as its Word face, inserted only where the theme is still 0025's unchanged 0.2 (see [publishing](#publishing))                                                                                                                                                                                                                       |
 | `migrations/tenant/0027_word_layout_and_outputs`       | The default layout's 0.6 at layout schema 5, with a Word page, inserted only where the layout is still 0025's unchanged 0.5; and a publication's formats, its engine and template null without a PDF, and one output per format with its producer and report (see [publishing](#publishing))                                                                                                      |
+| `migrations/tenant/0028_templates`                     | `template` as a kind, in exactly one space, whose versions are authored ([templates.md](design/templates.md))                                                                                                                                                                                                                                                                                     |
 | `src/version-digest.ts`                                | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                                                                                                                                                                                                                                                                     |
 | `src/spaces.ts`                                        | `createSpace`                                                                                                                                                                                                                                                                                                                                                                                     |
 | `src/versions.ts`                                      | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `substanceOf`, and `recordVersion`, each taking a component, a document, a definition or a layout; `createArtifact` refuses a layout, a theme and a catalogue, which only their migrations make, and `recordVersion` a theme and a catalogue, whose versions `themes.ts` reads whole before it writes them through `recordReadVersion` |
@@ -901,6 +902,32 @@ renumbers the lists before the page hears back.
 
 `pnpm dev:setup` makes no document: **New document** makes one in General, which Ada and Grace may
 create in.
+
+## Templates
+
+A template ([templates.md](design/templates.md), W4) is an artifact of its own kind, in one space,
+whose version is its whole definition: the starting sections a document begins with, each with a key
+and whether it is required, what an author may change, the theme and layout it binds by identifier,
+and the metadata schemas it assigns at a document's level or its sections'. Its starting titles are
+section titles with no cross-reference, and its canonical form takes the content model's rule for
+their marks, so two spellings of one template digest alike.
+
+It is made and changed only when every identifier it names resolves - a theme, a layout, each schema
+and each field those group, and each `requires` against its schema - through `resolveTemplate`, which
+reuses the metadata resolution a component type's assignments go through (`resolveAssignedFields`)
+and names every reference that does not resolve. `design` makes one in a space and changes one;
+`read` shows it; a grant on the template itself decides it as a grant on any artifact does.
+
+| Where                          | What                                                                                                                   |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `domain: template/`            | `templateDefinitionSchema` with `checkTemplate`'s rules, `resolveTemplate`                                             |
+| `domain: metadata/resolve.ts`  | `resolveAssignedFields`, which `resolveComponentFields` and templates share                                            |
+| `domain: version/substance.ts` | `TemplateSubstance`, canonicalised with titles' marks as a set                                                         |
+| `db: src/templates.ts`         | `createTemplate`, `readTemplate`, `recordTemplateVersion`, `listReadableTemplates`, `templateReferences`               |
+| `api-contract: templates.ts`   | `GET /v1/templates`, `POST /v1/spaces/{space}/templates`, `GET /v1/templates/{id}`, `POST /v1/templates/{id}/versions` |
+| `api-contract: openapi.ts`     | `hoist`: a recursive schema's own definitions moved to `components.schemas`, so every reference resolves               |
+| `service: src/templates.ts`    | The handlers, `template_unresolved` carrying each reference and TPL-004 as its rule                                    |
+| `db: src/dev-content.ts`       | Development's Reviewer field, Review schema and **Report** template, and Designer on General                           |
 
 ## One renderer, two deliveries
 

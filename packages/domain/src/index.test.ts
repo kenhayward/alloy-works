@@ -78,6 +78,8 @@ describe('the domain package', () => {
         'principalIdsIn',
         'readDefinition',
         'resolveComponentFields',
+        // A template's assignments at one level resolve as a component type's do (templates.md).
+        'resolveAssignedFields',
         'validate',
         // The version record's serialisation, promoted in the storage plan that composes it.
         // What the store can hold, promoted when saving an iteration began asking (issue #127).
@@ -275,6 +277,12 @@ describe('the domain package', () => {
         // Word 4 (ruling R3): the maths tree as OMML, which the worker's test validates in Word's
         // schema before the writer writes an equation.
         'omml',
+        // A template: its definition and its resolution (templates.md, W4.1).
+        'TEMPLATE_SCHEMA_VERSION',
+        'resolveTemplate',
+        'startingSectionSchema',
+        'templateAssignmentSchema',
+        'templateDefinitionSchema',
       ].sort(),
     );
   });

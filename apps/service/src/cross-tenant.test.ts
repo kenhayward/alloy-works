@@ -7,7 +7,10 @@ import {
   createArtifact,
   createAssetUpload,
   createDocument,
+  createTemplate,
   createTenant,
+  DEFAULT_LAYOUT_ID,
+  DEFAULT_THEME_ID,
   createTenantDatabase,
   findRole,
   grant,
@@ -23,6 +26,7 @@ import {
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
 import {
   DEFINITION_SCHEMA_VERSION,
+  TEMPLATE_SCHEMA_VERSION,
   definitionsFor,
   type ComponentTypeDefinition,
 } from '@alloy-works/domain';
@@ -41,6 +45,29 @@ const authenticated = allRoutes.filter((route) => route.access.check !== 'none')
 
 /** An editing session and a version id, well formed: what the request's shape needs, and no more. */
 const SESSION = '11111111-1111-4111-8111-111111111111';
+
+/** A template definition any environment resolves: the default theme and layout, one section. */
+const aTemplate = () => ({
+  schemaVersion: TEMPLATE_SCHEMA_VERSION,
+  name: 'Report',
+  theme: DEFAULT_THEME_ID,
+  layout: DEFAULT_LAYOUT_ID,
+  schemas: [],
+  outline: {
+    sections: [
+      {
+        key: 'introduction',
+        title: [{ type: 'text', value: 'Introduction', marks: [] }],
+        required: false,
+        numbered: true,
+        matter: 'body',
+        pageBreak: 'none',
+        children: [],
+      },
+    ],
+  },
+  changes: { add: true, remove: true, reorder: true },
+});
 
 /**
  * For each route with path parameters: how to name, in its path, something belonging to environment
@@ -98,6 +125,9 @@ const OTHER_TENANT_IDS: Readonly<
   getAssetVersion: async (tenant, db) => ({ id: (await assetIn(tenant, db)).version }),
   getAssetVersionContent: async (tenant, db) => ({ id: (await assetIn(tenant, db)).version }),
   withdrawInvitation: async (tenant, db) => ({ id: await invitationIdIn(tenant, db) }),
+  createTemplate: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  getTemplate: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
+  recordTemplateVersion: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
 };
 
 /**
@@ -112,6 +142,8 @@ const VALID_INPUT: Readonly<
     payload: { title: 'Elsewhere', language: 'en-GB', direction: 'ltr' },
   },
   createDocument: { payload: { title: 'Elsewhere', language: 'en-GB', direction: 'ltr' } },
+  createTemplate: { payload: { definition: aTemplate() } },
+  recordTemplateVersion: { payload: { openedFrom: SESSION, definition: aTemplate() } },
   createAssetUpload: { payload: { alternative: null } },
   editOutline: {
     payload: {
@@ -213,6 +245,32 @@ const componentIdIn = (tenant: Tenant, db: TenantDatabase) =>
 
 /** A document in environment B's General space, made through the store as the route makes one, so a
  * route that opens one has a real version to find. */
+const templateIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const general = await trx
+      .selectFrom('space')
+      .select('id')
+      .where('name', '=', 'General')
+      .executeTakeFirstOrThrow();
+    const designer = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await createTemplate(trx, {
+      spaceId: general.id,
+      definition: aTemplate(),
+      author: designer.id,
+    });
+    if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
+    return made.template.id;
+  });
+
 const documentIdIn = (tenant: Tenant, db: TenantDatabase) =>
   db.withTenant(tenant, async (trx) => {
     const general = await trx

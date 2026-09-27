@@ -1,0 +1,160 @@
+import { templateDefinitionSchema } from '@alloy-works/domain';
+import { z } from 'zod';
+import { SpaceParams, VersionSummary } from './components.js';
+import type { RouteContract } from './contract.js';
+import { ErrorBody, LowercaseUuid } from './schemas.js';
+
+export const TemplateParams = z.object({ id: LowercaseUuid });
+export type TemplateParams = z.infer<typeof TemplateParams>;
+
+/** A template's definition as a caller writes it (templates.md, "The definition"), the domain's own. */
+export const CreateTemplateBody = z.strictObject({ definition: templateDefinitionSchema });
+export type CreateTemplateBody = z.infer<typeof CreateTemplateBody>;
+
+/** A template's next version: the whole definition, from the version it was opened at (API-037). */
+export const TemplateVersionBody = z.strictObject({
+  openedFrom: LowercaseUuid,
+  definition: templateDefinitionSchema,
+});
+export type TemplateVersionBody = z.infer<typeof TemplateVersionBody>;
+
+export const TemplateView = z.object({
+  id: z.string(),
+  space: z.object({ id: z.string(), name: z.string() }),
+  version: VersionSummary,
+  definition: z
+    .record(z.string(), z.unknown())
+    .describe('The latest version\'s definition (templates.md, "The definition"), as stored'),
+  mayDesign: z.boolean().describe('Whether the caller may change the template'),
+});
+export type TemplateView = z.infer<typeof TemplateView>;
+
+export const TemplateSummary = z.object({
+  id: z.string(),
+  name: z.string(),
+  space: z.object({ id: z.string(), name: z.string() }),
+  version: z.object({ id: z.string(), number: z.string() }),
+});
+export const TemplateList = z.object({ items: z.array(TemplateSummary) });
+export type TemplateList = z.infer<typeof TemplateList>;
+
+/**
+ * A template refused: each reference that does not resolve (`template_unresolved`, TPL-004), or the
+ * template as it now stands where the version it was opened at is no longer the latest
+ * (`version_precondition`, API-037).
+ */
+export const TemplateRefusal = ErrorBody.extend({
+  unresolved: z
+    .array(
+      z.object({
+        reference: z.enum(['theme', 'layout', 'schema', 'field', 'requires', 'conflict']),
+        id: z.string(),
+        field: z.string().optional(),
+        level: z.enum(['document', 'section']).optional(),
+        schemas: z.array(z.string()).optional(),
+      }),
+    )
+    .optional(),
+  current: TemplateView.optional(),
+});
+export type TemplateRefusal = z.infer<typeof TemplateRefusal>;
+
+const unauthenticated = {
+  description: 'No session, or not one this environment issued',
+  schema: ErrorBody,
+} as const;
+const unresolved = {
+  description: '`template_unresolved`: a theme, layout, schema or field it names does not resolve',
+  schema: TemplateRefusal,
+} as const;
+
+/** Templates (templates.md, "Routes"): `design` makes and changes one, `read` shows it (TPL-006). */
+export const templateRoutes = {
+  listTemplates: {
+    operationId: 'listTemplates',
+    method: 'GET',
+    path: '/v1/templates',
+    summary: 'The templates the caller may read, each with its name, space and latest version',
+    tenantScoped: true,
+    access: { check: 'session' },
+    responses: {
+      200: { description: 'The templates', schema: TemplateList },
+      401: unauthenticated,
+    },
+  },
+  createTemplate: {
+    operationId: 'createTemplate',
+    method: 'POST',
+    path: '/v1/spaces/{space}/templates',
+    summary: 'Make a template in this space, at version 0.1',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'design', target: { space: 'space' } },
+    params: SpaceParams,
+    body: CreateTemplateBody,
+    responses: {
+      200: { description: 'Made, at version 0.1', schema: TemplateView },
+      400: unresolved,
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the space but may not design in it',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such space in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+    },
+  },
+  getTemplate: {
+    operationId: 'getTemplate',
+    method: 'GET',
+    path: '/v1/templates/{id}',
+    summary: 'A template at its latest version',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: TemplateParams,
+    responses: {
+      200: { description: 'The template', schema: TemplateView },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a template the caller may not read is not found',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such template in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+    },
+  },
+  recordTemplateVersion: {
+    operationId: 'recordTemplateVersion',
+    method: 'POST',
+    path: '/v1/templates/{id}/versions',
+    summary: "Cut a template's next version from the one the caller opened",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'design', target: { artifact: 'id' } },
+    params: TemplateParams,
+    body: TemplateVersionBody,
+    responses: {
+      200: {
+        description:
+          'The template at its latest version: the one cut, or the one before where nothing changed',
+        schema: TemplateView,
+      },
+      400: unresolved,
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the template but may not change it',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such template in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+      409: {
+        description: '`version_precondition`: the template has a newer version than the one named',
+        schema: TemplateRefusal,
+      },
+    },
+  },
+} as const satisfies Record<string, RouteContract>;

@@ -104,7 +104,15 @@ satisfy its template, naming each failure`.
 
 ## What the build changed
 
-Filled in as each pull request lands.
+**W4.1 (PR #257).** The migration is split: 0028 makes the kind, and W4.2's 0029 the link and
+documents' values, so each lands with what uses it. A request body holding a recursive schema - the
+starting sections nest - left a reference in the OpenAPI document that resolved to nothing, and the
+client could not be generated; the generator now moves a schema's own definitions into
+`components.schemas`, held by a test that every reference resolves. `template_unresolved` is refused
+when a template is made or changed as well as when a document is made from it, with TPL-004 as its
+rule. Development's seed makes Ada and Grace Designers on General, which changed who plays the
+Author in the route tests. The seeded **Report** assigns its Review schema with nothing required,
+because no page can fill a field in until W5.
 
 ## Done when
 

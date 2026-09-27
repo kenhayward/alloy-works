@@ -36,6 +36,7 @@ import { assetHandlers, type BinaryBody } from './assets.js';
 import { componentHandlers } from './components.js';
 import type { GoogleSettings } from './config.js';
 import { documentHandlers } from './documents.js';
+import { templateHandlers } from './templates.js';
 import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
 import { admitGoogleAccount } from './google.js';
@@ -294,6 +295,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   const handlers: Handlers = {
     ...componentHandlers(db, tenantOf, principalOf),
     ...documentHandlers(db, tenantOf, principalOf),
+    ...templateHandlers(db, tenantOf, principalOf),
     ...publishingHandlers(db, tenantOf, principalOf, options.objects),
     ...assetHandlers(db, tenantOf, principalOf, options.objects),
     ...editingHandlers(),

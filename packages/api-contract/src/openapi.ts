@@ -8,7 +8,10 @@ type Json = Record<string, unknown>;
 export interface OpenApiDocument {
   readonly openapi: '3.1.0';
   readonly info: { readonly title: string; readonly version: string; readonly description: string };
-  readonly components: { readonly securitySchemes: Record<string, unknown> };
+  readonly components: {
+    readonly securitySchemes: Record<string, unknown>;
+    readonly schemas?: Record<string, unknown>;
+  };
   readonly paths: Record<string, Record<string, unknown>>;
 }
 
@@ -30,17 +33,59 @@ function open(value: unknown): unknown {
   return value;
 }
 
-function responseSchema(schema: z.ZodType): Json {
+/** Where a schema's own definitions go: the document's `components.schemas`, by a unique name. */
+type Definitions = Record<string, Json>;
+
+/**
+ * A schema's own definitions - what a recursive schema, such as a template's nested starting sections,
+ * is written with - moved into the document's `components.schemas` under names unique to where the
+ * schema stands, and every reference to them rewritten to point there. Left inside the schema, a
+ * reference `#/$defs/...` would resolve from the document's root, where there is nothing.
+ */
+function hoist(json: Json, name: string, definitions: Definitions): Json {
+  const own = json.$defs as Record<string, Json> | undefined;
+  if (own === undefined) return json;
+  delete json.$defs;
+  const renamed = new Map(
+    Object.keys(own).map((key) => [key, `${name}_${key.replace(/^_+/, '')}`]),
+  );
+  const rewrite = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(rewrite);
+    if (value !== null && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, inner]) => {
+          if (key === '$ref' && typeof inner === 'string' && inner.startsWith('#/$defs/')) {
+            const target = renamed.get(inner.slice('#/$defs/'.length));
+            if (target !== undefined) return [key, `#/components/schemas/${target}`];
+          }
+          return [key, rewrite(inner)];
+        }),
+      );
+    }
+    return value;
+  };
+  for (const [key, definition] of Object.entries(own)) {
+    definitions[renamed.get(key)!] = rewrite(definition) as Json;
+  }
+  return rewrite(json) as Json;
+}
+
+function responseSchema(schema: z.ZodType, name: string, definitions: Definitions): Json {
   const json: Json = { ...z.toJSONSchema(schema, { io: 'output' }) };
   delete json.$schema; // the document declares its dialect once, not per schema
-  return open(json) as Json;
+  return open(hoist(json, name, definitions)) as Json;
 }
 
-function content(schema: z.ZodType) {
-  return { 'application/json': { schema: responseSchema(schema) } };
+function content(schema: z.ZodType, name: string, definitions: Definitions) {
+  return { 'application/json': { schema: responseSchema(schema, name, definitions) } };
 }
 
-function response(status: number, declared: RouteResponse): Json {
+function response(
+  status: number,
+  declared: RouteResponse,
+  name: string,
+  definitions: Definitions,
+): Json {
   if (declared.binary) {
     return {
       description: declared.description,
@@ -59,7 +104,10 @@ function response(status: number, declared: RouteResponse): Json {
     };
   }
   if (declared.schema) {
-    return { description: declared.description, content: content(declared.schema) };
+    return {
+      description: declared.description,
+      content: content(declared.schema, name, definitions),
+    };
   }
   if (status >= 300 && status < 400) {
     return {
@@ -100,10 +148,13 @@ function pathParameters(params: z.ZodObject): Json[] {
  * is telling the service something it does not understand, and dropping it silently would accept and
  * discard part of the request rather than refuse it.
  */
-function requestBody(body: z.ZodObject): Json {
+function requestBody(body: z.ZodObject, name: string, definitions: Definitions): Json {
   const json: Json = { ...z.toJSONSchema(body, { io: 'input' }) };
   delete json.$schema;
-  return { required: true, content: { 'application/json': { schema: json } } };
+  return {
+    required: true,
+    content: { 'application/json': { schema: hoist(json, name, definitions) } },
+  };
 }
 
 /**
@@ -117,17 +168,23 @@ const COMPATIBILITY =
 
 export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument {
   const paths: Record<string, Record<string, unknown>> = {};
+  const definitions: Definitions = {};
   const ordered = [...routes].sort(
     (a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method),
   );
   for (const route of ordered) {
     const responses: Json = {};
     for (const [status, declared] of Object.entries(route.responses)) {
-      responses[status] = response(Number(status), declared);
+      responses[status] = response(
+        Number(status),
+        declared,
+        `${route.operationId}${status}`,
+        definitions,
+      );
     }
     responses.default = {
       description: 'An error, in the one shape every error takes',
-      content: content(ErrorBody),
+      content: content(ErrorBody, `${route.operationId}Default`, definitions),
     };
     const parameters = [
       ...(route.params ? pathParameters(route.params) : []),
@@ -138,7 +195,9 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
       summary: route.summary,
       security: route.access.check === 'none' ? [] : [{ session: [] }],
       ...(parameters.length > 0 ? { parameters } : {}),
-      ...(route.body ? { requestBody: requestBody(route.body) } : {}),
+      ...(route.body
+        ? { requestBody: requestBody(route.body, `${route.operationId}Body`, definitions) }
+        : {}),
       ...(route.rawBody
         ? {
             requestBody: {
@@ -163,6 +222,7 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
     info: { title: 'Alloy Works', version: API_VERSION, description: COMPATIBILITY },
     components: {
       securitySchemes: { session: { type: 'apiKey', in: 'cookie', name: SESSION_COOKIE } },
+      ...(Object.keys(definitions).length > 0 ? { schemas: definitions } : {}),
     },
     paths,
   };

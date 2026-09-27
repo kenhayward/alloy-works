@@ -3,6 +3,22 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.77.0 - 2026-09-27 (PR #257)
+
+### Added
+
+- **Templates can be made and changed through the API** by somebody who may design in a space - the
+  new use of the Designer role. A template names the sections a document starts with, which of them
+  a document may not publish without, whether sections may be added, removed or reordered, its theme
+  and layout, and the metadata schemas it asks for. It is refused, naming what, where anything it
+  names does not exist, and versioned like everything else. Development holds one, **Report**, and
+  Ada and Grace are Designers on General. Nothing in the pages uses templates yet.
+
+### Fixed
+
+- The API's own description now resolves every reference in it, so a client can be generated from
+  it where a request's shape nests within itself, as a template's sections do.
+
 ## 0.76.1 - 2026-09-27 (PR #256)
 
 ### Changed
