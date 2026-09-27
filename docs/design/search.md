@@ -210,11 +210,17 @@ right where Postgres knows the language and harmless where it does not.
 `createArtifact` and `recordVersion` rewrite an artifact's entries - and a document's sections' - in the
 transaction that writes its version, so a new or changed thing is findable the moment its version is
 (SCH-066). Values are part of a version, so they move with it. A component placed in a document changes
-nothing of the document's entries: the component is found as itself.
+nothing of the document's entries: the component is found as itself. **A publication has no versions**
+
+- it is recorded by `recordPublication`, never by the chain - so recording one writes its entry, in the
+  same transaction, as the third place entries are written.
 
 An environment that holds versions from before the projection has its entries made once, by
-`reindexSearch` over every artifact's latest version, run by the worker's `search.reindex` job, which
-migration 0031's first run for a tenant enqueues.
+`reindexSearch` over every artifact's latest version and every publication, run by the worker's
+`search.reindex` job. **The migration runner enqueues it**, not the migration: a tenant migration runs
+as the tenant's owner role, which can neither write the platform's job table nor name its own tenant
+there, while `migrate`, which applies each tenant's migrations and knows its id, inserts the job for
+every tenant whose run applied 0031.
 
 ### The query
 
@@ -268,16 +274,16 @@ and shows its newest version, which is the version it opens.
 
 Taken as recommended on Ken's instruction of 2026-09-27 to continue after W5, each open to his review.
 
-| #    | Decision                                                                                                                              |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| SE-A | T1 searches words; meaning is T5, designed above and not built                                                                        |
-| SE-B | One entry per artifact at its latest version and one per document section; one text row per place, so a result names where it matched |
-| SE-C | Entries are written in the version's transaction; existing environments are indexed once by a worker job the migration enqueues       |
-| SE-D | The query is Postgres's web search syntax plus `name:term` scopes; an open quote closes at the end                                    |
-| SE-E | Facets are declared by dimension and, for a field, by its data type; the ten commonest values of a text field, never an open list     |
-| SE-F | Owner is the author of the artifact's first version; changed is its latest version's time                                             |
-| SE-G | A result's link lands on the newest version and says by name when the place it names is gone                                          |
-| SE-H | Definitions are found by anyone with the tenant's `read`, as access.md reads them; a section by whoever may read its document         |
+| #    | Decision                                                                                                                                                                        |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SE-A | T1 searches words; meaning is T5, designed above and not built                                                                                                                  |
+| SE-B | One entry per artifact at its latest version and one per document section; one text row per place, so a result names where it matched                                           |
+| SE-C | Entries are written in the version's transaction, and a publication's when it is recorded; existing environments are indexed once by a worker job the migration runner enqueues |
+| SE-D | The query is Postgres's web search syntax plus `name:term` scopes; an open quote closes at the end                                                                              |
+| SE-E | Facets are declared by dimension and, for a field, by its data type; the ten commonest values of a text field, never an open list                                               |
+| SE-F | Owner is the author of the artifact's first version; changed is its latest version's time                                                                                       |
+| SE-G | A result's link lands on the newest version and says by name when the place it names is gone                                                                                    |
+| SE-H | Definitions are found by anyone with the tenant's `read`, as access.md reads them; a section by whoever may read its document                                                   |
 
 ## Open questions
 
