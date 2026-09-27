@@ -280,6 +280,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0030_definition_names',
       '0031_search',
       '0032_listing_snapshot',
+      '0033_idempotency',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -881,6 +882,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0030_definition_names',
       '0031_search',
       '0032_listing_snapshot',
+      '0033_idempotency',
     ]);
 
     // The theme is at 0.3, under its fixed identifier, unauthored, on top of 0.2; and it binds the
@@ -944,6 +946,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0030_definition_names',
       '0031_search',
       '0032_listing_snapshot',
+      '0033_idempotency',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -983,6 +986,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0030_definition_names',
       '0031_search',
       '0032_listing_snapshot',
+      '0033_idempotency',
     ]);
 
     const chain = await themeChain(tenant);

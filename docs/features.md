@@ -463,6 +463,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   A search with nothing to look for says why. What you save is found the moment it is saved.
   `GET /v1/search` answers the same search.
 
+- **Retrying safely through the API.** A request that makes or changes something can carry an
+  `Idempotency-Key`; sent again with the same key - after an answer that was lost - it is answered as it
+  was the first time, and nothing is made twice. The same key for a different request is refused.
+
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath
   its outline, and before it a choice of **PDF**, **Word** or **PDF and Word**, PDF unless they choose

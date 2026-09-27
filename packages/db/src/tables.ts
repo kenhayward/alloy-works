@@ -364,6 +364,17 @@ export interface SearchTextTable {
   vector: ColumnType<string, never, never>;
 }
 
+/** A mutating request's answer against its idempotency key, kept a day (0033; API-008). */
+export interface IdempotencyRecordTable {
+  principal_id: string;
+  key: string;
+  operation: string;
+  digest: string;
+  status: number;
+  body: ColumnType<unknown, string, string>;
+  made_at: ColumnType<Date, Date | undefined, Date>;
+}
+
 export interface TenantTables {
   component_lock: ComponentLockTable;
   iteration: IterationTable;
@@ -403,6 +414,7 @@ export interface TenantTables {
   asset_upload: AssetUploadTable;
   search_entry: SearchEntryTable;
   search_text: SearchTextTable;
+  idempotency_record: IdempotencyRecordTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

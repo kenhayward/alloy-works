@@ -99,6 +99,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0030_definition_names',
       '0031_search',
       '0032_listing_snapshot',
+      '0033_idempotency',
     ]);
 
     // The component and its version are as they were.
@@ -195,6 +196,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0030_definition_names',
       '0031_search',
       '0032_listing_snapshot',
+      '0033_idempotency',
     ]);
 
     const { rows } = await queryAs(

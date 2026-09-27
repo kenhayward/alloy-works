@@ -1,4 +1,5 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
 import cookie from '@fastify/cookie';
 import {
   routes,
@@ -516,23 +517,35 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const principal = principalOf(request);
       const { objects } = options;
       if (!objects) throw storageUnavailable();
-      const sample = await db.withTenant(tenant, async (trx) => {
-        const stored = await trx
-          .selectFrom('object_store_credential')
-          .select('access_key_id')
-          .executeTakeFirst();
-        if (!stored) throw storageUnavailable();
-        const row = await trx
-          .insertInto('sample')
-          .values({ requested_by: principal.principalId })
-          .returning(['id', 'state'])
-          .executeTakeFirstOrThrow();
-        // In the same transaction as the row it is about: the job exists exactly when the sample
-        // does, and the queue checks that a tenant enqueues only its own work.
-        await enqueueJob(trx, 'sample_pdf', row.id);
-        return row;
-      });
-      return reply.status(202).send({ id: sample.id, state: sample.state, download: null });
+      // It decides no permission, so it takes an idempotency key here, through the same helper as
+      // the routes that do (service-foundations.md, "Idempotency"; ID-A).
+      const keyed = keyedRequest(request, 'requestSample');
+      const { body, replayed } = await db.withTenant(tenant, (trx) =>
+        once(
+          trx,
+          principal.principalId,
+          keyed,
+          async () => {
+            const stored = await trx
+              .selectFrom('object_store_credential')
+              .select('access_key_id')
+              .executeTakeFirst();
+            if (!stored) throw storageUnavailable();
+            const row = await trx
+              .insertInto('sample')
+              .values({ requested_by: principal.principalId })
+              .returning(['id', 'state'])
+              .executeTakeFirstOrThrow();
+            // In the same transaction as the row it is about: the job exists exactly when the sample
+            // does, and the queue checks that a tenant enqueues only its own work.
+            await enqueueJob(trx, 'sample_pdf', row.id);
+            return { id: row.id, state: row.state, download: null };
+          },
+          202,
+        ),
+      );
+      if (replayed) void reply.header(IDEMPOTENT_REPLAYED, 'true');
+      return reply.status(202).send(body);
     },
 
     getSample: async (request) => {
@@ -614,6 +627,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
    * handed this route's `reply`, so it has nothing to send with even if it tried.
    */
   function permissionChecked(
+    operation: string,
+    mutating: boolean,
     access: RouteAccess,
     handler: Handlers[keyof Handlers],
     binary: boolean,
@@ -624,13 +639,16 @@ export function buildApp(options: AppOptions): FastifyInstance {
     }
     const run = handler as (request: FastifyRequest, authorised: Authorised) => Promise<unknown>;
     return async (request, reply) => {
-      const body = await db.withTenant(tenantOf(request), async (trx) => {
+      // A mutating request may carry an idempotency key, honoured in the one transaction its
+      // decision and its work share (service-foundations.md, "Idempotency"; API-008).
+      const keyed = mutating ? keyedRequest(request, operation) : undefined;
+      const { body, replayed } = await db.withTenant(tenantOf(request), async (trx) => {
         await beforeDeciding(trx, access);
-        return run(
-          request,
-          await authorise(trx, principalOf(request).principalId, access, request),
-        );
+        const principal = principalOf(request).principalId;
+        const authorised = await authorise(trx, principal, access, request);
+        return once(trx, principal, keyed, () => run(request, authorised));
       });
+      if (replayed) void reply.header(IDEMPOTENT_REPLAYED, 'true');
       if (!binary) return body;
       // Bytes, sent only now that the transaction has committed, as a body is (figures 1, R2): never
       // sniffed into something a browser would run, and never run as a document of this origin.
@@ -722,6 +740,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
           }
         : {}),
       handler: permissionChecked(
+        name,
+        route.method !== 'GET',
         route.access,
         handlers[name],
         route.responses[200]?.binary !== undefined,

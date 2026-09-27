@@ -177,6 +177,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0030_definition_names',
       '0031_search',
       '0032_listing_snapshot',
+      '0033_idempotency',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

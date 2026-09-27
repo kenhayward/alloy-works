@@ -140,7 +140,19 @@ export function assetHandlers(
             "Send the image's bytes as application/octet-stream.",
           );
         }
-        if (upload.state !== 'awaiting') throw filled();
+        if (upload.state !== 'awaiting') {
+          // The same image again - a retry after a lost answer - is answered with the upload as it
+          // stands (service-foundations.md, "Idempotency"; ID-D): its object is named by the image's
+          // own hash. Any other bytes for an upload already filled are refused.
+          const again = readImageHeader(bytes);
+          const hash = again.ok
+            ? createHash('sha256').update(bytes.subarray(0, again.header.end)).digest('hex')
+            : undefined;
+          if (hash !== undefined && upload.objectKey?.endsWith(`/sha256/${hash}`)) {
+            return { upload } as const;
+          }
+          throw filled();
+        }
         const read = readImageHeader(bytes);
         if (!read.ok) {
           if (!(await refuseAssetUpload(trx, upload.id, read.refusal, 'awaiting'))) throw filled();

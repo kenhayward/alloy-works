@@ -403,6 +403,7 @@ version and each structural act records the next (see
 | `migrations/tenant/0030_definition_names`              | `definition_name`, one folded name per field, schema and component type, unique per kind (MET-031), filled from every definition's latest version ([definitions.md](design/definitions.md))                                                                                                                                                                                                       |
 | `migrations/tenant/0031_search`                        | Search's projection, `search_entry` and `search_text`, made whole by the migration runner in the run that applies it (see [Search](#search))                                                                                                                                                                                                                                                      |
 | `migrations/tenant/0032_listing_snapshot`              | `written_by`, the writing transaction, on every version and publication written from now on, which a listing's snapshot reads (see [Listings](#listings))                                                                                                                                                                                                                                         |
+| `migrations/tenant/0033_idempotency`                   | `idempotency_record`, a mutating request's answer against its principal's idempotency key, kept a day (see [Idempotency](#idempotency))                                                                                                                                                                                                                                                           |
 | `src/version-digest.ts`                                | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                                                                                                                                                                                                                                                                     |
 | `src/spaces.ts`                                        | `createSpace`                                                                                                                                                                                                                                                                                                                                                                                     |
 | `src/versions.ts`                                      | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `substanceOf`, and `recordVersion`, each taking a component, a document, a definition or a layout; `createArtifact` refuses a layout, a theme and a catalogue, which only their migrations make, and `recordVersion` a theme and a catalogue, whose versions `themes.ts` reads whole before it writes them through `recordReadVersion` |
@@ -1103,6 +1104,25 @@ the paging and the space facet it already had, since its answer still carries th
 | `db: src/listing.ts`           | `listingSorts`, `keysetPage`, `snapshotFor`, `visibleIn`, `isListingRequest`       |
 | `api-contract: src/listing.ts` | `listingQuery` and `nextCursor`, what every content listing takes and answers      |
 | `service: src/listing.ts`      | `pageAsked` and `cursorFor`: the cursor written, and read back only by its listing |
+
+## Idempotency
+
+A mutating request may carry `Idempotency-Key`, 1 to 255 visible characters (API-008, W7.4). On a
+permission-checked route the key is honoured inside the one transaction its decision and its work
+share: `recallAnswer` locks the tenant's principal and key, then reads what is kept - the same route and
+a SHA-256 of its method, path, query and body is answered from the record with `Idempotent-Replayed:
+true` and the work is not done; a different request with the key is refused `422
+idempotency_key_reused`; otherwise the handler runs and `rememberAnswer` keeps its answer before the
+transaction commits, so a refusal, which rolls back, keeps nothing. A record is kept a day. The
+development sample request takes the key through the same helper, `once`; putting an upload's bytes
+answers the same image sent again with the upload as it stands, its object being named by the image's
+hash; signing out needs no key.
+
+| Where                         | What                                                         |
+| ----------------------------- | ------------------------------------------------------------ |
+| `db: src/idempotency.ts`      | `recallAnswer` and `rememberAnswer`, under the key's lock    |
+| `service: src/idempotency.ts` | `keyedRequest`, the key and the request's digest, and `once` |
+| `service: src/app.ts`         | The permission-checked wrapper, and the sample request       |
 
 ## Search
 
