@@ -12,7 +12,7 @@ reference's version shown and chosen where it stands.
 
 | PR   | Holds                                                                                        | Version |
 | ---- | -------------------------------------------------------------------------------------------- | ------- |
-| W9.0 | This plan and document-view.md, claiming ten requirements                                    | Build   |
+| W9.0 | This plan and document-view.md, claiming nine requirements                                   | Build   |
 | W9.1 | One scroll: one canvas, headings in the theme's roles, no cards; boundaries and their labels | Minor   |
 | W9.2 | Reading and Authoring                                                                        | Minor   |
 | W9.3 | Navigation: the current node, jumping to a node, arriving by a link                          | Minor   |
@@ -42,7 +42,7 @@ reference's version shown and chosen where it stands.
 1. The header's mode switch, offered by the document's `mayEdit` and each occurrence's; kept per
    viewer; first opening in Authoring where offered.
 2. Reading hides the outline's acts, the editor in place and the fields' writing; Publishing stays.
-3. Tests: CNT-154, CNT-105, CNT-156, IAM-023.
+3. Tests: CNT-154, CNT-105, CNT-156. IAM-023 is not cited: its review-mode half is T3's.
 
 ## W9.3: Navigation
 

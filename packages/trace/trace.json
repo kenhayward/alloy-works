@@ -15417,7 +15417,7 @@
         },
         {
           "id": "CNT-073",
-          "howItIsMet": "A component's edges and its label appear when the pointer or the focus is in it, and for all of them while **Show boundaries** is on, and never otherwise ([Boundaries](#boundaries))"
+          "howItIsMet": "A component's edges and its label appear when the pointer or the focus is in it, and for all of them while **Show boundaries** is on, and never otherwise ([Boundaries](#boundaries)). The one component open in an editor keeps its edges while it is open: that is the editor an author opened and closes with Done, not chrome the page puts round a component whatever the reader does"
         },
         {
           "id": "CNT-154",
@@ -15429,11 +15429,7 @@
         },
         {
           "id": "CNT-156",
-          "howItIsMet": "Reading offers moving through the document and nothing that changes it; Authoring offers the outline's acts and each component's editor in place, as the page has since the interface slices"
-        },
-        {
-          "id": "IAM-023",
-          "howItIsMet": "Which modes are offered is derived from the document's `edit` decision and each placed component's, which the page is already told: a reader never sees Authoring"
+          "howItIsMet": "Reading offers moving through the document and nothing that changes it; Authoring offers the outline's acts and each component's editor in place. The Publishing panel shows in both, to whoever may publish: publishing changes nothing in the document, and is the `publish` decision's rather than an editing affordance (DV-D, Ken's to overrule)"
         },
         {
           "id": "CNT-162",
