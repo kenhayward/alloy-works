@@ -348,10 +348,10 @@ export type PublicationRequestAnswer =
  * "Who may publish"): `publish` has been decided on the document before this runs, under the access
  * epoch's shared lock. It is made under the document's layout (`documentLayout`), and refuses a stale
  * version, a format that layout does not make or a document in another language than its words before
- * recording anything; otherwise it resolves every occurrence **as the publisher**, refuses a request without the
- * PDF whose document cites a page (PUB-074), and records the request with the failures resolving
- * found - each naming its node and nothing else (issue #143) - one row per resolved occurrence, and the
- * job, all in one transaction. A request with failures is still queued: `assemble` adds its own for
+ * recording anything; otherwise it resolves every occurrence **as the publisher**, refuses a request
+ * without the PDF whose document cites a page (PUB-074), and records the request with the failures
+ * resolving found - each naming its node and nothing else (issue #143) - one row per resolved
+ * occurrence, and the job, all in one transaction. A request with failures is still queued: `assemble` adds its own for
  * what the publisher can read, and the author is told once (PUB-052). The formats are recorded PDF
  * first, whichever order they were asked in: a set, spelled one way.
  */
