@@ -68,7 +68,8 @@ export interface Listed<T> {
 const SNAPSHOT = /^\d{1,20}:\d{1,20}:(?:\d{1,20}(?:,\d{1,20})*)?$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 // A timestamptz as Postgres writes one in the ISO style the session uses: to the microsecond.
-const TIME = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?[+-]\d{2}(?::\d{2})?$/;
+const TIME_PARTS =
+  /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?[+-]\d{2}(?::\d{2})?$/;
 
 /**
  * Whether a page request is one a listing could have given out: a snapshot in Postgres's form, and a
@@ -79,15 +80,52 @@ export function isListingRequest(
   request: ListingRequest<string>,
   types: readonly KeyType[],
 ): boolean {
-  if (request.snapshot !== undefined && !SNAPSHOT.test(request.snapshot)) return false;
+  if (request.snapshot !== undefined && !isSnapshot(request.snapshot)) return false;
   if (request.after === undefined) return true;
   const { keys, id } = request.after;
   if (!UUID.test(id) || !Array.isArray(keys) || keys.length !== types.length) return false;
   return types.every((type, index) => {
     const key = keys[index];
     if (typeof key !== 'string') return false;
-    return type === 'text' ? key.length <= 2000 : TIME.test(key);
+    return type === 'text' ? key.length <= 2000 : isTime(key);
   });
+}
+
+const XID8_MAX = 18446744073709551615n;
+
+/**
+ * A snapshot as `pg_current_snapshot()` writes one: `xmin:xmax:xip,...`, each a transaction id within
+ * `xid8`'s range, xmin no more than xmax, and the transactions in progress between them, ascending.
+ */
+function isSnapshot(text: string): boolean {
+  if (!SNAPSHOT.test(text)) return false;
+  const [low, high, running] = text.split(':') as [string, string, string];
+  const xmin = BigInt(low);
+  const xmax = BigInt(high);
+  if (xmin < 1n || xmax > XID8_MAX || xmin > xmax) return false;
+  let previous = xmin - 1n;
+  for (const each of running === '' ? [] : running.split(',')) {
+    const xip = BigInt(each);
+    if (xip <= previous || xip < xmin || xip >= xmax) return false;
+    previous = xip;
+  }
+  return true;
+}
+
+/** A time as Postgres writes a `timestamptz`, and one that exists: no thirteenth month, no 25:00. */
+function isTime(text: string): boolean {
+  const parts = TIME_PARTS.exec(text);
+  if (!parts) return false;
+  const [, year, month, day, hour, minute, second] = parts.map(Number) as number[];
+  const date = new Date(Date.UTC(year!, month! - 1, day!));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month! - 1 &&
+    date.getUTCDate() === day &&
+    hour! < 24 &&
+    minute! < 60 &&
+    second! < 60
+  );
 }
 
 /** Throws unless the limit is an integer 1 to 100 (API-007) - the rule every listing shares. */

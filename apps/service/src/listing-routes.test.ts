@@ -136,6 +136,32 @@ describe('the listings through the service', () => {
       expect(response.statusCode, url).toBe(400);
       expect(response.json(), url).toMatchObject({ code: 'invalid_request' });
     }
+    // Nor one made to look like a cursor, whose snapshot or key Postgres would not read: each is
+    // refused as the caller's, never failed as the service's.
+    const forged = (sort: string, snapshot: string, keys: string[]) =>
+      Buffer.from(
+        JSON.stringify({
+          v: 1,
+          l: 'components',
+          s: sort,
+          o: sort === 'title' ? 'asc' : 'desc',
+          n: snapshot,
+          k: keys,
+          i: '00000000-0000-4000-8000-000000000001',
+        }),
+      ).toString('base64url');
+    for (const [sort, snapshot, keys] of [
+      ['title', '99999999999999999999:99999999999999999999:', ['Anything']],
+      ['title', '9:3:', ['Anything']],
+      ['title', '3:9:12', ['Anything']],
+      ['title', '3:9:7,5', ['Anything']],
+      ['changed', '3:9:', ['2026-13-45 99:99:99+00']],
+      ['changed', '3:9:', ['2026-09-27 10:00:00+00', 'one key too many']],
+    ] as const) {
+      const url = `/v1/components?sort=${sort}&cursor=${forged(sort, snapshot, [...keys])}`;
+      const response = await get(url);
+      expect(response.statusCode, `${snapshot} ${keys.join()}`).toBe(400);
+    }
     // Its own listing, sort and order take it.
     expect((await get(`/v1/components?sort=title&cursor=${first.next}`)).statusCode).toBe(200);
   });

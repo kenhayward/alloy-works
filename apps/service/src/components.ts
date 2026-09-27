@@ -197,10 +197,16 @@ export function componentHandlers(
       const asked = pageAsked('components', query);
       const principal = principalOf(request).principalId;
       const spaces = query.spaces?.split(',');
-      const [page, counts] = await db.withTenant(tenantOf(request), async (trx) => [
-        await listReadableComponents(trx, principal, asked, spaces === undefined ? {} : { spaces }),
-        await countReadableComponents(trx, principal),
-      ]);
+      const [page, counts] = await db.withTenant(tenantOf(request), async (trx) => {
+        const listed = await listReadableComponents(
+          trx,
+          principal,
+          asked,
+          spaces === undefined ? {} : { spaces },
+        );
+        // Counted as of the walk's snapshot, so the total is what its pages can show.
+        return [listed, listed && (await countReadableComponents(trx, principal, listed.snapshot))];
+      });
       if (!page || !counts) throw new Error('A signed-in principal is not in its own tenant');
       const counted =
         spaces === undefined ? counts : counts.filter((one) => spaces.includes(one.id));

@@ -1,7 +1,7 @@
 import { TEMPLATE_SCHEMA_VERSION, type ContentDocument } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { listReadableComponents } from './components.js';
+import { countReadableComponents, listReadableComponents } from './components.js';
 import { createComponent } from './creation.js';
 import { createDocument, listReadableDocuments } from './documents.js';
 import { grant } from './grants.js';
@@ -227,7 +227,12 @@ describe('listings, paged by keyset as of their first page', () => {
       ['documents', 'title', 'desc'],
       ['documents', 'changed', 'asc'],
       ['templates', 'name', 'asc'],
+      ['publications', 'published', 'desc'],
+      ['publications', 'title', 'asc'],
     ];
+    // A publication is never changed once recorded: between its pages, new ones are recorded instead,
+    // of documents that sort before and after every boundary.
+    const documents = (await page(listings.documents!.list, { sort: 'title', limit: 100 })).items;
     for (const [name, sort, order] of walks) {
       const { list } = listings[name]!;
       const before = (await page(list, { sort, order, limit: 100 })).items.map((each) => each.id);
@@ -235,11 +240,23 @@ describe('listings, paged by keyset as of their first page', () => {
       const walked = await walk(list, sort, order, async (turned) => {
         // Between pages: something shown moves past the boundary, something not yet shown moves
         // before it, and something new arrives.
+        fresh += 1;
+        if (name === 'publications') {
+          for (const document of [documents[0]!, documents[documents.length - 1]!]) {
+            await service.withTenant(production, async (trx) =>
+              publish(trx, {
+                document: (await latestVersion(trx, document.id))!,
+                author: ada,
+                role: production.role,
+              }),
+            );
+          }
+          return;
+        }
         const shownAlready = before[turned * 2 - 1]!;
         const notYet = before[before.length - 1]!;
         await retitle(shownAlready, `Zz ${name} ${sort} ${order} ${turned}`);
         await retitle(notYet, `Aa ${name} ${sort} ${order} ${turned}`);
-        fresh += 1;
         await service.withTenant(production, (trx) =>
           createComponent(trx, {
             spaceId: general,
@@ -253,5 +270,29 @@ describe('listings, paged by keyset as of their first page', () => {
       // The walk is over the set as its first page found it: each once, in its first order.
       expect(walked, `${name} ${sort} ${order}`).toEqual(before);
     }
+  });
+
+  it('counts the components of each space as of the walk it belongs to', async () => {
+    const first = await page(listings.components!.list, { sort: 'title', limit: 1 });
+    const counted = (snapshot?: string) =>
+      service.withTenant(production, async (trx) =>
+        (await countReadableComponents(trx, ada, snapshot))!.reduce(
+          (sum, space) => sum + space.count,
+          0,
+        ),
+      );
+    const before = await counted(first.snapshot);
+    await service.withTenant(production, (trx) =>
+      createComponent(trx, {
+        spaceId: general,
+        title: 'Counted later',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      }),
+    );
+    // The walk's count stays what its pages can show; a new walk's includes what was made since.
+    expect(await counted(first.snapshot)).toBe(before);
+    expect(await counted()).toBe(before + 1);
   });
 });

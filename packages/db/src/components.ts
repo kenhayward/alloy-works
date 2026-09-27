@@ -151,6 +151,7 @@ export async function listReadableComponents(
 export async function countReadableComponents(
   trx: TenantTransaction,
   principalId: string,
+  snapshot?: string,
 ): Promise<readonly SpaceCount[] | undefined> {
   const readable = await loadReadableSet(trx, principalId);
   if (!readable) return undefined;
@@ -160,6 +161,18 @@ export async function countReadableComponents(
     .select(['s.id', 's.name', (eb) => eb.fn.countAll<string>().as('count')])
     .where('a.kind', '=', 'component')
     .where((eb) => readableArtifacts(eb, readable))
+    // As of a walk's snapshot where it counts for one, so the count is what its pages can show: a
+    // component with no version the snapshot could see is none of that walk's.
+    .$if(snapshot !== undefined, (query) =>
+      query.where(({ exists, selectFrom }) =>
+        exists(
+          selectFrom('artifact_version as v')
+            .select('v.id')
+            .whereRef('v.artifact_id', '=', 'a.id')
+            .where(visibleIn('v.written_by', snapshot!)),
+        ),
+      ),
+    )
     .groupBy(['s.id', 's.name'])
     .orderBy('s.name')
     .execute();
