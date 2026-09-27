@@ -1085,9 +1085,11 @@ Each content listing is filtered on the service (W7.3): components by space and 
 documents by space and publishing state - the latest publication the reader may read of each, as of the
 snapshot, in SQL - publications by space and document, templates by space. The page, the total and each
 facet are read from one base query, `countOf` and `facetOf` running it with every filter but the facet's
-own. The views - **Components**, **Documents**, **Publications** and **Templates**, the last at
-`#/templates` - page with Show more through `usePagedListing`, sort with `SortChooser` and filter with
-`Facet`, the counts the service's.
+own. **Documents**, **Publications** and **Templates** - the last at `#/templates` - page with Show
+more through `usePagedListing`, sort with `SortChooser` and filter with `Facet`, the counts the
+service's. **Components** sorts with the same chooser and takes its type facet through `Facet`, but keeps
+the paging and the space facet it already had, since its answer still carries the space counts as
+`spaces` beside `facets` (API-012).
 
 | Where                                 | What                                                     |
 | ------------------------------------- | -------------------------------------------------------- |

@@ -215,6 +215,47 @@ describe('listings filtered on the service, each facet counted without its own f
     ]);
   });
 
+  it('reads a publishing state only from a publication the reader may read', async () => {
+    // Ivy reads General, and is refused the Manual's one publication by a grant on it alone.
+    const ivy = await run(async (trx) => {
+      const id = (
+        await trx
+          .insertInto('principal')
+          .values({ issuer: ISSUER, subject: 'ivy', email: null, display_name: 'Ivy' })
+          .returning('id')
+          .executeTakeFirstOrThrow()
+      ).id;
+      const reader = await findRole(trx, 'Reader');
+      await grant(trx, {
+        roleId: reader!.id,
+        subject: { principal: id },
+        level: { kind: 'space', id: general },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+      const manual = await trx
+        .selectFrom('publication')
+        .select('id')
+        .where('document_id', '=', documents.Manual!)
+        .executeTakeFirstOrThrow();
+      await grant(trx, {
+        roleId: reader!.id,
+        subject: { principal: id },
+        level: { kind: 'artifact', id: manual.id },
+        effect: 'deny',
+        grantedBy: ada,
+      });
+      return id;
+    });
+    const listed = (await run((trx) => listReadableDocuments(trx, ivy, { limit: 50 })))!;
+    // To her the Manual was never published: the one publication of it is none of hers to read.
+    expect(listed.items.find((each) => each.title === 'Manual')?.publishing).toBe('neverPublished');
+    expect(counted(listed.facets.publishing)).toEqual([
+      ['neverPublished', 2],
+      ['changedSince', 1],
+    ]);
+  });
+
   it('filters publications by document and space, counting each', async () => {
     const audits = (await run((trx) =>
       listReadablePublications(trx, ada, { limit: 50 }, { documents: [documents.Audit!] }),
