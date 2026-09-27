@@ -5,7 +5,7 @@ import { Selection, type EditorState, type Transaction } from 'prosemirror-state
 import { describe, expect, it } from 'vitest';
 
 import { sinkDefinitionItem } from './blocks.js';
-import { KEEPS_IDENTIFIERS } from './identity.js';
+import { KEEPS_IDENTIFIERS, whereBlockIs } from './identity.js';
 import { editorSchema } from './schema.js';
 import { createEditorState, enterWithoutEmpties } from './state.js';
 
@@ -355,5 +355,33 @@ describe('identity through undo and redo', () => {
       ['beta', 'p1'],
       ['gamma', 'n1'],
     ]);
+  });
+});
+
+describe('where a block is', () => {
+  it('finds a block by its identifier at any depth, and a footnote paragraph at its footnote', () => {
+    const footnote = editorSchema.node('footnote', { id: 'fn', anchor: { kind: 'span' } }, [
+      editorSchema.node('footnoteParagraph', { id: 'fp', style: 'body' }, [
+        editorSchema.text('Firmly'),
+      ]),
+    ]);
+    const doc = documentOf(
+      paragraph('p1', 'Hold the lever'),
+      list('l1', item(paragraph('p2', 'Pull'))),
+      editorSchema.node('paragraph', { id: 'p3', style: 'body' }, [
+        editorSchema.text('Then '),
+        footnote,
+      ]),
+    );
+    const at = (id: string) => {
+      const pos = whereBlockIs(doc, id);
+      return pos === undefined ? undefined : doc.nodeAt(pos)?.attrs['id'];
+    };
+    expect(at('p1')).toBe('p1');
+    expect(at('p2')).toBe('p2');
+    // A footnote's paragraph is written in the footnote's own editor: the place is its footnote.
+    expect(at('fp')).toBe('fn');
+    expect(at('fn')).toBe('fn');
+    expect(whereBlockIs(doc, 'gone')).toBeUndefined();
   });
 });

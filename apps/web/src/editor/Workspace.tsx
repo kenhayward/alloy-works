@@ -6,6 +6,8 @@ import { isAccessAnswers } from '../access/describe.js';
 import { Home } from '../home/Home.js';
 import { PublicationList } from '../publishing/PublicationList.js';
 import { PublicationPage } from '../publishing/PublicationPage.js';
+import { componentAddress, searchAddress, searchLink } from '../search/links.js';
+import { SearchPage } from '../search/SearchPage.js';
 import { DocumentList } from '../structure/DocumentList.js';
 import { DocumentPage } from '../structure/DocumentPage.js';
 import { documentAddress, documentLink } from '../structure/links.js';
@@ -20,17 +22,15 @@ export interface WorkspaceProps {
   readonly fetch?: typeof fetch;
 }
 
-const OPEN = /^#\/components\/([0-9a-f-]{36})(\/access)?$/;
-
 /** A publication's own address (PUB-047). */
 const PUBLICATION = /^#\/publications\/([0-9a-f-]{36})$/;
 
-/** What sits above either listing: the two kinds of thing a person can open, each a plain link. */
+/** What sits above each listing: the kinds of thing a person can open, and Search, each a link. */
 function Places() {
   return (
     <nav aria-label="Workspace">
       <a href="#/components">Components</a> <a href="#/documents">Documents</a>{' '}
-      <a href="#/publications">Publications</a>
+      <a href="#/publications">Publications</a> <a href="#/search">Search</a>
     </nav>
   );
 }
@@ -166,9 +166,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   }
   if (me === null) return null;
   if (hash === '' || hash === '#' || hash === '#/') return <Home client={client} />;
-  const address = OPEN.exec(hash);
-  const opened = address?.[1];
-  if (opened && address?.[2]) {
+  const address = componentAddress(hash);
+  const opened = address?.component;
+  if (opened && address?.access) {
     return (
       <>
         <p>
@@ -197,9 +197,25 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             client={client}
             principalId={me}
             onSpace={(space) => setPlaced({ component: opened, space })}
+            linked={address?.block ? { block: address.block, arrival: arrivals } : null}
           />
         </div>
       </div>
+    );
+  }
+  const searched = searchAddress(hash);
+  if (searched !== null) {
+    return (
+      <>
+        <Places />
+        <SearchPage
+          client={client}
+          query={searched}
+          onSearch={(query) => {
+            window.location.hash = searchLink(query);
+          }}
+        />
+      </>
     );
   }
   if (hash === '#/publications') {

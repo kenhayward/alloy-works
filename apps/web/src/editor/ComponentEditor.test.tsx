@@ -8,7 +8,7 @@ import {
   setListAttributes,
   type EditorView,
 } from '@alloy-works/editor';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -5229,5 +5229,76 @@ describe('equations in the editor (equations 1)', () => {
     caretIn(view, 'b1');
     fireEvent.keyDown(view.dom, { key: 'E', keyCode: 69, ctrlKey: true, shiftKey: true });
     expect(latexOf(await opens())).toHaveFocus();
+  });
+});
+
+describe('the component editor opened at a place', () => {
+  const equation = {
+    type: 'equation',
+    id: 'e1',
+    mathml:
+      '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>',
+    numbered: false,
+  };
+  const three = opened({
+    content: {
+      ...content('Unbox the printer.', 'Plug it in.'),
+      content: [...content('Unbox the printer.', 'Plug it in.').content, equation],
+    },
+  });
+
+  it('SCH-057 opens at the block a link names, and says so by name when it is no longer there', async () => {
+    const linked = open({ 'GET /v1/components/{id}': () => json(200, three) }, quick, false, {
+      linked: { block: 'b2', arrival: 1 },
+    });
+    const view = await linked.surface();
+    // The caret stands in the block the link names, and the surface has the focus.
+    expect(view.state.selection.$from.parent.attrs['id']).toBe('b2');
+    expect(view.hasFocus()).toBe(true);
+    cleanup();
+
+    const gone = open({ 'GET /v1/components/{id}': () => json(200, three) }, quick, false, {
+      linked: { block: 'b9', arrival: 1 },
+    });
+    await gone.surface();
+    // Its newest version is what opened, and the page says the place is no longer in it.
+    expect(
+      await screen.findByText(
+        'The part the link names is no longer in this component. This is its latest version.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('selects a block with nothing to type into, rather than the block after it', async () => {
+    const linked = open({ 'GET /v1/components/{id}': () => json(200, three) }, quick, false, {
+      linked: { block: 'e1', arrival: 1 },
+    });
+    const view = await linked.surface();
+    const selection = view.state.selection as NodeSelection;
+    expect(selection.node?.attrs['id']).toBe('e1');
+  });
+
+  it('goes to each place a link names in turn, the component staying open between them', async () => {
+    const { client } = service({ 'GET /v1/components/{id}': () => json(200, three) });
+    let view: EditorView | undefined;
+    const at = (block: string, arrival: number) => (
+      <ComponentEditor
+        componentId={COMPONENT}
+        client={client}
+        principalId={ADA}
+        sessionId={SESSION}
+        timing={quick}
+        onView={(mounted) => (view = mounted)}
+        linked={{ block, arrival }}
+      />
+    );
+    const { rerender } = render(at('b2', 1));
+    await screen.findByLabelText('Title');
+    await waitFor(() => expect(view?.state.selection.$from.parent.attrs['id']).toBe('b2'));
+    const first = view;
+    rerender(at('b1', 2));
+    await waitFor(() => expect(view?.state.selection.$from.parent.attrs['id']).toBe('b1'));
+    // The same surface, moved: nothing was opened again.
+    expect(view).toBe(first);
   });
 });

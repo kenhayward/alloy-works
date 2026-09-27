@@ -1,5 +1,5 @@
-/** The three modules, in the order the switcher lists them. */
-export type ModuleName = 'Components' | 'Documents' | 'Publications';
+/** The modules, in the order the switcher lists them, and Search, which finds across them. */
+export type ModuleName = 'Components' | 'Documents' | 'Publications' | 'Search';
 
 /**
  * The module an address belongs to, which the header band names. Only the first segment counts:
@@ -10,5 +10,6 @@ export function moduleOf(hash: string): ModuleName | null {
   if (hash === '' || hash === '#' || hash === '#/') return null;
   if (/^#\/documents(?:\/|$)/.test(hash)) return 'Documents';
   if (/^#\/publications(?:\/|$)/.test(hash)) return 'Publications';
+  if (/^#\/search(?:\?|$)/.test(hash)) return 'Search';
   return 'Components';
 }

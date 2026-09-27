@@ -35,6 +35,21 @@ function identified(doc: Node): { readonly id: unknown; readonly pos: number }[]
 }
 
 /**
+ * Where the block with this identifier stands, for a link that names it (search.md, "The page";
+ * SCH-057): its position at any depth, or its footnote's where it is a footnote's paragraph, which is
+ * written in the footnote's own editor. Undefined where this version holds no such block.
+ */
+export function whereBlockIs(doc: Node, id: string): number | undefined {
+  const found = identified(doc).find((each) => each.id === id);
+  if (found === undefined) return undefined;
+  const at = doc.resolve(found.pos);
+  for (let depth = at.depth; depth > 0; depth -= 1) {
+    if (at.node(depth).type.name === 'footnote') return at.before(depth);
+  }
+  return found.pos;
+}
+
+/**
  * The meta a transaction carries to say it has named what it places itself, so the identity plugin
  * keeps every identifier in it that no other node holds (cross-references 1, ruling R7). `pasteInto`
  * sets it: admission has already given every pasted block an identifier new to the component

@@ -69,6 +69,9 @@ function serviceThat(pages: Record<string, unknown>, signedIn = true) {
     // every test that reaches the list is not also, incidentally, exercising a failed spaces read.
     if (url.pathname === '/v1/spaces') return json(200, { items: [] });
     if (url.pathname === '/v1/access' && pages.access) return json(200, pages.access);
+    if (url.pathname === '/v1/search' && pages.search) {
+      return json(200, { ...(pages.search as object), asked: url.searchParams.get('q') });
+    }
     return json(404, { code: 'not_found', message: 'none', traceId: 't' });
   }) as unknown as typeof fetch;
 }
@@ -203,6 +206,20 @@ describe('the workspace', () => {
   it('says so when there is nothing to read', async () => {
     render(<Workspace fetch={serviceThat({ first: { items: [], next: null } })} />);
     expect(await screen.findByText('There are no components you may read.')).toBeInTheDocument();
+  });
+
+  it('opens Search from its link, holding the query in the address', async () => {
+    window.location.hash = '#/search?q=lever';
+    const nothing = { outcome: 'empty', message: 'Type what to look for.' };
+    render(<Workspace fetch={serviceThat({ search: nothing })} />);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Search' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Search' })).toHaveAttribute('href', '#/search');
+    expect(screen.getByRole('searchbox', { name: 'Search' })).toHaveValue('lever');
+    expect(await screen.findByRole('status')).toHaveTextContent('Type what to look for.');
+    const box = screen.getByRole('searchbox', { name: 'Search' });
+    await userEvent.clear(box);
+    await userEvent.type(box, 'hand lever{Enter}');
+    expect(window.location.hash).toBe('#/search?q=hand+lever');
   });
 
   it('opens the component the address names', async () => {

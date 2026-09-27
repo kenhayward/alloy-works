@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.89.0 - 2026-09-27 (PR #273)
+
+### Added
+
+- **Search.** A Search page, beside Components, Documents and Publications, finds everything you may
+  read by its words. Each result says what it is, which space it is in and where in it your words were
+  found, shows a passage from there with them marked, and opens at that place: a component at the
+  paragraph, a section in its document. If that paragraph has since gone, the component says so and
+  opens at its latest version. Narrow the results by kind, space, component type, who made it, when it
+  last changed and a field's value, each choice showing how many results it would leave. The search is
+  in the address, so you can link to it and come back.
+
 ## 0.88.0 - 2026-09-27 (PR #272)
 
 ### Added

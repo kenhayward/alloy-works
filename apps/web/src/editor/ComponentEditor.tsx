@@ -28,6 +28,7 @@ import {
   newBlockIdentifier,
   referenceContextOf,
   removeMarkCommand,
+  NodeSelection,
   Selection as EditorSelection,
   setDirection,
   setLanguage,
@@ -40,6 +41,7 @@ import {
   type EquationAt,
   type ReferenceContext,
   type Selection,
+  whereBlockIs,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import styles from './ComponentEditor.module.css';
@@ -114,6 +116,13 @@ export interface ComponentEditorProps {
   /** Where the text was clicked to open it, in characters: the focus and the caret go there. */
   readonly openAt?: number;
   /**
+   * The block a link names (search.md, "The page"; SCH-057), and which arrival at it this is: the focus
+   * and the caret go there - or the block is selected, where it has nothing to type into - or, where
+   * the version that opens, the newest, no longer holds it, the page says so. A second link into the
+   * component while it is open is a new arrival, and moves there without opening it again.
+   */
+  readonly linked?: { readonly block: string; readonly arrival: number } | null;
+  /**
    * What the document it is open in offers a reference (cross-references 1, rulings R10 and R11):
    * `documentTargets` for this occurrence, from the page, which passes it again whenever it numbers
    * the document again. None standalone, where a reference shows its target's kind and caption and
@@ -155,6 +164,10 @@ const PASTED = 'Pasted.';
 const PASTED_WITH_REPORT =
   'Pasted. Some of it was changed or left out: the paste report says what.';
 const NOT_DROPPED = 'Dragging content in is not available yet. Copy and paste it instead.';
+
+/** A link names a block the newest version no longer holds (SCH-057): the page says so. */
+export const LINKED_PART_GONE =
+  'The part the link names is no longer in this component. This is its latest version.';
 const CLIPBOARD_UNREADABLE =
   'The clipboard could not be read, so nothing was pasted. Allow this page to see the clipboard and try again.';
 
@@ -222,6 +235,7 @@ export function ComponentEditor({
   number,
   onDone,
   openAt,
+  linked = null,
   referenceContext = null,
 }: ComponentEditorProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
@@ -541,6 +555,8 @@ export function ComponentEditor({
   runPromptingRef.current = runPrompting;
   const openAtRef = useRef(openAt);
   openAtRef.current = openAt;
+  // The arrival last taken, on the surface it was taken on: StrictMode mounts a second surface.
+  const takenArrival = useRef<{ surface: EditorView; arrival: number } | null>(null);
   const openReferenceRef = useRef(openReference);
   openReferenceRef.current = openReference;
   const openEquationRef = useRef(openEquation);
@@ -780,6 +796,32 @@ export function ComponentEditor({
       view.destroy();
     };
   }, [component, client, principalId]);
+
+  // Arrived at by a link naming a block, on opening or while open: the caret goes to the block's start,
+  // or it is selected where it has nothing to type into - an equation, a footnote - or the page says
+  // it is gone.
+  const linkedBlock = linked?.block;
+  const linkedArrival = linked?.arrival;
+  useEffect(() => {
+    if (surface === null || surface.isDestroyed) return;
+    if (linkedBlock === undefined || linkedArrival === undefined) return;
+    const taken = takenArrival.current;
+    if (taken?.surface === surface && taken.arrival === linkedArrival) return;
+    takenArrival.current = { surface, arrival: linkedArrival };
+    const { doc } = surface.state;
+    const at = whereBlockIs(doc, linkedBlock);
+    if (at === undefined) {
+      setNotice(LINKED_PART_GONE);
+      return;
+    }
+    const node = doc.nodeAt(at);
+    const selection =
+      node !== null && !node.isTextblock && node.isAtom
+        ? NodeSelection.create(doc, at)
+        : EditorSelection.near(doc.resolve(at + 1));
+    surface.dispatch(surface.state.tr.setSelection(selection).scrollIntoView());
+    surface.focus();
+  }, [surface, linkedBlock, linkedArrival]);
 
   // The page numbers the document again, or opens this editor in another place: every reference on
   // the surface, and in a footnote's open editor, is drawn again from what it now offers (R10, R11).

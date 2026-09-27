@@ -44,8 +44,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   `apps/web/src/theme/tokens.css`, the only file that writes a colour. A test fails the build if
   any other file writes one, and another fails it if a second theme misses a token. The components list is a table - title,
   type, space, version, language, when changed and by whom - beside a filter pane of spaces with
-  their counts, which hides to a rail, Administration opens from the account chip with the environment, its spaces, its people and invitations, its roles and the version; the application opens on Home, a card for each module with how many there are to read; publications are listed together, across documents, and each opens with its PDF shown in the page beside what it was made from; a document opens as one page - its outline in a tabbed pane that resizes and hides to a rail, holding the way back to the documents, the acts as icons, the document as the root of an indented tree, and a triangle or a page beside each section or component - a section's triangle, or Left and Right on the keyboard, collapses and expands what it holds - its text in reading order with each component's text under its number, each saying whether you may edit it now and, when not, why - who is editing it and when they are expected back - any one of which opens for editing in place when you click its text, the caret where you clicked, and closes again with Done, and the chosen part's settings beside them; the documents list is a table - title, space, version, section and component counts, publishing state and when changed - filtered by space and by publishing state; its access page sets what is granted and why beside giving and inviting, and an open component sits beside the list of its space, under one strip holding its title (renamed by clicking it), its version and space, its language and direction as chips that open to change them, a save chip saying Saved, Saving or Not saved, and Done and Save version, over a single row of icons for the toolbar, each naming itself and its shortcut on hover; its block and word counts are the tooltip of its section number, or of its version where it has none; with New component in a dialog and a menu on each row to open it, copy its link or manage its access; a status bar along the foot of every page says the latest notice, such as a move or why one was refused, and for a document how many sections and components it holds and which version it is in which space; there is no search, sort, or filter by type, language or
-  date yet. Messages have one look per state: could not be loaded, signed out, read only, refused, someone else
+  their counts, which hides to a rail, Administration opens from the account chip with the environment, its spaces, its people and invitations, its roles and the version; the application opens on Home, a card for each module with how many there are to read; publications are listed together, across documents, and each opens with its PDF shown in the page beside what it was made from; a document opens as one page - its outline in a tabbed pane that resizes and hides to a rail, holding the way back to the documents, the acts as icons, the document as the root of an indented tree, and a triangle or a page beside each section or component - a section's triangle, or Left and Right on the keyboard, collapses and expands what it holds - its text in reading order with each component's text under its number, each saying whether you may edit it now and, when not, why - who is editing it and when they are expected back - any one of which opens for editing in place when you click its text, the caret where you clicked, and closes again with Done, and the chosen part's settings beside them; the documents list is a table - title, space, version, section and component counts, publishing state and when changed - filtered by space and by publishing state; its access page sets what is granted and why beside giving and inviting, and an open component sits beside the list of its space, under one strip holding its title (renamed by clicking it), its version and space, its language and direction as chips that open to change them, a save chip saying Saved, Saving or Not saved, and Done and Save version, over a single row of icons for the toolbar, each naming itself and its shortcut on hover; its block and word counts are the tooltip of its section number, or of its version where it has none; with New component in a dialog and a menu on each row to open it, copy its link or manage its access; a status bar along the foot of every page says the latest notice, such as a move or why one was refused, and for a document how many sections and components it holds and which version it is in which space; the components list has no sort, or filter by type, language or
+  date yet, though Search finds across it. Messages have one look per state: could not be loaded, signed out, read only, refused, someone else
   editing, empty and waiting, and the save state carries a coloured dot. There is one
   theme, so there is no theme choice, and no screen has the layout the drawings in
   `docs/interface/` give it yet.
@@ -447,6 +447,20 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   definitions that component's version was written against, not today's. The publication's page names
   the component, the field and what is wrong. A version can always be cut, filled in or not.
 
+- **Search.** **Search**, beside Components, Documents and Publications, finds everything you may read
+  by its words, and nothing you may not: components, documents and each of their sections,
+  publications, templates, images, fields, metadata schemas and component types. Words are found
+  wherever they are in a component - its title, its text, a caption, an image's description, a
+  footnote, a field's value. Put a phrase in quotes, leave a word out with `-`, and look in one place
+  with `title:word` or a field's name, as in `Reviewer:Grace` - where you may read the field. Each
+  result says what it is, where it is and where in it the words were found, shows a passage from there
+  with the words marked, and opens at that place: a component at the paragraph, a section in its
+  document. A place that has gone since is said to be gone, and the latest version opens. Beside the
+  results, narrow them by kind, space, component type, who made it, when it last changed and a field's
+  value, each choice saying how many results it would leave; past 1,000 a count says at least 1,000.
+  A search with nothing to look for says why. What you save is found the moment it is saved.
+  `GET /v1/search` answers the same search.
+
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath
   its outline, and before it a choice of **PDF**, **Word** or **PDF and Word**, PDF unless they choose
@@ -789,7 +803,7 @@ Named explicitly so nobody has to read the source to find out:
   takes the default's one table style and two image styles.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
-- No search, no metadata anybody can fill in, no taxonomy, no workflow, and no revisions, baselines or
+- No search by meaning, no taxonomy, no workflow, and no revisions, baselines or
   comparison: versions are cut and kept, and nothing yet compares or designates one. Conditional text
   and suggestion handling are described in the content model and neither runs.
 - No signed or published release - the installer builds locally and is unsigned.

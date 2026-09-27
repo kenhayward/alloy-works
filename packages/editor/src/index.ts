@@ -73,7 +73,7 @@ export {
   type ImageAt,
 } from './images.js';
 export { fromEditor, toEditor, type Opened } from './mapping.js';
-export { identityPlugin, newBlockIdentifier } from './identity.js';
+export { identityPlugin, newBlockIdentifier, whereBlockIs } from './identity.js';
 export {
   applyMarkCommand,
   commandKeymap,
