@@ -17691,15 +17691,21 @@
       "kind": "title"
     },
     {
+      "id": "MET-023",
+      "file": "packages/db/src/component-values.test.ts",
+      "line": 278,
+      "kind": "title"
+    },
+    {
       "id": "MET-033",
       "file": "packages/db/src/component-values.test.ts",
-      "line": 176,
+      "line": 191,
       "kind": "title"
     },
     {
       "id": "MET-038",
       "file": "packages/db/src/component-values.test.ts",
-      "line": 231,
+      "line": 246,
       "kind": "title"
     },
     {

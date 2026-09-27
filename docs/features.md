@@ -442,6 +442,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   its title and settings in the outline panel, with the same inputs and the same checks as a
   component's. Each is saved a moment after you stop typing, as the document's next version.
 
+- **A component's fields held at publication.** A document is not published while a component it
+  places is missing a value its fields require, or holds one they refuse - checked against the
+  definitions that component's version was written against, not today's. The publication's page names
+  the component, the field and what is wrong. A version can always be cut, filled in or not.
+
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath
   its outline, and before it a choice of **PDF**, **Word** or **PDF and Word**, PDF unless they choose

@@ -118,7 +118,7 @@ This table is updated as each workstream lands.
 | W2  | Small fixes                        | Built (PRs #249, #251, #252, #255; [plan](2026-09-26-w2-small-fixes.md))                   |
 | W3  | Word output                        | Built (PRs #231, #236, #237, #238)                                                         |
 | W4  | Templates                          | Built (PRs #256, #257, #258, #259, #260; [plan](2026-09-27-w4-templates.md))               |
-| W5  | Definitions and the metadata panel | In progress ([plan](2026-09-27-w5-definitions.md), [design](../design/definitions.md))     |
+| W5  | Definitions and the metadata panel | Built (PRs #261, #262, #265, #266, #267, #268; [plan](2026-09-27-w5-definitions.md))       |
 | W6  | Search                             | Not started                                                                                |
 | W7  | Listings and the API               | Not started                                                                                |
 | W8  | The theme in the editor            | Not started                                                                                |

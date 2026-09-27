@@ -24,6 +24,10 @@ import {
   type BlockNode,
   type InlineNode,
   type UnresolvedReference,
+  readDefinition,
+  resolveComponentFields,
+  validate,
+  type DefinitionOf,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -33,7 +37,7 @@ import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import { documentLayout, documentRules, documentTheme } from './templates.js';
 import { themeAt } from './themes.js';
-import { headingOf, latestVersion, type VersionHeading } from './versions.js';
+import { headingOf, latestVersion, readVersion, type VersionHeading } from './versions.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -265,6 +269,64 @@ async function readResolved(
 }
 
 /**
+ * MET-023 (definitions.md, "Held at publication"): each resolved component version validated against
+ * the definition versions **it recorded** (MET-017), never the current ones, each failure the
+ * request's own against its node - the field's name and what is wrong, never a value. Only versions
+ * the publisher may read reach here, so nothing of one they may not is read. Definitions are read once
+ * each, however many versions record them.
+ */
+async function componentFailures(
+  trx: TenantTransaction,
+  resolved: readonly { readonly node: string; readonly version: string }[],
+): Promise<PublishFailure[]> {
+  const definitions = new Map<string, unknown>();
+  const definitionAt = async <K extends 'field' | 'metadataSchema' | 'componentType'>(
+    kind: K,
+    version: string,
+  ): Promise<DefinitionOf[K]> => {
+    const known = definitions.get(version);
+    if (known !== undefined) return known as DefinitionOf[K];
+    const stored = await readVersion(trx, version);
+    if (!stored) throw new Error(`The ${kind} version ${version} a component records is gone`);
+    const read = readDefinition(kind, stored.content, {
+      artifact: stored.artifactId,
+      version,
+    });
+    if (!read.ok) throw new Error(`The ${kind} at ${version} does not read: ${read.failure}`);
+    definitions.set(version, read.definition);
+    return read.definition;
+  };
+  const failures: PublishFailure[] = [];
+  for (const { node, version } of resolved) {
+    const stored = await readVersion(trx, version);
+    if (!stored) throw new Error(`The component version ${version} resolved is gone`);
+    const recorded = stored.definitions;
+    const typeRef = recorded.find((each) => each.kind === 'componentType');
+    if (!typeRef) throw new Error(`The component version ${version} records no component type`);
+    const type = await definitionAt('componentType', typeRef.version);
+    const schemas = [];
+    const fields = [];
+    for (const each of recorded) {
+      if (each.kind === 'metadataSchema')
+        schemas.push(await definitionAt('metadataSchema', each.version));
+      if (each.kind === 'field') fields.push(await definitionAt('field', each.version));
+    }
+    const effective = resolveComponentFields(type, schemas, fields);
+    const names = new Map(effective.map((each) => [each.field.id, each.field.name]));
+    for (const each of validate(effective, stored.values)) {
+      failures.push({
+        stage: 'resolve',
+        code: 'component_metadata_invalid',
+        node,
+        block: null,
+        detail: `${names.get(each.field) ?? each.field}: ${each.detail}`,
+      });
+    }
+  }
+  return failures;
+}
+
+/**
  * Every image the resolved occurrences place, decided as the publisher (figures 3, ruling R6;
  * assets.md, "The publisher's half"): the asset versions to record on the request, each once, and a
  * failure naming the node and the figure for each figure whose image the publisher may not read or
@@ -454,6 +516,7 @@ export async function requestPublication(
     if (failures.length > 0) return { answer: 'metadata.invalid', failures };
   }
   const images = await resolveImages(trx, resolved, input.requester);
+  const held = await componentFailures(trx, resolved);
   // Set from the document's theme - its template's (STY-025), or the environment's declared one - at
   // its latest version, recorded by its key beside the layout's (themes 1, ruling R5): the version
   // names its catalogues' versions, so the job sets the publication from exactly what was chosen now,
@@ -468,7 +531,7 @@ export async function requestPublication(
       // Every one named is one the layout makes, which is one of these, checked above.
       formats: PUBLISHING_FORMATS.filter((format) => input.formats.includes(format)),
       requested_by: input.requester,
-      failures: JSON.stringify([...failures, ...images.failures]),
+      failures: JSON.stringify([...failures, ...held, ...images.failures]),
       layout_id: layout.artifactId,
       layout_version_id: layout.versionId,
       theme_id: theme.artifactId,

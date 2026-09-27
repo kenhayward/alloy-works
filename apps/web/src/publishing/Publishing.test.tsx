@@ -182,6 +182,29 @@ describe('publishing from the document page', () => {
     );
   });
 
+  it("names a component's field its definitions refuse, and says where to put it right", async () => {
+    const failures = [
+      {
+        stage: 'resolve',
+        code: 'component_metadata_invalid',
+        node: CALIBRATION,
+        block: null,
+        detail: 'Code: Code is required',
+      },
+    ];
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [queued(failures)],
+      [`GET /v1/publication-requests/${REQUEST}`]: [{ ...queued(failures), state: 'failed' }],
+    });
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      "1.1 Calibration: This component's fields are not filled in as its type asks: Code: Code is required. Put it right in the component, and publish again.",
+    );
+  });
+
   it('names a language the publication cannot take, and what a publication takes', async () => {
     const takes =
       'a publication takes a language of two or three letters and, if any, a region of two, such as en-GB.';

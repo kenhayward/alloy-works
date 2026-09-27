@@ -1054,6 +1054,11 @@ outline act's `set` - and the stored values taken back only where they differ fr
 | `web: src/structure/DocumentPage.tsx` | The document's fields in the side column, and `saveValues`     |
 | `web: src/structure/OutlinePanel.tsx` | A chosen section's fields beside its settings                  |
 
+A component's values are held at publication (W5.5, MET-023): `requestPublication` validates each
+component version it resolves against the definition versions that version recorded, and records each
+failure as the request's own, `component_metadata_invalid`, naming the node, the field and what is
+wrong. `assemble` fails a request holding failures, so the publication fails naming each.
+
 ## One renderer, two deliveries
 
 `apps/web` **is** the web application, and it is also the thing the Electron window loads. There is

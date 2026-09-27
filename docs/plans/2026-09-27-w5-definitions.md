@@ -154,7 +154,13 @@ stand in the page's side column; a section's in the outline panel beside its oth
 those who may edit the outline. The review found a section's typed value dropped when another section
 was chosen inside the pause - the fields are torn down with the selection - so a waiting save is sent
 as they go; and a section's value refused showed a generic sentence, where the page now says the
-service's own, as it does for the document's. Definitions are read, and
+service's own, as it does for the document's.
+
+**W5.5.** Each component version a request resolves is validated against the definition versions it
+recorded (MET-017), read once each, and each failure recorded as `component_metadata_invalid` with the
+node, and the field's name and what is wrong in `detail` - never the value. `assemble` fails a request
+holding failures, so the publication fails naming them; the page says each in a sentence that sends
+the author to the component. Cutting validates nothing, which MET-023's test shows beside the failure. Definitions are read, and
 places listed, by name, so a refusal lists them in the same order every time. The body that makes a
 definition is one object whose payload is read by its kind's schema in a refinement, because a route's
 body must be an object schema; a version's payload is read against the definition's own kind by the
