@@ -236,6 +236,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0028_templates',
       '0029_document_template',
       '0030_definition_names',
+      '0031_search',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -562,6 +563,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0028_templates',
       '0029_document_template',
       '0030_definition_names',
+      '0031_search',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -664,6 +666,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0028_templates',
       '0029_document_template',
       '0030_definition_names',
+      '0031_search',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -749,6 +752,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0028_templates',
       '0029_document_template',
       '0030_definition_names',
+      '0031_search',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -780,6 +784,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0028_templates',
       '0029_document_template',
       '0030_definition_names',
+      '0031_search',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     const chain = await service.withTenant({ ...tenant, id }, (trx) =>
@@ -881,6 +886,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0028_templates',
       '0029_document_template',
       '0030_definition_names',
+      '0031_search',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -904,6 +910,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0028_templates',
       '0029_document_template',
       '0030_definition_names',
+      '0031_search',
     ]);
     const { declared, fifth } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -993,6 +1000,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0028_templates',
       '0029_document_template',
       '0030_definition_names',
+      '0031_search',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1040,6 +1048,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0028_templates',
       '0029_document_template',
       '0030_definition_names',
+      '0031_search',
     ]);
     const { declared, sixth, inputs } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),

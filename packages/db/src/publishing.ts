@@ -34,6 +34,7 @@ import { loadReadableSet } from './access-facts.js';
 import { readableComponents } from './documents.js';
 import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
+import { indexPublication } from './search.js';
 import type { TenantTransaction } from './tables.js';
 import { documentLayout, documentRules, documentTheme } from './templates.js';
 import { themeAt } from './themes.js';
@@ -839,6 +840,8 @@ export async function recordPublication(
   await sql`savepoint record_publication`.execute(trx);
   try {
     const id = await insertPublication(trx, request, input);
+    // Found by its words from the moment it is recorded, as a version is (search.md; SCH-066).
+    await indexPublication(trx, id);
     await sql`release savepoint record_publication`.execute(trx);
     return id;
   } catch (error) {

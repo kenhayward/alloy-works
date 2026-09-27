@@ -20,6 +20,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
+import { indexVersion } from './search.js';
 import type { TenantTransaction } from './tables.js';
 import { versionDigests } from './version-digest.js';
 
@@ -220,6 +221,8 @@ async function insertVersion(
   }
   const stored = await readVersion(trx, row.id);
   if (!stored) throw new Error(`Version ${row.id} was written and cannot be read back`);
+  // Found by its words from the moment it exists, in its own transaction (search.md; SCH-066).
+  await indexVersion(trx, stored);
   return stored;
 }
 

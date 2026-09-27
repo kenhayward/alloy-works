@@ -545,6 +545,8 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 432, from 429 (2026-09-27): W6.1 - SCH-002 in packages/domain's search/entries.test.ts, and
+  // SCH-054 and SCH-066 in packages/db's search.test.ts.
   // 429, from 428 (2026-09-27): W5.5 - MET-023 in the store's test of a component's values.
   // 428, from 427 (2026-09-27): W5.3 - MET-021 in the fields form's test.
   // 427, from 425 (2026-09-27): W5.2 - MET-033 and MET-038 in the store's test of a component's values.
@@ -575,7 +577,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(429);
+    expect(model.citations).toHaveLength(432);
   });
 
   it('cites no identifier the corpus does not hold', () => {

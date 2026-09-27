@@ -401,6 +401,7 @@ version and each structural act records the next (see
 | `migrations/tenant/0028_templates`                     | `template` as a kind, in exactly one space, whose versions are authored ([templates.md](design/templates.md))                                                                                                                                                                                                                                                                                     |
 | `migrations/tenant/0029_document_template`             | A document version's metadata values, and `document_template`, insert-only, naming the template version a document was made from ([templates.md](design/templates.md))                                                                                                                                                                                                                            |
 | `migrations/tenant/0030_definition_names`              | `definition_name`, one folded name per field, schema and component type, unique per kind (MET-031), filled from every definition's latest version ([definitions.md](design/definitions.md))                                                                                                                                                                                                       |
+| `migrations/tenant/0031_search`                        | Search's projection, `search_entry` and `search_text`, made whole by the migration runner in the run that applies it (see [Search](#search))                                                                                                                                                                                                                                                      |
 | `src/version-digest.ts`                                | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                                                                                                                                                                                                                                                                     |
 | `src/spaces.ts`                                        | `createSpace`                                                                                                                                                                                                                                                                                                                                                                                     |
 | `src/versions.ts`                                      | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `substanceOf`, and `recordVersion`, each taking a component, a document, a definition or a layout; `createArtifact` refuses a layout, a theme and a catalogue, which only their migrations make, and `recordVersion` a theme and a catalogue, whose versions `themes.ts` reads whole before it writes them through `recordReadVersion` |
@@ -1058,6 +1059,38 @@ A component's values are held at publication (W5.5, MET-023): `requestPublicatio
 component version it resolves against the definition versions that version recorded, and records each
 failure as the request's own, `component_metadata_invalid`, naming the node, the field and what is
 wrong. `assemble` fails a request holding failures, so the publication fails naming each.
+
+## Search
+
+Everything the product holds is projected for search by its words ([search.md](design/search.md),
+"Searching words, in T1"; W6). The projection is two tables in the tenant's schema, derived and never
+a record: `search_entry`, one row per thing found - an artifact at its latest version, a publication,
+and each section of a document, keyed by its document and node - with the columns the readable set,
+the filters and the facets read; and `search_text`, one row per place in an entry, with its words and
+a generated `tsvector` in the entry's language's text search configuration, indexed with GIN.
+
+`entriesOf` in `packages/domain` reads a version into entries and their places: a component's title,
+each block's own words - a caption with its figure, a footnote's and a cell's paragraphs as blocks of
+their own, an equation and an image by their alternatives - and each field's value as words by its
+data type; a document's title and values and each section's; a publication by its document's title
+and version; a template by its name and starting sections; an asset by its description; a definition
+by its name. Every string is composed (NFC). `configurationFor` maps a language's primary subtag to the
+configuration Postgres ships for it, or `simple`.
+
+`insertVersion` rewrites an artifact's entries with every version the chain writes, and
+`recordPublication` writes a publication's, each in its own transaction, so a thing is findable the
+moment it is written (SCH-066). The migration runner rebuilds a tenant's projection whole with
+`reindexSearch`, in the transaction that applies 0031 and as the tenant's owner role, on a
+`TenantTransaction` over its own connection (`transactionOver`); a migration listed in `REINDEXED_BY`
+does the same. A tenant with no `search_entry` table yet is skipped, which only a test migrated to an
+earlier point reaches.
+
+| Where                               | What                                                                               |
+| ----------------------------------- | ---------------------------------------------------------------------------------- |
+| `domain: src/search/entries.ts`     | `entriesOf`, `configurationFor`, `SEARCH_CONFIGURATIONS`, the kinds and the places |
+| `db: migrations/tenant/0031_search` | `search_entry` and `search_text`, the `tsvector` generated and indexed with GIN    |
+| `db: src/search.ts`                 | `indexVersion`, `indexPublication`, `reindexSearch`                                |
+| `db: src/migrate.ts`                | `REINDEXED_BY`, and the reindex in the run that applies 0031                       |
 
 ## One renderer, two deliveries
 

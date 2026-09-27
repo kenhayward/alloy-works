@@ -197,8 +197,11 @@ as words by data type - a person by name, a date as written, a boolean by its fi
 it was read from, the space, its title, who made it (`owner`: the author of the artifact's first
 version), when it last changed, its component type, and its values as stored - the columns the
 predicate, the filters and the facets read. `search_text` holds one row per place in it: the entry,
-the place (`title`, `values`, a block's id, a node's id), the text, and its `tsvector` in the entry's
-text search configuration, indexed with GIN. A result is an entry; the place is where it matched,
+the place, the text, and its `tsvector` in the entry's text search configuration, indexed with GIN. A
+place is `title`; `block:<id>`, a block of a component, a footnote's paragraph and a table cell's among
+them; `field:<id>`, one field's value, so a term scoped to a field is matched in that field alone;
+`section:<key>`, a template's starting section; `description`, an asset's; and `fields` and `schemas`,
+what a metadata schema groups and a component type assigns, by name. A result is an entry; the place is where it matched,
 the best of its matching rows by rank.
 
 The configuration comes from the entry's language by a fixed map from the primary subtag to the
@@ -210,17 +213,21 @@ right where Postgres knows the language and harmless where it does not.
 `createArtifact` and `recordVersion` rewrite an artifact's entries - and a document's sections' - in the
 transaction that writes its version, so a new or changed thing is findable the moment its version is
 (SCH-066). Values are part of a version, so they move with it. A component placed in a document changes
-nothing of the document's entries: the component is found as itself. **A publication has no versions**
+nothing of the document's entries: the component is found as itself. **A publication has no
+versions:** it is recorded by `recordPublication`, never by the chain, so recording one writes its
+entry, in the same transaction, as the third place entries are written.
 
-- it is recorded by `recordPublication`, never by the chain - so recording one writes its entry, in the
-  same transaction, as the third place entries are written.
+The names a version's words are said with - a field's, a schema's, a person's - are read when the
+version is written. A field renamed, or a person, is found by the new name in each entry written after,
+and by the old one until then: the projection is rewritten with versions, not with the names they
+point at.
 
 An environment that holds versions from before the projection has its entries made once, by
-`reindexSearch` over every artifact's latest version and every publication, run by the worker's
-`search.reindex` job. **The migration runner enqueues it**, not the migration: a tenant migration runs
-as the tenant's owner role, which can neither write the platform's job table nor name its own tenant
-there, while `migrate`, which applies each tenant's migrations and knows its id, inserts the job for
-every tenant whose run applied 0031.
+`reindexSearch` over every artifact's latest version and every publication. **The migration runner runs
+it**, in the transaction that applies 0031 to a tenant and as that tenant's owner role, so an
+environment is never migrated without its projection and never has one half made. A later migration
+that changes what the projection holds is listed beside 0031 in the runner, and its run rebuilds it the
+same way.
 
 ### The query
 
@@ -274,16 +281,16 @@ and shows its newest version, which is the version it opens.
 
 Taken as recommended on Ken's instruction of 2026-09-27 to continue after W5, each open to his review.
 
-| #    | Decision                                                                                                                                                                        |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SE-A | T1 searches words; meaning is T5, designed above and not built                                                                                                                  |
-| SE-B | One entry per artifact at its latest version and one per document section; one text row per place, so a result names where it matched                                           |
-| SE-C | Entries are written in the version's transaction, and a publication's when it is recorded; existing environments are indexed once by a worker job the migration runner enqueues |
-| SE-D | The query is Postgres's web search syntax plus `name:term` scopes; an open quote closes at the end                                                                              |
-| SE-E | Facets are declared by dimension and, for a field, by its data type; the ten commonest values of a text field, never an open list                                               |
-| SE-F | Owner is the author of the artifact's first version; changed is its latest version's time                                                                                       |
-| SE-G | A result's link lands on the newest version and says by name when the place it names is gone                                                                                    |
-| SE-H | Definitions are found by anyone with the tenant's `read`, as access.md reads them; a section by whoever may read its document                                                   |
+| #    | Decision                                                                                                                                                                                        |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SE-A | T1 searches words; meaning is T5, designed above and not built                                                                                                                                  |
+| SE-B | One entry per artifact at its latest version and one per document section; one text row per place, so a result names where it matched                                                           |
+| SE-C | Entries are written in the version's transaction, and a publication's when it is recorded; existing environments are indexed once by the migration runner, in the transaction that applies 0031 |
+| SE-D | The query is Postgres's web search syntax plus `name:term` scopes; an open quote closes at the end                                                                                              |
+| SE-E | Facets are declared by dimension and, for a field, by its data type; the ten commonest values of a text field, never an open list                                                               |
+| SE-F | Owner is the author of the artifact's first version; changed is its latest version's time                                                                                                       |
+| SE-G | A result's link lands on the newest version and says by name when the place it names is gone                                                                                                    |
+| SE-H | Definitions are found by anyone with the tenant's `read`, as access.md reads them; a section by whoever may read its document                                                                   |
 
 ## Open questions
 
