@@ -33,7 +33,7 @@ import {
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { describeEquation } from '../editor/speech.js';
 import { shimRangeMeasurement } from '../test/range.js';
@@ -2568,7 +2568,7 @@ describe('the documents', () => {
 });
 
 describe('section numbers in the outline panel', () => {
-  it('shows each numbered node its section number, and renumbers a move without asking for one', async () => {
+  it('STR-065 shows each numbered node its section number, and renumbers a move without asking for one', async () => {
     const fake = service(
       outline([
         section(INTRODUCTION, 'Introduction'),
@@ -3350,6 +3350,110 @@ describe('the address of every node', () => {
       expect(screen.getByRole('tree', { name: 'Outline' })).toBeInTheDocument();
       // Publishing changes nothing in the document, and stays for whoever may publish (DV-D).
       expect(screen.getByRole('button', { name: /^Publish as/ })).toBeInTheDocument();
+    });
+  });
+
+  describe('moving through the document (document-view.md, "Navigation")', () => {
+    const FIRST = 'aaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const SECOND = 'bbbbbbbbbbbbbbbbbbbbbbbbbb';
+    /** Each node's top edge, as the page lays it out; jsdom lays nothing out. */
+    const tops = new Map<string, number>();
+    const scrolledTo: string[] = [];
+    let seen: (() => void) | null = null;
+    const original = {
+      rect: Element.prototype.getBoundingClientRect,
+      scroll: Element.prototype.scrollIntoView,
+      observer: window.IntersectionObserver,
+    };
+    beforeEach(() => {
+      tops.clear();
+      scrolledTo.length = 0;
+      seen = null;
+      Element.prototype.getBoundingClientRect = function (this: Element) {
+        const top = tops.get(this.getAttribute('data-node') ?? '') ?? 0;
+        return {
+          top,
+          bottom: top + 40,
+          left: 0,
+          right: 600,
+          width: 600,
+          height: 40,
+          x: 0,
+          y: top,
+          toJSON: () => ({}),
+        } as DOMRect;
+      };
+      Element.prototype.scrollIntoView = function (this: Element) {
+        const node = this.getAttribute('data-node');
+        if (node !== null && this.closest('[aria-label="The document\'s text"]'))
+          scrolledTo.push(node);
+      };
+      // An observer by hand: it tells the page something crossed, when the test says so.
+      window.IntersectionObserver = class {
+        constructor(callback: () => void) {
+          seen = callback;
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+        takeRecords() {
+          return [];
+        }
+        root = null;
+        rootMargin = '';
+        thresholds = [];
+      } as unknown as typeof IntersectionObserver;
+    });
+    afterEach(() => {
+      Element.prototype.getBoundingClientRect = original.rect;
+      Element.prototype.scrollIntoView = original.scroll;
+      window.IntersectionObserver = original.observer;
+    });
+    const twoSections = () =>
+      service(outline([section(FIRST, 'Unpacking'), section(SECOND, 'Setting up')]));
+    const treeItem = (name: RegExp) => screen.getByRole('treeitem', { name });
+
+    it('STR-035 marks in the outline the node whose text is at the top as the reader scrolls, and takes the text to any node chosen', async () => {
+      const fake = twoSections();
+      render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} principalId={ADA} />);
+      await screen.findByRole('region', { name: "The document's text" });
+      // The reader has scrolled past the first section's heading: the second is where they are.
+      tops.set(FIRST, -400);
+      tops.set(SECOND, 60);
+      act(() => seen?.());
+      await waitFor(() =>
+        expect(treeItem(/Setting up/)).toHaveAttribute('aria-current', 'location'),
+      );
+      expect(treeItem(/Unpacking/)).not.toHaveAttribute('aria-current');
+      // Back up to the top: the first is.
+      tops.set(FIRST, 20);
+      tops.set(SECOND, 500);
+      act(() => seen?.());
+      await waitFor(() =>
+        expect(treeItem(/Unpacking/)).toHaveAttribute('aria-current', 'location'),
+      );
+      // Choosing a node in the outline takes the text to it.
+      await userEvent.click(treeItem(/Setting up/));
+      expect(scrolledTo).toContain(SECOND);
+    });
+
+    it("STR-045 takes a reader who follows a node's link to it in the text, and marks it there until they choose another", async () => {
+      const fake = twoSections();
+      render(
+        <DocumentPage
+          client={client(fake.fetch)}
+          id={DOCUMENT}
+          principalId={ADA}
+          linked={{ node: SECOND, arrival: 1 }}
+        />,
+      );
+      const text = await screen.findByRole('region', { name: "The document's text" });
+      await waitFor(() => expect(scrolledTo).toContain(SECOND));
+      const marked = () => text.querySelector('[data-marked="true"]')?.getAttribute('data-node');
+      expect(marked()).toBe(SECOND);
+      // Choosing another moves the mark off, as the outline's own does.
+      await userEvent.click(treeItem(/Unpacking/));
+      expect(marked()).toBeUndefined();
     });
   });
 

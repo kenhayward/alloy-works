@@ -139,3 +139,10 @@
   color: var(--muted);
   font-size: var(--size-body-small);
 }
+
+/* The node a link took the reader to, its heading marked until they choose another (STR-045), as the
+ * outline marks its item. */
+.section[data-marked='true'] > .heading,
+.reference[data-marked='true'] > .component > .heading {
+  background: var(--accent-weak);
+}

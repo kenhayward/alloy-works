@@ -398,8 +398,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   Beneath the outline, the document lists its **figures, tables and equations**, each with its number
   and caption and a link to where it is placed, renumbered at once when you move anything. A number
   that would depend on a component you may not read is left off. A cross-reference in the text shows
-  what the page gives its target, as a publication prints it. Nothing yet tracks where you are as you
-  read.
+  what the page gives its target, as a publication prints it. As you read, the outline marks where you
+  are, keeping it in view; choosing any part of the outline, or an entry in the lists beneath it, takes
+  the text there, and a link to a part opens the document at it, its heading marked until you choose
+  another.
 
   **This is the document as it is written, not as it is paginated.** The page shows the outline you
   build beside the text in reading order, set in the document's theme, and in Authoring each
