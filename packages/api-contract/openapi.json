@@ -5263,6 +5263,45 @@
                       "additionalProperties": {},
                       "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
                     },
+                    "template": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "version"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read"
+                    },
                     "mayEdit": {
                       "type": "boolean",
                       "description": "Whether the caller may restructure the outline"
@@ -5327,7 +5366,7 @@
                         "words",
                         "formats"
                       ],
-                      "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
+                      "description": "The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, \"The layout\"; templates.md)"
                     }
                   },
                   "required": [
@@ -5335,6 +5374,7 @@
                     "space",
                     "version",
                     "outline",
+                    "template",
                     "mayEdit",
                     "mayPublish",
                     "layout"
@@ -7826,6 +7866,45 @@
                       "additionalProperties": {},
                       "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
                     },
+                    "template": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "version"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read"
+                    },
                     "mayEdit": {
                       "type": "boolean",
                       "description": "Whether the caller may restructure the outline"
@@ -7890,7 +7969,7 @@
                         "words",
                         "formats"
                       ],
-                      "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
+                      "description": "The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, \"The layout\"; templates.md)"
                     }
                   },
                   "required": [
@@ -7898,6 +7977,7 @@
                     "space",
                     "version",
                     "outline",
+                    "template",
                     "mayEdit",
                     "mayPublish",
                     "layout"
@@ -7994,6 +8074,45 @@
                           "additionalProperties": {},
                           "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
                         },
+                        "template": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "number": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "number"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "version"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read"
+                        },
                         "mayEdit": {
                           "type": "boolean",
                           "description": "Whether the caller may restructure the outline"
@@ -8058,7 +8177,7 @@
                             "words",
                             "formats"
                           ],
-                          "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
+                          "description": "The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, \"The layout\"; templates.md)"
                         }
                       },
                       "required": [
@@ -8066,6 +8185,7 @@
                         "space",
                         "version",
                         "outline",
+                        "template",
                         "mayEdit",
                         "mayPublish",
                         "layout"
@@ -8272,6 +8392,45 @@
                           "additionalProperties": {},
                           "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
                         },
+                        "template": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "number": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "number"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "version"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read"
+                        },
                         "mayEdit": {
                           "type": "boolean",
                           "description": "Whether the caller may restructure the outline"
@@ -8336,7 +8495,7 @@
                             "words",
                             "formats"
                           ],
-                          "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
+                          "description": "The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, \"The layout\"; templates.md)"
                         }
                       },
                       "required": [
@@ -8344,6 +8503,7 @@
                         "space",
                         "version",
                         "outline",
+                        "template",
                         "mayEdit",
                         "mayPublish",
                         "layout"
@@ -14832,7 +14992,7 @@
     "/v1/spaces/{space}/documents": {
       "post": {
         "operationId": "createDocument",
-        "summary": "Create a document in this space, at version 0.1, with an empty outline",
+        "summary": "Create a document in this space, at version 0.1: an empty outline, or its template's starting one",
         "security": [
           {
             "session": []
@@ -14877,6 +15037,18 @@
                     "enum": [
                       "ltr",
                       "rtl"
+                    ]
+                  },
+                  "template": {
+                    "description": "The template to make it from, at its latest version (templates.md); without one, a blank document",
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
                     ]
                   }
                 },
@@ -14959,6 +15131,45 @@
                       "additionalProperties": {},
                       "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
                     },
+                    "template": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "version"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read"
+                    },
                     "mayEdit": {
                       "type": "boolean",
                       "description": "Whether the caller may restructure the outline"
@@ -15023,7 +15234,7 @@
                         "words",
                         "formats"
                       ],
-                      "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
+                      "description": "The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, \"The layout\"; templates.md)"
                     }
                   },
                   "required": [
@@ -15031,6 +15242,7 @@
                     "space",
                     "version",
                     "outline",
+                    "template",
                     "mayEdit",
                     "mayPublish",
                     "layout"
@@ -15040,7 +15252,7 @@
             }
           },
           "400": {
-            "description": "The title, language or direction is not one an outline accepts",
+            "description": "The title, language or direction is not one an outline accepts; or `template_unresolved`: a theme, layout, schema or field the template names does not resolve",
             "content": {
               "application/json": {
                 "schema": {
@@ -15061,6 +15273,125 @@
                     "traceId": {
                       "type": "string",
                       "description": "Quote this when reporting a problem"
+                    },
+                    "unresolved": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "reference": {
+                            "type": "string",
+                            "enum": [
+                              "theme",
+                              "layout",
+                              "schema",
+                              "field",
+                              "requires",
+                              "conflict"
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "document",
+                              "section"
+                            ]
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "reference",
+                          "id"
+                        ]
+                      }
+                    },
+                    "current": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "space": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string",
+                              "description": "`revision.version`, as `0.2`"
+                            },
+                            "author": {
+                              "description": "The principal who cut it; null for a starter definition",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "author",
+                            "createdAt",
+                            "note"
+                          ]
+                        },
+                        "definition": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's definition (templates.md, \"The definition\"), as stored"
+                        },
+                        "mayDesign": {
+                          "type": "boolean",
+                          "description": "Whether the caller may change the template"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "space",
+                        "version",
+                        "definition",
+                        "mayDesign"
+                      ]
                     }
                   },
                   "required": [
@@ -15139,7 +15470,7 @@
             }
           },
           "404": {
-            "description": "No such space in this environment, or none the caller may read",
+            "description": "No such space in this environment, or none the caller may read; or no such template, or none the caller may read",
             "content": {
               "application/json": {
                 "schema": {

@@ -2408,6 +2408,83 @@ describe('New document', () => {
     expect(screen.getByLabelText('Title')).toHaveValue('The dosing report');
   });
 
+  const TEMPLATE = 'ee000000-0000-4000-8000-000000000001';
+  const TEMPLATES = {
+    items: [
+      {
+        id: TEMPLATE,
+        name: 'Report',
+        space: { id: SPACE, name: 'General' },
+        version: { id: 'ee000000-0000-4000-8000-0000000000a1', number: '0.3' },
+      },
+    ],
+  };
+
+  it('offers Blank and the templates the caller may read, and sends the one chosen', async () => {
+    const { fetch, sent } = spaces({
+      '/v1/spaces': SPACES,
+      '/v1/templates': TEMPLATES,
+      [`/v1/spaces/${SPACE}/documents`]: made,
+    });
+    const onCreated = vi.fn();
+    render(<NewDocument client={client(fetch)} onCreated={onCreated} />);
+
+    const template = await screen.findByLabelText('Template');
+    await waitFor(() =>
+      expect([...template.querySelectorAll('option')].map((option) => option.textContent)).toEqual([
+        'Blank',
+        'Report (General)',
+      ]),
+    );
+    // Blank is chosen until another is: a document made from nothing sends no template.
+    expect(template).toHaveValue('');
+    await userEvent.selectOptions(template, 'Report (General)');
+    await userEvent.type(screen.getByLabelText('Title'), 'The dosing report');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith(DOCUMENT));
+    expect(sent.at(-1)).toEqual({
+      url: `/v1/spaces/${SPACE}/documents`,
+      body: { title: 'The dosing report', language: 'en-GB', direction: 'ltr', template: TEMPLATE },
+    });
+  });
+
+  it('still offers Blank when the templates cannot be read, and says they could not', async () => {
+    const { fetch } = spaces({ '/v1/spaces': SPACES });
+    render(<NewDocument client={client(fetch)} onCreated={vi.fn()} />);
+    expect(await screen.findByText('The templates could not be loaded.')).toBeInTheDocument();
+    const template = screen.getByLabelText('Template');
+    expect([...template.querySelectorAll('option')].map((option) => option.textContent)).toEqual([
+      'Blank',
+    ]);
+  });
+
+  it('says a template that no longer resolves cannot be used, and keeps the choice', async () => {
+    const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url).pathname;
+      if (url === '/v1/spaces') return json(200, SPACES);
+      if (url === '/v1/templates') return json(200, TEMPLATES);
+      return json(400, {
+        code: 'template_unresolved',
+        message: 'No.',
+        traceId: 't',
+        unresolved: [{ reference: 'layout', id: SPACE }],
+      });
+    }) as typeof globalThis.fetch;
+    render(<NewDocument client={client(fetch)} onCreated={vi.fn()} />);
+    const template = await screen.findByLabelText('Template');
+    await screen.findByRole('option', { name: 'Report (General)' });
+    await userEvent.selectOptions(template, 'Report (General)');
+    await userEvent.type(screen.getByLabelText('Title'), 'The dosing report');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'This template refers to something that no longer exists, so a document cannot be made from it. Choose another, or Blank.',
+    );
+    expect(template).toHaveValue(TEMPLATE);
+  });
+
   it('says the caller is signed out on a 401, rather than asking them to try again', async () => {
     const { fetch } = spaces({ '/v1/spaces': SPACES }, { [`/v1/spaces/${SPACE}/documents`]: 401 });
     render(<NewDocument client={client(fetch)} onCreated={vi.fn()} />);

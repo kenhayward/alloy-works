@@ -309,6 +309,15 @@ export interface IterationTable {
   digest: ColumnType<string, string, never>;
 }
 
+/** The template, and its version, a document was made from (0029): written once, never changed. */
+export interface DocumentTemplateTable {
+  document_id: ColumnType<string, string, never>;
+  document_kind: ColumnType<'document', 'document' | undefined, never>;
+  template_id: ColumnType<string, string, never>;
+  template_version_id: ColumnType<string, string, never>;
+  template_kind: ColumnType<'template', 'template' | undefined, never>;
+}
+
 export interface TenantTables {
   component_lock: ComponentLockTable;
   iteration: IterationTable;
@@ -341,6 +350,7 @@ export interface TenantTables {
   publication: PublicationTable;
   publication_input: PublicationInputTable;
   publication_output: PublicationOutputTable;
+  document_template: DocumentTemplateTable;
   publication_request_asset: PublicationRequestAssetTable;
   publication_asset: PublicationAssetTable;
   asset_upload: AssetUploadTable;

@@ -7,15 +7,18 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   createDocument,
-  defaultLayout,
+  documentLayout,
+  documentTemplate,
   editOutline,
   listReadableDocuments,
+  loadFacts,
   loadFactsFor,
   numberingInputs,
   readLocks,
   versionContents,
   readableComponents,
   readDocument,
+  readVersion,
   type StoredDocument,
   type StoredVersion,
   type Tenant,
@@ -29,6 +32,7 @@ import {
   PUBLISHING_FORMATS,
   readOutline,
   resolve,
+  templateDefinitionSchema,
   walkOutline,
   withholdComponents,
   type Contribution,
@@ -74,16 +78,39 @@ async function outlineView(
 }
 
 /**
+ * The template a document was made from, at the version it was made from (TPL-025), named as that
+ * version names it - or null for a blank document, and for a template this viewer may not read, which
+ * access.md makes indistinguishable from none.
+ */
+async function templateView(viewer: Viewer, document: string): Promise<DocumentView['template']> {
+  const link = await documentTemplate(viewer.trx, document);
+  if (!link) return null;
+  const facts = await loadFacts(viewer.trx, viewer.principalId, {
+    kind: 'artifact',
+    id: link.template,
+  });
+  if (!facts || !decide('read', facts).allowed) return null;
+  const version = await readVersion(viewer.trx, link.version);
+  if (!version) throw new Error(`The template version ${link.version} a document names is gone`);
+  return {
+    id: link.template,
+    name: templateDefinitionSchema.parse(version.content).name,
+    version: { id: version.id, number: `${version.revision}.${version.version}` },
+  };
+}
+
+/**
  * A document as the API shows it: at one version, with whether the caller may restructure it and the
  * layout it is numbered and published under. Every answer that carries an outline is built here - the
  * page, an act's answer, and a refusal's `current` - so none can carry an outline that has not been
  * through `outlineView`, and none is shown beside numbers taken from a different scheme.
  *
- * The layout is the environment's, read fresh in this transaction, which is the version a publish
- * requested now would be made under (`requestPublication`). It belongs to the environment, not to any
- * component, so nothing here is derived from something the viewer may not read. An environment that
- * declares none, or one whose layout does not read, throws: 0018 declares one everywhere, so either is
- * a broken store rather than an answer. **Never a fallback to the product's default scheme** - that
+ * The layout is the document's - its template's, or the environment's for a document made blank
+ * (templates.md) - read fresh in this transaction, which is the version a publish requested now would
+ * be made under (`requestPublication`). A layout belongs to the environment, not to any space, so
+ * nothing here is derived from something the viewer may not read, whether or not they may read the
+ * template that chose it. A layout that is missing or does not read throws: a broken store rather than
+ * an answer. **Never a fallback to the product's default scheme** - that
  * would show numbers no publish could produce, which is the one thing this is here to prevent.
  *
  * The read costs four indexed reads and a parse on every document answer - the declaration, the
@@ -96,12 +123,13 @@ async function documentView(
   document: Pick<StoredDocument, 'id' | 'space'>,
   version: StoredVersion,
 ): Promise<DocumentView> {
-  const layout = await defaultLayout(viewer.trx);
+  const layout = await documentLayout(viewer.trx, document.id);
   return {
     id: document.id,
     space: document.space,
     version: versionView(version),
     outline: await outlineView(viewer, document.id, version),
+    template: await templateView(viewer, document.id),
     mayEdit: viewer.mayEdit,
     mayPublish: viewer.mayPublish,
     layout: {
@@ -193,10 +221,22 @@ export function documentHandlers(
         language: body.language,
         direction: body.direction,
         author: principalId,
+        ...(body.template === undefined ? {} : { template: body.template }),
       });
       // The space was decided on before this ran, so `space.missing` here means it went in the moment
       // between; answered as absent either way, never as a refusal that says it exists.
-      if (answer.answer === 'space.missing') throw notFound();
+      // A template the caller may not read is answered as one that does not exist (TE-I).
+      if (answer.answer === 'space.missing' || answer.answer === 'template.missing') {
+        throw notFound();
+      }
+      if (answer.answer === 'template.unresolved') {
+        throw refused(
+          400,
+          'template.unresolved',
+          'This template names a theme, layout, schema or field that does not resolve.',
+          { unresolved: answer.unresolved },
+        );
+      }
       if (answer.answer === 'content.invalid') {
         throw refused(
           400,
@@ -340,15 +380,15 @@ export function documentHandlers(
      * than guessed. A stored outline that does not read is a broken store, thrown as the outline route
      * throws it.
      *
-     * Numbered with the **environment's layout's** scheme, not the product's default: the numbers a
-     * reader is shown are the numbers that would publish (STR-036), since a request made now is made
-     * under this same layout version. The layout is named beside them, so a caller can tell which
+     * Numbered with the **document's layout's** scheme - its template's, or the environment's - not
+     * the product's default: the numbers a reader is shown are the numbers that would publish
+     * (STR-036), since a request made now is made under this same layout version. The layout is named beside them, so a caller can tell which
      * scheme produced them.
      */
     getNumbering: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as DocumentParams;
       const { document, outline } = await latestOutline(trx, id);
-      const layout = await defaultLayout(trx);
+      const layout = await documentLayout(trx, id);
       const inputs = await numberingInputs(trx, outline, principalId);
       const table = number(
         conditions(resolve(outline, inputs.contributions)),

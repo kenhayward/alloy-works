@@ -12,7 +12,15 @@ import { loadReadableSet } from './access-facts.js';
 import { currentDefinition } from './creation.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
-import { createArtifact, latestVersion, recordVersion, type StoredVersion } from './versions.js';
+import { defaultLayout, layoutLatest, type StoredLayout } from './layouts.js';
+import { defaultTheme, themeLatest, type StoredTheme } from './themes.js';
+import {
+  createArtifact,
+  latestVersion,
+  readVersion,
+  recordVersion,
+  type StoredVersion,
+} from './versions.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -215,4 +223,56 @@ export async function listReadableTemplates(
       version: { id: row.version_id, revision: row.revision_no, version: row.version_no },
     })),
   };
+}
+
+/**
+ * The template, and the version of it, a document was made from (TPL-025), or undefined for a
+ * document made blank. Everything a document takes from its template is read at this version, so a
+ * template's later version changes nothing about it (TPL-027).
+ */
+export async function documentTemplate(
+  trx: TenantTransaction,
+  documentId: string,
+): Promise<{ readonly template: string; readonly version: string } | undefined> {
+  const row = await trx
+    .selectFrom('document_template')
+    .select(['template_id', 'template_version_id'])
+    .where('document_id', '=', documentId)
+    .executeTakeFirst();
+  return row && { template: row.template_id, version: row.template_version_id };
+}
+
+/** The definition of the template version a document was made from, or undefined for a blank one. */
+async function boundBy(
+  trx: TenantTransaction,
+  documentId: string,
+): Promise<TemplateDefinition | undefined> {
+  const link = await documentTemplate(trx, documentId);
+  if (!link) return undefined;
+  const version = await readVersion(trx, link.version);
+  if (!version) throw new Error(`The template version ${link.version} a document names is gone`);
+  return templateDefinitionSchema.parse(version.content);
+}
+
+/**
+ * The layout a document is numbered and published under, at its latest version (templates.md,
+ * "Publishing a document made from a template"): the one its recorded template version binds, or the
+ * environment's declared layout for a document made blank (TE-F). The page's view, its numbering and
+ * a publication request all read it here, so the numbers shown are the numbers that publish (STR-036).
+ */
+export async function documentLayout(
+  trx: TenantTransaction,
+  documentId: string,
+): Promise<StoredLayout> {
+  const bound = await boundBy(trx, documentId);
+  return bound ? layoutLatest(trx, bound.layout) : defaultLayout(trx);
+}
+
+/** The theme a document is published under, as `documentLayout` reads its layout (STY-025). */
+export async function documentTheme(
+  trx: TenantTransaction,
+  documentId: string,
+): Promise<StoredTheme> {
+  const bound = await boundBy(trx, documentId);
+  return bound ? themeLatest(trx, bound.theme) : defaultTheme(trx);
 }

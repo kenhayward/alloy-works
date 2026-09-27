@@ -38,6 +38,7 @@ import {
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import { requestBefore0029 } from './testing/request-before-0029.js';
 import {
   addCatalogueVersion,
   addThemeVersion,
@@ -275,6 +276,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0026_word',
       '0027_word_layout_and_outputs',
       '0028_templates',
+      '0029_document_template',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -613,16 +615,15 @@ describe('migration 0025, which gives the default theme its table and image styl
         author: ada,
       });
       if (made.answer !== 'created') throw new Error(made.answer);
-      const answer = await requestPublication(trx, {
+      // Written as `requestPublication` wrote it: this environment has not reached 0029.
+      const requested = await requestBefore0029(trx, {
         documentId: made.version.artifactId,
         version: made.version.id,
-        formats: ['pdf'],
         requester: ada,
       });
-      if (answer.answer !== 'requested') throw new Error(answer.answer);
       return {
         version: made.version,
-        waiting: answer.request.id,
+        waiting: requested,
         first: (await defaultTheme(trx)).versionId,
       };
     });
@@ -655,18 +656,17 @@ describe('migration 0025, which gives the default theme its table and image styl
     // `theme_default` names the theme, not a version of it: the request waiting was made under 0.1
     // and is handed 0.1, and a request made now records the latest, 0.2, and is handed that.
     const { made, handed } = await service.withTenant(tenant, async (trx) => {
-      const answer = await requestPublication(trx, {
+      // Written as `requestPublication` wrote it: this environment has not reached 0029.
+      const requested = await requestBefore0029(trx, {
         documentId: version.artifactId,
         version: version.id,
-        formats: ['pdf'],
         requester: ada,
       });
-      if (answer.answer !== 'requested') throw new Error(answer.answer);
       return {
-        made: answer.request.id,
+        made: requested,
         handed: {
           waiting: (await publicationInputs(trx, waiting))!.theme,
-          made: (await publicationInputs(trx, answer.request.id))!.theme,
+          made: (await publicationInputs(trx, requested))!.theme,
         },
       };
     });
@@ -861,20 +861,20 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
         author: ada,
       });
       if (made.answer !== 'created') throw new Error(made.answer);
-      const answer = await requestPublication(trx, {
+      // Written as `requestPublication` wrote it: this environment has not reached 0029.
+      const requested = await requestBefore0029(trx, {
         documentId: made.version.artifactId,
         version: made.version.id,
-        formats: ['pdf'],
         requester: ada,
       });
-      if (answer.answer !== 'requested') throw new Error(answer.answer);
-      return { version: made.version, waiting: answer.request.id };
+      return { version: made.version, waiting: requested };
     });
 
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0026_word',
       '0027_word_layout_and_outputs',
       '0028_templates',
+      '0029_document_template',
     ]);
 
     // The theme is at 0.3, under its fixed identifier, unauthored, on top of 0.2; and it binds the
@@ -934,6 +934,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0026_word',
       '0027_word_layout_and_outputs',
       '0028_templates',
+      '0029_document_template',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -969,6 +970,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0026_word',
       '0027_word_layout_and_outputs',
       '0028_templates',
+      '0029_document_template',
     ]);
 
     const chain = await themeChain(tenant);

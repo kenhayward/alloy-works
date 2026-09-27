@@ -114,6 +114,15 @@ rule. Development's seed makes Ada and Grace Designers on General, which changed
 Author in the route tests. The seeded **Report** assigns its Review schema with nothing required,
 because no page can fill a field in until W5.
 
+**W4.2.** The migration is `0029_document_template`, named for its table, and instantiation lives in
+`createDocument` beside a blank document's, with `documentTemplate`, `documentLayout` and
+`documentTheme` in `templates.ts`. A document version's `values` is optional in its substance and left
+out when empty, so a document with none serialises as every earlier one did; an outline act carries
+the values forward, held by a test, since leaving them out would have cut a version that quietly
+dropped them. `createArtifact` makes no theme or layout, so the tests binding a second one copy the
+environment's rows under a new artifact. A document's view names its template only where the caller
+may read it, null otherwise, as for a blank document.
+
 ## Done when
 
 - Every requirement templates.md claims is Covered, and STY-025, VER-056, TPL-006 and IAM-018 are cited

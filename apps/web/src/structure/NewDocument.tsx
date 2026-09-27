@@ -1,6 +1,6 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { hasText, outlineDocumentSchema } from '@alloy-works/domain';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { DirectionSelect } from '../editor/DirectionSelect.js';
 import { useCreatableSpaces } from '../spaces.js';
@@ -10,6 +10,43 @@ type Client = ReturnType<typeof createApiClient>;
 /** The outline's own tag rule, so the form refuses what the service would, with one rule and not two. */
 const language = outlineDocumentSchema.shape.language;
 
+/** A template as the chooser offers it: what it is called and the space it lives in. */
+interface TemplateChoice {
+  readonly id: string;
+  readonly label: string;
+}
+
+/**
+ * The templates the caller may read, or `'failed'` when they could not be listed - which leaves Blank
+ * to choose, and says so, rather than hiding that there may have been more.
+ */
+function useTemplates(client: Client): readonly TemplateChoice[] | 'failed' | null {
+  const [templates, setTemplates] = useState<readonly TemplateChoice[] | 'failed' | null>(null);
+  useEffect(() => {
+    let current = true;
+    void (async () => {
+      try {
+        const { data } = await client.GET('/v1/templates');
+        if (!current) return;
+        setTemplates(
+          data
+            ? data.items.map((item) => ({
+                id: item.id,
+                label: `${item.name} (${item.space.name})`,
+              }))
+            : 'failed',
+        );
+      } catch {
+        if (current) setTemplates('failed');
+      }
+    })();
+    return () => {
+      current = false;
+    };
+  }, [client]);
+  return templates;
+}
+
 export interface NewDocumentProps {
   readonly client: Client;
   /** Called with the new document's id, so the page can open it. */
@@ -17,8 +54,9 @@ export interface NewDocumentProps {
 }
 
 /**
- * Making a document: where, what it is called, its language and its direction - **New component**
- * without a component type, because a document has none. Shown only where there is somewhere the
+ * Making a document: where, what it is called, its language and its direction, and the template it
+ * starts from or Blank (templates.md, TE-J) - **New component** without a component type, because a
+ * document has none. Shown only where there is somewhere the
  * caller may create (the plan's decision 8), so nobody is offered a form that could only refuse them,
  * and built the way `NewComponent` is so the two pages do not disagree about what a person may do.
  */
@@ -33,6 +71,9 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
   const [title, setTitle] = useState('');
   const [languageTag, setLanguageTag] = useState('en-GB');
   const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
+  const templates = useTemplates(client);
+  // The empty string is Blank: a document made from nothing sends no template.
+  const [template, setTemplate] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   // Checked before any await, so a second click that lands before React re-renders sends nothing.
@@ -52,9 +93,14 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
     setSending(true);
     setNotice(null);
     try {
-      const { data, response } = await client.POST('/v1/spaces/{space}/documents', {
+      const { data, error, response } = await client.POST('/v1/spaces/{space}/documents', {
         params: { path: { space: where } },
-        body: { title, language: languageTag, direction },
+        body: {
+          title,
+          language: languageTag,
+          direction,
+          ...(template === '' ? {} : { template }),
+        },
       });
       const id = typeof data === 'object' && data !== null && 'id' in data ? data.id : undefined;
       if (typeof id !== 'string') {
@@ -66,8 +112,16 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
           // so the chooser stops offering one that would only refuse again.
           void loadSpaces();
         } else if (response.status === 404) {
-          setNotice('This space is no longer open to you. Choose another.');
+          setNotice(
+            template === ''
+              ? 'This space is no longer open to you. Choose another.'
+              : 'This space or template is no longer open to you. Choose another.',
+          );
           void loadSpaces();
+        } else if (response.status === 400 && error?.code === 'template_unresolved') {
+          setNotice(
+            'This template refers to something that no longer exists, so a document cannot be made from it. Choose another, or Blank.',
+          );
         } else if (response.status === 400) {
           setNotice('The title, language or direction was not accepted. Check them and try again.');
         } else {
@@ -82,7 +136,7 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
       pending.current = false;
       setSending(false);
     }
-  }, [client, direction, languageTag, loadSpaces, onCreated, title, where]);
+  }, [client, direction, languageTag, loadSpaces, onCreated, template, title, where]);
 
   const status = <p role="status">{notice}</p>;
 
@@ -129,6 +183,19 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
           ))}
         </select>
       </label>
+      <label>
+        Template
+        <select value={template} onChange={(event) => setTemplate(event.target.value)}>
+          <option value="">Blank</option>
+          {Array.isArray(templates) &&
+            templates.map((each) => (
+              <option key={each.id} value={each.id}>
+                {each.label}
+              </option>
+            ))}
+        </select>
+      </label>
+      {templates === 'failed' && <p>The templates could not be loaded.</p>}
       <label>
         Title
         <input value={title} onChange={(event) => setTitle(event.target.value)} />

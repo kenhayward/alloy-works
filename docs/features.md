@@ -11,7 +11,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > preformatted text, tables and figures published as a laid-out PDF with a cover, a contents, lists
 > of figures and tables and numbered pages that carries all of that formatting.
 > Footnotes, a table's note, cross-references and equations are written and published, and every
-> publication is set from the environment's theme and records it, its tables and images from the
+> publication is set from its template's theme, or the environment's, and records it, its tables and images from the
 > theme's table and image styles. A document can be published to Word as well, or instead, as a
 > Word document in the theme's styles with its headings, figures, tables, footnotes and equations
 > numbered by Word, its cross-references fields Word updates and its equations Word's own.
@@ -384,7 +384,18 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   where anything it names does not exist. Development's General holds one, **Report**: Introduction
   and Conclusion required, Method and Results beside them, in that order. Templates are made and
   changed through the API, `/v1/spaces/{space}/templates` and `/v1/templates`; nothing in the pages
-  makes, changes or uses one yet.
+  makes or changes one yet.
+
+- **Making a document from a template.** **New document** offers **Blank** and every template you
+  may read, named with its space; a document made from one starts with the template's sections, in
+  its order, each numbered, placed and broken as the template says, and with the default values the
+  template's metadata schemas give the document and each section. It records the template and the
+  version it was made from, and is published, shown and numbered under that template's theme and
+  layout, at their latest versions; a blank document keeps the environment's. After that the outline
+  is the document's own: changing it changes no template, and a template's next version changes no
+  document already made. A template you may not read is answered as not there, and one naming
+  something that no longer exists is refused with a sentence saying so, keeping your choice. What an
+  author may change is not yet held to the template, and no page fills a field in.
 
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath
