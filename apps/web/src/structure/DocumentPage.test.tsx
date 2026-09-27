@@ -194,6 +194,21 @@ const publishRequest = {
   preview: null,
 };
 
+const PREVIEW_REQUEST = '99999999-0000-4000-8000-000000000002';
+/** A preview asked for from the page, as the service answers it once asked for. */
+const previewRequest = {
+  ...publishRequest,
+  id: PREVIEW_REQUEST,
+  kind: 'preview',
+  state: 'queued',
+};
+/** Its links and expiry once made. */
+const previewLinks = {
+  view: 'https://store.example.test/p.pdf?view',
+  download: 'https://store.example.test/p.pdf?download',
+  expiresAt: '2026-09-27T14:02:00.000Z',
+};
+
 /**
  * The service, as a model rather than a table of canned answers (pre-flight S23): it keeps the
  * document's version chain and applies each operation with the domain's own `applyOutlineOperation`,
@@ -305,6 +320,11 @@ function service(
     }
     if (url === `/v1/publication-requests/${PUBLISH_REQUEST}`) {
       return json(200, { ...publishRequest, failures: options.publishFailures ?? [] });
+    }
+    // A preview asked for from the page, answered at once as made (W10.3).
+    if (url === `/v1/documents/${DOCUMENT}/previews`) return json(200, previewRequest);
+    if (url === `/v1/publication-requests/${PREVIEW_REQUEST}`) {
+      return json(200, { ...previewRequest, state: 'done', preview: previewLinks });
     }
     if (url === `/v1/documents/${DOCUMENT}`) return json(200, view());
     if (url === `/v1/documents/${DOCUMENT}/contributions`) {
@@ -4667,6 +4687,165 @@ describe('publishing from the document page', () => {
     await screen.findByRole('treeitem', { name: 'Method' });
     expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeInTheDocument();
     expect(screen.queryByRole('radiogroup', { name: 'Publish as' })).toBeNull();
+  });
+});
+
+describe('a preview beside the text (W10.3)', () => {
+  const REFERENCE = 'kkkkkkkkkkkkkkkkkkkkkkkkkk';
+  const printer = {
+    schemaVersion: 1,
+    title: 'Install the printer',
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [{ type: 'text', value: 'Unbox the printer.', marks: [] }],
+      },
+    ],
+  };
+  afterEach(() => {
+    try {
+      window.localStorage.removeItem('alloy-works.mode');
+    } catch {
+      // Storage refused: nothing was kept.
+    }
+  });
+  /**
+   * The harness's service, with the text of the one component the document places, which the reader
+   * may or may not edit, and the component itself as its editor reads it, read only there.
+   */
+  function withText(fake: ReturnType<typeof service>, mayEdit: boolean) {
+    return (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      if (path === `/v1/documents/${DOCUMENT}/texts`) {
+        return json(200, {
+          document: DOCUMENT,
+          version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
+          occurrences: [
+            {
+              node: REFERENCE,
+              version: 'vvvvvvvv-0000-4000-8000-000000000001',
+              mayEdit,
+              lock: null,
+            },
+          ],
+          versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: printer }],
+        });
+      }
+      if (path === `/v1/components/${PRINTER}`) {
+        return json(200, {
+          id: PRINTER,
+          space: { id: SPACE, name: 'General' },
+          version: {
+            id: 'vvvvvvvv-0000-4000-8000-000000000001',
+            number: '0.3',
+            author: ADA,
+            createdAt: '2026-09-18T09:00:00.000Z',
+            note: null,
+          },
+          content: printer,
+          mayEdit: false,
+          lock: null,
+          type: { id: 'type-topic', name: 'Topic' },
+          fields: [],
+          schemas: [],
+          values: {},
+        });
+      }
+      return fake.fetch(request);
+    }) as typeof globalThis.fetch;
+  }
+  // By a name in a variable: Vite rewrites a literal one into the stylesheet's served address.
+  const STYLESHEET = './DocumentPage.module.css';
+  /** The declarations of the page's rule for exactly this selector, outside any media query. */
+  const ruleOf = (selector: string) => {
+    const sheet = readFileSync(new URL(STYLESHEET, import.meta.url), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .split('@media')[0]!;
+    const found = [...sheet.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find((match) =>
+      match[1]!.split(',').some((each) => each.trim() === selector),
+    );
+    return found?.[2] ?? null;
+  };
+
+  it('CNT-150 previews the document from its page in a pane beside the text, the editor open in place kept where it was with its text', async () => {
+    const user = userEvent.setup();
+    const fake = service(outline([reference(REFERENCE, 'latest')]));
+    render(
+      <StrictMode>
+        <DocumentPage
+          client={client(withText(fake, true))}
+          id={DOCUMENT}
+          principalId={ADA}
+          followMs={0}
+        />
+      </StrictMode>,
+    );
+    const text = await screen.findByRole('region', { name: "The document's text" });
+    await user.click(await within(text).findByText('Unbox the printer.'));
+    const editor = await within(text).findByRole('textbox', {
+      name: 'Content of Install the printer',
+    });
+    await waitFor(() => expect(editor).toHaveTextContent('Unbox the printer.'));
+
+    await user.click(screen.getByRole('button', { name: 'Preview' }));
+    const pane = await screen.findByRole('region', { name: 'Preview' });
+    // The PDF in the browser's own viewer, named for the document.
+    expect(within(pane).getByTitle('Preview of The dosing report')).toHaveAttribute(
+      'src',
+      previewLinks.view,
+    );
+    // Of the version the page holds.
+    expect(fake.sent.find((each) => each.url.endsWith('/previews'))?.body).toEqual({
+      version: 'dddddddd-0000-4000-8000-000000000001',
+    });
+    // Beside the text, in the grid the text is in, in a column of its own after it: the text narrows.
+    const layout = text.closest('[data-previewing]');
+    expect(layout).toHaveAttribute('data-previewing', 'true');
+    expect(pane.closest('[data-previewing]')).toBe(layout);
+    expect(ruleOf(".layout[data-previewing='true']")).toMatch(
+      /grid-template-columns:[^;]*minmax\(0, 1fr\) minmax\(0, 1fr\) var\(--dock-panel\)/,
+    );
+    expect(ruleOf('.text')).toMatch(/grid-column: 3/);
+    expect(ruleOf('.preview')).toMatch(/grid-column: 4/);
+    // Without leaving the editor: the same editor, open where it was, holding its text.
+    expect(within(text).getByRole('textbox', { name: 'Content of Install the printer' })).toBe(
+      editor,
+    );
+    expect(editor).toHaveTextContent('Unbox the printer.');
+    expect(screen.getByRole('article', { name: /in Authoring$/ })).toBeInTheDocument();
+  });
+
+  it('offers Preview in Reading to a reader who may not publish, where Publish is not offered', async () => {
+    const fake = service(outline([reference(REFERENCE, 'latest')]), {
+      mayEdit: false,
+      mayPublish: false,
+    });
+    render(
+      <StrictMode>
+        <DocumentPage
+          client={client(withText(fake, false))}
+          id={DOCUMENT}
+          principalId={ADA}
+          followMs={0}
+        />
+      </StrictMode>,
+    );
+    const text = await screen.findByRole('region', { name: "The document's text" });
+    await within(text).findByText('Unbox the printer.');
+    expect(screen.getByRole('article', { name: /in Reading$/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Publish as/ })).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    const pane = await screen.findByRole('region', { name: 'Preview' });
+    expect(within(pane).getByTitle('Preview of The dosing report')).toHaveAttribute(
+      'src',
+      previewLinks.view,
+    );
   });
 });
 

@@ -1193,6 +1193,22 @@ describe('publishing from the document page', () => {
     expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeEnabled();
   });
 
+  it('says a publish refused because the document is no longer open to the author', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: () => listed([]),
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [
+        new Status(404, {
+          code: 'not_found',
+          message: 'There is nothing at this address.',
+          traceId: 't',
+        }),
+      ],
+    });
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    expect(await screen.findByText('This document is no longer open to you.')).toBeInTheDocument();
+  });
+
   it("says why a publish was refused at the door, in the service's words", async () => {
     const fake = service({
       [`GET /v1/documents/${DOCUMENT}/publications`]: () => listed([]),

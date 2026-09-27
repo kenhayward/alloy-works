@@ -1,0 +1,8 @@
+/* Preview and Publish side by side, as layout C draws them, wrapping where the dock is narrow. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  margin-block: var(--space-12);
+}
