@@ -204,6 +204,19 @@ describe('the fields form', () => {
     expect(changed).toHaveBeenLastCalledWith({ 'field-sites': ['York', 'Hull'] });
   });
 
+  it('moves what each box shows with its value when a list of numbers is reordered', async () => {
+    render(
+      <Held
+        {...base}
+        initial={{ 'field-doses': ['1.5', '2'] }}
+        fields={[fieldOf('field-doses', 'Doses', { dataType: 'number', multiplicity: 'many' })]}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Move 2 up' }));
+    expect(screen.getByRole('textbox', { name: 'Doses, value 1' })).toHaveValue('2');
+    expect(screen.getByRole('textbox', { name: 'Doses, value 2' })).toHaveValue('1.5');
+  });
+
   it('offers nothing to change when read-only', () => {
     render(<Held {...base} readOnly fields={[fieldOf('field-code', 'Code')]} />);
     expect(screen.getByRole('textbox', { name: /^Code/ })).toHaveAttribute('readonly');

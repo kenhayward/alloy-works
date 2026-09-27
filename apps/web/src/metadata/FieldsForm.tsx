@@ -5,7 +5,7 @@ import {
   type EffectiveField,
   type FieldDefinition,
 } from '@alloy-works/domain';
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 
 import { authorZone, instantFor, localIn } from './dateTime.js';
 import styles from './FieldsForm.module.css';
@@ -414,6 +414,12 @@ function DateTimeInput(
   );
 }
 
+/** One value of a list, with a key that stays with it however the list is reordered. */
+interface Entry {
+  readonly key: number;
+  readonly value: unknown;
+}
+
 /** A field holding several values: an ordered list of its input, with add, move and remove. */
 function ManyInput(
   props: InputProps & {
@@ -422,11 +428,17 @@ function ManyInput(
   },
 ) {
   // Entries as the author sees them: one being filled in is kept here and not handed on until it
-  // holds something, so the list handed on never carries an empty value that was never meant.
-  const [entries, setEntries] = useState<unknown[]>([...props.value]);
-  const emit = (next: unknown[]) => {
-    setEntries(next);
-    props.onChange(next.filter((each) => each !== null && each !== undefined));
+  // holds something, so the list handed on never carries an empty value that was never meant. Each
+  // has a key of its own that moves with it, so an input that keeps what was typed - a number's, a
+  // date and time's - moves with its value when the list is reordered (W5.3 review).
+  const counter = useRef(0);
+  const keyed = (value: unknown): Entry => ({ key: (counter.current += 1), value });
+  const [rows, setRows] = useState<Entry[]>(() => props.value.map(keyed));
+  const emit = (next: Entry[]) => {
+    setRows(next);
+    props.onChange(
+      next.map((row) => row.value).filter((each) => each !== null && each !== undefined),
+    );
   };
   const nameOf = (value: unknown, index: number) => {
     if (typeof value === 'string' && value !== '') return value;
@@ -438,13 +450,15 @@ function ManyInput(
   };
   return (
     <ol className={styles['many']}>
-      {entries.map((entry, index) => (
-        <li key={index}>
+      {rows.map(({ key, value: entry }, index) => (
+        <li key={key}>
           <OneInput
             {...props}
             label={`${props.field.name}, value ${index + 1}`}
             value={entry}
-            onChange={(value) => emit(entries.map((each, at) => (at === index ? value : each)))}
+            onChange={(value) =>
+              emit(rows.map((row, at) => (at === index ? { key: row.key, value } : row)))
+            }
           />
           {!props.readOnly && (
             <>
@@ -452,8 +466,8 @@ function ManyInput(
                 type="button"
                 disabled={index === 0}
                 onClick={() => {
-                  const next = [...entries];
-                  [next[index - 1], next[index]] = [next[index], next[index - 1]];
+                  const next = [...rows];
+                  [next[index - 1], next[index]] = [next[index]!, next[index - 1]!];
                   emit(next);
                 }}
               >
@@ -461,16 +475,16 @@ function ManyInput(
               </button>
               <button
                 type="button"
-                disabled={index === entries.length - 1}
+                disabled={index === rows.length - 1}
                 onClick={() => {
-                  const next = [...entries];
-                  [next[index + 1], next[index]] = [next[index], next[index + 1]];
+                  const next = [...rows];
+                  [next[index + 1], next[index]] = [next[index]!, next[index + 1]!];
                   emit(next);
                 }}
               >
                 {`Move ${nameOf(entry, index)} down`}
               </button>
-              <button type="button" onClick={() => emit(entries.filter((_, at) => at !== index))}>
+              <button type="button" onClick={() => emit(rows.filter((_, at) => at !== index))}>
                 {`Remove ${nameOf(entry, index)}`}
               </button>
             </>
@@ -479,7 +493,7 @@ function ManyInput(
       ))}
       {!props.readOnly && (
         <li>
-          <button type="button" onClick={() => setEntries([...entries, null])}>
+          <button type="button" onClick={() => setRows([...rows, keyed(null)])}>
             {`Add to ${props.field.name}`}
           </button>
         </li>

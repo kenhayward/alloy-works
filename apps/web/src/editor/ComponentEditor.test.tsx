@@ -272,6 +272,57 @@ describe('the component editor', () => {
     expect(document.activeElement).toBe(code);
   });
 
+  it('puts its fields back, as it puts the text back, when the claim a change made is refused', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () =>
+        json(
+          200,
+          opened({
+            type: { id: 'type-protocol', name: 'Protocol' },
+            fields: [
+              {
+                id: 'field-code',
+                name: 'Code',
+                dataType: 'text',
+                multiplicity: 'one',
+                validation: {},
+                required: false,
+                requiredBy: [],
+                fixed: false,
+                fixedBy: [],
+              },
+            ],
+            schemas: [],
+            values: { 'field-code': 'A1' },
+          }),
+        ),
+      'POST /v1/components/{id}/lock': () =>
+        json(409, {
+          code: 'lock_held',
+          message: 'held',
+          traceId: 't',
+          holder: { id: 'grace', name: 'Grace' },
+          expectedRelease: '2026-09-16T09:15:00.000Z',
+        }),
+    });
+    await surface();
+    const code = within(screen.getByRole('region', { name: 'Fields of Protocol' })).getByRole(
+      'textbox',
+      { name: /^Code/ },
+    );
+    await userEvent.type(code, '9');
+    // Grace holds it: what was typed is not the component's, in its fields as in its text.
+    await screen.findByRole('button', { name: 'Try again' });
+    // The form is drawn afresh, so the field is asked for again.
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('region', { name: 'Fields of Protocol' })).getByRole('textbox', {
+          name: /^Code/,
+        }),
+      ).toHaveValue('A1'),
+    );
+  });
+
   it('in place, Done releases what was claimed and then closes', async () => {
     const onDone = vi.fn();
     const { asked, surface } = open(

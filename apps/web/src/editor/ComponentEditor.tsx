@@ -313,6 +313,8 @@ export function ComponentEditor({
   // `user` field may name.
   const metadataRegion = useRef<HTMLElement | null>(null);
   const [values, setValues] = useState<Record<string, unknown>>({});
+  // Each time the values are put back rather than changed, the form is drawn anew.
+  const [valuesDrawn, setValuesDrawn] = useState(0);
   const heldValues = useRef<Record<string, unknown>>({});
   const [people, setPeople] = useState<readonly { id: string; name: string }[]>([]);
   // Read only where a field names a person: a component with none has no one to pick.
@@ -627,6 +629,8 @@ export function ComponentEditor({
         ...(selection ? { selection } : {}),
       });
     let base = opened.doc;
+    // The values' own base, as `base` is the text's: what a refused claim puts the fields back to.
+    let baseValues: Record<string, unknown> = { ...component.values };
     let phase: SessionView['phase'] = 'reading';
     keptIsCurrent.current = false;
     /**
@@ -705,6 +709,11 @@ export function ComponentEditor({
         // filled `kept` with exactly this text must not add a second copy of it (fix round 2, minor).
         captureKept();
         view.updateState(fresh(base));
+        // And the fields, which are held changes too: what was typed into them is not applied either,
+        // and the form is drawn afresh so no input keeps what it held (W5.3 review).
+        heldValues.current = baseValues;
+        setValues(baseValues);
+        setValuesDrawn((drawn) => drawn + 1);
         // `updateState` does not go through `dispatch` above, so nothing else refreshes `header`
         // (review round 1, item 1): left alone, it would keep showing whatever was typed right up to
         // the refusal, and the next keystroke into that stale field would resend it - resurrecting
@@ -717,6 +726,7 @@ export function ComponentEditor({
         // rather than jumping back to the start (fix round 1, minor).
         const { selection } = view.state;
         base = view.state.doc;
+        baseValues = heldValues.current;
         view.updateState(fresh(base, selection));
         // As above: cutting changes nothing about the header, but this keeps that an invariant the
         // surface enforces rather than one a future change could silently break.
@@ -1223,6 +1233,7 @@ export function ComponentEditor({
                 className={styles['fields']}
               >
                 <FieldsForm
+                  key={valuesDrawn}
                   fields={shown.fields}
                   schemas={shown.schemas}
                   values={values}
