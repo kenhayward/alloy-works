@@ -547,6 +547,9 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 457, from 450 (2026-09-27): W8.2 - the domain's css.test.ts cites STY-058, STY-050 and CNT-082 (one
+  // title), STY-051, CNT-097, CNT-115 and STY-037, where the prototype's cited STY-050, STY-051 and
+  // STY-037; and apps/web's ComponentEditor.test.tsx cites CNT-097, CNT-082 and CNT-115.
   // 450, from 448 (2026-09-27): W8.1 - STY-035 in apps/service's presentation-routes.test.ts and
   // STY-039 in apps/web's theme/presentation.test.tsx.
   // 448, from 446 (2026-09-27): W7.4 - API-008 in apps/service's idempotency-routes.test.ts, by a
@@ -591,7 +594,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(450);
+    expect(model.citations).toHaveLength(457);
   });
 
   it('cites no identifier the corpus does not hold', () => {

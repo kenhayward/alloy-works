@@ -12,6 +12,7 @@ import { DocumentList } from '../structure/DocumentList.js';
 import { DocumentPage } from '../structure/DocumentPage.js';
 import { documentAddress, documentLink } from '../structure/links.js';
 import { TemplateList } from '../structure/TemplateList.js';
+import { ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { ComponentList } from './ComponentList.js';
@@ -196,6 +197,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
           </p>
           {/* A component on its own is set in the environment's theme and layout (themes.md, ET-A). */}
           <PresentationProvider client={client}>
+            <ZoomControl />
             <ComponentEditor
               key={opened}
               componentId={opened}

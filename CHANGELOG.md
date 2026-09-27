@@ -3,6 +3,21 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.95.0 - 2026-09-27 (PR #281)
+
+### Added
+
+- **See a component's text as it will print.** The editor now sets text in the typefaces, sizes and
+  spacing of its theme: running text, lists, quotations, table cells, footnotes, captions and
+  preformatted text each in the style it will print in, and bold, italics, code and the other marks as
+  the theme sets them. A document's page does the same with the text it shows before you open it.
+- **The page's width, and a zoom.** The text is as wide as the printed page's text, at its printed
+  size at 100%. Zoom sets 50% to 200%, or Fit to your window, and is remembered in this browser.
+
+### Changed
+
+- The editor's text keeps the paper white in dark mode, as the page it will print on is.
+
 ## 0.94.0 - 2026-09-27 (PR #280)
 
 ### Added

@@ -14,8 +14,9 @@ choose a paragraph's, a table's and an image's style.
 | ---- | -------------------------------------------------------------------------------------- | ------- |
 | W8.0 | This plan and themes.md's section, claiming STY-070 and CNT-122                        | Build   |
 | W8.1 | `packages/fonts`, coverage as data, the presentation routes, the faces in the renderer | Minor   |
-| W8.2 | The canvas: the whole projection, places, marks, paper, the measure and zoom, images   | Minor   |
-| W8.3 | Choosing a style, the markers, and the default theme 0.4                               | Minor   |
+| W8.2 | The canvas: the whole projection, places, marks, paper, the measure and zoom           | Minor   |
+| W8.3 | Tables and images by their styles                                                      | Minor   |
+| W8.4 | Choosing a style, the markers, and the default theme 0.4                               | Minor   |
 
 **STR-025 is not in W8** (ET-J): it waits on K8, a requirement Ken has to file or decline.
 
@@ -72,7 +73,25 @@ files, and the drift test holds the two to the same files.
 6. **Tests** in jsdom read each element's declared values: block spacing (CNT-082), faces and sizes
    (CNT-097), the measure at each zoom (CNT-115), and a figure's size (CNT-122).
 
-## W8.3: Choosing a style, and what will not resolve
+**W8.2, as built.** Tables and images moved to W8.3 of their own, since the text alone touched the
+projection, the editor's schema, both pages and the read text. The paragraph's markup carries the
+theme's hooks rather than the theme: `data-style` from the paragraph's own attribute, `data-place` from
+a decoration on the surface and from `drawPlaces` on the read text, both from one `paragraphPlaces`,
+`data-role` on what the template sets by role, and `aw-mark-<mark>` on every mark. A block's spacing is
+a transparent border rather than padding, so a paragraph's fill is clipped inside it to its padding.
+The canvas's own two rules - the measure, and scrolling sideways - are injected with the theme's
+rather than imported, so a test in jsdom reads them. Each read-text block is its own canvas, so the
+page's controls around the text keep the application's colours in dark mode.
+
+## W8.3: Tables and images by their styles
+
+1. **Table styles** projected: rules, fills, banding, cell padding and header weight on the surface's
+   tables, from the table's stored style; header repetition, rows kept whole and the continuation label
+   left to preview (STY-037).
+2. **Images** sized by `styledSize` from the asset version's pixels (`GET /v1/asset-versions/{id}`)
+   and the frame, in points times the zoom, a figure and an image in a line alike (CNT-122).
+
+## W8.4: Choosing a style, and what will not resolve
 
 1. **Commands**: `setParagraphStyle`, `setTableStyle`, `setImageStyle` in `packages/editor`, each one
    history step, refusing a style that does not apply where it would stand.

@@ -106,6 +106,12 @@
   background: var(--surface);
 }
 
+/* On the theme's paper, the surface is the paper's: its own fill stands down (themes.md, "The theme
+ * in the editor"). */
+:global(.aw-canvas) > .surface {
+  background: transparent;
+}
+
 .surface:focus-within {
   outline: 2px solid var(--ring);
   outline-offset: -2px;

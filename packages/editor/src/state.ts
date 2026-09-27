@@ -31,6 +31,7 @@ import { imagesUnmarked, marksPastImages } from './images.js';
 import { commandKeymap, spansOf } from './marks.js';
 import type { ReferenceContext } from './referenceText.js';
 import { referenceContextOf, referenceDecorations, referencesPlugin } from './referenceView.js';
+import { placeDecorations } from './places.js';
 
 // A footnote's paragraph is a paragraph to CNT-023 (footnotes 1, ruling R6): the stored model has one
 // paragraph type, and holds two empty ones apart in a footnote as it does anywhere else.
@@ -567,6 +568,8 @@ export function createEditorState(options: EditorStateOptions): EditorState {
             DecorationSet.create(state.doc, [
               ...spellcheckDecorations(state.doc).find(),
               ...placeholderDecorations(state.doc).find(),
+              // Where each paragraph stands, for the theme's rules (themes.md, "The theme in the editor").
+              ...placeDecorations(state.doc).find(),
               ...referenceDecorations(state.doc, referenceContextOf(state)).find(),
             ]),
         },

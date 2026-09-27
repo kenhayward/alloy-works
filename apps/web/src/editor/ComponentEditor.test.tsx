@@ -19,6 +19,9 @@ import { StatusProvider } from '../shell/Status.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { describeEquation } from './speech.js';
 import { designTiming } from './session.js';
+import { ZoomControl } from '../theme/Canvas.js';
+import { PresentationProvider } from '../theme/presentation.js';
+import { DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
 
 shimRangeMeasurement();
 
@@ -5300,5 +5303,127 @@ describe('the component editor opened at a place', () => {
     await waitFor(() => expect(view?.state.selection.$from.parent.attrs['id']).toBe('b1'));
     // The same surface, moved: nothing was opened again.
     expect(view).toBe(first);
+  });
+});
+
+describe('the surface set in the theme\'s type, at the layout\'s measure (themes.md, "The theme in the editor")', () => {
+  /** A component holding running text and a quotation, opened inside the environment's presentation. */
+  async function openInTheme() {
+    const quoted = {
+      ...content('Unbox the printer.'),
+      content: [
+        ...content('Unbox the printer.').content,
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [
+            {
+              type: 'paragraph',
+              id: 'b2',
+              style: 'body',
+              content: [{ type: 'text', value: 'Keep the box.', marks: [] }],
+            },
+          ],
+        },
+      ],
+    };
+    const { client } = service({
+      'GET /v1/components/{id}': () => json(200, opened({ content: quoted })),
+      'GET /v1/presentation': () => json(200, DEFAULT_PRESENTATION),
+    });
+    let view: EditorView | undefined;
+    render(
+      <PresentationProvider client={client}>
+        <ZoomControl />
+        <ComponentEditor
+          componentId={COMPONENT}
+          client={client}
+          principalId={ADA}
+          sessionId={SESSION}
+          timing={quick}
+          onView={(mounted) => (view = mounted)}
+        />
+      </PresentationProvider>,
+    );
+    await screen.findByRole('textbox', { name: 'Content of Install the printer' });
+    await screen.findByLabelText('Title');
+    // The theme arrives beside the component, and the text is set in it once it has.
+    await waitFor(() => expect(document.querySelector('.aw-canvas')).not.toBeNull());
+    const paragraph = (text: string) =>
+      [...view!.dom.querySelectorAll('p')].find((each) => each.textContent === text)!;
+    return { view: view!, paragraph };
+  }
+
+  afterEach(() => {
+    try {
+      window.localStorage.clear();
+    } catch {
+      // Storage refused: nothing was kept.
+    }
+  });
+
+  it("CNT-097 sets the surface's text in the theme's own face, loaded from the renderer, at the size the theme declares", async () => {
+    const { paragraph } = await openInTheme();
+    const running = getComputedStyle(paragraph('Unbox the printer.'));
+    expect(running.fontFamily).toBe('"aw-face-serif"');
+    expect(running.fontSize).toBe('calc(11pt * var(--aw-zoom))');
+    // The face it names is declared from the pinned file, never a face of that name on the machine.
+    expect(document.querySelector('style[data-aw-faces]')?.textContent).toContain(
+      '@font-face { font-family: "aw-face-serif"',
+    );
+  });
+
+  it("CNT-082 separates the surface's blocks by the theme's spacing, a paragraph in a quotation by the quotation's", async () => {
+    const { paragraph } = await openInTheme();
+    // The body: nothing before, 2.75pt after, added to the next block's space before.
+    expect(
+      getComputedStyle(paragraph('Unbox the printer.')).getPropertyValue('border-block-width'),
+    ).toBe('0 calc(2.75pt * var(--aw-zoom))');
+    // A stored body in a quotation is the quotation's default: 16.5pt before, 12.65pt after, and set
+    // in from both sides by 11pt.
+    const quoted = getComputedStyle(paragraph('Keep the box.'));
+    expect(quoted.getPropertyValue('border-block-width')).toBe(
+      'calc(16.5pt * var(--aw-zoom)) calc(12.65pt * var(--aw-zoom))',
+    );
+    expect(quoted.getPropertyValue('margin-inline')).toBe(
+      'calc(11pt * var(--aw-zoom)) calc(11pt * var(--aw-zoom))',
+    );
+  });
+
+  it("CNT-115 sets the surface at the layout's measure, scaled by the zoom a reader chooses and keeps", async () => {
+    const { view } = await openInTheme();
+    const canvas = view.dom.closest('.aw-canvas') as HTMLElement;
+    expect(canvas.style.getPropertyValue('--aw-measure')).toBe('451.28pt');
+    expect(canvas.style.getPropertyValue('--aw-zoom')).toBe('1');
+    expect(getComputedStyle(view.dom).width).toBe('calc(var(--aw-measure) * var(--aw-zoom))');
+
+    await userEvent.selectOptions(screen.getByLabelText('Zoom'), '150%');
+    expect(canvas.style.getPropertyValue('--aw-zoom')).toBe('1.5');
+    // Kept for this reader: the next page opened is at the same zoom.
+    cleanup();
+    const again = await openInTheme();
+    expect(
+      (again.view.dom.closest('.aw-canvas') as HTMLElement).style.getPropertyValue('--aw-zoom'),
+    ).toBe('1.5');
+    expect(screen.getByLabelText('Zoom')).toHaveValue('1.5');
+  });
+
+  it('leaves the text as it was where no presentation arrives', async () => {
+    const { client } = service({ 'GET /v1/components/{id}': () => json(200, opened()) });
+    let view: EditorView | undefined;
+    render(
+      <PresentationProvider client={client}>
+        <ComponentEditor
+          componentId={COMPONENT}
+          client={client}
+          principalId={ADA}
+          sessionId={SESSION}
+          timing={quick}
+          onView={(mounted) => (view = mounted)}
+        />
+      </PresentationProvider>,
+    );
+    await screen.findByLabelText('Title');
+    expect(view!.dom.closest('.aw-canvas')).toBeNull();
   });
 });

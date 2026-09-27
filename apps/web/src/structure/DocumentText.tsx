@@ -26,6 +26,7 @@ import { textOffsetIn } from '../editor/caret.js';
 import { Lozenge } from '../states/Lozenge.js';
 import styles from './DocumentText.module.css';
 import { nodeName, titleText, type Names } from './tree.js';
+import { parentRoom, useCanvas } from '../theme/Canvas.js';
 
 /** What the text knows of an occurrence's contributions until the page has heard: nothing. */
 const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
@@ -155,6 +156,9 @@ function RenderedText({
   onOpen?: (openAt: number) => void;
 }) {
   const place = useRef<HTMLDivElement>(null);
+  // Each component's text is its own paper, set as the editing surface sets it (themes.md, "The theme
+  // in the editor"), so a page's controls around it keep the application's own colours.
+  const canvas = useCanvas(parentRoom, place);
   const rendered = useMemo(() => renderContent(content, document, context), [content, context]);
   useEffect(() => {
     const host = place.current;
@@ -163,11 +167,13 @@ function RenderedText({
     return () => host.replaceChildren();
   }, [rendered]);
   if (rendered === null) return <p className={styles['cannot']}>{CANNOT_SHOW}</p>;
-  if (!onOpen) return <div ref={place} className={`${styles['body']} ${TEXT_CLASS}`} />;
+  const classes = [styles['body'], TEXT_CLASS, canvas.className].filter(Boolean).join(' ');
+  if (!onOpen) return <div ref={place} className={classes} style={canvas.style} />;
   return (
     <div
       ref={place}
-      className={`${styles['body']} ${TEXT_CLASS}`}
+      className={classes}
+      style={canvas.style}
       data-opens="true"
       tabIndex={0}
       title="Click to edit"

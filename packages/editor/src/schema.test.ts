@@ -77,7 +77,7 @@ describe('the editor schema', () => {
     // `toDOM` cannot see. It is a decoration recomputed from the document (CNT-147, `state.ts`).
     expect(editorSchema.marks.language!.spec.toDOM!(mark, true)).toEqual([
       'span',
-      { lang: 'fr-CA', class: 'aw-language', 'data-mark-id': 'm1' },
+      { lang: 'fr-CA', class: 'aw-language aw-mark-language', 'data-mark-id': 'm1' },
       0,
     ]);
   });
@@ -93,6 +93,7 @@ describe('the editor schema', () => {
       {
         href: 'https://example.test/report',
         title: 'The quarterly report',
+        class: 'aw-mark-hyperlink',
         'data-mark-id': 'm2',
       },
       0,
@@ -100,7 +101,7 @@ describe('the editor schema', () => {
     const bare = editorSchema.mark('hyperlink', { id: 'm3', href: 'mailto:ada@example.test' });
     expect(editorSchema.marks.hyperlink!.spec.toDOM!(bare, true)).toEqual([
       'a',
-      { href: 'mailto:ada@example.test', 'data-mark-id': 'm3' },
+      { href: 'mailto:ada@example.test', class: 'aw-mark-hyperlink', 'data-mark-id': 'm3' },
       0,
     ]);
   });
@@ -108,16 +109,44 @@ describe('the editor schema', () => {
   it('renders every other mark as its own element, carrying the identifier', () => {
     const rendered = (name: string, attrs: Record<string, string>) =>
       editorSchema.marks[name]!.spec.toDOM!(editorSchema.mark(name, attrs), true);
-    expect(rendered('emphasis', { id: 'm1' })).toEqual(['em', { 'data-mark-id': 'm1' }, 0]);
-    expect(rendered('strong', { id: 'm2' })).toEqual(['strong', { 'data-mark-id': 'm2' }, 0]);
-    expect(rendered('underline', { id: 'm3' })).toEqual(['u', { 'data-mark-id': 'm3' }, 0]);
-    expect(rendered('subscript', { id: 'm4' })).toEqual(['sub', { 'data-mark-id': 'm4' }, 0]);
-    expect(rendered('superscript', { id: 'm5' })).toEqual(['sup', { 'data-mark-id': 'm5' }, 0]);
-    expect(rendered('inlineCode', { id: 'm6' })).toEqual(['code', { 'data-mark-id': 'm6' }, 0]);
-    expect(rendered('quotedPhrase', { id: 'm7' })).toEqual(['q', { 'data-mark-id': 'm7' }, 0]);
+    expect(rendered('emphasis', { id: 'm1' })).toEqual([
+      'em',
+      { class: 'aw-mark-emphasis', 'data-mark-id': 'm1' },
+      0,
+    ]);
+    expect(rendered('strong', { id: 'm2' })).toEqual([
+      'strong',
+      { class: 'aw-mark-strong', 'data-mark-id': 'm2' },
+      0,
+    ]);
+    expect(rendered('underline', { id: 'm3' })).toEqual([
+      'u',
+      { class: 'aw-mark-underline', 'data-mark-id': 'm3' },
+      0,
+    ]);
+    expect(rendered('subscript', { id: 'm4' })).toEqual([
+      'sub',
+      { class: 'aw-mark-subscript', 'data-mark-id': 'm4' },
+      0,
+    ]);
+    expect(rendered('superscript', { id: 'm5' })).toEqual([
+      'sup',
+      { class: 'aw-mark-superscript', 'data-mark-id': 'm5' },
+      0,
+    ]);
+    expect(rendered('inlineCode', { id: 'm6' })).toEqual([
+      'code',
+      { class: 'aw-mark-inlineCode', 'data-mark-id': 'm6' },
+      0,
+    ]);
+    expect(rendered('quotedPhrase', { id: 'm7' })).toEqual([
+      'q',
+      { class: 'aw-mark-quotedPhrase', 'data-mark-id': 'm7' },
+      0,
+    ]);
     expect(rendered('definedTerm', { id: 'm8', term: 'toner' })).toEqual([
       'dfn',
-      { 'data-term': 'toner', 'data-mark-id': 'm8' },
+      { 'data-term': 'toner', class: 'aw-mark-definedTerm', 'data-mark-id': 'm8' },
       0,
     ]);
   });
@@ -374,7 +403,10 @@ describe('the editor stylesheet', () => {
       const attrs = Object.fromEntries(Object.keys(type.spec.attrs ?? {}).map((key) => [key, 'x']));
       const mark = type.create(attrs);
       const [tag, domAttrs] = type.spec.toDOM!(mark, true) as [string, Record<string, string>, 0];
-      if (typeof domAttrs.class === 'string') return `.${domAttrs.class}`;
+      // Its own class, where it has one: never the `aw-mark-` class every mark carries for the theme,
+      // which the theme's rules style and this stylesheet does not.
+      const own = domAttrs.class?.split(' ').find((each) => !each.startsWith('aw-mark-'));
+      if (own !== undefined) return `.${own}`;
       if ('href' in domAttrs) return `${tag}[href]`;
       return tag;
     };
@@ -478,11 +510,15 @@ describe('quotations and preformatted text in the editor schema (editor 5)', () 
     const labelled = editorSchema.node('preformatted', { id: 'p1', language: 'sql' });
     expect(editorSchema.nodes.preformatted.spec.toDOM!(labelled)).toEqual([
       'pre',
-      { 'data-language': 'sql' },
+      { 'data-role': 'preformatted', 'data-language': 'sql' },
       ['code', 0],
     ]);
     const bare = editorSchema.node('preformatted', { id: 'p2' });
-    expect(editorSchema.nodes.preformatted.spec.toDOM!(bare)).toEqual(['pre', {}, ['code', 0]]);
+    expect(editorSchema.nodes.preformatted.spec.toDOM!(bare)).toEqual([
+      'pre',
+      { 'data-role': 'preformatted' },
+      ['code', 0],
+    ]);
     const quoted = editorSchema.node('blockquote', { id: 'q1' }, [
       editorSchema.node('paragraph', { id: 'b1' }),
     ]);
@@ -490,7 +526,7 @@ describe('quotations and preformatted text in the editor schema (editor 5)', () 
     const attribution = editorSchema.node('attribution');
     expect(editorSchema.nodes.attribution.spec.toDOM!(attribution)).toEqual([
       'footer',
-      { class: 'aw-attribution' },
+      { class: 'aw-attribution', 'data-role': 'attribution' },
       0,
     ]);
   });

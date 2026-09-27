@@ -39,6 +39,8 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
 import { byName } from '../metadata/people.js';
+import { ZoomControl } from '../theme/Canvas.js';
+import { PresentationProvider } from '../theme/presentation.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -812,140 +814,145 @@ export function DocumentPage({
   const { document } = loaded;
   const ids = tabIds(tab);
   return (
-    <article aria-labelledby="document-title" className={styles['page']}>
-      {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
-      {document.scheme === null && <p>This document's numbering could not be read.</p>}
-      <div
-        className={styles['layout']}
-        data-collapsed={outlinePane.collapsed}
-        style={{ '--outline-width': `${outlinePane.width}px` } as React.CSSProperties}
-      >
-        {outlinePane.collapsed && <OutlineRail pane={outlinePane} chosen={tab} />}
-        <OutlinePanel
-          outline={document.outline}
-          head={
-            // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
-            outlinePane.collapsed ? null : (
-              <OutlineTabs pane={outlinePane} chosen={tab} onChoose={chooseTab} />
-            )
-          }
-          tab={ids}
-          root={
-            // The document itself, as the tree's root: its title - the page's heading - and its
-            // version number. The space is said in the status bar.
-            <div className={styles['root']}>
-              <span className={styles['folder']}>
-                <Icon name="Folder" size={14} />
-              </span>
-              <h2 id="document-title" className={styles['title']}>
-                {document.outline.title}
-              </h2>
-              <span className={styles['number']}>{document.version.number}</span>
+    // Set in the theme and layout this document publishes under, its own and its components' text alike
+    // (themes.md, "The theme in the editor", ET-A).
+    <PresentationProvider client={client} document={document.id}>
+      <article aria-labelledby="document-title" className={styles['page']}>
+        {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
+        <ZoomControl />
+        {document.scheme === null && <p>This document's numbering could not be read.</p>}
+        <div
+          className={styles['layout']}
+          data-collapsed={outlinePane.collapsed}
+          style={{ '--outline-width': `${outlinePane.width}px` } as React.CSSProperties}
+        >
+          {outlinePane.collapsed && <OutlineRail pane={outlinePane} chosen={tab} />}
+          <OutlinePanel
+            outline={document.outline}
+            head={
+              // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
+              outlinePane.collapsed ? null : (
+                <OutlineTabs pane={outlinePane} chosen={tab} onChoose={chooseTab} />
+              )
+            }
+            tab={ids}
+            root={
+              // The document itself, as the tree's root: its title - the page's heading - and its
+              // version number. The space is said in the status bar.
+              <div className={styles['root']}>
+                <span className={styles['folder']}>
+                  <Icon name="Folder" size={14} />
+                </span>
+                <h2 id="document-title" className={styles['title']}>
+                  {document.outline.title}
+                </h2>
+                <span className={styles['number']}>{document.version.number}</span>
+              </div>
+            }
+            scheme={document.scheme}
+            editable={document.mayEdit}
+            sectionFields={document.fields.section}
+            schemas={document.schemas}
+            people={people}
+            busy={busy}
+            onOperation={(operation) => apply(operation, false)}
+            notice={notice}
+            onNotice={setNotice}
+            canUndo={undo.length > 0}
+            refusals={refusals}
+            signedOuts={signedOuts}
+            onUndo={async () => {
+              const top = undo[undo.length - 1];
+              return top === undefined ? 'unsent' : apply(top, true);
+            }}
+            names={names}
+            components={components}
+            onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
+            linked={linked}
+            linkOf={(node) =>
+              `${window.location.origin}${window.location.pathname}${nodeLink(document.id, node)}`
+            }
+            onSelected={(node) => {
+              // The address follows what is chosen, without a history entry per arrow key and without a
+              // `hashchange`, so a reload or a copy of the address comes back to it.
+              window.history.replaceState(window.history.state, '', nodeLink(document.id, node));
+            }}
+          />
+          {!outlinePane.collapsed && (
+            <div className={styles['separator']}>
+              <PaneSeparator label="outline" pane={outlinePane} />
             </div>
-          }
-          scheme={document.scheme}
-          editable={document.mayEdit}
-          sectionFields={document.fields.section}
-          schemas={document.schemas}
-          people={people}
-          busy={busy}
-          onOperation={(operation) => apply(operation, false)}
-          notice={notice}
-          onNotice={setNotice}
-          canUndo={undo.length > 0}
-          refusals={refusals}
-          signedOuts={signedOuts}
-          onUndo={async () => {
-            const top = undo[undo.length - 1];
-            return top === undefined ? 'unsent' : apply(top, true);
-          }}
-          names={names}
-          components={components}
-          onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
-          linked={linked}
-          linkOf={(node) =>
-            `${window.location.origin}${window.location.pathname}${nodeLink(document.id, node)}`
-          }
-          onSelected={(node) => {
-            // The address follows what is chosen, without a history entry per arrow key and without a
-            // `hashchange`, so a reload or a copy of the address comes back to it.
-            window.history.replaceState(window.history.state, '', nodeLink(document.id, node));
-          }}
-        />
-        {!outlinePane.collapsed && (
-          <div className={styles['separator']}>
-            <PaneSeparator label="outline" pane={outlinePane} />
-          </div>
-        )}
-        <div className={styles['text']}>
-          <DocumentText
-            outline={document.outline}
-            scheme={document.scheme}
-            words={document.words}
-            names={names}
-            texts={texts}
-            editable={editable}
-            // What each occurrence holds, as the lists beside it number it: what a reference in the
-            // text, and in the editor opened in place, is numbered from (cross-references 1). The
-            // editor takes its context through its place, and is told again as this is read again.
-            {...(known.state === 'loaded' ? { contributions: known.contributions } : {})}
-            editing={editing}
-            {...(principalId === undefined
-              ? {}
-              : {
-                  onEdit: (node: string | null) => {
-                    setEditing(node);
-                    // Closing reads the text again, so the card shows what was saved.
-                    if (node === null) setTextsAttempt((count) => count + 1);
-                  },
-                  editor: (component: string, place: Place) => (
-                    <ComponentEditor
-                      key={component}
-                      componentId={component}
-                      client={client}
-                      principalId={principalId}
-                      {...place}
-                    />
-                  ),
-                })}
-          />
-        </div>
-        <div className={styles['side']}>
-          {/* What the document's template asks of the document itself, filled in and checked as it
-              is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
-          {document.fields.document.length > 0 && (
-            <HeldFields
-              label="Fields of this document"
-              fields={document.fields.document}
-              schemas={document.schemas}
-              people={people}
-              stored={document.values}
-              readOnly={!document.mayEdit}
-              onSave={saveValues}
-            />
           )}
-          <GeneratedLists
-            document={document.id}
-            outline={document.outline}
-            scheme={document.scheme}
-            known={known}
-            names={names}
-            onRetry={() => setKnownAttempt((count) => count + 1)}
-            onArriveAgain={onArriveAgain}
-          />
-          <Publishing
-            client={client}
-            document={document.id}
-            version={document.version.id}
-            mayPublish={document.mayPublish}
-            placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
-            followMs={followMs}
-            formats={document.formats}
-          />
+          <div className={styles['text']}>
+            <DocumentText
+              outline={document.outline}
+              scheme={document.scheme}
+              words={document.words}
+              names={names}
+              texts={texts}
+              editable={editable}
+              // What each occurrence holds, as the lists beside it number it: what a reference in the
+              // text, and in the editor opened in place, is numbered from (cross-references 1). The
+              // editor takes its context through its place, and is told again as this is read again.
+              {...(known.state === 'loaded' ? { contributions: known.contributions } : {})}
+              editing={editing}
+              {...(principalId === undefined
+                ? {}
+                : {
+                    onEdit: (node: string | null) => {
+                      setEditing(node);
+                      // Closing reads the text again, so the card shows what was saved.
+                      if (node === null) setTextsAttempt((count) => count + 1);
+                    },
+                    editor: (component: string, place: Place) => (
+                      <ComponentEditor
+                        key={component}
+                        componentId={component}
+                        client={client}
+                        principalId={principalId}
+                        {...place}
+                      />
+                    ),
+                  })}
+            />
+          </div>
+          <div className={styles['side']}>
+            {/* What the document's template asks of the document itself, filled in and checked as it
+              is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
+            {document.fields.document.length > 0 && (
+              <HeldFields
+                label="Fields of this document"
+                fields={document.fields.document}
+                schemas={document.schemas}
+                people={people}
+                stored={document.values}
+                readOnly={!document.mayEdit}
+                onSave={saveValues}
+              />
+            )}
+            <GeneratedLists
+              document={document.id}
+              outline={document.outline}
+              scheme={document.scheme}
+              known={known}
+              names={names}
+              onRetry={() => setKnownAttempt((count) => count + 1)}
+              onArriveAgain={onArriveAgain}
+            />
+            <Publishing
+              client={client}
+              document={document.id}
+              version={document.version.id}
+              mayPublish={document.mayPublish}
+              placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
+              followMs={followMs}
+              formats={document.formats}
+            />
+          </div>
         </div>
-      </div>
-      {status === null && <StatusBar notice={notice} context={context} />}
-    </article>
+        {status === null && <StatusBar notice={notice} context={context} />}
+      </article>
+    </PresentationProvider>
   );
 }
 
