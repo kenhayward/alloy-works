@@ -15376,6 +15376,39 @@
       ]
     },
     {
+      "document": "definitions.md",
+      "owns": [
+        {
+          "id": "MET-041",
+          "howItIsMet": "A field, a schema and a component type are each made at 0.1 by `createArtifact` and changed only by `recordVersion` from the version the caller opened; no route changes a stored version, and the chain's grant refuses it anyway"
+        },
+        {
+          "id": "MET-031",
+          "howItIsMet": "`definition_name` holds one row per definition: its kind and its name folded for comparison, unique per kind; making one and renaming one write it in the same transaction, and a name taken is refused, `definition_name_taken`, naming the definition that holds it"
+        },
+        {
+          "id": "MET-008",
+          "howItIsMet": "A component type's version is refused where two schemas it assigns disagree about a field's default, `assignment_conflict`, naming the field and both schemas, by `checkAssignment`; a template's is refused the same way already, by `resolveTemplate`'s `conflict` ([templates.md](templates.md))"
+        },
+        {
+          "id": "MET-040",
+          "howItIsMet": "An assignment names a schema and never a version of it, so it always takes the latest. A schema's next version is refused where its default for a field would differ from that of a schema applied beside it at any place - every component type and every template level assigning both, at their latest versions - `schema_conflict`, naming the field, the other schema and every such place"
+        },
+        {
+          "id": "MET-037",
+          "howItIsMet": "A field's next version is refused where it would make any schema's default for it invalid - every schema grouping the field, at its latest version, checked by `checkSchema` against the candidate field - `field_breaks_default`, naming the field, each schema and its default"
+        },
+        {
+          "id": "MET-021",
+          "howItIsMet": "The metadata panel beside a component, and the fields of a document and of the selected section on the document's page, run `validate` on every change against the fields that apply there, each failure shown beside its field and announced, and none of it blocks a save"
+        },
+        {
+          "id": "MET-023",
+          "howItIsMet": "A publication request validates every component version it resolves against the definition versions that version recorded (MET-017), and each failure is recorded against its node as the request's own, `component_metadata_invalid`, so the publication fails naming the component and the field. Cutting a version validates nothing"
+        }
+      ]
+    },
+    {
       "document": "metadata.md",
       "owns": [
         {
