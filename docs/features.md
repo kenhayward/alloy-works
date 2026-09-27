@@ -437,6 +437,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   asks which is meant. What you type is saved with the text. Development's General holds a Procedure,
   **Calibrate the scanner**, to try it on.
 
+- **A document's fields and its sections', on its page.** A document made from a template shows the
+  fields its template asks of the document in the page's side column, and a chosen section's beside
+  its title and settings in the outline panel, with the same inputs and the same checks as a
+  component's. Each is saved a moment after you stop typing, as the document's next version.
+
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath
   its outline, and before it a choice of **PDF**, **Word** or **PDF and Word**, PDF unless they choose

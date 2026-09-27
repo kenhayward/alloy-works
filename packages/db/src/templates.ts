@@ -284,6 +284,8 @@ export type DocumentRules =
       readonly definition: TemplateDefinition;
       readonly changes: TemplateDefinition['changes'];
       readonly resolved: ResolvedTemplate;
+      /** The schemas it assigns, at their latest versions, as far as they were found: for naming. */
+      readonly schemas: readonly MetadataSchemaDefinition[];
     };
 
 export async function documentRules(
@@ -292,11 +294,13 @@ export async function documentRules(
 ): Promise<DocumentRules> {
   const bound = await boundBy(trx, documentId);
   if (!bound) return { bound: false };
+  const references = await templateReferences(trx, bound);
   return {
     bound: true,
     definition: bound,
     changes: bound.changes,
-    resolved: resolveTemplate(bound, await templateReferences(trx, bound)),
+    resolved: resolveTemplate(bound, references),
+    schemas: references.schemas,
   };
 }
 

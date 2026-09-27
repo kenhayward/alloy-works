@@ -4,7 +4,7 @@ import {
   storableEverywhere,
 } from '@alloy-works/domain';
 import { z } from 'zod';
-import { CreateComponentBody, Lock, SpaceParams, VersionSummary } from './components.js';
+import { CreateComponentBody, FieldView, Lock, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 import { TemplateRefusal } from './templates.js';
@@ -95,6 +95,15 @@ export const DocumentView = z.object({
     .describe(
       "The latest version's own field values, by field identifier: empty for a document with no template",
     ),
+  fields: z
+    .object({ document: z.array(FieldView), section: z.array(FieldView) })
+    .describe(
+      "The fields the document's template applies to the document and to each of its sections, at the " +
+        'current definitions; none for a document made blank, or whose template no longer resolves',
+    ),
+  schemas: z
+    .array(z.object({ id: z.string(), name: z.string() }))
+    .describe('The schemas behind those fields, by name, for naming which require or fix one'),
   template: z
     .object({
       id: z.string(),

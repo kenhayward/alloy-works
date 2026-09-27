@@ -9,6 +9,7 @@ import type {
 import {
   createDocument,
   documentLayout,
+  documentRules,
   documentTemplate,
   editOutline,
   listReadableDocuments,
@@ -42,7 +43,7 @@ import {
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
-import { lockView, versionView } from './components.js';
+import { fieldViews, lockView, versionView } from './components.js';
 import type { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
@@ -81,6 +82,26 @@ async function outlineView(
 }
 
 /**
+ * The fields a document's template applies to it and to its sections, at the current definitions
+ * (definitions.md, "A document's and a section's"), with the schemas behind them by name: read through
+ * the document, as a component's are through it. None for a blank document, and none while its
+ * template does not resolve, since then there is nothing to check a value against.
+ */
+async function documentFields(viewer: Viewer, document: string) {
+  const rules = await documentRules(viewer.trx, document);
+  if (!rules.bound || !rules.resolved.ok) {
+    return { fields: { document: [], section: [] }, schemas: [] };
+  }
+  return {
+    fields: {
+      document: fieldViews(rules.resolved.document),
+      section: fieldViews(rules.resolved.section),
+    },
+    schemas: rules.schemas.map((each) => ({ id: each.id, name: each.name })),
+  };
+}
+
+/**
  * The template a document was made from, at the version it was made from (TPL-025), named as that
  * version names it - or null for a blank document, and for a template this viewer may not read, which
  * access.md makes indistinguishable from none.
@@ -116,10 +137,12 @@ async function templateView(viewer: Viewer, document: string): Promise<DocumentV
  * an answer. **Never a fallback to the product's default scheme** - that
  * would show numbers no publish could produce, which is the one thing this is here to prevent.
  *
- * The read costs four indexed reads and a parse on every document answer - the declaration, the
- * latest version's id, its row, and its definitions - measured at one to two milliseconds. It is not
- * cached: a layout may be revised between two requests, and a page showing numbers from a scheme that
- * has since moved would be showing numbers that will not publish.
+ * The layout costs four indexed reads and a parse on every document answer - the declaration, the
+ * latest version's id, its row, and its definitions - measured at one to two milliseconds before
+ * templates. A document made from a template adds the read of its link and its template version for
+ * the layout, again for its fields, and its schemas' and fields' latest versions (W5.4); none of it is
+ * cached: a layout, a template or a field may be revised between two requests, and a page showing
+ * numbers or fields that have since moved would show what no publish or save would use.
  */
 async function documentView(
   viewer: Viewer,
@@ -133,6 +156,7 @@ async function documentView(
     version: versionView(version),
     outline: await outlineView(viewer, document.id, version),
     values: { ...version.values },
+    ...(await documentFields(viewer, document.id)),
     template: await templateView(viewer, document.id),
     mayEdit: viewer.mayEdit,
     mayPublish: viewer.mayPublish,

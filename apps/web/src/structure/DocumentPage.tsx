@@ -1,3 +1,4 @@
+import type { FieldView } from '@alloy-works/api-client';
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import {
   conditions,
@@ -36,6 +37,7 @@ import {
 import { inverseOf, nodeName, placeOf, visibleOrder, type Names } from './tree.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
+import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -74,9 +76,23 @@ interface Opened {
    * where the view names none, as a view from before Word did not.
    */
   readonly formats: readonly string[];
+  /**
+   * The fields its template applies to it and to each of its sections, the schemas behind them, and
+   * its own values (definitions.md, "A document's and a section's"): none for a blank document.
+   */
+  readonly fields: {
+    readonly document: readonly FieldView[];
+    readonly section: readonly FieldView[];
+  };
+  readonly schemas: readonly { readonly id: string; readonly name: string }[];
+  readonly values: Readonly<Record<string, unknown>>;
 }
 
 type Read = Opened | 'unreadable' | undefined;
+
+/** A view's list of fields, as the service draws them: trusted in shape, as `FieldsForm` reads it. */
+const fieldsIn = (value: unknown): readonly FieldView[] =>
+  Array.isArray(value) ? (value.filter(isRecord) as unknown as FieldView[]) : [];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -89,7 +105,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 function documentIn(data: unknown): Read {
   if (!isRecord(data)) return undefined;
-  const { id, space, version, outline, mayEdit, mayPublish, layout } = data;
+  const { id, space, version, outline, mayEdit, mayPublish, layout, fields, schemas, values } =
+    data;
   if (typeof id !== 'string' || typeof mayEdit !== 'boolean' || typeof mayPublish !== 'boolean') {
     return undefined;
   }
@@ -126,6 +143,17 @@ function documentIn(data: unknown): Read {
       isRecord(layout) && Array.isArray(layout.formats)
         ? layout.formats.filter((format): format is string => typeof format === 'string')
         : ['pdf'],
+    fields: {
+      document: isRecord(fields) ? fieldsIn(fields.document) : [],
+      section: isRecord(fields) ? fieldsIn(fields.section) : [],
+    },
+    schemas: Array.isArray(schemas)
+      ? schemas.filter(
+          (each): each is { id: string; name: string } =>
+            isRecord(each) && typeof each.id === 'string' && typeof each.name === 'string',
+        )
+      : [],
+    values: isRecord(values) ? values : {},
   };
 }
 
@@ -214,6 +242,15 @@ function componentsIn(items: readonly unknown[]): ComponentChoice[] {
  * which the author cannot correct and trying again cannot fix.
  */
 function doesNotApply(refusal: unknown): string {
+  // A section's value refused (definitions.md): the service's own sentence says which kind of thing
+  // did not fit, and is one of its fixed messages, never an exception's text.
+  if (
+    isRecord(refusal) &&
+    (refusal.code === 'values_invalid' || refusal.code === 'values_unresolved') &&
+    typeof refusal.message === 'string'
+  ) {
+    return refusal.message;
+  }
   if (!isRecord(refusal) || refusal.code !== 'outline_invalid') {
     return 'The change could not be made.';
   }
@@ -523,12 +560,86 @@ export function DocumentPage({
   );
 
   const opened = loaded.state === 'open' ? loaded.document : null;
+  // Who a `user` field may name, read only where a field of the document or its sections is one.
+  const [people, setPeople] = useState<readonly { id: string; name: string }[]>([]);
+  const wantsPeople =
+    opened !== null &&
+    [...opened.fields.document, ...opened.fields.section].some((each) => each.dataType === 'user');
+  useEffect(() => {
+    if (!wantsPeople) return;
+    let current = true;
+    client
+      .GET('/v1/people')
+      .then(({ data }) => {
+        if (current && data) setPeople(data.items);
+      })
+      .catch(() => {});
+    return () => {
+      current = false;
+    };
+  }, [client, wantsPeople]);
 
   /** Shows a document, and remembers it as the latest one the page holds (written only here). */
   const show = useCallback((document: Opened) => {
     latest.current = document;
     setLoaded({ state: 'open', document });
   }, []);
+
+  /**
+   * The document's own values, whole, as its next version with the outline unchanged
+   * (definitions.md): one act at a time, as an outline act is, and told the same way when somebody
+   * else moved first.
+   */
+  const saveValues = useCallback(
+    async (next: Record<string, unknown>): Promise<SaveAnswer> => {
+      if (pending.current || opened === null) return 'unsent';
+      const before = latest.current ?? opened;
+      pending.current = true;
+      setBusy(true);
+      try {
+        const { data, error, response } = await client.PUT('/v1/documents/{id}/values', {
+          params: { path: { id } },
+          body: { openedFrom: before.version.id, values: next },
+        });
+        const after = documentIn(data);
+        if (after !== undefined && after !== 'unreadable') {
+          show(after);
+          setNotice(null);
+          return 'saved';
+        }
+        if (response.status === 409) {
+          const refusal: unknown = error;
+          const current = documentIn(isRecord(refusal) ? refusal.current : undefined);
+          if (current !== undefined && current !== 'unreadable') show(current);
+          else setAttempt((count) => count + 1);
+          setNotice(SOMEBODY_ELSE);
+          return 'refused';
+        }
+        if (response.status === 401) {
+          setSignedOuts((count) => count + 1);
+          setNotice('You are signed out. Sign in again to change this document.');
+          return 'refused';
+        }
+        if (response.status === 400 || response.status === 403 || response.status === 404) {
+          setNotice(
+            isRecord(error) && typeof error.message === 'string'
+              ? error.message
+              : 'The fields could not be saved.',
+          );
+          return 'refused';
+        }
+        setNotice('The fields were not saved. Try again.');
+        return 'unsent';
+      } catch {
+        setNotice('The fields were not saved. Try again.');
+        return 'unsent';
+      } finally {
+        pending.current = false;
+        setBusy(false);
+      }
+    },
+    [client, id, opened, show],
+  );
 
   const apply = useCallback(
     async (operation: OutlineOperation, undoing: boolean): Promise<Answered> => {
@@ -729,6 +840,9 @@ export function DocumentPage({
           }
           scheme={document.scheme}
           editable={document.mayEdit}
+          sectionFields={document.fields.section}
+          schemas={document.schemas}
+          people={people}
           busy={busy}
           onOperation={(operation) => apply(operation, false)}
           notice={notice}
@@ -792,6 +906,19 @@ export function DocumentPage({
           />
         </div>
         <div className={styles['side']}>
+          {/* What the document's template asks of the document itself, filled in and checked as it
+              is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
+          {document.fields.document.length > 0 && (
+            <HeldFields
+              label="Fields of this document"
+              fields={document.fields.document}
+              schemas={document.schemas}
+              people={people}
+              stored={document.values}
+              readOnly={!document.mayEdit}
+              onSave={saveValues}
+            />
+          )}
           <GeneratedLists
             document={document.id}
             outline={document.outline}
