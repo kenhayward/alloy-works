@@ -10,8 +10,13 @@ import {
   FIRST_DEFAULT_CATALOGUES_BY_VERSION,
   FIRST_DEFAULT_CATALOGUE_VERSIONS,
   FIRST_DEFAULT_THEME,
+  SECOND_DEFAULT_CATALOGUES,
+  SECOND_DEFAULT_CATALOGUES_BY_VERSION,
+  SECOND_DEFAULT_CATALOGUE_VERSIONS,
   SECOND_DEFAULT_THEME,
   SECOND_DEFAULT_THEME_VERSION,
+  THIRD_DEFAULT_THEME,
+  THIRD_DEFAULT_THEME_VERSION,
 } from './default.js';
 import { readTheme, type ResolvedTheme } from './read.js';
 import { CATALOGUE_KINDS } from './schema.js';
@@ -128,56 +133,52 @@ describe('the default theme', () => {
     expect(face('serif').advance).toBeUndefined();
   });
 
-  it("states template 12's look for its one table style: ruled 1pt black inside and out, padded 5pt, the header repeated and nothing else", () => {
+  it("states template 12's look for its table style `table`: ruled 1pt black inside and out, padded 5pt, the header repeated and nothing else", () => {
     // Themes 2, ruling R3. No continuation label: measured in the design, one leaves an empty header
     // cell in the structure tree on a table's first page, which is a cost a theme should choose.
-    expect(DEFAULT_CATALOGUES.table).toEqual({
-      schemaVersion: 2,
-      kind: 'table',
-      styles: [
-        {
-          id: 'table',
-          name: 'Table',
-          appliesTo: ['table'],
-          headerRow: { fill: 'none', bold: false, rule: 'none' },
-          headerColumn: { fill: 'none', bold: false, rule: 'none' },
-          banding: { fill: 'none' },
-          rules: {
-            outer: { width: 1, colour: '#000000' },
-            horizontal: { width: 1, colour: '#000000' },
-            vertical: { width: 1, colour: '#000000' },
-          },
-          padding: 5,
-          breaks: { repeatHeader: true, keepRowsWhole: false, continuationLabel: false },
+    expect(DEFAULT_CATALOGUES.table).toMatchObject({ schemaVersion: 2, kind: 'table' });
+    expect(DEFAULT_CATALOGUES.table.styles.filter((each) => each.id === 'table')).toEqual([
+      {
+        id: 'table',
+        name: 'Table',
+        appliesTo: ['table'],
+        headerRow: { fill: 'none', bold: false, rule: 'none' },
+        headerColumn: { fill: 'none', bold: false, rule: 'none' },
+        banding: { fill: 'none' },
+        rules: {
+          outer: { width: 1, colour: '#000000' },
+          horizontal: { width: 1, colour: '#000000' },
+          vertical: { width: 1, colour: '#000000' },
         },
-      ],
-    });
+        padding: 5,
+        breaks: { repeatHeader: true, keepRowsWhole: false, continuationLabel: false },
+      },
+    ]);
   });
 
   it("states today's image rules: a figure the measure wide at most 60 per cent of the text block high, centred; an inline image 1.2 ems high at most the measure wide", () => {
-    expect(DEFAULT_CATALOGUES.image).toEqual({
-      schemaVersion: 2,
-      kind: 'image',
-      styles: [
-        {
-          id: 'figure',
-          name: 'Figure',
-          appliesTo: ['figure'],
-          fixed: { dimension: 'width', value: 1, unit: 'measure' },
-          maximum: { value: 0.6, unit: 'textHeight' },
-          placement: 'block',
-          alignment: 'centre',
-        },
-        {
-          id: 'inline',
-          name: 'Inline image',
-          appliesTo: ['inlineImage'],
-          fixed: { dimension: 'height', value: 1.2, unit: 'em' },
-          maximum: { value: 1, unit: 'measure' },
-          placement: 'inline',
-        },
-      ],
-    });
+    expect(DEFAULT_CATALOGUES.image).toMatchObject({ schemaVersion: 2, kind: 'image' });
+    expect(
+      DEFAULT_CATALOGUES.image.styles.filter((each) => ['figure', 'inline'].includes(each.id)),
+    ).toEqual([
+      {
+        id: 'figure',
+        name: 'Figure',
+        appliesTo: ['figure'],
+        fixed: { dimension: 'width', value: 1, unit: 'measure' },
+        maximum: { value: 0.6, unit: 'textHeight' },
+        placement: 'block',
+        alignment: 'centre',
+      },
+      {
+        id: 'inline',
+        name: 'Inline image',
+        appliesTo: ['inlineImage'],
+        fixed: { dimension: 'height', value: 1.2, unit: 'em' },
+        maximum: { value: 1, unit: 'measure' },
+        placement: 'inline',
+      },
+    ]);
   });
 
   it('keeps its admonition and citation catalogues empty', () => {
@@ -185,15 +186,15 @@ describe('the default theme', () => {
     expect(DEFAULT_CATALOGUES.citation.styles).toEqual([]);
   });
 
-  it("changes only the quotation's and its attribution's spacing, and states contextual spacing, off, in the base", () => {
+  it("changes only the quotation's and its attribution's spacing at 0.2, and states contextual spacing, off, in the base", () => {
     const changed = new Set(['quotation', 'attribution']);
-    expect(DEFAULT_CATALOGUES.paragraph.base).toEqual({
+    expect(SECOND_DEFAULT_CATALOGUES.paragraph.base).toEqual({
       ...FIRST_DEFAULT_CATALOGUES.paragraph.base,
       contextualSpacing: false,
     });
-    expect(DEFAULT_CATALOGUES.paragraph.styles.filter((each) => !changed.has(each.id))).toEqual(
-      FIRST_DEFAULT_CATALOGUES.paragraph.styles.filter((each) => !changed.has(each.id)),
-    );
+    expect(
+      SECOND_DEFAULT_CATALOGUES.paragraph.styles.filter((each) => !changed.has(each.id)),
+    ).toEqual(FIRST_DEFAULT_CATALOGUES.paragraph.styles.filter((each) => !changed.has(each.id)));
     expect(paragraph('quotation').properties).toEqual({
       startIndent: 11,
       endIndent: 11,
@@ -242,10 +243,148 @@ describe('the default theme', () => {
   });
 });
 
-describe("the default theme's version 0.3", () => {
+describe("the default theme's version 0.4", () => {
+  const style = <T extends { id: string }>(styles: readonly T[], id: string) => {
+    const found = styles.find((each) => each.id === id);
+    expect(found, id).toBeDefined();
+    return found!;
+  };
+
+  it('binds new versions of its paragraph, table and image catalogues, each by a fixed identifier, and the other three as 0.1 did', () => {
+    expect(DEFAULT_CATALOGUE_VERSIONS).toEqual({
+      paragraph: 'd056b809-2dfa-4283-b99c-6fbc37cc7c84',
+      character: FIRST_DEFAULT_CATALOGUE_VERSIONS.character,
+      table: 'd1d81250-e486-4e06-b7e5-ebb68fe97e97',
+      image: '4d03fc94-ecd8-44c5-ba24-740ca7d79f59',
+      admonition: FIRST_DEFAULT_CATALOGUE_VERSIONS.admonition,
+      citation: FIRST_DEFAULT_CATALOGUE_VERSIONS.citation,
+    });
+    const earlier = [
+      ...Object.values(FIRST_DEFAULT_CATALOGUE_VERSIONS),
+      ...Object.values(SECOND_DEFAULT_CATALOGUE_VERSIONS),
+      SECOND_DEFAULT_THEME_VERSION,
+      THIRD_DEFAULT_THEME_VERSION,
+    ];
+    for (const kind of ['paragraph', 'table', 'image'] as const) {
+      expect(earlier, kind).not.toContain(DEFAULT_CATALOGUE_VERSIONS[kind]);
+      expect(DEFAULT_CATALOGUES[kind].schemaVersion, kind).toBe(2);
+    }
+    for (const kind of ['character', 'admonition', 'citation'] as const) {
+      expect(DEFAULT_CATALOGUES[kind], kind).toBe(FIRST_DEFAULT_CATALOGUES[kind]);
+    }
+    expect([...DEFAULT_CATALOGUES_BY_VERSION.keys()].sort()).toEqual(
+      Object.values(DEFAULT_CATALOGUE_VERSIONS).sort(),
+    );
+  });
+
+  it('is its 0.3 naming those catalogue versions, with nothing else changed, under a fixed identifier of its own', () => {
+    expect(DEFAULT_THEME).toEqual({
+      ...THIRD_DEFAULT_THEME,
+      catalogues: DEFAULT_CATALOGUE_VERSIONS,
+    });
+    expect(DEFAULT_THEME_VERSION).toBe('80a7869a-6ceb-43b2-b748-81e3e4fee2dd');
+    expect([
+      SECOND_DEFAULT_THEME_VERSION,
+      THIRD_DEFAULT_THEME_VERSION,
+      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(DEFAULT_THEME_VERSION);
+  });
+
+  it("keeps every style 0.3's catalogues held, and adds Lead, Centred and Small print for running text, Banded for a table and Half width for a figure", () => {
+    expect(DEFAULT_CATALOGUES.paragraph).toEqual({
+      ...SECOND_DEFAULT_CATALOGUES.paragraph,
+      styles: [
+        ...SECOND_DEFAULT_CATALOGUES.paragraph.styles,
+        {
+          id: 'lead',
+          name: 'Lead',
+          basedOn: 'body',
+          appliesTo: ['text'],
+          properties: { size: 13, spaceAfter: 6, lineSpacing: 16.96 },
+        },
+        {
+          id: 'centred',
+          name: 'Centred',
+          basedOn: 'body',
+          appliesTo: ['text', 'listItem'],
+          properties: { alignment: 'centre' },
+        },
+        {
+          id: 'small-print',
+          name: 'Small print',
+          basedOn: 'body',
+          appliesTo: ['text', 'listItem'],
+          properties: { size: 9, spaceAfter: 2.25, lineSpacing: 11.74 },
+        },
+      ],
+    });
+    expect(DEFAULT_CATALOGUES.table).toEqual({
+      ...SECOND_DEFAULT_CATALOGUES.table,
+      styles: [
+        ...SECOND_DEFAULT_CATALOGUES.table.styles,
+        {
+          id: 'banded',
+          name: 'Banded',
+          appliesTo: ['table'],
+          headerRow: { fill: '#d9d9d9', bold: true, rule: { width: 1, colour: '#000000' } },
+          headerColumn: { fill: 'none', bold: false, rule: 'none' },
+          banding: { fill: '#f2f2f2' },
+          rules: {
+            outer: { width: 1, colour: '#000000' },
+            horizontal: { width: 0.5, colour: '#808080' },
+            vertical: 'none',
+          },
+          padding: 5,
+          breaks: { repeatHeader: true, keepRowsWhole: false, continuationLabel: false },
+        },
+      ],
+    });
+    expect(DEFAULT_CATALOGUES.image).toEqual({
+      ...SECOND_DEFAULT_CATALOGUES.image,
+      styles: [
+        ...SECOND_DEFAULT_CATALOGUES.image.styles,
+        {
+          id: 'half-width',
+          name: 'Half width',
+          appliesTo: ['figure'],
+          fixed: { dimension: 'width', value: 0.5, unit: 'measure' },
+          maximum: { value: 0.6, unit: 'textHeight' },
+          placement: 'block',
+          alignment: 'centre',
+        },
+      ],
+    });
+  });
+
+  it('reads, each new paragraph style resolved over the body it is based on, and none set at a place or a role', () => {
+    const read = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+    if (!read.ok) throw new Error(read.refusals.map((each) => each.message).join('; '));
+    const resolved = (id: string) => read.theme.paragraphStyles.get(id)!.properties;
+    expect(resolved('lead')).toEqual({
+      ...resolved('body'),
+      size: 13,
+      lineSpacing: 16.96,
+      spaceAfter: 6,
+    });
+    expect(resolved('centred')).toEqual({ ...resolved('body'), alignment: 'centre' });
+    expect(resolved('small-print')).toEqual({
+      ...resolved('body'),
+      size: 9,
+      lineSpacing: 11.74,
+      spaceAfter: 2.25,
+    });
+    expect(style(DEFAULT_CATALOGUES.table.styles, 'banded').name).toBe('Banded');
+    expect(style(DEFAULT_CATALOGUES.image.styles, 'half-width').name).toBe('Half width');
+    // No place and no role is set in any of them: they are there to be chosen.
+    const bound = [...Object.values(DEFAULT_THEME.places), ...Object.values(DEFAULT_THEME.roles)];
+    for (const id of ['lead', 'centred', 'small-print']) expect(bound, id).not.toContain(id);
+  });
+});
+
+describe("the default theme's version 0.3, as migration 0026 stored it", () => {
   it("is its 0.2 with the maths face's Word face declared, nothing else changed, under a fixed identifier of its own", () => {
     const [serif, mono, maths] = SECOND_DEFAULT_THEME.typefaces;
-    expect(DEFAULT_THEME).toEqual({
+    expect(THIRD_DEFAULT_THEME).toEqual({
       ...SECOND_DEFAULT_THEME,
       typefaces: [
         serif,
@@ -253,30 +392,32 @@ describe("the default theme's version 0.3", () => {
         { ...maths, embedding: { pdf: true, word: false }, wordFamily: 'Cambria Math' },
       ],
     });
-    expect(DEFAULT_THEME.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
-    expect(DEFAULT_THEME_VERSION).toBe('3c00d89a-547f-468e-94a3-8a4b82ab05d3');
+    expect(THIRD_DEFAULT_THEME.catalogues).toEqual(SECOND_DEFAULT_CATALOGUE_VERSIONS);
+    expect(THIRD_DEFAULT_THEME_VERSION).toBe('3c00d89a-547f-468e-94a3-8a4b82ab05d3');
     expect([
       SECOND_DEFAULT_THEME_VERSION,
-      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
-    ]).not.toContain(DEFAULT_THEME_VERSION);
+      ...Object.values(SECOND_DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(THIRD_DEFAULT_THEME_VERSION);
   });
 
-  it('reads', () => {
-    expect(readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION).ok).toBe(true);
+  it('still reads, as the theme a publication made under it was set from', () => {
+    expect(readTheme(THIRD_DEFAULT_THEME, SECOND_DEFAULT_CATALOGUES_BY_VERSION).ok).toBe(true);
   });
 });
 
 describe("the default theme's version 0.2, as migration 0025 stored it", () => {
   it('binds new versions of its paragraph, table and image catalogues, each by a fixed identifier, and the other three as 0.1 did', () => {
     for (const kind of ['paragraph', 'table', 'image'] as const) {
-      expect(DEFAULT_CATALOGUE_VERSIONS[kind], kind).not.toBe(
+      expect(SECOND_DEFAULT_CATALOGUE_VERSIONS[kind], kind).not.toBe(
         FIRST_DEFAULT_CATALOGUE_VERSIONS[kind],
       );
     }
     for (const kind of ['character', 'admonition', 'citation'] as const) {
-      expect(DEFAULT_CATALOGUE_VERSIONS[kind], kind).toBe(FIRST_DEFAULT_CATALOGUE_VERSIONS[kind]);
+      expect(SECOND_DEFAULT_CATALOGUE_VERSIONS[kind], kind).toBe(
+        FIRST_DEFAULT_CATALOGUE_VERSIONS[kind],
+      );
     }
-    expect(DEFAULT_CATALOGUE_VERSIONS).toEqual({
+    expect(SECOND_DEFAULT_CATALOGUE_VERSIONS).toEqual({
       paragraph: '16b4cdba-64f4-48f4-b1cf-20c9983118aa',
       character: FIRST_DEFAULT_CATALOGUE_VERSIONS.character,
       table: 'ea7c2f51-17d2-4b4f-bead-dcb481b4d1cc',
@@ -284,18 +425,18 @@ describe("the default theme's version 0.2, as migration 0025 stored it", () => {
       admonition: FIRST_DEFAULT_CATALOGUE_VERSIONS.admonition,
       citation: FIRST_DEFAULT_CATALOGUE_VERSIONS.citation,
     });
-    expect([...DEFAULT_CATALOGUES_BY_VERSION.keys()].sort()).toEqual(
-      Object.values(DEFAULT_CATALOGUE_VERSIONS).sort(),
+    expect([...SECOND_DEFAULT_CATALOGUES_BY_VERSION.keys()].sort()).toEqual(
+      Object.values(SECOND_DEFAULT_CATALOGUE_VERSIONS).sort(),
     );
   });
 
   it('is its 0.1 naming those catalogue versions, with nothing else changed, under a fixed identifier of its own', () => {
     expect(SECOND_DEFAULT_THEME).toEqual({
       ...FIRST_DEFAULT_THEME,
-      catalogues: DEFAULT_CATALOGUE_VERSIONS,
+      catalogues: SECOND_DEFAULT_CATALOGUE_VERSIONS,
     });
     expect(SECOND_DEFAULT_THEME_VERSION).toBe('29c4ade2-741b-48fa-bc45-94c06257bd75');
-    expect([...Object.values(DEFAULT_CATALOGUE_VERSIONS)]).not.toContain(
+    expect([...Object.values(SECOND_DEFAULT_CATALOGUE_VERSIONS)]).not.toContain(
       SECOND_DEFAULT_THEME_VERSION,
     );
     // Its maths face as 0025 stored it: embeddable in Word, with no Word face.
@@ -307,7 +448,7 @@ describe("the default theme's version 0.2, as migration 0025 stored it", () => {
   });
 
   it('still reads, as the theme a publication made under it was set from', () => {
-    expect(readTheme(SECOND_DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION).ok).toBe(true);
+    expect(readTheme(SECOND_DEFAULT_THEME, SECOND_DEFAULT_CATALOGUES_BY_VERSION).ok).toBe(true);
   });
 });
 

@@ -315,6 +315,13 @@ describe('the domain package', () => {
         'brokenDefaults',
         'nameKey',
         'schemaConflicts',
+        // W8.5 (themes.md, ET-H): the default theme's 0.2 catalogues frozen as 0025 stored them, and
+        // its 0.3 as 0026 did, beside its 0.4.
+        'SECOND_DEFAULT_CATALOGUES',
+        'SECOND_DEFAULT_CATALOGUES_BY_VERSION',
+        'SECOND_DEFAULT_CATALOGUE_VERSIONS',
+        'THIRD_DEFAULT_THEME',
+        'THIRD_DEFAULT_THEME_VERSION',
       ].sort(),
     );
   });

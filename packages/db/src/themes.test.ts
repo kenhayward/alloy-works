@@ -95,7 +95,7 @@ describe("the theme's store", () => {
       const author = await ada(trx);
       const first = DEFAULT_CATALOGUES.paragraph;
 
-      // 0.2 drops `attribution` and allocates `epigraph` in its place.
+      // 0.4 drops `attribution` and allocates `epigraph` in its place.
       const second: ParagraphCatalogue = {
         ...first,
         styles: [
@@ -118,7 +118,7 @@ describe("the theme's store", () => {
         }),
       );
 
-      // 0.3 bringing `attribution` back is refused, naming it, and nothing is written.
+      // 0.5 bringing `attribution` back is refused, naming it, and nothing is written.
       expect(
         await addCatalogueVersion(trx, {
           artifactId: PARAGRAPHS,
@@ -139,10 +139,10 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, PARAGRAPHS)).toBe(3);
+      expect(await versionsOf(trx, PARAGRAPHS)).toBe(4);
 
       // Every identifier the latest version holds keeps meaning what it meant, and a new one is
-      // allocated beside them: 0.3 records.
+      // allocated beside them: 0.5 records.
       const three = recorded(
         await addCatalogueVersion(trx, {
           artifactId: PARAGRAPHS,
@@ -163,7 +163,7 @@ describe("the theme's store", () => {
           },
         }),
       );
-      expect(three).toMatchObject({ kind: 'catalogue', revision: 0, version: 4 });
+      expect(three).toMatchObject({ kind: 'catalogue', revision: 0, version: 5 });
     });
   });
 
@@ -198,7 +198,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, PARAGRAPHS)).toBe(2);
+      expect(await versionsOf(trx, PARAGRAPHS)).toBe(3);
     });
   });
 
@@ -332,12 +332,12 @@ describe("the theme's store", () => {
       expect(version).toMatchObject({
         kind: 'theme',
         revision: 0,
-        version: 4,
+        version: 5,
         author,
         content: next,
       });
       const now = await defaultTheme(trx);
-      expect(now).toMatchObject({ versionId: version.id, number: '0.4', content: next });
+      expect(now).toMatchObject({ versionId: version.id, number: '0.5', content: next });
       expect(now.theme.name).toBe('Italic captions');
       expect(now.theme.catalogues.paragraph).toBe(captions.id);
       expect(now.theme.paragraphStyles.get('caption')!.properties.italic).toBe(true);
@@ -394,7 +394,7 @@ describe("the theme's store", () => {
       });
 
       // Neither was saved: the environment is set from the theme it was.
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(3);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(4);
       expect((await latestVersion(trx, DEFAULT_THEME_ID))!.id).toBe(declared.versionId);
     });
   });
@@ -423,7 +423,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(3);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(4);
     });
   });
 });

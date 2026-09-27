@@ -131,6 +131,21 @@ footnote's position rather than mapped.
 
 ## W8.5: The default theme 0.4
 
+**W8.5, as built.** `DEFAULT_THEME` and its catalogues are 0.4, with 0.2's catalogues frozen as
+`SECOND_DEFAULT_CATALOGUES` and 0.3 as `THIRD_DEFAULT_THEME`, as 0.1's and 0.2's theme were. The
+paragraph, table and image catalogues each gain a third version, 0.2's with the new styles appended
+under fixed identifiers, and the theme's 0.4 names them; migration 0034 seeds all four as literals
+`default-theme.test.ts` recomputes, each catalogue on its own chain's guard and the theme on 0026's 0.3
+with all three present, as 0025 did. Lead is 13pt at a second heading's line spacing with 6pt after
+it; Centred the body centred; Small print the notice's 9pt and spacing; Banded a `#d9d9d9` bold header
+ruled 1pt below, `#f2f2f2` bands, a 1pt black edge, 0.5pt grey rules between rows and none between
+columns, padded 5pt; Half width a centred block figure half the measure wide. A worker test publishes
+all five to PDF and Word. The reader's contrast tests read the theme's 0.3 (`plainInputs`), since
+0.4's fills and list-item styles add refusals of their own to what each counts, and tests that added
+a style under one of the new identifiers renamed theirs. The pipeline's pin in the worker's
+`template.test.ts` assembles its fixed input under the theme's 0.3, which '13' was pinned under: the
+theme is an input recorded beside the pipeline, not part of what the pipeline is.
+
 ## W8.6: What will not resolve
 
 1. **Commands**: `setParagraphStyle`, `setTableStyle`, `setImageStyle` in `packages/editor`, each one

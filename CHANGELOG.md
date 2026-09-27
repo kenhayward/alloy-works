@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.98.0 - 2026-09-27 (PR #284)
+
+### Added
+
+- **Styles to choose from.** The default theme now offers something in each style list: **Lead**,
+  larger and with more space after it, **Centred** and **Small print** for paragraphs - the last two in
+  a list as well - **Banded** for a table, with a grey bold header row, shaded alternate rows and no
+  lines between its columns, and **Half width** for a figure, centred. Each prints as it shows, in a
+  PDF and in Word. An environment whose theme has been changed from the default keeps it as it is.
+
 ## 0.97.0 - 2026-09-27 (PR #283)
 
 ### Added

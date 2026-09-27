@@ -8,10 +8,11 @@ import {
   FIRST_DEFAULT_CATALOGUES_BY_VERSION,
   FIRST_DEFAULT_CATALOGUE_VERSIONS,
   FIRST_DEFAULT_THEME,
+  SECOND_DEFAULT_CATALOGUES,
 } from './default.js';
 import { readCatalogue, readTheme, themeRefusalCodes } from './read.js';
 import { CATALOGUE_KINDS, PLACES, ROLES, STYLED_MARKS } from './schema.js';
-import { codes, defaultInputs, read, resolved } from './theme.fixture.js';
+import { codes, defaultInputs, plainInputs, read, resolved } from './theme.fixture.js';
 
 /**
  * The reader (themes 1, ruling R2): the one place a theme's rules live (STY-035). A theme and the
@@ -28,8 +29,8 @@ describe('readTheme', () => {
     for (const style of DEFAULT_CATALOGUES.character.styles) {
       expect(theme.characterStyles[style.mark]).toMatchObject({ id: style.id, name: style.name });
     }
-    expect([...theme.tableStyles.keys()]).toEqual(['table']);
-    expect([...theme.imageStyles.keys()]).toEqual(['figure', 'inline']);
+    expect([...theme.tableStyles.keys()]).toEqual(['table', 'banded']);
+    expect([...theme.imageStyles.keys()]).toEqual(['figure', 'inline', 'half-width']);
 
     const inputs = defaultInputs();
     const nameless: Record<string, unknown> = { ...inputs.catalogues.paragraph.styles[0]! };
@@ -441,7 +442,7 @@ describe('contrast, when a theme is read', () => {
   });
 
   it("measures a style against its own background where it has one, not the paper's", () => {
-    const inputs = defaultInputs();
+    const inputs = plainInputs();
     inputs.theme.paper = '#000000';
     inputs.catalogues.paragraph.base.colour = '#ffffff';
     inputs.catalogues.paragraph.styles = inputs.catalogues.paragraph.styles.map((style) =>
@@ -464,7 +465,7 @@ describe('contrast, when a theme is read', () => {
   });
 
   it("measures a mark's colour against every background it can stand on - the paper and each style's fill", () => {
-    const inputs = defaultInputs();
+    const inputs = plainInputs();
     // #767676 passes on the white paper at 4.54:1 and fails on preformatted text's #f0f0f0 at 3.98:1.
     inputs.catalogues.character.styles = inputs.catalogues.character.styles.map((style) =>
       style.mark === 'hyperlink' ? { ...style, properties: { colour: '#767676' } } : style,
@@ -489,7 +490,7 @@ describe('contrast, when a theme is read', () => {
     colour = '#000000',
     bold = false,
   ) => {
-    const inputs = defaultInputs();
+    const inputs = plainInputs();
     inputs.catalogues.paragraph.styles = inputs.catalogues.paragraph.styles.map((style) => ({
       ...style,
       properties: {
@@ -594,8 +595,8 @@ describe('table and image styles, when a theme is read', () => {
     const outcome = readTheme(FIRST_DEFAULT_THEME, FIRST_DEFAULT_CATALOGUES_BY_VERSION);
     if (!outcome.ok) throw new Error(outcome.refusals.map((each) => each.message).join('\n'));
     expect(outcome.theme.catalogues).toEqual(FIRST_DEFAULT_CATALOGUE_VERSIONS);
-    expect([...outcome.theme.tableStyles.values()]).toEqual(DEFAULT_CATALOGUES.table.styles);
-    expect([...outcome.theme.imageStyles.values()]).toEqual(DEFAULT_CATALOGUES.image.styles);
+    expect([...outcome.theme.tableStyles.values()]).toEqual(SECOND_DEFAULT_CATALOGUES.table.styles);
+    expect([...outcome.theme.imageStyles.values()]).toEqual(SECOND_DEFAULT_CATALOGUES.image.styles);
     // No contextual spacing anywhere, and the quotation as 0.1 had it.
     for (const style of outcome.theme.paragraphStyles.values()) {
       expect(style.properties.contextualSpacing, style.id).toBe(false);
@@ -829,7 +830,7 @@ describe('contrast on a table style, when a theme is read', () => {
     marks: Partial<Record<string, Record<string, unknown>>> = {},
     listItem = 'table-cell',
   ) => {
-    const inputs = defaultInputs();
+    const inputs = plainInputs();
     inputs.theme.places = { ...inputs.theme.places, listItem };
     (inputs.catalogues as { table: unknown }).table = {
       schemaVersion: 2,
@@ -1003,11 +1004,11 @@ describe('readCatalogue', () => {
     // the look 0.2 states outright.
     expect(readCatalogue(FIRST_DEFAULT_CATALOGUES.table)).toEqual({
       ok: true,
-      catalogue: DEFAULT_CATALOGUES.table,
+      catalogue: SECOND_DEFAULT_CATALOGUES.table,
     });
     expect(readCatalogue(FIRST_DEFAULT_CATALOGUES.image)).toEqual({
       ok: true,
-      catalogue: DEFAULT_CATALOGUES.image,
+      catalogue: SECOND_DEFAULT_CATALOGUES.image,
     });
     expect(readCatalogue(FIRST_DEFAULT_CATALOGUES.paragraph)).toEqual({
       ok: true,

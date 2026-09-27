@@ -225,8 +225,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   running text, in a list, in a quotation or in a table's cell each has its own - with the default
   there first. It is the only way a paragraph's alignment, indents or spacing change. **Table style**
   in the Table panel sets a table's, and **Image style** in the Figure dialog and the Figure panel sets
-  a figure's or an image's in a line of text. Undo takes a choice back. The environment's theme offers
-  one style of each yet, so each list has one entry until it offers more.
+  a figure's or an image's in a line of text. Undo takes a choice back. The environment's default
+  theme offers, beside each place's own: **Lead**, larger with more space after it, for running text;
+  **Centred** and **Small print** for running text and a list's items; **Banded** for a table, its
+  header row filled and bold and every other row shaded, with no rules between its columns; and
+  **Half width** for a figure, centred. Each publishes as it shows, in a PDF and in Word.
 
 - **Making a component.** On the list of components, **New component** offers the spaces you may create
   in, a title, a base language such as `en-GB`, a direction, and the component type the environment
@@ -823,10 +826,9 @@ Named explicitly so nobody has to read the source to find out:
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,
   and every document publishes under it.
-- No way to choose, make or edit a theme, or to give a paragraph, a table or a figure a style of your
-  own: every environment has the default theme, and every document publishes under it. The theme does
-  not reach the editor, which shows text and tables in its own settings, and every table and figure
-  takes the default's one table style and two image styles.
+- No way to choose, make or edit a theme, or to make a style of your own: every environment has the
+  default theme, and every document publishes under it, so the styles to choose from are the
+  default's.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
 - No search by meaning, no taxonomy, no workflow, and no revisions, baselines or

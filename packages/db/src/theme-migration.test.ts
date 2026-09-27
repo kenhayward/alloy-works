@@ -9,13 +9,19 @@ import {
   DEFAULT_THEME,
   DEFAULT_THEME_VERSION,
   defaultNumberingScheme,
+  SECOND_DEFAULT_CATALOGUES,
+  SECOND_DEFAULT_CATALOGUES_BY_VERSION,
+  SECOND_DEFAULT_CATALOGUE_VERSIONS,
   SECOND_DEFAULT_THEME,
   SECOND_DEFAULT_THEME_VERSION,
+  THIRD_DEFAULT_THEME,
+  THIRD_DEFAULT_THEME_VERSION,
   FIRST_DEFAULT_CATALOGUES,
   FIRST_DEFAULT_CATALOGUE_VERSIONS,
   FIRST_DEFAULT_CATALOGUES_BY_VERSION,
   FIRST_DEFAULT_THEME,
   readTheme,
+  type Catalogue,
   type Catalogue1,
   type CatalogueKind,
   type PublishFailure,
@@ -281,6 +287,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0031_search',
       '0032_listing_snapshot',
       '0033_idempotency',
+      '0034_default_theme_choices',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -644,18 +651,18 @@ describe('migration 0025, which gives the default theme its table and image styl
       const ids = (await chainOf(tenant, DEFAULT_CATALOGUE_IDS[kind])).map((each) => each.id);
       expect(ids, kind).toEqual(
         (revised as readonly CatalogueKind[]).includes(kind)
-          ? [FIRST_DEFAULT_CATALOGUE_VERSIONS[kind], DEFAULT_CATALOGUE_VERSIONS[kind]]
+          ? [FIRST_DEFAULT_CATALOGUE_VERSIONS[kind], SECOND_DEFAULT_CATALOGUE_VERSIONS[kind]]
           : [FIRST_DEFAULT_CATALOGUE_VERSIONS[kind]],
       );
     }
-    const now = read(SECOND_DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+    const now = read(SECOND_DEFAULT_THEME, SECOND_DEFAULT_CATALOGUES_BY_VERSION);
     expect(await service.withTenant(tenant, (trx) => defaultTheme(trx))).toEqual({
       artifactId: DEFAULT_THEME_ID,
       versionId: SECOND_DEFAULT_THEME_VERSION,
       number: '0.2',
       content: SECOND_DEFAULT_THEME,
       theme: now,
-      catalogues: DEFAULT_CATALOGUES_BY_VERSION,
+      catalogues: SECOND_DEFAULT_CATALOGUES_BY_VERSION,
     });
 
     // `theme_default` names the theme, not a version of it: the request waiting was made under 0.1
@@ -733,7 +740,7 @@ describe('migration 0025, which gives the default theme its table and image styl
         const ids = (await chainOf(tenant, DEFAULT_CATALOGUE_IDS[other])).map((each) => each.id);
         expect(ids, other).toEqual([
           FIRST_DEFAULT_CATALOGUE_VERSIONS[other],
-          DEFAULT_CATALOGUE_VERSIONS[other],
+          SECOND_DEFAULT_CATALOGUE_VERSIONS[other],
         ]);
       }
       // And the theme is not: its 0.2 names this catalogue's 0.2, which this environment does not
@@ -785,6 +792,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
   let service: TenantDatabase;
   let atFirst: string;
   let atSecond: string;
+  let through: string;
 
   /** A copy of the migrations holding every tenant migration below `below` and none after. */
   const migrationsBelow = async (below: number) => {
@@ -805,6 +813,8 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
     // Where every environment stood with the default theme's 0.2, and where one stood at its 0.1.
     atSecond = await migrationsBelow(26);
     atFirst = await migrationsBelow(25);
+    // And every one up to 0026 itself, so what 0026 leaves is read before 0034 gives the theme 0.4.
+    through = await migrationsBelow(27);
     service = createTenantDatabase(db.serviceUrl);
   });
 
@@ -812,6 +822,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
     await service?.close();
     await rm(atSecond, { recursive: true, force: true });
     await rm(atFirst, { recursive: true, force: true });
+    await rm(through, { recursive: true, force: true });
     await db?.drop();
   });
 
@@ -849,7 +860,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
         .execute(),
     );
 
-  const second = () => read(SECOND_DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+  const second = () => read(SECOND_DEFAULT_THEME, SECOND_DEFAULT_CATALOGUES_BY_VERSION);
 
   it("gives an environment still at the product's 0.2 the theme's 0.3: a request waiting keeps 0.2, and one made after records 0.3", async () => {
     const { tenant, ada } = await standingAt(atSecond, 'Still 0.2');
@@ -876,55 +887,49 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       return { version: made.version, waiting: requested };
     });
 
-    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
-      '0026_word',
-      '0027_word_layout_and_outputs',
-      '0028_templates',
-      '0029_document_template',
-      '0030_definition_names',
-      '0031_search',
-      '0032_listing_snapshot',
-      '0033_idempotency',
-    ]);
+    expect(
+      (await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${through}/`) })).tenants[
+        tenant.id
+      ],
+    ).toEqual(['0026_word']);
 
     // The theme is at 0.3, under its fixed identifier, unauthored, on top of 0.2; and it binds the
     // catalogues 0.2 bound, which are as they were.
     const chain = await themeChain(tenant);
     expect(chain.slice(1)).toEqual([
       { id: SECOND_DEFAULT_THEME_VERSION, revision_no: 0, version_no: 2, author_id: null },
-      { id: DEFAULT_THEME_VERSION, revision_no: 0, version_no: 3, author_id: null },
+      { id: THIRD_DEFAULT_THEME_VERSION, revision_no: 0, version_no: 3, author_id: null },
     ]);
-    const now = read(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+    const now = read(THIRD_DEFAULT_THEME, SECOND_DEFAULT_CATALOGUES_BY_VERSION);
     expect(now.maths).toMatchObject({
       embedding: { pdf: true, word: false },
       wordFamily: 'Cambria Math',
     });
     expect(await service.withTenant(tenant, (trx) => defaultTheme(trx))).toEqual({
       artifactId: DEFAULT_THEME_ID,
-      versionId: DEFAULT_THEME_VERSION,
+      versionId: THIRD_DEFAULT_THEME_VERSION,
       number: '0.3',
-      content: DEFAULT_THEME,
+      content: THIRD_DEFAULT_THEME,
       theme: now,
-      catalogues: DEFAULT_CATALOGUES_BY_VERSION,
+      catalogues: SECOND_DEFAULT_CATALOGUES_BY_VERSION,
     });
 
     // The request waiting was made under 0.2 and is handed 0.2; a request made now records 0.3.
     const handed = await service.withTenant(tenant, async (trx) => {
-      const answer = await requestPublication(trx, {
+      // Written as `requestPublication` wrote it: this environment has not reached 0029.
+      const made = await requestBefore0029(trx, {
         documentId: version.artifactId,
         version: version.id,
-        formats: ['pdf'],
         requester: ada,
       });
-      if (answer.answer !== 'requested') throw new Error(answer.answer);
       return {
         waiting: (await publicationInputs(trx, waiting))!.theme,
-        made: (await publicationInputs(trx, answer.request.id))!.theme,
+        made: (await publicationInputs(trx, made))!.theme,
       };
     });
     expect(handed).toEqual({
       waiting: { versionId: SECOND_DEFAULT_THEME_VERSION, theme: second() },
-      made: { versionId: DEFAULT_THEME_VERSION, theme: now },
+      made: { versionId: THIRD_DEFAULT_THEME_VERSION, theme: now },
     });
   });
 
@@ -950,6 +955,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0031_search',
       '0032_listing_snapshot',
       '0033_idempotency',
+      '0034_default_theme_choices',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -990,6 +996,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0031_search',
       '0032_listing_snapshot',
       '0033_idempotency',
+      '0034_default_theme_choices',
     ]);
 
     const chain = await themeChain(tenant);
@@ -999,5 +1006,245 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       number: '0.1',
       content: FIRST_DEFAULT_THEME,
     });
+  });
+});
+
+describe('migration 0034, which gives the default theme styles an author may choose', () => {
+  let db: TestDatabase;
+  let service: TenantDatabase;
+  let atThird: string;
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    // Every tenant migration up to 0033 and none after, so a tenant stands where every environment
+    // stood with the default theme's 0.3.
+    atThird = await mkdtemp(join(tmpdir(), 'aw-before-0034-'));
+    await cp(new URL('../migrations/', import.meta.url), atThird, {
+      recursive: true,
+      filter: (source) => {
+        const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
+        return numbered === null || Number(numbered[1]) < 34;
+      },
+    });
+    service = createTenantDatabase(db.serviceUrl);
+  });
+
+  afterAll(async () => {
+    await service?.close();
+    await rm(atThird, { recursive: true, force: true });
+    await db?.drop();
+  });
+
+  /** A tenant standing at 0033, with Ada in it, as every environment stood before this migration. */
+  const atThirdTheme = async (name: string) => {
+    const id = db.newTenantId();
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${atThird}/`) });
+    const provisioned = await provisionTenant(db.adminUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id, name },
+      hostnames: [`${id}.alloy.test`],
+    });
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${atThird}/`) });
+    const tenant = { ...provisioned, id };
+    const ada = await service.withTenant(tenant, (trx) =>
+      trx
+        .insertInto('principal')
+        .values({ issuer: ISSUER, subject: 'ada', email: null, display_name: 'Ada' })
+        .returning('id')
+        .executeTakeFirstOrThrow()
+        .then((row) => row.id),
+    );
+    return { tenant, ada };
+  };
+
+  /** Every version of one artifact, in the chain's order. */
+  const chainOf = (tenant: Tenant, artifactId: string) =>
+    service.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('artifact_version')
+        .select(['id', 'revision_no', 'version_no', 'author_id'])
+        .where('artifact_id', '=', artifactId)
+        .orderBy('revision_no')
+        .orderBy('version_no')
+        .execute(),
+    );
+
+  /** The catalogues the theme's 0.4 gives a version of their own. */
+  const revised = ['paragraph', 'table', 'image'] as const;
+
+  const third = () => read(THIRD_DEFAULT_THEME, SECOND_DEFAULT_CATALOGUES_BY_VERSION);
+
+  /** What an environment still at the product's 0.3 declares. */
+  const declaredThird = () => ({
+    artifactId: DEFAULT_THEME_ID,
+    versionId: THIRD_DEFAULT_THEME_VERSION,
+    number: '0.3',
+    content: THIRD_DEFAULT_THEME,
+    theme: third(),
+    catalogues: SECOND_DEFAULT_CATALOGUES_BY_VERSION,
+  });
+
+  it("gives an environment still at the product's 0.3 the new catalogue versions and the theme's 0.4 naming them: a request waiting keeps 0.3, and one made after records 0.4", async () => {
+    const { tenant, ada } = await atThirdTheme('Still 0.3');
+    const ask = (trx: TenantTransaction, version: StoredVersion) =>
+      requestPublication(trx, {
+        documentId: version.artifactId,
+        version: version.id,
+        formats: ['pdf'],
+        requester: ada,
+      }).then((answer) => {
+        if (answer.answer !== 'requested') throw new Error(answer.answer);
+        return answer.request.id;
+      });
+    const { version, waiting } = await service.withTenant(tenant, async (trx) => {
+      const general = await trx
+        .selectFrom('space')
+        .select('id')
+        .where('name', '=', 'General')
+        .executeTakeFirstOrThrow();
+      const made = await createDocument(trx, {
+        spaceId: general.id,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      return { version: made.version, waiting: await ask(trx, made.version) };
+    });
+    expect(await service.withTenant(tenant, (trx) => defaultTheme(trx))).toEqual(declaredThird());
+
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0034_default_theme_choices',
+    ]);
+
+    // The theme is at 0.4, under its fixed identifier, unauthored, on top of 0.3; each revised
+    // catalogue at its third version on top of 0.2's; and the other three as they were.
+    expect((await chainOf(tenant, DEFAULT_THEME_ID)).slice(2)).toEqual([
+      { id: THIRD_DEFAULT_THEME_VERSION, revision_no: 0, version_no: 3, author_id: null },
+      { id: DEFAULT_THEME_VERSION, revision_no: 0, version_no: 4, author_id: null },
+    ]);
+    for (const kind of CATALOGUE_KINDS) {
+      const chain = await chainOf(tenant, DEFAULT_CATALOGUE_IDS[kind]);
+      expect(
+        chain.map((each) => each.id),
+        kind,
+      ).toEqual(
+        (revised as readonly CatalogueKind[]).includes(kind)
+          ? [
+              FIRST_DEFAULT_CATALOGUE_VERSIONS[kind],
+              SECOND_DEFAULT_CATALOGUE_VERSIONS[kind],
+              DEFAULT_CATALOGUE_VERSIONS[kind],
+            ]
+          : [FIRST_DEFAULT_CATALOGUE_VERSIONS[kind]],
+      );
+      expect(chain.at(-1), kind).toMatchObject({ revision_no: 0, author_id: null });
+    }
+    const now = read(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+    expect([...now.paragraphStyles.keys()]).toEqual(
+      expect.arrayContaining(['lead', 'centred', 'small-print']),
+    );
+    expect([...now.tableStyles.keys()]).toEqual(['table', 'banded']);
+    expect([...now.imageStyles.keys()]).toEqual(['figure', 'inline', 'half-width']);
+    expect(await service.withTenant(tenant, (trx) => defaultTheme(trx))).toEqual({
+      artifactId: DEFAULT_THEME_ID,
+      versionId: DEFAULT_THEME_VERSION,
+      number: '0.4',
+      content: DEFAULT_THEME,
+      theme: now,
+      catalogues: DEFAULT_CATALOGUES_BY_VERSION,
+    });
+
+    // `theme_default` names the theme, not a version of it: the request waiting was made under 0.3
+    // and is handed 0.3, and a request made now records the latest, 0.4, and is handed that.
+    const handed = await service.withTenant(tenant, async (trx) => {
+      const made = await ask(trx, version);
+      return {
+        waiting: (await publicationInputs(trx, waiting))!.theme,
+        made: (await publicationInputs(trx, made))!.theme,
+      };
+    });
+    expect(handed).toEqual({
+      waiting: { versionId: THIRD_DEFAULT_THEME_VERSION, theme: third() },
+      made: { versionId: DEFAULT_THEME_VERSION, theme: now },
+    });
+  });
+
+  for (const kind of revised) {
+    it(`leaves a ${kind} catalogue version an environment recorded after 0.2, and gives the theme no 0.4 over it`, async () => {
+      const { tenant, ada } = await atThirdTheme(`Own ${kind} after 0.2`);
+      // The environment's own third version of the catalogue, its first style renamed.
+      const catalogue = SECOND_DEFAULT_CATALOGUES[kind];
+      const own = {
+        ...catalogue,
+        styles: catalogue.styles.map((style, index) =>
+          index === 0 ? { ...style, name: 'Our own' } : style,
+        ),
+      } as Catalogue;
+      const recorded = await service.withTenant(tenant, (trx) =>
+        addCatalogueVersion(trx, {
+          artifactId: DEFAULT_CATALOGUE_IDS[kind],
+          openedFrom: SECOND_DEFAULT_CATALOGUE_VERSIONS[kind],
+          author: ada,
+          catalogue: own,
+        }),
+      );
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+
+      expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+        '0034_default_theme_choices',
+      ]);
+
+      // The catalogue is left at the environment's own version, with nothing of the product's on top.
+      expect((await chainOf(tenant, DEFAULT_CATALOGUE_IDS[kind])).map((each) => each.id)).toEqual([
+        FIRST_DEFAULT_CATALOGUE_VERSIONS[kind],
+        SECOND_DEFAULT_CATALOGUE_VERSIONS[kind],
+        recorded.version.id,
+      ]);
+      // The other two revised catalogues are still the product's own, and are given their third.
+      for (const other of revised.filter((each) => each !== kind)) {
+        const ids = (await chainOf(tenant, DEFAULT_CATALOGUE_IDS[other])).map((each) => each.id);
+        expect(ids, other).toEqual([
+          FIRST_DEFAULT_CATALOGUE_VERSIONS[other],
+          SECOND_DEFAULT_CATALOGUE_VERSIONS[other],
+          DEFAULT_CATALOGUE_VERSIONS[other],
+        ]);
+      }
+      // And the theme is not: its 0.4 names this catalogue's third version, which this environment
+      // does not hold, so it stays at 0.3, naming the catalogues it named.
+      expect((await chainOf(tenant, DEFAULT_THEME_ID)).at(-1)!.id).toBe(
+        THIRD_DEFAULT_THEME_VERSION,
+      );
+      expect(await service.withTenant(tenant, (trx) => defaultTheme(trx))).toEqual(declaredThird());
+    });
+  }
+
+  it('leaves a theme version an environment recorded after 0.3 as the one it declares', async () => {
+    const { tenant, ada } = await atThirdTheme('Own theme after 0.3');
+    const own: Theme = { ...THIRD_DEFAULT_THEME, name: 'Our own', paper: '#fafafa' };
+    const recorded = await service.withTenant(tenant, async (trx) =>
+      addThemeVersion(trx, {
+        artifactId: DEFAULT_THEME_ID,
+        openedFrom: (await defaultTheme(trx)).versionId,
+        author: ada,
+        theme: own,
+      }),
+    );
+    if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0034_default_theme_choices',
+    ]);
+
+    // The theme is left at the environment's own 0.4, with nothing of the product's on top, and still
+    // names the catalogues 0.3 named.
+    expect((await chainOf(tenant, DEFAULT_THEME_ID)).slice(2).map((each) => each.id)).toEqual([
+      THIRD_DEFAULT_THEME_VERSION,
+      recorded.version.id,
+    ]);
+    const declared = await service.withTenant(tenant, (trx) => defaultTheme(trx));
+    expect(declared).toMatchObject({ versionId: recorded.version.id, number: '0.4', content: own });
+    expect(declared.theme.catalogues).toEqual(SECOND_DEFAULT_CATALOGUE_VERSIONS);
   });
 });
