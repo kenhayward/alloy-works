@@ -7400,6 +7400,175 @@
                       "additionalProperties": {},
                       "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                     },
+                    "fields": {
+                      "type": "object",
+                      "properties": {
+                        "document": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "dataType": {
+                                "type": "string"
+                              },
+                              "multiplicity": {
+                                "type": "string",
+                                "enum": [
+                                  "one",
+                                  "many"
+                                ]
+                              },
+                              "maxValues": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "validation": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "requiredBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that makes it required, by identifier"
+                              },
+                              "fixed": {
+                                "type": "boolean"
+                              },
+                              "fixedBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that fixes it, by identifier"
+                              },
+                              "default": {
+                                "description": "Absent where no schema gives one"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "dataType",
+                              "multiplicity",
+                              "validation",
+                              "required",
+                              "requiredBy",
+                              "fixed",
+                              "fixedBy"
+                            ]
+                          }
+                        },
+                        "section": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "dataType": {
+                                "type": "string"
+                              },
+                              "multiplicity": {
+                                "type": "string",
+                                "enum": [
+                                  "one",
+                                  "many"
+                                ]
+                              },
+                              "maxValues": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "validation": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "requiredBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that makes it required, by identifier"
+                              },
+                              "fixed": {
+                                "type": "boolean"
+                              },
+                              "fixedBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that fixes it, by identifier"
+                              },
+                              "default": {
+                                "description": "Absent where no schema gives one"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "dataType",
+                              "multiplicity",
+                              "validation",
+                              "required",
+                              "requiredBy",
+                              "fixed",
+                              "fixedBy"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "document",
+                        "section"
+                      ],
+                      "description": "The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves"
+                    },
+                    "schemas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      "description": "The schemas behind those fields, by name, for naming which require or fix one"
+                    },
                     "template": {
                       "anyOf": [
                         {
@@ -7512,6 +7681,8 @@
                     "version",
                     "outline",
                     "values",
+                    "fields",
+                    "schemas",
                     "template",
                     "mayEdit",
                     "mayPublish",
@@ -10014,6 +10185,175 @@
                       "additionalProperties": {},
                       "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                     },
+                    "fields": {
+                      "type": "object",
+                      "properties": {
+                        "document": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "dataType": {
+                                "type": "string"
+                              },
+                              "multiplicity": {
+                                "type": "string",
+                                "enum": [
+                                  "one",
+                                  "many"
+                                ]
+                              },
+                              "maxValues": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "validation": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "requiredBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that makes it required, by identifier"
+                              },
+                              "fixed": {
+                                "type": "boolean"
+                              },
+                              "fixedBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that fixes it, by identifier"
+                              },
+                              "default": {
+                                "description": "Absent where no schema gives one"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "dataType",
+                              "multiplicity",
+                              "validation",
+                              "required",
+                              "requiredBy",
+                              "fixed",
+                              "fixedBy"
+                            ]
+                          }
+                        },
+                        "section": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "dataType": {
+                                "type": "string"
+                              },
+                              "multiplicity": {
+                                "type": "string",
+                                "enum": [
+                                  "one",
+                                  "many"
+                                ]
+                              },
+                              "maxValues": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "validation": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "requiredBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that makes it required, by identifier"
+                              },
+                              "fixed": {
+                                "type": "boolean"
+                              },
+                              "fixedBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that fixes it, by identifier"
+                              },
+                              "default": {
+                                "description": "Absent where no schema gives one"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "dataType",
+                              "multiplicity",
+                              "validation",
+                              "required",
+                              "requiredBy",
+                              "fixed",
+                              "fixedBy"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "document",
+                        "section"
+                      ],
+                      "description": "The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves"
+                    },
+                    "schemas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      "description": "The schemas behind those fields, by name, for naming which require or fix one"
+                    },
                     "template": {
                       "anyOf": [
                         {
@@ -10126,6 +10466,8 @@
                     "version",
                     "outline",
                     "values",
+                    "fields",
+                    "schemas",
                     "template",
                     "mayEdit",
                     "mayPublish",
@@ -10230,6 +10572,175 @@
                           },
                           "additionalProperties": {},
                           "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                        },
+                        "fields": {
+                          "type": "object",
+                          "properties": {
+                            "document": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "multiplicity": {
+                                    "type": "string",
+                                    "enum": [
+                                      "one",
+                                      "many"
+                                    ]
+                                  },
+                                  "maxValues": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "validation": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "requiredBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that makes it required, by identifier"
+                                  },
+                                  "fixed": {
+                                    "type": "boolean"
+                                  },
+                                  "fixedBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that fixes it, by identifier"
+                                  },
+                                  "default": {
+                                    "description": "Absent where no schema gives one"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "dataType",
+                                  "multiplicity",
+                                  "validation",
+                                  "required",
+                                  "requiredBy",
+                                  "fixed",
+                                  "fixedBy"
+                                ]
+                              }
+                            },
+                            "section": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "multiplicity": {
+                                    "type": "string",
+                                    "enum": [
+                                      "one",
+                                      "many"
+                                    ]
+                                  },
+                                  "maxValues": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "validation": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "requiredBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that makes it required, by identifier"
+                                  },
+                                  "fixed": {
+                                    "type": "boolean"
+                                  },
+                                  "fixedBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that fixes it, by identifier"
+                                  },
+                                  "default": {
+                                    "description": "Absent where no schema gives one"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "dataType",
+                                  "multiplicity",
+                                  "validation",
+                                  "required",
+                                  "requiredBy",
+                                  "fixed",
+                                  "fixedBy"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "document",
+                            "section"
+                          ],
+                          "description": "The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves"
+                        },
+                        "schemas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "description": "The schemas behind those fields, by name, for naming which require or fix one"
                         },
                         "template": {
                           "anyOf": [
@@ -10343,6 +10854,8 @@
                         "version",
                         "outline",
                         "values",
+                        "fields",
+                        "schemas",
                         "template",
                         "mayEdit",
                         "mayPublish",
@@ -10635,6 +11148,175 @@
                           "additionalProperties": {},
                           "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                         },
+                        "fields": {
+                          "type": "object",
+                          "properties": {
+                            "document": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "multiplicity": {
+                                    "type": "string",
+                                    "enum": [
+                                      "one",
+                                      "many"
+                                    ]
+                                  },
+                                  "maxValues": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "validation": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "requiredBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that makes it required, by identifier"
+                                  },
+                                  "fixed": {
+                                    "type": "boolean"
+                                  },
+                                  "fixedBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that fixes it, by identifier"
+                                  },
+                                  "default": {
+                                    "description": "Absent where no schema gives one"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "dataType",
+                                  "multiplicity",
+                                  "validation",
+                                  "required",
+                                  "requiredBy",
+                                  "fixed",
+                                  "fixedBy"
+                                ]
+                              }
+                            },
+                            "section": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "multiplicity": {
+                                    "type": "string",
+                                    "enum": [
+                                      "one",
+                                      "many"
+                                    ]
+                                  },
+                                  "maxValues": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "validation": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "requiredBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that makes it required, by identifier"
+                                  },
+                                  "fixed": {
+                                    "type": "boolean"
+                                  },
+                                  "fixedBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that fixes it, by identifier"
+                                  },
+                                  "default": {
+                                    "description": "Absent where no schema gives one"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "dataType",
+                                  "multiplicity",
+                                  "validation",
+                                  "required",
+                                  "requiredBy",
+                                  "fixed",
+                                  "fixedBy"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "document",
+                            "section"
+                          ],
+                          "description": "The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves"
+                        },
+                        "schemas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "description": "The schemas behind those fields, by name, for naming which require or fix one"
+                        },
                         "template": {
                           "anyOf": [
                             {
@@ -10747,6 +11429,8 @@
                         "version",
                         "outline",
                         "values",
+                        "fields",
+                        "schemas",
                         "template",
                         "mayEdit",
                         "mayPublish",
@@ -12188,6 +12872,175 @@
                       "additionalProperties": {},
                       "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                     },
+                    "fields": {
+                      "type": "object",
+                      "properties": {
+                        "document": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "dataType": {
+                                "type": "string"
+                              },
+                              "multiplicity": {
+                                "type": "string",
+                                "enum": [
+                                  "one",
+                                  "many"
+                                ]
+                              },
+                              "maxValues": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "validation": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "requiredBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that makes it required, by identifier"
+                              },
+                              "fixed": {
+                                "type": "boolean"
+                              },
+                              "fixedBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that fixes it, by identifier"
+                              },
+                              "default": {
+                                "description": "Absent where no schema gives one"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "dataType",
+                              "multiplicity",
+                              "validation",
+                              "required",
+                              "requiredBy",
+                              "fixed",
+                              "fixedBy"
+                            ]
+                          }
+                        },
+                        "section": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "dataType": {
+                                "type": "string"
+                              },
+                              "multiplicity": {
+                                "type": "string",
+                                "enum": [
+                                  "one",
+                                  "many"
+                                ]
+                              },
+                              "maxValues": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "validation": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "requiredBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that makes it required, by identifier"
+                              },
+                              "fixed": {
+                                "type": "boolean"
+                              },
+                              "fixedBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that fixes it, by identifier"
+                              },
+                              "default": {
+                                "description": "Absent where no schema gives one"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "dataType",
+                              "multiplicity",
+                              "validation",
+                              "required",
+                              "requiredBy",
+                              "fixed",
+                              "fixedBy"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "document",
+                        "section"
+                      ],
+                      "description": "The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves"
+                    },
+                    "schemas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      "description": "The schemas behind those fields, by name, for naming which require or fix one"
+                    },
                     "template": {
                       "anyOf": [
                         {
@@ -12300,6 +13153,8 @@
                     "version",
                     "outline",
                     "values",
+                    "fields",
+                    "schemas",
                     "template",
                     "mayEdit",
                     "mayPublish",
@@ -12404,6 +13259,175 @@
                           },
                           "additionalProperties": {},
                           "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                        },
+                        "fields": {
+                          "type": "object",
+                          "properties": {
+                            "document": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "multiplicity": {
+                                    "type": "string",
+                                    "enum": [
+                                      "one",
+                                      "many"
+                                    ]
+                                  },
+                                  "maxValues": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "validation": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "requiredBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that makes it required, by identifier"
+                                  },
+                                  "fixed": {
+                                    "type": "boolean"
+                                  },
+                                  "fixedBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that fixes it, by identifier"
+                                  },
+                                  "default": {
+                                    "description": "Absent where no schema gives one"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "dataType",
+                                  "multiplicity",
+                                  "validation",
+                                  "required",
+                                  "requiredBy",
+                                  "fixed",
+                                  "fixedBy"
+                                ]
+                              }
+                            },
+                            "section": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "multiplicity": {
+                                    "type": "string",
+                                    "enum": [
+                                      "one",
+                                      "many"
+                                    ]
+                                  },
+                                  "maxValues": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "validation": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "requiredBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that makes it required, by identifier"
+                                  },
+                                  "fixed": {
+                                    "type": "boolean"
+                                  },
+                                  "fixedBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that fixes it, by identifier"
+                                  },
+                                  "default": {
+                                    "description": "Absent where no schema gives one"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "dataType",
+                                  "multiplicity",
+                                  "validation",
+                                  "required",
+                                  "requiredBy",
+                                  "fixed",
+                                  "fixedBy"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "document",
+                            "section"
+                          ],
+                          "description": "The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves"
+                        },
+                        "schemas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "description": "The schemas behind those fields, by name, for naming which require or fix one"
                         },
                         "template": {
                           "anyOf": [
@@ -12517,6 +13541,8 @@
                         "version",
                         "outline",
                         "values",
+                        "fields",
+                        "schemas",
                         "template",
                         "mayEdit",
                         "mayPublish",
@@ -12809,6 +13835,175 @@
                           "additionalProperties": {},
                           "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                         },
+                        "fields": {
+                          "type": "object",
+                          "properties": {
+                            "document": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "multiplicity": {
+                                    "type": "string",
+                                    "enum": [
+                                      "one",
+                                      "many"
+                                    ]
+                                  },
+                                  "maxValues": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "validation": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "requiredBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that makes it required, by identifier"
+                                  },
+                                  "fixed": {
+                                    "type": "boolean"
+                                  },
+                                  "fixedBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that fixes it, by identifier"
+                                  },
+                                  "default": {
+                                    "description": "Absent where no schema gives one"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "dataType",
+                                  "multiplicity",
+                                  "validation",
+                                  "required",
+                                  "requiredBy",
+                                  "fixed",
+                                  "fixedBy"
+                                ]
+                              }
+                            },
+                            "section": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "multiplicity": {
+                                    "type": "string",
+                                    "enum": [
+                                      "one",
+                                      "many"
+                                    ]
+                                  },
+                                  "maxValues": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "validation": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "requiredBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that makes it required, by identifier"
+                                  },
+                                  "fixed": {
+                                    "type": "boolean"
+                                  },
+                                  "fixedBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that fixes it, by identifier"
+                                  },
+                                  "default": {
+                                    "description": "Absent where no schema gives one"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "dataType",
+                                  "multiplicity",
+                                  "validation",
+                                  "required",
+                                  "requiredBy",
+                                  "fixed",
+                                  "fixedBy"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "document",
+                            "section"
+                          ],
+                          "description": "The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves"
+                        },
+                        "schemas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "description": "The schemas behind those fields, by name, for naming which require or fix one"
+                        },
                         "template": {
                           "anyOf": [
                             {
@@ -12921,6 +14116,8 @@
                         "version",
                         "outline",
                         "values",
+                        "fields",
+                        "schemas",
                         "template",
                         "mayEdit",
                         "mayPublish",
@@ -18875,6 +20072,175 @@
                       "additionalProperties": {},
                       "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                     },
+                    "fields": {
+                      "type": "object",
+                      "properties": {
+                        "document": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "dataType": {
+                                "type": "string"
+                              },
+                              "multiplicity": {
+                                "type": "string",
+                                "enum": [
+                                  "one",
+                                  "many"
+                                ]
+                              },
+                              "maxValues": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "validation": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "requiredBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that makes it required, by identifier"
+                              },
+                              "fixed": {
+                                "type": "boolean"
+                              },
+                              "fixedBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that fixes it, by identifier"
+                              },
+                              "default": {
+                                "description": "Absent where no schema gives one"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "dataType",
+                              "multiplicity",
+                              "validation",
+                              "required",
+                              "requiredBy",
+                              "fixed",
+                              "fixedBy"
+                            ]
+                          }
+                        },
+                        "section": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "dataType": {
+                                "type": "string"
+                              },
+                              "multiplicity": {
+                                "type": "string",
+                                "enum": [
+                                  "one",
+                                  "many"
+                                ]
+                              },
+                              "maxValues": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "validation": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "requiredBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that makes it required, by identifier"
+                              },
+                              "fixed": {
+                                "type": "boolean"
+                              },
+                              "fixedBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that fixes it, by identifier"
+                              },
+                              "default": {
+                                "description": "Absent where no schema gives one"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "dataType",
+                              "multiplicity",
+                              "validation",
+                              "required",
+                              "requiredBy",
+                              "fixed",
+                              "fixedBy"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "document",
+                        "section"
+                      ],
+                      "description": "The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves"
+                    },
+                    "schemas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      "description": "The schemas behind those fields, by name, for naming which require or fix one"
+                    },
                     "template": {
                       "anyOf": [
                         {
@@ -18987,6 +20353,8 @@
                     "version",
                     "outline",
                     "values",
+                    "fields",
+                    "schemas",
                     "template",
                     "mayEdit",
                     "mayPublish",

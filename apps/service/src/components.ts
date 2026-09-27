@@ -3,6 +3,7 @@ import type {
   ComponentParams,
   CreateComponentBody,
   SpaceParams,
+  FieldView,
 } from '@alloy-works/api-contract';
 import {
   componentFieldsNow,
@@ -21,7 +22,7 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { decide } from '@alloy-works/domain';
+import { decide, type EffectiveField } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { AppError } from './errors.js';
@@ -78,6 +79,28 @@ export function pageLimit(limit: string | undefined): number {
  * it is read in; the listing is filtered by the caller's readable set inside its query.
  */
 /**
+ * Each field as a view carries it (`FieldView`): what a form draws and validates it by, and which
+ * schemas make it required or fixed - a component's, a document's and a section's alike.
+ */
+export function fieldViews(effective: readonly EffectiveField[]): FieldView[] {
+  return effective.map((each) => ({
+    id: each.field.id,
+    name: each.field.name,
+    dataType: each.field.dataType,
+    multiplicity: each.field.multiplicity,
+    ...('maxValues' in each.field && each.field.maxValues !== undefined
+      ? { maxValues: each.field.maxValues }
+      : {}),
+    validation: { ...each.field.validation },
+    required: each.required,
+    requiredBy: [...each.requiredBy],
+    fixed: each.fixed,
+    fixedBy: [...each.fixedBy],
+    ...(each.default === undefined ? {} : { default: each.default.value }),
+  }));
+}
+
+/**
  * A component's type, the fields its next version is written against, the schemas that make them what
  * they are, and its latest version's values (definitions.md, "A component's"): read through the
  * component, as access.md reads a definition an artifact uses, with no decision of its own.
@@ -86,21 +109,7 @@ async function metadataView(trx: TenantTransaction, version: StoredVersion) {
   const { definitions, effective } = await componentFieldsNow(trx, version);
   return {
     type: { id: definitions.type.definition.id, name: definitions.type.definition.name },
-    fields: effective.map((each) => ({
-      id: each.field.id,
-      name: each.field.name,
-      dataType: each.field.dataType,
-      multiplicity: each.field.multiplicity,
-      ...('maxValues' in each.field && each.field.maxValues !== undefined
-        ? { maxValues: each.field.maxValues }
-        : {}),
-      validation: { ...each.field.validation },
-      required: each.required,
-      requiredBy: [...each.requiredBy],
-      fixed: each.fixed,
-      fixedBy: [...each.fixedBy],
-      ...(each.default === undefined ? {} : { default: each.default.value }),
-    })),
+    fields: fieldViews(effective),
     schemas: definitions.schemas.map((each) => ({
       id: each.definition.id,
       name: each.definition.name,

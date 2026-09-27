@@ -3723,6 +3723,52 @@ export interface operations {
                         values: {
                             [key: string]: unknown;
                         };
+                        /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                        fields: {
+                            document: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                            section: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                        };
+                        /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                        schemas: {
+                            id: string;
+                            name: string;
+                        }[];
                         /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
                         template: {
                             id: string;
@@ -4482,6 +4528,52 @@ export interface operations {
                         values: {
                             [key: string]: unknown;
                         };
+                        /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                        fields: {
+                            document: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                            section: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                        };
+                        /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                        schemas: {
+                            id: string;
+                            name: string;
+                        }[];
                         /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
                         template: {
                             id: string;
@@ -4556,6 +4648,52 @@ export interface operations {
                             values: {
                                 [key: string]: unknown;
                             };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
                             /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
                             template: {
                                 id: string;
@@ -4705,6 +4843,52 @@ export interface operations {
                             values: {
                                 [key: string]: unknown;
                             };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
                             /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
                             template: {
                                 id: string;
@@ -5290,6 +5474,52 @@ export interface operations {
                         values: {
                             [key: string]: unknown;
                         };
+                        /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                        fields: {
+                            document: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                            section: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                        };
+                        /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                        schemas: {
+                            id: string;
+                            name: string;
+                        }[];
                         /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
                         template: {
                             id: string;
@@ -5364,6 +5594,52 @@ export interface operations {
                             values: {
                                 [key: string]: unknown;
                             };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
                             /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
                             template: {
                                 id: string;
@@ -5513,6 +5789,52 @@ export interface operations {
                             values: {
                                 [key: string]: unknown;
                             };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
                             /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
                             template: {
                                 id: string;
@@ -8206,6 +8528,52 @@ export interface operations {
                         values: {
                             [key: string]: unknown;
                         };
+                        /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                        fields: {
+                            document: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                            section: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                        };
+                        /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                        schemas: {
+                            id: string;
+                            name: string;
+                        }[];
                         /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
                         template: {
                             id: string;

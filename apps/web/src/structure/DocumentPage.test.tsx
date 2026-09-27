@@ -4282,3 +4282,112 @@ describe('a cross-reference in the document page (cross-references 1)', () => {
     );
   });
 });
+
+describe("a document's fields and its sections'", () => {
+  const REVIEWER = 'f1e1d000-0000-4000-8000-000000000001';
+  const reviewer = {
+    id: REVIEWER,
+    name: 'Reviewer',
+    dataType: 'text',
+    multiplicity: 'one',
+    validation: {},
+    required: true,
+    requiredBy: ['schema-review'],
+    fixed: false,
+    fixedBy: [],
+  };
+
+  /** A document made from a template applying Review at both levels, answering what it is sent. */
+  function templated() {
+    const sent: { url: string; method: string; body: unknown }[] = [];
+    let version = 1;
+    let values: Record<string, unknown> = {};
+    let nodes: OutlineNode[] = [section(INTRODUCTION, 'Introduction')];
+    const view = () => ({
+      id: DOCUMENT,
+      space: { id: SPACE, name: 'General' },
+      version: {
+        id: `dddddddd-0000-4000-8000-${String(version).padStart(12, '0')}`,
+        number: `0.${version}`,
+        author: ADA,
+        createdAt: '2026-09-18T09:00:00.000Z',
+        note: null,
+      },
+      outline: outline(nodes),
+      values,
+      fields: { document: [reviewer], section: [{ ...reviewer, required: false, requiredBy: [] }] },
+      schemas: [{ id: 'schema-review', name: 'Review' }],
+      template: null,
+      mayEdit: true,
+      mayPublish: false,
+      layout: layoutView(defaultLayout.scheme),
+    });
+    const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url).pathname;
+      const body = request.method === 'GET' ? undefined : await request.clone().json();
+      sent.push({ url, method: request.method, body });
+      if (url === `/v1/documents/${DOCUMENT}` && request.method === 'GET') return json(200, view());
+      if (url === `/v1/documents/${DOCUMENT}/values`) {
+        values = (body as { values: Record<string, unknown> }).values;
+        version += 1;
+        return json(200, view());
+      }
+      if (url === `/v1/documents/${DOCUMENT}/outline`) {
+        const { operation } = body as {
+          operation: { node: string; values?: Record<string, unknown> };
+        };
+        nodes = nodes.map((node) =>
+          node.id === operation.node ? { ...node, values: operation.values ?? node.values } : node,
+        );
+        version += 1;
+        return json(200, view());
+      }
+      if (url === '/v1/components') return json(200, COMPONENTS);
+      if (url === '/v1/people') return json(200, { items: [] });
+      if (url.endsWith('/contributions')) {
+        return json(200, {
+          document: DOCUMENT,
+          version: view().version,
+          occurrences: [],
+          versions: [],
+        });
+      }
+      if (url.endsWith('/publications')) return json(200, { items: [] });
+      if (url.endsWith('/texts')) return json(200, { items: [] });
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as typeof globalThis.fetch;
+    return { fetch, sent };
+  }
+
+  it("shows the document's fields, each as it arises, and saves what is typed as its next version", async () => {
+    const { fetch, sent } = templated();
+    open(fetch);
+    const fields = await screen.findByRole('region', { name: 'Fields of this document' });
+    const field = within(fields).getByRole('textbox', { name: /^Reviewer/ });
+    expect(field).toHaveAccessibleDescription(/Reviewer is required/);
+    await userEvent.type(field, 'Ada');
+    await waitFor(() =>
+      expect(sent.find((each) => each.url.endsWith('/values'))?.body).toEqual({
+        openedFrom: 'dddddddd-0000-4000-8000-000000000001',
+        values: { [REVIEWER]: 'Ada' },
+      }),
+    );
+    // Saved once, a pause after the last key, rather than once a key.
+    expect(sent.filter((each) => each.url.endsWith('/values'))).toHaveLength(1);
+    expect(field).toHaveValue('Ada');
+  });
+
+  it("shows the chosen section's fields, and saves them with the outline's set", async () => {
+    const { fetch, sent } = templated();
+    open(fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: /Introduction/ }));
+    const fields = await screen.findByRole('region', { name: 'Fields of Introduction' });
+    await userEvent.type(within(fields).getByRole('textbox', { name: /^Reviewer/ }), 'Grace');
+    await waitFor(() =>
+      expect(sent.find((each) => each.url.endsWith('/outline'))?.body).toMatchObject({
+        operation: { operation: 'set', node: INTRODUCTION, values: { [REVIEWER]: 'Grace' } },
+      }),
+    );
+  });
+});

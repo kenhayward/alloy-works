@@ -1,3 +1,4 @@
+import type { FieldView } from '@alloy-works/api-client';
 import {
   canonicaliseTitle,
   conditions,
@@ -60,6 +61,7 @@ import {
   type DropTarget,
   type Names,
 } from './tree.js';
+import { HeldFields } from '../metadata/HeldFields.js';
 
 /**
  * The Equation dialog, loaded the first time a title asks for it, and Temml with it - the component
@@ -176,6 +178,13 @@ export interface OutlinePanelProps {
   readonly scheme: NumberingScheme | null;
   /** Whether the caller may restructure the outline at all; a reader is offered nothing to change. */
   readonly editable: boolean;
+  /**
+   * The fields the document's template applies to each section, the schemas behind them, and who a
+   * `user` field may name (definitions.md): a chosen section's are filled in beside its title.
+   */
+  readonly sectionFields?: readonly FieldView[];
+  readonly schemas?: readonly { readonly id: string; readonly name: string }[];
+  readonly people?: readonly { readonly id: string; readonly name: string }[];
   /** An operation is in flight: everything that would send another waits for it. */
   readonly busy?: boolean;
   /**
@@ -332,6 +341,9 @@ export function OutlinePanel({
   linked = null,
   linkOf,
   onSelected = () => {},
+  sectionFields,
+  schemas,
+  people,
 }: OutlinePanelProps) {
   const prefix = useId();
   const nodes = outline.nodes;
@@ -1027,6 +1039,9 @@ export function OutlinePanel({
               direction={outline.direction}
               onEquation={askEquation}
               onWithdrawEquation={withdrawEquation}
+              sectionFields={sectionFields ?? []}
+              schemas={schemas ?? []}
+              people={people ?? []}
             />
           )}
           {editable && confirming !== null && (
@@ -1256,6 +1271,9 @@ function NodeDetails({
   direction,
   onEquation,
   onWithdrawEquation,
+  sectionFields,
+  schemas,
+  people,
 }: {
   node: OutlineViewNode;
   /** Whether the node is at the top level, the only place `matter` may be set (STR-016). */
@@ -1283,6 +1301,9 @@ function NodeDetails({
   onEquation: (request: EquationRequest) => void;
   /** Closes that dialog, placing nothing, because the title changed under it. */
   onWithdrawEquation: () => void;
+  sectionFields: readonly FieldView[];
+  schemas: readonly { readonly id: string; readonly name: string }[];
+  people: readonly { readonly id: string; readonly name: string }[];
 }) {
   const hintId = useId();
   const matterHintId = useId();
@@ -1313,6 +1334,26 @@ function NodeDetails({
           onWithdrawEquation={onWithdrawEquation}
         />
       )}
+      {/* A section's own fields, from its document's template, saved with the outline's set a pause
+          after the last change (definitions.md; STR-060). A component's are its own, in its editor. */}
+      {node.type === 'section' && sectionFields.length > 0 && (
+        <HeldFields
+          label={`Fields of ${nodeName(node, names)}`}
+          fields={sectionFields}
+          schemas={schemas}
+          people={people}
+          stored={node.values}
+          readOnly={false}
+          onSave={async (values) => {
+            const answered = await onOperation({ operation: 'set', node: node.id, values });
+            return answered === 'unsent'
+              ? 'unsent'
+              : answered === 'refused' || answered === 'signedOut'
+                ? 'refused'
+                : 'saved';
+          }}
+        />
+      )}
       <label>
         Starts on
         <select
@@ -1334,7 +1375,7 @@ function NodeDetails({
       </label>
       {/* Controlled, and left enabled while an act is in flight, as the select above is: a change
           made then is not sent, and the box goes on showing what the node holds. Each sends the one
-          switch it is, and never `values`, which must stay empty. */}
+          switch it is; a section's values are sent by its fields, above. */}
       <label>
         <input
           type="checkbox"

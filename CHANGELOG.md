@@ -3,6 +3,14 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.84.0 - 2026-09-27 (PR #267)
+
+### Added
+
+- **A document's fields and its sections', on its page.** A document made from a template shows what
+  its template asks of the document beside its text, and a section's beside that section's title in
+  the outline, checked as you type like a component's. Each is saved a moment after you stop typing.
+
 ## 0.83.0 - 2026-09-27 (PR #266)
 
 ### Added

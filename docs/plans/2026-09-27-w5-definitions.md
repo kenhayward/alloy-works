@@ -141,7 +141,17 @@ both fixed test-first: a refused claim put the text back and left the fields hol
 which the next save would have sent - the fields now have a base of their own, reset with the text's;
 and a list of numbers or of dates and times, keyed by position, left each box showing its old value
 when reordered - each entry now carries a key that moves with it. The listing tests that counted
-development's one component count its two. Definitions are read, and
+development's one component count its two.
+
+**W5.4.** The document's view carries the fields its template applies at each level and the schemas
+behind them, drawn by the component view's own `fieldViews`; none while the template does not resolve.
+`HeldFields` holds a document's or a section's fields between saves: it saves a pause after the last
+change, since each save is a version - the document's through the values route, a section's through
+the outline's `set` - tries again while another act is in flight, and takes the stored values back
+only where they differ from what it holds, compared canonically because Postgres reorders an object's
+members, so the answer to its own save never redraws the form under the author. The document's fields
+stand in the page's side column; a section's in the outline panel beside its other settings, for
+those who may edit the outline. Definitions are read, and
 places listed, by name, so a refusal lists them in the same order every time. The body that makes a
 definition is one object whose payload is read by its kind's schema in a refinement, because a route's
 body must be an object schema; a version's payload is read against the definition's own kind by the

@@ -1042,6 +1042,18 @@ whatever path writes it.
 | `web: src/editor/session.ts`       | `values` beside `snapshot`, sent whole with every save            |
 | `db: src/dev-content.ts`           | Development's Procedure type and Calibrate the scanner            |
 
+A document's fields and its sections' (W5.4) are drawn from the document's view, which carries the
+fields its template applies at each level and the schemas behind them (`fieldViews`, shared with the
+component's view). `HeldFields` holds them between saves on the document page: a save a pause after
+the last change - the document's through `PUT /v1/documents/{id}/values`, a section's through the
+outline act's `set` - and the stored values taken back only where they differ from what it holds.
+
+| Where                                 | What                                                           |
+| ------------------------------------- | -------------------------------------------------------------- |
+| `web: src/metadata/HeldFields.tsx`    | Fields held between saves, saved a pause after the last change |
+| `web: src/structure/DocumentPage.tsx` | The document's fields in the side column, and `saveValues`     |
+| `web: src/structure/OutlinePanel.tsx` | A chosen section's fields beside its settings                  |
+
 ## One renderer, two deliveries
 
 `apps/web` **is** the web application, and it is also the thing the Electron window loads. There is

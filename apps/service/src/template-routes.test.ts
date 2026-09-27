@@ -355,6 +355,31 @@ describe('templates through the service', () => {
     });
   });
 
+  it('shows the fields its template applies to the document and to its sections, and none for a blank one', async () => {
+    const template = (
+      await make('ada', {
+        schemas: [
+          { schema: REVIEW_SCHEMA, level: 'document', requires: [REVIEWER] },
+          { schema: REVIEW_SCHEMA, level: 'section', requires: [] },
+        ],
+      })
+    ).json<TemplateBody>();
+    const view = (await document('alice', template.id)).json<{
+      fields: {
+        document: { id: string; name: string; required: boolean }[];
+        section: { id: string; name: string; required: boolean }[];
+      };
+      schemas: { id: string; name: string }[];
+    }>();
+    expect(view.fields).toMatchObject({
+      document: [{ id: REVIEWER, name: 'Reviewer', required: true }],
+      section: [{ id: REVIEWER, name: 'Reviewer', required: false }],
+    });
+    expect(view.schemas).toEqual([{ id: REVIEW_SCHEMA, name: 'Review' }]);
+    const blank = (await document('alice')).json<{ fields: unknown; schemas: unknown }>();
+    expect(blank).toMatchObject({ fields: { document: [], section: [] }, schemas: [] });
+  });
+
   it("writes a document's values and a section's, refusing by name what does not fit", async () => {
     const template = (
       await make('ada', {

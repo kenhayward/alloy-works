@@ -9,6 +9,7 @@ import type {
 import {
   createDocument,
   documentLayout,
+  documentRules,
   documentTemplate,
   editOutline,
   listReadableDocuments,
@@ -42,7 +43,7 @@ import {
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
-import { lockView, versionView } from './components.js';
+import { fieldViews, lockView, versionView } from './components.js';
 import type { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
@@ -78,6 +79,26 @@ async function outlineView(
   });
   const readable = await readableComponents(viewer.trx, viewer.principalId, components);
   return withholdComponents(read.outline, (component) => readable.has(component));
+}
+
+/**
+ * The fields a document's template applies to it and to its sections, at the current definitions
+ * (definitions.md, "A document's and a section's"), with the schemas behind them by name: read through
+ * the document, as a component's are through it. None for a blank document, and none while its
+ * template does not resolve, since then there is nothing to check a value against.
+ */
+async function documentFields(viewer: Viewer, document: string) {
+  const rules = await documentRules(viewer.trx, document);
+  if (!rules.bound || !rules.resolved.ok) {
+    return { fields: { document: [], section: [] }, schemas: [] };
+  }
+  return {
+    fields: {
+      document: fieldViews(rules.resolved.document),
+      section: fieldViews(rules.resolved.section),
+    },
+    schemas: rules.schemas.map((each) => ({ id: each.id, name: each.name })),
+  };
 }
 
 /**
@@ -133,6 +154,7 @@ async function documentView(
     version: versionView(version),
     outline: await outlineView(viewer, document.id, version),
     values: { ...version.values },
+    ...(await documentFields(viewer, document.id)),
     template: await templateView(viewer, document.id),
     mayEdit: viewer.mayEdit,
     mayPublish: viewer.mayPublish,
