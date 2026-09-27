@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { useStyledImages } from './images.js';
 import { usePresentation, useZoom, ZOOMS, type Zoom } from './presentation.js';
+import { Notice } from '../states/Notice.js';
 
 /** Points to CSS pixels: a CSS inch is 96 pixels and 72 points. */
 const PX_PER_PT = 96 / 72;
@@ -124,5 +125,24 @@ export function ZoomControl() {
         ))}
       </select>
     </label>
+  );
+}
+
+/**
+ * The typefaces of the theme the renderer holds none of, said where the text is (STY-070, ET-I): their
+ * text is set in the application's own face meanwhile, and says so rather than passing for the page.
+ */
+export function UnheldFaces() {
+  const presentation = usePresentation();
+  if (presentation?.state !== 'ready' || presentation.unheld.length === 0) return null;
+  return (
+    <Notice tone="failed">
+      <p>
+        {presentation.unheld.length === 1 ? 'The typeface ' : 'The typefaces '}
+        {presentation.unheld.join(', ')}
+        {presentation.unheld.length === 1 ? ' is' : ' are'} not available here, so the text set in{' '}
+        {presentation.unheld.length === 1 ? 'it' : 'them'} is shown in the application's own face.
+      </p>
+    </Notice>
   );
 }

@@ -33,6 +33,7 @@ import {
   setDirection,
   setLanguage,
   setReferenceContext,
+  setStyleCheck,
   setTitle,
   somewhereToPutMark,
   toEditor,
@@ -45,7 +46,7 @@ import {
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import styles from './ComponentEditor.module.css';
-import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 
 import { positionAtTextOffset } from './caret.js';
@@ -83,6 +84,9 @@ import { everyPage } from '../paging.js';
 import { byName } from '../metadata/people.js';
 import { Canvas } from '../theme/Canvas.js';
 import { ParagraphStyle } from '../theme/StyleChoice.js';
+import { styleCheckFor } from '../theme/check.js';
+import { UnheldFaces } from '../theme/Canvas.js';
+import { usePresentation } from '../theme/presentation.js';
 
 /**
  * The Equation dialog, loaded the first time it opens, and Temml with it (equations 1's final review,
@@ -840,6 +844,21 @@ export function ComponentEditor({
     }
   }, [surface, referenceContext]);
 
+  // The theme the page is set in marks, on the surface and in a footnote's editor, what will not
+  // resolve in it (themes.md, "What will not resolve", ET-I; STY-070); nothing is marked without one.
+  const presentation = usePresentation();
+  const styleCheck = useMemo(
+    () =>
+      presentation?.state === 'ready'
+        ? styleCheckFor(presentation.theme, presentation.unheld)
+        : null,
+    [presentation],
+  );
+  useEffect(() => {
+    if (surface === null || surface.isDestroyed) return;
+    setStyleCheck(surface, styleCheck);
+  }, [surface, styleCheck]);
+
   // While there is something the service has not acknowledged, an unmount already flushes it best
   // effort (Session.dispose) but a page close does not run that cleanup at all - so a close is
   // guarded for as long as anything is dirty or being sent (fix round 1, finding 4): while dirty,
@@ -1278,6 +1297,7 @@ export function ComponentEditor({
                 itself where what it holds cannot take the focus, such as a component being read. */}
             {/* On the paper the theme sets text on, at the layout's measure (themes.md, "The theme in
                 the editor"): the same element whether or not the theme has arrived. */}
+            <UnheldFaces />
             <Canvas>
               <div ref={place} className={styles['surface']} tabIndex={-1} />
             </Canvas>

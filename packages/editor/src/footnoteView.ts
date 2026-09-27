@@ -10,12 +10,13 @@ import {
   type Transaction,
 } from 'prosemirror-state';
 import { AddNodeMarkStep, AttrStep, RemoveNodeMarkStep, StepMap } from 'prosemirror-transform';
-import { EditorView, type NodeView } from 'prosemirror-view';
+import { DecorationSet, EditorView, type NodeView } from 'prosemirror-view';
 
 import { equationView } from './equationView.js';
 import { pasteInto, readClipboard, type ClipboardSource, type PasteOutcome } from './clipboard.js';
 import { footnoteAt, openFootnote, recordOpenFootnote } from './footnotes.js';
 import { referenceContextOf, referenceDecorations, referenceView } from './referenceView.js';
+import { styleCheckOf, unresolvedDecorations, type StyleCheck } from './resolution.js';
 import { footnotePluginsOf } from './state.js';
 
 /** A transaction the footnote's editor takes from the surface, which is not sent back to it. */
@@ -113,6 +114,9 @@ export function footnoteView(
     return done;
   };
 
+  // The last marks made for the footnote's text, and what they were made from.
+  let marked: { doc: Node; check: StyleCheck; marks: DecorationSet } | null = null;
+
   const openEditor = () => {
     if (inner !== null) return;
     const holder = document.createElement('span');
@@ -161,12 +165,19 @@ export function footnoteView(
       },
       decorations: (state) => {
         const pos = getPos();
-        return pos === undefined
-          ? null
-          : referenceDecorations(state.doc, referenceContextOf(outer.state), {
-              component: outer.state.doc,
-              offset: pos + 1,
-            });
+        if (pos === undefined) return null;
+        const references = referenceDecorations(state.doc, referenceContextOf(outer.state), {
+          component: outer.state.doc,
+          offset: pos + 1,
+        });
+        // What will not resolve in the footnote's own text, by the component's check (ET-I): made again
+        // only when the footnote's text or the check changes, not on every draw.
+        const check = styleCheckOf(outer.state);
+        if (check === null) return references;
+        if (marked === null || marked.doc !== state.doc || marked.check !== check) {
+          marked = { doc: state.doc, check, marks: unresolvedDecorations(state.doc, check, true) };
+        }
+        return DecorationSet.create(state.doc, [...references.find(), ...marked.marks.find()]);
       },
       handleDOMEvents: {
         paste: (_view, event) => {

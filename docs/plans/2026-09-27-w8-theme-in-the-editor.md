@@ -148,13 +148,16 @@ theme is an input recorded beside the pipeline, not part of what the pipeline is
 
 ## W8.6: What will not resolve
 
-1. **Commands**: `setParagraphStyle`, `setTableStyle`, `setImageStyle` in `packages/editor`, each one
-   history step, refusing a style that does not apply where it would stand.
-2. **Choosers**: the toolbar's Style list; the Table panel's Table style; the Figure dialog's and
-   panel's Image style. Only styles that apply are offered, and the place's default is stored as
-   `body` (CNT-094, CNT-121).
-3. **Markers** (STY-070): a style missing or out of place, a face not held, and a character its family
-   cannot set by `characterProblems`, over the blocks a change touched.
-4. **The default theme 0.4** (ET-H): Lead, Centred, Small print, Banded and Half width, seeded by the
-   next tenant migration, moving only the product's own unchanged chain as 0025 did; a publish of each
-   style in the worker's suite, to PDF and Word.
+**W8.6, as built.** The theme lives in the renderer and the editor holds none, so the page gives the
+surface a check - `styleCheckFor` in `apps/web/src/theme/check.ts`, the reader's applicability rules and
+the publish's own `characterProblems` over the fonts' generated coverage - which `packages/editor`'s
+`resolution.ts` keeps in plugin state and marks the document by, made again only when the document or
+the check changes; a footnote's editor asks the component's. A paragraph whose style the theme does
+not hold, or holds for another place, is outlined and labelled and set meanwhile in its place's default
+by one more selector in the projection; a table or an image in that state is outlined and labelled, and
+set by the editor's own stylesheet, since neither has a default of its place. A character the family
+setting it cannot set, in the setting it is set in - inline code in inline code's face - is outlined and
+named on hover; a character of a family the renderer does not hold is not, since the notice beside the
+text names the family itself. A document's read text marks styles as the surface does; characters are
+marked only on the surface, where they can be changed. A preformatted block's language label is drawn
+rather than typed, so the block itself is marked where its label's face lacks a character, naming it.

@@ -537,3 +537,27 @@
   border: 1px dashed var(--muted);
   color: var(--muted);
 }
+
+/* What will not resolve in the theme the text is set in (themes.md, "What will not resolve"; STY-070):
+ * a block whose style the theme does not hold, or holds for somewhere else, outlined and labelled
+ * with the style's name - its text meanwhile in the default where it stands - and a character the face
+ * setting it cannot set, outlined, its code point named on hover. Never a silent default. */
+.aw-text [data-unresolved] {
+  outline: 2px dashed var(--danger);
+  outline-offset: 2px;
+}
+
+.aw-text [data-unresolved]::before {
+  content: attr(data-unresolved-label);
+  display: block;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.aw-text .aw-glyph-missing,
+.aw-text .aw-label-glyph-missing {
+  outline: 1px solid var(--danger);
+}

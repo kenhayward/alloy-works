@@ -17289,7 +17289,7 @@
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5707,
+      "line": 5802,
       "kind": "title"
     },
     {
@@ -17350,6 +17350,12 @@
       "id": "SCH-057",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
       "line": 5340,
+      "kind": "title"
+    },
+    {
+      "id": "STY-070",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 5596,
       "kind": "title"
     },
     {
@@ -18591,7 +18597,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 329,
+      "line": 331,
       "kind": "title"
     },
     {
@@ -19209,13 +19215,13 @@
     {
       "id": "CNT-115",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 176,
+      "line": 188,
       "kind": "title"
     },
     {
       "id": "STY-037",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 184,
+      "line": 196,
       "kind": "title"
     },
     {
@@ -19492,6 +19498,12 @@
       "id": "CNT-127",
       "file": "packages/editor/src/marks.test.ts",
       "line": 312,
+      "kind": "title"
+    },
+    {
+      "id": "STY-070",
+      "file": "packages/editor/src/resolution.test.ts",
+      "line": 62,
       "kind": "title"
     },
     {

@@ -204,12 +204,18 @@ function selectorsOf(theme: ResolvedTheme, id: string): string[] {
   const selectors = id === 'body' ? [] : [`${CANVAS} [data-style="${id}"]`];
   for (const place of PLACES) {
     if (theme.places[place] !== id) continue;
+    // A paragraph whose style will not resolve is marked by the editor (STY-070) and set meanwhile
+    // in the default where it stands, a selector heavier than its own style's rule.
     if (place === 'footnote') {
-      selectors.push(`${CANVAS} .aw-footnote-paragraph[data-style="body"]`);
+      selectors.push(
+        `${CANVAS} .aw-footnote-paragraph[data-style="body"]`,
+        `${CANVAS} .aw-footnote-paragraph[data-unresolved]`,
+      );
     } else {
       selectors.push(
         `${CANVAS} [data-place="${place}"][data-style="body"]`,
         `${CANVAS} [data-place="${place}"]:not([data-style])`,
+        `${CANVAS} [data-place="${place}"][data-unresolved]`,
       );
     }
   }

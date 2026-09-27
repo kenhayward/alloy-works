@@ -231,6 +231,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   header row filled and bold and every other row shaded, with no rules between its columns; and
   **Half width** for a figure, centred. Each publishes as it shows, in a PDF and in Word.
 
+- **What will not print as it shows, marked.** A paragraph, a table or an image whose style the theme
+  does not have, or has only for somewhere else, is outlined and labelled with the style's name, and
+  a paragraph is shown meanwhile as the default where it stands. A character the typeface cannot set -
+  one a publication would fail on - is outlined, and names itself when you point at it. A typeface
+  the application does not have is named in a notice beside the text, which is shown in the
+  application's own face until it does.
+
 - **Making a component.** On the list of components, **New component** offers the spaces you may create
   in, a title, a base language such as `en-GB`, a direction, and the component type the environment
   offers. Creating makes version 0.1 with one empty paragraph and opens it. Above the surface, the

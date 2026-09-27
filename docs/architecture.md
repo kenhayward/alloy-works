@@ -1238,18 +1238,20 @@ document's. The style lists offer what the theme holds, and nothing edits a them
 theme's 0.4 (migration 0034, ET-H) gives them something to offer: Lead, Centred and Small print for
 running text, Banded for a table and Half width for a figure, beside each place's default.
 
-| Where                             | What                                                                        |
-| --------------------------------- | --------------------------------------------------------------------------- |
-| `fonts: src/coverage.ts`          | Each family's characters as ranges, generated and drift-checked             |
-| `domain: src/theme/faces.ts`      | `projectFontFaces` and `faceFamily`                                         |
-| `service: src/presentation.ts`    | The two routes                                                              |
-| `web: src/theme/presentation.tsx` | `PresentationProvider` and `usePresentation`                                |
-| `domain: src/theme/css.ts`        | `projectCss`: every property but the pagination-bound                       |
-| `editor: src/places.ts`           | `paragraphPlaces`, its decorations and `drawPlaces`                         |
-| `web: src/theme/Canvas.tsx`       | `Canvas`, `useCanvas` and `ZoomControl`                                     |
-| `web: src/theme/images.ts`        | `sizeImages` and `useStyledImages`: images at their styled size             |
-| `editor: src/styles.ts`           | `setParagraphStyle`, `setTableStyle`, `setImageStyle` and `paragraphsAt`    |
-| `web: src/theme/StyleChoice.tsx`  | The style lists: what each offers, from the theme, and the lists themselves |
+| Where                             | What                                                                                                             |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `fonts: src/coverage.ts`          | Each family's characters as ranges, generated and drift-checked                                                  |
+| `domain: src/theme/faces.ts`      | `projectFontFaces` and `faceFamily`                                                                              |
+| `service: src/presentation.ts`    | The two routes                                                                                                   |
+| `web: src/theme/presentation.tsx` | `PresentationProvider` and `usePresentation`                                                                     |
+| `domain: src/theme/css.ts`        | `projectCss`: every property but the pagination-bound                                                            |
+| `editor: src/places.ts`           | `paragraphPlaces`, its decorations and `drawPlaces`                                                              |
+| `web: src/theme/Canvas.tsx`       | `Canvas`, `useCanvas` and `ZoomControl`                                                                          |
+| `web: src/theme/images.ts`        | `sizeImages` and `useStyledImages`: images at their styled size                                                  |
+| `editor: src/styles.ts`           | `setParagraphStyle`, `setTableStyle`, `setImageStyle` and `paragraphsAt`                                         |
+| `web: src/theme/StyleChoice.tsx`  | The style lists: what each offers, from the theme, and the lists themselves                                      |
+| `editor: src/resolution.ts`       | The theme's check, kept in plugin state, and the marks it makes on what will not resolve                         |
+| `web: src/theme/check.ts`         | `styleCheckFor`, `markUnresolved` and `useUnresolvedMarks`: the check, from the theme, and the read text's marks |
 
 ## One renderer, two deliveries
 

@@ -5593,6 +5593,101 @@ describe('the surface set in the theme\'s type, at the layout\'s measure (themes
     );
   });
 
+  it('STY-070 marks a style, a typeface or a character that will not resolve, rather than setting it in a silent default', async () => {
+    const stored = {
+      ...content('Unbox the printer.'),
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'gone',
+          content: [{ type: 'text', value: 'Keep the receipt.', marks: [] }],
+        },
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [
+            {
+              type: 'paragraph',
+              id: 'b2',
+              style: 'lead',
+              content: [{ type: 'text', value: 'Keep the box.', marks: [] }],
+            },
+          ],
+        },
+        {
+          type: 'paragraph',
+          id: 'b3',
+          style: 'body',
+          content: [{ type: 'text', value: 'Letter ا here.', marks: [] }],
+        },
+      ],
+    };
+    // A theme whose monospaced face names a file the renderer does not hold.
+    const unheldMono = {
+      ...DEFAULT_PRESENTATION,
+      theme: {
+        ...DEFAULT_PRESENTATION.theme,
+        content: {
+          ...DEFAULT_PRESENTATION.theme.content,
+          typefaces: DEFAULT_PRESENTATION.theme.content.typefaces.map((typeface) =>
+            typeface.id === 'mono'
+              ? {
+                  ...typeface,
+                  files: typeface.files.map((file, index) =>
+                    index === 0 ? { ...file, sha256: '0'.repeat(64) } : file,
+                  ),
+                }
+              : typeface,
+          ),
+        },
+      },
+    };
+    const { client } = service({
+      'GET /v1/components/{id}': () => json(200, opened({ content: stored })),
+      'GET /v1/presentation': () => json(200, unheldMono),
+    });
+    let view: EditorView | undefined;
+    render(
+      <PresentationProvider client={client}>
+        <ComponentEditor
+          componentId={COMPONENT}
+          client={client}
+          principalId={ADA}
+          sessionId={SESSION}
+          timing={quick}
+          onView={(mounted) => (view = mounted)}
+        />
+      </PresentationProvider>,
+    );
+    await screen.findByLabelText('Title');
+    const paragraph = (text: string) =>
+      [...view!.dom.querySelectorAll('p')].find((each) => each.textContent === text)!;
+
+    // A style the theme does not hold: marked, named, and set meanwhile in the default where it stands.
+    await waitFor(() =>
+      expect(paragraph('Keep the receipt.')).toHaveAttribute('data-unresolved', 'missing'),
+    );
+    expect(paragraph('Keep the receipt.')).toHaveAttribute(
+      'data-unresolved-label',
+      'Style gone is not in this theme',
+    );
+    expect(getComputedStyle(paragraph('Keep the receipt.')).fontSize).toBe(
+      'calc(11pt * var(--aw-zoom))',
+    );
+    // One it holds for running text, standing in a quotation: marked, and set as the quotation's.
+    expect(paragraph('Keep the box.')).toHaveAttribute('data-unresolved', 'misplaced');
+    expect(getComputedStyle(paragraph('Keep the box.')).getPropertyValue('margin-inline')).toBe(
+      'calc(11pt * var(--aw-zoom)) calc(11pt * var(--aw-zoom))',
+    );
+    // A character no face of the family setting it holds: marked, its code point named.
+    const glyph = view!.dom.querySelector('.aw-glyph-missing');
+    expect(glyph?.textContent).toBe('ا');
+    expect(glyph).toHaveAttribute('title', 'No glyph for U+0627 in this typeface');
+    // A face the renderer does not hold: said, by its family, where the text stands.
+    expect(await screen.findByText(/Liberation Mono/)).toBeInTheDocument();
+  });
+
   it('leaves the text as it was where no presentation arrives', async () => {
     const { client } = service({ 'GET /v1/components/{id}': () => json(200, opened()) });
     let view: EditorView | undefined;

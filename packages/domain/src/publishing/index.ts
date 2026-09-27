@@ -20,6 +20,8 @@ export type { Covers, Setting } from './glyphs.js';
 // Promoted by editor 5 so the worker's regression corpus probes the exemption with the predicate
 // `assemble` asks, rather than a copy of its ranges.
 export { setWithoutAGlyph } from './glyphs.js';
+// And the check itself, which the editor marks a character by that a publish would fail on (W8.6, STY-070).
+export { characterProblems } from './glyphs.js';
 // The maths tree, from an equation's stored MathML: what the template and the Word writer read of an
 // equation, and why one cannot be set (equations 2, ruling R2).
 export { mathsTree } from './maths.js';
