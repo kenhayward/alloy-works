@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.89.1 - 2026-09-27 (PR #274)
+
+### Changed
+
+- **Listings and retries are designed for this tranche.** Components, documents, publications and
+  templates will each be listed a page at a time without repeating or skipping anything, sorted and
+  filtered by the service, with a Templates view in the application; and a request sent again with the
+  same idempotency key will be answered from the first rather than doing its work twice.
+
 ## 0.89.0 - 2026-09-27 (PR #273)
 
 ### Added
