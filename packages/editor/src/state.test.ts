@@ -642,7 +642,15 @@ describe('spelling, over a run in another language', () => {
 
   /** The text of every run the decorations turn the checker off over. */
   const unchecked = (doc: Node, set = spellcheckDecorations(doc)) =>
-    set.find().map((decoration) => doc.textBetween(decoration.from, decoration.to));
+    set
+      .find()
+      // Only the spelling rule's: the plugin's set holds the theme's places and placeholders too.
+      .filter(
+        (decoration) =>
+          'spellcheck' in
+          ((decoration as unknown as { type: { attrs?: object } }).type.attrs ?? {}),
+      )
+      .map((decoration) => doc.textBetween(decoration.from, decoration.to));
 
   it("CNT-147 does not check a run whose language differs from the component's base language", () => {
     const doc = componentIn('en-GB', runs);

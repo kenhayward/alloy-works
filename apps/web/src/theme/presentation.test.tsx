@@ -1,26 +1,13 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { DEFAULT_CATALOGUES_BY_VERSION, DEFAULT_THEME } from '@alloy-works/domain';
+import { DEFAULT_THEME } from '@alloy-works/domain';
 import { PINNED_FONT_FILES } from '@alloy-works/fonts';
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { faceUrl } from './faces.js';
 import { PresentationProvider, usePresentation } from './presentation.js';
+import { DEFAULT_PRESENTATION } from './presentation.fixture.js';
 
 const DOCUMENT = '0b4fd1a5-9a8e-4a55-9f6e-2f1f33c6d7a1';
-
-/** The environment's default theme and layout, as `GET /v1/presentation` answers them. */
-const DEFAULT_PRESENTATION = {
-  theme: {
-    versionId: 'theme-version',
-    number: '0.3',
-    content: DEFAULT_THEME,
-    catalogues: [...DEFAULT_CATALOGUES_BY_VERSION].map(([versionId, content]) => ({
-      versionId,
-      content,
-    })),
-  },
-  frame: { measure: 451.28, textHeight: 697.89 },
-};
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });

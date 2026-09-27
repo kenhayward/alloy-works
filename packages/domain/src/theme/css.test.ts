@@ -1,47 +1,207 @@
 import { describe, expect, it } from 'vitest';
 
-import { projectCss } from './css.js';
-import { resolved } from './theme.fixture.js';
+import {
+  PAGINATION_BOUND,
+  PROJECTED_CHARACTER_PROPERTIES,
+  PROJECTED_PARAGRAPH_PROPERTIES,
+  projectCss,
+} from './css.js';
+import { characterPropertiesSchema, paragraphBaseSchema } from './schema.js';
+import { defaultInputs, resolved } from './theme.fixture.js';
 
 /** The editor's projection. It translates resolved styles and decides nothing. */
 const css = projectCss(resolved());
 
+/** The declarations of the one rule whose selector list includes `selector`. */
+function ruleFor(text: string, selector: string): string {
+  const rule = text
+    .split('\n')
+    .find((line) => line.split(' { ')[0]!.split(', ').includes(selector));
+  if (!rule) throw new Error(`No rule for ${selector}`);
+  return rule.slice(rule.indexOf(' { ') + 3, -3);
+}
+
+/**
+ * The default theme with a style an author may choose that states every paragraph property at a value
+ * no default holds, and marks that state every character property.
+ */
+function everyProperty() {
+  const inputs = defaultInputs();
+  inputs.catalogues.paragraph.styles.push({
+    id: 'panel',
+    name: 'Panel',
+    appliesTo: ['text'],
+    properties: {
+      typeface: 'mono',
+      size: 12,
+      bold: true,
+      italic: true,
+      colour: '#1a2b3c',
+      background: '#f0f0f0',
+      padding: 4,
+      alignment: 'justify',
+      firstLineIndent: 9,
+      startIndent: 18,
+      endIndent: 6,
+      spaceBefore: 5,
+      spaceAfter: 7,
+      lineSpacing: 16,
+      contextualSpacing: true,
+    },
+  });
+  const character = inputs.catalogues.character.styles.find((style) => style.mark === 'strong')!;
+  character.properties = {
+    bold: false,
+    italic: true,
+    underline: true,
+    colour: '#223344',
+    typeface: 'mono',
+    position: 'superscript',
+    scale: 0.8,
+  };
+  return projectCss(resolved(inputs));
+}
+
 describe('projectCss', () => {
-  it('writes every property it projects of a paragraph style at its resolved value', () => {
-    expect(css).toContain(
-      '.aw-p-heading-1 { margin: 0 0 -1.581pt 0; font-family: "Liberation Serif"; font-size: 16pt; ' +
-        'font-weight: 700; font-style: normal; color: #000000; text-indent: 0pt; ' +
-        'padding-top: 11.911pt; padding-bottom: 4.57pt; line-height: 20.88pt; }',
+  it('STY-058 writes every declared paragraph and character property as the theme declares it, and none is left out but the pagination-bound', () => {
+    // Every property the schema has is either written or bound to pagination: a property added to the
+    // schema and to neither list fails here, so the projection cannot stop at a sample again.
+    expect([...PROJECTED_PARAGRAPH_PROPERTIES, ...PAGINATION_BOUND].sort()).toEqual(
+      Object.keys(paragraphBaseSchema.shape).sort(),
     );
+    expect([...PROJECTED_CHARACTER_PROPERTIES].sort()).toEqual(
+      Object.keys(characterPropertiesSchema.shape).sort(),
+    );
+
+    // And each is written at the value the theme declares. Panel: Liberation Mono at 12pt on 16pt,
+    // whose half-leading is (16 - (1705 + 615) / 2048 x 12) / 2 = 1.203pt.
+    const text = everyProperty();
+    const panel = ruleFor(text, '.aw-canvas.aw-canvas [data-style="panel"]');
+    const z = (points: string) => `calc(${points}pt * var(--aw-zoom))`;
+    expect(panel.split('; ')).toEqual([
+      'font-family: "aw-face-mono"',
+      `font-size: ${z('12')}`,
+      'font-weight: 700',
+      'font-style: italic',
+      'color: #1a2b3c',
+      'background-color: #f0f0f0',
+      'background-clip: padding-box',
+      'text-align: justify',
+      `text-indent: ${z('9')}`,
+      `margin-block: 0 ${z('-1.203')}`,
+      `margin-inline: ${z('18')} ${z('6')}`,
+      'border: 0 solid transparent',
+      `border-block-width: ${z('5')} ${z('7')}`,
+      // Its padding inside its fill, on every side; its half-leading above its first line.
+      `padding-block: ${z('5.203')} ${z('4')}`,
+      `padding-inline: ${z('4')}`,
+      `line-height: ${z('16')}`,
+    ]);
+    // Contextual spacing: two neighbours in Panel lose the space between them, and only that.
+    expect(text).toContain(
+      '.aw-canvas.aw-canvas [data-style="panel"] + [data-style="panel"] { border-block-start-width: 0; }',
+    );
+    expect(text).toContain(
+      '.aw-canvas.aw-canvas [data-style="panel"]:has(+ [data-style="panel"]) { border-block-end-width: 0; }',
+    );
+
+    // Strong, restated: every character property, the script's size its scale times 1331/2048.
+    expect(ruleFor(text, '.aw-canvas.aw-canvas .aw-mark-strong').split('; ')).toEqual([
+      'font-weight: 400',
+      'font-style: italic',
+      'text-decoration-line: underline',
+      'color: #223344',
+      'font-family: "aw-face-mono"',
+      'vertical-align: super',
+      'font-size: 0.52em',
+      'line-height: 0',
+    ]);
   });
 
-  it('spaces blocks with padding, which adds, never with collapsing margins (STY-050)', () => {
-    // A table's note: no space before, its half-leading, (13.05 - 1.107 x 10) / 2 = 0.988pt, above
-    // that, and its 2.97pt after below.
-    expect(css).toMatch(/\.aw-p-table-note \{[^}]*padding-top: 0\.988pt; padding-bottom: 2\.97pt;/);
+  it("STY-050 CNT-082 spaces blocks by adding one's space after to the next's space before, never collapsing them", () => {
+    // A block's spaces are transparent borders, which never collapse into each other as margins do.
+    // The body: no space before, 2.75pt after.
+    const body = ruleFor(css, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]');
+    expect(body).toContain('border: 0 solid transparent');
+    expect(body).toContain('border-block-width: 0 calc(2.75pt * var(--aw-zoom))');
+    expect(css).not.toMatch(/margin-(top|bottom|block-start|block-end):/);
   });
 
-  it("moves each line's extra space above it, as Word does, by cancelling CSS's split (STY-051)", () => {
+  it("moves each line's extra space above it, as Word does, by cancelling CSS's split", () => {
     // CSS puts half of a line's extra space above and half below. Word puts all of it above.
     // Half-leading = (line spacing - (ascent + descent) x size) / 2: 1.084pt for body at 11pt on
     // 14.35pt. Adding it above and taking it back below as a margin - which can go negative where
     // padding cannot - leaves it all above.
-    expect(css).toMatch(/\.aw-p-body \{ margin: 0 0 -1\.084pt 0;[^}]*padding-top: 1\.084pt;/);
+    const body = ruleFor(css, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]');
+    expect(body).toContain('margin-block: 0 calc(-1.084pt * var(--aw-zoom))');
+    expect(body).toContain('padding-block: calc(1.084pt * var(--aw-zoom)) 0');
+  });
+
+  it('CNT-097 sets text in the face the theme declares, never a face of the same name on the machine, at the size it declares', () => {
+    const body = ruleFor(css, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]');
+    expect(body).toContain('font-family: "aw-face-serif"');
+    expect(body).toContain('font-size: calc(11pt * var(--aw-zoom))');
+    expect(css).not.toContain('Liberation');
+    expect(css).toContain('.aw-canvas.aw-canvas math { font-family: "aw-face-maths"; }');
+    // Inline code in the monospaced face at 0.8 of the text it stands in.
+    const code = ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-inlineCode');
+    expect(code).toContain('font-family: "aw-face-mono"');
+    expect(code).toContain('font-size: 0.8em');
+  });
+
+  it('sets a stored body in the default of the place it stands in, and each role in its own style', () => {
+    const quotation = ruleFor(
+      css,
+      '.aw-canvas.aw-canvas [data-place="quotation"][data-style="body"]',
+    );
+    expect(quotation).toContain(
+      'margin-inline: calc(11pt * var(--aw-zoom)) calc(11pt * var(--aw-zoom))',
+    );
+    // The footnote's paragraphs are always in the footnote's place.
+    expect(
+      ruleFor(css, '.aw-canvas.aw-canvas .aw-footnote-paragraph[data-style="body"]'),
+    ).toContain('font-size: calc(9.35pt * var(--aw-zoom))');
+    // A term is set in its list item's default, and carries no stored style.
+    expect(
+      ruleFor(css, '.aw-canvas.aw-canvas [data-place="listItem"]:not([data-style])'),
+    ).toContain('font-size: calc(11pt * var(--aw-zoom))');
+    // A stored body never means the style called Body: it means the default where it stands.
+    expect(css).not.toMatch(/\.aw-canvas\.aw-canvas \[data-style="body"\]/);
+    for (const role of ['caption', 'tableNote', 'attribution', 'preformatted']) {
+      expect(() => ruleFor(css, `.aw-canvas.aw-canvas [data-role="${role}"]`), role).not.toThrow();
+    }
+    expect(() => ruleFor(css, '.aw-canvas.aw-canvas pre[data-language]::before')).not.toThrow();
+  });
+
+  it('CNT-115 scales every length by the canvas zoom, and writes none in any other unit but ems of the text', () => {
+    const lengths = css.match(/-?\d+(\.\d+)?(pt|px|em|rem|mm|in)\b/g) ?? [];
+    expect(lengths.length).toBeGreaterThan(0);
+    for (const length of lengths) expect(length).toMatch(/pt$|em$/);
+    // Every point is inside a calc by the zoom.
+    expect(css.match(/\d(\.\d+)?pt(?! \* var\(--aw-zoom\))/g)).toBeNull();
   });
 
   it('writes nothing that depends on pagination - preview shows those (STY-037)', () => {
-    expect(css).not.toMatch(/keep|break|orphans|widows|hyphen/);
+    expect(css).not.toMatch(/keep|break-|orphans|widows|hyphen/);
   });
 
   it("puts the canvas on the theme's paper, in the ink of the text's own style", () => {
     expect(css).toContain('.aw-canvas { background: #ffffff; color: #000000; }');
   });
 
-  it('renders a mark by the weight and posture its character style states, and only those', () => {
-    expect(css).toContain('.aw-mark-strong { font-weight: 700; }');
-    expect(css).toContain('.aw-mark-emphasis { font-style: italic; }');
-    // Not projected yet: the theme in the editor finishes them (TH-F).
-    expect(css).not.toContain('.aw-mark-underline');
-    expect(css).not.toContain('.aw-mark-inlineCode');
+  it("states every property of a mark, the text's own where its style states none, so no browser default shows", () => {
+    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-hyperlink').split('; ')).toEqual([
+      'font-weight: inherit',
+      'font-style: inherit',
+      'text-decoration-line: none',
+      'color: inherit',
+      'font-family: inherit',
+      'vertical-align: baseline',
+      'font-size: inherit',
+    ]);
+    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-strong')).toContain('font-weight: 700');
+    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-subscript')).toContain(
+      'vertical-align: sub',
+    );
   });
 });

@@ -1,6 +1,14 @@
 import type { createApiClient, PresentationView } from '@alloy-works/api-client';
-import { projectFontFaces, readTheme, type ResolvedTheme } from '@alloy-works/domain';
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { projectCss, projectFontFaces, readTheme, type ResolvedTheme } from '@alloy-works/domain';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { faceUrl } from './faces.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -23,6 +31,37 @@ export type Presentation =
 
 const PresentationContext = createContext<Presentation | null>(null);
 
+/** The zooms a reader chooses between (ET-E): a share of the printed size, or the column's width. */
+export const ZOOMS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+export type Zoom = (typeof ZOOMS)[number] | 'fit';
+
+const ZOOM_KEY = 'alloy-works.zoom';
+
+/** The zoom this reader chose last, kept in this browser as a convenience; the printed size if none. */
+function keptZoom(): Zoom {
+  try {
+    const kept = window.localStorage.getItem(ZOOM_KEY);
+    if (kept === 'fit') return 'fit';
+    const found = ZOOMS.find((each) => String(each) === kept);
+    return found ?? 1;
+  } catch {
+    return 1;
+  }
+}
+
+/**
+ * The canvas's own rules, beside the theme's: the text is the layout's measure wide, times the zoom
+ * (CNT-115), whether the canvas holds the text - the editing surface - or is the text itself - a
+ * document's read text; and a column narrower than that scrolls sideways rather than setting shorter
+ * lines than the page will. The layout's, not the theme's, so written here rather than projected.
+ */
+const CANVAS_CSS =
+  '.aw-canvas { overflow-x: auto; }\n' +
+  '.aw-canvas .aw-text, .aw-canvas.aw-text { box-sizing: content-box; ' +
+  'width: calc(var(--aw-measure) * var(--aw-zoom)); max-width: none; }\n';
+
+const ZoomContext = createContext<{ zoom: Zoom; setZoom: (zoom: Zoom) => void } | null>(null);
+
 /**
  * Reads the presentation a page is set in - the environment's, or with `document` that document's, as
  * a publish would take them (ET-A) - and declares the theme's faces from the renderer's own copy of the
@@ -40,6 +79,16 @@ export function PresentationProvider({
 }) {
   const [presentation, setPresentation] = useState<Presentation>({ state: 'loading' });
   const [faces, setFaces] = useState('');
+  const [zoom, setZoomState] = useState<Zoom>(keptZoom);
+  const setZoom = useCallback((next: Zoom) => {
+    setZoomState(next);
+    try {
+      window.localStorage.setItem(ZOOM_KEY, String(next));
+    } catch {
+      // Storage refused: the zoom holds for this page and is not kept.
+    }
+  }, []);
+  const zooming = useMemo(() => ({ zoom, setZoom }), [zoom, setZoom]);
 
   useEffect(() => {
     let live = true;
@@ -63,7 +112,8 @@ export function PresentationProvider({
           return;
         }
         const projected = projectFontFaces(read.theme, faceUrl);
-        setFaces(projected.css);
+        // The faces, then the theme's own rules, which name them (STY-058).
+        setFaces(projected.css + CANVAS_CSS + projectCss(read.theme));
         setPresentation({
           state: 'ready',
           theme: read.theme,
@@ -84,8 +134,10 @@ export function PresentationProvider({
 
   return (
     <PresentationContext.Provider value={presentation}>
-      {faces !== '' && <style data-aw-faces="">{faces}</style>}
-      {children}
+      <ZoomContext.Provider value={zooming}>
+        {faces !== '' && <style data-aw-faces="">{faces}</style>}
+        {children}
+      </ZoomContext.Provider>
     </PresentationContext.Provider>
   );
 }
@@ -93,4 +145,9 @@ export function PresentationProvider({
 /** The presentation a page is set in, or null outside any provider, where text is set as it was. */
 export function usePresentation(): Presentation | null {
   return useContext(PresentationContext);
+}
+
+/** The zoom a page's text is set at, and how a reader changes it; null outside any provider. */
+export function useZoom(): { zoom: Zoom; setZoom: (zoom: Zoom) => void } | null {
+  return useContext(ZoomContext);
 }

@@ -5,6 +5,7 @@ import { drawEquation } from './equationView.js';
 import { toEditor } from './mapping.js';
 import { BROKEN_CLASS, referencesShown, type ReferenceContext } from './referenceText.js';
 import { editorSchema } from './schema.js';
+import { drawPlaces } from './places.js';
 
 /**
  * A component's content as markup, to be read and not edited: through the same mapping and schema
@@ -36,6 +37,7 @@ export function renderContent(
   });
   drawReferences(rendered, referencesShown(opened.doc, context));
   drawEquations(rendered, opened.doc);
+  drawPlaces(rendered, opened.doc);
   return rendered;
 }
 

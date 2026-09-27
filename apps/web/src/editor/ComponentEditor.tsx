@@ -81,6 +81,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { everyPage } from '../paging.js';
 import { byName } from '../metadata/people.js';
+import { Canvas } from '../theme/Canvas.js';
 
 /**
  * The Equation dialog, loaded the first time it opens, and Temml with it (equations 1's final review,
@@ -1270,7 +1271,11 @@ export function ComponentEditor({
             )}
             {/* The surface's region: ProseMirror mounts into it, and F6 lands on this element
                 itself where what it holds cannot take the focus, such as a component being read. */}
-            <div ref={place} className={styles['surface']} tabIndex={-1} />
+            {/* On the paper the theme sets text on, at the layout's measure (themes.md, "The theme in
+                the editor"): the same element whether or not the theme has arrived. */}
+            <Canvas>
+              <div ref={place} className={styles['surface']} tabIndex={-1} />
+            </Canvas>
             {/* Beside the surface, wherever the type gives the component fields: its values are
                 part of the iteration, saved with the content (definitions.md, "Shown as they
                 arise"). A change is a change like any typed on the surface, and claims the lock. */}

@@ -42,6 +42,7 @@ import { DocumentPage } from './DocumentPage.js';
 import { documentAddress } from './links.js';
 import { NewDocument } from './NewDocument.js';
 import { OutlinePanel } from './OutlinePanel.js';
+import { DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
 
 // A section's title is a ProseMirror view since equations 3, which scrolls its selection into view.
 shimRangeMeasurement();
@@ -3127,6 +3128,76 @@ describe('the address of every node', () => {
     openAt(fake.fetch, SCOPE);
     expect(await screen.findByText('The linked part is not in this document.')).toBeInTheDocument();
     expect(item('Introduction')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it("sets the document's text in the theme and layout it publishes under, as its editing surface is set", async () => {
+    const REFERENCE = 'kkkkkkkkkkkkkkkkkkkkkkkkkk';
+    const fake = service(outline([{ ...reference(REFERENCE, 'latest') }]));
+    const quoted = {
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: 'Unbox the printer.', marks: [] }],
+        },
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [
+            {
+              type: 'paragraph',
+              id: 'b2',
+              style: 'body',
+              content: [{ type: 'text', value: 'Keep the box.', marks: [] }],
+            },
+          ],
+        },
+      ],
+    };
+    const asked: string[] = [];
+    const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      asked.push(path);
+      if (path === `/v1/documents/${DOCUMENT}/presentation`) return json(200, DEFAULT_PRESENTATION);
+      if (path === `/v1/documents/${DOCUMENT}/texts`) {
+        return json(200, {
+          document: DOCUMENT,
+          version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
+          occurrences: [
+            {
+              node: REFERENCE,
+              version: 'vvvvvvvv-0000-4000-8000-000000000001',
+              mayEdit: true,
+              lock: null,
+            },
+          ],
+          versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: quoted }],
+        });
+      }
+      return fake.fetch(request);
+    }) as typeof globalThis.fetch;
+    render(<DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />);
+
+    const text = await screen.findByRole('region', { name: "The document's text" });
+    const running = await within(text).findByText('Unbox the printer.');
+    // The document's own presentation - its template's theme and layout, or the environment's.
+    expect(asked).toContain(`/v1/documents/${DOCUMENT}/presentation`);
+    await waitFor(() => expect(running.closest('.aw-canvas')).not.toBeNull());
+    const canvas = running.closest('.aw-canvas') as HTMLElement;
+    expect(canvas.style.getPropertyValue('--aw-measure')).toBe('451.28pt');
+    expect(getComputedStyle(canvas).width).toBe('calc(var(--aw-measure) * var(--aw-zoom))');
+    // Each paragraph by the place it stands in, as on the surface.
+    expect(getComputedStyle(running).fontFamily).toBe('"aw-face-serif"');
+    expect(
+      getComputedStyle(within(text).getByText('Keep the box.')).getPropertyValue('margin-inline'),
+    ).toBe('calc(11pt * var(--aw-zoom)) calc(11pt * var(--aw-zoom))');
+    expect(screen.getByLabelText('Zoom')).toHaveValue('1');
   });
 
   it("reads the document's text in one call and edits one component in place at a time", async () => {

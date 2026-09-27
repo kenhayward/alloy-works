@@ -84,8 +84,9 @@ padding, none wider than twice it (`table_rule_over_text`), and returns every
 refusal at once; the default theme, `DEFAULT_THEME`, and its catalogues under fixed
 version identifiers - 0.2, with 0.1 frozen as `FIRST_DEFAULT_THEME` and `FIRST_DEFAULT_CATALOGUES`;
 and three projections - `projectTypst`, the data template 13 reads, which `assemble` uses, beside
-`projectTypst12`, template 12's, frozen - and `projectCss` and `projectStylesXml`, which nothing calls yet and which leave out
-what they name in their doc comments, since the editor and Word slices finish them. The zod schemas
+`projectTypst12`, template 12's, frozen - `projectCss`, which the renderer sets a component's text
+by (W8.2, [The theme in the editor](#the-theme-in-the-editor)), and `projectStylesXml`, which the Word
+writer's styles come from. The zod schemas
 stay inside the package: the store and `assemble` read a theme only through the reader.
 
 Dependencies point one way: `apps/web` depends on `@alloy-works/domain`, on `@alloy-works/editor` -
@@ -1213,8 +1214,21 @@ with `projectFontFaces`, one `@font-face` to a file under the family `aw-face-<t
 face's real name, from the renderer's own copy of the pinned files: `apps/web/src/theme/faces.ts`
 imports each from `@alloy-works/fonts` with Vite's `?url`, so the build emits them beside the renderer
 and both deliveries load them from there. A typeface one of whose files the renderer does not hold is
-declared not at all and named in `unheld`. The component page is set inside a provider for the
-environment's presentation; nothing reads it yet but the face declarations.
+declared not at all and named in `unheld`.
+
+**The canvas** (W8.2). The provider also injects the theme's own rules, `projectCss`, which write every
+paragraph and character property but the pagination-bound under `.aw-canvas`, each length in points
+times `--aw-zoom`, and the canvas's two rules: the text the layout's measure wide, `--aw-measure`, and
+a narrower column scrolling sideways. The editor's markup carries the hooks those rules select by: a
+paragraph's stored style as `data-style`, the place it stands in as `data-place` - by a decoration on
+the surface and by `drawPlaces` on the read text, both from `paragraphPlaces`, the nearest list item,
+quotation or cell - what the template sets by role as `data-role`, and each mark as `aw-mark-<mark>`.
+`Canvas` wraps the editing surface and `useCanvas` makes each read-text block its own canvas, so the
+controls around the text keep the application's colours; both are the same element whether or not the
+theme has arrived, so ProseMirror's host is never remounted. The zoom - 50 to 200 per cent, or Fit -
+is the provider's, kept in `localStorage`; `ZoomControl` sets it on the component page and the
+document's. The component page is set in the environment's presentation and a document's page in the
+document's.
 
 | Where                             | What                                                            |
 | --------------------------------- | --------------------------------------------------------------- |
@@ -1222,6 +1236,9 @@ environment's presentation; nothing reads it yet but the face declarations.
 | `domain: src/theme/faces.ts`      | `projectFontFaces` and `faceFamily`                             |
 | `service: src/presentation.ts`    | The two routes                                                  |
 | `web: src/theme/presentation.tsx` | `PresentationProvider` and `usePresentation`                    |
+| `domain: src/theme/css.ts`        | `projectCss`: every property but the pagination-bound           |
+| `editor: src/places.ts`           | `paragraphPlaces`, its decorations and `drawPlaces`             |
+| `web: src/theme/Canvas.tsx`       | `Canvas`, `useCanvas` and `ZoomControl`                         |
 
 ## One renderer, two deliveries
 

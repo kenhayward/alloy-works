@@ -17217,103 +17217,121 @@
     {
       "id": "AST-015",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3681,
+      "line": 3684,
       "kind": "title"
     },
     {
       "id": "AST-039",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3599,
+      "line": 3602,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3284,
+      "line": 3287,
       "kind": "title"
     },
     {
       "id": "CNT-036",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4046,
+      "line": 4049,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4165,
+      "line": 4168,
       "kind": "title"
     },
     {
       "id": "CNT-044",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4833,
+      "line": 4836,
       "kind": "title"
     },
     {
       "id": "CNT-048",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4861,
+      "line": 4864,
       "kind": "title"
     },
     {
       "id": "CNT-063",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 621,
+      "line": 624,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3096,
+      "line": 3099,
       "kind": "title"
     },
     {
       "id": "CNT-080",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4906,
+      "line": 4909,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-082",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 5376,
       "kind": "title"
     },
     {
       "id": "CNT-087",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3904,
+      "line": 3907,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-097",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 5365,
       "kind": "title"
     },
     {
       "id": "CNT-098",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2213,
+      "line": 2216,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-115",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 5393,
       "kind": "title"
     },
     {
       "id": "CNT-147",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2223,
+      "line": 2226,
       "kind": "title"
     },
     {
       "id": "CNT-152",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2614,
+      "line": 2617,
       "kind": "title"
     },
     {
       "id": "CNT-169",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 1388,
+      "line": 1391,
       "kind": "title"
     },
     {
       "id": "CNT-173",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 431,
+      "line": 434,
       "kind": "title"
     },
     {
       "id": "SCH-057",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5250,
+      "line": 5253,
       "kind": "title"
     },
     {
@@ -17379,67 +17397,67 @@
     {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2237,
+      "line": 2238,
       "kind": "title"
     },
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3221,
+      "line": 3292,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3378,
+      "line": 3449,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3676,
+      "line": 3747,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 484,
+      "line": 485,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3880,
+      "line": 3951,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3716,
+      "line": 3787,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3026,
+      "line": 3027,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3072,
+      "line": 3073,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 864,
+      "line": 865,
       "kind": "title"
     },
     {
       "id": "STY-039",
       "file": "apps/web/src/theme/presentation.test.tsx",
-      "line": 58,
+      "line": 45,
       "kind": "title"
     },
     {
@@ -18555,7 +18573,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 320,
+      "line": 322,
       "kind": "title"
     },
     {
@@ -19159,21 +19177,39 @@
       "kind": "title"
     },
     {
+      "id": "CNT-082",
+      "file": "packages/domain/src/theme/css.test.ts",
+      "line": 121,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-097",
+      "file": "packages/domain/src/theme/css.test.ts",
+      "line": 140,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-115",
+      "file": "packages/domain/src/theme/css.test.ts",
+      "line": 176,
+      "kind": "title"
+    },
+    {
       "id": "STY-037",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 32,
+      "line": 184,
       "kind": "title"
     },
     {
       "id": "STY-050",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 18,
+      "line": 121,
       "kind": "title"
     },
     {
-      "id": "STY-051",
+      "id": "STY-058",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 24,
+      "line": 66,
       "kind": "title"
     },
     {
@@ -19455,7 +19491,7 @@
     {
       "id": "CNT-147",
       "file": "packages/editor/src/state.test.ts",
-      "line": 647,
+      "line": 655,
       "kind": "title"
     },
     {

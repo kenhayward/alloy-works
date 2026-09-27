@@ -208,6 +208,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   stands and to undo the change that caused it, without the page being able to say which change that
   was.
 
+- **Text set as it will print.** A component's text is set in the typefaces, sizes and spacing its
+  theme gives it - the environment's on the component's own page, and a document's own on the
+  document's page, where the text read before it is opened is set the same way. Running text, lists,
+  quotations, table cells, footnotes, captions, a table's note, an attribution and preformatted text
+  each take the style they will print in, and every mark its own. The text is as wide as the printed
+  page's text, at its printed size at 100%; **Zoom** beside it sets 50% to 200%, or **Fit** to the
+  column, and is remembered in this browser. The paper stays white in dark mode. Tables and images are
+  not yet set by their styles, and page breaks, hyphenation and keeping lines together are left to the
+  publication.
+
 - **Making a component.** On the list of components, **New component** offers the spaces you may create
   in, a title, a base language such as `en-GB`, a direction, and the component type the environment
   offers. Creating makes version 0.1 with one empty paragraph and opens it. Above the surface, the

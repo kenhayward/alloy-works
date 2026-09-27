@@ -9,8 +9,13 @@ import { equationAlternative, isLanguageLabel, kindWord } from '@alloy-works/dom
  */
 const render =
   (tag: string, attributes: (attrs: Attrs) => Record<string, string> = () => ({})) =>
-  (mark: { attrs: Attrs }) =>
-    [tag, { ...attributes(mark.attrs), 'data-mark-id': mark.attrs.id as string }, 0] as const;
+  (mark: { attrs: Attrs; type: { name: string } }) => {
+    const own = attributes(mark.attrs);
+    // Each mark's own class, which the theme styles it by (themes.md, "The theme in the editor"),
+    // beside any class the mark already has.
+    const classes = [own.class, `aw-mark-${mark.type.name}`].filter(Boolean).join(' ');
+    return [tag, { ...own, class: classes, 'data-mark-id': mark.attrs.id as string }, 0] as const;
+  };
 
 /**
  * One mark of the content model, in the editor's terms.
@@ -145,8 +150,14 @@ export const editorSchema = new Schema({
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing is read back from the DOM through these rules, so a paragraph the browser makes is
       // still a paragraph - with no identifier, which the identity plugin then allocates.
-      parseDOM: [{ tag: 'p' }],
-      toDOM: () => ['p', 0],
+      // The style it is drawn with is read back with it, so a paragraph the browser remakes keeps the
+      // style an author chose (themes.md, "The theme in the editor").
+      parseDOM: [
+        { tag: 'p', getAttrs: (node) => ({ style: node.getAttribute('data-style') ?? 'body' }) },
+      ],
+      // Its stored style, which the theme's rules set it in, a stored `body` by the place it stands in
+      // (`places.ts`).
+      toDOM: (node) => ['p', { 'data-style': node.attrs.style as string }, 0],
     },
     text: {},
     /**
@@ -296,7 +307,12 @@ export const editorSchema = new Schema({
       ],
       toDOM: (node) => [
         'pre',
-        node.attrs.language === null ? {} : { 'data-language': node.attrs.language as string },
+        {
+          'data-role': 'preformatted',
+          ...(node.attrs.language === null
+            ? {}
+            : { 'data-language': node.attrs.language as string }),
+        },
         ['code', 0],
       ],
     },
@@ -349,7 +365,7 @@ export const editorSchema = new Schema({
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption' }],
-      toDOM: () => ['figcaption', { class: 'aw-table-caption' }, 0],
+      toDOM: () => ['figcaption', { class: 'aw-table-caption', 'data-role': 'caption' }, 0],
     },
     /**
      * A table's note (CNT-038, footnotes 1, ruling R11): a line of inline content beneath the table,
@@ -363,7 +379,11 @@ export const editorSchema = new Schema({
       defining: true,
       isolating: true,
       parseDOM: [{ tag: 'p[data-table-note]', priority: 60 }],
-      toDOM: () => ['p', { class: 'aw-table-note', 'data-table-note': '' }, 0],
+      toDOM: () => [
+        'p',
+        { class: 'aw-table-note', 'data-table-note': '', 'data-role': 'tableNote' },
+        0,
+      ],
     },
     /**
      * A figure (figures 2, ruling R1): an asset version, an image style, an alternative text in one of
@@ -410,7 +430,11 @@ export const editorSchema = new Schema({
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption[data-figure-caption]', priority: 60 }],
-      toDOM: () => ['figcaption', { class: 'aw-figure-caption', 'data-figure-caption': '' }, 0],
+      toDOM: () => [
+        'figcaption',
+        { class: 'aw-figure-caption', 'data-figure-caption': '', 'data-role': 'caption' },
+        0,
+      ],
     },
     /**
      * An image in a run of text (figures 4, ruling R1): the asset version it shows, its image style and
@@ -482,8 +506,19 @@ export const editorSchema = new Schema({
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing in the footnote's own editor is read back through this rule, which wins over a
       // paragraph's where the parent is a footnote.
-      parseDOM: [{ tag: 'p', context: 'footnote/', priority: 60 }],
-      toDOM: () => ['p', { class: 'aw-footnote-paragraph' }, 0],
+      parseDOM: [
+        {
+          tag: 'p',
+          context: 'footnote/',
+          priority: 60,
+          getAttrs: (node) => ({ style: node.getAttribute('data-style') ?? 'body' }),
+        },
+      ],
+      toDOM: (node) => [
+        'p',
+        { class: 'aw-footnote-paragraph', 'data-style': node.attrs.style as string },
+        0,
+      ],
     },
     /**
      * A cross-reference (cross-references 1, ruling R4): inline, an atom, with its identifier, its
@@ -580,7 +615,7 @@ export const editorSchema = new Schema({
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'footer' }],
-      toDOM: () => ['footer', { class: 'aw-attribution' }, 0],
+      toDOM: () => ['footer', { class: 'aw-attribution', 'data-role': 'attribution' }, 0],
     },
   },
   marks: {
