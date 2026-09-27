@@ -26,10 +26,16 @@ create table search_entry (
   component_type uuid references artifact on delete restrict,
   -- Its values as stored, keyed by field (a filter and a facet read them).
   field_values jsonb not null default '{}',
+  -- Every place's words together, so a query is matched against the whole entry - two words in two
+  -- places find it - while `search_text` says which place matched best.
+  configuration regconfig not null,
+  body text not null,
+  vector tsvector generated always as (to_tsvector(configuration, body)) stored,
   constraint search_entry_once unique nulls not distinct (artifact_id, node)
 );
 create index search_entry_space on search_entry (space_id);
 create index search_entry_kind on search_entry (kind);
+create index search_entry_vector on search_entry using gin (vector);
 
 -- One row per place in an entry, in the entry's language's text search configuration, so a result
 -- names where it matched (SCH-017) and a passage is made from that place alone (SCH-016).

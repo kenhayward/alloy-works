@@ -196,7 +196,8 @@ as words by data type - a person by name, a date as written, a boolean by its fi
 `search_entry` holds one row per entry: its kind, the artifact, the node for a section, the version
 it was read from, the space, its title, who made it (`owner`: the author of the artifact's first
 version), when it last changed, its component type, and its values as stored - the columns the
-predicate, the filters and the facets read. `search_text` holds one row per place in it: the entry,
+predicate, the filters and the facets read - and every place's words together with their `tsvector`,
+so a query is matched against the whole entry and two words in two places find it. `search_text` holds one row per place in it: the entry,
 the place, the text, and its `tsvector` in the entry's text search configuration, indexed with GIN. A
 place is `title`; `block:<id>`, a block of a component, a footnote's paragraph and a table cell's among
 them; `field:<id>`, one field's value, so a term scoped to a field is matched in that field alone;

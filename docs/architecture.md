@@ -1066,7 +1066,7 @@ Everything the product holds is projected for search by its words ([search.md](d
 "Searching words, in T1"; W6). The projection is two tables in the tenant's schema, derived and never
 a record: `search_entry`, one row per thing found - an artifact at its latest version, a publication,
 and each section of a document, keyed by its document and node - with the columns the readable set,
-the filters and the facets read; and `search_text`, one row per place in an entry, with its words and
+the filters and the facets read and every place's words together, matched as one; and `search_text`, one row per place in an entry, with its words and
 a generated `tsvector` in the entry's language's text search configuration, indexed with GIN.
 
 `entriesOf` in `packages/domain` reads a version into entries and their places: a component's title,

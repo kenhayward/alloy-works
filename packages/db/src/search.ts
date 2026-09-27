@@ -206,6 +206,8 @@ async function write(
         changed_at: placing.changedAt,
         component_type: draft.kind === 'component' ? placing.componentType : null,
         field_values: JSON.stringify(draft.values),
+        configuration: draft.configuration,
+        body: draft.texts.map((each) => each.text).join(' '),
       })),
     )
     .execute();

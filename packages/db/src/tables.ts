@@ -348,6 +348,9 @@ export interface SearchEntryTable {
   changed_at: Date;
   component_type: string | null;
   field_values: ColumnType<Record<string, unknown>, string, string>;
+  configuration: SearchConfiguration;
+  body: string;
+  vector: ColumnType<string, never, never>;
 }
 
 /** One place in a search entry and its words; `vector` is generated from them (0031). */

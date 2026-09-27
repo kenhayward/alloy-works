@@ -320,6 +320,39 @@ describe("search's projection, written with every version", () => {
     expect(before).toEqual([]);
   });
 
+  it('matches an entry by its words together, wherever in it each one is', async () => {
+    const made = await component('Tapir crossing');
+    const substance = substanceOf(made) as Extract<
+      ReturnType<typeof substanceOf>,
+      { kind: 'component' }
+    >;
+    await service.withTenant(production, (trx) =>
+      recordVersion(trx, {
+        artifactId: made.artifactId,
+        openedFrom: made.id,
+        author: ada,
+        substance: {
+          ...substance,
+          content: {
+            ...(substance.content as ContentDocument),
+            content: [
+              { type: 'paragraph', id: 'b1', style: 'body', content: text('Mind the unicorns') },
+            ],
+          } as ContentDocument,
+        },
+      }),
+    );
+    const matched = await service.withTenant(production, (trx) =>
+      sql<{ artifact_id: string }>`
+        select artifact_id from search_entry
+        where vector @@ websearch_to_tsquery(configuration, 'tapir unicorn -zebra')`
+        .execute(trx)
+        .then((result) => result.rows.map((row) => row.artifact_id)),
+    );
+    // A title and a paragraph, each holding one of the two words: no one place holds both.
+    expect(matched).toEqual([made.artifactId]);
+  });
+
   it("rebuilds a tenant's projection whole from the chain", async () => {
     const snapshot = (trx: TenantTransaction) =>
       sql<{ kind: string; artifact_id: string; node: string | null; place: string; body: string }>`
