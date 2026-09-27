@@ -36,10 +36,13 @@ function service({ creatable = true } = {}) {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
     if (url.pathname === '/v1/spaces') {
-      return json(200, { items: [{ id: GENERAL, name: 'General', mayCreate: creatable }] });
+      return json(200, {
+        items: [{ id: GENERAL, name: 'General', mayCreate: creatable }],
+        next: null,
+      });
     }
     if (url.pathname === `/v1/spaces/${GENERAL}/component-types`) {
-      return json(200, { items: [{ id: 't1', name: 'Topic', isDefault: true }] });
+      return json(200, { items: [{ id: 't1', name: 'Topic', isDefault: true }], next: null });
     }
     if (url.pathname === '/v1/access') {
       // The reader administers the printer, and only reads the toner.

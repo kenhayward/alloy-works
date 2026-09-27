@@ -4,6 +4,8 @@ import type {
   CreateComponentBody,
   SpaceParams,
   FieldView,
+  PageQuery,
+  PeopleQuery,
 } from '@alloy-works/api-contract';
 import {
   componentFieldsNow,
@@ -127,20 +129,33 @@ export function componentHandlers(
   return {
     // Anybody signed in may see who may be named in a user field (definitions.md, DE-J).
     listPeople: async (request: FastifyRequest) => {
-      const people = await db.withTenant(tenantOf(request), (trx) => listPeople(trx));
-      return { items: people.map((each) => ({ ...each })) };
+      const asked = pageAsked('people', request.query as PeopleQuery);
+      const people = await db.withTenant(tenantOf(request), (trx) => listPeople(trx, asked));
+      return {
+        items: people.items.map((each) => ({ ...each })),
+        next: cursorFor('people', asked.sort, asked.order, people.snapshot, people.next),
+      };
     },
 
     listSpaces: async (request: FastifyRequest) => {
-      const items = await db.withTenant(tenantOf(request), (trx) =>
-        listSpacesFor(trx, principalOf(request).principalId),
+      const asked = pageAsked('spaces', request.query as PageQuery);
+      const spaces = await db.withTenant(tenantOf(request), (trx) =>
+        listSpacesFor(trx, principalOf(request).principalId, asked),
       );
-      return { items: [...items] };
+      return {
+        items: [...spaces.items],
+        next: cursorFor('spaces', asked.sort, asked.order, spaces.snapshot, spaces.next),
+      };
     },
 
-    listComponentTypes: async (_request: FastifyRequest, { trx }: Authorised) => ({
-      items: [...(await listComponentTypes(trx))],
-    }),
+    listComponentTypes: async (request: FastifyRequest, { trx }: Authorised) => {
+      const asked = pageAsked('componentTypes', request.query as PageQuery);
+      const types = await listComponentTypes(trx, asked);
+      return {
+        items: [...types.items],
+        next: cursorFor('componentTypes', asked.sort, asked.order, types.snapshot, types.next),
+      };
+    },
 
     createComponent: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {
       const { space } = request.params as SpaceParams;

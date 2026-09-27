@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { listingQuery, nextCursor } from './listing.js';
+import { listingQuery, nextCursor, pageQuery } from './listing.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
@@ -19,7 +19,10 @@ export const SpaceList = z.object({
       mayCreate: z.boolean().describe('Whether the caller may create a component in this space'),
     }),
   ),
+  next: nextCursor,
 });
+export const PageQuery = z.object(pageQuery);
+export type PageQuery = z.infer<typeof PageQuery>;
 export type SpaceList = z.infer<typeof SpaceList>;
 
 export const ComponentTypeList = z.object({
@@ -30,6 +33,7 @@ export const ComponentTypeList = z.object({
       isDefault: z.boolean().describe("The environment's default, preselected (MET-011, MET-042)"),
     }),
   ),
+  next: nextCursor,
 });
 export type ComponentTypeList = z.infer<typeof ComponentTypeList>;
 
@@ -187,8 +191,13 @@ export const componentRoutes = {
     summary: 'The spaces the caller may read, and whether they may create a component in each',
     tenantScoped: true,
     access: { check: 'session' },
+    query: PageQuery,
     responses: {
-      200: { description: 'The spaces', schema: SpaceList },
+      200: { description: 'A page of the spaces, by name', schema: SpaceList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
     },
   },
@@ -202,8 +211,13 @@ export const componentRoutes = {
     // here, and only they, may see what they may create. Editor 1's finding 4.
     access: { check: 'permission', permission: 'create', target: { space: 'space' } },
     params: SpaceParams,
+    query: PageQuery,
     responses: {
-      200: { description: 'The component types', schema: ComponentTypeList },
+      200: { description: 'A page of the component types, by name', schema: ComponentTypeList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
       403: {
         description: 'The caller may read the space but may not create in it',

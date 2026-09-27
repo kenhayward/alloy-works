@@ -123,6 +123,7 @@ const SPACES = {
     { id: 'aaaaaaaa-0000-4000-8000-000000000002', name: 'Quality', mayCreate: false },
     { id: 'aaaaaaaa-0000-4000-8000-000000000003', name: 'Regulatory', mayCreate: true },
   ],
+  next: null,
 };
 
 const COMPONENTS = {
@@ -2373,7 +2374,7 @@ describe('New document', () => {
   });
 
   it('shows nothing at all where there is nowhere the caller may create', async () => {
-    const { fetch } = spaces({ '/v1/spaces': { items: [SPACES.items[1]] } });
+    const { fetch } = spaces({ '/v1/spaces': { items: [SPACES.items[1]], next: null } });
     const { container } = render(<NewDocument client={client(fetch)} onCreated={vi.fn()} />);
     await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
@@ -2505,7 +2506,7 @@ describe('the documents', () => {
       const request = input instanceof Request ? input : new Request(String(input), init);
       const url = new URL(request.url).pathname;
       if (url === '/v1/documents') return json(answer.status, answer.body);
-      if (url === '/v1/spaces') return json(200, { items: [] });
+      if (url === '/v1/spaces') return json(200, { items: [], next: null });
       return json(500, {});
     }) as typeof globalThis.fetch;
   }
@@ -4354,7 +4355,7 @@ describe("a document's fields and its sections'", () => {
         return json(200, view());
       }
       if (url === '/v1/components') return json(200, COMPONENTS);
-      if (url === '/v1/people') return json(200, { items: [] });
+      if (url === '/v1/people') return json(200, { items: [], next: null });
       if (url.endsWith('/contributions')) {
         return json(200, {
           document: DOCUMENT,

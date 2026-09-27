@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import { randomBytes } from 'node:crypto';
 import {
   blockIdentifierFrom,
@@ -16,6 +17,18 @@ import {
 } from '@alloy-works/domain';
 import type { TenantTransaction } from './tables.js';
 import { createArtifact, latestVersion, type StoredVersion } from './versions.js';
+import {
+  checkedLimit,
+  isListingRequest,
+  keysetPage,
+  listingSorts,
+  snapshotFor,
+  sortColumns,
+  visibleIn,
+  type Listed,
+  type ListingRequest,
+  type SortOf,
+} from './listing.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -43,16 +56,21 @@ export interface ComponentTypeSummary {
 }
 
 /**
- * Every component type this environment holds, by name, with the default marked - each read at its
- * latest version the way stored definitions are read, so a payload from an older definition schema is
- * migrated rather than refused. One that does not read is left out rather than throwing: a chooser is
- * better short than broken, and the definitions-management design owns telling somebody why.
+ * The component types a component may be written against, a page at a time by each one's latest name
+ * and then id, as of the walk's first page (API-007, SCH-022), with which is the environment's default.
  */
 export async function listComponentTypes(
   trx: TenantTransaction,
-): Promise<readonly ComponentTypeSummary[]> {
+  request: ListingRequest<SortOf<'componentTypes'>> = { limit: 100 },
+): Promise<Listed<ComponentTypeSummary>> {
+  const limit = checkedLimit(request.limit);
+  const { types, order } = listingSorts.componentTypes.name;
+  if (!isListingRequest(request, types)) {
+    throw new Error('A page request names a cursor no listing gave out');
+  }
+  const snapshot = await snapshotFor(trx, request.snapshot);
   const declared = await defaultComponentType(trx);
-  const rows = await trx
+  const inner = trx
     .selectFrom('artifact as a')
     .innerJoinLateral(
       (eb) =>
@@ -60,6 +78,7 @@ export async function listComponentTypes(
           .selectFrom('artifact_version as v')
           .select(['v.id', 'v.content'])
           .whereRef('v.artifact_id', '=', 'a.id')
+          .where(visibleIn('v.written_by', snapshot))
           .orderBy('v.revision_no', 'desc')
           .orderBy('v.version_no', 'desc')
           .limit(1)
@@ -67,9 +86,18 @@ export async function listComponentTypes(
       (join) => join.onTrue(),
     )
     .select(['a.id', 'latest.id as version_id', 'latest.content'])
-    .where('a.kind', '=', 'componentType')
-    .execute();
-  const types = rows.flatMap((row): ComponentTypeSummary[] => {
+    .select(sortColumns([sql`latest.content ->> 'name'`]))
+    .where('a.kind', '=', 'componentType');
+  const { rows, next } = await keysetPage<{ id: string; version_id: string; content: unknown }>(
+    trx,
+    inner,
+    types,
+    request.order ?? order,
+    limit,
+    request.after,
+  );
+  // A type that does not read is left out; the page's end is still where the rows ended.
+  const items = rows.flatMap((row): ComponentTypeSummary[] => {
     const read = readDefinition('componentType', row.content, {
       artifact: row.id,
       version: row.version_id,
@@ -77,7 +105,7 @@ export async function listComponentTypes(
     if (!read.ok) return [];
     return [{ id: row.id, name: read.definition.name, isDefault: row.id === declared }];
   });
-  return types.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  return { items, next, snapshot };
 }
 
 /**

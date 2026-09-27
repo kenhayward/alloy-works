@@ -38,6 +38,7 @@ import { inverseOf, nodeName, placeOf, visibleOrder, type Names } from './tree.j
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
+import { byName } from '../metadata/people.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -568,10 +569,14 @@ export function DocumentPage({
   useEffect(() => {
     if (!wantsPeople) return;
     let current = true;
-    client
-      .GET('/v1/people')
-      .then(({ data }) => {
-        if (current && data) setPeople(data.items);
+    // Every page, then by name: the listing gives people in the order each first signed in.
+    everyPage((cursor) =>
+      client.GET('/v1/people', {
+        params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+      }),
+    )
+      .then((all) => {
+        if (current && 'items' in all) setPeople(byName(all.items));
       })
       .catch(() => {});
     return () => {

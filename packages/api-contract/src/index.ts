@@ -13,6 +13,7 @@ export {
   ComponentView,
   FieldView,
   CreateComponentBody,
+  PageQuery,
   SpaceList,
   SpaceParams,
 } from './components.js';
@@ -93,12 +94,13 @@ export {
   CreateDefinitionBody,
   DefinitionKind,
   DefinitionList,
+  DefinitionListQuery,
   DefinitionParams,
   DefinitionRefusal,
   DefinitionVersionBody,
   DefinitionView,
 } from './definitions.js';
-export { PeopleList } from './people.js';
+export { PeopleList, PeopleQuery } from './people.js';
 export {
   FacetValueView,
   SearchAnswerView,

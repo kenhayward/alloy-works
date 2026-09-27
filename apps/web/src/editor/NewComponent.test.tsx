@@ -11,12 +11,14 @@ const SPACES = {
     { id: 'aaaaaaaa-0000-4000-8000-000000000002', name: 'Quality', mayCreate: false },
     { id: 'aaaaaaaa-0000-4000-8000-000000000003', name: 'Regulatory', mayCreate: true },
   ],
+  next: null,
 };
 const TYPES = {
   items: [
     { id: 'bbbbbbbb-0000-4000-8000-000000000001', name: 'Procedure', isDefault: false },
     { id: 'bbbbbbbb-0000-4000-8000-000000000002', name: 'Topic', isDefault: true },
   ],
+  next: null,
 };
 
 /**
@@ -112,7 +114,7 @@ describe('New component', () => {
 
   it('says nothing at all where there is nowhere the caller may create', async () => {
     const { fetch } = service({
-      '/v1/spaces': { items: [SPACES.items[1]] },
+      '/v1/spaces': { items: [SPACES.items[1]], next: null },
     });
     const { container } = render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
     await waitFor(() => expect(container).toBeEmptyDOMElement());
@@ -190,7 +192,7 @@ describe('New component', () => {
       if (url === '/v1/spaces') {
         spacesCall += 1;
         const items = spacesCall === 1 ? SPACES.items : [SPACES.items[2]];
-        return new Response(JSON.stringify({ items }), {
+        return new Response(JSON.stringify({ items, next: null }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });
@@ -241,7 +243,7 @@ describe('New component', () => {
       if (url === `/v1/spaces/${SPACES.items[0]!.id}/component-types`) {
         typesCall += 1;
         const items = typesCall === 1 ? TYPES.items : [TYPES.items[1]];
-        return new Response(JSON.stringify({ items }), {
+        return new Response(JSON.stringify({ items, next: null }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });
@@ -287,7 +289,7 @@ describe('New component', () => {
       if (url === '/v1/spaces') {
         spacesCall += 1;
         const items = spacesCall === 1 ? SPACES.items : [SPACES.items[2]];
-        return new Response(JSON.stringify({ items }), {
+        return new Response(JSON.stringify({ items, next: null }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });
@@ -449,7 +451,7 @@ describe('New component', () => {
         const items = answers[spacesCall];
         spacesCall += 1;
         if (!items) return new Response('{}', { status: 500 });
-        return new Response(JSON.stringify({ items }), {
+        return new Response(JSON.stringify({ items, next: null }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });

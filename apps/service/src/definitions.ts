@@ -3,7 +3,9 @@ import type {
   DefinitionParams,
   DefinitionVersionBody,
   DefinitionView,
+  DefinitionListQuery,
 } from '@alloy-works/api-contract';
+import { cursorFor, pageAsked } from './listing.js';
 import {
   createDefinition,
   listDefinitions,
@@ -114,10 +116,12 @@ export function definitionHandlers(
   void db;
   void tenantOf;
   return {
-    listDefinitions: async (_request: FastifyRequest, { trx }: Authorised) => {
-      const listed = await listDefinitions(trx);
+    listDefinitions: async (request: FastifyRequest, { trx }: Authorised) => {
+      const asked = pageAsked('definitions', request.query as DefinitionListQuery);
+      const listed = await listDefinitions(trx, asked);
       return {
-        items: listed.map((each) => ({
+        next: cursorFor('definitions', asked.sort, asked.order, listed.snapshot, listed.next),
+        items: listed.items.map((each) => ({
           id: each.id,
           kind: each.kind,
           name: each.name,

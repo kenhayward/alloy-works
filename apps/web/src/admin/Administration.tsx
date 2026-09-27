@@ -136,10 +136,12 @@ export function Administration({
   }, [client]);
 
   const [loads] = useState(() => ({
-    spaces: async () => {
-      const { data, response } = await client.GET('/v1/spaces');
-      return data ? { items: [...data.items] } : { status: response.status };
-    },
+    spaces: () =>
+      everyPage((cursor) =>
+        client.GET('/v1/spaces', {
+          params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+        }),
+      ),
     people: () =>
       everyPage<PersonRow>((cursor) =>
         client.GET('/v1/principals', {

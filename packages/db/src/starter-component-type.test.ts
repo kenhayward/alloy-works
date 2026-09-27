@@ -96,7 +96,9 @@ describe('the component type every environment starts with', () => {
 
   it('lists the environment component types with the default marked', async () => {
     const types = await service.withTenant(acme, (trx) => listComponentTypes(trx));
-    expect(types).toEqual([{ id: STARTER_COMPONENT_TYPE_ID, name: 'Topic', isDefault: true }]);
+    expect(types.items).toEqual([
+      { id: STARTER_COMPONENT_TYPE_ID, name: 'Topic', isDefault: true },
+    ]);
   });
 
   it('does not list another environment component types, which declares its own default', async () => {
@@ -155,8 +157,8 @@ describe('the component type every environment starts with', () => {
       service.withTenant(acme, (trx) => listComponentTypes(trx)),
       service.withTenant(other, (trx) => listComponentTypes(trx)),
     ]);
-    expect(here).toEqual([{ id: STARTER_COMPONENT_TYPE_ID, name: 'Topic', isDefault: true }]);
-    expect(theirs.map((each) => each.name)).toContain('Procedure');
+    expect(here.items).toEqual([{ id: STARTER_COMPONENT_TYPE_ID, name: 'Topic', isDefault: true }]);
+    expect(theirs.items.map((each) => each.name)).toContain('Procedure');
     expect(await service.withTenant(acme, defaultComponentType)).toBe(STARTER_COMPONENT_TYPE_ID);
     expect(await service.withTenant(other, defaultComponentType)).toBe(procedureId);
   });

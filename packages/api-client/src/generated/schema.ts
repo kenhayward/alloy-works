@@ -3008,14 +3008,17 @@ export interface operations {
     };
     listDefinitions: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The definitions, by kind and then name */
+            /** @description A page of the definitions, by name */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3032,6 +3035,26 @@ export interface operations {
                                 number: string;
                             };
                         }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -6820,14 +6843,17 @@ export interface operations {
     };
     listPeople: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The people, by name */
+            /** @description A page of the people, by when each first signed in */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -6838,6 +6864,26 @@ export interface operations {
                             id: string;
                             name: string;
                         }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -8290,14 +8336,17 @@ export interface operations {
     };
     listSpaces: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The spaces */
+            /** @description A page of the spaces, by name */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -8310,6 +8359,26 @@ export interface operations {
                             /** @description Whether the caller may create a component in this space */
                             mayCreate: boolean;
                         }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -8469,7 +8538,10 @@ export interface operations {
     };
     listComponentTypes: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
             header?: never;
             path: {
                 space: string & (unknown & unknown);
@@ -8478,7 +8550,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The component types */
+            /** @description A page of the component types, by name */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -8491,6 +8563,26 @@ export interface operations {
                             /** @description The environment's default, preselected (MET-011, MET-042) */
                             isDefault: boolean;
                         }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };

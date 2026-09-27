@@ -3,6 +3,13 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.91.0 - 2026-09-27 (PR #276)
+
+### Added
+
+- **Every listing in the API now pages.** Spaces, component types, definitions and people come a page
+  at a time as the rest do, so an environment with many of them is never answered all at once.
+
 ## 0.90.0 - 2026-09-27 (PR #275)
 
 ### Added

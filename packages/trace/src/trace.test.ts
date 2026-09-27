@@ -546,6 +546,7 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 445, from 444 (2026-09-27): W7.2 - API-007 in apps/service's listing-routes.test.ts.
   // 444, from 443 (2026-09-27): W7.1 - SCH-022 in packages/db's listing.test.ts.
   // 443, from 442 (2026-09-27): W6.4 - SCH-057 in apps/web's editor/ComponentEditor.test.tsx.
   // 442, from 438 (2026-09-27): W6.3 - SCH-059, SCH-046, SCH-062 and SCH-034 in packages/db's
@@ -584,7 +585,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(444);
+    expect(model.citations).toHaveLength(445);
   });
 
   it('cites no identifier the corpus does not hold', () => {

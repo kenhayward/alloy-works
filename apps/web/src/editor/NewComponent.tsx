@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useCreatableSpaces } from '../spaces.js';
 import { DirectionSelect } from './DirectionSelect.js';
+import { everyPage } from '../paging.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -92,15 +93,20 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
       const generation = ++typesRequest.current;
       setTypesProblem(null);
       try {
-        const { data, response } = await client.GET('/v1/spaces/{space}/component-types', {
-          params: { path: { space } },
-        });
+        const all = await everyPage((cursor) =>
+          client.GET('/v1/spaces/{space}/component-types', {
+            params: {
+              path: { space },
+              query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) },
+            },
+          }),
+        );
         if (typesRequest.current !== generation) return false;
-        const offered = typesIn(data);
+        const offered = 'items' in all ? typesIn({ items: all.items }) : undefined;
         if (offered === undefined) {
           setTypes([]);
           setComponentType('');
-          setTypesProblem(response.status === 401 ? 'signedOut' : 'failed');
+          setTypesProblem('status' in all && all.status === 401 ? 'signedOut' : 'failed');
           return false;
         }
         setTypes(offered);

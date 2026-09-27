@@ -4,6 +4,7 @@ import {
   metadataSchemaDefinitionSchema,
 } from '@alloy-works/domain';
 import { z } from 'zod';
+import { nextCursor, pageQuery } from './listing.js';
 import { VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
@@ -79,8 +80,11 @@ export const DefinitionList = z.object({
       version: z.object({ id: z.string(), number: z.string() }),
     }),
   ),
+  next: nextCursor,
 });
 export type DefinitionList = z.infer<typeof DefinitionList>;
+export const DefinitionListQuery = z.object(pageQuery);
+export type DefinitionListQuery = z.infer<typeof DefinitionListQuery>;
 
 const Failure = z.object({
   code: z.string(),
@@ -152,8 +156,13 @@ export const definitionRoutes = {
     summary: 'Every field, metadata schema and component type at its latest version',
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { tenant: true } },
+    query: DefinitionListQuery,
     responses: {
-      200: { description: 'The definitions, by kind and then name', schema: DefinitionList },
+      200: { description: 'A page of the definitions, by name', schema: DefinitionList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
       403: { description: 'The caller may not read the environment', schema: ErrorBody },
     },

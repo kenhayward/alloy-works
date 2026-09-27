@@ -251,7 +251,7 @@ describe('the component editor', () => {
             values: {},
           }),
         ),
-      'GET /v1/people': () => json(200, { items: [{ id: ADA, name: 'Ada' }] }),
+      'GET /v1/people': () => json(200, { items: [{ id: ADA, name: 'Ada' }], next: null }),
       'POST /v1/components/{id}/lock': () => json(200, { lock }),
       'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
     });
