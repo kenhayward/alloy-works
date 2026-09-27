@@ -424,7 +424,18 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and a new version keeps them. A save is refused, naming the field, where a fixed value is changed, a
   value is not of its field's kind, or a person named is not one of this environment's; everything
   else a field would refuse is saved, and a version is cut with a required field empty. The people who
-  may be named are listed to anybody signed in. No page shows or edits a value yet.
+  may be named are listed to anybody signed in.
+
+- **A component's fields, beside its text.** A component whose type gives it fields shows them in a
+  **Fields** panel beside the surface, reached with `F6` like the other panels: text, numbers, dates,
+  times, a date and time in your own time zone, a switch, and a person picked from the environment's
+  people, one value or an ordered list of several. A field a schema requires is marked, naming the
+  schema; one a schema fixes is shown and cannot be changed. Each value is checked as you type, and
+  what is missing or wrong is said beside it and read out, though it is saved all the same: a
+  component is filled in over time and held to its fields when a document is published. A number
+  that is not a number, and a date and time your clock skips, are held until put right; one it repeats
+  asks which is meant. What you type is saved with the text. Development's General holds a Procedure,
+  **Calibrate the scanner**, to try it on.
 
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath

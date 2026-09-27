@@ -117,3 +117,10 @@
   min-height: 280px;
   outline: none;
 }
+
+/* The metadata panel, beside the surface: its own region of the view (definitions.md). */
+.fields {
+  border-top: 1px solid var(--border, currentColor);
+  margin-top: var(--space-4, 16px);
+  padding-top: var(--space-3, 12px);
+}

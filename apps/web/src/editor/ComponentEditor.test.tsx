@@ -52,6 +52,11 @@ const opened = (overrides: Record<string, unknown> = {}) => ({
   content: content('Unbox the printer.'),
   mayEdit: true,
   lock: null,
+  // The starter type, which gives a component no fields.
+  type: { id: 'type-topic', name: 'Topic' },
+  fields: [],
+  schemas: [],
+  values: {},
   ...overrides,
 });
 
@@ -220,6 +225,51 @@ describe('the component editor', () => {
     await userEvent.click(done);
     expect(onDone).toHaveBeenCalledTimes(1);
     expect(asked.map((each) => each.route)).toEqual(['GET /v1/components/{id}']);
+  });
+
+  it('keeps its fields beside the surface, and saves what is typed into them with the content', async () => {
+    const { asked, surface } = open({
+      'GET /v1/components/{id}': () =>
+        json(
+          200,
+          opened({
+            type: { id: 'type-protocol', name: 'Protocol' },
+            fields: [
+              {
+                id: 'field-code',
+                name: 'Code',
+                dataType: 'text',
+                multiplicity: 'one',
+                validation: { maxLength: 4 },
+                required: true,
+                requiredBy: ['schema-review'],
+                fixed: false,
+                fixedBy: [],
+              },
+            ],
+            schemas: [{ id: 'schema-review', name: 'Review' }],
+            values: {},
+          }),
+        ),
+      'GET /v1/people': () => json(200, { items: [{ id: ADA, name: 'Ada' }] }),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+    });
+    const view = await surface();
+    const fields = screen.getByRole('region', { name: 'Fields of Protocol' });
+    const code = within(fields).getByRole('textbox', { name: /^Code/ });
+    expect(code).toHaveAccessibleDescription(/Code is required/);
+    await userEvent.type(code, 'A1');
+    await waitFor(() =>
+      expect(asked.find((each) => each.route.startsWith('PUT'))?.body).toMatchObject({
+        openedFrom: 'v1',
+        values: { 'field-code': 'A1' },
+      }),
+    );
+    // A region of the view: F6 from the surface lands on its first field.
+    view.focus();
+    await userEvent.keyboard('{F6}');
+    expect(document.activeElement).toBe(code);
   });
 
   it('in place, Done releases what was claimed and then closes', async () => {

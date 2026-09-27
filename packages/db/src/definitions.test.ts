@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { DEFINITION_SCHEMA_VERSION, TEMPLATE_SCHEMA_VERSION } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -18,7 +19,7 @@ import { createTemplate } from './templates.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 import { DEFAULT_THEME_ID } from './themes.js';
-import { readVersion } from './versions.js';
+import { createArtifact, readVersion, recordVersion } from './versions.js';
 
 const ISSUER = 'https://idp.example';
 
@@ -156,6 +157,34 @@ describe('definitions through the service', () => {
     expect((await create('componentType', componentType('topic', []))).answer).toBe(
       'definition.name_taken',
     );
+  });
+
+  it('holds the name of a definition however it was made, and renamed, not only through the routes', async () => {
+    // Made as development's seed makes its fields: straight onto the chain, with an identifier of its own.
+    const direct = await run((trx) =>
+      createArtifact(trx, {
+        author: ada,
+        substance: {
+          kind: 'field',
+          content: { ...field('Batch number'), id: randomUUID() } as never,
+        },
+      }),
+    );
+    expect((await create('field', field('batch NUMBER'))).answer).toBe('definition.name_taken');
+    // And renamed straight onto the chain: the new name is held, and the old one is free.
+    await run((trx) =>
+      recordVersion(trx, {
+        artifactId: direct.artifactId,
+        openedFrom: direct.id,
+        author: ada,
+        substance: {
+          kind: 'field',
+          content: { ...field('Lot number'), id: direct.artifactId } as never,
+        },
+      }),
+    );
+    expect((await create('field', field('Lot number'))).answer).toBe('definition.name_taken');
+    expect((await create('field', field('Batch number'))).answer).toBe('created');
   });
 
   it('MET-008 refuses a component type assigning two schemas whose defaults for a field differ, naming the field and both schemas', async () => {

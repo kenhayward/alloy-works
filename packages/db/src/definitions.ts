@@ -328,14 +328,11 @@ export async function createDefinition(
   await holdDefinitions(trx);
   const refused = await refusal(trx, input.kind, definition);
   if (refused) return refused;
+  // `createArtifact` holds the name, as it does for a definition made any other way.
   await createArtifact(trx, {
     author: input.author,
     substance: { kind: input.kind, content: definition } as never,
   });
-  await trx
-    .insertInto('definition_name')
-    .values({ artifact_id: id, kind: input.kind, name_key: nameKey(definition.name) })
-    .execute();
   return { answer: 'created', definition: (await readDefinitionLatest(trx, id))! };
 }
 
@@ -369,11 +366,7 @@ export async function recordDefinitionVersion(
   });
   switch (answer.answer) {
     case 'recorded':
-      await trx
-        .updateTable('definition_name')
-        .set({ name_key: nameKey(definition.name) })
-        .where('artifact_id', '=', input.id)
-        .execute();
+      // `recordVersion` renamed it, as it renames a definition changed any other way.
       return { answer: 'recorded', definition: (await readDefinitionLatest(trx, input.id))! };
     case 'version.unchanged':
       return { answer: 'version.unchanged', definition: current };

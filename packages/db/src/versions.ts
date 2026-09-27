@@ -16,6 +16,7 @@ import {
   type NotCarried,
   type ThemeSubstance,
   type VersionSubstance,
+  nameKey,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
@@ -251,7 +252,26 @@ export async function createArtifact(
     )
     .returning('id')
     .executeTakeFirstOrThrow();
-  return insertVersion(trx, artifact.id, { revision: 0, version: 1 }, input, substance);
+  const version = await insertVersion(
+    trx,
+    artifact.id,
+    { revision: 0, version: 1 },
+    input,
+    substance,
+  );
+  // A definition's name is held from its first version, whatever made it (definitions.md, MET-031):
+  // the seed's as well as the routes', so no path onto the chain leaves a name unheld.
+  if (isDefinition(substance)) {
+    await trx
+      .insertInto('definition_name')
+      .values({
+        artifact_id: artifact.id,
+        kind: substance.kind,
+        name_key: nameKey(substance.content.name),
+      })
+      .execute();
+  }
+  return version;
 }
 
 /** One version by its id, or undefined when this tenant holds no such version. */
@@ -478,5 +498,13 @@ async function record(
     substance,
     digests,
   );
+  // And a definition renamed holds its new name, the old one freed.
+  if (isDefinition(substance)) {
+    await trx
+      .updateTable('definition_name')
+      .set({ name_key: nameKey(substance.content.name) })
+      .where('artifact_id', '=', input.artifactId)
+      .execute();
+  }
   return { answer: 'recorded', version };
 }

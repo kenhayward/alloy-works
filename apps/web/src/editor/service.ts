@@ -141,13 +141,23 @@ export function sessionService(
       }
     },
 
-    async save(sequence, openedFrom, content: ContentDocument, signal): Promise<SaveResult> {
+    async save(
+      sequence,
+      openedFrom,
+      content: ContentDocument,
+      signal,
+      values,
+    ): Promise<SaveResult> {
       try {
         const { data, error, response } = await client.PUT(
           '/v1/components/{id}/iterations/{session}/{sequence}',
           {
             params: { path: { ...path, session: current, sequence: String(sequence) } },
-            body: { openedFrom, content: content as unknown as Record<string, unknown> },
+            body: {
+              openedFrom,
+              content: content as unknown as Record<string, unknown>,
+              ...(values === undefined ? {} : { values: { ...values } }),
+            },
             ...(signal ? { signal } : {}),
           },
         );

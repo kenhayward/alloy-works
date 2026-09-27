@@ -147,7 +147,8 @@ describe('routes that check a permission', () => {
       const type: ComponentTypeDefinition = {
         schemaVersion: DEFINITION_SCHEMA_VERSION,
         id: randomUUID(),
-        name: 'Topic',
+        // Named apart from the starter Topic: two component types may not share a name (MET-031).
+        name: 'Probe type',
         assignments: [],
       };
       const madeType = await createArtifact(trx, {

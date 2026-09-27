@@ -3178,6 +3178,10 @@ describe('the address of every node', () => {
           content: printer,
           mayEdit: false,
           lock: null,
+          type: { id: 'type-topic', name: 'Topic' },
+          fields: [],
+          schemas: [],
+          values: {},
         });
       }
       return fake.fetch(request);
@@ -3310,6 +3314,10 @@ describe('the address of every node', () => {
           content: text('Print a page.'),
           mayEdit: true,
           lock: null,
+          type: { id: 'type-topic', name: 'Topic' },
+          fields: [],
+          schemas: [],
+          values: {},
         });
       }
       return fake.fetch(request);
@@ -3414,6 +3422,10 @@ describe('the address of every node', () => {
           content: printer,
           mayEdit: false,
           lock: null,
+          type: { id: 'type-topic', name: 'Topic' },
+          fields: [],
+          schemas: [],
+          values: {},
         });
       }
       return fake.fetch(request);
@@ -4107,6 +4119,10 @@ describe('a cross-reference in the document page (cross-references 1)', () => {
           content: referring,
           mayEdit: false,
           lock: null,
+          type: { id: 'type-topic', name: 'Topic' },
+          fields: [],
+          schemas: [],
+          values: {},
         });
       }
       return fake.fetch(request);
@@ -4232,6 +4248,10 @@ describe('a cross-reference in the document page (cross-references 1)', () => {
           content: relative,
           mayEdit: false,
           lock: null,
+          type: { id: 'type-topic', name: 'Topic' },
+          fields: [],
+          schemas: [],
+          values: {},
         });
       }
       return fake.fetch(request);

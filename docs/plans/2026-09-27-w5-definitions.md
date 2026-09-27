@@ -122,7 +122,21 @@ is the whole set, checked by `unstorableValues`. Nothing deactivates a principal
 naming any principal of the tenant is a user of it. The people route lists everybody who has signed
 in, and is not yet paged. The component's view carries its type, fields, the schemas behind them and
 its values for creating a component as well as opening one, from one helper. The web session sends
-no values until W5.3's panel edits them. Definitions are read, and
+no values until W5.3's panel edits them.
+
+**W5.3.** `FieldsForm` holds back only a value that is not its field's kind - a number that does not
+read, a date and time the zone skips or repeats until asked - and hands every other change on, so the
+service's type refusal is not one an author can reach through the panel. A date and time is entered
+in the author's zone and stored with its offset (`instantFor`, `localIn`). The session sends the
+values whole with every save once the component has fields, and none where it has none. Building it
+found development's Reviewer and Review made straight onto the chain, outside the name table:
+`createArtifact` and `recordVersion` now hold a definition's name, whatever path wrote it, and the
+definitions routes no longer write the row themselves. Development's seed gains a Procedure type -
+Sign-off, with a required Owner and a Due date, beside Review - and a component of it, Calibrate the
+scanner, so the panel has something to show; it grants nobody Definitions manager, because that role
+reads the whole environment and every access scenario the seed sets up would change. Two route tests
+that made a second component type called Topic now name theirs apart, as the index requires. The
+panel was checked by component tests, not in the running application. Definitions are read, and
 places listed, by name, so a refusal lists them in the same order every time. The body that makes a
 definition is one object whose payload is read by its kind's schema in a refinement, because a route's
 body must be an object schema; a version's payload is read against the definition's own kind by the
