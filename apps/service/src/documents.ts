@@ -1,6 +1,7 @@
 import type {
   CreateDocumentBody,
   DocumentParams,
+  DocumentValuesBody,
   DocumentView,
   OutlineOperationBody,
   SpaceParams,
@@ -15,6 +16,7 @@ import {
   loadFactsFor,
   numberingInputs,
   readLocks,
+  recordDocumentValues,
   versionContents,
   readableComponents,
   readDocument,
@@ -24,6 +26,7 @@ import {
   type Tenant,
   type TenantDatabase,
   type TenantTransaction,
+  type ValuesRefused,
 } from '@alloy-works/db';
 import {
   conditions,
@@ -129,6 +132,7 @@ async function documentView(
     space: document.space,
     version: versionView(version),
     outline: await outlineView(viewer, document.id, version),
+    values: { ...version.values },
     template: await templateView(viewer, document.id),
     mayEdit: viewer.mayEdit,
     mayPublish: viewer.mayPublish,
@@ -142,6 +146,32 @@ async function documentView(
       formats: PUBLISHING_FORMATS.filter((format) => layout.layout.formats[format] !== undefined),
     },
   };
+}
+
+/**
+ * Values that do not fit, or a template that no longer resolves to check them against (templates.md,
+ * "Values") - each named. Told only to a caller who is not stale, as `outline_invalid` is.
+ */
+async function refusedValues(
+  viewer: Viewer,
+  id: string,
+  openedFrom: string,
+  answer: ValuesRefused,
+): Promise<never> {
+  const current = await latestView(viewer, id);
+  if (current.version.id !== openedFrom) throw stale(current);
+  // Its own code, not `template_unresolved`: that one's rule is TPL-004's, about making a document.
+  if (answer.answer === 'template.unresolved') {
+    throw refused(
+      400,
+      'values.unresolved',
+      "This document's template names a schema or field that no longer resolves, so no value can be checked.",
+      { unresolved: answer.unresolved },
+    );
+  }
+  throw refused(400, 'values.invalid', 'A value does not fit its field.', {
+    failures: answer.failures,
+  });
 }
 
 /** The precondition's refusal, carrying the document as it now stands so the caller can look again. */
@@ -418,6 +448,45 @@ export function documentHandlers(
      * `outline_invalid`. An opened-from version that is not one of this document's is stale in the
      * same sense, as `cutVersion` already answers one that is not the component's latest.
      */
+    /**
+     * The document's own values, whole, as one version with the outline unchanged (templates.md,
+     * "Values"). Stale before anything else, as an outline act is.
+     */
+    recordDocumentValues: async (
+      request: FastifyRequest,
+      { trx, principalId, facts }: Authorised,
+    ): Promise<DocumentView> => {
+      const { id } = request.params as DocumentParams;
+      const body = request.body as DocumentValuesBody;
+      const viewer = {
+        trx,
+        principalId,
+        mayEdit: decide('edit', facts).allowed,
+        mayPublish: decide('publish', facts).allowed,
+      };
+      const document = await readDocument(trx, id);
+      if (!document) throw notFound();
+      const answer = await recordDocumentValues(trx, {
+        documentId: id,
+        openedFrom: body.openedFrom,
+        author: principalId,
+        values: body.values,
+      });
+      switch (answer.answer) {
+        case 'recorded':
+          return documentView(viewer, document, answer.version);
+        case 'version.unchanged':
+          return documentView(viewer, document, answer.current);
+        case 'version.precondition':
+          throw stale(await documentView(viewer, document, answer.current));
+        case 'artifact.missing':
+          throw stale(await latestView(viewer, id));
+        case 'values.invalid':
+        case 'template.unresolved':
+          return refusedValues(viewer, id, body.openedFrom, answer);
+      }
+    },
+
     editOutline: async (
       request: FastifyRequest,
       { trx, principalId, facts }: Authorised,
@@ -450,6 +519,9 @@ export function documentHandlers(
         case 'artifact.missing':
           // The document is there - it was read above - so it is the opened-from version that is not.
           throw stale(await latestView(viewer, id));
+        case 'values.invalid':
+        case 'template.unresolved':
+          return refusedValues(viewer, id, body.openedFrom, answer);
         case 'outline.invalid': {
           // Versions are only ever appended, so a latest that is not the opened-from version now
           // never will be again: no lock is needed to know the caller is stale.

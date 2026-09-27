@@ -1,4 +1,8 @@
-import { outlineMatterSchema, outlineOperationSchema } from '@alloy-works/domain';
+import {
+  outlineMatterSchema,
+  outlineOperationSchema,
+  storableEverywhere,
+} from '@alloy-works/domain';
 import { z } from 'zod';
 import { CreateComponentBody, Lock, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
@@ -37,6 +41,21 @@ export const OutlineOperationBody = z.strictObject({
 });
 export type OutlineOperationBody = z.infer<typeof OutlineOperationBody>;
 
+/**
+ * A document's own values, whole (templates.md, "Values"), from the version they were read at: each a
+ * field its template applies to the document, the default of each left without a member filled in.
+ */
+export const DocumentValuesBody = z.strictObject({
+  openedFrom: LowercaseUuid.describe(
+    'The version the values were read at, which must be the latest',
+  ),
+  values: z
+    .record(z.string(), z.unknown())
+    .refine(storableEverywhere, 'A value holds a character that cannot be stored')
+    .describe("The document's values, by field identifier"),
+});
+export type DocumentValuesBody = z.infer<typeof DocumentValuesBody>;
+
 export const DocumentList = z.object({
   items: z.array(
     z.object({
@@ -70,6 +89,11 @@ export const DocumentView = z.object({
       "The latest version's outline document (structure.md), as the caller is shown it: a reference " +
         'to a component the caller may not read carries `component: null`, and a pinned one ' +
         '`mode.version: null`; everything else is as stored. Empty when the stored outline does not read',
+    ),
+  values: z
+    .record(z.string(), z.unknown())
+    .describe(
+      "The latest version's own field values, by field identifier: empty for a document with no template",
     ),
   template: z
     .object({
@@ -122,6 +146,21 @@ export type DocumentView = z.infer<typeof DocumentView>;
 export const OutlineRefusal = ErrorBody.extend({
   current: DocumentView.optional().describe('version_precondition: the document as it now stands'),
   reason: z.string().optional().describe('outline_invalid: why the operation does not apply'),
+  failures: z
+    .array(
+      z.object({
+        code: z.string(),
+        field: z.string(),
+        rule: z.string(),
+        schemas: z.array(z.string()),
+        detail: z.string(),
+      }),
+    )
+    .optional()
+    .describe("values_invalid: each value that does not fit its field, in MET-022's shape"),
+  unresolved: TemplateRefusal.shape.unresolved.describe(
+    "values_unresolved: what the document's template names that does not resolve now",
+  ),
 });
 export type OutlineRefusal = z.infer<typeof OutlineRefusal>;
 
@@ -369,6 +408,39 @@ export const documentRoutes = {
       404: notFound,
     },
   },
+  recordDocumentValues: {
+    operationId: 'recordDocumentValues',
+    method: 'PUT',
+    path: '/v1/documents/{id}/values',
+    summary: "Write the document's own values, whole, as one version with the outline unchanged",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
+    params: DocumentParams,
+    body: DocumentValuesBody,
+    responses: {
+      200: {
+        description: 'Written, or nothing changed: the document at its latest version',
+        schema: DocumentView,
+      },
+      400: {
+        description:
+          "values_invalid: a value is for a field the document's template does not apply, or does " +
+          'not fit its field; values_unresolved: the template no longer resolves; or ' +
+          'invalid_request: a body this route does not accept',
+        schema: OutlineRefusal,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the document but may not edit it',
+        schema: ErrorBody,
+      },
+      404: notFound,
+      409: {
+        description: 'version_precondition: the document has changed since it was read',
+        schema: OutlineRefusal,
+      },
+    },
+  },
   editOutline: {
     operationId: 'editOutline',
     method: 'POST',
@@ -385,7 +457,9 @@ export const documentRoutes = {
       },
       400: {
         description:
-          'outline_invalid: the operation does not apply to the latest outline; or invalid_request: a body this route does not accept',
+          'outline_invalid: the operation does not apply to the latest outline; values_invalid: a ' +
+          "section's value does not fit; values_unresolved: the document's template no longer " +
+          'resolves; or invalid_request: a body this route does not accept',
         schema: OutlineRefusal,
       },
       401: unauthenticated,

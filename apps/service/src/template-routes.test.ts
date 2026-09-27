@@ -30,6 +30,9 @@ const HOST = 'acme.alloy.test';
 const MISSING = '00000000-0000-4000-8000-00000000dead';
 const SIGN_OFF = '5c4e0000-0000-4000-8000-00000000519f';
 const APPROVER = 'f1e1d000-0000-4000-8000-00000000a99e';
+// Development's seeded Review schema and the Reviewer field it groups (dev-content.ts).
+const REVIEW_SCHEMA = '0d5e7a11-0000-4000-8000-00000000c4e3';
+const REVIEWER = '0d5e7a11-0000-4000-8000-00000000f1e1';
 
 type Json = Record<string, unknown>;
 
@@ -84,7 +87,7 @@ describe('templates through the service', () => {
       direction: 'ltr',
       ...(template === undefined ? {} : { template }),
     });
-  const call = (as: string, method: 'GET' | 'POST', url: string, payload?: Json) =>
+  const call = (as: string, method: 'GET' | 'POST' | 'PUT', url: string, payload?: Json) =>
     app.inject({
       method,
       url,
@@ -326,6 +329,73 @@ describe('templates through the service', () => {
     expect((await document('alice')).json<{ layout: { id: string } }>().layout.id).toBe(
       DEFAULT_LAYOUT_ID,
     );
+  });
+
+  it("refuses a section added where the document's template forbids it, saying why", async () => {
+    const template = (
+      await make('ada', { changes: { add: false, remove: true, reorder: true } }, 'Fixed form')
+    ).json<TemplateBody>();
+    const made = (await document('alice', template.id)).json<{
+      id: string;
+      version: { id: string };
+    }>();
+    const answer = await call('alice', 'POST', `/v1/documents/${made.id}/outline`, {
+      openedFrom: made.version.id,
+      operation: {
+        operation: 'insert',
+        parent: null,
+        position: 1,
+        node: { type: 'section', title: [{ type: 'text', value: 'Results', marks: [] }] },
+      },
+    });
+    expect(answer.statusCode).toBe(400);
+    expect(answer.json()).toMatchObject({
+      code: 'outline_invalid',
+      reason: "This document's template does not allow sections to be added",
+    });
+  });
+
+  it("writes a document's values and a section's, refusing by name what does not fit", async () => {
+    const template = (
+      await make('ada', {
+        schemas: [
+          { schema: REVIEW_SCHEMA, level: 'document', requires: [] },
+          { schema: REVIEW_SCHEMA, level: 'section', requires: [] },
+        ],
+      })
+    ).json<TemplateBody>();
+    const made = (await document('alice', template.id)).json<{
+      id: string;
+      version: { id: string };
+      outline: { nodes: { id: string }[] };
+    }>();
+    const values = (openedFrom: string, written: Json) =>
+      call('alice', 'PUT', `/v1/documents/${made.id}/values`, { openedFrom, values: written });
+
+    const written = await values(made.version.id, { [REVIEWER]: 'Ada' });
+    expect(written.statusCode, written.body).toBe(200);
+    const view = written.json<{ version: { id: string; number: string }; values: Json }>();
+    expect(view).toMatchObject({ version: { number: '0.2' }, values: { [REVIEWER]: 'Ada' } });
+    // From the version before, stale; and a field the document has not, refused by name.
+    expect((await values(made.version.id, { [REVIEWER]: 'Grace' })).statusCode).toBe(409);
+    const refusedValues = await values(view.version.id, { [MISSING]: 'x' });
+    expect(refusedValues.statusCode).toBe(400);
+    expect(refusedValues.json()).toMatchObject({
+      code: 'values_invalid',
+      failures: [{ field: MISSING, rule: 'unknown' }],
+    });
+    // A section's values go through the outline act's set, refused the same way.
+    const section = await call('alice', 'POST', `/v1/documents/${made.id}/outline`, {
+      openedFrom: view.version.id,
+      operation: { operation: 'set', node: made.outline.nodes[0]!.id, values: { [MISSING]: 'x' } },
+    });
+    expect(section.statusCode).toBe(400);
+    expect(section.json()).toMatchObject({
+      code: 'values_invalid',
+      failures: [{ field: MISSING, rule: 'unknown' }],
+    });
+    // An Author may write them, as they may restructure the outline.
+    expect((await values(view.version.id, { [REVIEWER]: 'Grace' })).statusCode).toBe(200);
   });
 
   it('answers a template the caller may not read as not found, and makes nothing', async () => {

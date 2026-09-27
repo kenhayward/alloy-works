@@ -19,6 +19,7 @@ export {
   CreateDocumentBody,
   DocumentList,
   DocumentParams,
+  DocumentValuesBody,
   DocumentView,
   OutlineOperationBody,
   OutlineRefusal,

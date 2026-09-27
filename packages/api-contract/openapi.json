@@ -5263,6 +5263,14 @@
                       "additionalProperties": {},
                       "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
                     },
+                    "values": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                    },
                     "template": {
                       "anyOf": [
                         {
@@ -5374,6 +5382,7 @@
                     "space",
                     "version",
                     "outline",
+                    "values",
                     "template",
                     "mayEdit",
                     "mayPublish",
@@ -7773,10 +7782,12 @@
                             ]
                           },
                           "values": {
-                            "description": "Empty: nothing may be written into a node's values until TPL-054 says what they hold",
+                            "description": "A section's field values, whole: each a field its document's template applies to sections",
                             "type": "object",
-                            "properties": {},
-                            "additionalProperties": false
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           }
                         },
                         "required": [
@@ -7865,6 +7876,14 @@
                       },
                       "additionalProperties": {},
                       "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
+                    },
+                    "values": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                     },
                     "template": {
                       "anyOf": [
@@ -7977,6 +7996,7 @@
                     "space",
                     "version",
                     "outline",
+                    "values",
                     "template",
                     "mayEdit",
                     "mayPublish",
@@ -7987,7 +8007,7 @@
             }
           },
           "400": {
-            "description": "outline_invalid: the operation does not apply to the latest outline; or invalid_request: a body this route does not accept",
+            "description": "outline_invalid: the operation does not apply to the latest outline; values_invalid: a section's value does not fit; values_unresolved: the document's template no longer resolves; or invalid_request: a body this route does not accept",
             "content": {
               "application/json": {
                 "schema": {
@@ -8073,6 +8093,14 @@
                           },
                           "additionalProperties": {},
                           "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
+                        },
+                        "values": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                         },
                         "template": {
                           "anyOf": [
@@ -8185,6 +8213,7 @@
                         "space",
                         "version",
                         "outline",
+                        "values",
                         "template",
                         "mayEdit",
                         "mayPublish",
@@ -8194,6 +8223,83 @@
                     "reason": {
                       "description": "outline_invalid: why the operation does not apply",
                       "type": "string"
+                    },
+                    "failures": {
+                      "description": "values_invalid: each value that does not fit its field, in MET-022's shape",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "detail": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "field",
+                          "rule",
+                          "schemas",
+                          "detail"
+                        ]
+                      }
+                    },
+                    "unresolved": {
+                      "description": "values_unresolved: what the document's template names that does not resolve now",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "reference": {
+                            "type": "string",
+                            "enum": [
+                              "theme",
+                              "layout",
+                              "schema",
+                              "field",
+                              "requires",
+                              "conflict"
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "document",
+                              "section"
+                            ]
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "reference",
+                          "id"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -8392,6 +8498,14 @@
                           "additionalProperties": {},
                           "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
                         },
+                        "values": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                        },
                         "template": {
                           "anyOf": [
                             {
@@ -8503,6 +8617,7 @@
                         "space",
                         "version",
                         "outline",
+                        "values",
                         "template",
                         "mayEdit",
                         "mayPublish",
@@ -8512,6 +8627,83 @@
                     "reason": {
                       "description": "outline_invalid: why the operation does not apply",
                       "type": "string"
+                    },
+                    "failures": {
+                      "description": "values_invalid: each value that does not fit its field, in MET-022's shape",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "detail": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "field",
+                          "rule",
+                          "schemas",
+                          "detail"
+                        ]
+                      }
+                    },
+                    "unresolved": {
+                      "description": "values_unresolved: what the document's template names that does not resolve now",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "reference": {
+                            "type": "string",
+                            "enum": [
+                              "theme",
+                              "layout",
+                              "schema",
+                              "field",
+                              "requires",
+                              "conflict"
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "document",
+                              "section"
+                            ]
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "reference",
+                          "id"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -9501,6 +9693,1013 @@
                     "traceId": {
                       "type": "string",
                       "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/values": {
+      "put": {
+        "operationId": "recordDocumentValues",
+        "summary": "Write the document's own values, whole, as one version with the outline unchanged",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "openedFrom": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ],
+                    "description": "The version the values were read at, which must be the latest"
+                  },
+                  "values": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {},
+                    "description": "The document's values, by field identifier"
+                  }
+                },
+                "required": [
+                  "openedFrom",
+                  "values"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Written, or nothing changed: the document at its latest version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "space": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`, as `0.2`"
+                        },
+                        "author": {
+                          "description": "The principal who cut it; null for a starter definition",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number",
+                        "author",
+                        "createdAt",
+                        "note"
+                      ]
+                    },
+                    "outline": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
+                    },
+                    "values": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                    },
+                    "template": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "version"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read"
+                    },
+                    "mayEdit": {
+                      "type": "boolean",
+                      "description": "Whether the caller may restructure the outline"
+                    },
+                    "mayPublish": {
+                      "type": "boolean",
+                      "description": "Whether the caller may publish the document"
+                    },
+                    "layout": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number"
+                          ]
+                        },
+                        "language": {
+                          "type": "string"
+                        },
+                        "scheme": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The numbering scheme this document is numbered and published with"
+                        },
+                        "words": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
+                        },
+                        "formats": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version",
+                        "language",
+                        "scheme",
+                        "words",
+                        "formats"
+                      ],
+                      "description": "The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, \"The layout\"; templates.md)"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "space",
+                    "version",
+                    "outline",
+                    "values",
+                    "template",
+                    "mayEdit",
+                    "mayPublish",
+                    "layout"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "values_invalid: a value is for a field the document's template does not apply, or does not fit its field; values_unresolved: the template no longer resolves; or invalid_request: a body this route does not accept",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "current": {
+                      "description": "version_precondition: the document as it now stands",
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "space": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string",
+                              "description": "`revision.version`, as `0.2`"
+                            },
+                            "author": {
+                              "description": "The principal who cut it; null for a starter definition",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "author",
+                            "createdAt",
+                            "note"
+                          ]
+                        },
+                        "outline": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
+                        },
+                        "values": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                        },
+                        "template": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "number": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "number"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "version"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read"
+                        },
+                        "mayEdit": {
+                          "type": "boolean",
+                          "description": "Whether the caller may restructure the outline"
+                        },
+                        "mayPublish": {
+                          "type": "boolean",
+                          "description": "Whether the caller may publish the document"
+                        },
+                        "layout": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            },
+                            "language": {
+                              "type": "string"
+                            },
+                            "scheme": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {},
+                              "description": "The numbering scheme this document is numbered and published with"
+                            },
+                            "words": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {},
+                              "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
+                            },
+                            "formats": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "version",
+                            "language",
+                            "scheme",
+                            "words",
+                            "formats"
+                          ],
+                          "description": "The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, \"The layout\"; templates.md)"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "space",
+                        "version",
+                        "outline",
+                        "values",
+                        "template",
+                        "mayEdit",
+                        "mayPublish",
+                        "layout"
+                      ]
+                    },
+                    "reason": {
+                      "description": "outline_invalid: why the operation does not apply",
+                      "type": "string"
+                    },
+                    "failures": {
+                      "description": "values_invalid: each value that does not fit its field, in MET-022's shape",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "detail": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "field",
+                          "rule",
+                          "schemas",
+                          "detail"
+                        ]
+                      }
+                    },
+                    "unresolved": {
+                      "description": "values_unresolved: what the document's template names that does not resolve now",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "reference": {
+                            "type": "string",
+                            "enum": [
+                              "theme",
+                              "layout",
+                              "schema",
+                              "field",
+                              "requires",
+                              "conflict"
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "document",
+                              "section"
+                            ]
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "reference",
+                          "id"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the document but may not edit it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "version_precondition: the document has changed since it was read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "current": {
+                      "description": "version_precondition: the document as it now stands",
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "space": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string",
+                              "description": "`revision.version`, as `0.2`"
+                            },
+                            "author": {
+                              "description": "The principal who cut it; null for a starter definition",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "author",
+                            "createdAt",
+                            "note"
+                          ]
+                        },
+                        "outline": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
+                        },
+                        "values": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                        },
+                        "template": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "number": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "number"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "version"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read"
+                        },
+                        "mayEdit": {
+                          "type": "boolean",
+                          "description": "Whether the caller may restructure the outline"
+                        },
+                        "mayPublish": {
+                          "type": "boolean",
+                          "description": "Whether the caller may publish the document"
+                        },
+                        "layout": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            },
+                            "language": {
+                              "type": "string"
+                            },
+                            "scheme": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {},
+                              "description": "The numbering scheme this document is numbered and published with"
+                            },
+                            "words": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {},
+                              "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2)"
+                            },
+                            "formats": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "version",
+                            "language",
+                            "scheme",
+                            "words",
+                            "formats"
+                          ],
+                          "description": "The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, \"The layout\"; templates.md)"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "space",
+                        "version",
+                        "outline",
+                        "values",
+                        "template",
+                        "mayEdit",
+                        "mayPublish",
+                        "layout"
+                      ]
+                    },
+                    "reason": {
+                      "description": "outline_invalid: why the operation does not apply",
+                      "type": "string"
+                    },
+                    "failures": {
+                      "description": "values_invalid: each value that does not fit its field, in MET-022's shape",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "detail": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "field",
+                          "rule",
+                          "schemas",
+                          "detail"
+                        ]
+                      }
+                    },
+                    "unresolved": {
+                      "description": "values_unresolved: what the document's template names that does not resolve now",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "reference": {
+                            "type": "string",
+                            "enum": [
+                              "theme",
+                              "layout",
+                              "schema",
+                              "field",
+                              "requires",
+                              "conflict"
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "document",
+                              "section"
+                            ]
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "reference",
+                          "id"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -15131,6 +16330,14 @@
                       "additionalProperties": {},
                       "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
                     },
+                    "values": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                    },
                     "template": {
                       "anyOf": [
                         {
@@ -15242,6 +16449,7 @@
                     "space",
                     "version",
                     "outline",
+                    "values",
                     "template",
                     "mayEdit",
                     "mayPublish",
