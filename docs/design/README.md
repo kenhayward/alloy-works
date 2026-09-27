@@ -32,6 +32,7 @@ understand the storage layer, rather than something to be thrown away.
 | [publishing.md](publishing.md)                         | A document version to a kept, reproducible PDF: who may publish, the layout, the pipeline and the record      |
 | [templates.md](templates.md)                           | A template, a document made from one, and what the document keeps of it                                       |
 | [definitions.md](definitions.md)                       | Fields, schemas and component types made and changed, and values written, shown and held at publication       |
+| [document-view.md](document-view.md)                   | A document read and authored on one page: one scroll, boundaries, modes, navigation and versions              |
 
 ## Why these are not one per requirement area
 

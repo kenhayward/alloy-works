@@ -122,7 +122,7 @@ This table is updated as each workstream lands.
 | W6  | Search                             | Built (PRs #269 to #273; [plan](2026-09-27-w6-search.md))                                   |
 | W7  | Listings and the API               | Built (PRs #274 to #278; [plan](2026-09-27-w7-listings.md))                                 |
 | W8  | The theme in the editor            | Built (PRs #279 to #285; [plan](2026-09-27-w8-theme-in-the-editor.md)); STR-025 waits on K8 |
-| W9  | The document view                  | Not started                                                                                 |
+| W9  | The document view                  | In progress ([plan](2026-09-27-w9-document-view.md), [design](../design/document-view.md))  |
 | W10 | Preview                            | Not started                                                                                 |
 | W11 | Recovery                           | Not started                                                                                 |
 | W12 | Identity                           | Not started                                                                                 |
