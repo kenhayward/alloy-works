@@ -50,6 +50,12 @@ PDF does, held to the measure by the canvas's own rule. The version in the label
 2. Reading hides the outline's acts, the editor in place and the fields' writing; Publishing stays.
 3. Tests: CNT-154, CNT-105, CNT-156. IAM-023 is not cited: its review-mode half is T3's.
 
+**W9.2, as built.** The mode is a radio group in the page's header named **Mode**, or the word
+Reading where Authoring is not offered; whether it is offered is worked out from the document's
+`mayEdit` and each occurrence's, so it can appear once the texts arrive. Dropping to Reading closes an
+editor open in place. Reading is the page with the outline's acts, the editor in place and the fields'
+writing switched off, which the page already did for a document the reader may not change.
+
 ## W9.3: Navigation
 
 1. The current node by an `IntersectionObserver`: `aria-current="location"` in the tree, kept in view;

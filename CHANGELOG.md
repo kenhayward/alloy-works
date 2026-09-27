@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.101.0 - 2026-09-27 (PR #288)
+
+### Added
+
+- **Reading and Authoring.** A document's page is in one of two modes, shown by a switch in its header.
+  Reading shows the document with nothing that changes it; Authoring adds the outline's changes and
+  editing a component in place. Authoring is offered only to someone who may change the document or a
+  component in it, and anyone may switch to Reading, which is remembered in this browser. Publishing
+  stays in both, for whoever may publish.
+
 ## 0.100.0 - 2026-09-27 (PR #287)
 
 ### Changed
