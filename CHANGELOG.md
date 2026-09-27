@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.87.0 - 2026-09-27 (PR #271)
+
+### Added
+
+- **Search through the API.** `GET /v1/search?q=` finds everything you may read that holds your words,
+  and nothing you may not. Put a phrase in quotes, leave a word out with `-`, and look in one place with
+  `title:word` or a field's name, as in `Reviewer:Grace`. Each result says where it matched and shows a
+  passage from there, its matching words marked. A search with nothing to look for is answered in a
+  sentence saying why, rather than with everything or an empty page. The search page follows.
+
 ## 0.86.0 - 2026-09-27 (PR #270)
 
 ### Added

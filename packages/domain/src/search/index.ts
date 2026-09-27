@@ -7,3 +7,5 @@ export type {
   SearchSource,
   SearchText,
 } from './entries.js';
+export { parseQuery } from './query.js';
+export type { ParsedQuery, ScopedTerm } from './query.js';

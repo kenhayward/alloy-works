@@ -1092,6 +1092,24 @@ earlier point reaches.
 | `db: src/search.ts`                 | `indexVersion`, `indexPublication`, `reindexSearch`                                |
 | `db: src/migrate.ts`                | `REINDEXED_BY`, and the reindex in the run that applies 0031                       |
 
+A search is `GET /v1/search?q=` (W6.2), open to anybody signed in and answered over what they may read.
+`parseQuery` in `packages/domain` composes the query and lifts out its scoped terms - `title:word`, and
+`name:word` for a field by its folded name - handing the rest on in Postgres's web search syntax, and
+names the queries it will not run: `empty`, and `nothing_to_match` for one that only excludes.
+`searchWords` in `packages/db` resolves each scope - `unknown_field` for a name no field the reader may
+read has - and runs one statement: the readable set as access.md's predicate, a definition read at the
+tenant and refused, as anything is, by a grant on itself; the free words against each entry's vector and each scoped term against its place;
+the count, capped at 1,000 over what matched; and for each result on the page its best place by
+`ts_rank` and a passage from that place by `ts_headline`, its matched words marked. The service says
+each outcome in a sentence.
+
+| Where                         | What                                                                  |
+| ----------------------------- | --------------------------------------------------------------------- |
+| `domain: src/search/query.ts` | `parseQuery`: composing, scoped terms, `empty` and `nothing_to_match` |
+| `db: src/search-words.ts`     | `searchWords`: the scopes, the one statement, the passage in pieces   |
+| `api-contract: search.ts`     | `GET /v1/search`, its query and every outcome's body                  |
+| `service: src/search.ts`      | The handler, and `sentenceFor`, each outcome in a sentence            |
+
 ## One renderer, two deliveries
 
 `apps/web` **is** the web application, and it is also the thing the Electron window loads. There is

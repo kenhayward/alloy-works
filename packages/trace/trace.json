@@ -17091,6 +17091,12 @@
       "kind": "title"
     },
     {
+      "id": "SCH-039",
+      "file": "apps/service/src/search-routes.test.ts",
+      "line": 100,
+      "kind": "title"
+    },
+    {
       "id": "IAM-039",
       "file": "apps/service/src/session-routes.test.ts",
       "line": 82,
@@ -17931,6 +17937,36 @@
       "kind": "title"
     },
     {
+      "id": "SCH-010",
+      "file": "packages/db/src/search-words.test.ts",
+      "line": 249,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-011",
+      "file": "packages/db/src/search-words.test.ts",
+      "line": 154,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-012",
+      "file": "packages/db/src/search-words.test.ts",
+      "line": 201,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-016",
+      "file": "packages/db/src/search-words.test.ts",
+      "line": 208,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-017",
+      "file": "packages/db/src/search-words.test.ts",
+      "line": 226,
+      "kind": "title"
+    },
+    {
       "id": "SCH-054",
       "file": "packages/db/src/search.test.ts",
       "line": 125,
@@ -18431,7 +18467,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 310,
+      "line": 311,
       "kind": "title"
     },
     {
