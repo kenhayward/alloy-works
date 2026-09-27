@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.80.0 - 2026-09-27 (PR #260)
+
+### Added
+
+- **A document is not published until it has what its template requires.** A missing required
+  section - even one retitled or moved is still found - or a value the template asks for that is
+  missing or does not fit, is refused when you publish, and the page names each section or value to
+  put right. Nothing is queued until it is.
+
 ## 0.79.0 - 2026-09-27 (PR #259)
 
 ### Added
