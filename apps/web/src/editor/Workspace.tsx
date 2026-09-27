@@ -12,6 +12,7 @@ import { DocumentList } from '../structure/DocumentList.js';
 import { DocumentPage } from '../structure/DocumentPage.js';
 import { documentAddress, documentLink } from '../structure/links.js';
 import { TemplateList } from '../structure/TemplateList.js';
+import { PresentationProvider } from '../theme/presentation.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { ComponentList } from './ComponentList.js';
 import { SpacePane } from './SpacePane.js';
@@ -193,14 +194,17 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             <a href="#/components">Back to components</a>
             <ManageAccessLink client={client} componentId={opened} />
           </p>
-          <ComponentEditor
-            key={opened}
-            componentId={opened}
-            client={client}
-            principalId={me}
-            onSpace={(space) => setPlaced({ component: opened, space })}
-            linked={address?.block ? { block: address.block, arrival: arrivals } : null}
-          />
+          {/* A component on its own is set in the environment's theme and layout (themes.md, ET-A). */}
+          <PresentationProvider client={client}>
+            <ComponentEditor
+              key={opened}
+              componentId={opened}
+              client={client}
+              principalId={me}
+              onSpace={(space) => setPlaced({ component: opened, space })}
+              linked={address?.block ? { block: address.block, arrival: arrivals } : null}
+            />
+          </PresentationProvider>
         </div>
       </div>
     );

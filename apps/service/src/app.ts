@@ -39,6 +39,7 @@ import type { GoogleSettings } from './config.js';
 import { documentHandlers } from './documents.js';
 import { templateHandlers } from './templates.js';
 import { definitionHandlers } from './definitions.js';
+import { presentationHandlers } from './presentation.js';
 import { searchHandlers } from './search.js';
 import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
@@ -301,6 +302,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...templateHandlers(db, tenantOf, principalOf),
     ...definitionHandlers(db, tenantOf, principalOf),
     ...searchHandlers(db, tenantOf, principalOf),
+    ...presentationHandlers(db, tenantOf),
     ...publishingHandlers(db, tenantOf, principalOf, options.objects),
     ...assetHandlers(db, tenantOf, principalOf, options.objects),
     ...editingHandlers(),

@@ -17,6 +17,7 @@
     "@alloy-works/api-client": "workspace:^",
     "@alloy-works/domain": "workspace:*",
     "@alloy-works/editor": "workspace:^",
+    "@alloy-works/fonts": "workspace:^",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "speech-rule-engine": "4.1.4",

@@ -341,6 +341,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/presentation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The theme and layout a document is published under, which its text is shown in */
+        get: operations["getDocumentPresentation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/publications": {
         parameters: {
             query?: never;
@@ -489,6 +506,23 @@ export interface paths {
         };
         /** The environment's people, by name, for a user field */
         get: operations["listPeople"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The environment's theme and layout, which a component on its own is shown in */
+        get: operations["getPresentation"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5067,6 +5101,125 @@ export interface operations {
             };
         };
     };
+    getDocumentPresentation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The theme and the frame */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        theme: {
+                            versionId: string;
+                            /** @description The theme version, as VER-009 presents it */
+                            number: string;
+                            /** @description The theme version as stored, naming its catalogues by version */
+                            content: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Each catalogue version the theme names */
+                            catalogues: {
+                                versionId: string;
+                                /** @description The catalogue version as stored */
+                                content: {
+                                    [key: string]: unknown;
+                                };
+                            }[];
+                        };
+                        /** @description The layout's page, as far as an image style's lengths are shares of it */
+                        frame: {
+                            /** @description The width of the layout's text block, in points */
+                            measure: number;
+                            /** @description The height of the layout's text block, in points */
+                            textHeight: number;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may read is one they may see set */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document, or not one the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listPublications: {
         parameters: {
             query?: {
@@ -6940,6 +7093,87 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getPresentation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The theme and the frame */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        theme: {
+                            versionId: string;
+                            /** @description The theme version, as VER-009 presents it */
+                            number: string;
+                            /** @description The theme version as stored, naming its catalogues by version */
+                            content: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Each catalogue version the theme names */
+                            catalogues: {
+                                versionId: string;
+                                /** @description The catalogue version as stored */
+                                content: {
+                                    [key: string]: unknown;
+                                };
+                            }[];
+                        };
+                        /** @description The layout's page, as far as an image style's lengths are shares of it */
+                        frame: {
+                            /** @description The width of the layout's text block, in points */
+                            measure: number;
+                            /** @description The height of the layout's text block, in points */
+                            textHeight: number;
+                        };
                     };
                 };
             };
