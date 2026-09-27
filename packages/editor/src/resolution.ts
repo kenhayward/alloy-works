@@ -124,6 +124,26 @@ export function unresolvedDecorations(
     doc.descendants((node, pos) => {
       const role = ROLE_OF[node.type.name];
       if (role !== undefined) glyphs(node, pos, { paragraph: null, role });
+      // A preformatted block's language label is drawn, not typed, so no character of it can carry a
+      // mark: the block it labels is marked instead, naming the characters its role's face lacks.
+      const label =
+        node.type.name === 'preformatted' ? (node.attrs.language as string | null) : null;
+      if (label) {
+        const missing = check.uncovered(label, {
+          paragraph: null,
+          role: 'preformattedLabel',
+          code: false,
+          inlineCode: false,
+        });
+        if (missing.size > 0) {
+          decorations.push(
+            Decoration.node(pos, pos + node.nodeSize, {
+              class: 'aw-label-glyph-missing',
+              title: `No glyph for ${[...missing].map((each) => `U+${hex(each)}`).join(', ')} in this typeface, in its label`,
+            }),
+          );
+        }
+      }
       if (node.type.name === 'tableFigure') {
         const style = node.attrs.style as string;
         const status = check.table(style);

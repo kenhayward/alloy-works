@@ -762,7 +762,7 @@ default:
 | A typeface whose files the renderer does not hold by hash, or whose file fails to load, by the font's load status | A notice on the canvas naming the family, its text set in the application's own face and the notice saying so: never quietly in a fallback (STY-040)                            |
 | A character that the family setting it cannot set, by `characterProblems`                                         | The character marked, and its code point named on hover. This is the check the publish fails on (STY-049), asked in the same setting - body, code or maths - of the same family |
 
-The glyph check runs over the blocks a change touched, not the whole component on every keystroke.
+The marks are made again when the component's text or the theme changes, and not on a draw that changed neither: one pass over the component, a range lookup per character, which W8.6 found cheap enough that marking only the blocks a change touched was not built.
 
 ### Decisions for Ken
 

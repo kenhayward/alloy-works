@@ -1,4 +1,5 @@
 import type { BlockNode, ContentDocument } from '@alloy-works/domain';
+import type { Node as ProseNode } from 'prosemirror-model';
 import type { EditorState } from 'prosemirror-state';
 import { DecorationSet, type Decoration } from 'prosemirror-view';
 import { describe, expect, it } from 'vitest';
@@ -156,6 +157,63 @@ describe('what will not resolve, marked where it stands (STY-070)', () => {
       ['ا', 'No glyph for U+0627 in this typeface'],
       ['ß', 'No glyph for U+00DF in this typeface'],
     ]);
+  });
+
+  it("marks a character in text a role sets, in a preformatted block's label, and in a footnote's own editor", () => {
+    const state = opened([
+      {
+        type: 'figure',
+        id: 'f1',
+        asset: ASSET,
+        imageStyle: 'half-width',
+        caption: [{ type: 'text', value: 'Tray ا', marks: [] }],
+        alternative: { kind: 'decorative' },
+      },
+      { type: 'preformatted', id: 'p1', language: 'اsql', text: 'select 1' },
+    ]);
+    const decorations = unresolvedDecorations(state.doc, check).find();
+    // The caption's letter, marked where it stands.
+    expect(
+      decorations
+        .filter((decoration) => attributesOf(decoration).class === 'aw-glyph-missing')
+        .map((decoration) => state.doc.textBetween(decoration.from, decoration.to)),
+    ).toEqual(['ا']);
+    // The label is drawn, not typed: the block it labels is marked, the character named.
+    const label = decorations.find(
+      (decoration) => attributesOf(decoration).class === 'aw-label-glyph-missing',
+    );
+    expect(state.doc.nodeAt(label!.from)?.type.name).toBe('preformatted');
+    expect(attributesOf(label!).title).toBe('No glyph for U+0627 in this typeface, in its label');
+
+    // A footnote's own editor, whose document is the footnote: its paragraphs in the footnote's place.
+    const withNote = opened([
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [
+          { type: 'text', value: 'Unbox', marks: [] },
+          {
+            type: 'footnote',
+            id: 'n1',
+            anchor: { kind: 'span' },
+            content: [paragraph('fp1', 'Note ا', 'gone')],
+          },
+        ],
+      },
+    ]);
+    let footnote: ProseNode | undefined;
+    withNote.doc.descendants((node) => {
+      if (node.type.name === 'footnote') footnote = node;
+      return footnote === undefined;
+    });
+    const inFootnote = unresolvedDecorations(footnote!, check, true).find();
+    expect(
+      inFootnote.map(
+        (decoration) =>
+          attributesOf(decoration)['data-unresolved-label'] ?? attributesOf(decoration).class,
+      ),
+    ).toEqual(expect.arrayContaining(['Style gone is not in this theme', 'aw-glyph-missing']));
   });
 
   it('marks nothing until the theme is given, and follows the theme the surface is given', () => {

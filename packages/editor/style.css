@@ -557,6 +557,7 @@
   color: var(--danger);
 }
 
-.aw-text .aw-glyph-missing {
+.aw-text .aw-glyph-missing,
+.aw-text .aw-label-glyph-missing {
   outline: 1px solid var(--danger);
 }

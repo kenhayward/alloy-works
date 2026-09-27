@@ -159,4 +159,5 @@ set by the editor's own stylesheet, since neither has a default of its place. A 
 setting it cannot set, in the setting it is set in - inline code in inline code's face - is outlined and
 named on hover; a character of a family the renderer does not hold is not, since the notice beside the
 text names the family itself. A document's read text marks styles as the surface does; characters are
-marked only on the surface, where they can be changed.
+marked only on the surface, where they can be changed. A preformatted block's language label is drawn
+rather than typed, so the block itself is marked where its label's face lacks a character, naming it.
