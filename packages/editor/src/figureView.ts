@@ -29,6 +29,7 @@ export function figureView(node: Node, document: Document): NodeView {
       if (next.type !== shown.type) return false;
       const same =
         next.attrs.asset === shown.attrs.asset &&
+        next.attrs.imageStyle === shown.attrs.imageStyle &&
         JSON.stringify(next.attrs.alternative) === JSON.stringify(shown.attrs.alternative);
       if (!same) return false;
       shown = next;

@@ -96,6 +96,17 @@ and the page prints none.
 2. **Images** sized by `styledSize` from the asset version's pixels (`GET /v1/asset-versions/{id}`)
    and the frame, in points times the zoom, a figure and an image in a line alike (CNT-122).
 
+**W8.3, as built.** A table carries its style as `data-table-style`, and a figure and an image in a
+line theirs as `data-image-style`; the node views draw an image again when its style changes. The
+table's rules are CSS alone: header cells are told by the `scope` the editor already gives them, and a
+body row's band by `:nth-child(odd of ...)`, counted from the first body row as the template counts.
+The header column's rule is drawn beside its body cells and not beside a header row's cell above it,
+which the template's does reach: no `scope` says which of a header row's cells stand over the header
+column. The images are sized by `useStyledImages`, which the canvas and each read-text block run: the
+provider asks each asset version's pixels once, and each image is set at `styledSize`'s width in
+points times the zoom, its height following, an image in a line by the size of the paragraph style it
+stands in.
+
 ## W8.4: Choosing a style, and what will not resolve
 
 1. **Commands**: `setParagraphStyle`, `setTableStyle`, `setImageStyle` in `packages/editor`, each one

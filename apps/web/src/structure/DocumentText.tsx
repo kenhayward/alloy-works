@@ -27,6 +27,7 @@ import { Lozenge } from '../states/Lozenge.js';
 import styles from './DocumentText.module.css';
 import { nodeName, titleText, type Names } from './tree.js';
 import { parentRoom, useCanvas } from '../theme/Canvas.js';
+import { useStyledImages } from '../theme/images.js';
 
 /** What the text knows of an occurrence's contributions until the page has heard: nothing. */
 const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
@@ -159,6 +160,7 @@ function RenderedText({
   // Each component's text is its own paper, set as the editing surface sets it (themes.md, "The theme
   // in the editor"), so a page's controls around it keep the application's own colours.
   const canvas = useCanvas(parentRoom, place);
+  useStyledImages(place);
   const rendered = useMemo(() => renderContent(content, document, context), [content, context]);
   useEffect(() => {
     const host = place.current;

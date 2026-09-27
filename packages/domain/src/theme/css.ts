@@ -7,6 +7,8 @@ import {
   STYLED_MARKS,
   type CharacterProperties,
   type ResolvedParagraphProperties,
+  type TableRule,
+  type TableStyle,
 } from './schema.js';
 
 /**
@@ -114,7 +116,77 @@ export function projectCss(theme: ResolvedTheme): string {
     rules.push(`${CANVAS} .aw-mark-${mark} { ${declarations.join('; ')}; }`);
   }
 
+  for (const table of theme.tableStyles.values()) rules.push(...tableRules(table));
+
+  // An image's size is `styledSize`'s, which the editor sets on each image from its pixels (CNT-122):
+  // the editor stylesheet's own caps stand down, and a figure is aligned in its band by its style.
+  rules.push(
+    `${CANVAS} [data-image-style] img, ${CANVAS} img[data-image-style] { max-height: none; height: auto; }`,
+  );
+  for (const image of theme.imageStyles.values()) {
+    if (image.placement === 'inline') continue;
+    rules.push(
+      `${CANVAS} [data-image-style="${image.id}"] .aw-figure-image { text-align: ${ALIGN[image.alignment]}; }`,
+    );
+  }
+
   return rules.join('\n') + '\n';
+}
+
+/**
+ * A table style's rules on the surface's tables (STY-076, TH-I), as template 13 draws them: its rules
+ * inside and its outer frame; its cells' padding; its header row's and header column's fill, bold and
+ * rule - the header row's below its last row, the header column's after its last column; and the band
+ * behind every other body row from the first, under a filled header column's own fill. Header cells are
+ * told by the `scope` the editor gives them from the table's header counts. What depends on pages -
+ * the header repeated, rows kept whole, the continuation label - is preview's (STY-037).
+ */
+function tableRules(style: TableStyle): string[] {
+  const at = `${CANVAS} [data-table-style="${style.id}"]`;
+  const line = (rule: TableRule) =>
+    rule === 'none' ? 'none' : `${zoomed(rule.width)} solid ${rule.colour}`;
+  const fill = (colour: string) => (colour === 'none' ? 'transparent' : colour);
+  const outer = line(style.rules.outer);
+  const rules = [
+    `${at} table { border-collapse: collapse; border: ${outer}; }`,
+    `${at} td, ${at} th { padding: ${zoomed(style.padding)}; ` +
+      `border-block: ${line(style.rules.horizontal)}; border-inline: ${line(style.rules.vertical)}; ` +
+      'background-color: transparent; font-weight: inherit; }',
+    `${at} tr:first-child > * { border-block-start: ${outer}; }`,
+    `${at} tr:last-child > * { border-block-end: ${outer}; }`,
+    `${at} tr > :first-child { border-inline-start: ${outer}; }`,
+    `${at} tr > :last-child { border-inline-end: ${outer}; }`,
+  ];
+  if (style.banding.fill !== 'none') {
+    const cells = style.headerColumn.fill === 'none' ? '*' : ':not([scope="row"])';
+    rules.push(
+      `${at} tr:nth-child(odd of :not(:has(> [scope="col"]))) > ${cells} ` +
+        `{ background-color: ${style.banding.fill}; }`,
+    );
+  }
+  rules.push(
+    `${at} [scope="col"] { background-color: ${fill(style.headerRow.fill)}; }`,
+    `${at} [scope="row"] { background-color: ${fill(style.headerColumn.fill)}; }`,
+  );
+  if (style.headerRow.bold) {
+    rules.push(`${at} [scope="col"] [data-style] { font-weight: 700; }`);
+  }
+  if (style.headerColumn.bold) {
+    rules.push(`${at} [scope="row"] [data-style] { font-weight: 700; }`);
+  }
+  if (style.headerRow.rule !== 'none') {
+    rules.push(
+      `${at} tr:has(> [scope="col"]):not(:has(+ tr > [scope="col"])) > * ` +
+        `{ border-block-end: ${line(style.headerRow.rule)}; }`,
+    );
+  }
+  if (style.headerColumn.rule !== 'none') {
+    rules.push(
+      `${at} [scope="row"]:not(:has(+ [scope="row"])) ` +
+        `{ border-inline-end: ${line(style.headerColumn.rule)}; }`,
+    );
+  }
+  return rules;
 }
 
 /**

@@ -357,7 +357,11 @@ export const editorSchema = new Schema({
         keyColumns: { default: null },
       },
       parseDOM: [{ tag: 'figure[data-table]' }],
-      toDOM: () => ['figure', { 'data-table': '', class: 'aw-table' }, 0],
+      toDOM: (node) => [
+        'figure',
+        { 'data-table': '', class: 'aw-table', 'data-table-style': node.attrs.style as string },
+        0,
+      ],
     },
     /** The caption: inline content, typed in place above the table, as a quotation's attribution is. */
     tableCaption: {
@@ -414,7 +418,12 @@ export const editorSchema = new Schema({
         const alt = altOf(node.attrs.alternative as { kind: string; text?: string });
         return [
           'figure',
-          { 'data-figure': '', 'data-asset': node.attrs.asset as string, class: 'aw-figure' },
+          {
+            'data-figure': '',
+            'data-asset': node.attrs.asset as string,
+            'data-image-style': node.attrs.imageStyle as string,
+            class: 'aw-figure',
+          },
           [
             'div',
             { class: 'aw-figure-image', contenteditable: 'false' },
@@ -464,6 +473,7 @@ export const editorSchema = new Schema({
           alt: altOf(node.attrs.alternative as { kind: string; text?: string }),
           class: 'aw-inline-image',
           'data-asset': node.attrs.asset as string,
+          'data-image-style': node.attrs.imageStyle as string,
         },
       ],
     },

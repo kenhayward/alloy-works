@@ -214,9 +214,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   quotations, table cells, footnotes, captions, a table's note, an attribution and preformatted text
   each take the style they will print in, and every mark its own. The text is as wide as the printed
   page's text, at its printed size at 100%; **Zoom** beside it sets 50% to 200%, or **Fit** to the
-  column, and is remembered in this browser. The paper stays white in dark mode. Tables and images are
-  not yet set by their styles, and page breaks, hyphenation and keeping lines together are left to the
-  publication.
+  column, and is remembered in this browser. The paper stays white in dark mode. A table is ruled,
+  filled, banded and padded as its table style says, and a figure and an image in a line are the size
+  their image styles give them, from the image's own pixels, as a publication sets them. Page breaks,
+  hyphenation, keeping lines together, a table's header repeated on each page and a floated figure's
+  place on its page are left to the publication.
 
 - **Making a component.** On the list of components, **New component** offers the spaces you may create
   in, a title, a base language such as `en-GB`, a direction, and the component type the environment

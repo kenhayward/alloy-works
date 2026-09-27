@@ -5408,6 +5408,104 @@ describe('the surface set in the theme\'s type, at the layout\'s measure (themes
     expect(screen.getByLabelText('Zoom')).toHaveValue('1.5');
   });
 
+  it("CNT-122 sizes a figure and an image in a line by their image styles, from the image's own pixels, as a publish does", async () => {
+    const ASSET = '00000000-0000-4000-8000-0000000000a1';
+    const stored = {
+      ...content('Unbox the printer.'),
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Press ', marks: [] },
+            {
+              type: 'image',
+              asset: ASSET,
+              imageStyle: 'inline',
+              alternative: { kind: 'decorative' },
+            },
+          ],
+        },
+        {
+          type: 'figure',
+          id: 'f1',
+          asset: ASSET,
+          imageStyle: 'figure',
+          caption: [{ type: 'text', value: 'The tray', marks: [] }],
+          alternative: { kind: 'decorative' },
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [{ type: 'text', value: 'Readings', marks: [] }],
+          headerRows: 1,
+          headerColumns: 0,
+          rows: [
+            {
+              cells: [
+                {
+                  content: [
+                    {
+                      type: 'paragraph',
+                      id: 'c1',
+                      style: 'body',
+                      content: [{ type: 'text', value: 'Tray', marks: [] }],
+                    },
+                  ],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const { client } = service({
+      'GET /v1/components/{id}': () => json(200, opened({ content: stored })),
+      'GET /v1/presentation': () => json(200, DEFAULT_PRESENTATION),
+      [`GET /v1/asset-versions/${ASSET}`]: () =>
+        json(200, {
+          id: ASSET,
+          asset: 'a1',
+          number: '0.1',
+          format: 'png',
+          bytes: 11,
+          width: 1200,
+          height: 800,
+          resolution: null,
+          alternative: null,
+        }),
+    });
+    let view: EditorView | undefined;
+    render(
+      <PresentationProvider client={client}>
+        <ComponentEditor
+          componentId={COMPONENT}
+          client={client}
+          principalId={ADA}
+          sessionId={SESSION}
+          timing={quick}
+          onView={(mounted) => (view = mounted)}
+        />
+      </PresentationProvider>,
+    );
+    await screen.findByLabelText('Title');
+    const figure = () => view!.dom.querySelector('figure[data-figure] img') as HTMLImageElement;
+    const inline = () => view!.dom.querySelector('img.aw-inline-image') as HTMLImageElement;
+    // The figure: the measure wide, since 800 / 1200 of it is less than 0.6 of the text block high.
+    await waitFor(() => expect(figure().style.width).toBe('calc(451.28pt * var(--aw-zoom))'));
+    // The image in a line: 1.2 ems of the body's 11pt high, and wide in proportion: 19.8pt.
+    await waitFor(() => expect(inline().style.width).toBe('calc(19.8pt * var(--aw-zoom))'));
+    // And the table in its table style: its cells ruled at 1pt in black, as the default's are.
+    const cell = view!.dom.querySelector('figure[data-table-style="table"] th') as HTMLElement;
+    expect(getComputedStyle(cell).getPropertyValue('border-block')).toBe(
+      'calc(1pt * var(--aw-zoom)) solid #000000',
+    );
+  });
+
   it('leaves the text as it was where no presentation arrives', async () => {
     const { client } = service({ 'GET /v1/components/{id}': () => json(200, opened()) });
     let view: EditorView | undefined;
