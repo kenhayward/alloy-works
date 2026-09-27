@@ -15922,6 +15922,54 @@
         {
           "id": "SCH-035",
           "howItIsMet": "The vector strategy is chosen by the size of the visible set, and a test asserts a full page for a user who can see very little"
+        },
+        {
+          "id": "SCH-054",
+          "howItIsMet": "Every kind the product holds is a `search_entry` - a component, a document, each of its sections, a publication, a template, an asset, a field, a metadata schema and a component type - written with the version that makes it what it is ([Searching words, in T1](#searching-words-in-t1))"
+        },
+        {
+          "id": "SCH-002",
+          "howItIsMet": "Each entry's text is its content's every block - a caption and a figure's alternative text among them - its title, and its values rendered as words, each a `search_text` row of its own"
+        },
+        {
+          "id": "SCH-011",
+          "howItIsMet": "A query is Postgres's web search syntax - a phrase in quotes, `-word` excluding, `or` - and a term written `name:word` or `name:\"a phrase\"` is looked for only in the place `name` names: `title`, or a metadata field by its name"
+        },
+        {
+          "id": "SCH-012",
+          "howItIsMet": "Query and text are both NFC-normalised, as ingest normalises content (CNT-056), and both folded by the same text search configuration, so two strings a reader cannot tell apart match"
+        },
+        {
+          "id": "SCH-016",
+          "howItIsMet": "Every result carries a passage from the place it matched, the matched words marked, cut to about thirty words"
+        },
+        {
+          "id": "SCH-017",
+          "howItIsMet": "Every result names the place it matched - a block of a component, a section of a document, a field's value - and links to it there"
+        },
+        {
+          "id": "SCH-039",
+          "howItIsMet": "A query with nothing to search for, one that excludes and asks for nothing, a scope naming no field, and a phrase left open are each answered by a named outcome with a sentence, never an error page, never the whole corpus and never an empty page"
+        },
+        {
+          "id": "SCH-046",
+          "howItIsMet": "The facet dimensions are declared: kind, space, component type, owner, when it last changed in five named ranges, and each metadata field whose data type facets - a boolean, a person, a date by month, a text of one value. Each dimension's counts are computed with every other filter in force and its own left out"
+        },
+        {
+          "id": "SCH-057",
+          "howItIsMet": "A result links by identity - the artifact's id and the place's own id, never a position. Where the place is no longer in the version the reader opens, the page says so by name and shows the version it opened, which is the newest"
+        },
+        {
+          "id": "SCH-059",
+          "howItIsMet": "Results are narrowed by kind, space, a metadata value, owner - who made the artifact - and a date range, each a filter over the same predicate"
+        },
+        {
+          "id": "SCH-062",
+          "howItIsMet": "Component type is a filter and a facet over components; a field facets across every entry whose values hold it - a component's, a document's, a section's - however it came to hold it"
+        },
+        {
+          "id": "SCH-066",
+          "howItIsMet": "An entry's rows are written in the transaction that writes its version, so new and changed words are findable the moment the version is: the interval is none, measured by a test that searches in the next transaction"
         }
       ]
     },

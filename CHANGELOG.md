@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.85.1 - 2026-09-27 (PR #269)
+
+### Changed
+
+- **Search is designed for this tranche.** Everything the product holds - components, documents and
+  their sections, publications, templates, images and definitions - will be found by its words, by
+  whoever may read it and nobody else, each result showing and linking to where it matched, narrowed
+  and counted by declared facets. Nothing in the product changes yet.
+
 ## 0.85.0 - 2026-09-27 (PR #268)
 
 ### Added
