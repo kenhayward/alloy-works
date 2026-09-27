@@ -374,6 +374,9 @@ describe('the version chain as stored', () => {
         'schema_version',
         'version_digest',
         'version_no',
+        // The transaction that wrote it, which a listing's snapshot reads (0032): a closed column
+        // about the row, not an attribute of the component.
+        'written_by',
       ].sort(),
     );
   });

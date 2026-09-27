@@ -1,5 +1,6 @@
 import { templateDefinitionSchema } from '@alloy-works/domain';
 import { z } from 'zod';
+import { listingQuery, nextCursor } from './listing.js';
 import { SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
@@ -34,8 +35,12 @@ export const TemplateSummary = z.object({
   name: z.string(),
   space: z.object({ id: z.string(), name: z.string() }),
   version: z.object({ id: z.string(), number: z.string() }),
+  changedAt: z.string().describe('When its latest version was made'),
 });
-export const TemplateList = z.object({ items: z.array(TemplateSummary) });
+export const TemplateList = z.object({ items: z.array(TemplateSummary), next: nextCursor });
+
+export const TemplateListQuery = z.object(listingQuery(['name', 'changed'], 'name'));
+export type TemplateListQuery = z.infer<typeof TemplateListQuery>;
 export type TemplateList = z.infer<typeof TemplateList>;
 
 /**
@@ -77,8 +82,13 @@ export const templateRoutes = {
     summary: 'The templates the caller may read, each with its name, space and latest version',
     tenantScoped: true,
     access: { check: 'session' },
+    query: TemplateListQuery,
     responses: {
-      200: { description: 'The templates', schema: TemplateList },
+      200: { description: 'A page of templates', schema: TemplateList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
     },
   },

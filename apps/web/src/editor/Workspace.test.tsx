@@ -523,6 +523,7 @@ describe('the workspace', () => {
               version: '0.1',
             },
           ],
+          next: null,
         });
       }
       return json(404, { code: 'not_found', message: 'none', traceId: 't' });
@@ -551,7 +552,7 @@ describe('the workspace', () => {
       const request = input instanceof Request ? input : new Request(String(input), init);
       const url = new URL(request.url);
       if (url.pathname === '/v1/me') return json(200, me);
-      if (url.pathname === '/v1/publications') return json(200, { items: [] });
+      if (url.pathname === '/v1/publications') return json(200, { items: [], next: null });
       return json(404, { code: 'not_found', message: 'none', traceId: 't' });
     }) as unknown as typeof fetch;
     render(<Workspace fetch={fetching} />);
@@ -640,7 +641,7 @@ describe('the workspace', () => {
       if (url.pathname === '/v1/me') return json(200, me);
       if (url.pathname === '/v1/components') return json(200, { items: [], next: null });
       if (url.pathname === `/v1/documents/${DOCUMENT}/publications`) {
-        return json(200, { items: [] });
+        return json(200, { items: [], next: null });
       }
       if (url.pathname === `/v1/documents/${DOCUMENT}`) {
         return json(200, {
@@ -730,7 +731,7 @@ describe('the workspace', () => {
         });
       }
       if (url.pathname === `/v1/documents/${DOCUMENT}/publications`) {
-        return json(200, { items: [] });
+        return json(200, { items: [], next: null });
       }
       if (url.pathname === `/v1/documents/${DOCUMENT}`) {
         return json(200, {

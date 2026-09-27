@@ -402,6 +402,7 @@ version and each structural act records the next (see
 | `migrations/tenant/0029_document_template`             | A document version's metadata values, and `document_template`, insert-only, naming the template version a document was made from ([templates.md](design/templates.md))                                                                                                                                                                                                                            |
 | `migrations/tenant/0030_definition_names`              | `definition_name`, one folded name per field, schema and component type, unique per kind (MET-031), filled from every definition's latest version ([definitions.md](design/definitions.md))                                                                                                                                                                                                       |
 | `migrations/tenant/0031_search`                        | Search's projection, `search_entry` and `search_text`, made whole by the migration runner in the run that applies it (see [Search](#search))                                                                                                                                                                                                                                                      |
+| `migrations/tenant/0032_listing_snapshot`              | `written_by`, the writing transaction, on every version and publication written from now on, which a listing's snapshot reads (see [Listings](#listings))                                                                                                                                                                                                                                         |
 | `src/version-digest.ts`                                | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                                                                                                                                                                                                                                                                     |
 | `src/spaces.ts`                                        | `createSpace`                                                                                                                                                                                                                                                                                                                                                                                     |
 | `src/versions.ts`                                      | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `substanceOf`, and `recordVersion`, each taking a component, a document, a definition or a layout; `createArtifact` refuses a layout, a theme and a catalogue, which only their migrations make, and `recordVersion` a theme and a catalogue, whose versions `themes.ts` reads whole before it writes them through `recordReadVersion` |
@@ -1059,6 +1060,26 @@ A component's values are held at publication (W5.5, MET-023): `requestPublicatio
 component version it resolves against the definition versions that version recorded, and records each
 failure as the request's own, `component_metadata_invalid`, naming the node, the field and what is
 wrong. `assemble` fails a request holding failures, so the publication fails naming each.
+
+## Listings
+
+Components, documents, publications and templates are each listed a page at a time by one rule
+(service-foundations.md, "Listings and idempotency, in T1"; W7). Each takes `cursor`, `limit`, `sort`
+and `order`, sorts by its keys and then the artifact's id - a total order; a publication's time is to
+the second, so two in one second are told apart by when each was recorded - and reads a page by keyset,
+the rows after the last one shown, never an offset (API-007). A listing is read **as of its first
+page**: that page records the database's snapshot, and every later one keeps only the versions and
+publications the snapshot could see, by the transaction each records as `written_by` (0032), so a walk
+is over one set no later write moves (SCH-022). The cursor is the base64url of the listing, sort,
+order, snapshot and the last row's key and id; one another listing, sort or order gave out is refused
+`400 invalid_request`. The application reads the documents, publications and templates listings to
+their end with `everyPage` until their filters are the service's.
+
+| Where                          | What                                                                               |
+| ------------------------------ | ---------------------------------------------------------------------------------- |
+| `db: src/listing.ts`           | `listingSorts`, `keysetPage`, `snapshotFor`, `visibleIn`, `isListingRequest`       |
+| `api-contract: src/listing.ts` | `listingQuery` and `nextCursor`, what every content listing takes and answers      |
+| `service: src/listing.ts`      | `pageAsked` and `cursorFor`: the cursor written, and read back only by its listing |
 
 ## Search
 

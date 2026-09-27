@@ -12,18 +12,25 @@ describe('the routes that find and open components', () => {
     });
   });
 
-  it('pages a listing by an opaque cursor and a limit, never an offset', () => {
+  it('pages every content listing by an opaque cursor, a limit and a sort, never an offset', () => {
     const document = buildOpenApi(allRoutes);
-    const listing = document.paths['/v1/components']?.get as {
-      parameters: { name: string; in: string; required: boolean }[];
-    };
-    expect(
-      listing.parameters.map(({ name, in: where, required }) => [name, where, required]),
-    ).toEqual([
+    const parameters = (path: string) =>
+      (
+        document.paths[path]?.get as {
+          parameters: { name: string; in: string; required: boolean }[];
+        }
+      ).parameters.map(({ name, in: where, required }) => [name, where, required]);
+    const paged = [
       ['cursor', 'query', false],
       ['limit', 'query', false],
-      // The space facet's filter (interface slice 3): narrows what is paged, never an offset into it.
-      ['spaces', 'query', false],
-    ]);
+      ['sort', 'query', false],
+      ['order', 'query', false],
+    ];
+    // The space facet's filter (interface slice 3): narrows what is paged, never an offset into it.
+    expect(parameters('/v1/components')).toEqual([...paged, ['spaces', 'query', false]]);
+    for (const path of ['/v1/documents', '/v1/publications', '/v1/templates']) {
+      expect(parameters(path), path).toEqual(paged);
+    }
+    expect(parameters('/v1/documents/{id}/publications')).toEqual([['id', 'path', true], ...paged]);
   });
 });

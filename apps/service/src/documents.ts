@@ -1,11 +1,13 @@
 import type {
   CreateDocumentBody,
   DocumentParams,
+  DocumentListQuery,
   DocumentValuesBody,
   DocumentView,
   OutlineOperationBody,
   SpaceParams,
 } from '@alloy-works/api-contract';
+import { cursorFor, pageAsked } from './listing.js';
 import {
   createDocument,
   documentLayout,
@@ -248,8 +250,9 @@ export function documentHandlers(
 ) {
   return {
     listDocuments: async (request: FastifyRequest) => {
+      const asked = pageAsked('documents', request.query as DocumentListQuery);
       const listed = await db.withTenant(tenantOf(request), (trx) =>
-        listReadableDocuments(trx, principalOf(request).principalId),
+        listReadableDocuments(trx, principalOf(request).principalId, asked),
       );
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
       return {
@@ -263,6 +266,7 @@ export function documentHandlers(
           components: item.components,
           publishing: item.publishing,
         })),
+        next: cursorFor('documents', asked.sort, asked.order, listed.snapshot, listed.next),
       };
     },
 

@@ -34,6 +34,18 @@ import { loadReadableSet } from './access-facts.js';
 import { readableComponents } from './documents.js';
 import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
+import {
+  checkedLimit,
+  isListingRequest,
+  keysetPage,
+  listingSorts,
+  snapshotFor,
+  sortColumns,
+  visibleIn,
+  type Listed,
+  type ListingRequest,
+  type SortOf,
+} from './listing.js';
 import { indexPublication } from './search.js';
 import type { TenantTransaction } from './tables.js';
 import { documentLayout, documentRules, documentTheme } from './templates.js';
@@ -1130,8 +1142,9 @@ export async function listPublications(
   trx: TenantTransaction,
   documentId: string,
   principalId: string,
-): Promise<readonly PublicationSummary[] | undefined> {
-  return readablePublications(trx, principalId, documentId);
+  request: ListingRequest<SortOf<'publications'>> = { limit: 100 },
+): Promise<Listed<PublicationSummary> | undefined> {
+  return readablePublications(trx, principalId, documentId, request);
 }
 
 /**
@@ -1143,30 +1156,60 @@ export async function listPublications(
 export async function listReadablePublications(
   trx: TenantTransaction,
   principalId: string,
-): Promise<readonly PublicationSummary[] | undefined> {
-  return readablePublications(trx, principalId, null);
+  request: ListingRequest<SortOf<'publications'>> = { limit: 100 },
+): Promise<Listed<PublicationSummary> | undefined> {
+  return readablePublications(trx, principalId, null, request);
 }
 
+/**
+ * A page of publications by keyset over the sort asked for and then the id, as of the walk's first
+ * page's snapshot (API-007, SCH-022): a publication is never changed once recorded, so the snapshot
+ * only keeps one recorded since the walk began off its later pages.
+ */
 async function readablePublications(
   trx: TenantTransaction,
   principalId: string,
   documentId: string | null,
-): Promise<readonly PublicationSummary[] | undefined> {
+  request: ListingRequest<SortOf<'publications'>>,
+): Promise<Listed<PublicationSummary> | undefined> {
+  const limit = checkedLimit(request.limit);
+  const sort = request.sort ?? 'published';
+  const { types, order: byDefault } = listingSorts.publications[sort];
+  if (!isListingRequest(request, types)) {
+    throw new Error('A page request names a cursor no listing gave out');
+  }
   const readable = await loadReadableSet(trx, principalId);
   if (!readable) return undefined;
-  const rows = await trx
+  const snapshot = await snapshotFor(trx, request.snapshot);
+  const inner = trx
     .selectFrom('publication as p')
     .innerJoin('artifact as a', 'a.id', 'p.id')
     .innerJoin('principal as pr', 'pr.id', 'p.publisher')
     .innerJoin('artifact_version as v', 'v.id', 'p.document_version_id')
     .select([...publicationColumns, sql<string>`v.content ->> 'title'`.as('title')])
+    .select(
+      sortColumns(
+        sort === 'published'
+          ? [sql`p.published_at`, sql`a.created_at`]
+          : [sql`v.content ->> 'title'`],
+      ),
+    )
     .$if(documentId !== null, (query) => query.where('p.document_id', '=', documentId!))
     .where((eb) => readableArtifacts(eb, readable))
-    .orderBy('p.published_at', 'desc')
-    .orderBy('a.created_at', 'desc')
-    .orderBy('p.id')
-    .execute();
-  return rows.map(summaryOf);
+    .where(visibleIn('p.written_by', snapshot));
+  const { rows, next } = await keysetPage<Parameters<typeof summaryOf>[0]>(
+    trx,
+    inner,
+    types,
+    request.order ?? byDefault,
+    limit,
+    request.after,
+  );
+  return {
+    items: rows.map((row) => summaryOf({ ...row, published_at: new Date(row.published_at) })),
+    next,
+    snapshot,
+  };
 }
 
 function summaryOf(row: {

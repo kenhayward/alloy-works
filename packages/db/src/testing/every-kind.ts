@@ -22,6 +22,43 @@ const nodeId = () =>
     () => 'abcdefghijklmnopqrstuvwxyz234567'[Math.floor(Math.random() * 32)],
   ).join('');
 
+/** Publishes this document version as a PDF, as the worker would record it, answering the publication. */
+export async function publish(
+  trx: TenantTransaction,
+  input: {
+    readonly document: { readonly artifactId: string; readonly id: string };
+    readonly author: string;
+    readonly role: string;
+  },
+): Promise<string> {
+  const asked = await requestPublication(trx, {
+    documentId: input.document.artifactId,
+    version: input.document.id,
+    formats: ['pdf'],
+    requester: input.author,
+  });
+  if (asked.answer !== 'requested') throw new Error(asked.answer);
+  const publication = await recordPublication(trx, {
+    requestId: asked.request.id,
+    pipelineVersion: '5',
+    fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
+    dataSha256: 'b'.repeat(64),
+    numbering: { scheme: defaultNumberingScheme.id, entries: [] },
+    outputs: [
+      {
+        format: 'pdf' as const,
+        engineVersion: '0.15.1',
+        templateVersion: 5,
+        key: `${input.role}/sha256/${'c'.repeat(64)}`,
+        sha256: 'c'.repeat(64),
+        bytes: 1000,
+      },
+    ],
+  });
+  if (!publication) throw new Error('Expected a publication');
+  return publication;
+}
+
 /**
  * One of every kind search finds, each holding `word` - for a test that must reach every kind, as the
  * leak suite does (SCH-010). The document's one section holds the word too, and so does the
@@ -137,31 +174,7 @@ export async function everyKind(
       content: { ...identity(`${word} type`), assignments: [] },
     },
   });
-  const asked = await requestPublication(trx, {
-    documentId: document.artifactId,
-    version: document.id,
-    formats: ['pdf'],
-    requester: author,
-  });
-  if (asked.answer !== 'requested') throw new Error(asked.answer);
-  const publication = await recordPublication(trx, {
-    requestId: asked.request.id,
-    pipelineVersion: '5',
-    fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
-    dataSha256: 'b'.repeat(64),
-    numbering: { scheme: defaultNumberingScheme.id, entries: [] },
-    outputs: [
-      {
-        format: 'pdf' as const,
-        engineVersion: '0.15.1',
-        templateVersion: 5,
-        key: `${input.role}/sha256/${'c'.repeat(64)}`,
-        sha256: 'c'.repeat(64),
-        bytes: 1000,
-      },
-    ],
-  });
-  if (!publication) throw new Error('Expected a publication');
+  const publication = await publish(trx, { document, author, role: input.role });
   return {
     component: component.version.artifactId,
     document: document.artifactId,

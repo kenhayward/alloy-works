@@ -430,7 +430,7 @@ describe('migration 0031, which makes search a projection of the chain', () => {
       });
 
       const report = await migrate(db.migratorUrl);
-      expect(report.tenants[id]).toEqual(['0031_search']);
+      expect(report.tenants[id]).toContain('0031_search');
       const [wombat, topic] = await service.withTenant(tenant, (trx) =>
         Promise.all([found(trx, 'wombat'), found(trx, 'topic')]),
       );

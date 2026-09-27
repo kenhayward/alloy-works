@@ -62,6 +62,8 @@ export interface PublicationAssetTable {
 
 /** Insert and read, nothing else (PUB-050). */
 export interface PublicationTable {
+  /** The transaction that wrote it, which a listing's snapshot reads (0032); null from before. */
+  written_by: ColumnType<string | null, never, never>;
   id: ColumnType<string, string, never>;
   kind: ColumnType<'publication', never, never>;
   request_id: ColumnType<string, string, never>;

@@ -13,6 +13,18 @@ import { loadReadableSet } from './access-facts.js';
 import { currentDefinition } from './creation.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
+import {
+  checkedLimit,
+  isListingRequest,
+  keysetPage,
+  listingSorts,
+  snapshotFor,
+  sortColumns,
+  visibleIn,
+  type Listed,
+  type ListingRequest,
+  type SortOf,
+} from './listing.js';
 import { defaultLayout, layoutLatest, type StoredLayout } from './layouts.js';
 import { defaultTheme, themeLatest, type StoredTheme } from './themes.js';
 import {
@@ -176,20 +188,31 @@ export interface TemplateSummary {
   readonly name: string;
   readonly space: { readonly id: string; readonly name: string };
   readonly version: { readonly id: string; readonly revision: number; readonly version: number };
+  /** When its latest version was made. */
+  readonly changedAt: Date;
 }
 
 /**
- * The templates a principal may read, filtered by the readable set inside the query, the predicate
- * the documents listing uses. Not paged, as that listing is not. Undefined when the tenant holds no
- * such principal.
+ * The templates a principal may read, a page at a time by keyset over the sort asked for and then the
+ * id, as of the snapshot the walk's first page took (API-007, SCH-022), filtered by the readable set
+ * inside the query, the predicate the documents listing uses. Undefined when the tenant holds no such
+ * principal.
  */
 export async function listReadableTemplates(
   trx: TenantTransaction,
   principalId: string,
-): Promise<{ readonly items: readonly TemplateSummary[] } | undefined> {
+  request: ListingRequest<SortOf<'templates'>> = { limit: 100 },
+): Promise<Listed<TemplateSummary> | undefined> {
+  const limit = checkedLimit(request.limit);
+  const sort = request.sort ?? 'name';
+  const { types, order: byDefault } = listingSorts.templates[sort];
+  if (!isListingRequest(request, types)) {
+    throw new Error('A page request names a cursor no listing gave out');
+  }
   const readable = await loadReadableSet(trx, principalId);
   if (!readable) return undefined;
-  const rows = await trx
+  const snapshot = await snapshotFor(trx, request.snapshot);
+  const inner = trx
     .selectFrom('artifact as a')
     .innerJoin('space as s', 's.id', 'a.space_id')
     .innerJoinLateral(
@@ -200,9 +223,11 @@ export async function listReadableTemplates(
             'v.id as version_id',
             'v.revision_no',
             'v.version_no',
+            'v.created_at',
             sql<string>`v.content ->> 'name'`.as('name'),
           ])
           .whereRef('v.artifact_id', '=', 'a.id')
+          .where(visibleIn('v.written_by', snapshot))
           .orderBy('v.revision_no', 'desc')
           .orderBy('v.version_no', 'desc')
           .limit(1)
@@ -210,19 +235,30 @@ export async function listReadableTemplates(
       (join) => join.onTrue(),
     )
     .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.name'])
-    .select(['latest.version_id', 'latest.revision_no', 'latest.version_no'])
+    .select(['latest.version_id', 'latest.revision_no', 'latest.version_no', 'latest.created_at'])
+    .select(sortColumns([sort === 'name' ? sql`latest.name` : sql`latest.created_at`]))
     .where('a.kind', '=', 'template')
-    .where((eb) => readableArtifacts(eb, readable))
-    .orderBy('latest.name')
-    .orderBy('a.id')
-    .execute();
+    .where((eb) => readableArtifacts(eb, readable));
+  const { rows, next } = await keysetPage<{
+    id: string;
+    name: string;
+    space_id: string;
+    space_name: string;
+    version_id: string;
+    revision_no: number;
+    version_no: number;
+    created_at: Date;
+  }>(trx, inner, types, request.order ?? byDefault, limit, request.after);
   return {
     items: rows.map((row) => ({
       id: row.id,
       name: row.name,
       space: { id: row.space_id, name: row.space_name },
       version: { id: row.version_id, revision: row.revision_no, version: row.version_no },
+      changedAt: new Date(row.created_at),
     })),
+    next,
+    snapshot,
   };
 }
 

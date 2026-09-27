@@ -295,7 +295,7 @@ function service(
     }
     if (url === '/v1/components') return json(200, options.components ?? COMPONENTS);
     if (url === `/v1/documents/${DOCUMENT}/publications`) {
-      if (request.method === 'GET') return json(200, { items: [] });
+      if (request.method === 'GET') return json(200, { items: [], next: null });
       return json(200, { ...publishRequest, state: 'queued' });
     }
     if (url === `/v1/publication-requests/${PUBLISH_REQUEST}`) {
@@ -2418,6 +2418,7 @@ describe('New document', () => {
         version: { id: 'ee000000-0000-4000-8000-0000000000a1', number: '0.3' },
       },
     ],
+    next: null,
   };
 
   it('offers Blank and the templates the caller may read, and sends the one chosen', async () => {
@@ -2522,6 +2523,7 @@ describe('the documents', () => {
           },
           { id: 7, title: null },
         ],
+        next: null,
       },
     });
     render(<DocumentList client={client(fetch)} onOpen={vi.fn()} />);
@@ -2538,7 +2540,7 @@ describe('the documents', () => {
   it('says so when there are no documents to read', async () => {
     render(
       <DocumentList
-        client={client(listing({ status: 200, body: { items: [] } }))}
+        client={client(listing({ status: 200, body: { items: [], next: null } }))}
         onOpen={vi.fn()}
       />,
     );
@@ -4361,7 +4363,7 @@ describe("a document's fields and its sections'", () => {
           versions: [],
         });
       }
-      if (url.endsWith('/publications')) return json(200, { items: [] });
+      if (url.endsWith('/publications')) return json(200, { items: [], next: null });
       if (url.endsWith('/texts')) return json(200, { items: [] });
       return json(404, { code: 'not_found', message: 'none', traceId: 't' });
     }) as typeof globalThis.fetch;

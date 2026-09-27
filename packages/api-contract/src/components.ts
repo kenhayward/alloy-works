@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { listingQuery, nextCursor } from './listing.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
@@ -53,12 +54,7 @@ export const CreateComponentBody = z.strictObject({
 export type CreateComponentBody = z.infer<typeof CreateComponentBody>;
 
 export const ComponentListQuery = z.object({
-  cursor: z.string().optional().describe('Where the previous page ended; absent for the first'),
-  limit: z
-    .string()
-    .regex(/^(?:[1-9]|[1-9][0-9]|100)$/, 'Expected a whole number from 1 to 100')
-    .optional()
-    .describe('At most this many, 50 when absent'),
+  ...listingQuery(['title', 'changed'], 'title'),
   spaces: z
     .string()
     .regex(
@@ -106,7 +102,7 @@ export const ComponentList = z.object({
         .describe('Who made its latest version; null for a version nobody authored'),
     }),
   ),
-  next: z.string().nullable().describe('The cursor for the next page, or null at the end'),
+  next: nextCursor,
   total: z.number().int().describe('How many there are in all, in the spaces asked for'),
   spaces: z
     .array(z.object({ id: z.string(), name: z.string(), count: z.number().int() }))

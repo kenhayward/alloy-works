@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { failureWords, isProductsOwn, type Failure } from './failures.js';
 import { formatsWords } from './formats.js';
 import { Waiting } from '../states/Waiting.js';
+import { everyPage } from '../paging.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -168,10 +169,16 @@ export function Publishing({
 
   useEffect(() => {
     let current = true;
-    client
-      .GET('/v1/documents/{id}/publications', { params: { path: { id: document } } })
-      .then(({ data }) => {
-        if (current) setListed(listedIn(data) ?? 'failed');
+    everyPage((cursor) =>
+      client.GET('/v1/documents/{id}/publications', {
+        params: {
+          path: { id: document },
+          query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) },
+        },
+      }),
+    )
+      .then((all) => {
+        if (current) setListed(('items' in all && listedIn({ items: all.items })) || 'failed');
       })
       .catch(() => {
         if (current) setListed('failed');

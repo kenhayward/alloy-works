@@ -23,6 +23,18 @@ import {
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
 import { readableArtifacts } from './readable-artifacts.js';
+import {
+  checkedLimit,
+  isListingRequest,
+  keysetPage,
+  listingSorts,
+  snapshotFor,
+  sortColumns,
+  visibleIn,
+  type Listed,
+  type ListingRequest,
+  type SortOf,
+} from './listing.js';
 import type { TenantTransaction } from './tables.js';
 import { documentRules, readTemplate, templateReferences } from './templates.js';
 import {
@@ -209,19 +221,28 @@ export async function readDocument(
 }
 
 /**
- * The documents a principal may read, filtered by the readable set inside the query (access.md, "The
- * readable set"), the predicate `listReadableComponents` uses. Not paged: the listing is small in
- * this slice, and paging it is left undone rather than half-built. Undefined when the tenant holds no
- * such principal.
+ * The documents a principal may read, a page at a time by keyset over the sort asked for and then the
+ * id, as of the snapshot the walk's first page took (API-007, SCH-022), filtered by the readable set
+ * inside the query (access.md, "The readable set"), the predicate `listReadableComponents` uses. Each
+ * says whether it is published as of that snapshot too, so a walk's pages agree. Undefined when the
+ * tenant holds no such principal.
  */
 export async function listReadableDocuments(
   trx: TenantTransaction,
   principalId: string,
-): Promise<{ readonly items: readonly DocumentSummary[] } | undefined> {
+  request: ListingRequest<SortOf<'documents'>> = { limit: 100 },
+): Promise<Listed<DocumentSummary> | undefined> {
+  const limit = checkedLimit(request.limit);
+  const sort = request.sort ?? 'title';
+  const { types, order: byDefault } = listingSorts.documents[sort];
+  if (!isListingRequest(request, types)) {
+    throw new Error('A page request names a cursor no listing gave out');
+  }
   const readable = await loadReadableSet(trx, principalId);
   if (!readable) return undefined;
+  const snapshot = await snapshotFor(trx, request.snapshot);
 
-  const rows = await trx
+  const inner = trx
     .selectFrom('artifact as a')
     .innerJoin('space as s', 's.id', 'a.space_id')
     .innerJoinLateral(
@@ -243,6 +264,7 @@ export async function listReadableDocuments(
             ),
           ])
           .whereRef('v.artifact_id', '=', 'a.id')
+          .where(visibleIn('v.written_by', snapshot))
           .orderBy('v.revision_no', 'desc')
           .orderBy('v.version_no', 'desc')
           .limit(1)
@@ -252,13 +274,24 @@ export async function listReadableDocuments(
     .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.title'])
     .select(['latest.revision_no', 'latest.version_no', 'latest.version_id', 'latest.created_at'])
     .select(['latest.sections', 'latest.components'])
+    .select(sortColumns([sort === 'title' ? sql`latest.title` : sql`latest.created_at`]))
     .where('a.kind', '=', 'document')
-    .where((eb) => readableArtifacts(eb, readable))
-    .orderBy('a.id')
-    .execute();
+    .where((eb) => readableArtifacts(eb, readable));
+  const { rows, next } = await keysetPage<{
+    id: string;
+    title: string;
+    space_id: string;
+    space_name: string;
+    revision_no: number;
+    version_no: number;
+    version_id: string;
+    created_at: Date;
+    sections: number;
+    components: number;
+  }>(trx, inner, types, request.order ?? byDefault, limit, request.after);
 
-  // The latest publication the reader may read of each, by the one readable-set predicate: which
-  // version it was made from is all the state needs.
+  // The latest publication the reader may read of each, by the one readable-set predicate and as of
+  // the walk's snapshot: which version it was made from is all the state needs.
   const published =
     rows.length === 0
       ? []
@@ -272,6 +305,7 @@ export async function listReadableDocuments(
             rows.map((row) => row.id),
           )
           .where((eb) => readableArtifacts(eb, readable))
+          .where(visibleIn('p.written_by', snapshot))
           .orderBy('p.published_at', 'desc')
           .orderBy('a.created_at', 'desc')
           .execute();
@@ -291,7 +325,7 @@ export async function listReadableDocuments(
         space: { id: row.space_id, name: row.space_name },
         revision: row.revision_no,
         version: row.version_no,
-        changedAt: row.created_at,
+        changedAt: new Date(row.created_at),
         sections: Number(row.sections),
         components: Number(row.components),
         publishing:
@@ -302,6 +336,8 @@ export async function listReadableDocuments(
               : 'changedSince',
       };
     }),
+    next,
+    snapshot,
   };
 }
 

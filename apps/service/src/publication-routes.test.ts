@@ -678,6 +678,7 @@ describe('publishing a document through the service', () => {
     expect(refusal(refused)).toEqual(refusal(nothing));
     expect((await call('ivy', 'GET', `/v1/documents/${document.id}/publications`)).json()).toEqual({
       items: [],
+      next: null,
     });
     // A document's id is not a publication's, and nothing deletes one: it is still there after.
     expect((await call('alice', 'GET', `/v1/publications/${document.id}`)).statusCode).toBe(404);
@@ -693,8 +694,10 @@ describe('publishing a document through the service', () => {
     await grantAt(ids.alice!, 'Reader', hidden, 'deny');
     const answer = await call('alice', 'GET', `/v1/documents/${document.id}/publications`);
     const listed = answer.json<{ items: { id: string }[] }>();
-    // No count, no position and no gap: the list is as if the refused one had never been made.
-    expect(Object.keys(listed)).toEqual(['items']);
+    // No count, no position and no gap: the list is as if the refused one had never been made, and
+    // its cursor is the end of it.
+    expect(listed).toMatchObject({ next: null });
+    expect(Object.keys(listed).sort()).toEqual(['items', 'next']);
     expect(listed.items.map((each) => each.id)).toEqual([last, first]);
     expect(answer.body).not.toContain(hidden);
     const refused = await call('alice', 'GET', `/v1/publications/${hidden}`);

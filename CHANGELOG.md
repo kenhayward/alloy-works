@@ -3,6 +3,20 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.90.0 - 2026-09-27 (PR #275)
+
+### Added
+
+- **Listings page and sort through the API.** Components, documents, publications and templates are
+  each listed a page at a time, sorted by title or name, or by when they last changed - publications by
+  when they were published - in either direction. Paging through one never shows you something twice
+  or misses something, even while others are changing what you are paging through: each walk is read
+  as of its first page.
+
+### Changed
+
+- The components list is now in title order.
+
 ## 0.89.1 - 2026-09-27 (PR #274)
 
 ### Changed

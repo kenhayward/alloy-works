@@ -1,5 +1,6 @@
 import { outputReportSchema, publishFailureCodes } from '@alloy-works/domain';
 import { z } from 'zod';
+import { listingQuery, nextCursor } from './listing.js';
 import type { RouteContract } from './contract.js';
 import { VersionSummary } from './components.js';
 import { DocumentParams } from './documents.js';
@@ -104,7 +105,10 @@ export const PublicationSummary = z.object({
 });
 export type PublicationSummary = z.infer<typeof PublicationSummary>;
 
-export const PublicationList = z.object({ items: z.array(PublicationSummary) });
+export const PublicationList = z.object({ items: z.array(PublicationSummary), next: nextCursor });
+
+export const PublicationListQuery = z.object(listingQuery(['published', 'title'], 'published'));
+export type PublicationListQuery = z.infer<typeof PublicationListQuery>;
 export type PublicationList = z.infer<typeof PublicationList>;
 
 const download = z
@@ -221,12 +225,17 @@ export const publishingRoutes = {
     operationId: 'listPublications',
     method: 'GET',
     path: '/v1/documents/{id}/publications',
-    summary: "The document's publications the caller may read, newest first",
+    summary: "The document's publications the caller may read, a page at a time",
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
+    query: PublicationListQuery,
     responses: {
-      200: { description: 'The publications', schema: PublicationList },
+      200: { description: 'A page of the publications', schema: PublicationList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
       403: {
         description:
@@ -243,11 +252,16 @@ export const publishingRoutes = {
     operationId: 'listPublicationsEverywhere',
     method: 'GET',
     path: '/v1/publications',
-    summary: 'Every publication the caller may read, of every document, newest first',
+    summary: 'Every publication the caller may read, of every document, a page at a time',
     tenantScoped: true,
     access: { check: 'session' },
+    query: PublicationListQuery,
     responses: {
-      200: { description: 'The publications', schema: PublicationList },
+      200: { description: 'A page of the publications', schema: PublicationList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
     },
   },
