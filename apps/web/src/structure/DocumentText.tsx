@@ -276,6 +276,7 @@ export function DocumentText({
   editable,
   contributions = NOTHING_KNOWN,
   boundaries = false,
+  marked = null,
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
@@ -300,6 +301,8 @@ export function DocumentText({
   contributions?: ReadonlyMap<string, readonly Contribution[]>;
   /** Whether every component's edges and label are shown, rather than on hover and focus (CNT-073). */
   boundaries?: boolean;
+  /** The node a link took the reader to, marked until they choose another (STR-045). */
+  marked?: string | null;
 }) {
   // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072).
   const column = useRef<HTMLElement>(null);
@@ -352,12 +355,22 @@ export function DocumentText({
   const render = (nodes: readonly OutlineViewNode[], depth: number): React.ReactNode =>
     nodes.map((node) =>
       node.type === 'section' ? (
-        <div key={node.id} className={styles['section']} data-node={node.id}>
+        <div
+          key={node.id}
+          className={styles['section']}
+          data-node={node.id}
+          data-marked={marked === node.id ? 'true' : undefined}
+        >
           {titled(node, depth)}
           {render(node.children, depth + 1)}
         </div>
       ) : (
-        <div key={node.id} className={styles['reference']} data-node={node.id}>
+        <div
+          key={node.id}
+          className={styles['reference']}
+          data-node={node.id}
+          data-marked={marked === node.id ? 'true' : undefined}
+        >
           <div className={styles['component']} data-component="" data-editing={editing === node.id}>
             {/* The component's label (CNT-073): what it is, whether the reader may edit it and who
                 holds it, and Open - seen on hover, on focus and under Show boundaries, and always

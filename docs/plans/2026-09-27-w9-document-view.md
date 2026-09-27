@@ -64,6 +64,14 @@ writing switched off, which the page already did for a document the reader may n
    reader moves.
 3. Tests: STR-035, STR-045, STR-065.
 
+**W9.3, as built.** `useReadingPosition` (`apps/web/src/structure/position.ts`) asks where the reader is
+whenever a node's text crosses the top quarter of the window, by an `IntersectionObserver` watched again
+as the text changes, or on every scroll where there is none; the node is the deepest whose top has
+reached that line. The outline marks it `aria-current="location"` and keeps it in view. Choosing a node
+takes the text to it, as the arrow keys choose in the tree; a link's arrival waits for the text, then
+takes the reader there and marks the heading until another node is chosen. **The collapsed rail's "4.1 of
+46" is not built**: nothing in the plan's tests asked for it, and the tree says the same once opened.
+
 ## W9.4: Versions
 
 1. The texts route answers each occurrence's version number; the label shows it with latest or pinned.

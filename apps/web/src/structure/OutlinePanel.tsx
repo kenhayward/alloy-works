@@ -225,6 +225,11 @@ export interface OutlinePanelProps {
   readonly linkOf?: (node: string) => string;
   /** Told whenever the author chooses a node, so the page's address can follow. */
   readonly onSelected?: (node: string) => void;
+  /**
+   * The node the reader is at in the text (document-view.md, "Navigation"; STR-035): marked as the
+   * current location and kept in view in the tree as they scroll.
+   */
+  readonly inView?: string | null;
 }
 
 /**
@@ -341,6 +346,7 @@ export function OutlinePanel({
   linked = null,
   linkOf,
   onSelected = () => {},
+  inView = null,
   sectionFields,
   schemas,
   people,
@@ -421,6 +427,10 @@ export function OutlinePanel({
     // Only the dialog closing moves the focus: `current` is read, not watched.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [equating]);
+  // The node the reader is at, kept in view in the tree as they scroll the text (STR-035).
+  useEffect(() => {
+    if (inView !== null) items.current.get(inView)?.scrollIntoView?.({ block: 'nearest' });
+  }, [inView]);
   // The node a link took the reader to, marked until they choose another (STR-045's panel half).
   const [highlighted, setHighlighted] = useState<string | null>(null);
   // The sections the reader has collapsed: how the outline is shown to them, never part of the
@@ -800,6 +810,7 @@ export function OutlinePanel({
           aria-setsize={list.length}
           aria-posinset={index + 1}
           aria-selected={node.id === current}
+          aria-current={node.id === inView ? 'location' : undefined}
           aria-expanded={node.children.length > 0 ? !collapsed.has(node.id) : undefined}
           aria-labelledby={labelId}
           // The number describes the item rather than naming it: a name is what typing a title finds

@@ -41,6 +41,7 @@ import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
 import { byName } from '../metadata/people.js';
 import { UnheldFaces, ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
+import { useReadingPosition } from './position.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -798,6 +799,30 @@ export function DocumentPage({
   // Reading or Authoring (document-view.md, "Modes"; CNT-154): the reader's choice, kept in the browser,
   // Authoring the first time; which of them is on offer is decided below, from what they may do.
   const [chosenMode, setChosenMode] = useState<Mode>(keptMode);
+  // Where the reader is in the text, and the node a link took them to (document-view.md, "Navigation";
+  // STR-035, STR-045): the one the outline marks as the current location, and the one the text marks
+  // until another is chosen.
+  const textColumn = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState<string | null>(null);
+  const [marked, setMarked] = useState<string | null>(null);
+  useReadingPosition(textColumn, setInView, loaded.state === 'open' ? loaded.document.id : null);
+  // A link's node is gone to once its text is there: the text arrives after the outline, so the
+  // arrival waits, and is taken once however often the page draws.
+  const arriving = useRef<string | null>(null);
+  const arrived = useRef<number | null>(null);
+  useEffect(() => {
+    if (linked === null || arrived.current === linked.arrival) return;
+    arrived.current = linked.arrival;
+    arriving.current = linked.node;
+    setMarked(linked.node);
+  }, [linked]);
+  useEffect(() => {
+    if (arriving.current === null) return;
+    const element = textColumn.current?.querySelector(`[data-node="${arriving.current}"]`);
+    if (!element) return;
+    arriving.current = null;
+    element.scrollIntoView?.({ block: 'start' });
+  });
   const chooseMode = (mode: Mode) => {
     setChosenMode(mode);
     // Reading offers no editor, so one open in place closes as the page drops to it.
@@ -963,10 +988,16 @@ export function DocumentPage({
             linkOf={(node) =>
               `${window.location.origin}${window.location.pathname}${nodeLink(document.id, node)}`
             }
+            inView={inView}
             onSelected={(node) => {
               // The address follows what is chosen, without a history entry per arrow key and without a
               // `hashchange`, so a reload or a copy of the address comes back to it.
               window.history.replaceState(window.history.state, '', nodeLink(document.id, node));
+              // And the text goes to it (STR-035); a link's mark stays only on what it marked.
+              textColumn.current
+                ?.querySelector(`[data-node="${node}"]`)
+                ?.scrollIntoView?.({ block: 'start' });
+              if (node !== marked) setMarked(null);
             }}
           />
           {!outlinePane.collapsed && (
@@ -974,7 +1005,7 @@ export function DocumentPage({
               <PaneSeparator label="outline" pane={outlinePane} />
             </div>
           )}
-          <div className={styles['text']}>
+          <div ref={textColumn} className={styles['text']}>
             <DocumentText
               outline={document.outline}
               scheme={document.scheme}
@@ -988,6 +1019,7 @@ export function DocumentPage({
               {...(known.state === 'loaded' ? { contributions: known.contributions } : {})}
               editing={editing}
               boundaries={boundaries}
+              marked={marked}
               {...(principalId === undefined || !authoring
                 ? {}
                 : {

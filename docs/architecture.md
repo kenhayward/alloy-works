@@ -1232,7 +1232,9 @@ from its asset version's pixels, asked once by the provider. `Canvas` wraps the 
 `useCanvas` makes a document's text column one canvas (W9.1, [document-view.md](design/document-view.md)),
 its headings in the theme's heading roles and no card round a component, whose edges and label show on
 hover, on focus and under **Show boundaries**; the page is in **Reading** or **Authoring** (W9.2), the
-latter offered from the document's `mayEdit` and each occurrence's, and kept per viewer; both are the same element whether or not the
+latter offered from the document's `mayEdit` and each occurrence's, and kept per viewer; the outline
+marks the node the reader is at in the text, `useReadingPosition` (`apps/web/src/structure/position.ts`),
+and choosing a node or following its link takes the text to it (W9.3); both are the same element whether or not the
 theme has arrived, so ProseMirror's host is never remounted. The zoom - 50 to 200 per cent, or Fit -
 is the provider's, kept in `localStorage`; `ZoomControl` sets it on the component page and the
 document's. The component page is set in the environment's presentation and a document's page in the

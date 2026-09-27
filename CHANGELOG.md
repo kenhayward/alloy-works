@@ -3,6 +3,14 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.102.0 - 2026-09-27 (PR #289)
+
+### Added
+
+- **The outline follows you.** As you scroll a document, its outline marks the part you are reading and
+  keeps it in view. Choosing any part of the outline takes the text there, and a link to a part opens
+  the document at it, with its heading marked until you choose another.
+
 ## 0.101.0 - 2026-09-27 (PR #288)
 
 ### Added
