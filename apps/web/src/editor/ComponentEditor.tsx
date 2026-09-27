@@ -1184,7 +1184,8 @@ export function ComponentEditor({
             />
             {/* The style of the paragraphs the selection touches, from the theme's catalogue: the
                 only way a paragraph's alignment, indents and spacing change (CNT-094). */}
-            {surface !== null && <ParagraphStyle view={surface} enabled={mayFormat} />}
+            {/* Of the footnote's own text while one is open, as the toolbar's buttons are. */}
+            {editing !== null && <ParagraphStyle view={editing} enabled={mayFormat} />}
             {!shown.mayEdit && (
               <Notice tone="readOnly">
                 <p>You may read this component but not edit it.</p>

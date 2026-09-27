@@ -44,6 +44,18 @@ export const CHOOSING_PRESENTATION = presentationWith({
   paragraph: [
     { id: 'lead', name: 'Lead', appliesTo: ['text'], properties: { size: 13, spaceAfter: 6 } },
     {
+      id: 'plain',
+      name: 'Plain',
+      appliesTo: ['text', 'quotation'],
+      properties: { spaceAfter: 0 },
+    },
+    {
+      id: 'small-note',
+      name: 'Small note',
+      appliesTo: ['footnote'],
+      properties: { size: 8, lineSpacing: 9.5 },
+    },
+    {
       id: 'pull-quote',
       name: 'Pull quote',
       appliesTo: ['quotation'],

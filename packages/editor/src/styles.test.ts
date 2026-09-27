@@ -1,11 +1,7 @@
 import type { BlockNode, ContentDocument } from '@alloy-works/domain';
 import { undo } from 'prosemirror-history';
-import {
-  NodeSelection,
-  TextSelection,
-  type EditorState,
-  type Transaction,
-} from 'prosemirror-state';
+import type { Node as ProseNode } from 'prosemirror-model';
+import { EditorState, NodeSelection, TextSelection, type Transaction } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
 
 import { fromEditor, toEditor } from './mapping.js';
@@ -182,6 +178,45 @@ describe("choosing a block's style", () => {
     ).toMatchObject({
       imageStyle: 'figure',
     });
+  });
+
+  it("names a footnote's paragraphs in the footnote's place in its own editor, and never from the text around it", () => {
+    let state = opened([
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [
+          { type: 'text', value: 'Unbox', marks: [] },
+          {
+            type: 'footnote',
+            id: 'n1',
+            anchor: { kind: 'span' },
+            content: [paragraph('fp1', 'Twice.')],
+          },
+        ],
+      },
+    ]);
+    state = state.apply(
+      state.tr.setSelection(TextSelection.create(state.doc, 1, state.doc.content.size - 1)),
+    );
+    // From the text: the paragraph, and not the footnote's inside it.
+    expect(paragraphsAt(state).map(({ node, place }) => [node.textContent, place])).toEqual([
+      ['UnboxTwice.', 'text'],
+    ]);
+    // In the footnote's own editor, whose document is the footnote: its paragraph, in its place.
+    let footnote: ProseNode | undefined;
+    state.doc.descendants((node) => {
+      if (node.type.name === 'footnote') footnote = node;
+      return footnote === undefined;
+    });
+    let inner = EditorState.create({ doc: footnote! });
+    inner = inner.apply(inner.tr.setSelection(TextSelection.create(inner.doc, 2)));
+    expect(paragraphsAt(inner).map(({ node, place }) => [node.textContent, place])).toEqual([
+      ['Twice.', 'footnote'],
+    ]);
+    const chosen = run(inner, setParagraphStyle('small-note'));
+    expect(chosen.doc.firstChild!.attrs.style).toBe('small-note');
   });
 
   it('does nothing where the selection stands in nothing of the kind', () => {

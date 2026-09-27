@@ -1,3 +1,5 @@
+import type { Place } from '@alloy-works/domain';
+import type { Node } from 'prosemirror-model';
 import type { Command, EditorState } from 'prosemirror-state';
 
 import { figureAt } from './figures.js';
@@ -16,8 +18,21 @@ import { tableAt } from './tables.js';
  * The paragraphs the selection touches, in order, each with the place it stands in - what the Style
  * list offers styles for. A term has no style of its own: it is set in its list item's default.
  */
-export function paragraphsAt(state: EditorState): ReturnType<typeof paragraphPlaces> {
+export function paragraphsAt(
+  state: EditorState,
+): { readonly pos: number; readonly node: Node; readonly place: Place }[] {
   const { from, to } = state.selection;
+  // A footnote's own editor, whose document is the footnote (footnotes 1): its paragraphs, always in
+  // the footnote's place. From the text around it a footnote's paragraphs are never touched.
+  if (state.doc.type.name === 'footnote') {
+    const found: { pos: number; node: Node; place: Place }[] = [];
+    state.doc.forEach((node, pos) => {
+      if (node.type.name === 'footnoteParagraph' && pos < to && pos + node.nodeSize > from) {
+        found.push({ pos, node, place: 'footnote' });
+      }
+    });
+    return found;
+  }
   return paragraphPlaces(state.doc).filter(
     ({ pos, node }) => node.type.name === 'paragraph' && pos < to && pos + node.nodeSize > from,
   );

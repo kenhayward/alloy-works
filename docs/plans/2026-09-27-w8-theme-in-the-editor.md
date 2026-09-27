@@ -123,6 +123,12 @@ figure's styles or an image in a line's. A list whose value none of its choices 
 several styles, or a style the theme does not offer - shows it as it is. Under the default theme each
 list has one entry until W8.5 gives it more.
 
+A footnote's paragraphs are chosen in the footnote's own editor, as the toolbar acts there, from the
+styles a footnote takes. Building it found `footnoteView` dropping an attribute's step on its way to
+the component: an offset map reads as content inserted before the footnote's first position, and
+`AttrStep.map` gives up any step at a position that reaches, so an attribute is now moved by the
+footnote's position rather than mapped.
+
 ## W8.5: The default theme 0.4
 
 ## W8.6: What will not resolve

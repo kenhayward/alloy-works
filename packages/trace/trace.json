@@ -17217,13 +17217,13 @@
     {
       "id": "AST-015",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3732,
+      "line": 3771,
       "kind": "title"
     },
     {
       "id": "AST-039",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3650,
+      "line": 3689,
       "kind": "title"
     },
     {
@@ -17235,25 +17235,25 @@
     {
       "id": "CNT-036",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4097,
+      "line": 4136,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4216,
+      "line": 4255,
       "kind": "title"
     },
     {
       "id": "CNT-044",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4884,
+      "line": 4923,
       "kind": "title"
     },
     {
       "id": "CNT-048",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4912,
+      "line": 4951,
       "kind": "title"
     },
     {
@@ -17271,31 +17271,31 @@
     {
       "id": "CNT-080",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4957,
+      "line": 4996,
       "kind": "title"
     },
     {
       "id": "CNT-082",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5424,
+      "line": 5463,
       "kind": "title"
     },
     {
       "id": "CNT-087",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3955,
+      "line": 3994,
       "kind": "title"
     },
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5653,
+      "line": 5692,
       "kind": "title"
     },
     {
       "id": "CNT-097",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5413,
+      "line": 5452,
       "kind": "title"
     },
     {
@@ -17307,7 +17307,7 @@
     {
       "id": "CNT-115",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5441,
+      "line": 5480,
       "kind": "title"
     },
     {
@@ -17319,7 +17319,7 @@
     {
       "id": "CNT-122",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5459,
+      "line": 5498,
       "kind": "title"
     },
     {
@@ -17349,7 +17349,7 @@
     {
       "id": "SCH-057",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5301,
+      "line": 5340,
       "kind": "title"
     },
     {
