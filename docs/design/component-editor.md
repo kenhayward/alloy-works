@@ -11,9 +11,9 @@ and [ADR-0024](../decisions/0024-a-version-digest-over-the-whole-version.md) (it
 the digest), [metadata.md](metadata.md) (which fields apply and what is valid), [themes.md](themes.md)
 (how it looks, resolved once for the editor and the publisher alike), [realtime.md](realtime.md) (how
 others learn of the lock) and [service-foundations.md](service-foundations.md) (how every route is
-written). **The document view** - many components in one scroll, the read, review and author modes,
-headings, choosing which version a reference points at, and preview - is the next slice, designed once
-the outline (STR) and the publishing pipeline are.
+written). **The document view** - many components in one scroll, the read and author modes, headings,
+and choosing which version a reference points at - is [document-view.md](document-view.md)'s; the review
+mode is T3's, and preview is [publishing.md](publishing.md)'s.
 
 > **Part of this is built.** Opening a component, editing its paragraphs, the lock,
 > iterations under the sequence rules, Save version and Done editing, the save indicator, and the six

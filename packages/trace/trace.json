@@ -15409,6 +15409,51 @@
       ]
     },
     {
+      "document": "document-view.md",
+      "owns": [
+        {
+          "id": "CNT-072",
+          "howItIsMet": "The text is one canvas on the theme's paper: every heading, a section's and a component's, set in the theme's heading role for its depth, and each component's text beneath its heading, with no card around it ([One scroll](#one-scroll))"
+        },
+        {
+          "id": "CNT-073",
+          "howItIsMet": "A component's edges and its label appear when the pointer or the focus is in it, and for all of them while **Show boundaries** is on, and never otherwise ([Boundaries](#boundaries))"
+        },
+        {
+          "id": "CNT-154",
+          "howItIsMet": "The page is in **Reading** or **Authoring**, said by a switch in its header that shows the mode it is in ([Modes](#modes))"
+        },
+        {
+          "id": "CNT-105",
+          "howItIsMet": "Authoring is offered where the reader may restructure the document or edit any component it places; anyone in Authoring may switch to Reading, and the page keeps that choice"
+        },
+        {
+          "id": "CNT-156",
+          "howItIsMet": "Reading offers moving through the document and nothing that changes it; Authoring offers the outline's acts and each component's editor in place, as the page has since the interface slices"
+        },
+        {
+          "id": "IAM-023",
+          "howItIsMet": "Which modes are offered is derived from the document's `edit` decision and each placed component's, which the page is already told: a reader never sees Authoring"
+        },
+        {
+          "id": "CNT-162",
+          "howItIsMet": "A component's label names the version its reference resolves to and whether it is the latest or pinned ([Versions](#versions))"
+        },
+        {
+          "id": "CNT-158",
+          "howItIsMet": "In Authoring, where the reader may restructure the document, the label's version opens a list of the component's versions and **Always the latest**; choosing one is the outline's `set` of the reference's mode"
+        },
+        {
+          "id": "STR-035",
+          "howItIsMet": "The outline marks the node whose text is in view as the reader scrolls, and choosing any node - in the outline, a generated list or a link - scrolls the text to it ([Navigation](#navigation))"
+        },
+        {
+          "id": "STR-045",
+          "howItIsMet": "Opening a node's link scrolls the text to the node and marks it there as well as in the outline, for whoever may read the document; a component they may not read is reached at its place and not shown"
+        }
+      ]
+    },
+    {
       "document": "metadata.md",
       "owns": [
         {

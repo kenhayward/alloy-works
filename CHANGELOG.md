@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.99.1 - 2026-09-27 (PR #286)
+
+### Changed
+
+- **The design for the document view.** How a document will be read and authored on one page: as one
+  continuous scroll in its theme, with each component's edges shown when you want them, in a Reading or
+  an Authoring mode, with the outline following where you are, and each component's version shown and
+  chosen where it stands. Nothing changes in the product yet.
+
 ## 0.99.0 - 2026-09-27 (PR #285)
 
 ### Added
