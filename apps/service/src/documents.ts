@@ -30,6 +30,7 @@ import {
   type TenantDatabase,
   type TenantTransaction,
   type ValuesRefused,
+  type PublishingState,
 } from '@alloy-works/db';
 import {
   conditions,
@@ -250,9 +251,15 @@ export function documentHandlers(
 ) {
   return {
     listDocuments: async (request: FastifyRequest) => {
-      const asked = pageAsked('documents', request.query as DocumentListQuery);
+      const query = request.query as DocumentListQuery;
+      const asked = pageAsked('documents', query);
+      const spaces = query.spaces?.split(',');
+      const publishing = query.publishing?.split(',') as PublishingState[] | undefined;
       const listed = await db.withTenant(tenantOf(request), (trx) =>
-        listReadableDocuments(trx, principalOf(request).principalId, asked),
+        listReadableDocuments(trx, principalOf(request).principalId, asked, {
+          ...(spaces === undefined ? {} : { spaces }),
+          ...(publishing === undefined ? {} : { publishing }),
+        }),
       );
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
       return {
@@ -267,6 +274,15 @@ export function documentHandlers(
           publishing: item.publishing,
         })),
         next: cursorFor('documents', asked.sort, asked.order, listed.snapshot, listed.next),
+        total: listed.total,
+        facets: {
+          spaces: listed.facets.spaces.map(
+            (each: { value: string; label: string; count: number }) => ({ ...each }),
+          ),
+          publishing: listed.facets.publishing.map(
+            (each: { value: string; label: string; count: number }) => ({ ...each }),
+          ),
+        },
       };
     },
 

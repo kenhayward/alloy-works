@@ -72,9 +72,15 @@ export function templateHandlers(
 ) {
   return {
     listTemplates: async (request: FastifyRequest) => {
-      const asked = pageAsked('templates', request.query as TemplateListQuery);
+      const query = request.query as TemplateListQuery;
+      const asked = pageAsked('templates', query);
       const listed = await db.withTenant(tenantOf(request), (trx) =>
-        listReadableTemplates(trx, principalOf(request).principalId, asked),
+        listReadableTemplates(
+          trx,
+          principalOf(request).principalId,
+          asked,
+          query.spaces === undefined ? {} : { spaces: query.spaces.split(',') },
+        ),
       );
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
       return {
@@ -89,6 +95,12 @@ export function templateHandlers(
           changedAt: item.changedAt.toISOString(),
         })),
         next: cursorFor('templates', asked.sort, asked.order, listed.snapshot, listed.next),
+        total: listed.total,
+        facets: {
+          spaces: listed.facets.spaces.map(
+            (each: { value: string; label: string; count: number }) => ({ ...each }),
+          ),
+        },
       };
     },
 

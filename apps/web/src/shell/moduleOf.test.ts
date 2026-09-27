@@ -24,6 +24,10 @@ describe('the module an address belongs to', () => {
     expect(moduleOf(`#/documents/${COMPONENT}/nodes/${NODE}`)).toBe('Documents');
   });
 
+  it('names Templates for the templates list', () => {
+    expect(moduleOf('#/templates')).toBe('Templates');
+  });
+
   it('names Search for a search, with its query or without', () => {
     expect(moduleOf('#/search')).toBe('Search');
     expect(moduleOf('#/search?q=lever%20arm')).toBe('Search');

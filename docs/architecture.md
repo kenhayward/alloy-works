@@ -1081,6 +1081,23 @@ their latest name, as of the snapshot, and people by when each first appeared - 
 in place at every sign-in; the picker sorts them by name. The access listings - grants, roles,
 principals and invitations - page by id, as they did. The application reads each to its end.
 
+Each content listing is filtered on the service (W7.3): components by space and component type,
+documents by space and publishing state - the latest publication the reader may read of each, as of the
+snapshot, in SQL - publications by space and document, templates by space. The page, the total and each
+facet are read from one base query, `countOf` and `facetOf` running it with every filter but the facet's
+own. **Documents**, **Publications** and **Templates** - the last at `#/templates` - page with Show
+more through `usePagedListing`, sort with `SortChooser` and filter with `Facet`, the counts the
+service's. **Components** sorts with the same chooser and takes its type facet through `Facet`, but keeps
+the paging and the space facet it already had, since its answer still carries the space counts as
+`spaces` beside `facets` (API-012).
+
+| Where                                 | What                                                     |
+| ------------------------------------- | -------------------------------------------------------- |
+| `db: src/listing.ts`                  | `countOf`, `facetOf`, `FacetCount`                       |
+| `db: src/readable-artifacts.ts`       | `readableArtifactsAs`, the predicate over a second alias |
+| `web: src/listing/`                   | `usePagedListing`, `SortChooser`, `Facet`, `More`        |
+| `web: src/structure/TemplateList.tsx` | The templates view                                       |
+
 | Where                          | What                                                                               |
 | ------------------------------ | ---------------------------------------------------------------------------------- |
 | `db: src/listing.ts`           | `listingSorts`, `keysetPage`, `snapshotFor`, `visibleIn`, `isListingRequest`       |

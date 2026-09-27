@@ -20,8 +20,8 @@ const everything = {
   '/v1/me': () => json(200, { id: 'p1', displayName: 'Ada Lovelace', email: null }),
   '/v1/tenant': () => json(200, { name: 'Development' }),
   '/v1/components': () => json(200, { items: [], next: null, total: 412, spaces: [] }),
-  '/v1/documents': () => json(200, { items: [{}, {}, {}], next: null }),
-  '/v1/publications': () => json(200, { items: [{}], next: null }),
+  '/v1/documents': () => json(200, { items: [{}], next: 'more', total: 3 }),
+  '/v1/publications': () => json(200, { items: [{}], next: null, total: 1 }),
 };
 
 describe('Home', () => {

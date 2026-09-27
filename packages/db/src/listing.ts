@@ -210,3 +210,37 @@ export async function keysetPage<Row extends { readonly id: string }>(
         : null,
   };
 }
+
+/** One value of a listing's facet: what to filter by to leave these, its label, and how many. */
+export interface FacetCount {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+}
+
+/** How many rows a listing's query holds: its total, with the filters in force. */
+export async function countOf(trx: TenantTransaction, query: Compilable): Promise<number> {
+  const { rows } = await sql<{ n: string }>`select count(*) as n from (${query}) as x`.execute(trx);
+  return Number(rows[0]?.n ?? 0);
+}
+
+/**
+ * A facet: the rows of `query` - run with every filter but this facet's own - counted by `value`, each
+ * labelled by `label`, most first and then by label (SCH-046's rule, which search's facets follow).
+ * `value` and `label` are column names the listing's own code names, never a caller's.
+ */
+export async function facetOf(
+  trx: TenantTransaction,
+  query: Compilable,
+  value: string,
+  label: string,
+): Promise<readonly FacetCount[]> {
+  const { rows } = await sql<{ value: string; label: string; n: string }>`
+    select ${sql.ref(`x.${value}`)}::text as value, max(${sql.ref(`x.${label}`)}) as label,
+           count(*) as n
+    from (${query}) as x
+    where ${sql.ref(`x.${value}`)} is not null
+    group by ${sql.ref(`x.${value}`)}
+    order by n desc, label, value`.execute(trx);
+  return rows.map((row) => ({ value: row.value, label: row.label, count: Number(row.n) }));
+}

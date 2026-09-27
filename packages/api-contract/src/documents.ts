@@ -4,7 +4,7 @@ import {
   storableEverywhere,
 } from '@alloy-works/domain';
 import { z } from 'zod';
-import { listingQuery, nextCursor } from './listing.js';
+import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
 import { CreateComponentBody, FieldView, Lock, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
@@ -78,10 +78,27 @@ export const DocumentList = z.object({
     }),
   ),
   next: nextCursor,
+  total: listingTotal,
+  facets: z
+    .object({ spaces: z.array(FacetCountView), publishing: z.array(FacetCountView) })
+    .describe(
+      'Each filter the listing takes, counted with the others in force and its own left out',
+    ),
 });
 export type DocumentList = z.infer<typeof DocumentList>;
 
-export const DocumentListQuery = z.object(listingQuery(['title', 'changed'], 'title'));
+export const DocumentListQuery = z.object({
+  ...listingQuery(['title', 'changed'], 'title'),
+  spaces: idsFilter.optional().describe('Only documents in these spaces, by id'),
+  publishing: z
+    .string()
+    .regex(
+      /^(?:published|changedSince|neverPublished)(?:,(?:published|changedSince|neverPublished)){0,2}$/,
+      'Expected publishing states, separated by commas',
+    )
+    .optional()
+    .describe('Only documents in these publishing states: published, changedSince, neverPublished'),
+});
 export type DocumentListQuery = z.infer<typeof DocumentListQuery>;
 
 export const DocumentView = z.object({

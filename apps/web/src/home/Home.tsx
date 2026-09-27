@@ -2,7 +2,6 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useState } from 'react';
 
 import styles from './Home.module.css';
-import { everyPage } from '../paging.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -73,20 +72,12 @@ async function totals(client: Client): Promise<Record<Module, number | null>> {
       return data ? data.total : null;
     }),
     read(async () => {
-      const all = await everyPage((cursor) =>
-        client.GET('/v1/documents', {
-          params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
-        }),
-      );
-      return 'items' in all ? all.items.length : null;
+      const { data } = await client.GET('/v1/documents', { params: { query: { limit: '1' } } });
+      return data ? data.total : null;
     }),
     read(async () => {
-      const all = await everyPage((cursor) =>
-        client.GET('/v1/publications', {
-          params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
-        }),
-      );
-      return 'items' in all ? all.items.length : null;
+      const { data } = await client.GET('/v1/publications', { params: { query: { limit: '1' } } });
+      return data ? data.total : null;
     }),
   ]);
   return { components, documents, publications };

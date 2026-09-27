@@ -15,12 +15,15 @@ import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import {
   checkedLimit,
+  countOf,
+  facetOf,
   isListingRequest,
   keysetPage,
   listingSorts,
   snapshotFor,
   sortColumns,
   visibleIn,
+  type FacetCount,
   type Listed,
   type ListingRequest,
   type SortOf,
@@ -202,7 +205,14 @@ export async function listReadableTemplates(
   trx: TenantTransaction,
   principalId: string,
   request: ListingRequest<SortOf<'templates'>> = { limit: 100 },
-): Promise<Listed<TemplateSummary> | undefined> {
+  filter: { readonly spaces?: readonly string[] } = {},
+): Promise<
+  | (Listed<TemplateSummary> & {
+      readonly total: number;
+      readonly facets: { readonly spaces: readonly FacetCount[] };
+    })
+  | undefined
+> {
   const limit = checkedLimit(request.limit);
   const sort = request.sort ?? 'name';
   const { types, order: byDefault } = listingSorts.templates[sort];
@@ -212,33 +222,40 @@ export async function listReadableTemplates(
   const readable = await loadReadableSet(trx, principalId);
   if (!readable) return undefined;
   const snapshot = await snapshotFor(trx, request.snapshot);
-  const inner = trx
-    .selectFrom('artifact as a')
-    .innerJoin('space as s', 's.id', 'a.space_id')
-    .innerJoinLateral(
-      (eb) =>
-        eb
-          .selectFrom('artifact_version as v')
-          .select([
-            'v.id as version_id',
-            'v.revision_no',
-            'v.version_no',
-            'v.created_at',
-            sql<string>`v.content ->> 'name'`.as('name'),
-          ])
-          .whereRef('v.artifact_id', '=', 'a.id')
-          .where(visibleIn('v.written_by', snapshot))
-          .orderBy('v.revision_no', 'desc')
-          .orderBy('v.version_no', 'desc')
-          .limit(1)
-          .as('latest'),
-      (join) => join.onTrue(),
-    )
-    .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.name'])
-    .select(['latest.version_id', 'latest.revision_no', 'latest.version_no', 'latest.created_at'])
-    .select(sortColumns([sort === 'name' ? sql`latest.name` : sql`latest.created_at`]))
-    .where('a.kind', '=', 'template')
-    .where((eb) => readableArtifacts(eb, readable));
+  /** The templates the reader may read, as of the snapshot, with the space filter unless left. */
+  const base = (leaving?: 'spaces') =>
+    trx
+      .selectFrom('artifact as a')
+      .innerJoin('space as s', 's.id', 'a.space_id')
+      .innerJoinLateral(
+        (eb) =>
+          eb
+            .selectFrom('artifact_version as v')
+            .select([
+              'v.id as version_id',
+              'v.revision_no',
+              'v.version_no',
+              'v.created_at',
+              sql<string>`v.content ->> 'name'`.as('name'),
+            ])
+            .whereRef('v.artifact_id', '=', 'a.id')
+            .where(visibleIn('v.written_by', snapshot))
+            .orderBy('v.revision_no', 'desc')
+            .orderBy('v.version_no', 'desc')
+            .limit(1)
+            .as('latest'),
+        (join) => join.onTrue(),
+      )
+      .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.name'])
+      .select(['latest.version_id', 'latest.revision_no', 'latest.version_no', 'latest.created_at'])
+      .select(sortColumns([sort === 'name' ? sql`latest.name` : sql`latest.created_at`]))
+      .where('a.kind', '=', 'template')
+      .where((eb) => readableArtifacts(eb, readable))
+      .$if(filter.spaces !== undefined && leaving !== 'spaces', (query) =>
+        filter.spaces!.length === 0
+          ? query.where(sql<boolean>`false`)
+          : query.where('a.space_id', 'in', [...filter.spaces!]),
+      );
   const { rows, next } = await keysetPage<{
     id: string;
     name: string;
@@ -248,7 +265,7 @@ export async function listReadableTemplates(
     revision_no: number;
     version_no: number;
     created_at: Date;
-  }>(trx, inner, types, request.order ?? byDefault, limit, request.after);
+  }>(trx, base(), types, request.order ?? byDefault, limit, request.after);
   return {
     items: rows.map((row) => ({
       id: row.id,
@@ -259,6 +276,8 @@ export async function listReadableTemplates(
     })),
     next,
     snapshot,
+    total: await countOf(trx, base()),
+    facets: { spaces: await facetOf(trx, base('spaces'), 'space_id', 'space_name') },
   };
 }
 

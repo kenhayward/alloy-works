@@ -1,6 +1,6 @@
 import { templateDefinitionSchema } from '@alloy-works/domain';
 import { z } from 'zod';
-import { listingQuery, nextCursor } from './listing.js';
+import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
 import { SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
@@ -37,9 +37,21 @@ export const TemplateSummary = z.object({
   version: z.object({ id: z.string(), number: z.string() }),
   changedAt: z.string().describe('When its latest version was made'),
 });
-export const TemplateList = z.object({ items: z.array(TemplateSummary), next: nextCursor });
+export const TemplateList = z.object({
+  items: z.array(TemplateSummary),
+  next: nextCursor,
+  total: listingTotal,
+  facets: z
+    .object({ spaces: z.array(FacetCountView) })
+    .describe(
+      'Each filter the listing takes, counted with the others in force and its own left out',
+    ),
+});
 
-export const TemplateListQuery = z.object(listingQuery(['name', 'changed'], 'name'));
+export const TemplateListQuery = z.object({
+  ...listingQuery(['name', 'changed'], 'name'),
+  spaces: idsFilter.optional().describe('Only templates in these spaces, by id'),
+});
 export type TemplateListQuery = z.infer<typeof TemplateListQuery>;
 export type TemplateList = z.infer<typeof TemplateList>;
 

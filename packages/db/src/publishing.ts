@@ -36,12 +36,15 @@ import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import {
   checkedLimit,
+  countOf,
+  facetOf,
   isListingRequest,
   keysetPage,
   listingSorts,
   snapshotFor,
   sortColumns,
   visibleIn,
+  type FacetCount,
   type Listed,
   type ListingRequest,
   type SortOf,
@@ -1143,9 +1146,25 @@ export async function listPublications(
   documentId: string,
   principalId: string,
   request: ListingRequest<SortOf<'publications'>> = { limit: 100 },
-): Promise<Listed<PublicationSummary> | undefined> {
-  return readablePublications(trx, principalId, documentId, request);
+  filter: PublicationFilter = {},
+): Promise<PublicationPage | undefined> {
+  return readablePublications(trx, principalId, documentId, request, filter);
 }
+
+/** Narrowing a publications listing: to these spaces, and publications of these documents (SCH-064). */
+export interface PublicationFilter {
+  readonly spaces?: readonly string[];
+  readonly documents?: readonly string[];
+}
+
+/** A page of publications, with the total and each facet counted without its own filter. */
+export type PublicationPage = Listed<PublicationSummary> & {
+  readonly total: number;
+  readonly facets: {
+    readonly spaces: readonly FacetCount[];
+    readonly documents: readonly FacetCount[];
+  };
+};
 
 /**
  * Every publication the principal may read, of every document, newest first: the per-document
@@ -1157,8 +1176,9 @@ export async function listReadablePublications(
   trx: TenantTransaction,
   principalId: string,
   request: ListingRequest<SortOf<'publications'>> = { limit: 100 },
-): Promise<Listed<PublicationSummary> | undefined> {
-  return readablePublications(trx, principalId, null, request);
+  filter: PublicationFilter = {},
+): Promise<PublicationPage | undefined> {
+  return readablePublications(trx, principalId, null, request, filter);
 }
 
 /**
@@ -1171,7 +1191,8 @@ async function readablePublications(
   principalId: string,
   documentId: string | null,
   request: ListingRequest<SortOf<'publications'>>,
-): Promise<Listed<PublicationSummary> | undefined> {
+  filter: PublicationFilter,
+): Promise<PublicationPage | undefined> {
   const limit = checkedLimit(request.limit);
   const sort = request.sort ?? 'published';
   const { types, order: byDefault } = listingSorts.publications[sort];
@@ -1181,25 +1202,39 @@ async function readablePublications(
   const readable = await loadReadableSet(trx, principalId);
   if (!readable) return undefined;
   const snapshot = await snapshotFor(trx, request.snapshot);
-  const inner = trx
-    .selectFrom('publication as p')
-    .innerJoin('artifact as a', 'a.id', 'p.id')
-    .innerJoin('principal as pr', 'pr.id', 'p.publisher')
-    .innerJoin('artifact_version as v', 'v.id', 'p.document_version_id')
-    .select([...publicationColumns, sql<string>`v.content ->> 'title'`.as('title')])
-    .select(
-      sortColumns(
-        sort === 'published'
-          ? [sql`p.published_at`, sql`a.created_at`]
-          : [sql`v.content ->> 'title'`],
-      ),
-    )
-    .$if(documentId !== null, (query) => query.where('p.document_id', '=', documentId!))
-    .where((eb) => readableArtifacts(eb, readable))
-    .where(visibleIn('p.written_by', snapshot));
+  /** The publications the reader may read, as of the snapshot, with every filter but `leaving`. */
+  const base = (leaving?: keyof PublicationFilter) =>
+    trx
+      .selectFrom('publication as p')
+      .innerJoin('artifact as a', 'a.id', 'p.id')
+      .innerJoin('space as s', 's.id', 'a.space_id')
+      .innerJoin('principal as pr', 'pr.id', 'p.publisher')
+      .innerJoin('artifact_version as v', 'v.id', 'p.document_version_id')
+      .select([...publicationColumns, sql<string>`v.content ->> 'title'`.as('title')])
+      .select(['s.id as space_id', 's.name as space_name'])
+      .select(
+        sortColumns(
+          sort === 'published'
+            ? [sql`p.published_at`, sql`a.created_at`]
+            : [sql`v.content ->> 'title'`],
+        ),
+      )
+      .$if(documentId !== null, (query) => query.where('p.document_id', '=', documentId!))
+      .where((eb) => readableArtifacts(eb, readable))
+      .where(visibleIn('p.written_by', snapshot))
+      .$if(filter.spaces !== undefined && leaving !== 'spaces', (query) =>
+        filter.spaces!.length === 0
+          ? query.where(sql<boolean>`false`)
+          : query.where('a.space_id', 'in', [...filter.spaces!]),
+      )
+      .$if(filter.documents !== undefined && leaving !== 'documents', (query) =>
+        filter.documents!.length === 0
+          ? query.where(sql<boolean>`false`)
+          : query.where('p.document_id', 'in', [...filter.documents!]),
+      );
   const { rows, next } = await keysetPage<Parameters<typeof summaryOf>[0]>(
     trx,
-    inner,
+    base(),
     types,
     request.order ?? byDefault,
     limit,
@@ -1209,6 +1244,12 @@ async function readablePublications(
     items: rows.map((row) => summaryOf({ ...row, published_at: new Date(row.published_at) })),
     next,
     snapshot,
+    total: await countOf(trx, base()),
+    facets: {
+      spaces: await facetOf(trx, base('spaces'), 'space_id', 'space_name'),
+      // A document by its title at the version each publication made: the latest of them labels it.
+      documents: await facetOf(trx, base('documents'), 'document_id', 'title'),
+    },
   };
 }
 
