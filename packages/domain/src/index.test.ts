@@ -285,6 +285,8 @@ describe('the domain package', () => {
         // Word 1 (ruling R4, R13): the default layout's 0.5 frozen as 0025 stored it beside its 0.6,
         // what an output's report can say and its one entry point, and the media type of each format.
         'FIFTH_DEFAULT_LAYOUT',
+        // W10.1 (the preview, PV-D): the default layout's 0.6 frozen as 0027 stored it beside its 0.7.
+        'SIXTH_DEFAULT_LAYOUT',
         'OUTPUT_CONTENT_TYPES',
         'OUTPUT_REPORT_KINDS',
         'outputReportSchema',

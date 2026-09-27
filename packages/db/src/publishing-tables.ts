@@ -33,6 +33,16 @@ export interface PublicationRequestTable {
   theme_id: ColumnType<string | null, string, never>;
   theme_version_id: ColumnType<string | null, string, never>;
   theme_kind: ColumnType<'theme', never, never>;
+  /** A publish or a preview, named when it is asked for and never changed (0035). */
+  kind: ColumnType<'publish' | 'preview', 'publish' | 'preview' | undefined, never>;
+  /**
+   * A preview's PDF in the tenant's store by its hash, and when it expires: all four exactly when a
+   * preview is done, written only in the move that finishes it, and never on a publish (0035).
+   */
+  preview_key: ColumnType<string | null, never, string>;
+  preview_sha256: ColumnType<string | null, never, string>;
+  preview_bytes: ColumnType<number | null, never, number>;
+  expires_at: ColumnType<Date | null, never, Date>;
 }
 
 /** Insert and read, nothing else (0017). */

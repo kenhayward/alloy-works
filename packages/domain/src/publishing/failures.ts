@@ -146,6 +146,10 @@ export const publishFailureCodes = [
   // caption's words named where they hold a reference that is not a number (each measured in Word
   // 16). The PDF is unaffected.
   'cross_reference_not_in_word',
+  // compose, from the preview (W10.1, PV-D): a preview under a layout with no words for one - stored
+  // before its schema 6, or none, for a request made before layouts - naming no place, since nothing
+  // in the document mends it. A preview otherwise would say it is a draft, or say so in English.
+  'preview_words_missing',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

@@ -609,7 +609,12 @@ export interface PublishedDocument {
   readonly title: string;
   readonly language: PublishedLanguage;
   readonly direction: 'ltr' | 'rtl';
-  readonly status: 'draft';
+  /**
+   * A publication is a `draft` until a baseline can approve one; a `preview` is the same document
+   * with the layout's words for a preview as its `words.notice` and `words.noticeSentence` (PUB-005),
+   * so the template, which prints those, prints a preview's with no change of its own.
+   */
+  readonly status: 'draft' | 'preview';
   readonly revision: string;
   readonly words: {
     readonly language: PublishedLanguage;

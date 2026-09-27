@@ -311,7 +311,9 @@ describe('publishing a document, from the request to the stored PDF', () => {
     worker = createTenantDatabase(db.workerUrl);
     queue = createJobQueue(db.workerUrl);
     stores = createObjectStores(objects.settings, objects.sealingKey);
-    handlers = { publish: publishJob({ db: worker, stores, typst, fonts }) };
+    // A preview is run by the publish handler, told the kind by its request (publishing.md, "Preview").
+    const publish = publishJob({ db: worker, stores, typst, fonts });
+    handlers = { publish, preview: publish };
     await service.withTenant(tenant, async (trx) => {
       ada = await person(trx, 'ada', 'Ada');
       general = (
@@ -373,6 +375,182 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(occurrencesOf(DRAFT_NOTICE.text, spoken(read.taggedText.flat()))).toBe(1);
     expect(row).toMatchObject({ approval: 'none' });
   });
+
+  /** What the default layout's 0.7 says of a preview, in place of the draft's notice and sentence. */
+  const PREVIEW = {
+    page: 'Preview - not approved',
+    text: 'Preview - not approved. This is a preview of unapproved content, not a publication.',
+  };
+
+  /** Ada asks for a publish or a preview of one version of a document of these nodes; answers both. */
+  const askedFor = (
+    nodes: (trx: TenantTransaction) => Promise<OutlineNode[]>,
+    kinds: readonly ('publish' | 'preview')[],
+  ) =>
+    service.withTenant(tenant, async (trx) => {
+      const version = await documentWith(trx, await nodes(trx));
+      const ids: string[] = [];
+      for (const kind of kinds) {
+        const answer = await requestPublication(trx, {
+          documentId: version.artifactId,
+          version: version.id,
+          formats: ['pdf'],
+          requester: ada,
+          kind,
+        });
+        if (answer.answer !== 'requested') throw new Error(answer.answer);
+        ids.push(answer.request.id);
+      }
+      return ids;
+    });
+
+  /** How many of each row a publication is made of the tenant holds. */
+  const publicationRows = () =>
+    service.withTenant(tenant, async (trx) => ({
+      artifacts: await publicationCount(),
+      publications: (await trx.selectFrom('publication').select('id').execute()).length,
+      inputs: (await trx.selectFrom('publication_input').select('version_id').execute()).length,
+      outputs: (await trx.selectFrom('publication_output').select('sha256').execute()).length,
+    }));
+
+  it('PUB-005 says on every page of a stored preview, and once to assistive technology, that it is a preview of unapproved content, and never that it is a draft', async () => {
+    const before = await publicationRows();
+    const [request] = await askedFor(
+      async (trx) => [
+        section('Introduction', [
+          reference(await component(trx, general, 'Calibration', LONG)),
+          section('Scope', []),
+        ]),
+        section('Method', []),
+      ],
+      ['preview'],
+    );
+    expect(await work()).toBe('done');
+    const row = await requestRow(request!);
+    expect(row).toMatchObject({ kind: 'preview', state: 'done', failures: [] });
+    const pdf = await pdfOf(row.preview_key!);
+    // The PDF recorded is the one the store holds, by its hash and size.
+    expect(createHash('sha256').update(pdf).digest('hex')).toBe(row.preview_sha256);
+    expect(pdf.byteLength).toBe(row.preview_bytes);
+    const read = await readPdf(pdf);
+
+    expect(read.pages).toBeGreaterThan(1);
+    // On every page, as an artifact, where the draft's notice would stand - and never the draft's.
+    expect(read.artifactText).toHaveLength(read.pages);
+    for (const [index, runs] of read.artifactText.entries()) {
+      expect(occurrencesOf(PREVIEW.page, spoken(runs)), `page ${index + 1}`).toBe(1);
+      expect(occurrencesOf(DRAFT_NOTICE.page, spoken(runs)), `page ${index + 1}`).toBe(0);
+    }
+    // And once where a screen reader reads it, and never the draft's sentence.
+    const tagged = spoken(read.taggedText.flat());
+    expect(occurrencesOf(PREVIEW.text, tagged)).toBe(1);
+    expect(occurrencesOf(DRAFT_NOTICE.text, tagged)).toBe(0);
+    expect(await checkPdfUa1(pdf)).toMatchObject({
+      compliant: true,
+      profile: 'PDF/UA-1 validation profile',
+      failedRules: 0,
+    });
+    // Nothing of a publication is made of it (PV-A).
+    expect(await publicationRows()).toEqual(before);
+    expect(await publicationOf(request!)).toBeUndefined();
+  }, 120_000);
+
+  it('PUB-006 makes a preview by the same pipeline as a publish of the same version: the same inputs recorded, the same pages but for the notice, and no publication', async () => {
+    const [publish, preview] = await askedFor(
+      async (trx) => [
+        section('Introduction', [
+          reference(await component(trx, general, 'Calibration', LONG.slice(0, 40))),
+          reference(await component(trx, quality, 'Never read', ['Unread.'])),
+        ]),
+      ],
+      ['publish', 'preview'],
+    );
+    // A component the publisher may not read fails both alike, by the same list, at the request.
+    expect(await work()).toBe('failed');
+    expect(await work()).toBe('failed');
+    const failuresOfBoth = await Promise.all(
+      [publish!, preview!].map(async (id) => (await requestRow(id)).failures),
+    );
+    expect(failuresOfBoth[1]).toEqual(failuresOfBoth[0]);
+    expect((failuresOfBoth[0] as { code: string }[]).map((each) => each.code)).toEqual([
+      'occurrence_unreadable',
+    ]);
+
+    // And one it may read publishes and previews alike.
+    const [published, previewed] = await askedFor(
+      async (trx) => [
+        section('Introduction', [
+          reference(await component(trx, general, 'Calibration', LONG.slice(0, 40))),
+          section('Scope', []),
+        ]),
+        section('Method', []),
+      ],
+      ['publish', 'preview'],
+    );
+    // The publish's job was queued first, and is taken first.
+    expect(await work()).toBe('done');
+    const before = await publicationRows();
+    expect(await work()).toBe('done');
+    expect(await publicationRows()).toEqual(before);
+    expect(await publicationOf(previewed!)).toBeUndefined();
+
+    // The same inputs: the document's version, the layout's and the theme's, and each occurrence's
+    // version, which are exactly what the publication records it read.
+    const [publishRow, previewRow] = await Promise.all([
+      requestRow(published!),
+      requestRow(previewed!),
+    ]);
+    for (const column of [
+      'document_version_id',
+      'layout_version_id',
+      'theme_version_id',
+    ] as const) {
+      expect(previewRow[column], column).toBe(publishRow[column]);
+    }
+    const { occurrences, read } = await service.withTenant(tenant, async (trx) => ({
+      occurrences: await trx
+        .selectFrom('publication_request_occurrence')
+        .select(['request_id', 'node', 'version_id'])
+        .where('request_id', 'in', [published!, previewed!])
+        .orderBy('node')
+        .execute(),
+      read: await trx
+        .selectFrom('publication_input as i')
+        .innerJoin('publication as p', 'p.id', 'i.publication_id')
+        .select(['i.node', 'i.version_id'])
+        .where('p.request_id', '=', published!)
+        .where('i.node', 'is not', null)
+        .orderBy('i.node')
+        .execute(),
+    }));
+    const taken = (id: string) =>
+      occurrences
+        .filter((each) => each.request_id === id)
+        .map(({ node, version_id }) => ({ node, version_id }));
+    expect(taken(previewed!)).toHaveLength(1);
+    expect(taken(previewed!)).toEqual(taken(published!));
+    expect(taken(previewed!)).toEqual(read);
+
+    // The same pages, word for word, once the notice and its sentence are taken out of each.
+    const publishRead = await readPdf(await pdfOf((await publicationOf(published!))!.object_key));
+    const previewRead = await readPdf(await pdfOf(previewRow.preview_key!));
+    const without = (
+      pages: readonly (readonly string[])[],
+      notice: { page: string; text: string },
+    ) => pages.map((runs) => spoken(runs).split(notice.text).join('').split(notice.page).join(''));
+    expect(previewRead.pages).toBe(publishRead.pages);
+    expect(without(previewRead.taggedText, PREVIEW)).toEqual(
+      without(publishRead.taggedText, DRAFT_NOTICE),
+    );
+    expect(without(previewRead.artifactText, PREVIEW)).toEqual(
+      without(publishRead.artifactText, DRAFT_NOTICE),
+    );
+    // And what each took out was there, so the comparison is of the rest of the same pages.
+    expect(occurrencesOf(PREVIEW.text, spoken(previewRead.taggedText.flat()))).toBe(1);
+    expect(occurrencesOf(DRAFT_NOTICE.text, spoken(publishRead.taggedText.flat()))).toBe(1);
+    expect(previewRead.bookmarks).toEqual(publishRead.bookmarks);
+    expect(previewRead.roles).toEqual(publishRead.roles);
+  }, 120_000);
 
   it('PUB-061 is always tagged PDF/UA-1, in the document title and language', async () => {
     const { read, row, verdict } = await published();

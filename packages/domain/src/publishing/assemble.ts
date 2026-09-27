@@ -136,6 +136,17 @@ export interface AssembleInput {
    * request recorded why.
    */
   readonly assets: ReadonlyMap<string, PublishingAsset>;
+  /**
+   * What is being made (publishing.md, "Preview"): a publication, which is a `draft` until a baseline
+   * can approve one, or a `preview` of it (PUB-005, PUB-006). **A preview is assembled exactly as a
+   * publish is**, from the same inputs, and differs in two words alone: the notice on every page and
+   * the sentence read once to assistive technology are the layout's `words.preview`, where a draft's
+   * are its `notice` and `noticeSentence`, so the template prints them where it prints the draft's and
+   * changes nowhere else. A layout with no words for a preview - one stored before its schema 6, or
+   * none, for a request made before layouts - fails a preview `preview_words_missing`. Omitted, it is
+   * `draft`, and a publish is made byte for byte as it was before previews.
+   */
+  readonly status?: 'draft' | 'preview';
 }
 
 /** What `assemble` reads of an asset version: where its bytes are, what they are, and its default. */
@@ -591,6 +602,16 @@ export function assemble(given: AssembleInput): Assembled {
     );
   }
 
+  // A preview says so in the layout's words (PV-D), never the product's: a layout without them - one
+  // stored before its schema 6, or none, for a request made before layouts - is refused by name, as
+  // the layout's and nothing of the document's, rather than printing a preview as a draft or in
+  // English under a layout in another language.
+  const status = input.status ?? 'draft';
+  const previewWords = status === 'preview' ? (layout?.words.preview ?? null) : null;
+  if (status === 'preview' && previewWords === null) {
+    failures.push(failure('compose', 'preview_words_missing', null, null, null));
+  }
+
   // The layout's own words are set in the pinned faces too, so each is checked as the title is. A
   // failure in one is the layout's, never the document's: it has codes of its own, names no place in
   // the document, and nothing the author does to the document puts it right. The layout's parse
@@ -605,7 +626,13 @@ export function assemble(given: AssembleInput): Assembled {
       );
     }
     const slotWords = slotParts.flatMap((part) => (part.kind === 'words' ? [part.text] : []));
-    const { contents: title, notice, noticeSentence, above, below, continued } = layout.words;
+    const { contents: title, above, below, continued } = layout.words;
+    // The notice and its sentence the document is set with: a preview's where it is one, and asked
+    // of the faces only where they are set, so a publish is never refused for a preview's words.
+    const { notice, sentence: noticeSentence } =
+      status === 'preview'
+        ? (previewWords ?? { notice: null, sentence: null })
+        : { notice: layout.words.notice, sentence: layout.words.noticeSentence };
     const listTitles = layout.matter.lists.map((list) => list.title);
     // A relative reference prints the layout's words for above and below (cross-references 2, R2),
     // where it has them: asked here of running text's family whether or not a reference prints one,
@@ -619,8 +646,8 @@ export function assemble(given: AssembleInput): Assembled {
     // The contents' title is set only where the layout declares a contents, and asked where it is not
     // as it always was, of running text's family, since nothing sets it.
     checkWords(title, layout.matter.contents === null ? text : roles('contents'), push);
-    checkWords(notice, roles('notice'), push);
-    checkWords(noticeSentence, roles('noticeSentence'), push);
+    if (notice !== null) checkWords(notice, roles('notice'), push);
+    if (noticeSentence !== null) checkWords(noticeSentence, roles('noticeSentence'), push);
     for (const words of slotWords) checkWords(words, running, push);
     for (const words of listTitles) checkWords(words, roles('list'), push);
     for (const words of relative) checkWords(words, text, push);
@@ -1843,6 +1870,11 @@ export function assemble(given: AssembleInput): Assembled {
     return { ok: false, failures: reported() };
   }
   const { words } = layout;
+  // A preview reaching here has its words, or it failed above: the notice and sentence it is set with.
+  const notice =
+    previewWords === null
+      ? { page: words.notice, text: words.noticeSentence }
+      : { page: previewWords.notice, text: previewWords.sentence };
   return {
     ok: true,
     numbering,
@@ -1862,13 +1894,13 @@ export function assemble(given: AssembleInput): Assembled {
       title: input.outline.title,
       language,
       direction: input.outline.direction,
-      status: 'draft',
+      status,
       revision: input.revision,
       words: {
         language: wordsLanguage,
         contents: words.contents,
-        notice: words.notice,
-        noticeSentence: words.noticeSentence,
+        notice: notice.page,
+        noticeSentence: notice.text,
         continued: words.continued ?? null,
       },
       format: publishedPdf(layout.formats.pdf),

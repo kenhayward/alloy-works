@@ -411,6 +411,21 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Publish again');
   });
 
+  it('says a layout has no words for a preview, blaming the layout, never the document', async () => {
+    // W10.1 (PV-D): the words are the layout's, and nothing in the document mends them, so the
+    // sentence never asks for another attempt.
+    const fake = failing([
+      { stage: 'compose', code: 'preview_words_missing', node: null, block: null, detail: null },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      "The layout has no words for a preview's notice, so it cannot mark a preview as one. The layout has to change before this document can be previewed.",
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
   it('names what cannot be published in Word yet, and a layout with no Word page, pointing at the PDF', async () => {
     // Word 1's ruling R3: `detail` is what the construct is, by its stored type, or a list after the
     // contents by its sequence; nothing in the document is wrong, so each says the PDF can be made.

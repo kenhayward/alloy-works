@@ -30,6 +30,7 @@ import {
   FIRST_DEFAULT_LAYOUT,
   FOURTH_DEFAULT_LAYOUT,
   FIFTH_DEFAULT_LAYOUT,
+  SIXTH_DEFAULT_LAYOUT,
   parseLayout,
   readLayout,
   type Layout,
@@ -6270,3 +6271,126 @@ describe("each image's size against the Word page (Word 2, ruling R3)", () => {
 function roleSize(role: keyof ResolvedTheme['roles']): number {
   return DEFAULT_THEME.paragraphStyles.get(DEFAULT_THEME.roles[role])!.properties.size;
 }
+
+describe('a preview, assembled (W10.1)', () => {
+  /** A document of a section and a component's paragraph, under a layout, for a PDF alone. */
+  const report = (over: Partial<UnderALayout> = {}) =>
+    input({
+      outline: outline([section('intro', 'Introduction', [reference('calib')])]),
+      occurrences: new Map([[id('calib'), component([paragraph('p1', text('Set the tray.'))])]]),
+      ...over,
+    });
+  /** The layout as one stored at schema 5 reads: every word but a preview's. */
+  const sixth = (() => {
+    const read = readLayout(JSON.parse(JSON.stringify(SIXTH_DEFAULT_LAYOUT)), {
+      artifact: 'a',
+      version: 'v',
+    });
+    if (!read.ok) throw new Error(read.failure);
+    return read.layout;
+  })();
+
+  it("PUB-005 says in a preview's published document, in the layout's words, that it is a preview of unapproved content, where a draft's notice and sentence stand", () => {
+    const preview = assemble({ ...report(), status: 'preview' });
+    if (!preview.ok) throw new Error(JSON.stringify(preview.failures));
+    expect(preview.document.status).toBe('preview');
+    expect(preview.document.words).toMatchObject({
+      notice: 'Preview - not approved',
+      noticeSentence:
+        'Preview - not approved. This is a preview of unapproved content, not a publication.',
+    });
+    expect(JSON.stringify(preview.document)).not.toContain(DRAFT_NOTICE.page);
+
+    // The layout's words, in its language, never the product's: a French layout's say it in French.
+    const french = layoutWith((layout) => {
+      layout.words.preview = { notice: 'Aperçu', sentence: 'Aperçu. Contenu non approuvé.' };
+    });
+    const inFrench = assemble({ ...report({ layout: french }), status: 'preview' });
+    expect(inFrench.ok && inFrench.document.words).toMatchObject({
+      notice: 'Aperçu',
+      noticeSentence: 'Aperçu. Contenu non approuvé.',
+    });
+
+    // And nothing else of the document differs from a publish of the same input.
+    const publish = assemble(report());
+    if (!publish.ok) throw new Error(JSON.stringify(publish.failures));
+    expect({
+      ...preview.document,
+      status: 'draft',
+      words: { ...preview.document.words, notice: 'n', noticeSentence: 's' },
+    }).toEqual({
+      ...publish.document,
+      words: { ...publish.document.words, notice: 'n', noticeSentence: 's' },
+    });
+    expect(preview.numbering).toEqual(publish.numbering);
+  });
+
+  it('fails a preview under a layout with no words for one, naming them at the compose stage, and publishes under it as before', () => {
+    const missing = {
+      stage: 'compose',
+      code: 'preview_words_missing',
+      node: null,
+      block: null,
+      detail: null,
+    };
+    expect(sixth.words.preview).toBeUndefined();
+    expect(failuresOf(assemble({ ...report({ layout: sixth }), status: 'preview' }))).toEqual([
+      missing,
+    ]);
+    // Said beside the document's own failures, all at once, as every failure is.
+    const withGlyph = assemble({
+      ...report({
+        layout: sixth,
+        occurrences: new Map([[id('calib'), component([paragraph('p1', text('\u{4e2d}'))])]]),
+      }),
+      status: 'preview',
+    });
+    expect(failuresOf(withGlyph).map((each) => each.code)).toEqual([
+      'preview_words_missing',
+      'glyph_missing',
+    ]);
+    // A request made before layouts has no words at all, so a preview of one fails the same way.
+    expect(
+      failuresOf(assemble({ ...report(), layout: null, theme: null, status: 'preview' })),
+    ).toEqual([missing]);
+    // A publish under the same layout needs no words for a preview, and is made as it always was.
+    const published = assemble(report({ layout: sixth }));
+    expect(published.ok && published.document.words.notice).toBe(DRAFT_NOTICE.page);
+  });
+
+  it("checks a preview's words against the faces, blaming the layout, and a publish's never", () => {
+    const foreign = layoutWith((layout) => {
+      layout.words.preview = { notice: 'Preview \u{4e2d}', sentence: 'A preview \u{627}.' };
+    });
+    const missing = (detail: string) => ({
+      stage: 'compose',
+      code: 'layout_glyph_missing',
+      node: null,
+      block: null,
+      detail,
+    });
+    expect(failuresOf(assemble({ ...report({ layout: foreign }), status: 'preview' }))).toEqual([
+      missing('U+4E2D'),
+      missing('U+0627'),
+    ]);
+    // A publish does not set them, so it is not refused for them.
+    expect(failuresOf(assemble(report({ layout: foreign })))).toEqual([]);
+  });
+
+  it("leaves a publish's published document as it was: a draft, in the draft's words, whether told so or not", () => {
+    const untold = assemble(report());
+    const told = assemble({ ...report(), status: 'draft' });
+    if (!untold.ok || !told.ok) throw new Error('refused');
+    expect(JSON.stringify(told.document)).toBe(JSON.stringify(untold.document));
+    expect(untold.document.status).toBe('draft');
+    expect(untold.document.words).toEqual({
+      language: { lang: 'en', region: null },
+      contents: 'Contents',
+      notice: DRAFT_NOTICE.page,
+      noticeSentence: DRAFT_NOTICE.text,
+      continued: '(continued)',
+    });
+    // The layout's preview words reach no publish: nothing of them is in the bytes Typst reads.
+    expect(JSON.stringify(untold.document)).not.toContain('Preview');
+  });
+});
