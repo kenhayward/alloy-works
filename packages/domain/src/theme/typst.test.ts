@@ -116,13 +116,19 @@ describe('projectTypst12, frozen with publishing/12', () => {
   it('projects the styles a document uses and every style a place or a role names, and no other', () => {
     const inputs = defaultInputs();
     inputs.catalogues.paragraph.styles.push(
-      { id: 'lead', name: 'Lead', basedOn: 'body', appliesTo: ['text'], properties: { size: 13 } },
+      {
+        id: 'opening',
+        name: 'Opening',
+        basedOn: 'body',
+        appliesTo: ['text'],
+        properties: { size: 13 },
+      },
       { id: 'aside', name: 'Aside', basedOn: 'body', appliesTo: ['text'], properties: {} },
     );
     const theme = resolved(inputs);
     expect(Object.keys(projectTypst12(theme).styles)).toContain('aside');
-    const used = Object.keys(projectTypst12(theme, ['lead']).styles);
-    expect(used).toContain('lead');
+    const used = Object.keys(projectTypst12(theme, ['opening']).styles);
+    expect(used).toContain('opening');
     expect(used).not.toContain('aside');
     for (const id of [...Object.values(theme.places), ...Object.values(theme.roles)]) {
       expect(used, id).toContain(id);
@@ -181,13 +187,28 @@ describe('projectTypst, for publishing/13', () => {
         keepRowsWhole: false,
         continuationLabel: false,
       },
+      // The default theme's 0.4's Banded.
+      banded: {
+        headerRow: { fill: '#d9d9d9', weight: 'bold', stroke: { thickness: 1, paint: '#000000' } },
+        headerColumn: { fill: null, weight: null, stroke: null },
+        band: '#f2f2f2',
+        strokes: {
+          outer: { thickness: 1, paint: '#000000' },
+          horizontal: { thickness: 0.5, paint: '#808080' },
+          vertical: null,
+        },
+        inset: 5,
+        repeatHeader: true,
+        keepRowsWhole: false,
+        continuationLabel: false,
+      },
     });
 
     const inputs = defaultInputs();
     inputs.catalogues.table.styles.push({
       ...inputs.catalogues.table.styles[0]!,
-      id: 'banded',
-      name: 'Banded',
+      id: 'striped',
+      name: 'Striped',
       headerRow: { fill: '#dbe4f0', bold: true, rule: { width: 1.5, colour: '#1f3a5f' } },
       headerColumn: { fill: '#eeeeee', bold: false, rule: 'none' },
       banding: { fill: '#f5f5f5' },
@@ -195,7 +216,7 @@ describe('projectTypst, for publishing/13', () => {
       padding: 3,
       breaks: { repeatHeader: false, keepRowsWhole: true, continuationLabel: true },
     });
-    expect(projectTypst(resolved(inputs)).tables['banded']).toEqual({
+    expect(projectTypst(resolved(inputs)).tables['striped']).toEqual({
       headerRow: {
         fill: '#dbe4f0',
         weight: 'bold',
@@ -226,6 +247,13 @@ describe('projectTypst, for publishing/13', () => {
         placement: 'inline',
         align: null,
       },
+      // The default theme's 0.4's Half width.
+      'half-width': {
+        fixed: { dimension: 'width', value: 0.5, unit: 'measure' },
+        maximum: { value: 0.6, unit: 'textHeight' },
+        placement: 'block',
+        align: 'center',
+      },
     });
     const inputs = defaultInputs();
     inputs.catalogues.image.styles.push({
@@ -243,8 +271,8 @@ describe('projectTypst, for publishing/13', () => {
 
   it('carries every table and image style whatever styles a document uses, and is plain data', () => {
     const used = projectTypst(resolved(), ['body']);
-    expect(Object.keys(used.tables)).toEqual(['table']);
-    expect(Object.keys(used.images)).toEqual(['figure', 'inline']);
+    expect(Object.keys(used.tables)).toEqual(['table', 'banded']);
+    expect(Object.keys(used.images)).toEqual(['figure', 'inline', 'half-width']);
     expect(JSON.parse(JSON.stringify(current))).toEqual(current);
   });
 });

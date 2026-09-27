@@ -20,6 +20,9 @@ import {
   PUBLISHING_SCHEMA_10,
   PUBLISHING_SCHEMA_11,
   PUBLISHING_SCHEMA_12,
+  readTheme,
+  SECOND_DEFAULT_CATALOGUES_BY_VERSION,
+  THIRD_DEFAULT_THEME,
   type AssembleInput,
   type Layout,
 } from '@alloy-works/domain';
@@ -385,6 +388,14 @@ describe('the pipeline version', () => {
     '12': 'c12118a97e6ec79f90ef4cf64107d7ecf3f84112e8014cab92ce2e067ae1c629',
     '13': '87888c8930915481bea27617df0268ab1c045b097024e92fbc3f4565bdabbf7f',
   };
+  // The theme is an input as the layout is, recorded on a publication beside the pipeline, so the
+  // input is fixed at one: the default theme's 0.3, which '13' was pinned under. The default moving
+  // on (0.4, W8.5) changes what a publication holds, not what the pipeline makes of an input.
+  const pinnedTheme = (() => {
+    const read = readTheme(THIRD_DEFAULT_THEME, SECOND_DEFAULT_CATALOGUES_BY_VERSION);
+    if (!read.ok) throw new Error(read.refusals.map((each) => each.message).join('; '));
+    return read.theme;
+  })();
   const digest = (made: { document: unknown; numbering: unknown }) =>
     createHash('sha256')
       .update(JSON.stringify({ document: made.document, numbering: made.numbering }))
@@ -413,7 +424,10 @@ describe('the pipeline version', () => {
   });
 
   it('is the version its number says under a layout: what assemble makes of the fixed input under the default layout', async () => {
-    const assembled = assemble(fixed((await loadPinnedFonts()).covers, defaultLayout));
+    const assembled = assemble({
+      ...fixed((await loadPinnedFonts()).covers, defaultLayout),
+      theme: pinnedTheme,
+    });
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     expect(assembled.document.schema).toBe(PUBLISHING_SCHEMA);
     expect(PIPELINE_VERSION[assembled.document.schema]).toBe('13');

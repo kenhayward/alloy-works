@@ -4362,8 +4362,12 @@ describe('the theme a publication is set from (themes 1)', () => {
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     expect(assembled.document.schema).toBe('publishing/13');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
-    expect(Object.keys(assembled.document.theme.tables)).toEqual(['table']);
-    expect(Object.keys(assembled.document.theme.images)).toEqual(['figure', 'inline']);
+    expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
+    expect(Object.keys(assembled.document.theme.images)).toEqual([
+      'figure',
+      'inline',
+      'half-width',
+    ]);
     // A document of one paragraph uses one style; the theme carries all of them, in catalogue order.
     expect(Object.keys(assembled.document.theme.styles)).toEqual([...theme.paragraphStyles.keys()]);
     expect(assembled.document.theme.maths).toBe('STIX Two Math');
@@ -4373,7 +4377,7 @@ describe('the theme a publication is set from (themes 1)', () => {
     const theme = themed((inputs) => {
       addStyle(inputs, 'item', ['listItem']);
       addStyle(inputs, 'cell', ['tableCell']);
-      addStyle(inputs, 'lead', ['text', 'quotation']);
+      addStyle(inputs, 'opening', ['text', 'quotation']);
       inputs.theme.places.listItem = 'item';
       inputs.theme.places.tableCell = 'cell';
     });
@@ -4381,7 +4385,7 @@ describe('the theme a publication is set from (themes 1)', () => {
       under(
         theme,
         paragraph('p1', text('Plain.')),
-        styled('p2', 'lead', text('Led.')),
+        styled('p2', 'opening', text('Led.')),
         storedList('L1', 'unordered', [
           {
             content: [
@@ -4390,19 +4394,22 @@ describe('the theme a publication is set from (themes 1)', () => {
             ],
           },
         ]),
-        quotation('q1', [paragraph('q1p', text('Quoted.')), styled('q1l', 'lead', text('Led.'))]),
+        quotation('q1', [
+          paragraph('q1p', text('Quoted.')),
+          styled('q1l', 'opening', text('Led.')),
+        ]),
         table('t1', {}, paragraph('c1', text('12'))),
         paragraph('p3', text('Noted'), footnote('n1', paragraph('n1p', text('A note.')))),
       ),
     );
     expect(stylesOf(assembled)).toEqual({
       p1: 'body',
-      p2: 'lead',
+      p2: 'opening',
       i1: 'item',
       // The place is where the paragraph stands, however deep: a quotation in a list item.
       i2: 'quotation',
       q1p: 'quotation',
-      q1l: 'lead',
+      q1l: 'opening',
       c1: 'cell',
       p3: 'body',
       n1p: 'footnote',
@@ -4413,7 +4420,7 @@ describe('the theme a publication is set from (themes 1)', () => {
     const assembled = assemble(
       under(
         resolved(),
-        styled('p1', 'lead', text('Led.')),
+        styled('p1', 'opening', text('Led.')),
         table('t1', { style: 'wide' }),
         figure('f1', 'wide'),
         paragraph('p2', text('A logo '), image('small')),
@@ -4421,7 +4428,7 @@ describe('the theme a publication is set from (themes 1)', () => {
       ),
     );
     expect(failuresOf(assembled)).toEqual([
-      failed('style_missing', 'p1', 'lead'),
+      failed('style_missing', 'p1', 'opening'),
       failed('style_missing', 't1', 'wide'),
       failed('style_missing', 'f1', 'wide'),
       failed('style_missing', 'p2', 'small'),
@@ -4527,13 +4534,13 @@ describe('the theme a publication is set from (themes 1)', () => {
       inputs.theme.typefaces = inputs.theme.typefaces.map((each) =>
         each.id === 'sans' ? sans(false) : each,
       );
-      addStyle(inputs, 'lead', ['text'], 'sans');
+      addStyle(inputs, 'opening', ['text'], 'sans');
     });
     expect(failuresOf(assemble(under(lead, paragraph('p1', text('Plain.')))))).toEqual([]);
     expect(
       failuresOf(
         assemble(
-          under(lead, styled('p1', 'lead', text('One.')), styled('p2', 'lead', text('Two.'))),
+          under(lead, styled('p1', 'opening', text('One.')), styled('p2', 'opening', text('Two.'))),
         ),
       ),
     ).toEqual([refusal(SANS)]);
@@ -4541,7 +4548,7 @@ describe('the theme a publication is set from (themes 1)', () => {
 
   it("asks the glyph check of the family that sets each run: its innermost mark's face, else its paragraph style's", () => {
     const theme = themed((inputs) => {
-      addStyle(inputs, 'lead', ['text'], 'sans');
+      addStyle(inputs, 'opening', ['text'], 'sans');
       const emphasis = inputs.catalogues.character.styles.find((each) => each.mark === 'emphasis')!;
       emphasis.properties = { ...emphasis.properties, typeface: 'sans' };
     });
@@ -4551,11 +4558,11 @@ describe('the theme a publication is set from (themes 1)', () => {
       under(
         theme,
         paragraph('p1', text(`In the body ${PI}`)),
-        styled('p2', 'lead', text(`In the lead ${PI}`)),
+        styled('p2', 'opening', text(`In the lead ${PI}`)),
         paragraph('p3', marked(`Emphasised ${PI}`, emphasis('m1'))),
-        styled('p4', 'lead', marked(`Code ${PI}`, code('m2'))),
+        styled('p4', 'opening', marked(`Code ${PI}`, code('m2'))),
         // Code is the innermost mark, so it is set in the monospace face, whatever is outside it.
-        styled('p5', 'lead', marked(`Both ${PI}`, emphasis('m3'), code('m4'))),
+        styled('p5', 'opening', marked(`Both ${PI}`, emphasis('m3'), code('m4'))),
       ),
     );
     expect(failuresOf(assembled)).toEqual([
@@ -4727,8 +4734,8 @@ describe('the theme a publication is set from (themes 1)', () => {
     // 10pt, and 24 in a 20pt style - each as wide as its 800 by 600 proportions make it.
     const theme = themed((inputs) => {
       restyle(inputs, 'body', { size: 10 });
-      addStyle(inputs, 'lead', ['text']);
-      restyle(inputs, 'lead', { size: 20, lineSpacing: 24 });
+      addStyle(inputs, 'opening', ['text']);
+      restyle(inputs, 'opening', { size: 20, lineSpacing: 24 });
     });
     const imagesOf = (assembled: Assembled<PublishedDocument>) =>
       blocksOf(assembled).flatMap((block) =>
@@ -4740,7 +4747,9 @@ describe('the theme a publication is set from (themes 1)', () => {
     ]);
     expect(
       imagesOf(
-        assemble(under(theme, paragraph('p1', image()), styled('p2', 'lead', text('A '), image()))),
+        assemble(
+          under(theme, paragraph('p1', image()), styled('p2', 'opening', text('A '), image())),
+        ),
       ),
     ).toEqual([sized(16, 12), sized(32, 24)]);
   });

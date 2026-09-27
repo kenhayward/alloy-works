@@ -17289,7 +17289,7 @@
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5692,
+      "line": 5707,
       "kind": "title"
     },
     {
@@ -17763,7 +17763,7 @@
     {
       "id": "PUB-029",
       "file": "apps/worker/src/word-check.test.ts",
-      "line": 2300,
+      "line": 2301,
       "kind": "title"
     },
     {
@@ -17871,7 +17871,7 @@
     {
       "id": "STY-024",
       "file": "packages/db/src/default-theme.test.ts",
-      "line": 89,
+      "line": 93,
       "kind": "title"
     },
     {
@@ -18591,7 +18591,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 322,
+      "line": 329,
       "kind": "title"
     },
     {
@@ -18933,19 +18933,19 @@
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4890,
+      "line": 4899,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4890,
+      "line": 4899,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4914,
+      "line": 4923,
       "kind": "title"
     },
     {
@@ -19263,37 +19263,37 @@
     {
       "id": "STY-001",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 23,
+      "line": 24,
       "kind": "title"
     },
     {
       "id": "STY-003",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 49,
+      "line": 50,
       "kind": "title"
     },
     {
       "id": "STY-006",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 179,
+      "line": 180,
       "kind": "title"
     },
     {
       "id": "STY-027",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 160,
+      "line": 161,
       "kind": "title"
     },
     {
       "id": "STY-038",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 389,
+      "line": 390,
       "kind": "title"
     },
     {
       "id": "STY-041",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 100,
+      "line": 101,
       "kind": "title"
     },
     {

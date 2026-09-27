@@ -524,7 +524,7 @@ const READINGS = component('Readings', [
   {
     type: 'table',
     id: 'T2',
-    style: 'banded',
+    style: 'ruled',
     caption: [text('Readings at noon')],
     headerRows: 2,
     headerColumns: 1,
@@ -686,8 +686,9 @@ const deepCaptionsLayout: Layout = (() => {
 })();
 
 /**
- * The default theme's 0.3 with a table style beside its own that bands, fills and rules, and an image
- * style that floats, half the measure wide at the end of it: the default has neither.
+ * The default theme with a table style beside its own that fills a header column as well as its header
+ * row, bands, and rules every way, and an image style that floats, half the measure wide at the end of
+ * it: the default has neither.
  */
 const TABLES = '7a0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c01';
 const IMAGE_STYLES = '7a0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c03';
@@ -697,8 +698,8 @@ const constructsTheme: ResolvedTheme = (() => {
     styles: [
       ...DEFAULT_CATALOGUES.table.styles,
       {
-        id: 'banded',
-        name: 'Banded',
+        id: 'ruled',
+        name: 'Ruled',
         appliesTo: ['table'],
         headerRow: { fill: '#dde4ee', bold: true, rule: { width: 2, colour: '#1f3a5f' } },
         headerColumn: { fill: '#eef2e6', bold: true, rule: { width: 1.5, colour: '#2e5e2e' } },

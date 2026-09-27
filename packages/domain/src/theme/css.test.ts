@@ -208,11 +208,11 @@ describe('projectCss', () => {
 
 describe('projectCss for tables and images (W8.3)', () => {
   /** A table style that states every property at something the default does not. */
-  function ruledAndBanded() {
+  function ruledAndStriped() {
     const inputs = defaultInputs();
     inputs.catalogues.table.styles.push({
-      id: 'banded',
-      name: 'Banded',
+      id: 'striped',
+      name: 'Striped',
       appliesTo: ['table'],
       headerRow: { fill: '#dddddd', bold: true, rule: { width: 1.5, colour: '#333333' } },
       headerColumn: { fill: '#eeeeee', bold: true, rule: { width: 0.75, colour: '#444444' } },
@@ -227,11 +227,11 @@ describe('projectCss for tables and images (W8.3)', () => {
     });
     return projectCss(resolved(inputs));
   }
-  const at = '.aw-canvas.aw-canvas [data-table-style="banded"]';
+  const at = '.aw-canvas.aw-canvas [data-table-style="striped"]';
   const z = (points: string) => `calc(${points}pt * var(--aw-zoom))`;
 
   it("draws a table's rules, its cells' padding and its outer frame from its table style", () => {
-    const text = ruledAndBanded();
+    const text = ruledAndStriped();
     expect(ruleFor(text, `${at} table`)).toBe(
       `border-collapse: collapse; border: ${z('2')} solid #111111`,
     );
@@ -249,7 +249,7 @@ describe('projectCss for tables and images (W8.3)', () => {
   });
 
   it('fills and embolds a header row and a header column, and rules them off from the body', () => {
-    const text = ruledAndBanded();
+    const text = ruledAndStriped();
     expect(ruleFor(text, `${at} [scope="col"]`)).toBe('background-color: #dddddd');
     expect(ruleFor(text, `${at} [scope="row"]`)).toBe('background-color: #eeeeee');
     // Bold over whatever the cell's paragraph style says, as the template sets it on the text.
@@ -274,7 +274,7 @@ describe('projectCss for tables and images (W8.3)', () => {
   it('bands every other body row from the first, and leaves a filled header column its own fill', () => {
     expect(
       ruleFor(
-        ruledAndBanded(),
+        ruledAndStriped(),
         `${at} tr:nth-child(odd of :not(:has(> [scope="col"]))) > :not([scope="row"])`,
       ),
     ).toBe('background-color: #f5f5f5');

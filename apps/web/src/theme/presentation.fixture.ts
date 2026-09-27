@@ -4,7 +4,7 @@ import { DEFAULT_CATALOGUES_BY_VERSION, DEFAULT_THEME } from '@alloy-works/domai
 export const DEFAULT_PRESENTATION = {
   theme: {
     versionId: 'theme-version',
-    number: '0.3',
+    number: '0.4',
     content: DEFAULT_THEME,
     catalogues: [...DEFAULT_CATALOGUES_BY_VERSION].map(([versionId, content]) => ({
       versionId,
@@ -18,9 +18,8 @@ export const DEFAULT_PRESENTATION = {
 type Added = Readonly<Partial<Record<'paragraph' | 'table' | 'image', readonly unknown[]>>>;
 
 /**
- * The default theme with styles an author may choose besides each place's default (ET-G): a paragraph
- * style for running text and one for a quotation, a table style, and an image style for a figure and
- * one for an image in a line. Each catalogue keeps the version the theme names it by.
+ * The default theme with styles added to what it offers an author to choose besides each place's
+ * default (ET-G). Each catalogue keeps the version the theme names it by.
  */
 export function presentationWith(added: Added) {
   return {
@@ -40,9 +39,14 @@ export function presentationWith(added: Added) {
   };
 }
 
+/**
+ * The default theme, whose 0.4 offers Lead, Centred and Small print for running text, Banded for a
+ * table and Half width for a figure (ET-H), with what it does not offer: a paragraph style for both
+ * running text and a quotation, one for a footnote and one for a quotation alone, and an image style
+ * for an image in a line.
+ */
 export const CHOOSING_PRESENTATION = presentationWith({
   paragraph: [
-    { id: 'lead', name: 'Lead', appliesTo: ['text'], properties: { size: 13, spaceAfter: 6 } },
     {
       id: 'plain',
       name: 'Plain',
@@ -62,33 +66,7 @@ export const CHOOSING_PRESENTATION = presentationWith({
       properties: { italic: true },
     },
   ],
-  table: [
-    {
-      id: 'banded',
-      name: 'Banded',
-      appliesTo: ['table'],
-      headerRow: { fill: '#dddddd', bold: true, rule: 'none' },
-      headerColumn: { fill: 'none', bold: false, rule: 'none' },
-      banding: { fill: '#f2f2f2' },
-      rules: {
-        outer: { width: 1, colour: '#000000' },
-        horizontal: 'none',
-        vertical: 'none',
-      },
-      padding: 4,
-      breaks: { repeatHeader: true, keepRowsWhole: false, continuationLabel: false },
-    },
-  ],
   image: [
-    {
-      id: 'half-width',
-      name: 'Half width',
-      appliesTo: ['figure'],
-      fixed: { dimension: 'width', value: 0.5, unit: 'measure' },
-      maximum: { value: 0.6, unit: 'textHeight' },
-      placement: 'block',
-      alignment: 'centre',
-    },
     {
       id: 'icon',
       name: 'Icon',

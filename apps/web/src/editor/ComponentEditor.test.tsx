@@ -5664,7 +5664,7 @@ describe("choosing a block's style from the theme's catalogues (themes.md, ET-G)
       },
     ],
   };
-  const openChoosing = () =>
+  const openChoosing = (presentation: unknown = CHOOSING_PRESENTATION) =>
     open(
       {
         'GET /v1/components/{id}': () => json(200, opened({ content: withQuotationAndTable })),
@@ -5674,7 +5674,7 @@ describe("choosing a block's style from the theme's catalogues (themes.md, ET-G)
       quick,
       true,
       {},
-      CHOOSING_PRESENTATION,
+      presentation,
     );
   /** The caret just inside the text block reading `text`. */
   const caretIn = (view: EditorView, text: string) =>
@@ -5689,6 +5689,21 @@ describe("choosing a block's style from the theme's catalogues (themes.md, ET-G)
   const optionsOf = (list: HTMLElement) =>
     [...(list as HTMLSelectElement).options].map((option) => option.text);
 
+  it("offers the environment's default theme's own styles to choose: Lead, Centred and Small print for running text, and Banded for a table", async () => {
+    const { surface } = openChoosing(DEFAULT_PRESENTATION);
+    const view = await surface();
+    caretIn(view, 'Unbox the printer.');
+    expect(optionsOf(await screen.findByLabelText('Paragraph style'))).toEqual([
+      'Body (default)',
+      'Lead',
+      'Centred',
+      'Small print',
+    ]);
+    caretIn(view, 'Tray');
+    const panel = await screen.findByRole('group', { name: 'Table' });
+    expect(optionsOf(within(panel).getByLabelText('Table style'))).toEqual(['Table', 'Banded']);
+  });
+
   it("CNT-094 sets a paragraph's appearance only by a named style from the theme's catalogue, offering those that apply where it stands", async () => {
     const { surface } = openChoosing();
     const view = await surface();
@@ -5696,7 +5711,7 @@ describe("choosing a block's style from the theme's catalogues (themes.md, ET-G)
     const list = await screen.findByLabelText('Paragraph style');
     // Running text: its default, and the styles for running text. Not the quotation's, and never a
     // heading or a caption, which the template sets by role.
-    expect(optionsOf(list)).toEqual(['Body (default)', 'Lead', 'Plain']);
+    expect(optionsOf(list)).toEqual(['Body (default)', 'Lead', 'Centred', 'Small print', 'Plain']);
     await userEvent.selectOptions(list, 'Lead');
     await waitFor(() =>
       expect(view.dom.querySelector('p[data-style="lead"]')?.textContent).toBe(

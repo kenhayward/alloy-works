@@ -191,7 +191,7 @@ const READINGS = component('Readings', [
   {
     type: 'table',
     id: 't1',
-    style: 'banded',
+    style: 'ruled',
     caption: [text('Readings '), text('at noon', { type: 'emphasis', id: 'e1' })],
     headerRows: 2,
     headerColumns: 1,
@@ -314,8 +314,8 @@ const theme: ResolvedTheme = (() => {
     styles: [
       ...DEFAULT_CATALOGUES.table.styles,
       {
-        id: 'banded',
-        name: 'Banded',
+        id: 'ruled',
+        name: 'Ruled',
         appliesTo: ['table'],
         headerRow: { fill: '#dde4ee', bold: true, rule: { width: 2, colour: '#1f3a5f' } },
         headerColumn: { fill: '#eef2e6', bold: true, rule: { width: 1.5, colour: '#2e5e2e' } },
