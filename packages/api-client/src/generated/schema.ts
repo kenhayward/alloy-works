@@ -709,7 +709,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create a document in this space, at version 0.1, with an empty outline */
+        /** Create a document in this space, at version 0.1: an empty outline, or its template's starting one */
         post: operations["createDocument"];
         delete?: never;
         options?: never;
@@ -2840,6 +2840,15 @@ export interface operations {
                         outline: {
                             [key: string]: unknown;
                         };
+                        /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                        template: {
+                            id: string;
+                            name: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                        } | null;
                         /** @description Whether the caller may restructure the outline */
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
@@ -3584,6 +3593,15 @@ export interface operations {
                         outline: {
                             [key: string]: unknown;
                         };
+                        /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                        template: {
+                            id: string;
+                            name: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                        } | null;
                         /** @description Whether the caller may restructure the outline */
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
@@ -3645,6 +3663,15 @@ export interface operations {
                             outline: {
                                 [key: string]: unknown;
                             };
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                            } | null;
                             /** @description Whether the caller may restructure the outline */
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
@@ -3763,6 +3790,15 @@ export interface operations {
                             outline: {
                                 [key: string]: unknown;
                             };
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                            } | null;
                             /** @description Whether the caller may restructure the outline */
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
@@ -6711,6 +6747,8 @@ export interface operations {
                     language: string;
                     /** @enum {string} */
                     direction: "ltr" | "rtl";
+                    /** @description The template to make it from, at its latest version (templates.md); without one, a blank document */
+                    template?: string & (unknown & unknown);
                 };
             };
         };
@@ -6740,6 +6778,15 @@ export interface operations {
                         outline: {
                             [key: string]: unknown;
                         };
+                        /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                        template: {
+                            id: string;
+                            name: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                        } | null;
                         /** @description Whether the caller may restructure the outline */
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
@@ -6766,7 +6813,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The title, language or direction is not one an outline accepts */
+            /** @description The title, language or direction is not one an outline accepts; or `template_unresolved`: a theme, layout, schema or field the template names does not resolve */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -6781,6 +6828,37 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            id: string;
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's definition (templates.md, "The definition"), as stored */
+                            definition: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Whether the caller may change the template */
+                            mayDesign: boolean;
+                        };
                     };
                 };
             };
@@ -6820,7 +6898,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No such space in this environment, or none the caller may read */
+            /** @description No such space in this environment, or none the caller may read; or no such template, or none the caller may read */
             404: {
                 headers: {
                     [name: string]: unknown;

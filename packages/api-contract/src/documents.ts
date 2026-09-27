@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { CreateComponentBody, Lock, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
+import { TemplateRefusal } from './templates.js';
 
 /** A document, by the id its artifact carries - lowercase, unlike `ComponentParams`. */
 export const DocumentParams = z.object({ id: LowercaseUuid });
@@ -16,6 +17,10 @@ export const CreateDocumentBody = CreateComponentBody.pick({
   title: true,
   language: true,
   direction: true,
+}).extend({
+  template: LowercaseUuid.optional().describe(
+    'The template to make it from, at its latest version (templates.md); without one, a blank document',
+  ),
 });
 export type CreateDocumentBody = z.infer<typeof CreateDocumentBody>;
 
@@ -65,6 +70,17 @@ export const DocumentView = z.object({
       "The latest version's outline document (structure.md), as the caller is shown it: a reference " +
         'to a component the caller may not read carries `component: null`, and a pinned one ' +
         '`mode.version: null`; everything else is as stored. Empty when the stored outline does not read',
+    ),
+  template: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      version: z.object({ id: z.string(), number: z.string() }),
+    })
+    .nullable()
+    .describe(
+      'The template, and the version of it, the document was made from (TPL-025), named as that ' +
+        'version names it. Null for a document made blank, or from a template the caller may not read',
     ),
   mayEdit: z.boolean().describe('Whether the caller may restructure the outline'),
   mayPublish: z.boolean().describe('Whether the caller may publish the document'),
@@ -246,7 +262,8 @@ export const documentRoutes = {
     operationId: 'createDocument',
     method: 'POST',
     path: '/v1/spaces/{space}/documents',
-    summary: 'Create a document in this space, at version 0.1, with an empty outline',
+    summary:
+      "Create a document in this space, at version 0.1: an empty outline, or its template's starting one",
     tenantScoped: true,
     access: { check: 'permission', permission: 'create', target: { space: 'space' } },
     params: SpaceParams,
@@ -256,8 +273,10 @@ export const documentRoutes = {
       // a status, so nothing is sent before its transaction commits.
       200: { description: 'Created, at version 0.1', schema: DocumentView },
       400: {
-        description: 'The title, language or direction is not one an outline accepts',
-        schema: ErrorBody,
+        description:
+          'The title, language or direction is not one an outline accepts; or ' +
+          '`template_unresolved`: a theme, layout, schema or field the template names does not resolve',
+        schema: TemplateRefusal,
       },
       401: unauthenticated,
       403: {
@@ -265,7 +284,9 @@ export const documentRoutes = {
         schema: ErrorBody,
       },
       404: {
-        description: 'No such space in this environment, or none the caller may read',
+        description:
+          'No such space in this environment, or none the caller may read; or no such template, or ' +
+          'none the caller may read',
         schema: ErrorBody,
       },
     },

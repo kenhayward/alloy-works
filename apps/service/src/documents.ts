@@ -8,14 +8,17 @@ import type {
 import {
   createDocument,
   defaultLayout,
+  documentTemplate,
   editOutline,
   listReadableDocuments,
+  loadFacts,
   loadFactsFor,
   numberingInputs,
   readLocks,
   versionContents,
   readableComponents,
   readDocument,
+  readVersion,
   type StoredDocument,
   type StoredVersion,
   type Tenant,
@@ -29,6 +32,7 @@ import {
   PUBLISHING_FORMATS,
   readOutline,
   resolve,
+  templateDefinitionSchema,
   walkOutline,
   withholdComponents,
   type Contribution,
@@ -74,6 +78,28 @@ async function outlineView(
 }
 
 /**
+ * The template a document was made from, at the version it was made from (TPL-025), named as that
+ * version names it - or null for a blank document, and for a template this viewer may not read, which
+ * access.md makes indistinguishable from none.
+ */
+async function templateView(viewer: Viewer, document: string): Promise<DocumentView['template']> {
+  const link = await documentTemplate(viewer.trx, document);
+  if (!link) return null;
+  const facts = await loadFacts(viewer.trx, viewer.principalId, {
+    kind: 'artifact',
+    id: link.template,
+  });
+  if (!facts || !decide('read', facts).allowed) return null;
+  const version = await readVersion(viewer.trx, link.version);
+  if (!version) throw new Error(`The template version ${link.version} a document names is gone`);
+  return {
+    id: link.template,
+    name: templateDefinitionSchema.parse(version.content).name,
+    version: { id: version.id, number: `${version.revision}.${version.version}` },
+  };
+}
+
+/**
  * A document as the API shows it: at one version, with whether the caller may restructure it and the
  * layout it is numbered and published under. Every answer that carries an outline is built here - the
  * page, an act's answer, and a refusal's `current` - so none can carry an outline that has not been
@@ -102,6 +128,7 @@ async function documentView(
     space: document.space,
     version: versionView(version),
     outline: await outlineView(viewer, document.id, version),
+    template: await templateView(viewer, document.id),
     mayEdit: viewer.mayEdit,
     mayPublish: viewer.mayPublish,
     layout: {
@@ -193,10 +220,22 @@ export function documentHandlers(
         language: body.language,
         direction: body.direction,
         author: principalId,
+        ...(body.template === undefined ? {} : { template: body.template }),
       });
       // The space was decided on before this ran, so `space.missing` here means it went in the moment
       // between; answered as absent either way, never as a refusal that says it exists.
-      if (answer.answer === 'space.missing') throw notFound();
+      // A template the caller may not read is answered as one that does not exist (TE-I).
+      if (answer.answer === 'space.missing' || answer.answer === 'template.missing') {
+        throw notFound();
+      }
+      if (answer.answer === 'template.unresolved') {
+        throw refused(
+          400,
+          'template.unresolved',
+          'This template names a theme, layout, schema or field that does not resolve.',
+          { unresolved: answer.unresolved },
+        );
+      }
       if (answer.answer === 'content.invalid') {
         throw refused(
           400,
