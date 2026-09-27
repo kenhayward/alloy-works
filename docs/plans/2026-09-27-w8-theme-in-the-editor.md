@@ -49,6 +49,12 @@ textHeight } }`; the document's under the document's read permission, the defaul
    theme names, as `aw-face-<typeface id>`. A test holds every file of the default theme to a bundled
    file by hash (STY-039).
 
+**W8.1, as built.** The provider is mounted on the component page in this slice rather than the next:
+until something imports the face map, Vite leaves the files out of the build, and STY-039's test would
+show a mechanism the product did not ship. The document's page mounts it with the canvas. `covers` in
+the renderer is `@alloy-works/fonts`'s, from the generated ranges; the worker's is still read from the
+files, and the drift test holds the two to the same files.
+
 ## W8.2: The canvas
 
 1. **`projectCss` widened** to every paragraph, character, table and image property but the

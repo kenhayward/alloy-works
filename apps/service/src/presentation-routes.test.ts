@@ -107,7 +107,7 @@ describe("the theme and layout the editor sets a component's text in", () => {
     await db?.drop();
   });
 
-  it("STY-035 hands the renderer the theme the publisher reads, which the same reader resolves to the same styles", async () => {
+  it('STY-035 hands the renderer the theme the publisher reads, which the same reader resolves to the same styles', async () => {
     const response = await get('/v1/presentation');
     expect(response.statusCode).toBe(200);
     const { theme } = response.json<Presentation>();

@@ -8,23 +8,23 @@ const everyFile = [...theme.typefaces.values()].flatMap((typeface) => typeface.f
 const bundled = (sha256: string) => `./assets/${sha256.slice(0, 8)}.ttf`;
 
 describe('projectFontFaces', () => {
-  it('declares each file of each typeface under a family of its own, never the face\'s real name', () => {
+  it("declares each file of each typeface under a family of its own, never the face's real name", () => {
     const { css, unheld } = projectFontFaces(theme, bundled);
     expect(unheld).toEqual([]);
     expect(css.match(/@font-face/g)).toHaveLength(everyFile.length);
     expect(faceFamily('serif')).toBe('aw-face-serif');
     // A Liberation Serif installed on the reader's machine is never what the editor sets text in.
     expect(css).not.toContain('Liberation');
-    const regular = theme.typefaces.get('serif')!.files.find(
-      (file) => file.weight === 'regular' && file.posture === 'normal',
-    )!;
+    const regular = theme.typefaces
+      .get('serif')!
+      .files.find((file) => file.weight === 'regular' && file.posture === 'normal')!;
     expect(css).toContain(
       `@font-face { font-family: "aw-face-serif"; src: url("${bundled(regular.sha256)}"); ` +
         'font-weight: 400; font-style: normal; font-display: block; }',
     );
-    const boldItalic = theme.typefaces.get('serif')!.files.find(
-      (file) => file.weight === 'bold' && file.posture === 'italic',
-    )!;
+    const boldItalic = theme.typefaces
+      .get('serif')!
+      .files.find((file) => file.weight === 'bold' && file.posture === 'italic')!;
     expect(css).toContain(
       `src: url("${bundled(boldItalic.sha256)}"); font-weight: 700; font-style: italic;`,
     );

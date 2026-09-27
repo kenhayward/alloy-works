@@ -56,7 +56,7 @@ export const presentationRoutes = {
     operationId: 'getDocumentPresentation',
     method: 'GET',
     path: '/v1/documents/{id}/presentation',
-    summary: "The theme and layout a document is published under, which its text is shown in",
+    summary: 'The theme and layout a document is published under, which its text is shown in',
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
