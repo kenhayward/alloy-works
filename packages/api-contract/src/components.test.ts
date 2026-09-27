@@ -26,11 +26,16 @@ describe('the routes that find and open components', () => {
       ['sort', 'query', false],
       ['order', 'query', false],
     ];
-    // The space facet's filter (interface slice 3): narrows what is paged, never an offset into it.
-    expect(parameters('/v1/components')).toEqual([...paged, ['spaces', 'query', false]]);
-    for (const path of ['/v1/documents', '/v1/publications', '/v1/templates']) {
-      expect(parameters(path), path).toEqual(paged);
-    }
-    expect(parameters('/v1/documents/{id}/publications')).toEqual([['id', 'path', true], ...paged]);
+    // Each listing's filters (SCH-064): they narrow what is paged, never an offset into it.
+    const filters = (...names: string[]) => names.map((name) => [name, 'query', false]);
+    expect(parameters('/v1/components')).toEqual([...paged, ...filters('types', 'spaces')]);
+    expect(parameters('/v1/documents')).toEqual([...paged, ...filters('spaces', 'publishing')]);
+    expect(parameters('/v1/publications')).toEqual([...paged, ...filters('spaces', 'documents')]);
+    expect(parameters('/v1/templates')).toEqual([...paged, ...filters('spaces')]);
+    expect(parameters('/v1/documents/{id}/publications')).toEqual([
+      ['id', 'path', true],
+      ...paged,
+      ...filters('spaces', 'documents'),
+    ]);
   });
 });
