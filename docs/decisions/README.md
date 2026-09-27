@@ -42,6 +42,7 @@ exist.
 | [0003](0003-one-renderer-two-deliveries.md)                                   | One renderer, two deliveries                                              | Accepted           |
 | [0004](0004-brand-assets-and-packaging.md)                                    | Brand assets and desktop packaging                                        | Accepted           |
 | [0005](0005-purpose-built-node-and-mark-content-model.md)                     | A purpose-built node-and-mark content model                               | Accepted           |
+| [0027](0027-the-warm-range-preview-leaves-t1.md)                              | The warm range preview leaves T1                                          | Accepted           |
 | [0026](0026-a-definition-is-its-own-editor-node.md)                           | A definition is its own editor node                                       | Accepted           |
 | [0025](0025-the-editor-schema-is-not-the-stored-model-one-for-one.md)         | The editor schema is not the stored model one for one                     | Superseded by 0026 |
 | [0024](0024-a-version-digest-over-the-whole-version.md)                       | A version digest over the whole version, and a content hash beside it     | Accepted           |

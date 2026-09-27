@@ -2732,7 +2732,7 @@
       "area": "CNT",
       "statement": "Preview must be fast enough to use while writing rather than as a separate step, against the budget in CNT-151, tested",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Withdrawn",
       "document": "CNT-content-and-authoring.md",
       "line": 479
     },
@@ -2758,7 +2758,7 @@
       "id": "CNT-151",
       "area": "CNT",
       "statement": "Preview must reflect a saved edit within one second of the save being recorded, with no measured sample above two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)",
-      "tranche": "T1",
+      "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
       "line": 482
@@ -8293,7 +8293,7 @@
       "id": "PUB-080",
       "area": "PUB",
       "statement": "Where a preview is untagged by design (PUB-061), the reading context must say so to assistive technology as well as on screen, and must name the tagged output as the accessible path. A preview that is hostile on purpose must not be silently hostile",
-      "tranche": "T1",
+      "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
       "line": 144
@@ -15531,15 +15531,19 @@
         },
         {
           "id": "PUB-005",
-          "howItIsMet": "A preview reads the document's latest version and each occurrence's current resolution, and says **Preview - not approved** on every page and once in the tagged text, and in its title"
+          "howItIsMet": "A preview reads the document's latest version and each occurrence's current resolution, and says **Preview - not approved** on every page and once, as its sentence, at the start of the tagged text, in the layout's words ([Preview](#preview), PV-D)"
         },
         {
           "id": "PUB-006",
-          "howItIsMet": "A preview is a request of kind `preview` run by the same job, the same `assemble`, template and engine; the differences are listed under [Preview](#preview) and none of them is in what the pages show"
+          "howItIsMet": "A preview is a request of kind `preview` run by the publish job, the same `assemble`, template and engine; the differences are listed under [Preview](#preview) and none of them is in what the pages show but the notice"
+        },
+        {
+          "id": "CNT-150",
+          "howItIsMet": "**Preview** on the document page asks for a preview of the version the page holds and opens it in a pane beside the text, the PDF in the browser's own viewer, so an author sees the pages without leaving the text or an editor open in it (PV-G)"
         },
         {
           "id": "PUB-061",
-          "howItIsMet": "A publication is always compiled with `--pdf-standard ua-1`; the publication path has no page-range parameter to pass, and Typst refuses `--pages` with `ua-1`. Only the warm range preview omits tagging, and it is images, never a PDF"
+          "howItIsMet": "A publication is always compiled with `--pdf-standard ua-1`; the publication path has no page-range parameter to pass, and Typst refuses `--pages` with `ua-1`. T1's preview is the whole document, tagged; only the warm range preview, T3's, omits tagging, and it is images, never a PDF"
         },
         {
           "id": "PUB-062",
@@ -15547,7 +15551,7 @@
         },
         {
           "id": "PUB-080",
-          "howItIsMet": "A range preview's pages are images whose alternative text says each is an untagged preview page and names the tagged PDF; the panel says the same on screen and offers the tagged PDF beside it"
+          "howItIsMet": "A range preview's pages are images whose alternative text says each is an untagged preview page and names the tagged PDF; the panel says the same on screen and offers the tagged PDF beside it. T3's since ADR-0027"
         },
         {
           "id": "PUB-007",

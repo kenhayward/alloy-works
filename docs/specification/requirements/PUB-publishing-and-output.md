@@ -141,7 +141,7 @@ is not the bar and never becomes it.
 | **PUB-035** | Word output must be accessible on the same terms, since a recipient may be reading it rather than the PDF                                                                                                                                                                                                              | T1      | Specified             |
 | **PUB-036** | Accessibility must be checked automatically as part of publishing, and the result must be retained with the publication                                                                                                                                                                                                | T1      | Superseded by PUB-091 |
 | **PUB-091** | Every PDF publication must be checked by veraPDF against its PDF/UA-1 validation profile as part of publishing, and the report must be retained with the publication                                                                                                                                                   | T1      | Specified             |
-| **PUB-080** | Where a preview is untagged by design (PUB-061), the reading context must say so to assistive technology as well as on screen, and must name the tagged output as the accessible path. A preview that is hostile on purpose must not be silently hostile                                                               | T1      | Specified             |
+| **PUB-080** | Where a preview is untagged by design (PUB-061), the reading context must say so to assistive technology as well as on screen, and must name the tagged output as the accessible path. A preview that is hostile on purpose must not be silently hostile                                                               | T3      | Specified             |
 
 **PUB-036 is what stops accessibility becoming an assertion.** Scope §11 says both accessibility
 requirements are tested rather than asserted; attaching the result to the publication is what makes
@@ -449,5 +449,24 @@ changes; a row split by tranche is superseded by its T1 half, and the rest becom
 | Counts           | Before                    | After                     |
 | ---------------- | ------------------------- | ------------------------- |
 | Requirements     | 95, of which 8 superseded | 97, of which 9 superseded |
+| Non-requirements | 4                         | 4                         |
+| Open questions   | 5                         | 5                         |
+
+### Ken's answer to the warm range preview (K2), 2026-09-27
+
+[The T1 audit](<../../reviews/T1 - Audit against the code.md>) asked whether the warm range preview
+belongs in T1 (K2). Ken took it out, recorded by
+[ADR-0027](../../decisions/0027-the-warm-range-preview-leaves-t1.md). A row moving tranche whole keeps
+its identifier.
+
+| What was found                                                                                                                           | Change                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| PUB-080 answers a range preview's untagged pages, and T1 makes no range preview: its whole-document preview is tagged like a publication | **PUB-080 moved to T3**, with the warm range preview (CNT-151) |
+| PUB-005 and PUB-006 are the whole-document preview's                                                                                     | Not changed                                                    |
+| PUB-061 governs a range preview whenever one is made                                                                                     | Not changed, a constraint                                      |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 97, of which 9 superseded | 97, of which 9 superseded |
 | Non-requirements | 4                         | 4                         |
 | Open questions   | 5                         | 5                         |

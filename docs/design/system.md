@@ -64,7 +64,7 @@ flowchart TB
     subgraph platform["Alloy Works"]
         service["Web service<br/>TypeScript on Node LTS<br/>API, realtime streams, MCP"]
         workers["Publishing workers<br/>TypeScript on Node + Typst binary"]
-        preview["Preview workers<br/>typst watch per open document"]
+        preview["Preview workers, T3<br/>typst watch per open document"]
         db[("PostgreSQL + pgvector<br/>a schema per tenant<br/>+ a platform schema")]
         objects[("Object storage<br/>S3-compatible")]
     end
@@ -85,7 +85,7 @@ flowchart TB
 | Desktop app        | Electron (`apps/desktop`)                              | Loads the renderer in a window; operating-system conveniences through the platform bridge                                | [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md), scope §9 decision 2                 |
 | Web service        | TypeScript on Node LTS                                 | The system of record: the API (OpenAPI), realtime streams, the MCP facade, sign-in, every permission decision            | [ADR-0019](../decisions/0019-platform-typescript-service-publishing-workers-object-storage.md)    |
 | Publishing workers | TypeScript on Node, a pinned Typst binary              | Publishing jobs: resolve, project to Typst data and Word parts, render, store; other heavy or retried work as it arrives | [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md), ADR-0019 |
-| Preview workers    | The same image, running `typst watch`                  | One warm compilation per open document, so an edit reuses the layout that did not change                                 | ADR-0013, ADR-0019                                                                                |
+| Preview workers    | The same image, running `typst watch`                  | T3's (ADR-0027). One warm compilation per open document, so an edit reuses the layout that did not change                | ADR-0013, ADR-0019, ADR-0027                                                                      |
 | PostgreSQL         | PostgreSQL with pgvector                               | Everything but binaries: versions, search, relationships, presence, locks, the job queue, the realtime fan-out           | [ADR-0008](../decisions/0008-schema-per-tenant-isolation.md), 0012, 0016, 0017, 0018              |
 | Object storage     | Any S3-compatible store; SeaweedFS in the compose file | Assets, pinned fonts, published PDF and Word files, keyed by content hash                                                | ADR-0019                                                                                          |
 
@@ -178,7 +178,8 @@ yet filter what each viewer hears (issue #147): the requester asks until it is d
 
 A whole-document preview is a publishing job of its own kind: the same pipeline, a tagged PDF that
 says it is a preview of unapproved content, kept an hour for its asker and never recorded as a
-publication. The warm preview binds an open document to a preview worker running `typst watch` on its
+publication, and it is T1's only preview. The warm preview, T3's since
+[ADR-0027](../decisions/0027-the-warm-range-preview-leaves-t1.md), binds an open document to a preview worker running `typst watch` on its
 data; each saved change rewrites the data, Typst recompiles only what changed, and the visible pages
 come back to the renderer **as images**, each saying it is an untagged preview and naming the tagged
 PDF (PUB-061, PUB-080). See [publishing.md](publishing.md).

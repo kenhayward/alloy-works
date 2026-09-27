@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.103.1 - 2026-09-27 (PR #291)
+
+### Changed
+
+- **The preview planned for this release is the whole document.** A preview that follows your
+  typing within a second, page by page, has moved to a later release, which a new decision record
+  explains. The preview coming next shows the whole document as it will be published to PDF, marked
+  as a preview of unapproved content, beside the text you are writing.
+
 ## 0.103.0 - 2026-09-27 (PR #290)
 
 ### Added

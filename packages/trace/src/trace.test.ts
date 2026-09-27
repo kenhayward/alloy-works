@@ -71,6 +71,7 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1458);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 493, from 492 (2026-09-27): W10.0 - publishing.md claims CNT-150, the preview beside the text.
     // 492, from 483 (2026-09-27): W9.0 - document-view.md claims CNT-072, CNT-073, CNT-154, CNT-105,
     // CNT-156, CNT-158, CNT-162, STR-035 and STR-045; IAM-023 waits on CNT-155's review mode, T3.
     // 483, from 481 (2026-09-27): W8.0 - themes.md claims STY-070 and CNT-122.
@@ -199,7 +200,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(492);
+    ).toBe(493);
   });
 });
 
