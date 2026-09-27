@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+import type { MetadataFailure } from '../metadata/failure.js';
+import type { EffectiveField } from '../metadata/resolve.js';
+import { checkWrittenValues, writtenValues } from '../metadata/write.js';
+import { storableEverywhere } from '../stored/storable.js';
+
 import {
   parseOutlineDocument,
   referenceModeSchema,
@@ -65,15 +70,16 @@ export const outlineOperationSchema = z
       matter: sectionNodeSchema.shape.matter.optional(),
       pageBreak: sectionNodeSchema.shape.pageBreak.optional(),
       mode: referenceModeSchema.optional(),
-      // Empty, and nothing else, until TPL-054 (or a requirement for an occurrence's metadata) says
-      // what a node's values hold: nothing validates or reads one yet, and keeping the member at
-      // schema version 1 is one migration either way only while every stored `values` is `{}`
-      // (structure.md, "The outline, and why it is one tree"). An insert carries none at all.
+      // A section's field values, whole (STR-060): what they may hold is its document's template's,
+      // which `applyOutlineOperation` is given as its rules and checks them against. Storable here,
+      // as a title is, so a character Postgres cannot hold is the caller's mistake and not a 500.
+      // An insert carries none at all.
       values: z
-        .strictObject({})
+        .record(z.string(), z.unknown())
+        .refine(storableEverywhere, 'A value holds a character that cannot be stored')
         .optional()
         .describe(
-          "Empty: nothing may be written into a node's values until TPL-054 says what they hold",
+          "A section's field values, whole: each a field its document's template applies to sections",
         ),
     }),
   ])
@@ -95,10 +101,55 @@ export type OutlineOperation = z.infer<typeof outlineOperationSchema>;
 
 export type OutlineApplied =
   | { readonly applied: true; readonly outline: OutlineDocument }
-  | { readonly applied: false; readonly reason: string };
+  | {
+      readonly applied: false;
+      readonly reason: string;
+      /** Each value a `set` wrote that its field refuses, in MET-022's shape (STR-060). */
+      readonly failures?: readonly MetadataFailure[];
+    };
+
+/**
+ * What a document's template holds its outline to (templates.md, "What an author may change" and
+ * "Values"): which changes to its sections it allows (TPL-015), and the fields a section's values
+ * may hold (STR-060). A document with no template has neither: nothing is refused on its account,
+ * and a section has no field to hold a value for.
+ */
+export interface OutlineRules {
+  readonly changes?: { readonly add: boolean; readonly remove: boolean; readonly reorder: boolean };
+  readonly sectionFields?: readonly EffectiveField[];
+}
 
 function refuse(reason: string): OutlineApplied {
   return { applied: false, reason };
+}
+
+/** TPL-015's refusals, in words an author can act on, as FRONT_FIRST's are. */
+const NOT_ADDED = "This document's template does not allow sections to be added";
+const NOT_REMOVED = "This document's template does not allow sections to be removed";
+const NOT_REORDERED = "This document's template does not allow sections to be reordered";
+const VALUES_REFUSED = 'A value does not fit its field';
+const REFERENCE_VALUES = "A component reference holds no values: a component's are its own";
+
+/**
+ * TPL-015, before anything else about the operation: an insert of a section, a removal of one or a
+ * move of one that the template's `changes` forbids. A component reference is never held - placing,
+ * moving and removing components is what writing a document is.
+ */
+function forbidden(
+  outline: OutlineDocument,
+  operation: OutlineOperation,
+  changes: OutlineRules['changes'],
+): OutlineApplied | undefined {
+  if (changes === undefined) return undefined;
+  if (operation.operation === 'insert') {
+    return operation.node.type === 'section' && !changes.add ? refuse(NOT_ADDED) : undefined;
+  }
+  if (operation.operation === 'remove' || operation.operation === 'move') {
+    if (findNode(outline.nodes, operation.node)?.type !== 'section') return undefined;
+    if (operation.operation === 'remove' && !changes.remove) return refuse(NOT_REMOVED);
+    if (operation.operation === 'move' && !changes.reorder) return refuse(NOT_REORDERED);
+  }
+  return undefined;
 }
 
 /**
@@ -315,20 +366,30 @@ function retitle(
 function set(
   outline: OutlineDocument,
   operation: Extract<OutlineOperation, { operation: 'set' }>,
+  sectionFields: readonly EffectiveField[],
 ): OutlineApplied {
   const node = findNode(outline.nodes, operation.node);
   if (!node) return refuse('The node is not in this outline');
   if (operation.mode !== undefined && node.type !== 'reference') {
     return refuse('A mode belongs to a component reference, not a section');
   }
+  if (operation.values !== undefined) {
+    if (node.type !== 'section') return refuse(REFERENCE_VALUES);
+    const failures = checkWrittenValues(sectionFields, operation.values);
+    if (failures.length > 0) return { applied: false, reason: VALUES_REFUSED, failures };
+  }
   // Only the switches this operation actually names, so one call can set one field without
   // disturbing the rest - built from entries, never a member assigned by a key spelled out by hand.
   // `outlineOperationSchema`'s own refine already refuses a `set` naming none of them.
-  const patch = Object.fromEntries(
-    (['numbered', 'matter', 'pageBreak', 'mode', 'values'] as const)
+  const patch: Record<string, unknown> = Object.fromEntries(
+    (['numbered', 'matter', 'pageBreak', 'mode'] as const)
       .filter((key) => operation[key] !== undefined)
       .map((key) => [key, operation[key]]),
   );
+  // Written whole, with the default of each field the author left without a member (STR-060).
+  if (operation.values !== undefined) {
+    patch.values = writtenValues(sectionFields, operation.values);
+  }
   const result = replaceNode(outline.nodes, operation.node, {
     ...node,
     ...patch,
@@ -342,13 +403,17 @@ function set(
  *
  * `newIdentifier` is the caller's, because where randomness comes from is the caller's platform and
  * this package has none: `packages/db` passes `node:crypto`'s `randomBytes` through
- * `blockIdentifierFrom`, and a test passes a counter.
+ * `blockIdentifierFrom`, and a test passes a counter. `rules` are the document's template's, read by
+ * the caller at the template version the document recorded; a document with no template passes none.
  */
 export function applyOutlineOperation(
   outline: OutlineDocument,
   operation: OutlineOperation,
   newIdentifier: () => string,
+  rules: OutlineRules = {},
 ): OutlineApplied {
+  const refused = forbidden(outline, operation, rules.changes);
+  if (refused) return refused;
   switch (operation.operation) {
     case 'insert':
       return insert(outline, operation, newIdentifier);
@@ -359,6 +424,6 @@ export function applyOutlineOperation(
     case 'retitle':
       return retitle(outline, operation);
     case 'set':
-      return set(outline, operation);
+      return set(outline, operation, rules.sectionFields ?? []);
   }
 }
