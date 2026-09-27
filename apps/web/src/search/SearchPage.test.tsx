@@ -74,7 +74,7 @@ const results = {
 };
 
 /** The service as the page meets it, answering every search with `answer`, and what it was asked. */
-function service(answer: (query: URLSearchParams) => Response) {
+function service(answer: (query: URLSearchParams) => Response | Promise<Response>) {
   const asked: URLSearchParams[] = [];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -153,6 +153,33 @@ describe('the search page', () => {
       expect(asked.at(-1)?.getAll('value')).toEqual([`${REVIEWER}:Grace Hopper`]),
     );
     expect(asked.at(-1)?.get('kind')).toBe('section');
+  });
+
+  it('shows more results a page at a time, once however often it is asked', async () => {
+    const third = {
+      ...results.items[0]!,
+      artifactId: 'aaaaaaaa-0000-4000-8000-000000000003',
+      title: 'Lever cleaning',
+    };
+    // The next page is held until both clicks are in, as a slow connection would hold it.
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    const { client, asked } = service(async (query) => {
+      if (query.get('offset') !== '2') return json(200, { ...results, count: 3 });
+      await held;
+      return json(200, { ...results, count: 3, items: [third] });
+    });
+    render(<SearchPage client={client} query="lever" onSearch={() => undefined} />);
+    await screen.findByRole('status');
+    const more = screen.getByRole('button', { name: 'Show more results' });
+    await userEvent.click(more);
+    await userEvent.click(more);
+    release();
+    expect(await screen.findByRole('link', { name: 'Lever cleaning' })).toBeInTheDocument();
+    expect(screen.getAllByRole('article')).toHaveLength(3);
+    expect(asked.filter((each) => each.get('offset') === '2')).toHaveLength(1);
+    // Everything shown, nothing more to ask for.
+    expect(screen.queryByRole('button', { name: 'Show more results' })).toBeNull();
   });
 
   it('offers Try again when the search could not be made', async () => {

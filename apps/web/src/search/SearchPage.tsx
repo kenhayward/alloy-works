@@ -169,6 +169,9 @@ export function SearchPage({
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [more, setMore] = useState<readonly Result[]>([]);
   const [problem, setProblem] = useState<'signedOut' | 'failed' | null>(null);
+  // A page being fetched: asked for once, however often Show more is pressed meanwhile.
+  const fetchingMore = useRef(false);
+  const [showingMore, setShowingMore] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const request = useRef(0);
   const inputId = useId();
@@ -223,6 +226,9 @@ export function SearchPage({
   }, [ask, query, attempt]);
 
   const showMore = async (offset: number) => {
+    if (fetchingMore.current) return;
+    fetchingMore.current = true;
+    setShowingMore(true);
     const generation = request.current;
     try {
       const { data } = await ask(offset);
@@ -230,6 +236,9 @@ export function SearchPage({
       setMore((shown) => [...shown, ...data.items]);
     } catch {
       if (request.current === generation) setProblem('failed');
+    } finally {
+      fetchingMore.current = false;
+      setShowingMore(false);
     }
   };
 
@@ -358,7 +367,7 @@ export function SearchPage({
         </div>
       )}
       {results !== null && problem === null && items.length < results.count && (
-        <button type="button" onClick={() => void showMore(items.length)}>
+        <button type="button" disabled={showingMore} onClick={() => void showMore(items.length)}>
           Show more results
         </button>
       )}

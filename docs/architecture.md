@@ -1122,7 +1122,9 @@ a link beside the other modules. It sends the query and the facets chosen, says 
 and shows each result's kind, space, where it was found and its passage, the matched words marked,
 linked by `resultLink`: a component's block by `#/components/<id>/blocks/<block>`, which opens the
 editor with the caret at the block - `whereBlockIs` in `packages/editor`, a footnote's paragraph at its
-footnote - or says the block is gone; a section by its node link. Each facet is a group of checkboxes,
+footnote, and a block with nothing to type into, an equation, selected whole - or says the block is
+gone, and moves there again on each arrival while the component stays open, as a document does for a
+node; a section by its node link. Each facet is a group of checkboxes,
 each saying how many it would leave.
 
 | Where                             | What                                                            |
@@ -1130,7 +1132,7 @@ each saying how many it would leave.
 | `web: src/search/SearchPage.tsx`  | The page: the query, the outcome, the results and the facets    |
 | `web: src/search/links.ts`        | `resultLink`, `componentAddress`, `searchAddress`, `whereFound` |
 | `editor: src/identity.ts`         | `whereBlockIs`                                                  |
-| `web: src/editor/ComponentEditor` | `openAtBlock`, and `LINKED_PART_GONE`                           |
+| `web: src/editor/ComponentEditor` | `linked`, each arrival at a block, and `LINKED_PART_GONE`       |
 
 ## One renderer, two deliveries
 

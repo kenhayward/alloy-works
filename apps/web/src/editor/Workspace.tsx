@@ -197,7 +197,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             client={client}
             principalId={me}
             onSpace={(space) => setPlaced({ component: opened, space })}
-            {...(address?.block ? { openAtBlock: address.block } : {})}
+            linked={address?.block ? { block: address.block, arrival: arrivals } : null}
           />
         </div>
       </div>
