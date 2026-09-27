@@ -281,3 +281,13 @@ export {
   type CurrentDefinitions,
   type NewComponent,
 } from './creation.js';
+export {
+  createDefinition,
+  listDefinitions,
+  placesOf,
+  readDefinitionLatest,
+  recordDefinitionVersion,
+  type DefinitionAnswer,
+  type DefinitionSummary,
+  type StoredDefinition,
+} from './definitions.js';

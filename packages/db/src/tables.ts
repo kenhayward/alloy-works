@@ -318,6 +318,17 @@ export interface DocumentTemplateTable {
   template_kind: ColumnType<'template', 'template' | undefined, never>;
 }
 
+/** A definition's name, folded, unique per kind (0030, MET-031); only `name_key` is ever updated. */
+export interface DefinitionNameTable {
+  artifact_id: ColumnType<string, string, never>;
+  kind: ColumnType<
+    'field' | 'metadataSchema' | 'componentType',
+    'field' | 'metadataSchema' | 'componentType',
+    never
+  >;
+  name_key: ColumnType<string, string, string>;
+}
+
 export interface TenantTables {
   component_lock: ComponentLockTable;
   iteration: IterationTable;
@@ -351,6 +362,7 @@ export interface TenantTables {
   publication_input: PublicationInputTable;
   publication_output: PublicationOutputTable;
   document_template: DocumentTemplateTable;
+  definition_name: DefinitionNameTable;
   publication_request_asset: PublicationRequestAssetTable;
   publication_asset: PublicationAssetTable;
   asset_upload: AssetUploadTable;
