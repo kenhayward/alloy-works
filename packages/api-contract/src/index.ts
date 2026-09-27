@@ -101,6 +101,7 @@ export {
   DefinitionView,
 } from './definitions.js';
 export { PeopleList, PeopleQuery } from './people.js';
+export { PresentationView } from './presentation.js';
 export {
   FacetValueView,
   SearchAnswerView,

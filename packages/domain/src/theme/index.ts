@@ -85,6 +85,7 @@ export type {
   TypstTheme12,
 } from './typst.js';
 export { projectCss } from './css.js';
+export { faceFamily, projectFontFaces } from './faces.js';
 export { markStyleId, projectStylesXml } from './ooxml.js';
 export type { WordDocument, WordStylesOptions } from './ooxml.js';
 export { runFormat, wordRun } from './runs.js';

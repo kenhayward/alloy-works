@@ -1,6 +1,10 @@
 // Word 3: a cross-reference's key in `WordInput.references`, which the worker's Word check reads each
 // reference's form by, as the writer does.
-export { assemble, inlineReferenceKey, publishedImagePath } from './assemble.js';
+export { assemble, inlineReferenceKey, publishedImagePath, publishedPdf } from './assemble.js';
+// The page's two lengths an image style is a share of, and an image's size by its style: what the
+// editor sets a figure by, as `assemble` does (themes.md, "The theme in the editor", CNT-122).
+export { styledSize, textBlockHeight, textMeasure } from './measure.js';
+export type { ImageFrame } from './measure.js';
 export type {
   Assembled,
   AssembleInput,

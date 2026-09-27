@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { docx, p, para, run, sect, NORMAL, COMPAT15, OUT } from './common.mjs';
 
-const FONTS = new URL('../../../apps/worker/fonts/', import.meta.url).pathname.replace(
+const FONTS = new URL('../../../packages/fonts/files/', import.meta.url).pathname.replace(
   /^\/([A-Za-z]:)/,
   '$1',
 );

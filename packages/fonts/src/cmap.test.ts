@@ -2,7 +2,8 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { codePoints } from './cmap.js';
-import { FONT_DIRECTORY, PINNED_FONT_FILES } from './fonts.js';
+import { PINNED_FONT_FILES } from './pinned.js';
+import { FONT_DIRECTORY } from './node.js';
 
 /**
  * The least a face can be for `codePoints`: a table directory naming one table, `cmap`, holding one

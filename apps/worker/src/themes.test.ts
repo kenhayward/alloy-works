@@ -54,7 +54,7 @@ import {
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { codePoints } from './cmap.js';
+import { codePoints } from '@alloy-works/fonts/node';
 import {
   FONT_DIRECTORY,
   loadPinnedFonts,

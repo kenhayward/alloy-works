@@ -53,6 +53,11 @@ export interface StoredTheme {
   readonly content: Theme;
   /** The theme and its catalogues read through `readTheme`: what `assemble` sets a publication from. */
   readonly theme: ResolvedTheme;
+  /**
+   * Each catalogue version the theme names, by version, as stored: what the renderer is handed with
+   * `content` to read the theme by the same reader (themes.md, "The theme in the editor", ET-B).
+   */
+  readonly catalogues: ReadonlyMap<string, unknown>;
 }
 
 /**
@@ -142,7 +147,8 @@ export async function defaultTheme(trx: TenantTransaction): Promise<StoredTheme>
 export async function themeLatest(trx: TenantTransaction, themeId: string): Promise<StoredTheme> {
   const stored = await latestVersion(trx, themeId);
   if (!stored || stored.kind !== 'theme') throw new Error(`The theme ${themeId} has no version`);
-  const read = await readStoredTheme(trx, stored.content);
+  const catalogues = await cataloguesNamedBy(trx, stored.content);
+  const read = readTheme(stored.content, catalogues);
   if (!read.ok) throw brokenTheme(stored.artifactId, stored.id, read);
   return {
     artifactId: stored.artifactId,
@@ -151,6 +157,7 @@ export async function themeLatest(trx: TenantTransaction, themeId: string): Prom
     // Read above, so it is a theme: the reader parses without filling anything in.
     content: stored.content as Theme,
     theme: read.theme,
+    catalogues,
   };
 }
 

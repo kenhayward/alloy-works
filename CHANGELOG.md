@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.94.0 - 2026-09-27 (PR #280)
+
+### Added
+
+- **The editor has the typefaces a publication is printed in.** The same font files the PDF and Word
+  output use now ship with the application, in the browser and the desktop app alike, and the editor
+  loads the ones the environment's theme names. Nothing is set in them yet; the next change sets a
+  component's text in them.
+- **The API answers the theme and page a component is set in**: the environment's, or a document's for
+  whoever may read the document, as a publish would take them.
+
 ## 0.93.1 - 2026-09-27 (PR #279)
 
 ### Changed

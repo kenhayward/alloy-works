@@ -622,6 +622,7 @@ describe('routes that check a permission', () => {
     }),
     getDocument: () => ({ url: `/v1/documents/${report}`, status: 404 }),
     getNumbering: () => ({ url: `/v1/documents/${report}/numbering`, status: 404 }),
+    getDocumentPresentation: () => ({ url: `/v1/documents/${report}/presentation`, status: 404 }),
     getContributions: () => ({ url: `/v1/documents/${report}/contributions`, status: 404 }),
     getDocumentTexts: () => ({ url: `/v1/documents/${report}/texts`, status: 404 }),
     editOutline: () => ({

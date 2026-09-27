@@ -105,6 +105,7 @@ describe('the theme every environment starts with', () => {
         number: '0.3',
         content: DEFAULT_THEME,
         theme: productDefaultTheme(),
+        catalogues: DEFAULT_CATALOGUES_BY_VERSION,
       });
 
       // It binds six catalogue versions, one of each kind, each a version of an artifact of its own:

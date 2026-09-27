@@ -655,6 +655,7 @@ describe('migration 0025, which gives the default theme its table and image styl
       number: '0.2',
       content: SECOND_DEFAULT_THEME,
       theme: now,
+      catalogues: DEFAULT_CATALOGUES_BY_VERSION,
     });
 
     // `theme_default` names the theme, not a version of it: the request waiting was made under 0.1
@@ -746,6 +747,7 @@ describe('migration 0025, which gives the default theme its table and image styl
         number: '0.1',
         content: FIRST_DEFAULT_THEME,
         theme: firstTheme(),
+        catalogues: FIRST_DEFAULT_CATALOGUES_BY_VERSION,
       });
     });
   }
@@ -903,6 +905,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       number: '0.3',
       content: DEFAULT_THEME,
       theme: now,
+      catalogues: DEFAULT_CATALOGUES_BY_VERSION,
     });
 
     // The request waiting was made under 0.2 and is handed 0.2; a request made now records 0.3.

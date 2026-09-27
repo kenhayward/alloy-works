@@ -262,6 +262,15 @@ describe('the domain package', () => {
         'DEFAULT_THEME_VERSION',
         'projectTypst12',
         'projectCss',
+        // W8.1 (themes.md, "The theme in the editor"): the faces a theme names, declared for the
+        // renderer, and the page's two lengths an image style is a share of, which the service computes
+        // for it, with the size an image is set at by its style, which W8.2's editor sets figures by.
+        'faceFamily',
+        'projectFontFaces',
+        'publishedPdf',
+        'styledSize',
+        'textBlockHeight',
+        'textMeasure',
         'projectStylesXml',
         'markStyleId',
         'runFormat',

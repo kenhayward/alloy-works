@@ -115,6 +115,7 @@ and its calls are one origin. Publishing, search and the rest of the proposed sy
 | Web service                    | TypeScript + Fastify on Node - hostname to tenant, the routes, and the renderer                              | `apps/service`          |
 | Stand-in identity provider     | TypeScript + oidc-provider - invented users; development and tests only                                      | `packages/stand-in-idp` |
 | Object storage                 | TypeScript + the S3 API - a credential per tenant, objects by content hash                                   | `packages/objects`      |
+| Fonts                          | The pinned faces and their licences, their list by hash, and each family's coverage as data                  | `packages/fonts`        |
 | Worker                         | TypeScript on Node + the pinned Typst binary - claims jobs and runs them, publishing among them              | `apps/worker`           |
 | API client                     | TypeScript - types generated from `openapi.json`, and the stream reader                                      | `packages/api-client`   |
 | Traceability                   | TypeScript - the requirement corpus parsed, compiled and queried                                             | `packages/trace`        |
