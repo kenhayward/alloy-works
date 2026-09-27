@@ -398,12 +398,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   Beneath the outline, the document lists its **figures, tables and equations**, each with its number
   and caption and a link to where it is placed, renumbered at once when you move anything. A number
   that would depend on a component you may not read is left off. A cross-reference in the text shows
-  what the page gives its target, as a publication prints it. Nothing tracks where you are as you
-  read - there is no reading view.
+  what the page gives its target, as a publication prints it. Nothing yet tracks where you are as you
+  read.
 
-  **This is structure and text, not the published document.** There is no document view - no view
-  that sets the document as it will publish: the page shows the outline you build beside the text in
-  reading order, and each component opens in place, in its card, to be edited. A section's
+  **This is the document as it is written, not as it is paginated.** The page shows the outline you
+  build beside the text in reading order, set in the document's theme, and in Authoring each
+  component opens in place to be edited; page breaks and running heads are the publication's. A section's
   title takes words and equations but no formatting or cross-reference - a title that already holds
   one is shown and not changed, with a sentence saying why - and a document's own title, language and
   direction cannot be changed once it is made.

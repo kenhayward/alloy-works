@@ -877,7 +877,11 @@ export function DocumentPage({
     // Set in the theme and layout this document publishes under, its own and its components' text alike
     // (themes.md, "The theme in the editor", ET-A).
     <PresentationProvider client={client} document={document.id}>
-      <article aria-labelledby="document-title" className={styles['page']}>
+      {/* Named by its title and the mode it is in, so a screen reader arriving hears which (CNT-154). */}
+      <article aria-labelledby="document-title document-mode" className={styles['page']}>
+        <span id="document-mode" hidden>
+          {authoring ? 'in Authoring' : 'in Reading'}
+        </span>
         {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
         {/* The mode the page is in, and the switch between the two where Authoring is offered. */}
         {mayAuthor ? (

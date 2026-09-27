@@ -3311,8 +3311,11 @@ describe('the address of every node', () => {
       // An author opens in Authoring, the switch saying so.
       expect(within(modeOf()).getByRole('radio', { name: 'Authoring' })).toBeChecked();
       expect(within(modeOf()).getByRole('radio', { name: 'Reading' })).not.toBeChecked();
+      // And the page says it in its own name, where a screen reader arrives.
+      expect(screen.getByRole('article', { name: /in Authoring$/ })).toBeInTheDocument();
       await userEvent.click(within(modeOf()).getByRole('radio', { name: 'Reading' }));
       expect(within(modeOf()).getByRole('radio', { name: 'Reading' })).toBeChecked();
+      expect(screen.getByRole('article', { name: /in Reading$/ })).toBeInTheDocument();
       // Kept: the next document opens as they left this one.
       shown.unmount();
       await openAs({ document: true, component: true });
