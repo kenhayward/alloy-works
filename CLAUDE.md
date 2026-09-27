@@ -89,8 +89,7 @@ a web application and a desktop application**.
 > publishes content: no image or equation pasted from outside the product, no metadata panel,
 > no making a component type, no defined term written or resolved, no
 > document view, no list of equations in the default layout, no
-> choosing or editing a layout or a theme, no style to choose for a paragraph,
-> a table or an image, and no preview. The single
+> choosing or editing a layout or a theme, and no preview. The single
 > `Component` in `packages/domain` is the scaffolding's, and nothing renders it any more.
 > [`docs/features.md`](docs/features.md) lists what does and does not exist.
 

@@ -104,6 +104,8 @@ export { mountEditor, TEXT_CLASS, type MountOptions } from './view.js';
 export { titleFromEditor, titleSchema, titleToEditor, type TitleRun } from './title.js';
 export { mountTitleEditor, type TitleEditor, type TitleEditorOptions } from './titleView.js';
 export { renderContent } from './render.js';
+export { paragraphPlaces } from './places.js';
+export { paragraphsAt, setImageStyle, setParagraphStyle, setTableStyle } from './styles.js';
 export { NodeSelection, Selection } from 'prosemirror-state';
 export type { Command, EditorState, Transaction } from 'prosemirror-state';
 export type { EditorView } from 'prosemirror-view';

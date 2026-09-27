@@ -16,7 +16,9 @@ choose a paragraph's, a table's and an image's style.
 | W8.1 | `packages/fonts`, coverage as data, the presentation routes, the faces in the renderer | Minor   |
 | W8.2 | The canvas: the whole projection, places, marks, paper, the measure and zoom           | Minor   |
 | W8.3 | Tables and images by their styles                                                      | Minor   |
-| W8.4 | Choosing a style, the markers, and the default theme 0.4                               | Minor   |
+| W8.4 | Choosing a style: the Style list, the Table panel's, the Figure dialog's and panel's   | Minor   |
+| W8.5 | The default theme 0.4, with styles to choose                                           | Minor   |
+| W8.6 | What will not resolve: the markers                                                     | Minor   |
 
 **STR-025 is not in W8** (ET-J): it waits on K8, a requirement Ken has to file or decline.
 
@@ -107,7 +109,23 @@ provider asks each asset version's pixels once, and each image is set at `styled
 points times the zoom, its height following, an image in a line by the size of the paragraph style it
 stands in.
 
-## W8.4: Choosing a style, and what will not resolve
+## W8.4: Choosing a style
+
+Split from the markers and the default theme's new styles for its size.
+
+**W8.4, as built.** `setParagraphStyle`, `setTableStyle` and `setImageStyle` in `packages/editor`
+set what they are given, each one step in the history; `insertFigure` and `insertImage` take the style
+the dialog chose. What is offered is the renderer's, from the theme (`apps/web/src/theme/StyleChoice.tsx`):
+**Paragraph style** beside the toolbar, over the paragraphs the selection touches, their places'
+default first as `body` and then every style applying in every one of their places, never a role's;
+**Table style** in the Table panel; **Image style** in the Figure dialog and the Figure panel, a
+figure's styles or an image in a line's. A list whose value none of its choices holds - paragraphs in
+several styles, or a style the theme does not offer - shows it as it is. Under the default theme each
+list has one entry until W8.5 gives it more.
+
+## W8.5: The default theme 0.4
+
+## W8.6: What will not resolve
 
 1. **Commands**: `setParagraphStyle`, `setTableStyle`, `setImageStyle` in `packages/editor`, each one
    history step, refusing a style that does not apply where it would stand.

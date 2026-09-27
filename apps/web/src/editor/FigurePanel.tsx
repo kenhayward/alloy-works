@@ -10,6 +10,7 @@ import {
 import { useEffect, useId, useRef, useState, type Ref } from 'react';
 
 import styles from './FigurePanel.module.css';
+import { ImageStyle } from '../theme/StyleChoice.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -22,6 +23,7 @@ export interface FigurePanelProps {
   readonly figure: {
     readonly pos: number;
     readonly asset: string;
+    readonly imageStyle: string;
     readonly alternative: Alternative;
   };
   /** A figure's panel or an inline image's: its name, and the commands that change it. */
@@ -128,6 +130,12 @@ export function FigurePanel({
 
   return (
     <div ref={ref} role="group" aria-label={named} tabIndex={-1} className={styles['panel']}>
+      <ImageStyle
+        view={view}
+        value={figure.imageStyle}
+        target={kind === 'image' ? 'inlineImage' : 'figure'}
+        enabled={enabled}
+      />
       <fieldset disabled={!enabled}>
         <legend>Alternative text</legend>
         <label>

@@ -5,6 +5,8 @@ import shell from '../layouts/Modal.module.css';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import type { UploadOutcome } from './upload.js';
+import { imageChoices, StyleSelect } from '../theme/StyleChoice.js';
+import { usePresentation } from '../theme/presentation.js';
 
 /** The language rule a component's own base language is held to, which an asset's is too. */
 const languageTag = contentDocumentSchema.shape.language;
@@ -29,6 +31,8 @@ export interface FigureDialogProps {
   readonly onDone: (result: {
     readonly assetVersion: string;
     readonly alternative: Alternative;
+    /** The image style chosen for what is placed (themes.md, ET-G); none when replacing an image. */
+    readonly imageStyle?: string;
   }) => string | null;
   readonly onCancel: () => void;
 }
@@ -47,6 +51,19 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
   const [description, setDescription] = useState('');
   const [tag, setTag] = useState(language);
   const [decorative, setDecorative] = useState(false);
+  // What a figure or an image in a line is placed in, from the theme's image catalogue (CNT-121):
+  // the schema's default where the theme offers it, which is what was placed before there was a choice.
+  const presentation = usePresentation();
+  const target = title === 'Figure' ? 'figure' : title === 'Image' ? 'inlineImage' : null;
+  const offered =
+    presentation?.state === 'ready' && target !== null
+      ? imageChoices(presentation.theme, target)
+      : [];
+  const [imageStyle, setImageStyle] = useState<string | null>(null);
+  const placedIn =
+    imageStyle ??
+    offered.find((choice) => choice.value === (target === 'figure' ? 'figure' : 'inline'))?.value ??
+    offered[0]?.value;
   const [said, setSaid] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const first = useRef<HTMLInputElement | null>(null);
@@ -95,6 +112,7 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
       onDone({
         assetVersion: outcome.assetVersion,
         alternative: decorative ? { kind: 'decorative' } : { kind: 'inherited' },
+        ...(placedIn === undefined ? {} : { imageStyle: placedIn }),
       }),
     );
   };
@@ -163,6 +181,16 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
             />
             It is decorative
           </label>
+          {offered.length > 0 && placedIn !== undefined && (
+            <StyleSelect
+              className={styles['field']}
+              label="Image style"
+              value={placedIn}
+              choices={offered}
+              enabled={!busy}
+              onChoose={setImageStyle}
+            />
+          )}
           {busy && <p role="status">Checking the image</p>}
           {said !== null && (
             <p role="alert" className={styles['complaint']}>

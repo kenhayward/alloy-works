@@ -8,6 +8,7 @@ import {
 import type { Ref } from 'react';
 
 import styles from './TablePanel.module.css';
+import { TableStyle } from '../theme/StyleChoice.js';
 
 /** What the panel offers, in the order it shows them (tables 1, ruling R4). */
 const ACTIONS: readonly { readonly action: TableAction; readonly label: string }[] = [
@@ -57,6 +58,7 @@ export function TablePanel({ view, table, enabled, ref }: TablePanelProps) {
 
   return (
     <div ref={ref} role="group" aria-label="Table" tabIndex={-1} className={styles['panel']}>
+      <TableStyle view={view} value={table.style} enabled={enabled} />
       <label className={styles['count']}>
         Header rows
         <input
