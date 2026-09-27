@@ -9,10 +9,11 @@ import { bootstrapCluster } from './bootstrap.js';
 import { createDocument } from './documents.js';
 import { migrate } from './migrate.js';
 import { provisionTenant, type Tenant } from './provision.js';
-import { readPublication, recordPublication, requestPublication } from './publishing.js';
+import { readPublication, recordPublication } from './publishing.js';
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import { requestBefore0029 } from './testing/request-before-0029.js';
 
 const ISSUER = 'https://idp.example';
 
@@ -79,20 +80,19 @@ describe('migration 0027, which lets a publication hold one output per format', 
     return { ada: ada.id, version: made.version };
   };
 
-  /** A PDF publication of a PDF request, requested today, at the given template version. */
+  /** A PDF publication of a PDF request, written as before 0029, at the given template version. */
   const requestFor = async (
     trx: TenantTransaction,
     ada: string,
     version: { artifactId: string; id: string },
   ) => {
-    const answer = await requestPublication(trx, {
+    // Written as `requestPublication` wrote it: this environment has not reached 0029.
+    const requested = await requestBefore0029(trx, {
       documentId: version.artifactId,
       version: version.id,
-      formats: ['pdf'],
       requester: ada,
     });
-    if (answer.answer !== 'requested') throw new Error(answer.answer);
-    return answer.request.id;
+    return requested;
   };
 
   /**

@@ -31,6 +31,7 @@ import {
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import { requestBefore0029 } from './testing/request-before-0029.js';
 import { versionDigests } from './version-digest.js';
 import { recordVersion, type StoredVersion } from './versions.js';
 
@@ -1015,14 +1016,13 @@ describe('migration 0027, which gives the default layout a Word page', () => {
         author: ada.id,
       });
       if (made.answer !== 'created') throw new Error(made.answer);
-      const answer = await requestPublication(trx, {
+      // Written as `requestPublication` wrote it: this environment has not reached 0029.
+      const requested = await requestBefore0029(trx, {
         documentId: made.version.artifactId,
         version: made.version.id,
-        formats: ['pdf'],
         requester: ada.id,
       });
-      if (answer.answer !== 'requested') throw new Error(answer.answer);
-      return answer.request.id;
+      return requested;
     });
     const fifth = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(fifth.number).toBe('0.5');
