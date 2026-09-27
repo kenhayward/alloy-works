@@ -2818,4 +2818,20 @@ describe('requesting and recording a publication', () => {
     expect(await service.withTenant(production, (trx) => sweepPreviews(trx))).toEqual([]);
     expect(await requestsLeft([first, second])).toEqual(new Set([second]));
   });
+
+  it('sweeps a preview whatever is queued of its document in another second, which cannot make its bytes', async () => {
+    const { version, first } = await service.withTenant(production, async (trx) => {
+      const version = await documentWith(trx, []);
+      return { version, first: await previewed(trx, version, ada) };
+    });
+    // A second later: the creation time compiled into its PDF differs, so its bytes would.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    const second = await service.withTenant(production, (trx) => previewed(trx, version, ada));
+    await service.withTenant(production, (trx) => finishedAgo(trx, first, '2 hours', 'b'));
+
+    expect(await service.withTenant(production, (trx) => sweepPreviews(trx))).toEqual([
+      previewPdf('b').key,
+    ]);
+    expect(await requestsLeft([first, second])).toEqual(new Set([second]));
+  });
 });

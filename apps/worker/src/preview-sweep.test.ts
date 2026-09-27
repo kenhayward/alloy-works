@@ -80,11 +80,24 @@ describe('sweeping previews an hour after they finished (PV-F)', () => {
       'application/pdf',
     );
     const ids = await service.withTenant(tenant, async (trx) => {
-      const ada = await trx
-        .insertInto('principal')
-        .values({ issuer: 'https://idp.example', subject: 'ada', email: null, display_name: 'Ada' })
-        .returning('id')
-        .executeTakeFirstOrThrow();
+      // Ada, made the first time a tenant is given previews and found again after.
+      const ada =
+        (await trx
+          .selectFrom('principal')
+          .select('id')
+          .where('issuer', '=', 'https://idp.example')
+          .where('subject', '=', 'ada')
+          .executeTakeFirst()) ??
+        (await trx
+          .insertInto('principal')
+          .values({
+            issuer: 'https://idp.example',
+            subject: 'ada',
+            email: null,
+            display_name: 'Ada',
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow());
       const general = await trx
         .selectFrom('space')
         .select('id')
@@ -183,5 +196,39 @@ describe('sweeping previews an hour after they finished (PV-F)', () => {
       expect(left.has(ids.older), tenant.id).toBe(false);
       expect(left.has(ids.newer), tenant.id).toBe(true);
     }
+  });
+
+  it("logs the keys of a tenant's swept PDFs when its store cannot be reached, and sweeps the others", async () => {
+    const made = new Map<string, Awaited<ReturnType<typeof previewsIn>>>();
+    for (const tenant of tenants) made.set(tenant.id, await previewsIn(tenant));
+
+    // Whichever tenant the sweep reaches first, its store cannot be opened at all.
+    let first: string | undefined;
+    const away: ObjectStores = {
+      forTenant: async (trx, tenant) => {
+        first ??= tenant.id;
+        if (tenant.id === first) throw new Error('The store is away');
+        return stores.forTenant(trx, tenant);
+      },
+    };
+    const errors: object[] = [];
+    const log: WorkerLog = {
+      info: () => {},
+      warn: () => {},
+      error: (details) => errors.push(details),
+    };
+
+    expect(await sweepExpiredPreviews(worker, away, log)).toBe(1);
+
+    const [failed, swept] = [
+      tenants.find((tenant) => tenant.id === first)!,
+      tenants.find((tenant) => tenant.id !== first)!,
+    ];
+    expect(await holds(swept, made.get(swept.id)!.alone.key)).toBe(false);
+    // Its requests are gone and its PDF left: the key is said, so nothing is left unnamed and unsaid.
+    expect(await holds(failed, made.get(failed.id)!.alone.key)).toBe(true);
+    expect(errors).toEqual([
+      expect.objectContaining({ tenant: failed.id, keys: [made.get(failed.id)!.alone.key] }),
+    ]);
   });
 });

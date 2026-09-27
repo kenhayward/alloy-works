@@ -817,8 +817,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   it - can ask for a preview of its latest version. It is made the way a publication of that version
   would be, refused for the same reasons, and is the PDF alone, saying **Preview - not approved** at
   the top of every page, and once where a screen reader reads it that it is a preview of unapproved
-  content, not a publication. Nothing is published: it is not listed, searched or kept. Only the person
-  who asked can follow it, and once it is made they are given a link that shows it in the browser and
+  content, not a publication. Nothing is published: it is not listed or searched, and it is kept for an
+  hour. Only the person who asked can follow it, and only while they may still read the document, and once it is made they are given a link that shows it in the browser and
   one that downloads it, each lasting five minutes, and when it expires, an hour after it was made.
   After that it has no links, and a little later it is removed. **The document page has no Preview
   button yet**, so nobody can ask for one there.

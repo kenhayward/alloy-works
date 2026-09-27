@@ -28,7 +28,7 @@ import {
 import { readOutline, walkOutline } from '@alloy-works/domain';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
-import { notFound, type Authorised } from './access.js';
+import { authoriseAt, notFound, type Authorised } from './access.js';
 import { versionView } from './components.js';
 import { storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
@@ -271,6 +271,16 @@ export function publishingHandlers(
       return db.withTenant(tenant, async (trx) => {
         const found = await readPublicationRequest(trx, id);
         if (!found || found.requestedBy !== principal.principalId) throw notFound();
+        // A preview's pages are the document's, so its asker must still read the document at every
+        // answer, as a publication is read on its own grants at every answer: losing `read` stops the
+        // links at the next request, not at the hour's end (W10.2's review). Refused as if there
+        // were no such request, as the document itself is.
+        if (found.kind === 'preview') {
+          await authoriseAt(trx, principal.principalId, 'read', {
+            kind: 'artifact',
+            id: found.documentId,
+          });
+        }
         // Asked for only where a preview lasts, after the requester is known: anybody else is
         // answered as if there were no request, store or none.
         return requestView(found, async () => {

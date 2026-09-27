@@ -1057,4 +1057,41 @@ describe('publishing a document through the service', () => {
       await storeless.close();
     }
   });
+
+  it('links a preview only while its asker may still read the document, deciding it at every answer', async () => {
+    const document = await documentReferencing([]);
+    const asked = (await preview('alice', document)).json<{ id: string }>().id;
+    const stored = await previewBytes();
+    await tenantDb.withTenant(tenant, (trx) =>
+      recordPreview(trx, {
+        requestId: asked,
+        key: stored.key,
+        sha256: stored.sha256,
+        bytes: stored.size,
+      }),
+    );
+    const linked = await call('alice', 'GET', `/v1/publication-requests/${asked}`);
+    expect(linked.json<{ preview: unknown }>().preview).not.toBeNull();
+    // Alice no longer reads General: the pages are the document's, so no link is signed for her
+    // again, and the request answers as if there were none, as the document itself does.
+    await tenantDb.withTenant(tenant, (trx) => removeGrant(trx, grants.aliceReads!));
+    try {
+      const refused = await call('alice', 'GET', `/v1/publication-requests/${asked}`);
+      expect(refused.statusCode, refused.body).toBe(404);
+      expect(refused.body).not.toContain('sha256');
+    } finally {
+      await tenantDb.withTenant(tenant, async (trx) => {
+        const reader = await findRole(trx, 'Reader');
+        const answer = await grant(trx, {
+          roleId: reader!.id,
+          subject: { principal: ids.alice! },
+          level: { kind: 'space', id: general },
+          effect: 'allow',
+          grantedBy: ids.ada!,
+        });
+        if (!('granted' in answer)) throw new Error(JSON.stringify(answer));
+        grants.aliceReads = answer.granted.id;
+      });
+    }
+  });
 });

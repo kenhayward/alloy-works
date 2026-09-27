@@ -91,8 +91,8 @@ a web application and a desktop application**.
 > document view, no list of equations in the default layout, no
 > choosing or editing a layout or a theme, and no preview on the document page: a preview is asked
 > for through `POST /v1/documents/{id}/previews`, on `read`, made by the worker's `preview` job as a
-> publish of that version would be, marked a preview on every page, and kept an hour for its asker
-> by migration 0036's sweep. The single
+> publish of that version would be, marked a preview on every page, kept an hour for its asker while
+> they may still read the document, and then swept by the worker. The single
 > `Component` in `packages/domain` is the scaffolding's, and nothing renders it any more.
 > [`docs/features.md`](docs/features.md) lists what does and does not exist.
 

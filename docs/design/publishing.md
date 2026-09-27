@@ -1225,7 +1225,7 @@ baselines, and is left there rather than half-built here.
 - its status is `preview`, so every page says **Preview - not approved** and the tagged text begins
   with the preview's sentence (PUB-005);
 - it is a PDF alone (CNT-150);
-- nothing is recorded as a publication; the PDF is kept for an hour, reachable only by its asker, and
+- nothing is recorded as a publication; the PDF is kept for an hour, reachable only by its asker while they may still read the document, and
   then swept with its request.
 
 **T1's preview is the whole document**, compiled whole and tagged like a publication.

@@ -10,7 +10,7 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **A preview can be asked for through the API.** Anybody who may read a document, not only somebody
   who may publish it, can ask for a preview of its latest version, as a PDF that says "Preview - not
   approved" on every page. It is refused for the same reasons a publication would be. Only the person
-  who asked can follow it, and once it is made they get a link that shows it in the browser and one
+  who asked can follow it, and only while they may still read the document, and once it is made they get a link that shows it in the browser and one
   that downloads it, until it expires an hour later. The document page has no Preview button yet: that
   comes in the next release.
 - **Expired previews are cleared away.** An hour after a preview was made, or failed, it is removed
