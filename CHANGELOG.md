@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.82.0 - 2026-09-27 (PR #263)
+
+### Added
+
+- **A component's values can be saved through the API with its content**, and are kept in its next
+  version. Opening a component now says which type it is, which fields it has and what they hold. A
+  save is refused, naming the field, when it changes a fixed value, gives a value of the wrong kind or
+  names a person this environment does not have; anything else is saved and shown later, and a
+  version can always be cut. Nothing in the pages edits a value yet.
+
 ## 0.81.0 - 2026-09-27 (PR #262)
 
 ### Added

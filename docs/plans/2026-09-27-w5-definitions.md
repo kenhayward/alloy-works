@@ -114,7 +114,15 @@ asks `manage_definitions`. MET-024's test cites the writes.
 **W5.1.** Definition writes take a transaction-scoped advisory lock, so the name check and the name's
 row are one act and a race meets the lock rather than the unique index. The review found its key the
 same in every tenant - an advisory lock is the cluster's, and tenants are schemas of one database - so
-one tenant's write waited on another's; the key carries the tenant's schema now, held by a test. Definitions are read, and
+one tenant's write waited on another's; the key carries the tenant's schema now, held by a test.
+
+**W5.2.** An iteration's `values` is optional: absent, the iteration keeps the values of the version
+it opened from, so a session that edits no value, and every existing caller, is unchanged; present, it
+is the whole set, checked by `unstorableValues`. Nothing deactivates a principal yet, so a `user` value
+naming any principal of the tenant is a user of it. The people route lists everybody who has signed
+in, and is not yet paged. The component's view carries its type, fields, the schemas behind them and
+its values for creating a component as well as opening one, from one helper. The web session sends
+no values until W5.3's panel edits them. Definitions are read, and
 places listed, by name, so a refusal lists them in the same order every time. The body that makes a
 definition is one object whose payload is read by its kind's schema in a refinement, because a route's
 body must be an object schema; a version's payload is read against the definition's own kind by the

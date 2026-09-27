@@ -170,14 +170,14 @@ not read fails as unreadable already and is never validated, so no value of it i
 
 ## Routes
 
-| Route                                                     | Permission                   | Does                                                                                     |
-| --------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------- |
-| `GET /v1/definitions`                                     | `read`, tenant               | Every field, schema and component type at its latest version: id, kind, name and version |
-| `GET /v1/definitions/{id}`                                | `read`, the definition       | One definition at its latest version, with its payload                                   |
-| `POST /v1/definitions`                                    | `manage_definitions`, tenant | Makes a definition at 0.1 from its kind and payload, checked as above                    |
-| `POST /v1/definitions/{id}/versions`                      | `manage_definitions`, tenant | Cuts its next version from `openedFrom` and the whole payload, checked as above          |
-| `PUT /v1/components/{id}/iterations/{session}/{sequence}` | As today                     | Gains `values`                                                                           |
-| `GET /v1/people`                                          | Signed in                    | The tenant's active people, by name, for a `user` field's picker; a page at a time       |
+| Route                                                     | Permission                   | Does                                                                                        |
+| --------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------- |
+| `GET /v1/definitions`                                     | `read`, tenant               | Every field, schema and component type at its latest version: id, kind, name and version    |
+| `GET /v1/definitions/{id}`                                | `read`, the definition       | One definition at its latest version, with its payload                                      |
+| `POST /v1/definitions`                                    | `manage_definitions`, tenant | Makes a definition at 0.1 from its kind and payload, checked as above                       |
+| `POST /v1/definitions/{id}/versions`                      | `manage_definitions`, tenant | Cuts its next version from `openedFrom` and the whole payload, checked as above             |
+| `PUT /v1/components/{id}/iterations/{session}/{sequence}` | As today                     | Gains `values`                                                                              |
+| `GET /v1/people`                                          | Signed in                    | The tenant's people who have signed in, by name, for a `user` field's picker. Not yet paged |
 
 ## Where the code lives
 

@@ -1,3 +1,4 @@
+import { storableEverywhere } from '@alloy-works/domain';
 import { z } from 'zod';
 import { ComponentParams, Lock, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
@@ -33,6 +34,13 @@ export const IterationBody = z.strictObject({
     'The version the session opened from, which must be the latest',
   ),
   content: z.record(z.string(), z.unknown()).describe('The whole content document'),
+  values: z
+    .record(z.string(), z.unknown())
+    .refine(storableEverywhere, 'A value holds a character that cannot be stored')
+    .optional()
+    .describe(
+      "The component's values, whole, by field identifier; absent keeps those of the version opened from",
+    ),
 });
 export type IterationBody = z.infer<typeof IterationBody>;
 
@@ -70,6 +78,20 @@ export const EditingRefusal = ErrorBody.extend({
   expectedRelease: z.string().optional(),
   current: VersionSummary.optional(),
   latest: z.number().optional(),
+  failures: z
+    .array(
+      z.object({
+        code: z.string(),
+        field: z.string(),
+        rule: z.string(),
+        schemas: z.array(z.string()),
+        detail: z.string(),
+      }),
+    )
+    .optional()
+    .describe(
+      "values_invalid: each value that cannot be stored with the component, in MET-022's shape",
+    ),
 });
 export type EditingRefusal = z.infer<typeof EditingRefusal>;
 
@@ -121,6 +143,10 @@ export const editingRoutes = {
     params: ComponentParams,
     query: ReleaseQuery,
     responses: {
+      400: {
+        description: '`values_invalid`: a fixed value differs from its default at the cut',
+        schema: EditingRefusal,
+      },
       200: { description: 'Released, with the version cut or the latest', schema: CutAnswer },
       401: unauthenticated,
       403: forbidden,
@@ -139,7 +165,12 @@ export const editingRoutes = {
     body: IterationBody,
     responses: {
       200: { description: 'Accepted, and the lock extended', schema: IterationAccepted },
-      400: { description: 'The content is not a document the model accepts', schema: ErrorBody },
+      400: {
+        description:
+          '`content_invalid`: the content is not a document the model accepts; `values_invalid`: a ' +
+          'fixed value changed, a value of the wrong type, or a user this environment does not hold',
+        schema: EditingRefusal,
+      },
       401: unauthenticated,
       403: forbidden,
       404: notFound,
@@ -156,6 +187,10 @@ export const editingRoutes = {
     params: ComponentParams,
     body: CutBody,
     responses: {
+      400: {
+        description: '`values_invalid`: a fixed value differs from its default at the cut',
+        schema: EditingRefusal,
+      },
       200: { description: 'Cut, or nothing to cut', schema: CutAnswer },
       401: unauthenticated,
       403: forbidden,

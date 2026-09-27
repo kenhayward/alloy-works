@@ -480,6 +480,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The environment's people, by name, for a user field */
+        get: operations["listPeople"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/principals": {
         parameters: {
             query?: never;
@@ -2101,6 +2118,40 @@ export interface operations {
                             /** @description The holding session, told only to its own principal */
                             session: string | null;
                         } | null;
+                        /** @description The component type its latest version records, at the current version */
+                        type: {
+                            id: string;
+                            name: string;
+                        };
+                        /** @description Its fields at the current definitions of its type, in resolution order: what its next version is written against */
+                        fields: {
+                            id: string;
+                            name: string;
+                            dataType: string;
+                            /** @enum {string} */
+                            multiplicity: "one" | "many";
+                            maxValues?: number;
+                            validation: {
+                                [key: string]: unknown;
+                            };
+                            required: boolean;
+                            /** @description Every schema that makes it required, by identifier */
+                            requiredBy: string[];
+                            fixed: boolean;
+                            /** @description Every schema that fixes it, by identifier */
+                            fixedBy: string[];
+                            /** @description Absent where no schema gives one */
+                            default?: unknown;
+                        }[];
+                        /** @description The schemas its type assigns, by name, for naming which require or fix a field */
+                        schemas: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @description The latest version's values, by field identifier */
+                        values: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };
@@ -2198,6 +2249,10 @@ export interface operations {
                     content: {
                         [key: string]: unknown;
                     };
+                    /** @description The component's values, whole, by field identifier; absent keeps those of the version opened from */
+                    values?: {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -2225,7 +2280,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The content is not a document the model accepts */
+            /** @description `content_invalid`: the content is not a document the model accepts; `values_invalid`: a fixed value changed, a value of the wrong type, or a user this environment does not hold */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2240,6 +2295,29 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                        holder?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        expectedRelease?: string;
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        latest?: number;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
                     };
                 };
             };
@@ -2327,6 +2405,14 @@ export interface operations {
                             note: string | null;
                         };
                         latest?: number;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
                     };
                 };
             };
@@ -2475,6 +2561,14 @@ export interface operations {
                             note: string | null;
                         };
                         latest?: number;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
                     };
                 };
             };
@@ -2534,6 +2628,47 @@ export interface operations {
                             createdAt: string;
                             note: string | null;
                         };
+                    };
+                };
+            };
+            /** @description `values_invalid`: a fixed value differs from its default at the cut */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        holder?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        expectedRelease?: string;
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        latest?: number;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
                     };
                 };
             };
@@ -2621,6 +2756,14 @@ export interface operations {
                             note: string | null;
                         };
                         latest?: number;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
                     };
                 };
             };
@@ -2688,6 +2831,47 @@ export interface operations {
                     };
                 };
             };
+            /** @description `values_invalid`: a fixed value differs from its default at the cut */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        holder?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        expectedRelease?: string;
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        latest?: number;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                    };
+                };
+            };
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
@@ -2772,6 +2956,14 @@ export interface operations {
                             note: string | null;
                         };
                         latest?: number;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
                     };
                 };
             };
@@ -6231,6 +6423,67 @@ export interface operations {
             };
         };
     };
+    listPeople: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The people, by name */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            name: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listPrincipals: {
         parameters: {
             query: {
@@ -7755,6 +8008,40 @@ export interface operations {
                             /** @description The holding session, told only to its own principal */
                             session: string | null;
                         } | null;
+                        /** @description The component type its latest version records, at the current version */
+                        type: {
+                            id: string;
+                            name: string;
+                        };
+                        /** @description Its fields at the current definitions of its type, in resolution order: what its next version is written against */
+                        fields: {
+                            id: string;
+                            name: string;
+                            dataType: string;
+                            /** @enum {string} */
+                            multiplicity: "one" | "many";
+                            maxValues?: number;
+                            validation: {
+                                [key: string]: unknown;
+                            };
+                            required: boolean;
+                            /** @description Every schema that makes it required, by identifier */
+                            requiredBy: string[];
+                            fixed: boolean;
+                            /** @description Every schema that fixes it, by identifier */
+                            fixedBy: string[];
+                            /** @description Absent where no schema gives one */
+                            default?: unknown;
+                        }[];
+                        /** @description The schemas its type assigns, by name, for naming which require or fix a field */
+                        schemas: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @description The latest version's values, by field identifier */
+                        values: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };

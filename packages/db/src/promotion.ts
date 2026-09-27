@@ -2,9 +2,10 @@ import {
   carryForward,
   definitionsFor,
   parseContentDocument,
-  resolveComponentFields,
+  validate,
+  type MetadataFailure,
 } from '@alloy-works/domain';
-import { currentDefinitionsFor } from './creation.js';
+import { componentFieldsNow } from './component-values.js';
 import {
   holding,
   isComponent,
@@ -28,6 +29,11 @@ export type CutAnswer =
   | { readonly answer: 'version.unchanged'; readonly current: StoredVersion }
   | { readonly answer: 'version.precondition'; readonly current: StoredVersion }
   | HolderRefusal
+  /**
+   * A fixed field's value differs from its default at the definitions the cut is made against
+   * (MET-033): carrying forward never replaces a value that is present, so the cut refuses it.
+   */
+  | { readonly answer: 'values.invalid'; readonly failures: readonly MetadataFailure[] }
   | { readonly answer: 'artifact.missing' };
 
 export type ReleaseAnswer =
@@ -65,17 +71,12 @@ export async function cutVersion(trx: TenantTransaction, input: Cut): Promise<Cu
     .executeTakeFirst();
   if (!iteration) return { answer: 'version.unchanged', current };
 
-  const typeRef = current.definitions.find((each) => each.kind === 'componentType');
-  if (!typeRef) throw new Error(`Component ${input.artifactId} records no component type`);
-  const definitions = await currentDefinitionsFor(trx, typeRef.id);
-  if (!definitions) throw new Error(`No componentType ${typeRef.id} is stored in this tenant`);
+  const { definitions, effective } = await componentFieldsNow(trx, current);
   const { type, schemas, fields } = definitions;
-  const effective = resolveComponentFields(
-    type.definition,
-    schemas.map((each) => each.definition),
-    fields.map((each) => each.definition),
-  );
   const carried = carryForward(iteration.metadata_values, effective);
+  // Only a fixed value refuses a cut: a required field left empty never does (MET-023).
+  const fixed = validate(effective, carried.values).filter((each) => each.rule === 'fixed');
+  if (fixed.length > 0) return { answer: 'values.invalid', failures: fixed };
   const recorded = await recordVersion(trx, {
     artifactId: input.artifactId,
     openedFrom: input.openedFrom,

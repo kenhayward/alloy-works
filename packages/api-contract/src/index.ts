@@ -11,6 +11,7 @@ export {
   ComponentParams,
   ComponentTypeList,
   ComponentView,
+  FieldView,
   CreateComponentBody,
   SpaceList,
   SpaceParams,
@@ -94,6 +95,7 @@ export {
   DefinitionVersionBody,
   DefinitionView,
 } from './definitions.js';
+export { PeopleList } from './people.js';
 export { allRoutes, API_VERSION, routes, SESSION_COOKIE } from './routes.js';
 export {
   AccessAnswers,

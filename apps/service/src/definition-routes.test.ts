@@ -14,6 +14,7 @@ import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/d
 import { DEFINITION_SCHEMA_VERSION } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
@@ -53,7 +54,7 @@ describe('definitions through the service', () => {
   const cookies: Record<string, string> = {};
   const ids: Record<string, string> = {};
 
-  const call = (as: string, method: 'GET' | 'POST', url: string, payload?: Json) =>
+  const call = (as: string, method: 'GET' | 'POST' | 'PUT', url: string, payload?: Json) =>
     app.inject({
       method,
       url,
@@ -204,5 +205,80 @@ describe('definitions through the service', () => {
     const shapeless = await make('grace', 'field', { name: 'Nothing' });
     expect(shapeless.statusCode).toBe(400);
     expect(shapeless.json()).toMatchObject({ code: 'invalid_request' });
+  });
+
+  it("shows a component's type, fields and values, and saves values with an iteration, refusing what cannot be stored", async () => {
+    const market = (await make('grace', 'field', field('Market'))).json<DefinitionBody>();
+    const trial = (
+      await make('grace', 'metadataSchema', {
+        schemaVersion: DEFINITION_SCHEMA_VERSION,
+        name: 'Trial',
+        entries: [{ field: market.id, required: false, fixed: true, default: 'uk' }],
+      })
+    ).json<DefinitionBody>();
+    const sheet = (
+      await make('grace', 'componentType', {
+        schemaVersion: DEFINITION_SCHEMA_VERSION,
+        name: 'Trial sheet',
+        assignments: [{ schema: trial.id, requires: [] }],
+      })
+    ).json<DefinitionBody>();
+    const general = (await call('ada', 'GET', '/v1/spaces'))
+      .json<{ items: { id: string; name: string }[] }>()
+      .items.find((each) => each.name === 'General')!;
+    const made = await call('ada', 'POST', `/v1/spaces/${general.id}/components`, {
+      title: 'Dosing',
+      language: 'en-GB',
+      direction: 'ltr',
+      componentType: sheet.id,
+    });
+    expect(made.statusCode, made.body).toBe(200);
+    const component = made.json<{ id: string; version: { id: string } }>();
+
+    const view = (await call('ada', 'GET', `/v1/components/${component.id}`)).json<{
+      type: { id: string; name: string };
+      fields: { id: string; name: string; fixed: boolean; fixedBy: string[]; default?: unknown }[];
+      schemas: { id: string; name: string }[];
+      values: Json;
+    }>();
+    expect(view.type).toEqual({ id: sheet.id, name: 'Trial sheet' });
+    expect(view.fields).toMatchObject([
+      { id: market.id, name: 'Market', fixed: true, fixedBy: [trial.id], default: 'uk' },
+    ]);
+    expect(view.schemas).toEqual([{ id: trial.id, name: 'Trial' }]);
+    expect(view.values).toEqual({ [market.id]: 'uk' });
+
+    const session = randomUUID();
+    expect(
+      (await call('ada', 'POST', `/v1/components/${component.id}/lock`, { session })).statusCode,
+    ).toBe(200);
+    const content = (await call('ada', 'GET', `/v1/components/${component.id}`)).json<{
+      content: Json;
+    }>().content;
+    const save = (sequence: number, values: Json) =>
+      call('ada', 'PUT', `/v1/components/${component.id}/iterations/${session}/${sequence}`, {
+        openedFrom: component.version.id,
+        content,
+        values,
+      });
+    const refusedSave = await save(1, { [market.id]: 'us' });
+    expect(refusedSave.statusCode).toBe(400);
+    expect(refusedSave.json()).toMatchObject({
+      code: 'values_invalid',
+      failures: [{ field: market.id, rule: 'fixed', schemas: [trial.id] }],
+    });
+    expect((await save(1, { [market.id]: 'uk' })).statusCode).toBe(200);
+  });
+
+  it("lists the environment's people by name to anybody signed in, for a user field's picker", async () => {
+    const people = await call('ada', 'GET', '/v1/people');
+    expect(people.statusCode).toBe(200);
+    const items = people.json<{ items: { id: string; name: string }[] }>().items;
+    expect(items).toEqual(
+      expect.arrayContaining([
+        { id: ids.ada, name: 'Ada' },
+        { id: ids.grace, name: 'Grace' },
+      ]),
+    );
   });
 });

@@ -3,9 +3,11 @@ import {
   canonicaliseValues,
   parseContentDocument,
   type ContentDocument,
+  type MetadataFailure,
   type MetadataValues,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import { componentFieldsNow, unstorableValues } from './component-values.js';
 import type { TenantTransaction } from './tables.js';
 import { sha256Hex } from './version-digest.js';
 import { latestVersion, type StoredVersion } from './versions.js';
@@ -69,6 +71,8 @@ export type IterationAnswer =
   | HolderRefusal
   /** A lower sequence than the latest accepted: a whole snapshot never replaces a newer one. */
   | { readonly answer: 'iteration.stale'; readonly latest: number }
+  /** A value that cannot be stored honestly with the component (MET-033, MET-038), each named. */
+  | { readonly answer: 'values.invalid'; readonly failures: readonly MetadataFailure[] }
   /** The latest sequence again, with different content. */
   | { readonly answer: 'iteration.conflict'; readonly latest: number }
   | { readonly answer: 'version.precondition'; readonly current: StoredVersion }
@@ -216,6 +220,11 @@ export interface NewIteration extends EditingSession {
   /** The version the session opened from, which must still be the latest. */
   readonly openedFrom: string;
   readonly content: ContentDocument;
+  /**
+   * The component's values, whole, as the session holds them (definitions.md, "A component's"). Absent,
+   * the values of the version the session opened from, as they stood before a session sent any.
+   */
+  readonly values?: MetadataValues;
 }
 
 /**
@@ -224,8 +233,8 @@ export interface NewIteration extends EditingSession {
  * accepted and extends the lock (COL-008); the latest again with the same content is answered as it
  * was, making no second row; with different content it is a conflict; a lower one is stale.
  *
- * The iteration records the metadata values of the version it opened from, because nothing in this
- * slice edits a value: the metadata panel's plan adds values to what a session sends.
+ * The iteration records the values the session sends, whole, checked against the component's fields at
+ * the current definitions: what cannot be stored honestly is refused, and everything else is saved.
  */
 export async function saveIteration(
   trx: TenantTransaction,
@@ -247,7 +256,13 @@ export async function saveIteration(
   if (current.id !== input.openedFrom) return { answer: 'version.precondition', current };
 
   const content = parseContentDocument(input.content);
-  const digest = iterationDigest(content, current.values);
+  const values = input.values ?? current.values;
+  if (input.values !== undefined) {
+    const { effective } = await componentFieldsNow(trx, current);
+    const failures = await unstorableValues(trx, effective, values);
+    if (failures.length > 0) return { answer: 'values.invalid', failures };
+  }
+  const digest = iterationDigest(content, values);
   // Filtered by principal as well as session, for the same reason cutVersion is (promotion.ts): a
   // session id is chosen by the client and is not unique per principal, so a session id reused by a
   // second principal must judge its own sequence alone, never against the first principal's.
@@ -278,7 +293,7 @@ export async function saveIteration(
       created_at: sql<Date>`clock_timestamp()`,
       expires_at: sql<Date>`clock_timestamp() + make_interval(days => ${ITERATION_RETENTION_DAYS})`,
       content: JSON.stringify(content),
-      metadata_values: JSON.stringify(current.values),
+      metadata_values: JSON.stringify(values),
       digest,
     })
     .execute();
