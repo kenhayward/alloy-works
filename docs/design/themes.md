@@ -755,12 +755,12 @@ unchanged chain. The PDF and Word projections are generic over the set and need 
 Where the editor cannot show what the theme says, it shows that it cannot. It never shows a silent
 default:
 
-| What                                                                      | What the editor shows                                                                                                                                                           |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A paragraph's, table's or image's style that the theme does not hold      | The block in its place's default, outlined and labelled with the style's identifier and "not in this theme": what `style_missing` names at publication                          |
-| A style that the theme holds but that does not apply where it stands      | The same, labelled "does not apply here": `style_not_applicable`                                                                                                                |
-| A typeface whose files the renderer does not hold by hash                 | A notice on the canvas naming the family. Its text is set in the application's own face, and the notice says so                                                                 |
-| A character that the family setting it cannot set, by `characterProblems` | The character marked, and its code point named on hover. This is the check the publish fails on (STY-049), asked in the same setting - body, code or maths - of the same family |
+| What                                                                                                              | What the editor shows                                                                                                                                                           |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A paragraph's, table's or image's style that the theme does not hold                                              | The block in its place's default, outlined and labelled with the style's identifier and "not in this theme": what `style_missing` names at publication                          |
+| A style that the theme holds but that does not apply where it stands                                              | The same, labelled "does not apply here": `style_not_applicable`                                                                                                                |
+| A typeface whose files the renderer does not hold by hash, or whose file fails to load, by the font's load status | A notice on the canvas naming the family, its text set in the application's own face and the notice saying so: never quietly in a fallback (STY-040)                            |
+| A character that the family setting it cannot set, by `characterProblems`                                         | The character marked, and its code point named on hover. This is the check the publish fails on (STY-049), asked in the same setting - body, code or maths - of the same family |
 
 The glyph check runs over the blocks a change touched, not the whole component on every keystroke.
 
