@@ -2,6 +2,15 @@ import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
 
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+const ids = z
+  .string()
+  .regex(new RegExp(`^${UUID}(?:,${UUID}){0,49}$`), 'Expected ids, separated by commas');
+const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a day, YYYY-MM-DD');
+const fieldValue = z
+  .string()
+  .regex(new RegExp(`^${UUID}:.{1,500}$`, 's'), 'Expected a field id, a colon and a value');
+
 export const SearchQuery = z.object({
   q: z
     .string()
@@ -20,6 +29,29 @@ export const SearchQuery = z.object({
     .regex(/^(?:[1-9]|[1-4][0-9]|50)$/, 'Expected a whole number from 1 to 50')
     .optional()
     .describe('At most this many, 20 when absent'),
+  kind: z
+    .string()
+    .regex(
+      /^(?:component|document|section|publication|template|asset|field|metadataSchema|componentType)(?:,(?:component|document|section|publication|template|asset|field|metadataSchema|componentType)){0,8}$/,
+      'Expected kinds, separated by commas',
+    )
+    .optional()
+    .describe('Only these kinds, separated by commas'),
+  space: ids.optional().describe('Only in these spaces, by id, separated by commas'),
+  type: ids.optional().describe('Only components of these types, by id, separated by commas'),
+  owner: ids.optional().describe('Only what these people made, by id, separated by commas'),
+  changed: z
+    .enum(['today', 'week', 'month', 'year', 'earlier'])
+    .optional()
+    .describe('Only what last changed within this range; `earlier` is before this year'),
+  changedFrom: date.optional().describe('Only what last changed on or after this day'),
+  changedTo: date.optional().describe('Only what last changed on or before this day'),
+  value: z
+    .union([fieldValue, z.array(fieldValue).max(20)])
+    .optional()
+    .describe(
+      "Only what holds this value of a field, as `<field id>:<value>`, the value as the field's facet gives it; repeated for more, several of one field either of them",
+    ),
 });
 export type SearchQuery = z.infer<typeof SearchQuery>;
 
@@ -54,6 +86,35 @@ export const SearchResultView = z.object({
 });
 export type SearchResultView = z.infer<typeof SearchResultView>;
 
+export const FacetValueView = z.object({
+  value: z.string().describe('What to filter by to leave these'),
+  label: z.string(),
+  count: z.number().int().describe('How many it would leave, up to 1,000'),
+  capped: z.boolean().describe('Whether more than the count, which is then a lower bound'),
+});
+
+export const SearchFacetsView = z
+  .object({
+    kinds: z.array(FacetValueView),
+    spaces: z.array(FacetValueView),
+    componentTypes: z.array(FacetValueView),
+    owners: z.array(FacetValueView),
+    changed: z
+      .array(FacetValueView)
+      .describe('Each declared range, in order: today, week, month, year, earlier'),
+    fields: z.array(
+      z.object({
+        field: z.string(),
+        name: z.string(),
+        dataType: z.string(),
+        values: z.array(FacetValueView).describe('Its ten commonest values'),
+      }),
+    ),
+  })
+  .describe(
+    'Every declared dimension, each counted with the other filters in force and its own left out',
+  );
+
 const said = { message: z.string().describe('The outcome in a sentence, for the reader') };
 
 /** Every outcome a search answers with, each by name and in a sentence (SCH-039). */
@@ -70,6 +131,7 @@ export const SearchAnswerView = z.discriminatedUnion('outcome', [
     count: z.number().int().describe('How many match, up to 1,000'),
     capped: z.boolean().describe('Whether more match than the count, which is then a lower bound'),
     items: z.array(SearchResultView),
+    facets: SearchFacetsView,
     ...said,
   }),
 ]);
@@ -90,7 +152,10 @@ export const searchRoutes = {
         description: 'The results, or by name why there are none to give',
         schema: SearchAnswerView,
       },
-      400: { description: 'An offset or a limit out of range', schema: ErrorBody },
+      400: {
+        description: 'An offset or a limit out of range, or a filter that is not one',
+        schema: ErrorBody,
+      },
       401: { description: 'No session, or not one this environment issued', schema: ErrorBody },
     },
   },

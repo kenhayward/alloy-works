@@ -17937,6 +17937,30 @@
       "kind": "title"
     },
     {
+      "id": "SCH-034",
+      "file": "packages/db/src/search-facets.test.ts",
+      "line": 382,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-046",
+      "file": "packages/db/src/search-facets.test.ts",
+      "line": 306,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-059",
+      "file": "packages/db/src/search-facets.test.ts",
+      "line": 270,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-062",
+      "file": "packages/db/src/search-facets.test.ts",
+      "line": 345,
+      "kind": "title"
+    },
+    {
       "id": "SCH-010",
       "file": "packages/db/src/search-words.test.ts",
       "line": 249,

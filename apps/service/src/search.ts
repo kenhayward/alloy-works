@@ -1,5 +1,12 @@
 import type { SearchAnswerView, SearchQuery } from '@alloy-works/api-contract';
-import { searchWords, type SearchAnswer, type Tenant, type TenantDatabase } from '@alloy-works/db';
+import {
+  searchWords,
+  type SearchAnswer,
+  type SearchFilters,
+  type Tenant,
+  type TenantDatabase,
+} from '@alloy-works/db';
+import type { SearchKind } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import type { SessionPrincipal } from './sessions.js';
 
@@ -42,6 +49,17 @@ function view(answer: SearchAnswer): SearchAnswerView {
     count: answer.count,
     capped: answer.capped,
     message,
+    facets: {
+      kinds: answer.facets.kinds.map((each) => ({ ...each })),
+      spaces: answer.facets.spaces.map((each) => ({ ...each })),
+      componentTypes: answer.facets.componentTypes.map((each) => ({ ...each })),
+      owners: answer.facets.owners.map((each) => ({ ...each })),
+      changed: answer.facets.changed.map((each) => ({ ...each })),
+      fields: answer.facets.fields.map((each) => ({
+        ...each,
+        values: each.values.map((value) => ({ ...value })),
+      })),
+    },
     items: answer.items.map((each) => ({
       kind: each.kind,
       artifactId: each.artifactId,
@@ -58,6 +76,44 @@ function view(answer: SearchAnswer): SearchAnswerView {
   };
 }
 
+/**
+ * The filters a query string names (search.md, "Filters and facets"), each already held to its shape by
+ * the contract: a list separated by commas, a named range or days, and each field value as its id and
+ * the value after the first colon.
+ */
+export function filtersOf(query: SearchQuery): SearchFilters {
+  const list = (value: string | undefined) => (value === undefined ? undefined : value.split(','));
+  const values = query.value === undefined ? [] : [query.value].flat();
+  const changed =
+    query.changed !== undefined
+      ? { within: query.changed }
+      : query.changedFrom !== undefined || query.changedTo !== undefined
+        ? {
+            ...(query.changedFrom === undefined ? {} : { from: query.changedFrom }),
+            ...(query.changedTo === undefined ? {} : { to: query.changedTo }),
+          }
+        : undefined;
+  const kinds = list(query.kind) as SearchKind[] | undefined;
+  const spaces = list(query.space);
+  const componentTypes = list(query.type);
+  const owners = list(query.owner);
+  return {
+    ...(kinds === undefined ? {} : { kinds }),
+    ...(spaces === undefined ? {} : { spaces }),
+    ...(componentTypes === undefined ? {} : { componentTypes }),
+    ...(owners === undefined ? {} : { owners }),
+    ...(changed === undefined ? {} : { changed }),
+    ...(values.length === 0
+      ? {}
+      : {
+          values: values.map((each) => {
+            const colon = each.indexOf(':');
+            return { field: each.slice(0, colon), value: each.slice(colon + 1) };
+          }),
+        }),
+  };
+}
+
 export function searchHandlers(
   db: TenantDatabase,
   tenantOf: (request: FastifyRequest) => Tenant,
@@ -71,10 +127,26 @@ export function searchHandlers(
         searchWords(trx, principalOf(request).principalId, query.q ?? '', {
           ...(query.offset === undefined ? {} : { offset: Number(query.offset) }),
           ...(query.limit === undefined ? {} : { limit: Number(query.limit) }),
+          filters: filtersOf(query),
         }),
       );
       // A session names a principal the environment holds; one that has gone reads nothing.
-      return view(answer ?? { outcome: 'results', count: 0, capped: false, items: [] });
+      return view(
+        answer ?? {
+          outcome: 'results',
+          count: 0,
+          capped: false,
+          items: [],
+          facets: {
+            kinds: [],
+            spaces: [],
+            componentTypes: [],
+            owners: [],
+            changed: [],
+            fields: [],
+          },
+        },
+      );
     },
   };
 }

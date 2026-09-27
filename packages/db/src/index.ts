@@ -294,9 +294,14 @@ export {
 export { componentFieldsNow, listPeople, unstorableValues } from './component-values.js';
 export { indexPublication, indexVersion, reindexSearch } from './search.js';
 export {
+  changedRanges,
   SEARCH_COUNT_CAP,
   searchWords,
+  type ChangedRange,
+  type FacetValue,
   type PassagePiece,
   type SearchAnswer,
+  type SearchFacets,
+  type SearchFilters,
   type SearchResult,
 } from './search-words.js';

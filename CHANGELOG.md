@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.88.0 - 2026-09-27 (PR #272)
+
+### Added
+
+- **Narrow a search, and see what narrowing would leave.** Search through the API now narrows by kind,
+  space, component type, who made it, when it last changed, and a field's value. Every search comes
+  back with counts for each of these, worked out with your other choices in force, so you can see what
+  each choice would leave before you make it. A field's values are counted wherever the field is held,
+  on a component or a document's section. Past 1,000, a count says "at least 1,000".
+
 ## 0.87.0 - 2026-09-27 (PR #271)
 
 ### Added

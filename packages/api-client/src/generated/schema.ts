@@ -7632,6 +7632,14 @@ export interface operations {
                 q?: string;
                 offset?: string;
                 limit?: string;
+                kind?: string;
+                space?: string;
+                type?: string;
+                owner?: string;
+                changed?: "today" | "week" | "month" | "year" | "earlier";
+                changedFrom?: string;
+                changedTo?: string;
+                value?: string | string[];
             };
             header?: never;
             path?: never;
@@ -7690,12 +7698,76 @@ export interface operations {
                                 matched: boolean;
                             }[];
                         }[];
+                        /** @description Every declared dimension, each counted with the other filters in force and its own left out */
+                        facets: {
+                            kinds: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                /** @description How many it would leave, up to 1,000 */
+                                count: number;
+                                /** @description Whether more than the count, which is then a lower bound */
+                                capped: boolean;
+                            }[];
+                            spaces: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                /** @description How many it would leave, up to 1,000 */
+                                count: number;
+                                /** @description Whether more than the count, which is then a lower bound */
+                                capped: boolean;
+                            }[];
+                            componentTypes: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                /** @description How many it would leave, up to 1,000 */
+                                count: number;
+                                /** @description Whether more than the count, which is then a lower bound */
+                                capped: boolean;
+                            }[];
+                            owners: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                /** @description How many it would leave, up to 1,000 */
+                                count: number;
+                                /** @description Whether more than the count, which is then a lower bound */
+                                capped: boolean;
+                            }[];
+                            /** @description Each declared range, in order: today, week, month, year, earlier */
+                            changed: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                /** @description How many it would leave, up to 1,000 */
+                                count: number;
+                                /** @description Whether more than the count, which is then a lower bound */
+                                capped: boolean;
+                            }[];
+                            fields: {
+                                field: string;
+                                name: string;
+                                dataType: string;
+                                /** @description Its ten commonest values */
+                                values: {
+                                    /** @description What to filter by to leave these */
+                                    value: string;
+                                    label: string;
+                                    /** @description How many it would leave, up to 1,000 */
+                                    count: number;
+                                    /** @description Whether more than the count, which is then a lower bound */
+                                    capped: boolean;
+                                }[];
+                            }[];
+                        };
                         /** @description The outcome in a sentence, for the reader */
                         message: string;
                     };
                 };
             };
-            /** @description An offset or a limit out of range */
+            /** @description An offset or a limit out of range, or a filter that is not one */
             400: {
                 headers: {
                     [name: string]: unknown;

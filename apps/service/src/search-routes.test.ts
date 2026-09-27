@@ -128,13 +128,46 @@ describe('searching through the service', () => {
       message: 'No field you can see is called Colour, so nothing can be looked for in it.',
     });
     // And a search that matches nothing says so, rather than showing an empty page.
-    expect(await answer('?q=quagga')).toEqual({
+    expect(await answer('?q=quagga')).toMatchObject({
       outcome: 'results',
       count: 0,
       capped: false,
       items: [],
       message: 'Nothing you can see matches this search.',
     });
+  });
+
+  it('narrows by the filters a query string names, and counts each facet without its own', async () => {
+    const answer = async (query: string) => {
+      const response = await search('grace', query);
+      expect(response.statusCode, query).toBe(200);
+      return response.json<{
+        count: number;
+        items: { kind: string }[];
+        facets: Record<string, { value: string; count: number }[]>;
+      }>();
+    };
+    const all = await answer('?q=scanner');
+    const components = all.items.filter((each) => each.kind === 'component').length;
+    expect(components).toBeGreaterThan(0);
+    // Narrowed to documents, of which none say scanner, the kind facet still offers components.
+    const documents = await answer('?q=scanner&kind=document,section');
+    expect(documents.count).toBe(0);
+    expect(documents.facets.kinds).toContainEqual(
+      expect.objectContaining({ value: 'component', count: components }),
+    );
+    // A named range, and a range of days reaching today.
+    expect((await answer('?q=scanner&changed=today')).count).toBe(all.count);
+    expect((await answer('?q=scanner&changedFrom=2000-01-01')).count).toBe(all.count);
+    expect((await answer('?q=scanner&changed=earlier')).count).toBe(0);
+    // A filter of the wrong shape is refused as the caller's.
+    for (const query of [
+      '?q=scanner&kind=image',
+      '?q=scanner&space=general',
+      '?q=x&value=Reviewer',
+    ]) {
+      expect((await search('grace', query)).statusCode, query).toBe(400);
+    }
   });
 
   it('finds nothing for a reader who may read nothing, and is refused without a session', async () => {

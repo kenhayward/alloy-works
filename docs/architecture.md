@@ -1110,6 +1110,13 @@ each outcome in a sentence.
 | `api-contract: search.ts`     | `GET /v1/search`, its query and every outcome's body                  |
 | `service: src/search.ts`      | The handler, and `sentenceFor`, each outcome in a sentence            |
 
+Filters and facets (W6.3) are in the same statement. Each filter - kind, space, component type, owner,
+changed, and each field's value - is a column over the matched entries, so the results are the rows
+where all hold and each facet counts the rows where all but its own hold: a field's own filter is left
+out of that field's facet alone. A field's values are read from the entry's stored values as its facet
+names them, for the fields the reader may read, the ten commonest of each. `GET /v1/search` takes each
+filter as a query parameter and answers the facets with the results.
+
 ## One renderer, two deliveries
 
 `apps/web` **is** the web application, and it is also the thing the Electron window loads. There is
