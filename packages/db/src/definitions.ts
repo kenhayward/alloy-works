@@ -15,7 +15,7 @@ import {
   type DefinitionOf,
   type MetadataFailure,
   type MetadataSchemaDefinition,
-  type Place,
+  type SchemaPlace,
   type SchemaConflict,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
@@ -164,8 +164,8 @@ export async function listDefinitions(
  * component type and each level of each template, at their latest versions, with the schemas each
  * assigns there.
  */
-export async function placesOf(trx: TenantTransaction): Promise<readonly Place[]> {
-  const places: Place[] = [];
+export async function placesOf(trx: TenantTransaction): Promise<readonly SchemaPlace[]> {
+  const places: SchemaPlace[] = [];
   for (const type of await latestOfKind(trx, 'componentType')) {
     places.push({
       kind: 'componentType',

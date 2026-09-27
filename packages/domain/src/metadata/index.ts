@@ -33,4 +33,4 @@ export { definitionsFor, canonicaliseValues, canonicaliseNotCarried } from './re
 export type { DefinitionRef, Versioned } from './record.js';
 export { checkWrittenValues, writtenValues } from './write.js';
 export { assignmentConflicts, brokenDefaults, nameKey, schemaConflicts } from './manage.js';
-export type { BrokenDefault, Place, PlaceName, SchemaConflict } from './manage.js';
+export type { BrokenDefault, SchemaPlace, SchemaPlaceName, SchemaConflict } from './manage.js';

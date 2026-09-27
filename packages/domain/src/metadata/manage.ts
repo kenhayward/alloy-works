@@ -43,7 +43,7 @@ export function assignmentConflicts(
  * A place a schema is applied at in T1 (definitions.md, "Where a schema applies"): a component type,
  * or one level of a template, with the schemas it assigns there.
  */
-export type Place =
+export type SchemaPlace =
   | {
       readonly kind: 'componentType';
       readonly id: string;
@@ -59,7 +59,7 @@ export type Place =
     };
 
 /** A place as a refusal names it, without the schemas it assigns. */
-export type PlaceName =
+export type SchemaPlaceName =
   | { readonly kind: 'componentType'; readonly id: string; readonly name: string }
   | {
       readonly kind: 'template';
@@ -72,7 +72,7 @@ export type PlaceName =
 export interface SchemaConflict {
   readonly field: string;
   readonly other: string;
-  readonly places: readonly PlaceName[];
+  readonly places: readonly SchemaPlaceName[];
 }
 
 /**
@@ -83,11 +83,11 @@ export interface SchemaConflict {
  */
 export function schemaConflicts(
   candidate: MetadataSchemaDefinition,
-  places: readonly Place[],
+  places: readonly SchemaPlace[],
   schemas: readonly MetadataSchemaDefinition[],
 ): SchemaConflict[] {
   const byId = new Map(schemas.map((schema) => [schema.id, schema]));
-  const grouped = new Map<string, { field: string; other: string; places: PlaceName[] }>();
+  const grouped = new Map<string, { field: string; other: string; places: SchemaPlaceName[] }>();
   for (const place of places) {
     if (!place.schemas.includes(candidate.id)) continue;
     const beside = place.schemas
@@ -112,7 +112,7 @@ export function schemaConflicts(
   return [...grouped.values()];
 }
 
-function nameOf(place: Place): PlaceName {
+function nameOf(place: SchemaPlace): SchemaPlaceName {
   return place.kind === 'componentType'
     ? { kind: place.kind, id: place.id, name: place.name }
     : { kind: place.kind, id: place.id, name: place.name, level: place.level };
