@@ -59,10 +59,13 @@ validation, and this claim is the reason.
 
 ### Who, and where
 
-Every route asks `manage_definitions` at the tenant (MET-024; the Definitions manager role holds it). A
-definition lives in no space, so there is no space to decide on. Reading a definition to write a value
-against it stays [access.md](access.md)'s "read through what uses it": an author sees the fields their
-component, document or section needs through that artifact's own decision, never through these routes.
+Making and changing a definition asks `manage_definitions` at the tenant (MET-024; the Definitions
+manager role holds it): a definition lives in no space, so there is no space to decide on. Reading one
+follows [access.md](access.md)'s rule: reading a definition on its own is `read` asked of the definition,
+whose chain is itself and the tenant, and listing them is `read` asked of the tenant. Reading a
+definition to write a value against it stays access.md's "read through what uses it": an author sees the
+fields their component, document or section needs through that artifact's own decision, never through
+these routes.
 
 ### Making and changing
 
@@ -169,8 +172,8 @@ not read fails as unreadable already and is never validated, so no value of it i
 
 | Route                                                     | Permission                   | Does                                                                                     |
 | --------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------- |
-| `GET /v1/definitions`                                     | `manage_definitions`, tenant | Every field, schema and component type at its latest version: id, kind, name and version |
-| `GET /v1/definitions/{id}`                                | `manage_definitions`, tenant | One definition at its latest version, with its payload                                   |
+| `GET /v1/definitions`                                     | `read`, tenant               | Every field, schema and component type at its latest version: id, kind, name and version |
+| `GET /v1/definitions/{id}`                                | `read`, the definition       | One definition at its latest version, with its payload                                   |
 | `POST /v1/definitions`                                    | `manage_definitions`, tenant | Makes a definition at 0.1 from its kind and payload, checked as above                    |
 | `POST /v1/definitions/{id}/versions`                      | `manage_definitions`, tenant | Cuts its next version from `openedFrom` and the whole payload, checked as above          |
 | `PUT /v1/components/{id}/iterations/{session}/{sequence}` | As today                     | Gains `values`                                                                           |
@@ -195,7 +198,7 @@ not read fails as unreadable already and is never validated, so no value of it i
 - `packages/db`: a definition made, read and versioned by the one mechanism; each refusal writing
   nothing; a name taken refused under a race; values with an iteration and the cut's fixed check; a
   publication request recording each component's failures.
-- `apps/service`: every route decided by `manage_definitions`; each refusal with its code and rule; an
+- `apps/service`: every write decided by `manage_definitions`, and every read by `read`; each refusal with its code and rule; an
   iteration refused for a fixed value, a wrong type and an unknown user, and saved for a required field
   empty.
 - `apps/web`: the panel validating as values change; the document's and a section's fields saving.
