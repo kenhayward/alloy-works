@@ -16065,6 +16065,14 @@
           "howItIsMet": "A mutating request with an `Idempotency-Key` records its response per tenant, and a repeat returns the recorded response"
         },
         {
+          "id": "SCH-022",
+          "howItIsMet": "Every listing pages by keyset over its sort key and then the artifact's id, a total order, so a page never repeats or skips what the one before it showed however the set changes between them ([Listings and idempotency, in T1](#listings-and-idempotency-in-t1))"
+        },
+        {
+          "id": "SCH-064",
+          "howItIsMet": "Components, documents, publications and templates each have a listing, a view of it in the application, and server-side sorting and filtering, each filter counted as a facet ([Listings and idempotency, in T1](#listings-and-idempotency-in-t1))"
+        },
+        {
           "id": "API-010",
           "howItIsMet": "Every path begins with its major version, `/v1`; a breaking change is a new version"
         },
