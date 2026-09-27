@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.80.1 - 2026-09-27 (PR #261)
+
+### Changed
+
+- **Definitions and the metadata panel are designed.** Fields, schemas and component types will be
+  made and changed through the API, each change checked against everything that uses it; values
+  written with a component, a document or a section will be checked as you type; and a publication
+  will fail where a component holds a value its fields refuse. Nothing in the product changes yet.
+
 ## 0.80.0 - 2026-09-27 (PR #260)
 
 ### Added
