@@ -391,7 +391,13 @@ describe('the editor stylesheet', () => {
     const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8');
     const selectors = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{[^{}]*\}/g)]
       .flatMap((match) => match[1]!.split(',').map((selector) => selector.trim()))
-      .filter((selector) => !selector.includes('::') && !selector.startsWith('@'))
+      // What it draws before or after an element is its own - a placeholder - but for the label above
+      // preformatted text, which the theme sets in its role's style.
+      .filter(
+        (selector) =>
+          !selector.startsWith('@') &&
+          (!selector.includes('::') || selector.endsWith('pre[data-language]::before')),
+      )
       // Only a rule whose element is one a theme styles: a paragraph, a term, preformatted text, a
       // quotation, a caption, a table's note, an attribution, an equation, and each mark's element.
       .filter(
@@ -407,12 +413,20 @@ describe('the editor stylesheet', () => {
           ),
       );
     const weight = (selector: string) => {
-      const bare = selector.replace(/:not\(([^)]*)\)/g, ' $1');
+      const bare = selector.replace(/::[\w-]+/g, '').replace(/:not\(([^)]*)\)/g, ' $1');
       return {
         ids: (bare.match(/#[\w-]+/g) ?? []).length,
         classes: (bare.match(/\.[\w-]+|\[[^\]]+\]|:(?!:)[\w-]+/g) ?? []).length,
       };
     };
+    // The label above preformatted text is among them, and a link and an attribution.
+    expect(selectors).toEqual(
+      expect.arrayContaining([
+        '.aw-text pre[data-language]::before',
+        '.aw-text a[href]',
+        '.aw-text footer.aw-attribution',
+      ]),
+    );
     for (const selector of selectors) {
       const { ids, classes } = weight(selector);
       expect(ids, selector).toBe(0);
