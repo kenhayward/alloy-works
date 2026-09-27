@@ -3,6 +3,7 @@ import {
   templateDefinitionSchema,
   type FieldDefinition,
   type MetadataSchemaDefinition,
+  type ResolvedTemplate,
   type TemplateDefinition,
   type TemplateReferences,
   type UnresolvedReference,
@@ -266,6 +267,34 @@ export async function documentLayout(
 ): Promise<StoredLayout> {
   const bound = await boundBy(trx, documentId);
   return bound ? layoutLatest(trx, bound.layout) : defaultLayout(trx);
+}
+
+/**
+ * What a document's template holds it to (templates.md, "What an author may change" and "Values"):
+ * nothing for a blank document; otherwise the `changes` of the template version it recorded
+ * (TPL-015), and that version resolved against the definitions as they are now (TE-K) for the fields
+ * its values and its sections' may hold. Resolution may fail where a schema has since changed, which
+ * refuses a value written, and nothing else.
+ */
+export type DocumentRules =
+  | { readonly bound: false }
+  | {
+      readonly bound: true;
+      readonly changes: TemplateDefinition['changes'];
+      readonly resolved: ResolvedTemplate;
+    };
+
+export async function documentRules(
+  trx: TenantTransaction,
+  documentId: string,
+): Promise<DocumentRules> {
+  const bound = await boundBy(trx, documentId);
+  if (!bound) return { bound: false };
+  return {
+    bound: true,
+    changes: bound.changes,
+    resolved: resolveTemplate(bound, await templateReferences(trx, bound)),
+  };
 }
 
 /** The theme a document is published under, as `documentLayout` reads its layout (STY-025). */

@@ -6,7 +6,7 @@ import {
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { createDocument, editOutline } from './documents.js';
+import { createDocument, editOutline, recordDocumentValues } from './documents.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { migrate } from './migrate.js';
@@ -377,6 +377,128 @@ describe('a document made from a template', () => {
       documentLayout(trx, blank.version.artifactId),
     );
     expect(kept.artifactId).toBe(DEFAULT_LAYOUT_ID);
+  });
+
+  it('holds an outline act to the changes of the template version the document was made from', async () => {
+    const made = await template({
+      name: 'Fixed',
+      changes: { add: false, remove: false, reorder: false },
+    });
+    const answer = await make(made.id);
+    if (answer.answer !== 'created') throw new Error(answer.answer);
+    // The template's next version allows everything, and a document made before it is held still.
+    const next = await service.withTenant(production, (trx) =>
+      recordTemplateVersion(trx, {
+        templateId: made.id,
+        openedFrom: made.version.id,
+        definition: definition({ name: 'Fixed' }),
+        author: ada,
+      }),
+    );
+    expect(next.answer).toBe('recorded');
+    const insert = await service.withTenant(production, (trx) =>
+      editOutline(trx, {
+        artifactId: answer.version.artifactId,
+        openedFrom: answer.version.id,
+        author: ada,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position: 2,
+          node: { type: 'section', title: text('Results') },
+        },
+      }),
+    );
+    expect(insert).toEqual({
+      answer: 'outline.invalid',
+      reason: "This document's template does not allow sections to be added",
+    });
+    // A blank document is held to nothing.
+    const blank = await make(undefined);
+    if (blank.answer !== 'created') throw new Error(blank.answer);
+    const free = await service.withTenant(production, (trx) =>
+      editOutline(trx, {
+        artifactId: blank.version.artifactId,
+        openedFrom: blank.version.id,
+        author: ada,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position: 0,
+          node: { type: 'section', title: text('Results') },
+        },
+      }),
+    );
+    expect(free.answer).toBe('recorded');
+  });
+
+  it("writes a section's values against its template's section-level fields, refusing by name", async () => {
+    const answer = await make((await template()).id);
+    if (answer.answer !== 'created') throw new Error(answer.answer);
+    const method = (answer.version.content as { nodes: SectionNode[] }).nodes[1]!;
+    const set = (values: Record<string, unknown>, openedFrom = answer.version.id) =>
+      service.withTenant(production, (trx) =>
+        editOutline(trx, {
+          artifactId: answer.version.artifactId,
+          openedFrom,
+          author: ada,
+          operation: { operation: 'set', node: method.id, values },
+        }),
+      );
+    const refused = await set({ [OWNER]: 'Ada', 'field-audience': 'clinical' });
+    expect(refused).toMatchObject({
+      answer: 'values.invalid',
+      failures: [{ field: 'field-audience', rule: 'unknown' }],
+    });
+    const written = await set({ [STATUS]: 'final' });
+    if (written.answer !== 'recorded') throw new Error(written.answer);
+    const nodes = (written.version.content as { nodes: SectionNode[] }).nodes;
+    expect(nodes[1]!.values).toEqual({ [STATUS]: 'final' });
+    // And the document's own values are carried as they stood.
+    expect(written.version.values).toEqual({ [STATUS]: 'draft' });
+  });
+
+  it("writes a document's values whole, as a version with its outline unchanged", async () => {
+    const answer = await make((await template()).id);
+    if (answer.answer !== 'created') throw new Error(answer.answer);
+    const write = (values: Record<string, unknown>, openedFrom: string) =>
+      service.withTenant(production, (trx) =>
+        recordDocumentValues(trx, {
+          documentId: answer.version.artifactId,
+          openedFrom,
+          author: ada,
+          values,
+        }),
+      );
+    const written = await write({ [OWNER]: 'Ada' }, answer.version.id);
+    if (written.answer !== 'recorded') throw new Error(written.answer);
+    // The status left without a member takes its default, as a section's does.
+    expect(written.version.values).toEqual({ [OWNER]: 'Ada', [STATUS]: 'draft' });
+    expect(written.version.content).toEqual(answer.version.content);
+    expect([written.version.revision, written.version.version]).toEqual([0, 2]);
+    // The same again is no version; from the version before, it is refused as stale; and a field that
+    // does not apply to the document is refused by name.
+    expect((await write({ [OWNER]: 'Ada' }, written.version.id)).answer).toBe('version.unchanged');
+    expect((await write({ [OWNER]: 'Grace' }, answer.version.id)).answer).toBe(
+      'version.precondition',
+    );
+    expect(await write({ 'field-audience': 'clinical' }, written.version.id)).toMatchObject({
+      answer: 'values.invalid',
+      failures: [{ field: 'field-audience', rule: 'unknown' }],
+    });
+    // A blank document has no field to hold a value for.
+    const blank = await make(undefined);
+    if (blank.answer !== 'created') throw new Error(blank.answer);
+    expect(
+      await service.withTenant(production, (trx) =>
+        recordDocumentValues(trx, {
+          documentId: blank.version.artifactId,
+          openedFrom: blank.version.id,
+          author: ada,
+          values: { [OWNER]: 'Ada' },
+        }),
+      ),
+    ).toMatchObject({ answer: 'values.invalid', failures: [{ field: OWNER, rule: 'unknown' }] });
   });
 
   // Last, because it changes the one schema every template here assigns.
