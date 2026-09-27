@@ -1075,6 +1075,12 @@ order, snapshot and the last row's key and id; one another listing, sort or orde
 `400 invalid_request`. The application reads the documents, publications and templates listings to
 their end with `everyPage` until their filters are the service's.
 
+The small listings page the same way, each in one order and with no sort to choose (W7.2): spaces by
+name - the readable set now in the query, so a page is never short - component types and definitions by
+their latest name, as of the snapshot, and people by when each first appeared - invited or signed in - since a name is changed
+in place at every sign-in; the picker sorts them by name. The access listings - grants, roles,
+principals and invitations - page by id, as they did. The application reads each to its end.
+
 | Where                          | What                                                                               |
 | ------------------------------ | ---------------------------------------------------------------------------------- |
 | `db: src/listing.ts`           | `listingSorts`, `keysetPage`, `snapshotFor`, `visibleIn`, `isListingRequest`       |

@@ -1,5 +1,6 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { everyPage } from './paging.js';
 
 /** A space somebody may create in, as `GET /v1/spaces` answers it. */
 export interface Space {
@@ -63,11 +64,15 @@ export function useCreatableSpaces(client: Client): CreatableSpaces {
     const generation = ++request.current;
     setProblem(null);
     try {
-      const { data, response } = await client.GET('/v1/spaces');
+      const all = await everyPage((cursor) =>
+        client.GET('/v1/spaces', {
+          params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+        }),
+      );
       if (request.current !== generation) return;
-      const open = creatableSpacesIn(data);
+      const open = 'items' in all ? creatableSpacesIn({ items: all.items }) : undefined;
       if (open === undefined) {
-        setProblem(response.status === 401 ? 'signedOut' : 'failed');
+        setProblem('status' in all && all.status === 401 ? 'signedOut' : 'failed');
         return;
       }
       setSpaces(open);

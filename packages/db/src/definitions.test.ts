@@ -334,7 +334,9 @@ describe('definitions through the service', () => {
 
   it('lists every definition at its latest version, and lets the runtime role rename but never unname one', async () => {
     const listed = await run((trx) => listDefinitions(trx));
-    expect(listed.find((each) => each.name === 'Topic')).toMatchObject({ kind: 'componentType' });
+    expect(listed.items.find((each) => each.name === 'Topic')).toMatchObject({
+      kind: 'componentType',
+    });
     await expect(run((trx) => sql`delete from definition_name`.execute(trx))).rejects.toThrow(
       /permission denied/,
     );

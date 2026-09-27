@@ -67,7 +67,7 @@ function serviceThat(pages: Record<string, unknown>, signedIn = true) {
     }
     // The list mounts `NewComponent` beside it, which reads this itself (S26): answered here so
     // every test that reaches the list is not also, incidentally, exercising a failed spaces read.
-    if (url.pathname === '/v1/spaces') return json(200, { items: [] });
+    if (url.pathname === '/v1/spaces') return json(200, { items: [], next: null });
     if (url.pathname === '/v1/access' && pages.access) return json(200, pages.access);
     if (url.pathname === '/v1/search' && pages.search) {
       return json(200, { ...(pages.search as object), asked: url.searchParams.get('q') });
@@ -359,7 +359,7 @@ describe('the workspace', () => {
         return json(200, me);
       }
       if (url.pathname === '/v1/components') return json(200, { items: [], next: null });
-      if (url.pathname === '/v1/spaces') return json(200, { items: [] });
+      if (url.pathname === '/v1/spaces') return json(200, { items: [], next: null });
       return json(404, { code: 'not_found', message: 'none', traceId: 't' });
     }) as unknown as typeof fetch;
 
@@ -393,7 +393,7 @@ describe('the workspace', () => {
           next: null,
         });
       }
-      if (url.pathname === '/v1/spaces') return json(200, { items: [] });
+      if (url.pathname === '/v1/spaces') return json(200, { items: [], next: null });
       return json(404, { code: 'not_found', message: 'none', traceId: 't' });
     }) as unknown as typeof fetch;
 
@@ -438,7 +438,7 @@ describe('the workspace', () => {
           next: null,
         });
       }
-      if (url.pathname === '/v1/spaces') return json(200, { items: [] });
+      if (url.pathname === '/v1/spaces') return json(200, { items: [], next: null });
       return json(404, { code: 'not_found', message: 'none', traceId: 't' });
     }) as unknown as typeof fetch;
 
@@ -491,7 +491,7 @@ describe('the workspace', () => {
             );
         });
       }
-      if (url.pathname === '/v1/spaces') return json(200, { items: [] });
+      if (url.pathname === '/v1/spaces') return json(200, { items: [], next: null });
       return json(404, { code: 'not_found', message: 'none', traceId: 't' });
     }) as unknown as typeof fetch;
 
@@ -512,7 +512,7 @@ describe('the workspace', () => {
       const url = new URL(request.url);
       if (url.pathname === '/v1/me') return json(200, me);
       if (url.pathname === '/v1/components') return json(200, { items: [], next: null });
-      if (url.pathname === '/v1/spaces') return json(200, { items: [] });
+      if (url.pathname === '/v1/spaces') return json(200, { items: [], next: null });
       if (url.pathname === '/v1/documents') {
         return json(200, {
           items: [

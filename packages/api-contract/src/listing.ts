@@ -25,6 +25,23 @@ export function listingQuery<S extends string>(sorts: readonly [S, ...S[]], byDe
   };
 }
 
+/**
+ * What a listing in one order takes - the small ones, spaces, component types, definitions and people -
+ * a cursor and a limit, and no sort to choose.
+ */
+export const pageQuery = {
+  cursor: z
+    .string()
+    .max(4000)
+    .optional()
+    .describe('Where the previous page ended, as that page gave it; absent for the first'),
+  limit: z
+    .string()
+    .regex(/^(?:[1-9]|[1-9][0-9]|100)$/, 'Expected a whole number from 1 to 100')
+    .optional()
+    .describe('At most this many, 50 when absent'),
+};
+
 /** The cursor a page answers with, for the next one. */
 export const nextCursor = z
   .string()

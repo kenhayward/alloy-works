@@ -79,6 +79,8 @@ import { FieldsForm } from '../metadata/FieldsForm.js';
 import { useStatus } from '../shell/Status.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
+import { everyPage } from '../paging.js';
+import { byName } from '../metadata/people.js';
 
 /**
  * The Equation dialog, loaded the first time it opens, and Temml with it (equations 1's final review,
@@ -338,10 +340,14 @@ export function ComponentEditor({
   useEffect(() => {
     if (!wantsPeople) return;
     let current = true;
-    client
-      .GET('/v1/people')
-      .then(({ data }) => {
-        if (current && data) setPeople(data.items);
+    // Every page, then by name: the listing gives people in the order each first appeared.
+    everyPage((cursor) =>
+      client.GET('/v1/people', {
+        params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+      }),
+    )
+      .then((all) => {
+        if (current && 'items' in all) setPeople(byName(all.items));
       })
       .catch(() => {});
     return () => {

@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import {
   checkUserValues,
   principalIdsIn,
@@ -10,6 +11,17 @@ import {
 import { currentDefinitionsFor, type CurrentDefinitions } from './creation.js';
 import type { TenantTransaction } from './tables.js';
 import type { StoredVersion } from './versions.js';
+import {
+  checkedLimit,
+  isListingRequest,
+  keysetPage,
+  listingSorts,
+  snapshotFor,
+  sortColumns,
+  type Listed,
+  type ListingRequest,
+  type SortOf,
+} from './listing.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -64,17 +76,33 @@ export async function unstorableValues(
 
 /**
  * The environment's people, for a `user` field's picker (definitions.md, DE-J): every principal who has
- * signed in, by name. One invited who has not signed in yet has no name to be picked by.
+ * signed in, a page at a time by when each first appeared and then id (API-007) - a name is changed in
+ * place at every sign-in, so it is no key a walk could hold its order by. The picker sorts them by name.
+ * One invited who has not signed in yet has no name to be picked by.
  */
 export async function listPeople(
   trx: TenantTransaction,
-): Promise<readonly { readonly id: string; readonly name: string }[]> {
-  const rows = await trx
-    .selectFrom('principal')
-    .select(['id', 'display_name', 'email'])
-    .where('subject', 'is not', null)
-    .execute();
-  return rows
-    .map((row) => ({ id: row.id, name: row.display_name ?? row.email ?? 'Unnamed' }))
-    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : a.id < b.id ? -1 : 1));
+  request: ListingRequest<SortOf<'people'>> = { limit: 100 },
+): Promise<Listed<{ readonly id: string; readonly name: string }>> {
+  const limit = checkedLimit(request.limit);
+  const { types, order } = listingSorts.people.joined;
+  if (!isListingRequest(request, types)) {
+    throw new Error('A page request names a cursor no listing gave out');
+  }
+  const snapshot = await snapshotFor(trx, request.snapshot);
+  const inner = trx
+    .selectFrom('principal as p')
+    .select(['p.id', 'p.display_name', 'p.email'])
+    .select(sortColumns([sql`p.created_at`]))
+    .where('p.subject', 'is not', null);
+  const { rows, next } = await keysetPage<{
+    id: string;
+    display_name: string | null;
+    email: string | null;
+  }>(trx, inner, types, request.order ?? order, limit, request.after);
+  return {
+    items: rows.map((row) => ({ id: row.id, name: row.display_name ?? row.email ?? 'Unnamed' })),
+    next,
+    snapshot,
+  };
 }

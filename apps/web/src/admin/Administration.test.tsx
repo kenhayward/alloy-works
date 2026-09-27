@@ -16,6 +16,7 @@ const everything: Record<string, () => Response> = {
         { id: 's1', name: 'General', mayCreate: true },
         { id: 's2', name: 'Training', mayCreate: false },
       ],
+      next: null,
     }),
   '/v1/principals': () =>
     json(200, {

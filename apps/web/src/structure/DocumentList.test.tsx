@@ -35,7 +35,7 @@ function listed() {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
     if (url.pathname === '/v1/spaces') {
-      return json(200, { items: [{ id: GENERAL, name: 'General', mayCreate: true }] });
+      return json(200, { items: [{ id: GENERAL, name: 'General', mayCreate: true }], next: null });
     }
     if (url.pathname !== '/v1/documents') return json(404, {});
     return json(200, {

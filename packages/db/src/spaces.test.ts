@@ -140,7 +140,7 @@ describe('spaces and artifacts', () => {
       if (!('granted' in read)) throw new Error(`refused: ${read.refused}`);
     });
 
-    expect(await service.withTenant(production, (trx) => listSpacesFor(trx, ada))).toEqual([
+    expect((await service.withTenant(production, (trx) => listSpacesFor(trx, ada))).items).toEqual([
       { id: general.id, name: 'Editorial', mayCreate: true },
       { id: quality.id, name: 'Review', mayCreate: false },
     ]);
@@ -176,8 +176,8 @@ describe('spaces and artifacts', () => {
     const seenFromProduction = await service.withTenant(production, (trx) =>
       listSpacesFor(trx, elsewhere),
     );
-    expect(seenFromProduction.map((space) => space.name)).not.toContain('Editorial');
-    expect(seenFromProduction.map((space) => space.name)).not.toContain('Review');
+    expect(seenFromProduction.items.map((space) => space.name)).not.toContain('Editorial');
+    expect(seenFromProduction.items.map((space) => space.name)).not.toContain('Review');
   });
 
   it("cannot see another tenant's space, or put an artifact in one", async () => {

@@ -21,6 +21,18 @@ import {
 import { sql } from 'kysely';
 import type { TenantTransaction } from './tables.js';
 import { createArtifact, latestVersion, recordVersion, type StoredVersion } from './versions.js';
+import {
+  checkedLimit,
+  isListingRequest,
+  keysetPage,
+  listingSorts,
+  snapshotFor,
+  sortColumns,
+  visibleIn,
+  type Listed,
+  type ListingRequest,
+  type SortOf,
+} from './listing.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -136,27 +148,64 @@ export async function readDefinitionLatest(
   return { id, kind, version, definition: read.definition };
 }
 
-/** Every field, schema and component type at its latest version, by kind and then name. */
+/**
+ * Every field, metadata schema and component type, a page at a time by each one's latest name and then
+ * id, as of the walk's first page (API-007, SCH-022): a definition renamed is a new version, so a walk
+ * holds its order. Read by whoever may read definitions, which the route decides.
+ */
 export async function listDefinitions(
   trx: TenantTransaction,
-): Promise<readonly DefinitionSummary[]> {
-  const all: DefinitionSummary[] = [];
-  for (const kind of ['field', 'metadataSchema', 'componentType'] as const) {
-    const each = await latestOfKind(trx, kind);
-    all.push(
-      ...each.map((stored) => ({
-        id: stored.id,
-        kind,
-        name: stored.definition.name,
-        version: {
-          id: stored.version.id,
-          revision: stored.version.revision,
-          version: stored.version.version,
-        },
-      })),
-    );
+  request: ListingRequest<SortOf<'definitions'>> = { limit: 100 },
+): Promise<Listed<DefinitionSummary>> {
+  const limit = checkedLimit(request.limit);
+  const { types, order } = listingSorts.definitions.name;
+  if (!isListingRequest(request, types)) {
+    throw new Error('A page request names a cursor no listing gave out');
   }
-  return all;
+  const snapshot = await snapshotFor(trx, request.snapshot);
+  const inner = trx
+    .selectFrom('artifact as a')
+    .innerJoinLateral(
+      (eb) =>
+        eb
+          .selectFrom('artifact_version as v')
+          .select(['v.id', 'v.revision_no', 'v.version_no', 'v.content'])
+          .whereRef('v.artifact_id', '=', 'a.id')
+          .where(visibleIn('v.written_by', snapshot))
+          .orderBy('v.revision_no', 'desc')
+          .orderBy('v.version_no', 'desc')
+          .limit(1)
+          .as('latest'),
+      (join) => join.onTrue(),
+    )
+    .select([
+      'a.id',
+      'a.kind',
+      'latest.id as version_id',
+      'latest.revision_no',
+      'latest.version_no',
+    ])
+    .select(sql<string>`latest.content ->> 'name'`.as('name'))
+    .select(sortColumns([sql`latest.content ->> 'name'`]))
+    .where('a.kind', 'in', ['field', 'metadataSchema', 'componentType']);
+  const { rows, next } = await keysetPage<{
+    id: string;
+    kind: DefinitionKind;
+    version_id: string;
+    revision_no: number;
+    version_no: number;
+    name: string;
+  }>(trx, inner, types, request.order ?? order, limit, request.after);
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      name: row.name,
+      version: { id: row.version_id, revision: row.revision_no, version: row.version_no },
+    })),
+    next,
+    snapshot,
+  };
 }
 
 /**

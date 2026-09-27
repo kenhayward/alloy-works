@@ -1,10 +1,17 @@
+import { allRoutes } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
   configureOrganisationSignIn,
+  createDocument,
   createTenant,
   createTenantDatabase,
+  findRole,
+  grant,
   migrate,
+  recordPublication,
+  requestPublication,
   seedDevelopmentContent,
+  type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
@@ -29,6 +36,7 @@ describe('the listings through the service', () => {
   let tenantDb: TenantDatabase;
   let app: FastifyInstance;
   let cookie: string;
+  let tenant: Tenant;
 
   const get = (url: string) => app.inject({ method: 'GET', url, headers: { host: HOST, cookie } });
 
@@ -45,7 +53,7 @@ describe('the listings through the service', () => {
         },
       ],
     });
-    const tenant = await createTenant(db.adminUrl, db.migratorUrl, {
+    tenant = await createTenant(db.adminUrl, db.migratorUrl, {
       organisation: { id: 'acme', name: 'Acme' },
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: [HOST],
@@ -63,8 +71,62 @@ describe('the listings through the service', () => {
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
     });
-    // Grace reads General, where the seed's components, documents and templates are.
+    // Grace reads General, where the seed's components, documents and templates are, and - for the
+    // access listings, which only an administrator reads - administers the environment.
     cookie = await signIn(app, HOST, 'grace', idp.issuer);
+    const grace = (await get('/v1/me')).json<{ id: string }>().id;
+    await tenantDb.withTenant(tenant, async (trx) => {
+      const administrator = await findRole(trx, 'Administrator');
+      await grant(trx, {
+        roleId: administrator!.id,
+        subject: { principal: grace },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: grace,
+      });
+      // Two documents in General, one published twice, so every content listing has pages to turn.
+      const general = await trx
+        .selectFrom('space')
+        .select('id')
+        .where('name', '=', 'General')
+        .executeTakeFirstOrThrow();
+      for (const title of ['Pump manual', 'Valve manual']) {
+        const made = await createDocument(trx, {
+          spaceId: general.id,
+          title,
+          language: 'en-GB',
+          direction: 'ltr',
+          author: grace,
+        });
+        if (made.answer !== 'created') throw new Error(made.answer);
+        for (let times = 0; times < 2; times += 1) {
+          const asked = await requestPublication(trx, {
+            documentId: made.version.artifactId,
+            version: made.version.id,
+            formats: ['pdf'],
+            requester: grace,
+          });
+          if (asked.answer !== 'requested') throw new Error(asked.answer);
+          await recordPublication(trx, {
+            requestId: asked.request.id,
+            pipelineVersion: '2',
+            fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
+            dataSha256: 'b'.repeat(64),
+            numbering: { scheme: 'default/1', entries: [] },
+            outputs: [
+              {
+                format: 'pdf' as const,
+                engineVersion: '0.15.1',
+                templateVersion: 2,
+                key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
+                sha256: 'c'.repeat(64),
+                bytes: 1,
+              },
+            ],
+          });
+        }
+      }
+    });
   });
 
   afterAll(async () => {
@@ -164,5 +226,59 @@ describe('the listings through the service', () => {
     }
     // Its own listing, sort and order take it.
     expect((await get(`/v1/components?sort=title&cursor=${first.next}`)).statusCode).toBe(200);
+  });
+
+  it('API-007 pages every listing by an opaque cursor over a stable order', async () => {
+    // Two waiting invitations, so the invitations listing has pages to turn.
+    for (const email of ['ivy@example.com', 'joan@example.com']) {
+      const sent = await app.inject({
+        method: 'POST',
+        url: '/v1/invitations',
+        headers: { host: HOST, cookie },
+        payload: { email },
+      });
+      expect(sent.statusCode, email).toBe(200);
+    }
+    const spaces = (await get('/v1/spaces?limit=100')).json<Page>();
+    const general = spaces.items.find((each) => each.name === 'General')!.id;
+    const documents = (await get('/v1/documents?limit=100')).json<Page>();
+    const document = documents.items[0]?.id;
+    expect(document, 'a document to list the publications of').toBeDefined();
+    const addressed: Record<string, string> = {
+      listComponents: '/v1/components',
+      listSpaces: '/v1/spaces',
+      listComponentTypes: `/v1/spaces/${general}/component-types`,
+      listDocuments: '/v1/documents',
+      listPublications: `/v1/documents/${document}/publications`,
+      listPublicationsEverywhere: '/v1/publications',
+      listGrants: '/v1/grants?level=tenant',
+      listRoles: '/v1/roles?level=tenant',
+      listPrincipals: '/v1/principals?level=tenant',
+      listInvitations: '/v1/invitations',
+      listTemplates: '/v1/templates',
+      listDefinitions: '/v1/definitions',
+      listPeople: '/v1/people',
+    };
+    // Every route that answers a list: a new one is listed here, and so paged, or this fails.
+    const listings = allRoutes.filter(
+      (route) =>
+        route.method === 'GET' &&
+        'items' in ((route.responses[200]?.schema as { shape?: object } | undefined)?.shape ?? {}),
+    );
+    expect(listings.map((route) => route.operationId).sort()).toEqual(
+      Object.keys(addressed).sort(),
+    );
+    for (const route of listings) {
+      // Each takes a cursor and a limit, and never an offset.
+      const query = Object.keys((route as { query?: { shape: object } }).query?.shape ?? {});
+      expect(query, route.operationId).toEqual(expect.arrayContaining(['cursor', 'limit']));
+      expect(query, route.operationId).not.toContain('offset');
+      // And a walk a page of one at a time is the listing read whole, each once, in one order.
+      const path = addressed[route.operationId]!;
+      const whole = (await get(`${path}${path.includes('?') ? '&' : '?'}limit=100`)).json<Page>();
+      expect(whole.next, route.operationId).toBeNull();
+      expect(whole.items.length, route.operationId).toBeGreaterThan(0);
+      expect(await walk(path), route.operationId).toEqual(whole.items.map((each) => each.id));
+    }
   });
 });
