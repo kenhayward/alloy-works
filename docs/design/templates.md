@@ -158,7 +158,9 @@ The outline act reads the document's recorded template version and passes its `c
 false, a `remove` of a section when `remove` is false, and a `move` of a section when `reorder` is false
 
 - each as `outline_invalid` with a reason saying which, in the words FRONT_FIRST uses. **References are
-  never held by `changes`**: placing, moving and removing components is what writing a document is.
+  never held by `changes`**: placing, moving and removing components is what writing a document is -
+  except a reference carrying a section beneath it, whose removal or move takes that section too and
+  is held as the section is, so a reference is no way round the rule.
   A document with no template has no `changes`, and nothing is refused on its account (TPL-015).
 
 ### Values
@@ -232,7 +234,8 @@ nothing is queued to fail.
 - `packages/domain`: a definition refused for each rule `checkTemplate` holds; `resolveTemplate`
   refusing each kind of unresolved reference, and answering effective fields per level; materialising
   a starting outline with its origins and seeded values; `applyOutlineOperation` refusing each change
-  `changes` forbids and allowing every reference act.
+  `changes` forbids, a section carried inside a reference included, and allowing every other
+  reference act.
 - `packages/db`: a template made, read and versioned by the one mechanism; instantiation writing the
   outline, the values and the link in one transaction, and nothing when refused; `document_template`
   refusing an update.
