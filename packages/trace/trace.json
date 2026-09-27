@@ -16778,7 +16778,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 487,
+      "line": 489,
       "kind": "title"
     },
     {
@@ -17012,25 +17012,25 @@
     {
       "id": "API-037",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 245,
+      "line": 248,
       "kind": "rule"
     },
     {
       "id": "IAM-018",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 205,
+      "line": 208,
       "kind": "title"
     },
     {
       "id": "TPL-004",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 233,
+      "line": 236,
       "kind": "rule"
     },
     {
       "id": "TPL-006",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 179,
+      "line": 182,
       "kind": "title"
     },
     {
@@ -17642,7 +17642,7 @@
     {
       "id": "TPL-004",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 383,
+      "line": 505,
       "kind": "title"
     },
     {
@@ -18236,7 +18236,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 292,
+      "line": 295,
       "kind": "title"
     },
     {
@@ -18710,19 +18710,31 @@
     {
       "id": "STR-003",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 221,
+      "line": 228,
       "kind": "title"
     },
     {
       "id": "STR-007",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 270,
+      "line": 277,
       "kind": "title"
     },
     {
       "id": "STR-010",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 289,
+      "line": 296,
+      "kind": "title"
+    },
+    {
+      "id": "STR-060",
+      "file": "packages/domain/src/structure/operations.test.ts",
+      "line": 779,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-015",
+      "file": "packages/domain/src/structure/operations.test.ts",
+      "line": 697,
       "kind": "title"
     },
     {

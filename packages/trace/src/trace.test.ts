@@ -541,6 +541,7 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 412, from 410 (2026-09-27): W4.3 - TPL-015 and STR-060 in the outline operations' test.
   // 410, from 404 (2026-09-27): W4.2 - TPL-012 and TPL-062 in the materialising test; TPL-025,
   // TPL-027, TPL-004 and STY-025 in the store's test of a document made from a template.
   // 404, from 392 (2026-09-27): W4.1 - in titles TPL-059, TPL-012, TPL-013, TPL-015 and TPL-054 (the
@@ -562,7 +563,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(410);
+    expect(model.citations).toHaveLength(412);
   });
 
   it('cites no identifier the corpus does not hold', () => {

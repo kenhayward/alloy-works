@@ -31,3 +31,4 @@ export { carryForward } from './carry.js';
 export type { CarriedForward, NotCarried } from './carry.js';
 export { definitionsFor, canonicaliseValues, canonicaliseNotCarried } from './record.js';
 export type { DefinitionRef, Versioned } from './record.js';
+export { checkWrittenValues, writtenValues } from './write.js';

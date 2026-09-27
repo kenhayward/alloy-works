@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.79.0 - 2026-09-27 (PR #259)
+
+### Added
+
+- **A document keeps to what its template lets an author change.** Where the template forbids adding,
+  removing or reordering sections, the outline refuses it and says which; components are still
+  placed, moved and taken out freely.
+- **A document's and its sections' values can be written through the API**, each checked against
+  the fields its template applies there. A field that does not apply, a value that does not fit and
+  a changed fixed value are refused by name, and a field left out takes its default. An empty value
+  is allowed until the document is published. No page fills a field in yet.
+
 ## 0.78.0 - 2026-09-27 (PR #258)
 
 ### Added

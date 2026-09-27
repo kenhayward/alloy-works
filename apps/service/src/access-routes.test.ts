@@ -627,6 +627,11 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { openedFrom: MISSING, operation: { operation: 'remove', node: 'a'.repeat(26) } },
     }),
+    recordDocumentValues: () => ({
+      url: `/v1/documents/${report}/values`,
+      status: 404,
+      payload: { openedFrom: MISSING, values: {} },
+    }),
     requestPublication: () => ({
       url: `/v1/documents/${report}/publications`,
       status: 404,

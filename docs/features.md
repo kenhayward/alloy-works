@@ -394,8 +394,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   layout, at their latest versions; a blank document keeps the environment's. After that the outline
   is the document's own: changing it changes no template, and a template's next version changes no
   document already made. A template you may not read is answered as not there, and one naming
-  something that no longer exists is refused with a sentence saying so, keeping your choice. What an
-  author may change is not yet held to the template, and no page fills a field in.
+  something that no longer exists is refused with a sentence saying so, keeping your choice.
+
+- **What a template lets an author change, and its values.** A document made from a template is held
+  to what that template's version said an author may change: a section added, removed or moved where
+  it forbids that is refused with a sentence saying which, while components are placed, moved and
+  taken out freely - unless one carries a section beneath it, which is held as that section is. A document's own values are written whole through the API,
+  `PUT /v1/documents/{id}/values`, and a section's through the outline's `set`, each checked against
+  the fields its template applies at that level - a field that does not apply, a value its field
+  refuses and a fixed value changed are refused by name, and a field left out takes its default. A
+  value left empty is allowed until publication. No page fills a field in yet.
 
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath

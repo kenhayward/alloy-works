@@ -34,6 +34,8 @@ const WIRE_CODES = {
   'page_reference.without_pdf': 'page_reference_without_pdf',
   'layout.language': 'layout_language',
   'template.unresolved': 'template_unresolved',
+  'values.invalid': 'values_invalid',
+  'values.unresolved': 'values_unresolved',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;

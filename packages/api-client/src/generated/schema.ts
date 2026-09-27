@@ -324,6 +324,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/values": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Write the document's own values, whole, as one version with the outline unchanged */
+        put: operations["recordDocumentValues"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/grants": {
         parameters: {
             query?: never;
@@ -2840,6 +2857,10 @@ export interface operations {
                         outline: {
                             [key: string]: unknown;
                         };
+                        /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                        values: {
+                            [key: string]: unknown;
+                        };
                         /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
                         template: {
                             id: string;
@@ -3561,8 +3582,10 @@ export interface operations {
                             /** @constant */
                             kind: "approved";
                         };
-                        /** @description Empty: nothing may be written into a node's values until TPL-054 says what they hold */
-                        values?: Record<string, never>;
+                        /** @description A section's field values, whole: each a field its document's template applies to sections */
+                        values?: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };
@@ -3591,6 +3614,10 @@ export interface operations {
                         };
                         /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
                         outline: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                        values: {
                             [key: string]: unknown;
                         };
                         /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
@@ -3628,7 +3655,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description outline_invalid: the operation does not apply to the latest outline; or invalid_request: a body this route does not accept */
+            /** @description outline_invalid: the operation does not apply to the latest outline; values_invalid: a section's value does not fit; values_unresolved: the document's template no longer resolves; or invalid_request: a body this route does not accept */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3661,6 +3688,10 @@ export interface operations {
                             };
                             /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
                             outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
                                 [key: string]: unknown;
                             };
                             /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
@@ -3698,6 +3729,24 @@ export interface operations {
                         };
                         /** @description outline_invalid: why the operation does not apply */
                         reason?: string;
+                        /** @description values_invalid: each value that does not fit its field, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            id: string;
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
                     };
                 };
             };
@@ -3790,6 +3839,10 @@ export interface operations {
                             outline: {
                                 [key: string]: unknown;
                             };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
+                                [key: string]: unknown;
+                            };
                             /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
                             template: {
                                 id: string;
@@ -3825,6 +3878,24 @@ export interface operations {
                         };
                         /** @description outline_invalid: why the operation does not apply */
                         reason?: string;
+                        /** @description values_invalid: each value that does not fit its field, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            id: string;
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
                     };
                 };
             };
@@ -4237,6 +4308,356 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    recordDocumentValues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The version the values were read at, which must be the latest */
+                    openedFrom: string & (unknown & unknown);
+                    /** @description The document's values, by field identifier */
+                    values: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Written, or nothing changed: the document at its latest version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                        outline: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                        values: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                        template: {
+                            id: string;
+                            name: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                        } | null;
+                        /** @description Whether the caller may restructure the outline */
+                        mayEdit: boolean;
+                        /** @description Whether the caller may publish the document */
+                        mayPublish: boolean;
+                        /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            language: string;
+                            /** @description The numbering scheme this document is numbered and published with */
+                            scheme: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2) */
+                            words: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            formats: string[];
+                        };
+                    };
+                };
+            };
+            /** @description values_invalid: a value is for a field the document's template does not apply, or does not fit its field; values_unresolved: the template no longer resolves; or invalid_request: a body this route does not accept */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description version_precondition: the document as it now stands */
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                            } | null;
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                language: string;
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2) */
+                                words: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                formats: string[];
+                            };
+                        };
+                        /** @description outline_invalid: why the operation does not apply */
+                        reason?: string;
+                        /** @description values_invalid: each value that does not fit its field, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            id: string;
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description version_precondition: the document has changed since it was read */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description version_precondition: the document as it now stands */
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                            } | null;
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                language: string;
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2) */
+                                words: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                formats: string[];
+                            };
+                        };
+                        /** @description outline_invalid: why the operation does not apply */
+                        reason?: string;
+                        /** @description values_invalid: each value that does not fit its field, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            id: string;
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
                     };
                 };
             };
@@ -6776,6 +7197,10 @@ export interface operations {
                         };
                         /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
                         outline: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                        values: {
                             [key: string]: unknown;
                         };
                         /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */

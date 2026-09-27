@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import {
   applyOutlineOperation,
   blockIdentifierFrom,
+  checkWrittenValues,
   decide,
   materialiseTemplate,
   OUTLINE_SCHEMA_VERSION,
@@ -9,16 +10,21 @@ import {
   readOutline,
   resolveTemplate,
   walkOutline,
+  writtenValues,
+  type EffectiveField,
+  type MetadataFailure,
+  type MetadataValues,
   type OutlineDocument,
   type OutlineNode,
   type OutlineOperation,
+  type OutlineRules,
   type UnresolvedReference,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
-import { readTemplate, templateReferences } from './templates.js';
+import { documentRules, readTemplate, templateReferences } from './templates.js';
 import {
   createArtifact,
   latestVersion,
@@ -63,7 +69,15 @@ export type CreateDocumentAnswer =
  * an operation it cannot take, with the operation's fixed reason.
  */
 export type OutlineAnswer =
-  RecordAnswer | { readonly answer: 'outline.invalid'; readonly reason: string };
+  RecordAnswer | { readonly answer: 'outline.invalid'; readonly reason: string } | ValuesRefused;
+
+/**
+ * Values written that do not fit (templates.md, "Values"): each failure by field, in MET-022's shape;
+ * or the document's template no longer resolving, so there is nothing to check them against (TPL-004).
+ */
+export type ValuesRefused =
+  | { readonly answer: 'values.invalid'; readonly failures: readonly MetadataFailure[] }
+  | { readonly answer: 'template.unresolved'; readonly unresolved: readonly UnresolvedReference[] };
 
 /** One document as its page reads it: the latest version, and the one space it lives in. */
 export interface StoredDocument {
@@ -415,13 +429,79 @@ export async function editOutline(
   if (target && !(await mayReference(trx, input.author, target))) {
     return { answer: 'outline.invalid', reason: REFERENCE_REFUSED };
   }
-  const applied = applyOutlineOperation(read.outline, input.operation, newNodeIdentifier);
-  if (!applied.applied) return { answer: 'outline.invalid', reason: applied.reason };
+  // Held to the document's template (TPL-015, STR-060): its recorded version's changes always, and
+  // its section-level fields where a section's values are written, which needs it to resolve now.
+  const rules = await documentRules(trx, input.artifactId);
+  let held: OutlineRules = {};
+  if (rules.bound) {
+    const writesValues =
+      input.operation.operation === 'set' && input.operation.values !== undefined;
+    if (!rules.resolved.ok && writesValues) {
+      return { answer: 'template.unresolved', unresolved: rules.resolved.unresolved };
+    }
+    held = rules.resolved.ok
+      ? { changes: rules.changes, sectionFields: rules.resolved.section }
+      : { changes: rules.changes };
+  }
+  const applied = applyOutlineOperation(read.outline, input.operation, newNodeIdentifier, held);
+  if (!applied.applied) {
+    return applied.failures
+      ? { answer: 'values.invalid', failures: applied.failures }
+      : { answer: 'outline.invalid', reason: applied.reason };
+  }
   return recordVersion(trx, {
     artifactId: input.artifactId,
     openedFrom: input.openedFrom,
     author: input.author,
     // The document's values are not the outline's to change, so they are carried as they stand.
     substance: { kind: 'document', content: applied.outline, values: opened.values },
+  });
+}
+
+/**
+ * A document's own values, written whole as its next version with the outline unchanged (templates.md,
+ * "Values"): each checked against the document-level fields of its template, resolved now (TE-K), and
+ * refused by name where it does not fit - a blank document has no field to hold one. Required is not
+ * checked here but at publication (TPL-055). The version chain's precondition and unchanged answers are
+ * `recordVersion`'s, as for an outline act.
+ */
+export async function recordDocumentValues(
+  trx: TenantTransaction,
+  input: {
+    readonly documentId: string;
+    readonly openedFrom: string;
+    readonly author: string;
+    readonly values: MetadataValues;
+  },
+): Promise<RecordAnswer | ValuesRefused> {
+  const opened = await readVersion(trx, input.openedFrom);
+  if (!opened || opened.artifactId !== input.documentId || opened.kind !== 'document') {
+    return { answer: 'artifact.missing' };
+  }
+  const read = readOutline(opened.content, { artifact: input.documentId, version: opened.id });
+  if (!read.ok) {
+    throw new Error(
+      `The document ${input.documentId} at ${opened.id} does not read: ${read.failure}`,
+    );
+  }
+  const rules = await documentRules(trx, input.documentId);
+  let fields: readonly EffectiveField[] = [];
+  if (rules.bound) {
+    if (!rules.resolved.ok) {
+      return { answer: 'template.unresolved', unresolved: rules.resolved.unresolved };
+    }
+    fields = rules.resolved.document;
+  }
+  const failures = checkWrittenValues(fields, input.values);
+  if (failures.length > 0) return { answer: 'values.invalid', failures };
+  return recordVersion(trx, {
+    artifactId: input.documentId,
+    openedFrom: input.openedFrom,
+    author: input.author,
+    substance: {
+      kind: 'document',
+      content: read.outline,
+      values: writtenValues(fields, input.values),
+    },
   });
 }

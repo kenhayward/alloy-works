@@ -158,7 +158,9 @@ The outline act reads the document's recorded template version and passes its `c
 false, a `remove` of a section when `remove` is false, and a `move` of a section when `reorder` is false
 
 - each as `outline_invalid` with a reason saying which, in the words FRONT_FIRST uses. **References are
-  never held by `changes`**: placing, moving and removing components is what writing a document is.
+  never held by `changes`**: placing, moving and removing components is what writing a document is -
+  except a reference carrying a section beneath it, whose removal or move takes that section too and
+  is held as the section is, so a reference is no way round the rule.
   A document with no template has no `changes`, and nothing is refused on its account (TPL-015).
 
 ### Values
@@ -213,26 +215,27 @@ nothing is queued to fail.
 
 ## Where the code lives
 
-| Where                                              | What                                                                                                                               |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `domain: src/template/`                            | The definition's schema, `checkTemplate`, `resolveTemplate`, and the starting outline's materialising                              |
-| `domain: src/structure/`                           | `origin`, outline schema 3, and `changes` passed to `applyOutlineOperation`                                                        |
-| `db: migrations/tenant/0028_templates.sql`         | The kind, its space rule, and its versions authored                                                                                |
-| `db: migrations/tenant/0029_document_template.sql` | `document_template`, and documents' values                                                                                         |
-| `db: src/templates.ts`                             | Making, reading and versioning a template; a document's template, and the layout and theme it binds                                |
-| `service: src/templates.ts`                        | The template routes; the documents and publishing handlers read a document's template                                              |
-| `domain: src/version/substance.ts`                 | `DocumentSubstance.values`, and `canonicaliseVersion` digesting them                                                               |
-| `db: src/versions.ts`                              | `insertVersion` and `substanceOf` writing and reading a document's values                                                          |
-| `db: src/publishing.ts`, `layouts.ts`, `themes.ts` | `requestPublication` reading the document's template's layout and theme, `layoutLatest` and `themeLatest`, and the two door checks |
-| `service: src/wire-codes.ts`                       | `template.unresolved`, `section.required` and `metadata.invalid`, with their rules TPL-004, TPL-013 and TPL-055 (API-006)          |
-| `web: src/structure/NewDocument.tsx`               | The template to start from                                                                                                         |
+| Where                                              | What                                                                                                                                                                                                       |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: src/template/`                            | The definition's schema, `checkTemplate`, `resolveTemplate`, and the starting outline's materialising                                                                                                      |
+| `domain: src/structure/`                           | `origin`, outline schema 3, and `changes` passed to `applyOutlineOperation`                                                                                                                                |
+| `db: migrations/tenant/0028_templates.sql`         | The kind, its space rule, and its versions authored                                                                                                                                                        |
+| `db: migrations/tenant/0029_document_template.sql` | `document_template`, and documents' values                                                                                                                                                                 |
+| `db: src/templates.ts`                             | Making, reading and versioning a template; a document's template, and the layout and theme it binds                                                                                                        |
+| `service: src/templates.ts`                        | The template routes; the documents and publishing handlers read a document's template                                                                                                                      |
+| `domain: src/version/substance.ts`                 | `DocumentSubstance.values`, and `canonicaliseVersion` digesting them                                                                                                                                       |
+| `db: src/versions.ts`                              | `insertVersion` and `substanceOf` writing and reading a document's values                                                                                                                                  |
+| `db: src/publishing.ts`, `layouts.ts`, `themes.ts` | `requestPublication` reading the document's template's layout and theme, `layoutLatest` and `themeLatest`, and the two door checks                                                                         |
+| `service: src/wire-codes.ts`                       | `template.unresolved`, `section.required` and `metadata.invalid`, with their rules TPL-004, TPL-013 and TPL-055 (API-006); `values.invalid` and `values.unresolved`, a written value's refusals, with none |
+| `web: src/structure/NewDocument.tsx`               | The template to start from                                                                                                                                                                                 |
 
 ## Verification
 
 - `packages/domain`: a definition refused for each rule `checkTemplate` holds; `resolveTemplate`
   refusing each kind of unresolved reference, and answering effective fields per level; materialising
   a starting outline with its origins and seeded values; `applyOutlineOperation` refusing each change
-  `changes` forbids and allowing every reference act.
+  `changes` forbids, a section carried inside a reference included, and allowing every other
+  reference act.
 - `packages/db`: a template made, read and versioned by the one mechanism; instantiation writing the
   outline, the values and the link in one transaction, and nothing when refused; `document_template`
   refusing an update.

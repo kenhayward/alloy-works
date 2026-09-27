@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
+import { DEFINITION_SCHEMA_VERSION } from '../metadata/definition.js';
+import { fieldDefinitionSchema } from '../metadata/field.js';
+import type { EffectiveField } from '../metadata/resolve.js';
+
 import {
   applyOutlineOperation,
   outlineOperationSchema,
   type OutlineOperation,
+  type OutlineRules,
 } from './operations.js';
 import {
   OUTLINE_SCHEMA_VERSION,
@@ -132,13 +137,15 @@ describe('outlineOperationSchema', () => {
     ).toBe(false);
   });
 
-  it("writes nothing into a node's values until something says what they hold", () => {
-    // TPL-054 decides which fields a section carries, and nothing yet does: while every stored
-    // `values` is `{}`, keeping the member or dropping it later is one migration either way.
+  it("takes a node's values as a set of members, storable, and an insert carries none", () => {
     const set = (values: unknown) => ({ operation: 'set', node: NODE, values });
-    expect(outlineOperationSchema.safeParse(set({ audience: 'clinical' })).success).toBe(false);
-    expect(outlineOperationSchema.safeParse(set({ nested: {} })).success).toBe(false);
+    expect(outlineOperationSchema.safeParse(set({ audience: 'clinical' })).success).toBe(true);
     expect(outlineOperationSchema.safeParse(set({})).success).toBe(true);
+    expect(outlineOperationSchema.safeParse(set(['clinical'])).success).toBe(false);
+    // A character Postgres cannot hold in JSON, in a value or in a member's name.
+    const nul = String.fromCharCode(0);
+    expect(outlineOperationSchema.safeParse(set({ audience: 'a' + nul })).success).toBe(false);
+    expect(outlineOperationSchema.safeParse(set({ ['a' + nul]: 'b' })).success).toBe(false);
     // And an insert carries none at all, for either kind of node.
     for (const node of [
       { type: 'section', title: [{ type: 'text', value: 'Method', marks: [] }] },
@@ -661,5 +668,174 @@ describe('what an operation cannot build, because the parse refuses it', () => {
         allocate,
       ),
     ).toEqual(UNSTORABLE);
+  });
+});
+
+describe("an outline held to its template's rules", () => {
+  const title = (words: string) => [{ type: 'text' as const, value: words, marks: [] }];
+  /** Introduction, holding a component, then Method. */
+  const shaped = () => {
+    const { allocate } = identifiers();
+    let outline = run(empty, addSection(null, 0, 'Introduction'), allocate);
+    outline = run(outline, addSection(null, 1, 'Method'), allocate);
+    const [introduction, method] = outline.nodes.map((node) => node.id) as [string, string];
+    outline = run(
+      outline,
+      {
+        operation: 'insert',
+        parent: introduction,
+        position: 0,
+        node: { type: 'reference', component: COMPONENT, mode: { kind: 'latest' } },
+      },
+      allocate,
+    );
+    const reference = outline.nodes[0]!.children[0]!.id;
+    return { outline, allocate, introduction, method, reference };
+  };
+  const refusal = (reason: string) => ({ applied: false, reason });
+
+  it('TPL-015 refuses adding, removing or reordering sections where the template forbids it, and never placing a component', () => {
+    const { outline, allocate, introduction, method, reference } = shaped();
+    const fixed = { changes: { add: false, remove: false, reorder: false } };
+    const apply = (operation: OutlineOperation, rules: OutlineRules = fixed) =>
+      applyOutlineOperation(outline, operation, allocate, rules);
+
+    expect(apply(addSection(null, 2, 'Results'))).toEqual(
+      refusal("This document's template does not allow sections to be added"),
+    );
+    expect(apply({ operation: 'remove', node: method })).toEqual(
+      refusal("This document's template does not allow sections to be removed"),
+    );
+    const reordered = refusal("This document's template does not allow sections to be reordered");
+    expect(apply({ operation: 'move', node: method, parent: null, position: 0 })).toEqual(
+      reordered,
+    );
+    expect(apply({ operation: 'move', node: method, parent: introduction, position: 0 })).toEqual(
+      reordered,
+    );
+    // A component is placed, moved and taken out whatever the template says: that is writing.
+    for (const operation of [
+      {
+        operation: 'insert',
+        parent: method,
+        position: 0,
+        node: { type: 'reference', component: OTHER_COMPONENT, mode: { kind: 'latest' } },
+      },
+      { operation: 'move', node: reference, parent: method, position: 0 },
+      { operation: 'remove', node: reference },
+    ] as OutlineOperation[]) {
+      expect(apply(operation).applied, operation.operation).toBe(true);
+    }
+    // Nor are a section's title and switches held: they are not what the template's changes name.
+    expect(apply({ operation: 'retitle', node: method, title: title('Methods') }).applied).toBe(
+      true,
+    );
+    expect(apply({ operation: 'set', node: method, numbered: false }).applied).toBe(true);
+    // Each is allowed where the template allows it, and by a document with no template at all.
+    const free = { changes: { add: true, remove: true, reorder: true } };
+    expect(apply(addSection(null, 2, 'Results'), free).applied).toBe(true);
+    expect(apply({ operation: 'remove', node: method }, free).applied).toBe(true);
+    expect(apply({ operation: 'move', node: method, parent: null, position: 0 }, {}).applied).toBe(
+      true,
+    );
+  });
+
+  it('holds a section carried inside a component reference, so a reference cannot take it past the rules', () => {
+    const { outline, allocate, method, reference } = shaped();
+    // Reordering allowed, removing not: the section is moved under the reference, which is allowed.
+    const rules = { changes: { add: true, remove: false, reorder: true } };
+    const carried = applyOutlineOperation(
+      outline,
+      { operation: 'move', node: method, parent: reference, position: 0 },
+      allocate,
+      rules,
+    );
+    if (!carried.applied) throw new Error(carried.reason);
+    // And the reference, carrying it, is removed only where a section may be.
+    expect(
+      applyOutlineOperation(
+        carried.outline,
+        { operation: 'remove', node: reference },
+        allocate,
+        rules,
+      ),
+    ).toEqual(refusal("This document's template does not allow sections to be removed"));
+    expect(
+      applyOutlineOperation(carried.outline, { operation: 'remove', node: reference }, allocate, {
+        changes: { add: true, remove: true, reorder: true },
+      }).applied,
+    ).toBe(true);
+    // Nor is it moved, carrying the section, where sections may not be reordered.
+    expect(
+      applyOutlineOperation(
+        carried.outline,
+        { operation: 'move', node: reference, parent: null, position: 0 },
+        allocate,
+        { changes: { add: true, remove: true, reorder: false } },
+      ),
+    ).toEqual(refusal("This document's template does not allow sections to be reordered"));
+  });
+
+  it("STR-060 gives a section field values of its own from its template's section-level schemas", () => {
+    const { outline, allocate, method, reference } = shaped();
+    const field = (id: string, name: string, validation: object = {}) =>
+      fieldDefinitionSchema.parse({
+        schemaVersion: DEFINITION_SCHEMA_VERSION,
+        id,
+        name,
+        dataType: 'text',
+        multiplicity: 'one',
+        validation,
+      });
+    const sectionFields: EffectiveField[] = [
+      {
+        field: field('field-status', 'Status'),
+        required: false,
+        requiredBy: [],
+        fixed: false,
+        fixedBy: [],
+        default: { value: 'draft', from: ['schema-chapter'] },
+      },
+      {
+        field: field('field-code', 'Code', { maxLength: 4 }),
+        required: true,
+        requiredBy: ['schema-chapter'],
+        fixed: false,
+        fixedBy: [],
+      },
+    ];
+    const set = (node: string, values: Record<string, unknown>) =>
+      applyOutlineOperation(outline, { operation: 'set', node, values }, allocate, {
+        sectionFields,
+      });
+
+    // A section holds a value for each field its template's section-level schemas apply, and the
+    // default of each it is not given.
+    const written = set(method, { 'field-code': 'M1' });
+    if (!written.applied) throw new Error(written.reason);
+    expect(written.outline.nodes[1]!.values).toEqual({
+      'field-code': 'M1',
+      'field-status': 'draft',
+    });
+    // A field that is not one of them, and a value its field refuses, are refused by name.
+    const refused = set(method, { 'field-audience': 'clinical', 'field-code': 'M12345' });
+    expect(refused).toMatchObject({ applied: false, reason: 'A value does not fit its field' });
+    expect(
+      refused.applied ? [] : (refused.failures ?? []).map(({ field, rule }) => [field, rule]),
+    ).toEqual([
+      ['field-audience', 'unknown'],
+      ['field-code', 'maxLength'],
+    ]);
+    // A component's values are its own, so its reference holds none.
+    expect(set(reference, {})).toEqual(
+      refusal("A component reference holds no values: a component's are its own"),
+    );
+    // And a section of a document with no template has no field to hold a value for.
+    const blank = applyOutlineOperation(
+      outline,
+      { operation: 'set', node: method, values: { 'field-code': 'M1' } },
+      allocate,
+    );
+    expect(blank).toMatchObject({ applied: false, failures: [{ rule: 'unknown' }] });
   });
 });

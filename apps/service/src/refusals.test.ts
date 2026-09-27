@@ -43,6 +43,11 @@ describe('the rule behind a refusal', () => {
       'invitation.signed_in',
       'invitation.kind_differs',
       'invitation.accepted',
+      // A value written that does not fit, or that nothing can be checked against because the
+      // document's template no longer resolves: the design's own guards (templates.md, "Values"). A
+      // missing required value is TPL-055's, refused at publication and not here.
+      'values.invalid',
+      'values.unresolved',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

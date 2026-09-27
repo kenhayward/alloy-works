@@ -285,6 +285,9 @@ describe('the domain package', () => {
         'templateDefinitionSchema',
         // And the outline a document made from one starts with (templates.md, W4.2).
         'materialiseTemplate',
+        // Values as a section or a document is written with them (templates.md, W4.3).
+        'checkWrittenValues',
+        'writtenValues',
       ].sort(),
     );
   });

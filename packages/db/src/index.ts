@@ -243,6 +243,7 @@ export {
 export {
   createDocument,
   editOutline,
+  recordDocumentValues,
   listReadableDocuments,
   readableComponents,
   readDocument,
@@ -251,11 +252,13 @@ export {
   type PublishingState,
   type NewDocument,
   type OutlineAnswer,
+  type ValuesRefused,
   type StoredDocument,
 } from './documents.js';
 export {
   createTemplate,
   documentLayout,
+  documentRules,
   documentTemplate,
   documentTheme,
   listReadableTemplates,

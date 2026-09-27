@@ -123,6 +123,17 @@ dropped them. `createArtifact` makes no theme or layout, so the tests binding a 
 environment's rows under a new artifact. A document's view names its template only where the caller
 may read it, null otherwise, as for a blank document.
 
+**W4.3.** Values written are checked by `checkWrittenValues` and stored by `writtenValues`, in the
+metadata package beside `validate`, and a field outside the level's fields fails a new rule,
+`unknown`. A value written whole takes the default of each field it leaves out, as `carryForward`
+does, so a fixed value survives any write and a field is emptied by its clear. A write to a document
+whose template no longer resolves is refused as `values_unresolved`, not `template_unresolved`,
+because that code's rule is TPL-004's, about making a document; neither values code names a rule.
+The document's view carries its own values. As designed (TE-D), `remove: false` holds every section,
+an author's own included. The review found a way round the rule: a section moved under a component
+reference was removed, or moved, with the reference, which `changes` never holds. A removal or a move
+is now held by every section in the subtree it takes, not only by the node it names.
+
 ## Done when
 
 - Every requirement templates.md claims is Covered, and STY-025, VER-056, TPL-006 and IAM-018 are cited

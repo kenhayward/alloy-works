@@ -32,7 +32,7 @@ export type {
 } from './outline.js';
 
 export { applyOutlineOperation, outlineOperationSchema } from './operations.js';
-export type { OutlineApplied, OutlineOperation } from './operations.js';
+export type { OutlineApplied, OutlineOperation, OutlineRules } from './operations.js';
 
 export { contributionsOf, inlineContributions } from './contributions.js';
 export type { Contribution } from './contributions.js';
