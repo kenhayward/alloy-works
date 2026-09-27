@@ -130,7 +130,9 @@ does, so a fixed value survives any write and a field is emptied by its clear. A
 whose template no longer resolves is refused as `values_unresolved`, not `template_unresolved`,
 because that code's rule is TPL-004's, about making a document; neither values code names a rule.
 The document's view carries its own values. As designed (TE-D), `remove: false` holds every section,
-an author's own included.
+an author's own included. The review found a way round the rule: a section moved under a component
+reference was removed, or moved, with the reference, which `changes` never holds. A removal or a move
+is now held by every section in the subtree it takes, not only by the node it names.
 
 ## Done when
 

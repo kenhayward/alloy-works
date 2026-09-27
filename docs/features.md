@@ -399,7 +399,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **What a template lets an author change, and its values.** A document made from a template is held
   to what that template's version said an author may change: a section added, removed or moved where
   it forbids that is refused with a sentence saying which, while components are placed, moved and
-  taken out freely. A document's own values are written whole through the API,
+  taken out freely - unless one carries a section beneath it, which is held as that section is. A document's own values are written whole through the API,
   `PUT /v1/documents/{id}/values`, and a section's through the outline's `set`, each checked against
   the fields its template applies at that level - a field that does not apply, a value its field
   refuses and a fixed value changed are refused by name, and a field left out takes its default. A

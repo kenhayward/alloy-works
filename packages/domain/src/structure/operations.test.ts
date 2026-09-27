@@ -740,6 +740,42 @@ describe("an outline held to its template's rules", () => {
     );
   });
 
+  it('holds a section carried inside a component reference, so a reference cannot take it past the rules', () => {
+    const { outline, allocate, method, reference } = shaped();
+    // Reordering allowed, removing not: the section is moved under the reference, which is allowed.
+    const rules = { changes: { add: true, remove: false, reorder: true } };
+    const carried = applyOutlineOperation(
+      outline,
+      { operation: 'move', node: method, parent: reference, position: 0 },
+      allocate,
+      rules,
+    );
+    if (!carried.applied) throw new Error(carried.reason);
+    // And the reference, carrying it, is removed only where a section may be.
+    expect(
+      applyOutlineOperation(
+        carried.outline,
+        { operation: 'remove', node: reference },
+        allocate,
+        rules,
+      ),
+    ).toEqual(refusal("This document's template does not allow sections to be removed"));
+    expect(
+      applyOutlineOperation(carried.outline, { operation: 'remove', node: reference }, allocate, {
+        changes: { add: true, remove: true, reorder: true },
+      }).applied,
+    ).toBe(true);
+    // Nor is it moved, carrying the section, where sections may not be reordered.
+    expect(
+      applyOutlineOperation(
+        carried.outline,
+        { operation: 'move', node: reference, parent: null, position: 0 },
+        allocate,
+        { changes: { add: true, remove: true, reorder: false } },
+      ),
+    ).toEqual(refusal("This document's template does not allow sections to be reordered"));
+  });
+
   it("STR-060 gives a section field values of its own from its template's section-level schemas", () => {
     const { outline, allocate, method, reference } = shaped();
     const field = (id: string, name: string, validation: object = {}) =>

@@ -133,7 +133,9 @@ const REFERENCE_VALUES = "A component reference holds no values: a component's a
 /**
  * TPL-015, before anything else about the operation: an insert of a section, a removal of one or a
  * move of one that the template's `changes` forbids. A component reference is never held - placing,
- * moving and removing components is what writing a document is.
+ * moving and removing components is what writing a document is - except for a section it carries:
+ * a removal or a move takes the whole subtree, so a section inside it is removed or moved too, and a
+ * reference must not be a way round the rule for sections.
  */
 function forbidden(
   outline: OutlineDocument,
@@ -145,7 +147,13 @@ function forbidden(
     return operation.node.type === 'section' && !changes.add ? refuse(NOT_ADDED) : undefined;
   }
   if (operation.operation === 'remove' || operation.operation === 'move') {
-    if (findNode(outline.nodes, operation.node)?.type !== 'section') return undefined;
+    const node = findNode(outline.nodes, operation.node);
+    if (node === undefined) return undefined;
+    let carriesSection = false;
+    walkOutline([node], (member) => {
+      if (member.type === 'section') carriesSection = true;
+    });
+    if (!carriesSection) return undefined;
     if (operation.operation === 'remove' && !changes.remove) return refuse(NOT_REMOVED);
     if (operation.operation === 'move' && !changes.reorder) return refuse(NOT_REORDERED);
   }
