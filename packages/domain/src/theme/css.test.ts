@@ -149,6 +149,18 @@ describe('projectCss', () => {
     expect(code).toContain('font-size: 0.8em');
   });
 
+  it('sets a paragraph whose style will not resolve in the default of the place it stands in, as it is marked', () => {
+    // Its own style's rule, where the theme holds one for elsewhere, is outranked: one more selector.
+    const body = ruleFor(css, '.aw-canvas.aw-canvas [data-place="text"][data-unresolved]');
+    expect(body).toContain('font-size: calc(11pt * var(--aw-zoom))');
+    expect(
+      ruleFor(css, '.aw-canvas.aw-canvas [data-place="quotation"][data-unresolved]'),
+    ).toContain('margin-inline: calc(11pt * var(--aw-zoom)) calc(11pt * var(--aw-zoom))');
+    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-footnote-paragraph[data-unresolved]')).toContain(
+      'font-size: calc(9.35pt * var(--aw-zoom))',
+    );
+  });
+
   it('sets a stored body in the default of the place it stands in, and each role in its own style', () => {
     const quotation = ruleFor(
       css,

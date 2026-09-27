@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.99.0 - 2026-09-27 (PR #285)
+
+### Added
+
+- **See what will not print as it shows.** A paragraph, a table or an image whose style your theme
+  does not have, or has only for somewhere else, is outlined and labelled with the style's name, and a
+  character the typeface cannot set is outlined and names itself when you point at it - both are what
+  a publication would fail on. A typeface the application does not have is named in a notice beside
+  the text.
+
 ## 0.98.0 - 2026-09-27 (PR #284)
 
 ### Added

@@ -32,6 +32,7 @@ import { commandKeymap, spansOf } from './marks.js';
 import type { ReferenceContext } from './referenceText.js';
 import { referenceContextOf, referenceDecorations, referencesPlugin } from './referenceView.js';
 import { placeDecorations } from './places.js';
+import { styleCheckPlugin, unresolvedOf } from './resolution.js';
 
 // A footnote's paragraph is a paragraph to CNT-023 (footnotes 1, ruling R6): the stored model has one
 // paragraph type, and holds two empty ones apart in a footnote as it does anywhere else.
@@ -559,6 +560,8 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       // The host's reference context (cross-references 1, ruling R10), which a transaction of its own
       // changes and the history never holds.
       referencesPlugin(options.referenceContext ?? null),
+      // The page's check of the theme the surface is set in, and the marks it makes (ET-I, STY-070).
+      styleCheckPlugin(),
       // One decorations plugin, holding the spellcheck rule, the empty attribution's placeholder and
       // what each cross-reference shows: the view merges every plugin's set anyway, and one set is one
       // thing to test.
@@ -570,6 +573,8 @@ export function createEditorState(options: EditorStateOptions): EditorState {
               ...placeholderDecorations(state.doc).find(),
               // Where each paragraph stands, for the theme's rules (themes.md, "The theme in the editor").
               ...placeDecorations(state.doc).find(),
+              // What will not resolve in the theme the surface is set in (themes.md, ET-I).
+              ...unresolvedOf(state).find(),
               ...referenceDecorations(state.doc, referenceContextOf(state)).find(),
             ]),
         },

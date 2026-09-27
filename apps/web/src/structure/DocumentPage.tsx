@@ -39,7 +39,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
 import { byName } from '../metadata/people.js';
-import { ZoomControl } from '../theme/Canvas.js';
+import { UnheldFaces, ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -820,6 +820,7 @@ export function DocumentPage({
       <article aria-labelledby="document-title" className={styles['page']}>
         {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
         <ZoomControl />
+        <UnheldFaces />
         {document.scheme === null && <p>This document's numbering could not be read.</p>}
         <div
           className={styles['layout']}

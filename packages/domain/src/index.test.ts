@@ -198,6 +198,8 @@ describe('the domain package', () => {
         'publishedImagePath',
         'publishFailureCodes',
         'setWithoutAGlyph',
+        // W8.6: the glyph check, which the editor marks a character a publish would fail on by.
+        'characterProblems',
         // The maths tree the template and the Word writer both read, from one converter, promoted by
         // equations 2 so that nothing outside the domain builds a tree by hand (ruling R2).
         'mathsTree',
