@@ -15,7 +15,7 @@ choose a paragraph's, a table's and an image's style.
 | W8.0 | This plan and themes.md's section, claiming STY-070 and CNT-122                        | Build   |
 | W8.1 | `packages/fonts`, coverage as data, the presentation routes, the faces in the renderer | Minor   |
 | W8.2 | The canvas: the whole projection, places, marks, paper, the measure and zoom, images   | Minor   |
-| W8.3 | Choosing a style, the markers, and the default theme 0.3                               | Minor   |
+| W8.3 | Choosing a style, the markers, and the default theme 0.4                               | Minor   |
 
 **STR-025 is not in W8** (ET-J): it waits on K8, a requirement Ken has to file or decline.
 
@@ -75,6 +75,6 @@ textHeight } }`; the document's under the document's read permission, the defaul
    `body` (CNT-094, CNT-121).
 3. **Markers** (STY-070): a style missing or out of place, a face not held, and a character its family
    cannot set by `characterProblems`, over the blocks a change touched.
-4. **The default theme 0.3** (ET-H): Lead, Centred, Small print, Banded and Half width, seeded by the
+4. **The default theme 0.4** (ET-H): Lead, Centred, Small print, Banded and Half width, seeded by the
    next tenant migration, moving only the product's own unchanged chain as 0025 did; a publish of each
    style in the worker's suite, to PDF and Word.
