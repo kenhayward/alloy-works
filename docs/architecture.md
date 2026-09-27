@@ -1117,6 +1117,21 @@ out of that field's facet alone. A field's values are read from the entry's stor
 names them, for the fields the reader may read, the ten commonest of each. `GET /v1/search` takes each
 filter as a query parameter and answers the facets with the results.
 
+The **Search** page (W6.4) is `#/search?q=`, the query the address's so a search can be linked to, and
+a link beside the other modules. It sends the query and the facets chosen, says the outcome's sentence,
+and shows each result's kind, space, where it was found and its passage, the matched words marked,
+linked by `resultLink`: a component's block by `#/components/<id>/blocks/<block>`, which opens the
+editor with the caret at the block - `whereBlockIs` in `packages/editor`, a footnote's paragraph at its
+footnote - or says the block is gone; a section by its node link. Each facet is a group of checkboxes,
+each saying how many it would leave.
+
+| Where                             | What                                                            |
+| --------------------------------- | --------------------------------------------------------------- |
+| `web: src/search/SearchPage.tsx`  | The page: the query, the outcome, the results and the facets    |
+| `web: src/search/links.ts`        | `resultLink`, `componentAddress`, `searchAddress`, `whereFound` |
+| `editor: src/identity.ts`         | `whereBlockIs`                                                  |
+| `web: src/editor/ComponentEditor` | `openAtBlock`, and `LINKED_PART_GONE`                           |
+
 ## One renderer, two deliveries
 
 `apps/web` **is** the web application, and it is also the thing the Electron window loads. There is

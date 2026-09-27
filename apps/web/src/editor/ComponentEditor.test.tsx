@@ -8,7 +8,7 @@ import {
   setListAttributes,
   type EditorView,
 } from '@alloy-works/editor';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -5229,5 +5229,31 @@ describe('equations in the editor (equations 1)', () => {
     caretIn(view, 'b1');
     fireEvent.keyDown(view.dom, { key: 'E', keyCode: 69, ctrlKey: true, shiftKey: true });
     expect(latexOf(await opens())).toHaveFocus();
+  });
+});
+
+describe('the component editor opened at a place', () => {
+  it('SCH-057 opens at the block a link names, and says so by name when it is no longer there', async () => {
+    const two = opened({ content: content('Unbox the printer.', 'Plug it in.') });
+    const linked = open({ 'GET /v1/components/{id}': () => json(200, two) }, quick, false, {
+      openAtBlock: 'b2',
+    });
+    const view = await linked.surface();
+    // The caret stands in the block the link names, and the surface has the focus.
+    const { $from } = view.state.selection;
+    expect($from.parent.attrs['id']).toBe('b2');
+    expect(view.hasFocus()).toBe(true);
+    cleanup();
+
+    const gone = open({ 'GET /v1/components/{id}': () => json(200, two) }, quick, false, {
+      openAtBlock: 'b9',
+    });
+    await gone.surface();
+    // Its newest version is what opened, and the page says the place is no longer in it.
+    expect(
+      await screen.findByText(
+        'The part the link names is no longer in this component. This is its latest version.',
+      ),
+    ).toBeInTheDocument();
   });
 });

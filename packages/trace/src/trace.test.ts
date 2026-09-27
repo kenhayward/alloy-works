@@ -545,6 +545,7 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 443, from 442 (2026-09-27): W6.4 - SCH-057 in apps/web's editor/ComponentEditor.test.tsx.
   // 442, from 438 (2026-09-27): W6.3 - SCH-059, SCH-046, SCH-062 and SCH-034 in packages/db's
   // search-facets.test.ts.
   // 438, from 432 (2026-09-27): W6.2 - SCH-011, SCH-012, SCH-016, SCH-017 and SCH-010 in
@@ -581,7 +582,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(442);
+    expect(model.citations).toHaveLength(443);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -640,6 +641,7 @@ describe('scanning the repository for test files', () => {
     // 24, from 23: shell/Status.test.tsx, which cites nothing.
     // 25, from 24: editor/EquationDialog.test.tsx, which cites nothing.
     // 26, from 25: metadata/FieldsForm.test.tsx, which cites MET-021.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(26);
+    // 27, from 26: search/SearchPage.test.tsx, which cites nothing.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(27);
   });
 });

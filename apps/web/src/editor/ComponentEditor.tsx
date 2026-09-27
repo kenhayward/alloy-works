@@ -40,6 +40,7 @@ import {
   type EquationAt,
   type ReferenceContext,
   type Selection,
+  whereBlockIs,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import styles from './ComponentEditor.module.css';
@@ -114,6 +115,11 @@ export interface ComponentEditorProps {
   /** Where the text was clicked to open it, in characters: the focus and the caret go there. */
   readonly openAt?: number;
   /**
+   * The block a link names (search.md, "The page"; SCH-057): the focus and the caret go there, or,
+   * where the version that opens - the newest - no longer holds it, the page says so.
+   */
+  readonly openAtBlock?: string;
+  /**
    * What the document it is open in offers a reference (cross-references 1, rulings R10 and R11):
    * `documentTargets` for this occurrence, from the page, which passes it again whenever it numbers
    * the document again. None standalone, where a reference shows its target's kind and caption and
@@ -155,6 +161,10 @@ const PASTED = 'Pasted.';
 const PASTED_WITH_REPORT =
   'Pasted. Some of it was changed or left out: the paste report says what.';
 const NOT_DROPPED = 'Dragging content in is not available yet. Copy and paste it instead.';
+
+/** A link names a block the newest version no longer holds (SCH-057): the page says so. */
+export const LINKED_PART_GONE =
+  'The part the link names is no longer in this component. This is its latest version.';
 const CLIPBOARD_UNREADABLE =
   'The clipboard could not be read, so nothing was pasted. Allow this page to see the clipboard and try again.';
 
@@ -222,6 +232,7 @@ export function ComponentEditor({
   number,
   onDone,
   openAt,
+  openAtBlock,
   referenceContext = null,
 }: ComponentEditorProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
@@ -541,6 +552,8 @@ export function ComponentEditor({
   runPromptingRef.current = runPrompting;
   const openAtRef = useRef(openAt);
   openAtRef.current = openAt;
+  const openAtBlockRef = useRef(openAtBlock);
+  openAtBlockRef.current = openAtBlock;
   const openReferenceRef = useRef(openReference);
   openReferenceRef.current = openReference;
   const openEquationRef = useRef(openEquation);
@@ -771,6 +784,20 @@ export function ComponentEditor({
       const at = positionAtTextOffset(view.state.doc, openAtRef.current);
       view.dispatch(view.state.tr.setSelection(EditorSelection.near(view.state.doc.resolve(at))));
       view.focus();
+    }
+    // Opened by a link naming a block: the caret goes to its start, or the page says it is gone.
+    if (openAtBlockRef.current !== undefined) {
+      const at = whereBlockIs(view.state.doc, openAtBlockRef.current);
+      if (at === undefined) {
+        setNotice(LINKED_PART_GONE);
+      } else {
+        view.dispatch(
+          view.state.tr
+            .setSelection(EditorSelection.near(view.state.doc.resolve(at + 1)))
+            .scrollIntoView(),
+        );
+        view.focus();
+      }
     }
     onViewRef.current?.(view);
     return () => {

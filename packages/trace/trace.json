@@ -17271,6 +17271,12 @@
       "kind": "title"
     },
     {
+      "id": "SCH-057",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 5236,
+      "kind": "title"
+    },
+    {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
       "line": 219,

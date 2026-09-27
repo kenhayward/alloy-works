@@ -1,0 +1,81 @@
+/* The search page (search.md, "The page"): the query, the outcome, the results beside their facets. */
+.form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin-bottom: var(--space-10);
+}
+
+.form input {
+  flex: 1;
+  max-width: 40rem;
+}
+
+.layout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-28);
+}
+
+.facets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  width: var(--pane-filter);
+  flex-shrink: 0;
+}
+
+.facet {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.facet legend {
+  margin-bottom: var(--space-4);
+  color: var(--muted);
+  font-size: var(--size-overline);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-4) 0;
+  cursor: pointer;
+}
+
+.results {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result {
+  padding: var(--space-10) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.result h2 {
+  margin: var(--space-4) 0;
+  font-size: var(--size-label);
+}
+
+.about {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-overline);
+}
+
+.passage {
+  margin: var(--space-4) 0 0;
+}
+
+.passage mark {
+  background: var(--accent-weak);
+  color: inherit;
+}
