@@ -108,8 +108,9 @@ export const DocumentView = z.object({
         ),
     })
     .describe(
-      "The environment's layout at its latest version, which is the version a publish requested " +
-        'now would be made under (publishing.md, "The layout")',
+      "The document's layout at its latest version - its template's, or the environment's for a " +
+        'document made blank - which is the version a publish requested now would be made under ' +
+        '(publishing.md, "The layout"; templates.md)',
     ),
 });
 export type DocumentView = z.infer<typeof DocumentView>;

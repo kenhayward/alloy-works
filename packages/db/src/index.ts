@@ -20,13 +20,14 @@ export {
   type ArtifactKind,
   type ContentKind,
 } from './artifact-kind.js';
-export { DEFAULT_LAYOUT_ID, defaultLayout, type StoredLayout } from './layouts.js';
+export { DEFAULT_LAYOUT_ID, defaultLayout, layoutLatest, type StoredLayout } from './layouts.js';
 export {
   addCatalogueVersion,
   addThemeVersion,
   DEFAULT_CATALOGUE_IDS,
   DEFAULT_THEME_ID,
   defaultTheme,
+  themeLatest,
   themeAt,
   type NextCatalogueVersion,
   type NextThemeVersion,
@@ -241,7 +242,6 @@ export {
 } from './components.js';
 export {
   createDocument,
-  documentTemplate,
   editOutline,
   listReadableDocuments,
   readableComponents,
@@ -255,6 +255,9 @@ export {
 } from './documents.js';
 export {
   createTemplate,
+  documentLayout,
+  documentTemplate,
+  documentTheme,
   listReadableTemplates,
   readTemplate,
   recordTemplateVersion,

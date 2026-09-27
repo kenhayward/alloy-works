@@ -131,8 +131,17 @@ function brokenTheme(artifactId: string, versionId: string, outcome: ThemeReadOu
 export async function defaultTheme(trx: TenantTransaction): Promise<StoredTheme> {
   const declared = await trx.selectFrom('theme_default').select('theme_id').executeTakeFirst();
   if (!declared) throw new Error('This environment declares no theme');
-  const stored = await latestVersion(trx, declared.theme_id);
-  if (!stored) throw new Error(`The declared theme ${declared.theme_id} has no version`);
+  return themeLatest(trx, declared.theme_id);
+}
+
+/**
+ * One theme at its latest version, read whole as `defaultTheme` reads the declared one: the declared
+ * theme, or the one a document's template binds (templates.md, TE-B). Throws where it has no version
+ * or does not read - a broken store, as for the declared theme.
+ */
+export async function themeLatest(trx: TenantTransaction, themeId: string): Promise<StoredTheme> {
+  const stored = await latestVersion(trx, themeId);
+  if (!stored || stored.kind !== 'theme') throw new Error(`The theme ${themeId} has no version`);
   const read = await readStoredTheme(trx, stored.content);
   if (!read.ok) throw brokenTheme(stored.artifactId, stored.id, read);
   return {

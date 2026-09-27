@@ -6,14 +6,21 @@ import {
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { createDocument, documentTemplate, editOutline } from './documents.js';
+import { createDocument, editOutline } from './documents.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
-import { createTemplate, readTemplate, recordTemplateVersion } from './templates.js';
+import { requestPublication } from './publishing.js';
+import {
+  createTemplate,
+  documentLayout,
+  documentTemplate,
+  readTemplate,
+  recordTemplateVersion,
+} from './templates.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 import { DEFAULT_THEME_ID } from './themes.js';
@@ -291,6 +298,85 @@ describe('a document made from a template', () => {
         trx.deleteFrom('document_template').where('document_id', '=', document).execute(),
       ),
     ).rejects.toThrow(/permission denied/);
+  });
+
+  /**
+   * A second theme or layout: a copy of the environment's latest version, under an artifact of its
+   * own. Written row by row, because nothing yet makes one - `createArtifact` leaves both to their
+   * migrations - and the copy's digests are the original's, being over the same content.
+   */
+  const copied = (kind: 'theme' | 'layout', of: string) =>
+    service.withTenant(production, async (trx) => {
+      const original = await latestVersion(trx, of);
+      const artifact = await trx
+        .insertInto('artifact')
+        .values({ kind, space_id: null })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      await trx
+        .insertInto('artifact_version')
+        .values({
+          artifact_id: artifact.id,
+          kind,
+          revision_no: 0,
+          version_no: 1,
+          author_id: ada,
+          note: null,
+          schema_version: original!.schemaVersion,
+          content: JSON.stringify(original!.content),
+          content_hash: original!.contentHash,
+          metadata_values: '{}',
+          not_carried: '[]',
+          component_type_version_id: null,
+          version_digest: original!.versionDigest,
+        })
+        .execute();
+      return artifact.id;
+    });
+  const requested = (document: string, version: string) =>
+    service.withTenant(production, async (trx) => {
+      const answer = await requestPublication(trx, {
+        documentId: document,
+        version,
+        formats: ['pdf'],
+        requester: ada,
+      });
+      if (answer.answer !== 'requested') throw new Error(answer.answer);
+      return trx
+        .selectFrom('publication_request')
+        .select(['theme_id', 'layout_id'])
+        .where('id', '=', answer.request.id)
+        .executeTakeFirstOrThrow();
+    });
+
+  it('STY-025 publishes a document under the theme its template binds', async () => {
+    const theme = await copied('theme', DEFAULT_THEME_ID);
+    const answer = await make((await template({ theme })).id);
+    if (answer.answer !== 'created') throw new Error(answer.answer);
+    expect((await requested(answer.version.artifactId, answer.version.id)).theme_id).toBe(theme);
+    // A blank document keeps the environment's.
+    const blank = await make(undefined);
+    if (blank.answer !== 'created') throw new Error(blank.answer);
+    expect((await requested(blank.version.artifactId, blank.version.id)).theme_id).toBe(
+      DEFAULT_THEME_ID,
+    );
+  });
+
+  it('publishes and numbers a document under the layout its template binds', async () => {
+    const layout = await copied('layout', DEFAULT_LAYOUT_ID);
+    const answer = await make((await template({ layout })).id);
+    if (answer.answer !== 'created') throw new Error(answer.answer);
+    const document = answer.version.artifactId;
+    expect((await requested(document, answer.version.id)).layout_id).toBe(layout);
+    // The one reader the page's numbering and its view take the layout from.
+    const read = await service.withTenant(production, (trx) => documentLayout(trx, document));
+    expect(read.artifactId).toBe(layout);
+    const blank = await make(undefined);
+    if (blank.answer !== 'created') throw new Error(blank.answer);
+    const kept = await service.withTenant(production, (trx) =>
+      documentLayout(trx, blank.version.artifactId),
+    );
+    expect(kept.artifactId).toBe(DEFAULT_LAYOUT_ID);
   });
 
   // Last, because it changes the one schema every template here assigns.

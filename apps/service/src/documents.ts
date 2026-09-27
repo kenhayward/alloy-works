@@ -7,7 +7,7 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   createDocument,
-  defaultLayout,
+  documentLayout,
   documentTemplate,
   editOutline,
   listReadableDocuments,
@@ -105,11 +105,12 @@ async function templateView(viewer: Viewer, document: string): Promise<DocumentV
  * page, an act's answer, and a refusal's `current` - so none can carry an outline that has not been
  * through `outlineView`, and none is shown beside numbers taken from a different scheme.
  *
- * The layout is the environment's, read fresh in this transaction, which is the version a publish
- * requested now would be made under (`requestPublication`). It belongs to the environment, not to any
- * component, so nothing here is derived from something the viewer may not read. An environment that
- * declares none, or one whose layout does not read, throws: 0018 declares one everywhere, so either is
- * a broken store rather than an answer. **Never a fallback to the product's default scheme** - that
+ * The layout is the document's - its template's, or the environment's for a document made blank
+ * (templates.md) - read fresh in this transaction, which is the version a publish requested now would
+ * be made under (`requestPublication`). A layout belongs to the environment, not to any space, so
+ * nothing here is derived from something the viewer may not read, whether or not they may read the
+ * template that chose it. A layout that is missing or does not read throws: a broken store rather than
+ * an answer. **Never a fallback to the product's default scheme** - that
  * would show numbers no publish could produce, which is the one thing this is here to prevent.
  *
  * The read costs four indexed reads and a parse on every document answer - the declaration, the
@@ -122,7 +123,7 @@ async function documentView(
   document: Pick<StoredDocument, 'id' | 'space'>,
   version: StoredVersion,
 ): Promise<DocumentView> {
-  const layout = await defaultLayout(viewer.trx);
+  const layout = await documentLayout(viewer.trx, document.id);
   return {
     id: document.id,
     space: document.space,
@@ -379,15 +380,15 @@ export function documentHandlers(
      * than guessed. A stored outline that does not read is a broken store, thrown as the outline route
      * throws it.
      *
-     * Numbered with the **environment's layout's** scheme, not the product's default: the numbers a
-     * reader is shown are the numbers that would publish (STR-036), since a request made now is made
-     * under this same layout version. The layout is named beside them, so a caller can tell which
+     * Numbered with the **document's layout's** scheme - its template's, or the environment's - not
+     * the product's default: the numbers a reader is shown are the numbers that would publish
+     * (STR-036), since a request made now is made under this same layout version. The layout is named beside them, so a caller can tell which
      * scheme produced them.
      */
     getNumbering: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as DocumentParams;
       const { document, outline } = await latestOutline(trx, id);
-      const layout = await defaultLayout(trx);
+      const layout = await documentLayout(trx, id);
       const inputs = await numberingInputs(trx, outline, principalId);
       const table = number(
         conditions(resolve(outline, inputs.contributions)),

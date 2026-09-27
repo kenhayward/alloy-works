@@ -25,8 +25,22 @@ export interface StoredLayout {
 export async function defaultLayout(trx: TenantTransaction): Promise<StoredLayout> {
   const declared = await trx.selectFrom('layout_default').select('layout_id').executeTakeFirst();
   if (!declared) throw new Error('This environment declares no layout');
-  const stored = await latestVersion(trx, declared.layout_id);
-  if (!stored) throw new Error(`The declared layout ${declared.layout_id} has no version`);
+  return layoutLatest(trx, declared.layout_id);
+}
+
+/**
+ * One layout at its latest version: the declared one, or the one a document's template binds
+ * (templates.md, TE-B). Throws if it has no version or does not read - a broken store, since a
+ * template naming anything but a layout is refused before it is stored or used.
+ */
+export async function layoutLatest(
+  trx: TenantTransaction,
+  layoutId: string,
+): Promise<StoredLayout> {
+  const stored = await latestVersion(trx, layoutId);
+  if (!stored || stored.kind !== 'layout') {
+    throw new Error(`The layout ${layoutId} has no version`);
+  }
   const read = readLayout(stored.content, { artifact: stored.artifactId, version: stored.id });
   if (!read.ok) {
     throw new Error(

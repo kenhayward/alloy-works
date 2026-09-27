@@ -23,11 +23,11 @@ import {
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { readableComponents } from './documents.js';
-import { defaultLayout } from './layouts.js';
 import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
-import { defaultTheme, themeAt } from './themes.js';
+import { documentLayout, documentTheme } from './templates.js';
+import { themeAt } from './themes.js';
 import { headingOf, latestVersion, type VersionHeading } from './versions.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -346,9 +346,9 @@ export type PublicationRequestAnswer =
 /**
  * One publish asked for, decided and recorded in the caller's transaction (docs/design/publishing.md,
  * "Who may publish"): `publish` has been decided on the document before this runs, under the access
- * epoch's shared lock. It is made under the environment's declared layout, and refuses a stale version,
- * a format that layout does not make or a document in another language than its words before recording
- * anything; otherwise it resolves every occurrence **as the publisher**, refuses a request without the
+ * epoch's shared lock. It is made under the document's layout (`documentLayout`), and refuses a stale
+ * version, a format that layout does not make or a document in another language than its words before
+ * recording anything; otherwise it resolves every occurrence **as the publisher**, refuses a request without the
  * PDF whose document cites a page (PUB-074), and records the request with the failures resolving
  * found - each naming its node and nothing else (issue #143) - one row per resolved occurrence, and the
  * job, all in one transaction. A request with failures is still queued: `assemble` adds its own for
@@ -370,9 +370,10 @@ export async function requestPublication(
     return { answer: 'version.precondition', current: headingOf(latest) };
   }
 
-  // Made under the environment's declared layout at its latest version, recorded by its key: the job
-  // publishes under that version, whatever the layout becomes before it runs.
-  const layout = await defaultLayout(trx);
+  // Made under the document's layout at its latest version - its template's, or the environment's
+  // declared one (templates.md) - recorded by its key: the job publishes under that version, whatever
+  // the layout becomes before it runs.
+  const layout = await documentLayout(trx, input.documentId);
   const unsupported = unsupportedFormats(layout.layout, input.formats);
   if (unsupported.length > 0) return { answer: 'format.unsupported', formats: unsupported };
   // The contract refuses both; this function is public, and would otherwise record a request for
@@ -423,11 +424,12 @@ export async function requestPublication(
     }
   }
   const images = await resolveImages(trx, resolved, input.requester);
-  // Set from the environment's declared theme at its latest version, recorded by its key beside the
-  // layout's (themes 1, ruling R5): the version names its catalogues' versions, so the job sets the
-  // publication from exactly what was declared now, whatever the theme becomes before it runs. Read
-  // whole, so a declared theme that does not read is a broken store here rather than in the job.
-  const theme = await defaultTheme(trx);
+  // Set from the document's theme - its template's (STY-025), or the environment's declared one - at
+  // its latest version, recorded by its key beside the layout's (themes 1, ruling R5): the version
+  // names its catalogues' versions, so the job sets the publication from exactly what was chosen now,
+  // whatever the theme becomes before it runs. Read whole, so a theme that does not read is a broken
+  // store here rather than in the job.
+  const theme = await documentTheme(trx, input.documentId);
   const request = await trx
     .insertInto('publication_request')
     .values({

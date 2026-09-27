@@ -284,6 +284,50 @@ describe('templates through the service', () => {
     expect((await document('alice')).json<{ template: unknown }>().template).toBeNull();
   });
 
+  it('shows and numbers a document under the layout its template binds', async () => {
+    // A second layout, a copy of the environment's under an artifact of its own, row by row because
+    // nothing yet makes one.
+    const layout = await tenantDb.withTenant(tenant, async (trx) => {
+      const original = await latestVersion(trx, DEFAULT_LAYOUT_ID);
+      const artifact = await trx
+        .insertInto('artifact')
+        .values({ kind: 'layout', space_id: null })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      await trx
+        .insertInto('artifact_version')
+        .values({
+          artifact_id: artifact.id,
+          kind: 'layout',
+          revision_no: 0,
+          version_no: 1,
+          author_id: ids.ada!,
+          note: null,
+          schema_version: original!.schemaVersion,
+          content: JSON.stringify(original!.content),
+          content_hash: original!.contentHash,
+          metadata_values: '{}',
+          not_carried: '[]',
+          component_type_version_id: null,
+          version_digest: original!.versionDigest,
+        })
+        .execute();
+      return artifact.id;
+    });
+    const template = (await make('ada', { layout }, 'Specification')).json<TemplateBody>();
+    const made = (await document('alice', template.id)).json<{
+      id: string;
+      layout: { id: string };
+    }>();
+    expect(made.layout.id).toBe(layout);
+    const numbering = await call('alice', 'GET', `/v1/documents/${made.id}/numbering`);
+    expect(numbering.json<{ layout: { id: string } }>().layout.id).toBe(layout);
+    // A blank document is still shown under the environment's.
+    expect((await document('alice')).json<{ layout: { id: string } }>().layout.id).toBe(
+      DEFAULT_LAYOUT_ID,
+    );
+  });
+
   it('answers a template the caller may not read as not found, and makes nothing', async () => {
     const template = (await make('ada', {}, 'Audit', quality)).json<TemplateBody>();
     const listed = async () =>

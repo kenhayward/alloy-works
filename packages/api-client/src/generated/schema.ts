@@ -2853,7 +2853,7 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
-                        /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                        /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                         layout: {
                             id: string;
                             version: {
@@ -3606,7 +3606,7 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
-                        /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                        /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                         layout: {
                             id: string;
                             version: {
@@ -3676,7 +3676,7 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
-                            /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                             layout: {
                                 id: string;
                                 version: {
@@ -3803,7 +3803,7 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
-                            /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                             layout: {
                                 id: string;
                                 version: {
@@ -6791,7 +6791,7 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
-                        /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                        /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                         layout: {
                             id: string;
                             version: {

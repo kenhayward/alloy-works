@@ -175,23 +175,6 @@ export async function createDocument(
 }
 
 /**
- * The template, and the version of it, a document was made from (TPL-025), or undefined for a
- * document made blank. Everything a document takes from its template is read at this version, so a
- * template's later version changes nothing about it (TPL-027).
- */
-export async function documentTemplate(
-  trx: TenantTransaction,
-  documentId: string,
-): Promise<{ readonly template: string; readonly version: string } | undefined> {
-  const row = await trx
-    .selectFrom('document_template')
-    .select(['template_id', 'template_version_id'])
-    .where('document_id', '=', documentId)
-    .executeTakeFirst();
-  return row && { template: row.template_id, version: row.template_version_id };
-}
-
-/**
  * A document at its latest version, with its space. Undefined when this environment holds no such
  * artifact, or holds one that is not a document: `authorise` never looks at an artifact's kind, so
  * this is where a component's id on a document's route is turned away.
