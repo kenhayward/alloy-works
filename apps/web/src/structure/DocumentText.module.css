@@ -36,7 +36,9 @@
  * whether the reader may edit it and who holds it, and Open - show while the pointer or the focus is
  * in it, for every component under Show boundaries, and round the one open in an editor. The label is
  * transparent rather than removed, so a screen reader and the keyboard reach it where the eye does not,
- * and it stands over the component's top edge so that showing it moves no text.
+ * and it stands at the top of its own component's box, beside the heading where the column is wider than
+ * the measure, so that showing it moves no text and covers nothing of another component - nor stands
+ * above the canvas, whose sideways scrolling would clip it (W9.1's final review).
  */
 .component {
   position: relative;
@@ -52,12 +54,16 @@
 
 .label {
   position: absolute;
-  bottom: calc(100% + var(--space-6));
-  left: calc(-1 * var(--space-6));
+  top: 0;
+  right: 0;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-4) var(--space-10);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-6);
+  background: var(--surface);
   opacity: 0;
   pointer-events: none;
   color: var(--muted);

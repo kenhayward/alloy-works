@@ -3219,6 +3219,10 @@ describe('the address of every node', () => {
       const label = within(text).getByText('You may read this component but not edit it.');
       expect(label.closest('[data-label]')).not.toBeNull();
       expect(ruleOf('.label')).toMatch(/opacity: 0/);
+      // Inside its own component's box, at the top: never over the component above it, and never
+      // outside the canvas, whose sideways scrolling clips what stands above its top.
+      expect(ruleOf('.label')).toMatch(/top: 0/);
+      expect(ruleOf('.label')).not.toMatch(/bottom:/);
       for (const shown of [
         '.component:hover > .label',
         '.component:focus-within > .label',
