@@ -26,6 +26,17 @@ export const RequestPublicationBody = z.strictObject({
 export type RequestPublicationBody = z.infer<typeof RequestPublicationBody>;
 
 /**
+ * What a preview takes: the version the caller is looking at, and nothing else. A preview is the PDF
+ * alone (publishing.md, "Preview"; PV-C), so there is no format to name.
+ */
+export const RequestPreviewBody = z.strictObject({
+  version: LowercaseUuid.describe(
+    'The document version the caller is previewing, which must be the latest',
+  ),
+});
+export type RequestPreviewBody = z.infer<typeof RequestPreviewBody>;
+
+/**
  * A request refused because the document has moved on (API-037): the version it is at now, by its
  * heading alone. Not its outline, as the outline route's refusal carries - the outline names
  * components the caller may not read (IAM-073).
@@ -83,12 +94,34 @@ export const PublishFailureView = z.object({
 });
 export type PublishFailureView = z.infer<typeof PublishFailureView>;
 
+/** A done preview while it lasts: two links to its PDF, and when it goes (PV-F). */
+export const PreviewView = z.object({
+  view: z
+    .string()
+    .describe('A link to the PDF, valid for five minutes, that a browser shows rather than saves'),
+  download: z
+    .string()
+    .describe(
+      "A link to the same bytes, valid for five minutes, that saves them, named by the request's id",
+    ),
+  expiresAt: z
+    .string()
+    .describe('When the preview goes, an hour after it was made; after it, there are no links'),
+});
+export type PreviewView = z.infer<typeof PreviewView>;
+
 export const PublicationRequestView = z.object({
   id: z.string(),
   document: z.string(),
+  kind: z
+    .enum(['publish', 'preview'])
+    .describe('A publish, which makes a publication, or a preview, which makes a PDF for an hour'),
   state: z.enum(['queued', 'done', 'failed']),
   failures: z.array(PublishFailureView),
   publication: z.string().nullable().describe('The publication it made, once done'),
+  preview: PreviewView.nullable().describe(
+    "A done preview's links and expiry, until it expires; none for a publish, or a preview not done or expired",
+  ),
 });
 export type PublicationRequestView = z.infer<typeof PublicationRequestView>;
 
@@ -219,12 +252,49 @@ export const publishingRoutes = {
       },
     },
   },
+  requestPreview: {
+    operationId: 'requestPreview',
+    method: 'POST',
+    path: '/v1/documents/{id}/previews',
+    summary: 'Preview the latest version of this document as a PDF, kept an hour for the caller',
+    tenantScoped: true,
+    // `read`, not `publish` (PV-B): a reader who may not publish still sees the pages.
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: DocumentParams,
+    body: RequestPreviewBody,
+    responses: {
+      // 200, not 202, as a publish's: a permission-checked handler cannot set a status (finding 12).
+      200: {
+        description: 'Asked for, and queued; follow the request for its outcome and its PDF',
+        schema: PublicationRequestView,
+      },
+      400: {
+        description:
+          "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves",
+        schema: PublicationRefusal,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a document the caller may read is one they may preview',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such document in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+      409: {
+        description:
+          '`version_precondition`: the document has a newer version than the one named, which `current` names',
+        schema: PublicationRefusal,
+      },
+    },
+  },
   getPublicationRequest: {
     operationId: 'getPublicationRequest',
     method: 'GET',
     path: '/v1/publication-requests/{id}',
     summary:
-      'A publish the caller asked for: its state, every failure, and its publication once made',
+      'A publish or a preview the caller asked for: its state, every failure, and its publication once made, or its PDF while it lasts',
     tenantScoped: true,
     access: { check: 'session' },
     params: PublicationRequestParams,
@@ -232,6 +302,10 @@ export const publishingRoutes = {
       200: { description: 'The request', schema: PublicationRequestView },
       401: unauthenticated,
       404: { description: 'No such request, or one somebody else asked for', schema: ErrorBody },
+      503: {
+        description: 'A done preview, and this environment has nowhere to keep documents yet',
+        schema: ErrorBody,
+      },
     },
   },
   listPublications: {

@@ -16920,7 +16920,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 547,
+      "line": 549,
       "kind": "title"
     },
     {
@@ -17130,43 +17130,43 @@
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 404,
+      "line": 420,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 339,
+      "line": 355,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 432,
+      "line": 448,
       "kind": "rule"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 640,
+      "line": 656,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 582,
+      "line": 598,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 521,
+      "line": 537,
       "kind": "rule"
     },
     {
       "id": "PUB-095",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 449,
+      "line": 465,
       "kind": "rule"
     },
     {
@@ -17466,121 +17466,121 @@
     {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2239,
+      "line": 2241,
       "kind": "title"
     },
     {
       "id": "CNT-072",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3197,
+      "line": 3199,
       "kind": "title"
     },
     {
       "id": "CNT-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3217,
+      "line": 3219,
       "kind": "title"
     },
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3859,
+      "line": 3861,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4016,
+      "line": 4018,
       "kind": "title"
     },
     {
       "id": "CNT-105",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3310,
+      "line": 3312,
       "kind": "title"
     },
     {
       "id": "CNT-154",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3310,
+      "line": 3312,
       "kind": "title"
     },
     {
       "id": "CNT-156",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3341,
+      "line": 3343,
       "kind": "title"
     },
     {
       "id": "CNT-158",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3494,
+      "line": 3496,
       "kind": "title"
     },
     {
       "id": "CNT-162",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3477,
+      "line": 3479,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4314,
+      "line": 4316,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 486,
+      "line": 488,
       "kind": "title"
     },
     {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3653,
+      "line": 3655,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4518,
+      "line": 4520,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4354,
+      "line": 4356,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3028,
+      "line": 3030,
       "kind": "title"
     },
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3677,
+      "line": 3679,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3074,
+      "line": 3076,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 866,
+      "line": 868,
       "kind": "title"
     },
     {
       "id": "STR-065",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2572,
+      "line": 2574,
       "kind": "title"
     },
     {
@@ -18126,25 +18126,25 @@
     {
       "id": "PUB-014",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 329,
+      "line": 330,
       "kind": "title"
     },
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 943,
+      "line": 948,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 421,
+      "line": 422,
       "kind": "title"
     },
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 808,
+      "line": 813,
       "kind": "title"
     },
     {
@@ -19679,6 +19679,12 @@
     },
     {
       "id": "AST-005",
+      "file": "tests/e2e/src/stack.test.ts",
+      "line": 458,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-005",
       "file": "tests/e2e/src/stack.test.ts",
       "line": 388,
       "kind": "title"

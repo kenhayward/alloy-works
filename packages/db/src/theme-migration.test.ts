@@ -303,6 +303,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0033_idempotency',
       '0034_default_theme_choices',
       '0035_previews',
+      '0036_preview_sweep',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -320,6 +321,7 @@ describe('migration 0024, which gives every environment its default theme', () =
         'publication_request_finish_once',
         'publication_request_made_under_a_layout',
         'publication_request_made_under_a_theme',
+        'publication_request_swept_only',
       ].map((tgname) => ({ relname: 'publication_request', tgname, tgenabled: 'O' })),
     );
 
@@ -972,6 +974,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0033_idempotency',
       '0034_default_theme_choices',
       '0035_previews',
+      '0036_preview_sweep',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -1014,6 +1017,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0033_idempotency',
       '0034_default_theme_choices',
       '0035_previews',
+      '0036_preview_sweep',
     ]);
 
     const chain = await themeChain(tenant);
@@ -1135,6 +1139,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0034_default_theme_choices',
       '0035_previews',
+      '0036_preview_sweep',
     ]);
 
     // The theme is at 0.4, under its fixed identifier, unauthored, on top of 0.3; each revised
@@ -1213,6 +1218,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
       expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
         '0034_default_theme_choices',
         '0035_previews',
+        '0036_preview_sweep',
       ]);
 
       // The catalogue is left at the environment's own version, with nothing of the product's on top.
@@ -1255,6 +1261,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0034_default_theme_choices',
       '0035_previews',
+      '0036_preview_sweep',
     ]);
 
     // The theme is left at the environment's own 0.4, with nothing of the product's on top, and still

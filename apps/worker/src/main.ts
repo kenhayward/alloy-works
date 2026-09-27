@@ -9,7 +9,7 @@ import { loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
 import { ingestJob } from './jobs/ingest.js';
 import { publishJob } from './jobs/publish.js';
 import { sampleJob } from './jobs/sample.js';
-import { sweepExpiredSignIns } from './sweep.js';
+import { sweepExpiredPreviews, sweepExpiredSignIns } from './sweep.js';
 import { createTypst } from './typst.js';
 import { processNext, type JobHandler } from './worker.js';
 
@@ -42,6 +42,10 @@ const sweep = setInterval(() => {
   void sweepExpiredSignIns(db)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired sign-ins'))
     .catch((error: unknown) => log.error({ err: error }, 'sweep failed'));
+  // Previews an hour after they finished, in every tenant, and their PDFs (W10.2, PV-F).
+  void sweepExpiredPreviews(db, stores, log)
+    .then((removed) => removed > 0 && log.info({ removed }, 'swept expired previews'))
+    .catch((error: unknown) => log.error({ err: error }, 'preview sweep failed'));
 }, config.sweepIntervalMs);
 
 const stop = async (signal: string) => {

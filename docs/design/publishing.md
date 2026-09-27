@@ -1225,7 +1225,7 @@ baselines, and is left there rather than half-built here.
 - its status is `preview`, so every page says **Preview - not approved** and the tagged text begins
   with the preview's sentence (PUB-005);
 - it is a PDF alone (CNT-150);
-- nothing is recorded as a publication; the PDF is kept for an hour, reachable only by its asker, and
+- nothing is recorded as a publication; the PDF is kept for an hour, reachable only by its asker while they may still read the document, and
   then swept with its request.
 
 **T1's preview is the whole document**, compiled whole and tagged like a publication.
@@ -1263,8 +1263,10 @@ download it, each for `DOWNLOAD_SECONDS`, and the time it expires. After that th
 no links. The worker's sweep, which already runs on an interval, deletes each preview request an hour
 after it finished, done or failed, with its occurrence and asset rows. Then it removes the PDF unless
 something else names the same key, because a key is a hash and two previews made in one second of one
-unchanged document are the same bytes. The runtime role may delete a preview request and never a
-publish request, which a trigger refuses.
+unchanged document are the same bytes. Such a pair need not finish together, since one can be
+retried long after the other expired, and its worker keeps the bytes before it records them; so a
+preview is not swept while another of its document version and its second is still queued (W10.2).
+The runtime role may delete a preview request and never a publish request, which a trigger refuses.
 
 **Shown beside the text.** The document page offers **Preview** to anyone who may read the document,
 in Reading and Authoring alike. It asks for a preview of the version the page holds, follows the request

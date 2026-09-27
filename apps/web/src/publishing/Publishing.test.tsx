@@ -95,9 +95,11 @@ const publication = {
 const queued = (failures: unknown[] = []) => ({
   id: REQUEST,
   document: DOCUMENT,
+  kind: 'publish',
   state: 'queued',
   failures,
   publication: null,
+  preview: null,
 });
 
 /** A publish that is asked for, then answered as failed with these failures. */

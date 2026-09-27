@@ -359,6 +359,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview the latest version of this document as a PDF, kept an hour for the caller */
+        post: operations["requestPreview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/publications": {
         parameters: {
             query?: never;
@@ -556,7 +573,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A publish the caller asked for: its state, every failure, and its publication once made */
+        /** A publish or a preview the caller asked for: its state, every failure, and its publication once made, or its PDF while it lasts */
         get: operations["getPublicationRequest"];
         put?: never;
         post?: never;
@@ -5351,6 +5368,232 @@ export interface operations {
             };
         };
     };
+    requestPreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The document version the caller is previewing, which must be the latest */
+                    version: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description Asked for, and queued; follow the request for its outcome and its PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        document: string;
+                        /**
+                         * @description A publish, which makes a publication, or a preview, which makes a PDF for an hour
+                         * @enum {string}
+                         */
+                        kind: "publish" | "preview";
+                        /** @enum {string} */
+                        state: "queued" | "done" | "failed";
+                        failures: {
+                            /** @enum {string} */
+                            stage: "resolve" | "compose" | "engine" | "store";
+                            /** @enum {string} */
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "engine_failed" | "store_failed";
+                            /** @description The outline node it concerns */
+                            node: string | null;
+                            /** @description The block within that node's component */
+                            block: string | null;
+                            /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
+                            detail: string | null;
+                        }[];
+                        /** @description The publication it made, once done */
+                        publication: string | null;
+                        /** @description A done preview's links and expiry, until it expires; none for a publish, or a preview not done or expired */
+                        preview: {
+                            /** @description A link to the PDF, valid for five minutes, that a browser shows rather than saves */
+                            view: string;
+                            /** @description A link to the same bytes, valid for five minutes, that saves them, named by the request's id */
+                            download: string;
+                            /** @description When the preview goes, an hour after it was made; after it, there are no links */
+                            expiresAt: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description `format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description version_precondition: the version the document is at */
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description section_required: each section the document's template requires that none of its sections came from */
+                        sections?: {
+                            key: string;
+                            title: string;
+                        }[];
+                        /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
+                        failures?: {
+                            node: string | null;
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may read is one they may preview */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version_precondition`: the document has a newer version than the one named, which `current` names */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description version_precondition: the version the document is at */
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description section_required: each section the document's template requires that none of its sections came from */
+                        sections?: {
+                            key: string;
+                            title: string;
+                        }[];
+                        /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
+                        failures?: {
+                            node: string | null;
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listPublications: {
         parameters: {
             query?: {
@@ -5540,6 +5783,11 @@ export interface operations {
                     "application/json": {
                         id: string;
                         document: string;
+                        /**
+                         * @description A publish, which makes a publication, or a preview, which makes a PDF for an hour
+                         * @enum {string}
+                         */
+                        kind: "publish" | "preview";
                         /** @enum {string} */
                         state: "queued" | "done" | "failed";
                         failures: {
@@ -5556,6 +5804,15 @@ export interface operations {
                         }[];
                         /** @description The publication it made, once done */
                         publication: string | null;
+                        /** @description A done preview's links and expiry, until it expires; none for a publish, or a preview not done or expired */
+                        preview: {
+                            /** @description A link to the PDF, valid for five minutes, that a browser shows rather than saves */
+                            view: string;
+                            /** @description A link to the same bytes, valid for five minutes, that saves them, named by the request's id */
+                            download: string;
+                            /** @description When the preview goes, an hour after it was made; after it, there are no links */
+                            expiresAt: string;
+                        } | null;
                     };
                 };
             };
@@ -7501,6 +7758,11 @@ export interface operations {
                     "application/json": {
                         id: string;
                         document: string;
+                        /**
+                         * @description A publish, which makes a publication, or a preview, which makes a PDF for an hour
+                         * @enum {string}
+                         */
+                        kind: "publish" | "preview";
                         /** @enum {string} */
                         state: "queued" | "done" | "failed";
                         failures: {
@@ -7517,6 +7779,15 @@ export interface operations {
                         }[];
                         /** @description The publication it made, once done */
                         publication: string | null;
+                        /** @description A done preview's links and expiry, until it expires; none for a publish, or a preview not done or expired */
+                        preview: {
+                            /** @description A link to the PDF, valid for five minutes, that a browser shows rather than saves */
+                            view: string;
+                            /** @description A link to the same bytes, valid for five minutes, that saves them, named by the request's id */
+                            download: string;
+                            /** @description When the preview goes, an hour after it was made; after it, there are no links */
+                            expiresAt: string;
+                        } | null;
                     };
                 };
             };
@@ -7540,6 +7811,24 @@ export interface operations {
             };
             /** @description No such request, or one somebody else asked for */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description A done preview, and this environment has nowhere to keep documents yet */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

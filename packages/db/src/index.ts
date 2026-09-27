@@ -47,6 +47,7 @@ export {
   recordPublication,
   requestPublication,
   resolveOccurrences,
+  sweepPreviews,
   type NewPreview,
   type NewPublication,
   type NewPublicationOutput,

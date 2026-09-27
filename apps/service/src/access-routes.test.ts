@@ -641,6 +641,11 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { version: MISSING, formats: ['pdf'] },
     }),
+    requestPreview: () => ({
+      url: `/v1/documents/${report}/previews`,
+      status: 404,
+      payload: { version: MISSING },
+    }),
     listPublications: () => ({ url: `/v1/documents/${report}/publications`, status: 404 }),
     getPublication: () => ({ url: `/v1/publications/${reportPublication}`, status: 404 }),
     createTemplate: () => ({
