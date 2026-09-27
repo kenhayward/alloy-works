@@ -174,16 +174,22 @@ function tableRules(style: TableStyle): string[] {
   if (style.headerColumn.bold) {
     rules.push(`${at} [scope="row"] [data-style] { font-weight: 700; }`);
   }
+  // A header's rule is stated by the cells on both sides of its line: with collapsed borders a browser
+  // draws the wider of two that disagree, where the template draws the header's whatever the body's.
   if (style.headerRow.rule !== 'none') {
     rules.push(
       `${at} tr:has(> [scope="col"]):not(:has(+ tr > [scope="col"])) > * ` +
         `{ border-block-end: ${line(style.headerRow.rule)}; }`,
+      `${at} tr:has(> [scope="col"]) + tr:not(:has(> [scope="col"])) > * ` +
+        `{ border-block-start: ${line(style.headerRow.rule)}; }`,
     );
   }
   if (style.headerColumn.rule !== 'none') {
     rules.push(
       `${at} [scope="row"]:not(:has(+ [scope="row"])) ` +
         `{ border-inline-end: ${line(style.headerColumn.rule)}; }`,
+      `${at} [scope="row"]:not(:has(+ [scope="row"])) + * ` +
+        `{ border-inline-start: ${line(style.headerColumn.rule)}; }`,
     );
   }
   return rules;

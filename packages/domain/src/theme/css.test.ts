@@ -260,6 +260,15 @@ describe('projectCss for tables and images (W8.3)', () => {
     expect(ruleFor(text, `${at} [scope="row"]:not(:has(+ [scope="row"]))`)).toBe(
       `border-inline-end: ${z('0.75')} solid #444444`,
     );
+    // And from the other side too: two cells either side of a line both state it, so the browser's
+    // choice between two collapsed borders - the wider wins - never takes the body's rule over the
+    // header's, as each cell drawing its own lines in the template never does.
+    expect(ruleFor(text, `${at} tr:has(> [scope="col"]) + tr:not(:has(> [scope="col"])) > *`)).toBe(
+      `border-block-start: ${z('1.5')} solid #333333`,
+    );
+    expect(ruleFor(text, `${at} [scope="row"]:not(:has(+ [scope="row"])) + *`)).toBe(
+      `border-inline-start: ${z('0.75')} solid #444444`,
+    );
   });
 
   it('bands every other body row from the first, and leaves a filled header column its own fill', () => {
