@@ -48,7 +48,7 @@ generated from them and committed, and the renderer's client is generated from t
 | **API-037** | Every mutation of a versioned resource names the version it was read at - the outline act and the publication request the document's, a save, a cut and a release the component's - and a mismatch is refused `409 version_precondition`, naming the version the resource is at now: the document with its outline for the outline act, the version's heading alone for a publication request, whose outline may name what the caller may not read (IAM-073), and the version's heading for a component |
 | **API-007** | Listings take and return an opaque cursor over a stable order; offsets are never accepted                                                                                                                                                                                                                                                                                                                                                                                                               |
 | **API-008** | A mutating request with an `Idempotency-Key` records its response per tenant, and a repeat returns the recorded response                                                                                                                                                                                                                                                                                                                                                                                |
-| **SCH-022** | Every listing pages by keyset over its sort key and then the artifact's id, a total order, so a page never repeats or skips what the one before it showed however the set changes between them ([Listings and idempotency, in T1](#listings-and-idempotency-in-t1))                                                                                                                                                                                                                                     |
+| **SCH-022** | Every listing pages by keyset over its sort key and then the artifact's id, a total order, and is read as of its first page's snapshot - each version and publication knowing the transaction that wrote it - so a walk is over one set no later write moves, and never repeats or skips ([Listings and idempotency, in T1](#listings-and-idempotency-in-t1))                                                                                                                                           |
 | **SCH-064** | Components, documents, publications and templates each have a listing, a view of it in the application, and server-side sorting and filtering, each filter counted as a facet ([Listings and idempotency, in T1](#listings-and-idempotency-in-t1))                                                                                                                                                                                                                                                      |
 | **API-010** | Every path begins with its major version, `/v1`; a breaking change is a new version                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | **API-012** | Response schemas are open - generated clients ignore fields they do not know - and adding a field is never a new version; the document's description tells every caller to ignore a field it does not know, and that no field is removed within the version                                                                                                                                                                                                                                             |
@@ -266,8 +266,8 @@ viewer goes through the same helper.
 
 ## Listings and idempotency, in T1
 
-W7 builds the listings and the idempotency key the bullets above name. Decisions LI-A to LI-G and ID-A
-to ID-C were taken as recommended on Ken's instruction of 2026-09-27 to continue with W7, each open to
+W7 builds the listings and the idempotency key the bullets above name. Decisions LI-A to LI-H and ID-A
+to ID-D were taken as recommended on Ken's instruction of 2026-09-27 to continue with W7, each open to
 his review.
 
 ### One listing shape
@@ -302,15 +302,29 @@ version's time, `published` the publication's (LI-C).
 
 Every sort is its key and then the artifact's id, which is unique, so the order is total (SCH-042), and
 a page is read by keyset: the rows after the last one shown, `(key, id) > (last key, last id)` in the
-sort's direction, never an offset (API-007, SCH-022, LI-E). A row added or changed between two pages
-lands before or after the boundary by its own key and id, and a row already shown is shown again only
-where a change has moved it past the boundary - the listing telling the truth rather than repeating.
+sort's direction, never an offset (API-007, LI-E).
 
-**The cursor is opaque** (LI-B): the base64url of the listing's name, the sort and order, the last row's
-key and id, written by the service and read back only by it. A cursor from another listing, sort or
-order is refused `400 invalid_request`; one naming a row the reader may not read skips nothing they may,
-since the readable set is the predicate the keyset runs under. It is not signed: forging one gains
-nothing the predicate does not already allow.
+A keyset alone is not enough. A sort's key can change between two pages - a component retitled, a
+document given a new version - and a row whose key crosses the boundary is then shown twice or never.
+So **a listing is read as of its first page** (SCH-022, LI-H): the first page records the database's
+snapshot, `pg_current_snapshot()`, and every later page reads only what that snapshot could see.
+Nothing a listing sorts or filters by is ever changed in place - versions and publications are inserted
+and never updated - so each such row records the transaction that wrote it, `written_by`, and a later
+page keeps a row only where `written_by is null or pg_visible_in_snapshot(written_by, snapshot)`.
+Migration 0032 adds the column with no default, which rewrites nothing, and then gives it
+`pg_current_xact_id()` as the default for every row written after: a row from before it has none, and
+was committed before any snapshot a listing takes, so it is visible to all of them. An artifact's latest version is its latest the snapshot
+could see, a publication is listed only where the snapshot could see it, and so the whole walk is over
+one set, fixed when it began, that no later write moves. What was written after the first page is found
+by the next listing, begun again. The readable set is read afresh on every page: a grant removed between
+two pages removes what it granted, which is access being current rather than a page skipping.
+
+**The cursor is opaque** (LI-B): the base64url of the listing's name, the sort and order, the snapshot,
+and the last row's key and id, written by the service and read back only by it. A cursor from another
+listing, sort or order, or one the service cannot read, is refused `400 invalid_request`; one naming a
+row the reader may not read skips nothing they may, since the readable set is the predicate the keyset
+runs under. It is not signed: forging one gains nothing the predicate does not already allow. The total
+and the facets on every page are counted in the same snapshot, so they agree with the pages.
 
 ### The views
 
@@ -337,23 +351,28 @@ so the key is honoured in that transaction:
 
 A refusal is not recorded: the transaction rolls back with it, and a retry is decided again. A record is
 kept a day, and one older is replaced by the next request with its key (ID-C). The development sample
-request, which decides no permission, takes the key through the same helper in its own transaction;
-signing out and putting an upload's bytes are idempotent already, and accept a key and ignore it.
+request, which decides no permission, takes the key through the same helper in its own transaction.
+Signing out is idempotent already: a second sign-out ends a session that has ended. Putting an upload's
+bytes is made so (ID-D): the bytes already stored, sent again, are answered with the upload as it
+stands, rather than refused as a filled upload, so a retry after a lost answer succeeds; other bytes
+for a filled upload are refused as before. Both accept a key and need none.
 
 ### Decisions
 
-| #    | Decision                                                                                                    |
-| ---- | ----------------------------------------------------------------------------------------------------------- |
-| LI-A | One listing shape - cursor, limit, sort, order, filters; items, next, total, facets - for all four listings |
-| LI-B | The cursor is opaque and unsigned: listing, sort, order, last key and id, refused where it is another's     |
-| LI-C | Each listing's sorts and default are the table's; titles sort by the database's collation                   |
-| LI-D | Filters and their counts are the service's, each counted without its own filter; the browser counts nothing |
-| LI-E | Keyset paging over the sort key and then the id; offsets are never accepted                                 |
-| LI-F | Templates gain a listing view in the application; making and changing one stays the API's                   |
-| LI-G | The views page with Show more, as the components list already does                                          |
-| ID-A | The key is honoured on every permission-checked mutating route, and on the sample request                   |
-| ID-B | The record is written in the handler's own transaction, so a crash leaves both or neither                   |
-| ID-C | A record is kept a day; a refusal is never recorded; a key reused for a different request is refused `422`  |
+| #    | Decision                                                                                                                 |
+| ---- | ------------------------------------------------------------------------------------------------------------------------ |
+| LI-A | One listing shape - cursor, limit, sort, order, filters; items, next, total, facets - for all four listings              |
+| LI-B | The cursor is opaque and unsigned: listing, sort, order, snapshot, last key and id, refused where another's              |
+| LI-C | Each listing's sorts and default are the table's; titles sort by the database's collation                                |
+| LI-D | Filters and their counts are the service's, each counted without its own filter; the browser counts nothing              |
+| LI-E | Keyset paging over the sort key and then the id; offsets are never accepted                                              |
+| LI-F | Templates gain a listing view in the application; making and changing one stays the API's                                |
+| LI-G | The views page with Show more, as the components list already does                                                       |
+| LI-H | A listing is read as of its first page's snapshot, each row knowing its writing transaction, so none moves during a walk |
+| ID-A | The key is honoured on every permission-checked mutating route, and on the sample request                                |
+| ID-B | The record is written in the handler's own transaction, so a crash leaves both or neither                                |
+| ID-C | A record is kept a day; a refusal is never recorded; a key reused for a different request is refused `422`               |
+| ID-D | An upload's same bytes sent again are answered with the upload as it stands, rather than refused as filled               |
 
 ## Data access
 
