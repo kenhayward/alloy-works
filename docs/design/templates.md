@@ -213,19 +213,19 @@ nothing is queued to fail.
 
 ## Where the code lives
 
-| Where                                              | What                                                                                                                               |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `domain: src/template/`                            | The definition's schema, `checkTemplate`, `resolveTemplate`, and the starting outline's materialising                              |
-| `domain: src/structure/`                           | `origin`, outline schema 3, and `changes` passed to `applyOutlineOperation`                                                        |
-| `db: migrations/tenant/0028_templates.sql`         | The kind, its space rule, and its versions authored                                                                                |
-| `db: migrations/tenant/0029_document_template.sql` | `document_template`, and documents' values                                                                                         |
-| `db: src/templates.ts`                             | Making, reading and versioning a template; a document's template, and the layout and theme it binds                                |
-| `service: src/templates.ts`                        | The template routes; the documents and publishing handlers read a document's template                                              |
-| `domain: src/version/substance.ts`                 | `DocumentSubstance.values`, and `canonicaliseVersion` digesting them                                                               |
-| `db: src/versions.ts`                              | `insertVersion` and `substanceOf` writing and reading a document's values                                                          |
-| `db: src/publishing.ts`, `layouts.ts`, `themes.ts` | `requestPublication` reading the document's template's layout and theme, `layoutLatest` and `themeLatest`, and the two door checks |
-| `service: src/wire-codes.ts`                       | `template.unresolved`, `section.required` and `metadata.invalid`, with their rules TPL-004, TPL-013 and TPL-055 (API-006)          |
-| `web: src/structure/NewDocument.tsx`               | The template to start from                                                                                                         |
+| Where                                              | What                                                                                                                                                                                                       |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: src/template/`                            | The definition's schema, `checkTemplate`, `resolveTemplate`, and the starting outline's materialising                                                                                                      |
+| `domain: src/structure/`                           | `origin`, outline schema 3, and `changes` passed to `applyOutlineOperation`                                                                                                                                |
+| `db: migrations/tenant/0028_templates.sql`         | The kind, its space rule, and its versions authored                                                                                                                                                        |
+| `db: migrations/tenant/0029_document_template.sql` | `document_template`, and documents' values                                                                                                                                                                 |
+| `db: src/templates.ts`                             | Making, reading and versioning a template; a document's template, and the layout and theme it binds                                                                                                        |
+| `service: src/templates.ts`                        | The template routes; the documents and publishing handlers read a document's template                                                                                                                      |
+| `domain: src/version/substance.ts`                 | `DocumentSubstance.values`, and `canonicaliseVersion` digesting them                                                                                                                                       |
+| `db: src/versions.ts`                              | `insertVersion` and `substanceOf` writing and reading a document's values                                                                                                                                  |
+| `db: src/publishing.ts`, `layouts.ts`, `themes.ts` | `requestPublication` reading the document's template's layout and theme, `layoutLatest` and `themeLatest`, and the two door checks                                                                         |
+| `service: src/wire-codes.ts`                       | `template.unresolved`, `section.required` and `metadata.invalid`, with their rules TPL-004, TPL-013 and TPL-055 (API-006); `values.invalid` and `values.unresolved`, a written value's refusals, with none |
+| `web: src/structure/NewDocument.tsx`               | The template to start from                                                                                                                                                                                 |
 
 ## Verification
 

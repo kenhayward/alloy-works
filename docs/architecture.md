@@ -953,6 +953,25 @@ version, or the environment's declared one for a blank document.
 | `api-contract: documents.ts`      | `template` on `POST /v1/spaces/{space}/documents`, and on `DocumentView`, null where the caller may not read it |
 | `web: structure/NewDocument.tsx`  | The **Template** choice, Blank first                                                                            |
 
+An outline act on a document made from a template is held to it (W4.3): `documentRules` reads the
+recorded template version's `changes`, and resolves that version against the definitions as they are
+now for its fields, and `applyOutlineOperation` takes both as its `rules` - refusing an insert, removal
+or move of a section that `changes` forbids before anything else, and a section's `values` written by
+`set` that `checkWrittenValues` refuses: a field that does not apply at that level (`unknown`), a
+fixed field holding another value, or what `checkValue` refuses. Values written are stored whole, with
+each default the writer left without a member (`writtenValues`, `carryForward`'s rule). Required is
+not checked on a write. `PUT /v1/documents/{id}/values` writes the document's own the same way, as a
+version with the outline unchanged; `values_invalid` carries the failures, and `values_unresolved`
+answers a write to a document whose template no longer resolves. Neither names a rule.
+
+| Where                             | What                                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------------------- |
+| `domain: metadata/write.ts`       | `checkWrittenValues` and `writtenValues`; `unknown` joins the metadata rules          |
+| `domain: structure/operations.ts` | `OutlineRules`, `set`'s `values` opened and storable                                  |
+| `db: src/templates.ts`            | `documentRules`                                                                       |
+| `db: src/documents.ts`            | `editOutline` held to them; `recordDocumentValues`                                    |
+| `api-contract: documents.ts`      | `PUT /v1/documents/{id}/values`, `DocumentView.values`, `OutlineRefusal`'s `failures` |
+
 ## One renderer, two deliveries
 
 `apps/web` **is** the web application, and it is also the thing the Electron window loads. There is
