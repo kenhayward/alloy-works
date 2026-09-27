@@ -398,6 +398,72 @@ describe('templates through the service', () => {
     expect((await values(view.version.id, { [REVIEWER]: 'Grace' })).statusCode).toBe(200);
   });
 
+  it('refuses to publish, with the rule, a document missing a required section or a required value', async () => {
+    const template = (
+      await make(
+        'ada',
+        {
+          schemas: [
+            { schema: REVIEW_SCHEMA, level: 'document', requires: [REVIEWER] },
+            { schema: REVIEW_SCHEMA, level: 'section', requires: [] },
+          ],
+          outline: {
+            sections: [
+              { ...definition().outline.sections[0]!, required: true },
+              {
+                ...definition().outline.sections[0]!,
+                key: 'method',
+                required: false,
+                title: [{ type: 'text', value: 'Method', marks: [] }],
+              },
+            ],
+          },
+        },
+        'Audited',
+      )
+    ).json<TemplateBody>();
+    const made = (await document('ada', template.id)).json<{
+      id: string;
+      version: { id: string };
+      outline: { nodes: { id: string }[] };
+    }>();
+    const publish = (version: string) =>
+      call('ada', 'POST', `/v1/documents/${made.id}/publications`, { version, formats: ['pdf'] });
+
+    // The Introduction taken out: refused first for the section, by its title.
+    const removed = (
+      await call('ada', 'POST', `/v1/documents/${made.id}/outline`, {
+        openedFrom: made.version.id,
+        operation: { operation: 'remove', node: made.outline.nodes[0]!.id },
+      })
+    ).json<{ version: { id: string } }>();
+    const missing = await publish(removed.version.id);
+    expect(missing.statusCode).toBe(400);
+    expect(missing.json()).toMatchObject({
+      code: 'section_required',
+      rule: 'TPL-013',
+      message: 'This document is missing a section its template requires: Introduction.',
+      sections: [{ key: 'introduction', title: 'Introduction' }],
+    });
+
+    // A document with every section and no reviewer: refused for the value, by the field's name.
+    const whole = (await document('ada', template.id)).json<{
+      id: string;
+      version: { id: string };
+    }>();
+    const unfilled = await call('ada', 'POST', `/v1/documents/${whole.id}/publications`, {
+      version: whole.version.id,
+      formats: ['pdf'],
+    });
+    expect(unfilled.statusCode).toBe(400);
+    expect(unfilled.json()).toMatchObject({
+      code: 'metadata_invalid',
+      rule: 'TPL-055',
+      message: "This document's values do not satisfy its template: Reviewer is required.",
+      failures: [{ node: null, field: REVIEWER, rule: 'required' }],
+    });
+  });
+
   it('answers a template the caller may not read as not found, and makes nothing', async () => {
     const template = (await make('ada', {}, 'Audit', quality)).json<TemplateBody>();
     const listed = async () =>

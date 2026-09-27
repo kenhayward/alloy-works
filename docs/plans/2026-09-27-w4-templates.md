@@ -134,6 +134,14 @@ an author's own included. The review found a way round the rule: a section moved
 reference was removed, or moved, with the reference, which `changes` never holds. A removal or a move
 is now held by every section in the subtree it takes, not only by the node it names.
 
+**W4.4.** The checks are two pure functions in `template/conformance.ts`, called by
+`requestPublication` after the page-reference check, sections first. A template that no longer
+resolves is refused as `values_unresolved` there too, since its fields cannot be checked. The
+messages name each section by its starting title and each value by its field's name and its
+section's title, because the page shows a refusal at the door in its own words - so the page needed
+no change. Two earlier tests binding a theme and a layout gave their templates no schemas, which
+their required owner would now refuse at the door.
+
 ## Done when
 
 - Every requirement templates.md claims is Covered, and STY-025, VER-056, TPL-006 and IAM-018 are cited

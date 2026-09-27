@@ -17,6 +17,8 @@ describe('the rule behind a refusal', () => {
       ['grant.external_at_tenant', 'grant_external_at_tenant', 'IAM-071'],
       ['grant.external_past_cap', 'grant_external_past_cap', 'IAM-049'],
       ['template.unresolved', 'template_unresolved', 'TPL-004'],
+      ['section.required', 'section_required', 'TPL-013'],
+      ['metadata.invalid', 'metadata_invalid', 'TPL-055'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');

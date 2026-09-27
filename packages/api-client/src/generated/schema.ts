@@ -4083,7 +4083,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for */
+            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4098,6 +4098,34 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                        /** @description version_precondition: the version the document is at */
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description section_required: each section the document's template requires that none of its sections came from */
+                        sections?: {
+                            key: string;
+                            title: string;
+                        }[];
+                        /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
+                        failures?: {
+                            node: string | null;
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            [key: string]: unknown;
+                        }[];
                     };
                 };
             };
@@ -4180,6 +4208,24 @@ export interface operations {
                             createdAt: string;
                             note: string | null;
                         };
+                        /** @description section_required: each section the document's template requires that none of its sections came from */
+                        sections?: {
+                            key: string;
+                            title: string;
+                        }[];
+                        /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
+                        failures?: {
+                            node: string | null;
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            [key: string]: unknown;
+                        }[];
                     };
                 };
             };

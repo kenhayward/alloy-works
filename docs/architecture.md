@@ -972,6 +972,21 @@ answers a write to a document whose template no longer resolves. Neither names a
 | `db: src/documents.ts`            | `editOutline` held to them; `recordDocumentValues`                                    |
 | `api-contract: documents.ts`      | `PUT /v1/documents/{id}/values`, `DocumentView.values`, `OutlineRefusal`'s `failures` |
 
+A publication of a document made from a template is checked at the door (W4.4), after every check
+that stood before and before anything is queued: `missingSections` names each required starting
+section, at any depth, that no section of the version came from, found by `origin`; then
+`valueFailures` runs `validate` over the document's values and each section's, against the fields
+resolved now, each failure with its node. `section_required` (TPL-013) and `metadata_invalid`
+(TPL-055) carry them, with messages naming the sections and fields, which the page shows as it shows
+any refusal at the door; a template that no longer resolves is `values_unresolved`.
+
+| Where                             | What                                                              |
+| --------------------------------- | ----------------------------------------------------------------- |
+| `domain: template/conformance.ts` | `missingSections` and `valueFailures`                             |
+| `db: src/publishing.ts`           | `requestPublication`'s two checks, through `documentRules`        |
+| `service: src/publishing.ts`      | The refusals, each message naming what is missing or does not fit |
+| `api-contract: publishing.ts`     | `PublicationRefusal`'s `sections`, `failures` and `unresolved`    |
+
 ## One renderer, two deliveries
 
 `apps/web` **is** the web application, and it is also the thing the Electron window loads. There is

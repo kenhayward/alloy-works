@@ -405,6 +405,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   refuses and a fixed value changed are refused by name, and a field left out takes its default. A
   value left empty is allowed until publication. No page fills a field in yet.
 
+- **Publishing a document its template does not allow yet.** A document made from a template is not
+  published while a section its template requires is missing - found by where it came from, so one
+  retitled or moved still counts - or while its values, or a section's, do not satisfy the fields its
+  template asks for. The page says which sections, or which values, by name, and nothing is queued.
+
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath
   its outline, and before it a choice of **PDF**, **Word** or **PDF and Word**, PDF unless they choose

@@ -36,6 +36,8 @@ const WIRE_CODES = {
   'template.unresolved': 'template_unresolved',
   'values.invalid': 'values_invalid',
   'values.unresolved': 'values_unresolved',
+  'section.required': 'section_required',
+  'metadata.invalid': 'metadata_invalid',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -63,6 +65,9 @@ const RULES: Partial<Record<DottedCode, string>> = {
   // Refused when a template is made or changed as well as when a document is made from it: a template
   // naming what does not resolve could make no document (TPL-004, templates.md TE-L).
   'template.unresolved': 'TPL-004',
+  // A publication's door, for a document made from a template (templates.md, TE-H).
+  'section.required': 'TPL-013',
+  'metadata.invalid': 'TPL-055',
 };
 
 /** The wire's spelling of a store's dotted answer. */

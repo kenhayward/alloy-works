@@ -280,6 +280,8 @@ export type DocumentRules =
   | { readonly bound: false }
   | {
       readonly bound: true;
+      /** The template version the document recorded, as it says it. */
+      readonly definition: TemplateDefinition;
       readonly changes: TemplateDefinition['changes'];
       readonly resolved: ResolvedTemplate;
     };
@@ -292,6 +294,7 @@ export async function documentRules(
   if (!bound) return { bound: false };
   return {
     bound: true,
+    definition: bound,
     changes: bound.changes,
     resolved: resolveTemplate(bound, await templateReferences(trx, bound)),
   };

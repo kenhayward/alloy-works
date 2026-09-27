@@ -1,4 +1,5 @@
 import {
+  missingSections,
   parseAssetVersion,
   parseOutputReport,
   PUBLISHING_FORMATS,
@@ -7,9 +8,12 @@ import {
   readOutline,
   speaksFor,
   unsupportedFormats,
+  valueFailures,
   walkOutline,
   type ContentDocument,
   type Layout,
+  type MissingSection,
+  type NodeFailure,
   type NumberingTable,
   type OutlineDocument,
   type OutputReport,
@@ -19,6 +23,7 @@ import {
   type ResolvedTheme,
   type BlockNode,
   type InlineNode,
+  type UnresolvedReference,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -26,7 +31,7 @@ import { readableComponents } from './documents.js';
 import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
-import { documentLayout, documentTheme } from './templates.js';
+import { documentLayout, documentRules, documentTheme } from './templates.js';
 import { themeAt } from './themes.js';
 import { headingOf, latestVersion, type VersionHeading } from './versions.js';
 
@@ -341,6 +346,18 @@ export type PublicationRequestAnswer =
    * pages are not its. Nothing of where: the author asked for it, and adding the PDF answers it.
    */
   | { readonly answer: 'page_reference.without_pdf' }
+  /**
+   * A section the document's template requires that no section of this version came from (TPL-013),
+   * each by its starting title, in the template's order.
+   */
+  | { readonly answer: 'section.required'; readonly sections: readonly MissingSection[] }
+  /**
+   * The document's values, or a section's, do not satisfy its template's fields (TPL-055): every
+   * failure, each with the node it belongs to, `null` for the document's own.
+   */
+  | { readonly answer: 'metadata.invalid'; readonly failures: readonly NodeFailure[] }
+  /** Its template no longer resolves, so there is nothing to check its values against (TE-K). */
+  | { readonly answer: 'template.unresolved'; readonly unresolved: readonly UnresolvedReference[] }
   | { readonly answer: 'document.missing' };
 
 /**
@@ -422,6 +439,19 @@ export async function requestPublication(
     if (titled || resolved.some((each) => citesAPage(each.content.content))) {
       return { answer: 'page_reference.without_pdf' };
     }
+  }
+  // A document made from a template is held to it at the door, after every check above and before
+  // anything is queued, sections first (templates.md, TE-H): its required sections, by the recorded
+  // version, and its values and its sections', against the fields resolved now (TE-K).
+  const rules = await documentRules(trx, input.documentId);
+  if (rules.bound) {
+    const sections = missingSections(rules.definition, read.outline);
+    if (sections.length > 0) return { answer: 'section.required', sections };
+    if (!rules.resolved.ok) {
+      return { answer: 'template.unresolved', unresolved: rules.resolved.unresolved };
+    }
+    const failures = valueFailures(rules.resolved, read.outline, latest.values);
+    if (failures.length > 0) return { answer: 'metadata.invalid', failures };
   }
   const images = await resolveImages(trx, resolved, input.requester);
   // Set from the document's theme - its template's (STY-025), or the environment's declared one - at

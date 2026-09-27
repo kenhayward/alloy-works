@@ -288,6 +288,9 @@ describe('the domain package', () => {
         // Values as a section or a document is written with them (templates.md, W4.3).
         'checkWrittenValues',
         'writtenValues',
+        // What a publication of a document made from one is checked against (templates.md, W4.4).
+        'missingSections',
+        'valueFailures',
       ].sort(),
     );
   });

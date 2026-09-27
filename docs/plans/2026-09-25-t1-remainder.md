@@ -117,7 +117,7 @@ This table is updated as each workstream lands.
 | W1  | Test debt                          | Built (PRs #239, #241, #243); the rewordings cited in PR #244; API-003 waits on #240 in W2 |
 | W2  | Small fixes                        | Built (PRs #249, #251, #252, #255; [plan](2026-09-26-w2-small-fixes.md))                   |
 | W3  | Word output                        | Built (PRs #231, #236, #237, #238)                                                         |
-| W4  | Templates                          | In progress ([plan](2026-09-27-w4-templates.md), [design](../design/templates.md))         |
+| W4  | Templates                          | Built (PRs #256, #257, #258, #259, #260; [plan](2026-09-27-w4-templates.md))               |
 | W5  | Definitions and the metadata panel | Not started                                                                                |
 | W6  | Search                             | Not started                                                                                |
 | W7  | Listings and the API               | Not started                                                                                |

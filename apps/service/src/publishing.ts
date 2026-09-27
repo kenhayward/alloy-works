@@ -19,7 +19,9 @@ import {
   type StoredPublicationRequest,
   type Tenant,
   type TenantDatabase,
+  type TenantTransaction,
 } from '@alloy-works/db';
+import { readOutline, walkOutline } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
@@ -58,6 +60,30 @@ const summaryView = (publication: PublicationSummary): PublicationSummaryView =>
  * its requester through `GET /v1/publication-requests/{id}`, so no event about a document reaches a
  * viewer who may not read it (issue #147, decision G).
  */
+/** Each section of a document's latest outline by its title's words, to name one in a refusal. */
+async function sectionTitles(
+  trx: TenantTransaction,
+  id: string,
+): Promise<ReadonlyMap<string, string>> {
+  const document = await readDocument(trx, id);
+  const read =
+    document &&
+    readOutline(document.version.content, { artifact: id, version: document.version.id });
+  const titles = new Map<string, string>();
+  if (!read?.ok) return titles;
+  walkOutline(read.outline.nodes, (node) => {
+    if (node.type !== 'section') return;
+    titles.set(
+      node.id,
+      node.title
+        .map((inline) => (inline.type === 'text' ? inline.value : ''))
+        .join('')
+        .trim(),
+    );
+  });
+  return titles;
+}
+
 export function publishingHandlers(
   db: TenantDatabase,
   tenantOf: (request: FastifyRequest) => Tenant,
@@ -120,6 +146,36 @@ export function publishingHandlers(
             400,
             'page_reference.without_pdf',
             'This document refers to a page, and only the PDF has the pages it refers to. Publish it as a PDF as well.',
+          );
+        // A document made from a template, held to it (templates.md, TE-H): each refusal names what the
+        // author is to put right, since the page shows a refusal at the door in its own words.
+        case 'section.required':
+          throw refused(
+            400,
+            'section.required',
+            `This document is missing ${answer.sections.length === 1 ? 'a section' : 'sections'} its template requires: ${answer.sections.map((each) => each.title).join(', ')}.`,
+            { sections: answer.sections },
+          );
+        case 'metadata.invalid': {
+          const titles = await sectionTitles(trx, id);
+          const said = answer.failures.map((each) =>
+            each.node === null
+              ? each.detail
+              : `${each.detail} in ${titles.get(each.node) ?? 'a section'}`,
+          );
+          throw refused(
+            400,
+            'metadata.invalid',
+            `This document's values do not satisfy its template: ${said.join('; ')}.`,
+            { failures: answer.failures },
+          );
+        }
+        case 'template.unresolved':
+          throw refused(
+            400,
+            'values.unresolved',
+            "This document's template names a schema or field that no longer resolves, so its values cannot be checked.",
+            { unresolved: answer.unresolved },
           );
         case 'layout.language':
           throw refused(
