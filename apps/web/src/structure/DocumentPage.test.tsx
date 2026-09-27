@@ -3248,6 +3248,108 @@ describe('the address of every node', () => {
     });
   });
 
+  describe('Reading and Authoring (document-view.md, "Modes")', () => {
+    const REFERENCE = 'kkkkkkkkkkkkkkkkkkkkkkkkkk';
+    const printer = {
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: 'Unbox the printer.', marks: [] }],
+        },
+      ],
+    };
+    afterEach(() => {
+      try {
+        window.localStorage.removeItem('alloy-works.mode');
+      } catch {
+        // Storage refused: nothing was kept.
+      }
+    });
+    /** The document, whose outline the reader may or may not change, placing one component they may or may not edit. */
+    async function openAs(may: { document: boolean; component: boolean; publish?: boolean }) {
+      const fake = service(outline([reference(REFERENCE, 'latest')]), {
+        mayEdit: may.document,
+        mayPublish: may.publish ?? false,
+      });
+      const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const request = input instanceof Request ? input : new Request(String(input), init);
+        const path = new URL(request.url).pathname;
+        if (path === `/v1/documents/${DOCUMENT}/texts`) {
+          return json(200, {
+            document: DOCUMENT,
+            version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
+            occurrences: [
+              {
+                node: REFERENCE,
+                version: 'vvvvvvvv-0000-4000-8000-000000000001',
+                mayEdit: may.component,
+                lock: null,
+              },
+            ],
+            versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: printer }],
+          });
+        }
+        return fake.fetch(request);
+      }) as typeof globalThis.fetch;
+      const shown = render(
+        <DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />,
+      );
+      const text = await screen.findByRole('region', { name: "The document's text" });
+      await within(text).findByText('Unbox the printer.');
+      return { text, shown };
+    }
+    const modeOf = () => screen.getByRole('radiogroup', { name: 'Mode' });
+
+    it('CNT-154 CNT-105 is in Reading or in Authoring, says which, and lets an author drop to Reading on purpose, kept for them', async () => {
+      const { shown } = await openAs({ document: true, component: true });
+      // An author opens in Authoring, the switch saying so.
+      expect(within(modeOf()).getByRole('radio', { name: 'Authoring' })).toBeChecked();
+      expect(within(modeOf()).getByRole('radio', { name: 'Reading' })).not.toBeChecked();
+      await userEvent.click(within(modeOf()).getByRole('radio', { name: 'Reading' }));
+      expect(within(modeOf()).getByRole('radio', { name: 'Reading' })).toBeChecked();
+      // Kept: the next document opens as they left this one.
+      shown.unmount();
+      await openAs({ document: true, component: true });
+      expect(within(modeOf()).getByRole('radio', { name: 'Reading' })).toBeChecked();
+    });
+
+    it('CNT-105 offers Authoring to whoever may change the document or a component it places, and to nobody else', async () => {
+      // Neither: no switch at all, and the page reads.
+      const { shown } = await openAs({ document: false, component: false });
+      expect(screen.queryByRole('radiogroup', { name: 'Mode' })).toBeNull();
+      expect(screen.getByText('Reading')).toBeInTheDocument();
+      shown.unmount();
+      // A component they may edit, in a document they may not restructure: Authoring is theirs.
+      const second = await openAs({ document: false, component: true });
+      expect(within(modeOf()).getByRole('radio', { name: 'Authoring' })).toBeChecked();
+      second.shown.unmount();
+      // A document they may restructure, placing nothing they may edit: Authoring too.
+      await openAs({ document: true, component: false });
+      expect(within(modeOf()).getByRole('radio', { name: 'Authoring' })).toBeChecked();
+    });
+
+    it('CNT-156 offers in Reading moving through the document and nothing that changes it, and in Authoring its editing', async () => {
+      const { text } = await openAs({ document: true, component: true, publish: true });
+      const body = () => within(text).getByText('Unbox the printer.').closest('[data-opens]');
+      // Authoring: the outline's acts, and the text opens its editor.
+      expect(screen.getByRole('button', { name: 'Add section' })).toBeInTheDocument();
+      expect(body()).toHaveAttribute('data-opens', 'true');
+      await userEvent.click(within(modeOf()).getByRole('radio', { name: 'Reading' }));
+      // Reading: the outline to move through, and nothing that changes the document.
+      expect(screen.queryByRole('button', { name: 'Add section' })).toBeNull();
+      expect(body()).toBeNull();
+      expect(screen.getByRole('tree', { name: 'Outline' })).toBeInTheDocument();
+      // Publishing changes nothing in the document, and stays for whoever may publish (DV-D).
+      expect(screen.getByRole('button', { name: /^Publish as/ })).toBeInTheDocument();
+    });
+  });
+
   it("sets the document's text in the theme and layout it publishes under, as its editing surface is set", async () => {
     const REFERENCE = 'kkkkkkkkkkkkkkkkkkkkkkkkkk';
     const fake = service(outline([{ ...reference(REFERENCE, 'latest') }]));
@@ -4218,7 +4320,7 @@ describe('publishing from the document page', () => {
     shown({ ...layoutView(defaultLayout.scheme), formats: ['pdf'] });
     await screen.findByRole('treeitem', { name: 'Method' });
     expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeInTheDocument();
-    expect(screen.queryByRole('radiogroup')).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'Publish as' })).toBeNull();
   });
 });
 

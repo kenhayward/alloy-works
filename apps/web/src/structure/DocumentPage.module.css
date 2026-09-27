@@ -128,3 +128,11 @@
     grid-row: auto;
   }
 }
+
+/* The mode the page is in, and the switch between Reading and Authoring (document-view.md, "Modes"). */
+.mode {
+  display: inline-flex;
+  gap: var(--space-12);
+  margin: 0;
+  font-weight: 600;
+}

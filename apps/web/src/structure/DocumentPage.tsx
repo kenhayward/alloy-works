@@ -389,6 +389,25 @@ export interface DocumentPageProps {
  */
 const BOUNDARIES_KEY = 'alloy-works.boundaries';
 
+/** The document view's two modes (document-view.md, "Modes"); review is T3's. */
+type Mode = 'reading' | 'authoring';
+
+const MODES: readonly { readonly mode: Mode; readonly name: string }[] = [
+  { mode: 'reading', name: 'Reading' },
+  { mode: 'authoring', name: 'Authoring' },
+];
+
+const MODE_KEY = 'alloy-works.mode';
+
+/** The mode this reader last chose; Authoring, where it is offered, the first time (DV-E). */
+function keptMode(): Mode {
+  try {
+    return window.localStorage.getItem(MODE_KEY) === 'reading' ? 'reading' : 'authoring';
+  } catch {
+    return 'authoring';
+  }
+}
+
 /** Whether this reader last chose to see every component's boundaries. */
 function keptBoundaries(): boolean {
   try {
@@ -776,6 +795,19 @@ export function DocumentPage({
   // Every component's edges and label, rather than on hover and focus (document-view.md, "Boundaries";
   // CNT-073): this reader's choice, kept in the browser as a convenience.
   const [boundaries, setBoundaries] = useState(keptBoundaries);
+  // Reading or Authoring (document-view.md, "Modes"; CNT-154): the reader's choice, kept in the browser,
+  // Authoring the first time; which of them is on offer is decided below, from what they may do.
+  const [chosenMode, setChosenMode] = useState<Mode>(keptMode);
+  const chooseMode = (mode: Mode) => {
+    setChosenMode(mode);
+    // Reading offers no editor, so one open in place closes as the page drops to it.
+    if (mode === 'reading') setEditing(null);
+    try {
+      window.localStorage.setItem(MODE_KEY, mode);
+    } catch {
+      // Storage refused: the choice holds for this page and is not kept.
+    }
+  };
   const showBoundaries = (shown: boolean) => {
     setBoundaries(shown);
     try {
@@ -836,6 +868,10 @@ export function DocumentPage({
   }
 
   const { document } = loaded;
+  // Authoring is offered where the reader may restructure the document or edit any component it places
+  // (CNT-105): derived from the decisions the page is told, so a mode they cannot have is never shown.
+  const mayAuthor = document.mayEdit || [...editable.values()].some((each) => each.mayEdit);
+  const authoring = mayAuthor && chosenMode === 'authoring';
   const ids = tabIds(tab);
   return (
     // Set in the theme and layout this document publishes under, its own and its components' text alike
@@ -843,6 +879,24 @@ export function DocumentPage({
     <PresentationProvider client={client} document={document.id}>
       <article aria-labelledby="document-title" className={styles['page']}>
         {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
+        {/* The mode the page is in, and the switch between the two where Authoring is offered. */}
+        {mayAuthor ? (
+          <div role="radiogroup" aria-label="Mode" className={styles['mode']}>
+            {MODES.map(({ mode, name }) => (
+              <label key={mode}>
+                <input
+                  type="radio"
+                  name={`mode-${document.id}`}
+                  checked={(authoring ? 'authoring' : 'reading') === mode}
+                  onChange={() => chooseMode(mode)}
+                />{' '}
+                {name}
+              </label>
+            ))}
+          </div>
+        ) : (
+          <p className={styles['mode']}>Reading</p>
+        )}
         <ZoomControl />
         <label>
           <input
@@ -883,7 +937,7 @@ export function DocumentPage({
               </div>
             }
             scheme={document.scheme}
-            editable={document.mayEdit}
+            editable={document.mayEdit && authoring}
             sectionFields={document.fields.section}
             schemas={document.schemas}
             people={people}
@@ -930,7 +984,7 @@ export function DocumentPage({
               {...(known.state === 'loaded' ? { contributions: known.contributions } : {})}
               editing={editing}
               boundaries={boundaries}
-              {...(principalId === undefined
+              {...(principalId === undefined || !authoring
                 ? {}
                 : {
                     onEdit: (node: string | null) => {
@@ -960,7 +1014,7 @@ export function DocumentPage({
                 schemas={document.schemas}
                 people={people}
                 stored={document.values}
-                readOnly={!document.mayEdit}
+                readOnly={!document.mayEdit || !authoring}
                 onSave={saveValues}
               />
             )}
