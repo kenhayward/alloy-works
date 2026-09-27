@@ -1,5 +1,13 @@
 import { useEffect, type RefObject } from 'react';
 
+/** Whether a change to the text added or removed a node's element, or anything holding one. */
+function movesNodes(mutation: MutationRecord): boolean {
+  const holdsNode = (each: Node) =>
+    each instanceof Element &&
+    (each.hasAttribute('data-node') || each.querySelector('[data-node]') !== null);
+  return [...mutation.addedNodes, ...mutation.removedNodes].some(holdsNode);
+}
+
 /** How far down the window the line is that a node's heading must have reached to be where the reader is. */
 const READING_LINE = 0.25;
 
@@ -45,7 +53,10 @@ export function useReadingPosition(
       for (const element of root.querySelectorAll('[data-node]')) crossing.observe(element);
     };
     watch();
-    const changed = new MutationObserver(() => {
+    // Watched again only when a node's element comes or goes: an editor open in place changes the DOM
+    // inside its node on every keystroke, and none of that moves where any node begins.
+    const changed = new MutationObserver((mutations) => {
+      if (!mutations.some(movesNodes)) return;
       watch();
       update();
     });
