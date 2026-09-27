@@ -3,6 +3,14 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.80.2 - 2026-09-27 (PR #264)
+
+### Fixed
+
+- The check that the API client's types match the API's description no longer fails on a busy
+  build machine for taking more than five seconds: it is a check of what the types say, not of how
+  quickly they are made.
+
 ## 0.80.1 - 2026-09-27 (PR #261)
 
 ### Changed
