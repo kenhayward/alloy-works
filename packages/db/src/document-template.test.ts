@@ -1,6 +1,7 @@
 import {
   DEFINITION_SCHEMA_VERSION,
   TEMPLATE_SCHEMA_VERSION,
+  type OutlineOperation,
   type SectionNode,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
@@ -351,7 +352,8 @@ describe('a document made from a template', () => {
 
   it('STY-025 publishes a document under the theme its template binds', async () => {
     const theme = await copied('theme', DEFAULT_THEME_ID);
-    const answer = await make((await template({ theme })).id);
+    // No schemas, so nothing it asks for stands between the document and its publication.
+    const answer = await make((await template({ theme, schemas: [] })).id);
     if (answer.answer !== 'created') throw new Error(answer.answer);
     expect((await requested(answer.version.artifactId, answer.version.id)).theme_id).toBe(theme);
     // A blank document keeps the environment's.
@@ -364,7 +366,7 @@ describe('a document made from a template', () => {
 
   it('publishes and numbers a document under the layout its template binds', async () => {
     const layout = await copied('layout', DEFAULT_LAYOUT_ID);
-    const answer = await make((await template({ layout })).id);
+    const answer = await make((await template({ layout, schemas: [] })).id);
     if (answer.answer !== 'created') throw new Error(answer.answer);
     const document = answer.version.artifactId;
     expect((await requested(document, answer.version.id)).layout_id).toBe(layout);
@@ -499,6 +501,107 @@ describe('a document made from a template', () => {
         }),
       ),
     ).toMatchObject({ answer: 'values.invalid', failures: [{ field: OWNER, rule: 'unknown' }] });
+  });
+
+  const publish = (document: string, version: string) =>
+    service.withTenant(production, (trx) =>
+      requestPublication(trx, {
+        documentId: document,
+        version,
+        formats: ['pdf'],
+        requester: ada,
+      }),
+    );
+  const act = (document: string, openedFrom: string, operation: OutlineOperation) =>
+    service.withTenant(production, async (trx) => {
+      const answer = await editOutline(trx, {
+        artifactId: document,
+        openedFrom,
+        author: ada,
+        operation,
+      });
+      if (answer.answer !== 'recorded') throw new Error(answer.answer);
+      return answer.version;
+    });
+
+  it('TPL-013 refuses to publish a document missing a required section, naming it', async () => {
+    const made = await template({
+      schemas: [],
+      outline: {
+        sections: [
+          { ...section('introduction', 'Introduction'), required: true },
+          section('method', 'Method'),
+        ],
+      },
+    });
+    // Removed: refused, naming the starting section by its title.
+    const removed = await make(made.id);
+    if (removed.answer !== 'created') throw new Error(removed.answer);
+    const [introduction] = (removed.version.content as { nodes: SectionNode[] }).nodes;
+    const without = await act(removed.version.artifactId, removed.version.id, {
+      operation: 'remove',
+      node: introduction!.id,
+    });
+    expect(await publish(removed.version.artifactId, without.id)).toEqual({
+      answer: 'section.required',
+      sections: [{ key: 'introduction', title: 'Introduction' }],
+    });
+    // Retitled and moved under Method, it is still the required section: found by its key.
+    const kept = await make(made.id);
+    if (kept.answer !== 'created') throw new Error(kept.answer);
+    const nodes = (kept.version.content as { nodes: SectionNode[] }).nodes;
+    const retitled = await act(kept.version.artifactId, kept.version.id, {
+      operation: 'retitle',
+      node: nodes[0]!.id,
+      title: text('Background'),
+    });
+    const moved = await act(kept.version.artifactId, retitled.id, {
+      operation: 'move',
+      node: nodes[0]!.id,
+      parent: nodes[1]!.id,
+      position: 0,
+    });
+    expect((await publish(kept.version.artifactId, moved.id)).answer).toBe('requested');
+  });
+
+  it("TPL-055 refuses to publish a document whose fields, or any section's, do not satisfy its template, naming each failure", async () => {
+    const made = await template({
+      schemas: [
+        { schema: REVIEW, level: 'document', requires: [OWNER] },
+        { schema: REVIEW, level: 'section', requires: [OWNER] },
+      ],
+    });
+    const answer = await make(made.id);
+    if (answer.answer !== 'created') throw new Error(answer.answer);
+    const document = answer.version.artifactId;
+    const [introduction, method] = (answer.version.content as { nodes: SectionNode[] }).nodes;
+    // No owner anywhere: the document's own, and each section's, named with the node it belongs to.
+    const refused = await publish(document, answer.version.id);
+    if (refused.answer !== 'metadata.invalid') throw new Error(refused.answer);
+    expect(refused.failures.map(({ node, field, rule }) => [node, field, rule])).toEqual([
+      [null, OWNER, 'required'],
+      [introduction!.id, OWNER, 'required'],
+      [method!.id, OWNER, 'required'],
+    ]);
+    // Filled in everywhere, it publishes.
+    let version = await service.withTenant(production, async (trx) => {
+      const written = await recordDocumentValues(trx, {
+        documentId: document,
+        openedFrom: answer.version.id,
+        author: ada,
+        values: { [OWNER]: 'Ada' },
+      });
+      if (written.answer !== 'recorded') throw new Error(written.answer);
+      return written.version;
+    });
+    for (const node of [introduction!, method!]) {
+      version = await act(document, version.id, {
+        operation: 'set',
+        node: node.id,
+        values: { [OWNER]: 'Grace' },
+      });
+    }
+    expect((await publish(document, version.id)).answer).toBe('requested');
   });
 
   // Last, because it changes the one schema every template here assigns.
