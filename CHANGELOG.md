@@ -7,13 +7,14 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 ### Added
 
-- **A preview of a document can now be made.** It is made the way a publication is, from the same
-  version of every part of the document, as a PDF, and says "Preview - not approved" on every page and
-  once to a screen reader, where a publication says "Not approved". It is not a publication: nothing
-  lists it or searches it, and it is kept for an hour. Asking for one from the document page, and
-  seeing it beside the text, come in the next releases.
+- **Previews are being prepared.** The product can now make a preview of a document the way it makes
+  a publication, from the same version of every part of the document, as a PDF that says "Preview -
+  not approved" on every page and once to a screen reader, where a publication says "Not approved".
+  A preview is not a publication: nothing lists it or searches it, and it is kept for an hour.
+  Nothing asks for one yet: asking for a preview from the document page, and seeing it beside the
+  text, come in the next releases.
 - **The default layout says what a preview is called.** Its new version gives the words a preview
-  prints. A layout without them cannot make a preview, and the document page says so.
+  prints.
 
 ## 0.103.1 - 2026-09-27 (PR #291)
 

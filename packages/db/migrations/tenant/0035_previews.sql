@@ -7,7 +7,8 @@
 -- migration is a publish, and publishes as it was made. A preview asks for the PDF alone (PV-C).
 --
 -- Once done, a preview carries its PDF - kept in the tenant's store by its hash, as a publication's
--- output is - and the time it expires, where a publish's request points at its publication (PV-F).
+-- output is - and the time it expires, an hour after it finished, where a publish's request points
+-- at its publication (PV-F).
 -- All four exactly when it is done: a queued or failed preview has none, and a publish never any. The
 -- key names the digest it records, so no row can point at other bytes than it says; that the key is
 -- in the tenant's own store is `publication_request_finish_once`'s to hold, below, for 0017's reason.
@@ -38,7 +39,7 @@ alter table publication_request
     (preview_key is null or preview_key like '%/sha256/' || preview_sha256)
     and (preview_sha256 is null or preview_sha256 ~ '^[0-9a-f]{64}$')
     and (preview_bytes is null or preview_bytes > 0)
-    and (expires_at is null or expires_at > finished_at)
+    and (expires_at is null or expires_at = finished_at + interval '1 hour')
   );
 
 -- The runtime role names the kind when it asks, as it names the formats, and writes a preview's PDF

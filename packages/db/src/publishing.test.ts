@@ -1320,7 +1320,7 @@ describe('requesting and recording a publication', () => {
       /publication_request_preview_only/,
     );
     // A PDF that is not what it says: a key not ending in its own digest, a digest that is not one,
-    // no bytes, or an expiry no later than it finished.
+    // no bytes, or an expiry other than an hour after it finished.
     const capitals = sha256.toUpperCase();
     for (const [why, pdf] of [
       ['a key naming other bytes', { key: `${production.role}/sha256/${other}`, sha256, bytes: 1 }],
@@ -1343,6 +1343,13 @@ describe('requesting and recording a publication', () => {
     await refused(
       sql`update publication_request set state = 'done', finished_at = now(), preview_key = ${key},
             preview_sha256 = ${sha256}, preview_bytes = 1000, expires_at = now()
+          where id = ${preview}`,
+      /publication_request_preview_output/,
+    );
+    // Kept for longer than the hour a preview lasts (PV-F): the links follow the expiry.
+    await refused(
+      sql`update publication_request set state = 'done', finished_at = now(), preview_key = ${key},
+            preview_sha256 = ${sha256}, preview_bytes = 1000, expires_at = now() + interval '1 year'
           where id = ${preview}`,
       /publication_request_preview_output/,
     );
