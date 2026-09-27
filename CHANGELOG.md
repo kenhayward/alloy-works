@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.93.0 - 2026-09-27 (PR #278)
+
+### Added
+
+- **Retry a request without doing it twice.** Anything that makes or changes something through the API
+  can carry an `Idempotency-Key`. Sent again with the same key - because its answer was lost on the
+  way - it is answered as the first time was, and a document, a component or anything else is made once.
+  Using the same key for a different request is refused. Sending an upload's image again likewise
+  answers with the upload rather than an error.
+
 ## 0.92.0 - 2026-09-27 (PR #277)
 
 ### Added

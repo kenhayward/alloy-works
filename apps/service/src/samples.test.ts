@@ -98,6 +98,26 @@ describe('a sample of this environment', () => {
     ]);
   });
 
+  it('queues one sample for a request sent twice with one idempotency key', async () => {
+    const keyed = () =>
+      app.inject({
+        method: 'POST',
+        url: '/v1/samples',
+        headers: { host: HOST, cookie, 'idempotency-key': 'sample-once' },
+      });
+    const first = await keyed();
+    const again = await keyed();
+    expect(again.statusCode).toBe(202);
+    expect(again.json()).toEqual(first.json());
+    expect(again.headers['idempotent-replayed']).toBe('true');
+    const { rows } = await queryAs(
+      db.adminUrl,
+      `select count(*)::int as jobs from platform.job where subject_id = $1`,
+      [first.json().id as string],
+    );
+    expect(rows).toEqual([{ jobs: 1 }]);
+  });
+
   it('hands out a link that fetches the PDF once a worker has made it', async () => {
     const id = (await ask()).json().id as string;
     // What a worker would do, without running one: the service's half of this is the link.

@@ -297,9 +297,14 @@ describe('uploading an image through the service (figures 1)', () => {
       expect((await call(other, 'GET', `/v1/asset-uploads/${id}`)).statusCode, other).toBe(404);
       expect((await fill(other, id, png())).statusCode, other).toBe(404);
     }
+    // The same bytes again - a retry after a lost answer - are answered with the upload as it
+    // stands (ID-D); other bytes for it are refused, as it is filled.
     const again = await fill('grace', id, png());
-    expect(again.statusCode).toBe(409);
-    expect(code(again)).toBe('asset_upload_filled');
+    expect(again.statusCode).toBe(200);
+    expect(again.json()).toMatchObject({ id, state: 'checking', assetVersion: null });
+    const other = await fill('grace', id, png(5, 5));
+    expect(other.statusCode).toBe(409);
+    expect(code(other)).toBe('asset_upload_filled');
   });
 
   it('AST-026 reads an asset version, and its bytes, by read on the space it is in, never sniffed and never run', async () => {

@@ -316,3 +316,4 @@ export {
   type SortOf,
   type SortOrder,
 } from './listing.js';
+export { recallAnswer, rememberAnswer, type KeyedRequest, type Recalled } from './idempotency.js';
