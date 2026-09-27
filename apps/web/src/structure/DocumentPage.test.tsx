@@ -3130,6 +3130,124 @@ describe('the address of every node', () => {
     expect(item('Introduction')).toHaveAttribute('aria-selected', 'true');
   });
 
+  describe('the document as one scroll (document-view.md)', () => {
+    const SECTION = 'ssssssssssssssssssssssssss';
+    const REFERENCE = 'kkkkkkkkkkkkkkkkkkkkkkkkkk';
+    const printer = {
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: 'Unbox the printer.', marks: [] }],
+        },
+      ],
+    };
+    /** A section holding one component, in the environment's theme. */
+    async function openOneScroll() {
+      const fake = service(
+        outline([section(SECTION, 'Setting up', [reference(REFERENCE, 'latest')])]),
+      );
+      const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const request = input instanceof Request ? input : new Request(String(input), init);
+        const path = new URL(request.url).pathname;
+        if (path === `/v1/documents/${DOCUMENT}/presentation`) {
+          return json(200, DEFAULT_PRESENTATION);
+        }
+        if (path === `/v1/documents/${DOCUMENT}/texts`) {
+          return json(200, {
+            document: DOCUMENT,
+            version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
+            occurrences: [
+              {
+                node: REFERENCE,
+                version: 'vvvvvvvv-0000-4000-8000-000000000001',
+                mayEdit: false,
+                lock: null,
+              },
+            ],
+            versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: printer }],
+          });
+        }
+        return fake.fetch(request);
+      }) as typeof globalThis.fetch;
+      render(<DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />);
+      const text = await screen.findByRole('region', { name: "The document's text" });
+      await within(text).findByText('Unbox the printer.');
+      await waitFor(() => expect(text).toHaveClass('aw-canvas'));
+      return text;
+    }
+    // By a name in a variable: Vite rewrites a literal one into the stylesheet's served address.
+    const STYLESHEET = './DocumentText.module.css';
+    const stylesheet = () =>
+      readFileSync(new URL(STYLESHEET, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    /** The declarations of the stylesheet's rule for exactly this selector. */
+    const ruleOf = (selector: string) => {
+      const found = [...stylesheet().matchAll(/([^{}]+)\{([^{}]*)\}/g)].find((match) =>
+        match[1]!.split(',').some((each) => each.trim() === selector),
+      );
+      return found?.[2] ?? null;
+    };
+
+    it('CNT-072 sets the whole document on one canvas, its sections and components headed in the theme, with no card around a component', async () => {
+      const text = await openOneScroll();
+      // One canvas, holding every heading and every component's text: the text itself, and none
+      // inside it.
+      expect(text).toHaveClass('aw-canvas');
+      expect(text.querySelectorAll('.aw-canvas')).toHaveLength(0);
+      // Each heading in the theme's role for its depth: the section's first, the component's second.
+      const section = within(text).getByRole('heading', { name: /Setting up/ });
+      const component = within(text).getByRole('heading', { name: /Install the printer/ });
+      expect(section).toHaveAttribute('data-role', 'heading1');
+      expect(component).toHaveAttribute('data-role', 'heading2');
+      expect(getComputedStyle(section).fontSize).toBe('calc(16pt * var(--aw-zoom))');
+      expect(getComputedStyle(component).fontSize).toBe('calc(13pt * var(--aw-zoom))');
+      // Nothing draws a box round a component: no border, no fill.
+      const box = ruleOf('.component');
+      expect(box).not.toBeNull();
+      expect(box).not.toMatch(/border|background/);
+      expect(text.querySelector('[data-component]')).not.toBeNull();
+    });
+
+    it("CNT-073 shows a component's edges and label on hover, on focus and under Show boundaries, and never otherwise", async () => {
+      const text = await openOneScroll();
+      // The label is there for a screen reader and the keyboard, and seen only when asked for.
+      const label = within(text).getByText('You may read this component but not edit it.');
+      expect(label.closest('[data-label]')).not.toBeNull();
+      expect(ruleOf('.label')).toMatch(/opacity: 0/);
+      // Inside its own component's box, at the top: never over the component above it, and never
+      // outside the canvas, whose sideways scrolling clips what stands above its top.
+      expect(ruleOf('.label')).toMatch(/top: 0/);
+      expect(ruleOf('.label')).not.toMatch(/bottom:/);
+      for (const shown of [
+        '.component:hover > .label',
+        '.component:focus-within > .label',
+        ".text[data-boundaries='shown'] .label",
+      ]) {
+        expect(ruleOf(shown), shown).toMatch(/opacity: 1/);
+      }
+      for (const edged of [
+        '.component:hover',
+        '.component:focus-within',
+        ".text[data-boundaries='shown'] .component",
+      ]) {
+        expect(ruleOf(edged), edged).toMatch(/outline: 1px solid/);
+      }
+      // Show boundaries shows them all, and is kept for this reader.
+      expect(text).not.toHaveAttribute('data-boundaries');
+      await userEvent.click(screen.getByLabelText('Show boundaries'));
+      expect(text).toHaveAttribute('data-boundaries', 'shown');
+      expect(window.localStorage.getItem('alloy-works.boundaries')).toBe('shown');
+      await userEvent.click(screen.getByLabelText('Show boundaries'));
+      expect(text).not.toHaveAttribute('data-boundaries');
+      window.localStorage.removeItem('alloy-works.boundaries');
+    });
+  });
+
   it("sets the document's text in the theme and layout it publishes under, as its editing surface is set", async () => {
     const REFERENCE = 'kkkkkkkkkkkkkkkkkkkkkkkkkk';
     const fake = service(outline([{ ...reference(REFERENCE, 'latest') }]));
@@ -3191,7 +3309,10 @@ describe('the address of every node', () => {
     await waitFor(() => expect(running.closest('.aw-canvas')).not.toBeNull());
     const canvas = running.closest('.aw-canvas') as HTMLElement;
     expect(canvas.style.getPropertyValue('--aw-measure')).toBe('451.28pt');
-    expect(getComputedStyle(canvas).width).toBe('calc(var(--aw-measure) * var(--aw-zoom))');
+    // Each component's text is the measure wide, on the one canvas the document is (W9.1).
+    expect(getComputedStyle(running.closest('.aw-text')!).width).toBe(
+      'calc(var(--aw-measure) * var(--aw-zoom))',
+    );
     // Each paragraph by the place it stands in, as on the surface.
     expect(getComputedStyle(running).fontFamily).toBe('"aw-face-serif"');
     expect(

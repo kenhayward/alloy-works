@@ -58,7 +58,10 @@ function keptZoom(): Zoom {
 const CANVAS_CSS =
   '.aw-canvas { overflow-x: auto; }\n' +
   '.aw-canvas .aw-text, .aw-canvas.aw-text { box-sizing: content-box; ' +
-  'width: calc(var(--aw-measure) * var(--aw-zoom)); max-width: none; }\n';
+  'width: calc(var(--aw-measure) * var(--aw-zoom)); max-width: none; }\n' +
+  // A document's headings stand at the measure too, as the page sets them (document-view.md).
+  ".aw-canvas [data-role^='heading'] { max-width: calc(var(--aw-measure) * var(--aw-zoom)); }" +
+  '\n';
 
 /** An asset version's own size, in pixels as it is displayed: what an image style resolves from. */
 export interface Pixels {

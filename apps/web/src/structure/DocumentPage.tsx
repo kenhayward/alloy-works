@@ -387,6 +387,17 @@ export interface DocumentPageProps {
  * one onto theirs is the silent overwrite STR-059 forbids. An act that changes nothing (decision K)
  * is neither a refusal nor an entry: the page says nothing and pushes nothing.
  */
+const BOUNDARIES_KEY = 'alloy-works.boundaries';
+
+/** Whether this reader last chose to see every component's boundaries. */
+function keptBoundaries(): boolean {
+  try {
+    return window.localStorage.getItem(BOUNDARIES_KEY) === 'shown';
+  } catch {
+    return false;
+  }
+}
+
 export function DocumentPage({
   client,
   id,
@@ -762,6 +773,19 @@ export function DocumentPage({
     [client, id, names, opened, show],
   );
 
+  // Every component's edges and label, rather than on hover and focus (document-view.md, "Boundaries";
+  // CNT-073): this reader's choice, kept in the browser as a convenience.
+  const [boundaries, setBoundaries] = useState(keptBoundaries);
+  const showBoundaries = (shown: boolean) => {
+    setBoundaries(shown);
+    try {
+      if (shown) window.localStorage.setItem(BOUNDARIES_KEY, 'shown');
+      else window.localStorage.removeItem(BOUNDARIES_KEY);
+    } catch {
+      // Storage refused: the choice holds for this page and is not kept.
+    }
+  };
+
   if (loaded.state === 'loading') return <Waiting>Opening...</Waiting>;
   // A document that did not open has no outline pane, and so no arrow back: each notice carries it.
   const back = (
@@ -820,6 +844,14 @@ export function DocumentPage({
       <article aria-labelledby="document-title" className={styles['page']}>
         {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
         <ZoomControl />
+        <label>
+          <input
+            type="checkbox"
+            checked={boundaries}
+            onChange={(event) => showBoundaries(event.target.checked)}
+          />{' '}
+          Show boundaries
+        </label>
         <UnheldFaces />
         {document.scheme === null && <p>This document's numbering could not be read.</p>}
         <div
@@ -897,6 +929,7 @@ export function DocumentPage({
               // editor takes its context through its place, and is told again as this is read again.
               {...(known.state === 'loaded' ? { contributions: known.contributions } : {})}
               editing={editing}
+              boundaries={boundaries}
               {...(principalId === undefined
                 ? {}
                 : {

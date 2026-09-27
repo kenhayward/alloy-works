@@ -37,6 +37,12 @@ reference's version shown and chosen where it stands.
    **Show boundaries**, a header toggle kept per viewer.
 3. Tests: CNT-072 (one canvas, heading roles, no card chrome), CNT-073 (hidden, hover, focus, toggle).
 
+**W9.1, as built.** The label stands at the top of its own component's box, to the right, transparent
+rather than removed, so it moves no text when it shows and a screen reader and the keyboard reach it;
+it takes no pointer while hidden. Standing above the component, as first built, it covered the end of
+the component before and was clipped above the canvas, which scrolls sideways (final review). A heading's role is `heading<depth>` on the element, which the theme's rules set as the
+PDF does, held to the measure by the canvas's own rule. The version in the label waits for W9.4.
+
 ## W9.2: Reading and Authoring
 
 1. The header's mode switch, offered by the document's `mayEdit` and each occurrence's; kept per

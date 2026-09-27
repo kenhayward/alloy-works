@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.100.0 - 2026-09-27 (PR #287)
+
+### Changed
+
+- **A document reads as one page.** Its text is one continuous scroll on the theme's paper, each
+  section's and each component's heading set as the publication sets it, with no box round each
+  component. A component's edges, and a label saying whether you may edit it and who is editing it,
+  show when you point at it or move into it, or for every component with **Show boundaries**, which is
+  remembered in this browser.
+
 ## 0.99.1 - 2026-09-27 (PR #286)
 
 ### Changed

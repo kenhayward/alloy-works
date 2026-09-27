@@ -18,7 +18,15 @@ import {
   type ReferenceContext,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 
 import { heldSentence } from '../editor/held.js';
 import { textOffsetIn } from '../editor/caret.js';
@@ -26,9 +34,12 @@ import { textOffsetIn } from '../editor/caret.js';
 import { Lozenge } from '../states/Lozenge.js';
 import styles from './DocumentText.module.css';
 import { nodeName, titleText, type Names } from './tree.js';
-import { parentRoom, useCanvas } from '../theme/Canvas.js';
+import { innerWidth, useCanvas } from '../theme/Canvas.js';
 import { useStyledImages } from '../theme/images.js';
 import { useUnresolvedMarks } from '../theme/check.js';
+
+/** The room the document's column has for its measure, at Fit: its own, inside its padding. */
+const ownRoom = (element: HTMLElement) => innerWidth(element);
 
 /** What the text knows of an occurrence's contributions until the page has heard: nothing. */
 const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
@@ -158,9 +169,6 @@ function RenderedText({
   onOpen?: (openAt: number) => void;
 }) {
   const place = useRef<HTMLDivElement>(null);
-  // Each component's text is its own paper, set as the editing surface sets it (themes.md, "The theme
-  // in the editor"), so a page's controls around it keep the application's own colours.
-  const canvas = useCanvas(parentRoom, place);
   useStyledImages(place);
   useUnresolvedMarks(place);
   const rendered = useMemo(() => renderContent(content, document, context), [content, context]);
@@ -171,13 +179,12 @@ function RenderedText({
     return () => host.replaceChildren();
   }, [rendered]);
   if (rendered === null) return <p className={styles['cannot']}>{CANNOT_SHOW}</p>;
-  const classes = [styles['body'], TEXT_CLASS, canvas.className].filter(Boolean).join(' ');
-  if (!onOpen) return <div ref={place} className={classes} style={canvas.style} />;
+  const classes = `${styles['body']} ${TEXT_CLASS}`;
+  if (!onOpen) return <div ref={place} className={classes} />;
   return (
     <div
       ref={place}
       className={classes}
-      style={canvas.style}
       data-opens="true"
       tabIndex={0}
       title="Click to edit"
@@ -234,18 +241,28 @@ function SectionTitle({ title }: { title: SectionViewNode['title'] }) {
   );
 }
 
+/**
+ * A section's or a component's heading, set in the theme's heading role for its depth as the
+ * publication sets it (document-view.md, "One scroll"; CNT-072) - a deeper one in the sixth.
+ */
 const Heading = ({ depth, children }: { depth: number; children: React.ReactNode }) => {
   const level = Math.min(6, depth + 2);
   const Tag = `h${level}` as 'h3';
-  return <Tag className={styles['heading']}>{children}</Tag>;
+  return (
+    <Tag className={styles['heading']} data-role={`heading${Math.min(6, depth)}`}>
+      {children}
+    </Tag>
+  );
 };
 
 /**
- * The document itself, in reading order (layout C's middle): each section a heading under its number,
- * each component reference a card under its own, which opens the component. Numbered by the outline
- * panel's own function over the same outline and scheme, so the tree and the text cannot disagree.
- * Each card shows its component's text, rendered rather than mounted, and one at a time can hold that
- * component's own editor in its place (interface slice 9).
+ * The document itself, in reading order (layout C's middle), as one scroll on one canvas
+ * (document-view.md, "One scroll"): each section and each component reference a heading under its
+ * number, in the theme's heading role for its depth, and each component's text beneath its own with no
+ * card around it - its edges and its label shown on hover, on focus and under Show boundaries.
+ * Numbered by the outline panel's own function over the same outline and scheme, so the tree and the
+ * text cannot disagree. Each component's text is rendered rather than mounted, and one at a time can
+ * hold that component's own editor in its place (interface slice 9).
  */
 export function DocumentText({
   outline,
@@ -258,6 +275,7 @@ export function DocumentText({
   editor,
   editable,
   contributions = NOTHING_KNOWN,
+  boundaries = false,
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
@@ -280,7 +298,12 @@ export function DocumentText({
    * caption, and a section its number.
    */
   contributions?: ReadonlyMap<string, readonly Contribution[]>;
+  /** Whether every component's edges and label are shown, rather than on hover and focus (CNT-073). */
+  boundaries?: boolean;
 }) {
+  // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072).
+  const column = useRef<HTMLElement>(null);
+  const canvas = useCanvas(ownRoom, column as RefObject<HTMLDivElement | null>);
   // Where the text was clicked to open the one card being edited; read once, as that editor opens.
   const [openAt, setOpenAt] = useState<number | undefined>(undefined);
   const open = (node: string) => (at: number) => {
@@ -335,16 +358,21 @@ export function DocumentText({
         </div>
       ) : (
         <div key={node.id} className={styles['reference']} data-node={node.id}>
-          <div className={styles['card']} data-editing={editing === node.id}>
-            {/* While it is being edited the editor's own strip carries the number and the title,
-                and its Done is the way out, so the head would only say them a second time. */}
+          <div className={styles['component']} data-component="" data-editing={editing === node.id}>
+            {/* The component's label (CNT-073): what it is, whether the reader may edit it and who
+                holds it, and Open - seen on hover, on focus and under Show boundaries, and always
+                there for a screen reader. While it is being edited the editor's own strip says it. */}
             {!(editing === node.id && editor && node.component !== null) && (
-              <div className={styles['cardHead']}>
-                {titled(node, depth)}
+              <div className={styles['label']} data-label="">
+                <span className={styles['labelName']}>{nodeName(node, names)}</span>
                 {node.component === null ? (
                   <Lozenge kind="notYoursToRead">Not yours to read</Lozenge>
                 ) : (
-                  <span className={styles['actions']}>
+                  <>
+                    <EditableState
+                      state={editable?.get(node.id)}
+                      openHere={openComponent !== null && openComponent === node.component}
+                    />
                     <a
                       className={styles['open']}
                       href={`#/components/${node.component}`}
@@ -352,16 +380,11 @@ export function DocumentText({
                     >
                       Open
                     </a>
-                  </span>
+                  </>
                 )}
               </div>
             )}
-            {node.component !== null && editing !== node.id && (
-              <EditableState
-                state={editable?.get(node.id)}
-                openHere={openComponent !== null && openComponent === node.component}
-              />
-            )}
+            {!(editing === node.id && editor && node.component !== null) && titled(node, depth)}
             {node.component !== null &&
               (editing === node.id && editor
                 ? editor(node.component, {
@@ -386,7 +409,13 @@ export function DocumentText({
     );
 
   return (
-    <section className={styles['text']} aria-label="The document's text">
+    <section
+      ref={column}
+      className={[styles['text'], canvas.className].filter(Boolean).join(' ')}
+      style={canvas.style}
+      data-boundaries={boundaries ? 'shown' : undefined}
+      aria-label="The document's text"
+    >
       {render(outline.nodes, 1)}
     </section>
   );
