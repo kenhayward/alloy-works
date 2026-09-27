@@ -161,7 +161,8 @@ to API-008) - are [service-foundations.md](service-foundations.md)'s.
 | COL-009                                     | Taking a lock from an idle holder, with a warning and an audit, is not in the minimal lock. The row supports it; the act is not designed                                                                                                                          |
 | MET-021, MET-029                            | This panel validates as values change and shows a departed user as no longer active - for a component. MET-021 covers a document's and a section's fields too, and [definitions.md](definitions.md) claims it for all three; MET-029 was split, and MET-039 is T2 |
 | API-037, API-038, API-047, API-051, API-053 | Preconditions, request identifiers, rate limits and the authentication contract are honoured by every route below, but they are rules for every route in the product, not something this design is the realisation of                                             |
-| STY-066, STY-070                            | A draft resolving against its document's theme needs a document; an unresolvable glyph needs coverage data the editor does not have. Styles and typefaces that fail to resolve are marked - see [Unresolvable content](#unresolvable-content)                     |
+| STY-066                                     | A draft resolving against its document's theme needs a document. Styles and typefaces that fail to resolve are marked - see [Unresolvable content](#unresolvable-content)                                                                                         |
+| STY-070                                     | Claimed by [themes.md](themes.md#the-theme-in-the-editor): the coverage data an unresolvable glyph needs comes to the editor from `packages/fonts` (ET-D)                                                                                                         |
 
 ## Where the code lives
 

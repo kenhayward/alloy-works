@@ -738,7 +738,8 @@ at the cursor.
 - The choice is one step in the component's history, undone by Undo, and nothing else in the editor
   sets alignment, indentation or spacing.
 
-**A table's and an image's style** (CNT-121). The Table panel gains a Table style list. The Figure
+**A table's and an image's style.** A table is a block, so its style is chosen as CNT-094 asks, from the
+Table panel's new Table style list; an image's is CNT-121's. The Figure
 dialog, which places a figure or an image in a line, and the Figure panel gain an Image style list,
 each over the styles that apply to what is being placed: `figure` or `inlineImage`.
 
