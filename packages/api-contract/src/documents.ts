@@ -4,6 +4,7 @@ import {
   storableEverywhere,
 } from '@alloy-works/domain';
 import { z } from 'zod';
+import { listingQuery, nextCursor } from './listing.js';
 import { CreateComponentBody, FieldView, Lock, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
@@ -76,8 +77,12 @@ export const DocumentList = z.object({
         ),
     }),
   ),
+  next: nextCursor,
 });
 export type DocumentList = z.infer<typeof DocumentList>;
+
+export const DocumentListQuery = z.object(listingQuery(['title', 'changed'], 'title'));
+export type DocumentListQuery = z.infer<typeof DocumentListQuery>;
 
 export const DocumentView = z.object({
   id: z.string(),
@@ -299,11 +304,16 @@ export const documentRoutes = {
     operationId: 'listDocuments',
     method: 'GET',
     path: '/v1/documents',
-    summary: 'The documents the caller may read',
+    summary: 'The documents the caller may read, a page at a time',
     tenantScoped: true,
     access: { check: 'session' },
+    query: DocumentListQuery,
     responses: {
-      200: { description: 'The documents', schema: DocumentList },
+      200: { description: 'A page of documents', schema: DocumentList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
     },
   },

@@ -43,6 +43,7 @@ function listed() {
         ]),
         publication('ffffffff-0000-4000-8000-000000000001', MANUAL, 'Operator manual', '1.8'),
       ],
+      next: null,
     });
   }) as unknown as typeof fetch;
   return createApiClient({ baseUrl: 'http://publications.test', fetch: fetching });

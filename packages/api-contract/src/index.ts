@@ -19,6 +19,7 @@ export {
 export {
   CreateDocumentBody,
   DocumentList,
+  DocumentListQuery,
   DocumentParams,
   DocumentValuesBody,
   DocumentView,
@@ -68,6 +69,7 @@ export {
 export { buildOpenApi, type OpenApiDocument } from './openapi.js';
 export {
   PublicationList,
+  PublicationListQuery,
   PublicationParams,
   PublicationRequestParams,
   PublicationRefusal,
@@ -80,6 +82,7 @@ export {
 export {
   CreateTemplateBody,
   TemplateList,
+  TemplateListQuery,
   TemplateParams,
   TemplateRefusal,
   TemplateSummary,

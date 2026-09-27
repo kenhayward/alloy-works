@@ -44,6 +44,7 @@ function listed() {
         row(WORKBOOK, 'Training workbook', TRAINING, 'neverPublished'),
         row(PACK, 'Commissioning pack', GENERAL, 'published'),
       ],
+      next: null,
     });
   }) as unknown as typeof fetch;
   return createApiClient({ baseUrl: 'http://documents.test', fetch: fetching });

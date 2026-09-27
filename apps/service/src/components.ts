@@ -26,6 +26,7 @@ import { decide, type EffectiveField } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { AppError } from './errors.js';
+import { cursorFor, pageAsked } from './listing.js';
 import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
 
@@ -193,16 +194,11 @@ export function componentHandlers(
 
     listComponents: async (request: FastifyRequest) => {
       const query = request.query as ComponentListQuery;
-      const after = afterCursor(query.cursor);
+      const asked = pageAsked('components', query);
       const principal = principalOf(request).principalId;
       const spaces = query.spaces?.split(',');
       const [page, counts] = await db.withTenant(tenantOf(request), async (trx) => [
-        await listReadableComponents(
-          trx,
-          principal,
-          { ...(after === undefined ? {} : { after }), limit: pageLimit(query.limit) },
-          spaces === undefined ? {} : { spaces },
-        ),
+        await listReadableComponents(trx, principal, asked, spaces === undefined ? {} : { spaces }),
         await countReadableComponents(trx, principal),
       ]);
       if (!page || !counts) throw new Error('A signed-in principal is not in its own tenant');
@@ -219,7 +215,7 @@ export function componentHandlers(
           changedAt: item.changedAt.toISOString(),
           changedBy: item.changedBy,
         })),
-        next: cursorAfter(page.after),
+        next: cursorFor('components', asked.sort, asked.order, page.snapshot, page.next),
         total: counted.reduce((sum, one) => sum + one.count, 0),
         spaces: counts.map((one) => ({ id: one.id, name: one.name, count: one.count })),
       };

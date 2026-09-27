@@ -8,6 +8,7 @@ import { Lozenge } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
 import { formatsWords } from './formats.js';
+import { everyPage } from '../paging.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Item = Listing['items'][number];
@@ -29,13 +30,17 @@ export function PublicationList({ client }: { client: Client }) {
     setLoading(true);
     setProblem(null);
     try {
-      const { data, response } = await client.GET('/v1/publications');
+      const all = await everyPage((cursor) =>
+        client.GET('/v1/publications', {
+          params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+        }),
+      );
       if (request.current !== generation) return;
-      if (!data) {
-        setProblem(response.status === 401 ? 'signedOut' : 'failed');
+      if ('status' in all) {
+        setProblem(all.status === 401 ? 'signedOut' : 'failed');
         return;
       }
-      setItems(data.items);
+      setItems(all.items);
     } catch {
       if (request.current === generation) setProblem('failed');
     } finally {

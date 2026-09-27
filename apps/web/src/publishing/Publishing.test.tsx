@@ -81,7 +81,7 @@ const open = (
     </StrictMode>,
   );
 
-const listed = (items: unknown[]) => ({ items });
+const listed = (items: unknown[]) => ({ items, next: null });
 const publication = {
   id: PUBLICATION,
   document: DOCUMENT,

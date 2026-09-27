@@ -263,7 +263,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The documents the caller may read */
+        /** The documents the caller may read, a page at a time */
         get: operations["listDocuments"];
         put?: never;
         post?: never;
@@ -348,7 +348,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The document's publications the caller may read, newest first */
+        /** The document's publications the caller may read, a page at a time */
         get: operations["listPublications"];
         put?: never;
         /** Publish the latest version of this document */
@@ -538,7 +538,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every publication the caller may read, of every document, newest first */
+        /** Every publication the caller may read, of every document, a page at a time */
         get: operations["listPublicationsEverywhere"];
         put?: never;
         post?: never;
@@ -1980,6 +1980,8 @@ export interface operations {
             query?: {
                 cursor?: string;
                 limit?: string;
+                sort?: "title" | "changed";
+                order?: "asc" | "desc";
                 spaces?: string;
             };
             header?: never;
@@ -2016,7 +2018,7 @@ export interface operations {
                                 name: string | null;
                             } | null;
                         }[];
-                        /** @description The cursor for the next page, or null at the end */
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
                         /** @description How many there are in all, in the spaces asked for */
                         total: number;
@@ -3624,14 +3626,19 @@ export interface operations {
     };
     listDocuments: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: string;
+                sort?: "title" | "changed";
+                order?: "asc" | "desc";
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The documents */
+            /** @description A page of documents */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3659,6 +3666,26 @@ export interface operations {
                              */
                             publishing: "published" | "changedSince" | "neverPublished";
                         }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -4984,7 +5011,12 @@ export interface operations {
     };
     listPublications: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: string;
+                sort?: "published" | "title";
+                order?: "asc" | "desc";
+            };
             header?: never;
             path: {
                 id: string & (unknown & unknown);
@@ -4993,7 +5025,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The publications */
+            /** @description A page of the publications */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -5021,6 +5053,26 @@ export interface operations {
                             approval: "none";
                             formats: string[];
                         }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -5934,6 +5986,8 @@ export interface operations {
                 level: string;
                 cursor?: string;
                 limit?: string;
+                sort?: "title" | "changed";
+                order?: "asc" | "desc";
                 spaces?: string;
             };
             header?: never;
@@ -6341,6 +6395,8 @@ export interface operations {
             query?: {
                 cursor?: string;
                 limit?: string;
+                sort?: "title" | "changed";
+                order?: "asc" | "desc";
                 spaces?: string;
             };
             header?: never;
@@ -6829,6 +6885,8 @@ export interface operations {
                 level: string;
                 cursor?: string;
                 limit?: string;
+                sort?: "title" | "changed";
+                order?: "asc" | "desc";
                 spaces?: string;
             };
             header?: never;
@@ -7050,14 +7108,19 @@ export interface operations {
     };
     listPublicationsEverywhere: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: string;
+                sort?: "published" | "title";
+                order?: "asc" | "desc";
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The publications */
+            /** @description A page of the publications */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -7085,6 +7148,26 @@ export interface operations {
                             approval: "none";
                             formats: string[];
                         }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -7347,6 +7430,8 @@ export interface operations {
                 level: string;
                 cursor?: string;
                 limit?: string;
+                sort?: "title" | "changed";
+                order?: "asc" | "desc";
                 spaces?: string;
             };
             header?: never;
@@ -9214,14 +9299,19 @@ export interface operations {
     };
     listTemplates: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: string;
+                sort?: "name" | "changed";
+                order?: "asc" | "desc";
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The templates */
+            /** @description A page of templates */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -9239,7 +9329,29 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description When its latest version was made */
+                            changedAt: string;
                         }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };

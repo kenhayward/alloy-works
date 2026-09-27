@@ -737,7 +737,7 @@ describe('a document in the version chain, and its outline edited a version at a
 
     // Ada is not a principal of development's, and development's own list holds none of these.
     await expect(listed(ada, development)).resolves.toBeUndefined();
-    await expect(listed(ivy, development)).resolves.toEqual({ items: [] });
+    await expect(listed(ivy, development)).resolves.toMatchObject({ items: [], next: null });
   });
   it('says of each document when it changed and how many sections and component references its outline holds', async () => {
     const first = await created(general, 'The counted report');

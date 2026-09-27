@@ -2,6 +2,7 @@
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
+import type { Keyset } from './listing.js';
 import { countReadableComponents, listReadableComponents } from './components.js';
 import { seedDevelopmentContent } from './dev-content.js';
 import { grant } from './grants.js';
@@ -110,15 +111,21 @@ describe('listing the components a principal may read', () => {
 
   const all = async (principal: string, limit: number, tenant = production) => {
     const seen: { id: string; title: string }[] = [];
-    let after: string | undefined;
+    let after: Keyset | undefined;
+    let snapshot: string | undefined;
     for (let pages = 0; pages < 10; pages += 1) {
       const page = await service.withTenant(tenant, (trx) =>
-        listReadableComponents(trx, principal, { ...(after ? { after } : {}), limit }),
+        listReadableComponents(trx, principal, {
+          ...(after ? { after } : {}),
+          ...(snapshot ? { snapshot } : {}),
+          limit,
+        }),
       );
       if (!page) throw new Error('no such principal');
       seen.push(...page.items.map(({ id, title }) => ({ id, title })));
-      if (page.after === null) return seen;
-      after = page.after;
+      if (page.next === null) return seen;
+      after = page.next;
+      snapshot = page.snapshot;
     }
     throw new Error('never reached the end');
   };
@@ -137,7 +144,7 @@ describe('listing the components a principal may read', () => {
       revision: 0,
       version: 1,
     });
-    expect(page?.after).toBeNull();
+    expect(page?.next).toBeNull();
   });
 
   it('says of each its component type, its base language, and who changed it last and when', async () => {
@@ -211,8 +218,8 @@ describe('listing the components a principal may read', () => {
   it('pages in a stable order, every component once, however small the page', async () => {
     const whole = await all(ada, 50);
     const paged = await all(ada, 1);
+    // Each sort's order, and a walk while the set changes, are listing.test.ts's.
     expect(paged).toEqual(whole);
-    expect(whole.map((item) => item.id)).toEqual([...whole.map((item) => item.id)].sort());
   });
 
   it('lists nothing of another tenant, and nothing for a principal it does not hold', async () => {

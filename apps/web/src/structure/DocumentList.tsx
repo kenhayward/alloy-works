@@ -11,6 +11,7 @@ import { Notice } from '../states/Notice.js';
 import styles from './DocumentList.module.css';
 import { documentLink } from './links.js';
 import { NewDocument } from './NewDocument.js';
+import { everyPage } from '../paging.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -127,11 +128,16 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
     setLoading(true);
     setProblem(null);
     try {
-      const { data, response } = await client.GET('/v1/documents');
+      // Every page, until its filters are the service's (W7.3): the facets count what it holds.
+      const all = await everyPage((cursor) =>
+        client.GET('/v1/documents', {
+          params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+        }),
+      );
       if (request.current !== generation) return;
-      const listed = documentsIn(data);
+      const listed = 'items' in all ? documentsIn({ items: all.items }) : undefined;
       if (listed === undefined) {
-        setProblem(response.status === 401 ? 'signedOut' : 'failed');
+        setProblem('status' in all && all.status === 401 ? 'signedOut' : 'failed');
         return;
       }
       setItems(listed);

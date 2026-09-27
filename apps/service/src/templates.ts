@@ -1,10 +1,12 @@
 import type {
   CreateTemplateBody,
   SpaceParams,
+  TemplateListQuery,
   TemplateParams,
   TemplateVersionBody,
   TemplateView,
 } from '@alloy-works/api-contract';
+import { cursorFor, pageAsked } from './listing.js';
 import {
   createTemplate,
   listReadableTemplates,
@@ -70,8 +72,9 @@ export function templateHandlers(
 ) {
   return {
     listTemplates: async (request: FastifyRequest) => {
+      const asked = pageAsked('templates', request.query as TemplateListQuery);
       const listed = await db.withTenant(tenantOf(request), (trx) =>
-        listReadableTemplates(trx, principalOf(request).principalId),
+        listReadableTemplates(trx, principalOf(request).principalId, asked),
       );
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
       return {
@@ -83,7 +86,9 @@ export function templateHandlers(
             id: item.version.id,
             number: `${item.version.revision}.${item.version.version}`,
           },
+          changedAt: item.changedAt.toISOString(),
         })),
+        next: cursorFor('templates', asked.sort, asked.order, listed.snapshot, listed.next),
       };
     },
 

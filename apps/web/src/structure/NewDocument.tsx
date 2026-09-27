@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { DirectionSelect } from '../editor/DirectionSelect.js';
 import { useCreatableSpaces } from '../spaces.js';
+import { everyPage } from '../paging.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -26,11 +27,15 @@ function useTemplates(client: Client): readonly TemplateChoice[] | 'failed' | nu
     let current = true;
     void (async () => {
       try {
-        const { data } = await client.GET('/v1/templates');
+        const all = await everyPage((cursor) =>
+          client.GET('/v1/templates', {
+            params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+          }),
+        );
         if (!current) return;
         setTemplates(
-          data
-            ? data.items.map((item) => ({
+          'items' in all
+            ? all.items.map((item) => ({
                 id: item.id,
                 label: `${item.name} (${item.space.name})`,
               }))

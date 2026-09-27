@@ -177,6 +177,8 @@ export interface ArtifactTable {
  * Postgres array rather than as JSON.
  */
 export interface ArtifactVersionTable {
+  /** The transaction that wrote it, which a listing's snapshot reads (0032); null from before. */
+  written_by: ColumnType<string | null, never, never>;
   id: ColumnType<string, never, never>;
   artifact_id: ColumnType<string, string, never>;
   kind: ColumnType<ArtifactKind, ArtifactKind, never>;

@@ -2998,8 +2998,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "description": "Where the previous page ended; absent for the first",
-              "type": "string"
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
             }
           },
           {
@@ -3010,6 +3011,32 @@
               "description": "At most this many, 50 when absent",
               "type": "string",
               "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "What to sort by, title when absent",
+              "type": "string",
+              "enum": [
+                "title",
+                "changed"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Ascending or descending, the sort's own when absent",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           },
           {
@@ -3116,7 +3143,7 @@
                       }
                     },
                     "next": {
-                      "description": "The cursor for the next page, or null at the end",
+                      "description": "The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again",
                       "type": [
                         "string",
                         "null"
@@ -7137,15 +7164,63 @@
     "/v1/documents": {
       "get": {
         "operationId": "listDocuments",
-        "summary": "The documents the caller may read",
+        "summary": "The documents the caller may read, a page at a time",
         "security": [
           {
             "session": []
           }
         ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "At most this many, 50 when absent",
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "What to sort by, title when absent",
+              "type": "string",
+              "enum": [
+                "title",
+                "changed"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Ascending or descending, the sort's own when absent",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "The documents",
+            "description": "A page of documents",
             "content": {
               "application/json": {
                 "schema": {
@@ -7218,10 +7293,51 @@
                           "publishing"
                         ]
                       }
+                    },
+                    "next": {
+                      "description": "The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
-                    "items"
+                    "items",
+                    "next"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A cursor this listing did not give out, or a limit outside 1 to 100",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
                   ]
                 }
               }
@@ -11567,7 +11683,7 @@
     "/v1/documents/{id}/publications": {
       "get": {
         "operationId": "listPublications",
-        "summary": "The document's publications the caller may read, newest first",
+        "summary": "The document's publications the caller may read, a page at a time",
         "security": [
           {
             "session": []
@@ -11589,11 +11705,57 @@
                 }
               ]
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "At most this many, 50 when absent",
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "What to sort by, published when absent",
+              "type": "string",
+              "enum": [
+                "published",
+                "title"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Ascending or descending, the sort's own when absent",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "The publications",
+            "description": "A page of the publications",
             "content": {
               "application/json": {
                 "schema": {
@@ -11673,10 +11835,51 @@
                           "formats"
                         ]
                       }
+                    },
+                    "next": {
+                      "description": "The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
-                    "items"
+                    "items",
+                    "next"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A cursor this listing did not give out, or a limit outside 1 to 100",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
                   ]
                 }
               }
@@ -14276,8 +14479,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "description": "Where the previous page ended; absent for the first",
-              "type": "string"
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
             }
           },
           {
@@ -14288,6 +14492,32 @@
               "description": "At most this many, 50 when absent",
               "type": "string",
               "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "What to sort by, title when absent",
+              "type": "string",
+              "enum": [
+                "title",
+                "changed"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Ascending or descending, the sort's own when absent",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           },
           {
@@ -15228,8 +15458,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "description": "Where the previous page ended; absent for the first",
-              "type": "string"
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
             }
           },
           {
@@ -15240,6 +15471,32 @@
               "description": "At most this many, 50 when absent",
               "type": "string",
               "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "What to sort by, title when absent",
+              "type": "string",
+              "enum": [
+                "title",
+                "changed"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Ascending or descending, the sort's own when absent",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           },
           {
@@ -16257,8 +16514,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "description": "Where the previous page ended; absent for the first",
-              "type": "string"
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
             }
           },
           {
@@ -16269,6 +16527,32 @@
               "description": "At most this many, 50 when absent",
               "type": "string",
               "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "What to sort by, title when absent",
+              "type": "string",
+              "enum": [
+                "title",
+                "changed"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Ascending or descending, the sort's own when absent",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           },
           {
@@ -16783,15 +17067,63 @@
     "/v1/publications": {
       "get": {
         "operationId": "listPublicationsEverywhere",
-        "summary": "Every publication the caller may read, of every document, newest first",
+        "summary": "Every publication the caller may read, of every document, a page at a time",
         "security": [
           {
             "session": []
           }
         ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "At most this many, 50 when absent",
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "What to sort by, published when absent",
+              "type": "string",
+              "enum": [
+                "published",
+                "title"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Ascending or descending, the sort's own when absent",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "The publications",
+            "description": "A page of the publications",
             "content": {
               "application/json": {
                 "schema": {
@@ -16871,10 +17203,51 @@
                           "formats"
                         ]
                       }
+                    },
+                    "next": {
+                      "description": "The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
-                    "items"
+                    "items",
+                    "next"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A cursor this listing did not give out, or a limit outside 1 to 100",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
                   ]
                 }
               }
@@ -17611,8 +17984,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "description": "Where the previous page ended; absent for the first",
-              "type": "string"
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
             }
           },
           {
@@ -17623,6 +17997,32 @@
               "description": "At most this many, 50 when absent",
               "type": "string",
               "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "What to sort by, title when absent",
+              "type": "string",
+              "enum": [
+                "title",
+                "changed"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Ascending or descending, the sort's own when absent",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           },
           {
@@ -21967,9 +22367,57 @@
             "session": []
           }
         ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "At most this many, 50 when absent",
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "What to sort by, name when absent",
+              "type": "string",
+              "enum": [
+                "name",
+                "changed"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Ascending or descending, the sort's own when absent",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "The templates",
+            "description": "A page of templates",
             "content": {
               "application/json": {
                 "schema": {
@@ -22015,19 +22463,65 @@
                               "id",
                               "number"
                             ]
+                          },
+                          "changedAt": {
+                            "type": "string",
+                            "description": "When its latest version was made"
                           }
                         },
                         "required": [
                           "id",
                           "name",
                           "space",
-                          "version"
+                          "version",
+                          "changedAt"
                         ]
                       }
+                    },
+                    "next": {
+                      "description": "The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
-                    "items"
+                    "items",
+                    "next"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A cursor this listing did not give out, or a limit outside 1 to 100",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
                   ]
                 }
               }

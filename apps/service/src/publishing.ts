@@ -1,6 +1,7 @@
 import type {
   DocumentParams,
   PublicationList,
+  PublicationListQuery,
   PublicationParams,
   PublicationRequestParams,
   PublicationRequestView,
@@ -8,6 +9,7 @@ import type {
   PublicationView,
   RequestPublicationBody,
 } from '@alloy-works/api-contract';
+import { cursorFor, pageAsked } from './listing.js';
 import {
   listPublications,
   listReadablePublications,
@@ -216,18 +218,26 @@ export function publishingHandlers(
     ): Promise<PublicationList> => {
       const { id } = request.params as DocumentParams;
       if (!(await readDocument(trx, id))) throw notFound();
-      const listed = await listPublications(trx, id, principalId);
+      const asked = pageAsked('publications', request.query as PublicationListQuery);
+      const listed = await listPublications(trx, id, principalId, asked);
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
-      return { items: listed.map(summaryView) };
+      return {
+        items: listed.items.map(summaryView),
+        next: cursorFor('publications', asked.sort, asked.order, listed.snapshot, listed.next),
+      };
     },
 
     /** Every publication the caller may read, of every document (interface slice 10). */
     listPublicationsEverywhere: async (request: FastifyRequest): Promise<PublicationList> => {
+      const asked = pageAsked('publications', request.query as PublicationListQuery);
       const listed = await db.withTenant(tenantOf(request), (trx) =>
-        listReadablePublications(trx, principalOf(request).principalId),
+        listReadablePublications(trx, principalOf(request).principalId, asked),
       );
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
-      return { items: listed.map(summaryView) };
+      return {
+        items: listed.items.map(summaryView),
+        next: cursorFor('publications', asked.sort, asked.order, listed.snapshot, listed.next),
+      };
     },
 
     /**
