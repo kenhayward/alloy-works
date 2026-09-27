@@ -50,9 +50,11 @@ schema applied beside it, naming the field, the other schema and every such plac
    `MET-037 refuses a field version that would make a schema's default invalid, naming each schema
 and its default`; uncited: a missing field or schema named, a schema's own invalid default refused,
    a race on a name.
-4. **Routes** (`api-contract: definitions.ts`, `service: src/definitions.ts`): the four routes,
-   `manage_definitions` at the tenant; the codes and rules of DE-E. **Tests:** the routes decided by
-   `manage_definitions`, each refusal with its code and rule; the harnesses gain each route.
+4. **Routes** (`api-contract: definitions.ts`, `service: src/definitions.ts`): the four routes, the
+   two writes by `manage_definitions` at the tenant and the two reads by `read`, as access.md reads a
+   definition; the codes and rules of DE-E. **Tests:** `MET-024 decides making and changing a
+definition by managing definitions, at the tenant`, each refusal with its code and rule; the
+   harnesses gain each route.
 5. Docs: architecture.md, features.md and README, the changelog.
 
 ## W5.2: A component's values
