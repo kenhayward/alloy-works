@@ -1012,6 +1012,21 @@ lock that serialises definition writes, a definition is checked in order:
 | `api-contract: definitions.ts` | The four routes; a payload read by its kind's own schema, with no `id`                               |
 | `service: src/definitions.ts`  | The handlers, each refusal with its code and rule                                                    |
 
+A component's values travel with its iterations (W5.2): an iteration's body may carry `values`, the
+whole set, checked against the component's fields at its type's current definitions
+(`componentFieldsNow`) by `unstorableValues` - a fixed value changed, a value of the wrong type, and a
+`user` naming no principal of the tenant, over one query - and refused `values_invalid` with every
+failure. Absent, the iteration keeps the opened version's values. A cut refuses only a fixed value that
+differs at the definitions it is cut against. The component's view carries its type, its fields, the
+schemas behind them and its values; `GET /v1/people` lists everybody who has signed in, for a `user`
+field.
+
+| Where                                                    | What                                                                            |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `db: src/component-values.ts`                            | `componentFieldsNow`, `unstorableValues`, `listPeople`                          |
+| `db: src/editing.ts`, `promotion.ts`                     | Values with an iteration, and the cut's fixed check                             |
+| `api-contract: components.ts`, `editing.ts`, `people.ts` | `FieldView` and the view's metadata, `values` on an iteration, the people route |
+
 ## One renderer, two deliveries
 
 `apps/web` **is** the web application, and it is also the thing the Electron window loads. There is

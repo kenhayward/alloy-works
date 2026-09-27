@@ -16817,25 +16817,25 @@
     {
       "id": "MET-008",
       "file": "apps/service/src/definition-routes.test.ts",
-      "line": 185,
+      "line": 186,
       "kind": "rule"
     },
     {
       "id": "MET-024",
       "file": "apps/service/src/definition-routes.test.ts",
-      "line": 121,
+      "line": 122,
       "kind": "title"
     },
     {
       "id": "MET-031",
       "file": "apps/service/src/definition-routes.test.ts",
-      "line": 157,
+      "line": 158,
       "kind": "rule"
     },
     {
       "id": "MET-037",
       "file": "apps/service/src/definition-routes.test.ts",
-      "line": 196,
+      "line": 197,
       "kind": "rule"
     },
     {
@@ -17682,6 +17682,18 @@
       "id": "AST-041",
       "file": "packages/db/src/assets.test.ts",
       "line": 90,
+      "kind": "title"
+    },
+    {
+      "id": "MET-033",
+      "file": "packages/db/src/component-values.test.ts",
+      "line": 176,
+      "kind": "title"
+    },
+    {
+      "id": "MET-038",
+      "file": "packages/db/src/component-values.test.ts",
+      "line": 231,
       "kind": "title"
     },
     {

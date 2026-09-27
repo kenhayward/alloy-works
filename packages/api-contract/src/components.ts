@@ -114,6 +114,25 @@ export const ComponentList = z.object({
 });
 export type ComponentList = z.infer<typeof ComponentList>;
 
+/**
+ * One field as it applies to a component now (metadata.md, "Resolution"): what the panel draws it with
+ * and validates it by, and which schemas make it required or fixed.
+ */
+export const FieldView = z.object({
+  id: z.string(),
+  name: z.string(),
+  dataType: z.string(),
+  multiplicity: z.enum(['one', 'many']),
+  maxValues: z.number().int().optional(),
+  validation: z.record(z.string(), z.unknown()),
+  required: z.boolean(),
+  requiredBy: z.array(z.string()).describe('Every schema that makes it required, by identifier'),
+  fixed: z.boolean(),
+  fixedBy: z.array(z.string()).describe('Every schema that fixes it, by identifier'),
+  default: z.unknown().optional().describe('Absent where no schema gives one'),
+});
+export type FieldView = z.infer<typeof FieldView>;
+
 export const ComponentView = z.object({
   id: z.string(),
   space: z.object({ id: z.string(), name: z.string() }),
@@ -123,6 +142,20 @@ export const ComponentView = z.object({
     .describe("The latest version's content document (content-model.md), exactly as stored"),
   mayEdit: z.boolean().describe('Whether the caller may take the lock and write'),
   lock: Lock.nullable(),
+  type: z
+    .object({ id: z.string(), name: z.string() })
+    .describe('The component type its latest version records, at the current version'),
+  fields: z
+    .array(FieldView)
+    .describe(
+      'Its fields at the current definitions of its type, in resolution order: what its next version is written against',
+    ),
+  schemas: z
+    .array(z.object({ id: z.string(), name: z.string() }))
+    .describe('The schemas its type assigns, by name, for naming which require or fix a field'),
+  values: z
+    .record(z.string(), z.unknown())
+    .describe("The latest version's values, by field identifier"),
 });
 export type ComponentView = z.infer<typeof ComponentView>;
 

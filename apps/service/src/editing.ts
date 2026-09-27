@@ -21,6 +21,7 @@ import {
   parseContentDocument,
   storableEverywhere,
   type ContentDocument,
+  type MetadataFailure,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
@@ -33,6 +34,7 @@ type Refusal =
   | HolderRefusal
   | { readonly answer: 'version.precondition'; readonly current: StoredVersion }
   | { readonly answer: 'iteration.stale' | 'iteration.conflict'; readonly latest: number }
+  | { readonly answer: 'values.invalid'; readonly failures: readonly MetadataFailure[] }
   | { readonly answer: 'artifact.missing' };
 
 /**
@@ -76,6 +78,12 @@ function refuse(refusal: Refusal): AppError {
         'This save repeats an accepted one with different content.',
         { latest: refusal.latest },
       );
+    // What cannot be stored honestly with the component (definitions.md, "A component's"): a fixed
+    // value changed, a value of the wrong type, a user this environment does not hold.
+    case 'values.invalid':
+      return refused(400, 'values.invalid', 'A value does not fit its field.', {
+        failures: refusal.failures,
+      });
     case 'artifact.missing':
       return notFound();
   }
@@ -129,6 +137,7 @@ export function editingHandlers() {
         sequence: Number(params.sequence),
         openedFrom: body.openedFrom,
         content,
+        ...(body.values === undefined ? {} : { values: body.values }),
       });
       if (answer.answer !== 'accepted') throw refuse(answer);
       return { sequence: answer.sequence, lock: lockView(answer.lock, principalId) };

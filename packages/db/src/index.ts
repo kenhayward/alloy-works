@@ -291,3 +291,4 @@ export {
   type DefinitionSummary,
   type StoredDefinition,
 } from './definitions.js';
+export { componentFieldsNow, listPeople, unstorableValues } from './component-values.js';

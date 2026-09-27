@@ -419,6 +419,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   such place; and a field version that would make a schema's default for it invalid, naming each.
   Anybody who may read the whole environment may list and read them. No page makes or changes one yet.
 
+- **A component's values, through the API.** Opening a component answers its type, the fields its
+  type gives it and its values; a save through the API carries its values, whole, with its content,
+  and a new version keeps them. A save is refused, naming the field, where a fixed value is changed, a
+  value is not of its field's kind, or a person named is not one of this environment's; everything
+  else a field would refuse is saved, and a version is cut with a required field empty. The people who
+  may be named are listed to anybody signed in. No page shows or edits a value yet.
+
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath
   its outline, and before it a choice of **PDF**, **Word** or **PDF and Word**, PDF unless they choose

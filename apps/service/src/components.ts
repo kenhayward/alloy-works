@@ -5,14 +5,18 @@ import type {
   SpaceParams,
 } from '@alloy-works/api-contract';
 import {
+  componentFieldsNow,
   createComponent,
   latestVersion,
+  listPeople,
   listComponentTypes,
   countReadableComponents,
   listReadableComponents,
   listSpacesFor,
   readLock,
   type LockState,
+  type StoredVersion,
+  type TenantTransaction,
   type VersionHeading,
   type Tenant,
   type TenantDatabase,
@@ -73,12 +77,50 @@ export function pageLimit(limit: string | undefined): number {
  * The handlers that find and open components. Opening one is `read` on it, decided in the transaction
  * it is read in; the listing is filtered by the caller's readable set inside its query.
  */
+/**
+ * A component's type, the fields its next version is written against, the schemas that make them what
+ * they are, and its latest version's values (definitions.md, "A component's"): read through the
+ * component, as access.md reads a definition an artifact uses, with no decision of its own.
+ */
+async function metadataView(trx: TenantTransaction, version: StoredVersion) {
+  const { definitions, effective } = await componentFieldsNow(trx, version);
+  return {
+    type: { id: definitions.type.definition.id, name: definitions.type.definition.name },
+    fields: effective.map((each) => ({
+      id: each.field.id,
+      name: each.field.name,
+      dataType: each.field.dataType,
+      multiplicity: each.field.multiplicity,
+      ...('maxValues' in each.field && each.field.maxValues !== undefined
+        ? { maxValues: each.field.maxValues }
+        : {}),
+      validation: { ...each.field.validation },
+      required: each.required,
+      requiredBy: [...each.requiredBy],
+      fixed: each.fixed,
+      fixedBy: [...each.fixedBy],
+      ...(each.default === undefined ? {} : { default: each.default.value }),
+    })),
+    schemas: definitions.schemas.map((each) => ({
+      id: each.definition.id,
+      name: each.definition.name,
+    })),
+    values: { ...version.values },
+  };
+}
+
 export function componentHandlers(
   db: TenantDatabase,
   tenantOf: (request: FastifyRequest) => Tenant,
   principalOf: (request: FastifyRequest) => SessionPrincipal,
 ) {
   return {
+    // Anybody signed in may see who may be named in a user field (definitions.md, DE-J).
+    listPeople: async (request: FastifyRequest) => {
+      const people = await db.withTenant(tenantOf(request), (trx) => listPeople(trx));
+      return { items: people.map((each) => ({ ...each })) };
+    },
+
     listSpaces: async (request: FastifyRequest) => {
       const items = await db.withTenant(tenantOf(request), (trx) =>
         listSpacesFor(trx, principalOf(request).principalId),
@@ -136,6 +178,7 @@ export function componentHandlers(
         // cannot exist yet; nothing has had a chance to make one.
         mayEdit: decide('edit', facts).allowed,
         lock: null,
+        ...(await metadataView(trx, version)),
       };
     },
 
@@ -192,6 +235,7 @@ export function componentHandlers(
         // What the renderer offers from: the same decision a write would be refused by.
         mayEdit: decide('edit', facts).allowed,
         lock: lock ? lockView(lock, principalId) : null,
+        ...(await metadataView(trx, version)),
       };
     },
   };
