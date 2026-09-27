@@ -385,6 +385,76 @@ describe('the whole system', () => {
     expect(spoken(read.taggedText[1]!)).toContain('Preface');
   }, 120_000);
 
+  it('PUB-005 previews the latest version of a document through the API, and the worker makes a PDF saying on every page that it is a preview of unapproved content', async () => {
+    // The worker's `preview` job is registered in `main.ts`, which no other suite runs: a preview
+    // followed to done here is what shows it is (W10.1's review).
+    const api = client();
+    const { data: spaces } = await api.GET('/v1/spaces');
+    const general = spaces!.items.find((space) => space.name === 'General')!;
+    const { data: components } = await api.GET('/v1/components');
+    const printer = components!.items.find(
+      (component) => component.title === 'Install the printer',
+    );
+    if (!printer) throw new Error('The seeded component "Install the printer" was not found.');
+    const { data: made } = await api.POST('/v1/spaces/{space}/documents', {
+      params: { path: { space: general.id } },
+      body: { title: 'The calibration notes', language: 'en-GB', direction: 'ltr' },
+    });
+    const { data: placed } = await api.POST('/v1/documents/{id}/outline', {
+      params: { path: { id: made!.id } },
+      body: {
+        openedFrom: made!.version.id,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position: 0,
+          node: { type: 'reference', component: printer.id, mode: { kind: 'latest' } },
+        },
+      },
+    });
+
+    const { data: asked, response } = await api.POST('/v1/documents/{id}/previews', {
+      params: { path: { id: made!.id } },
+      body: { version: placed!.version.id },
+    });
+    expect(response.status).toBe(200);
+    expect(asked).toMatchObject({ kind: 'preview', state: 'queued', preview: null });
+    let view: string | null = null;
+    await vi.waitFor(
+      async () => {
+        const { data } = await api.GET('/v1/publication-requests/{id}', {
+          params: { path: { id: asked!.id } },
+        });
+        expect(data?.failures).toEqual([]);
+        expect(data?.state).toBe('done');
+        // Nothing is published: a preview is kept on its request, for an hour, and nowhere else.
+        expect(data?.publication).toBeNull();
+        expect(Date.parse(data!.preview!.expiresAt)).toBeGreaterThan(Date.now());
+        view = data!.preview!.view;
+      },
+      { timeout: 60_000, interval: 250 },
+    );
+
+    // Shown in place, as the browser's own viewer shows a PDF.
+    const pdf = await followSignedLink(new URL(view!));
+    expect(pdf.status).toBe(200);
+    expect(pdf.contentType).toBe('application/pdf');
+    const read = await readPdf(pdf.body);
+    for (let page = 0; page < read.pages; page += 1) {
+      const notice = spoken(read.artifactText[page]!);
+      expect(notice, `page ${page + 1}`).toContain('Preview - not approved');
+      // Never the draft's notice, which a publication carries.
+      expect(notice, `page ${page + 1}`).not.toContain('Not approved');
+    }
+    const tagged = spoken(read.taggedText.flat());
+    expect(tagged).toContain('This is a preview of unapproved content, not a publication.');
+    expect(tagged).not.toContain('This is a draft publication');
+    const { data: listed } = await api.GET('/v1/documents/{id}/publications', {
+      params: { path: { id: made!.id } },
+    });
+    expect(listed?.items).toEqual([]);
+  }, 120_000);
+
   it('AST-005 uploads an image, proves it in the worker and hands the same bytes back', async () => {
     // The worker's image carries sharp and its native binaries: this is the one test that runs them
     // where they will run, in the container built from the lock file.

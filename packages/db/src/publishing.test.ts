@@ -28,6 +28,7 @@ import {
   recordPublication,
   requestPublication,
   resolveOccurrences,
+  sweepPreviews,
 } from './publishing.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
@@ -613,7 +614,11 @@ describe('requesting and recording a publication', () => {
       sql`update publication_request set formats = array['pdf'] where id = ${id}`,
       /permission denied/,
     );
-    await refused(sql`delete from publication_request where id = ${id}`, /permission denied/);
+    // Deleting a request is the preview sweep's alone (0036), and never a publish's.
+    await refused(
+      sql`delete from publication_request where id = ${id}`,
+      /only a preview is deleted, an hour after it finished/,
+    );
     await refused(sql`truncate publication_request cascade`, /permission denied/);
     await refused(
       sql`update publication_request_occurrence set node = ${nodeId()} where request_id = ${id}`,
@@ -2643,5 +2648,174 @@ describe('requesting and recording a publication', () => {
       // Grace may read it, and is refused for the page it cites.
       expect(await asked(grace)).toEqual({ answer: 'page_reference.without_pdf' });
     });
+  });
+
+  // W10.2: a preview is swept an hour after it finished, with its request (PV-F).
+  /**
+   * Finishes a queued request `ago` before now by the database's clock, as the runtime role finishes
+   * one, by the grant it holds: a preview done with its PDF under this fill's key, or, given no fill,
+   * failed, as a publish is here.
+   */
+  const finishedAgo = (trx: TenantTransaction, id: string, ago: string, fill?: string) =>
+    fill === undefined
+      ? sql`update publication_request set state = 'failed',
+              finished_at = now() - ${ago}::interval,
+              failures = '[{"stage":"store","code":"store_failed","node":null,"block":null,"detail":null}]'
+            where id = ${id}`.execute(trx)
+      : sql`update publication_request set state = 'done',
+              finished_at = now() - ${ago}::interval,
+              expires_at = now() - ${ago}::interval + interval '1 hour',
+              preview_key = ${previewPdf(fill).key}, preview_sha256 = ${previewPdf(fill).sha256},
+              preview_bytes = 1000
+            where id = ${id} and kind = 'preview'`.execute(trx);
+  const requestsLeft = (ids: readonly string[]) =>
+    service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication_request')
+        .select('id')
+        .where('id', 'in', ids)
+        .execute()
+        .then((rows) => new Set(rows.map((row) => row.id))),
+    );
+
+  it('lets the runtime role delete a preview an hour after it finished, done or failed, and the versions and images it took with it', async () => {
+    const { done, failed } = await service.withTenant(production, async (trx) => {
+      const red = await image(trx, general, ada, 'a');
+      const placed = await holding(trx, ada, [figureOf('f1', red.id)]);
+      const version = await documentWith(trx, [section('Method', [reference(placed.artifactId)])]);
+      const done = await previewed(trx, version, ada);
+      const failed = await previewed(trx, version, ada);
+      await finishedAgo(trx, done, '61 minutes', '5');
+      await finishedAgo(trx, failed, '2 hours');
+      return { done, failed };
+    });
+    const taken = (trx: TenantTransaction) =>
+      Promise.all([
+        trx
+          .selectFrom('publication_request_occurrence')
+          .select('node')
+          .where('request_id', 'in', [done, failed])
+          .execute(),
+        trx
+          .selectFrom('publication_request_asset')
+          .select('version_id')
+          .where('request_id', 'in', [done, failed])
+          .execute(),
+      ]).then(([occurrences, assets]) => ({
+        occurrences: occurrences.length,
+        assets: assets.length,
+      }));
+    expect(await service.withTenant(production, taken)).toEqual({ occurrences: 2, assets: 2 });
+
+    await service.withTenant(production, (trx) =>
+      sql`delete from publication_request where id in (${done}, ${failed})`.execute(trx),
+    );
+
+    // Its occurrences and images go with it, by their keys' cascades: the runtime role may delete
+    // neither itself.
+    expect(await requestsLeft([done, failed])).toEqual(new Set());
+    expect(await service.withTenant(production, taken)).toEqual({ occurrences: 0, assets: 0 });
+  });
+
+  it('refuses the runtime role deleting a preview within the hour after it finished, one still queued, or any publish', async () => {
+    const { recent, queued, publish, published } = await service.withTenant(
+      production,
+      async (trx) => {
+        const version = await documentWith(trx, []);
+        const recent = await previewed(trx, version, ada);
+        await finishedAgo(trx, recent, '50 minutes', '6');
+        const publish = await requested(trx, version, ada);
+        const published = await requested(trx, version, ada);
+        await finishedAgo(trx, published, '1 year');
+        return { recent, queued: await previewed(trx, version, ada), publish, published };
+      },
+    );
+    for (const id of [recent, queued, publish, published]) {
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`delete from publication_request where id = ${id}`.execute(trx),
+        ),
+        id,
+      ).rejects.toThrow(/only a preview is deleted, an hour after it finished/);
+    }
+    // Nor by the table at once: the grant is to delete, never to truncate.
+    await expect(
+      service.withTenant(production, (trx) =>
+        sql`truncate publication_request cascade`.execute(trx),
+      ),
+    ).rejects.toThrow(/permission denied/);
+    expect(await requestsLeft([recent, queued, publish, published])).toEqual(
+      new Set([recent, queued, publish, published]),
+    );
+  });
+
+  it('sweeps every preview an hour after it finished, and answers the keys of those done that nothing else names', async () => {
+    const made = await service.withTenant(production, async (trx) => {
+      const document = () => documentWith(trx, []);
+      const alone = await previewed(trx, await document(), ada);
+      const failed = await previewed(trx, await document(), ada);
+      // Two previews of one document in one second are the same bytes, and share a key.
+      const twin = await document();
+      const twins = [await previewed(trx, twin, ada), await previewed(trx, twin, ada)];
+      const older = await previewed(trx, await document(), ada);
+      const newer = await previewed(trx, await document(), ada);
+      const beside = await previewed(trx, await document(), ada);
+      await image(trx, general, ada, '9');
+      const underImage = await previewed(trx, await document(), ada);
+      const recent = await previewed(trx, await document(), ada);
+      const queued = await previewed(trx, await document(), ada);
+      const publish = await requested(trx, await document(), ada);
+
+      await finishedAgo(trx, alone, '2 hours', '4');
+      await finishedAgo(trx, failed, '2 hours');
+      for (const id of twins) await finishedAgo(trx, id, '2 hours', '5');
+      // Another preview, not yet an hour old, names the older one's key; so does a publication.
+      await finishedAgo(trx, older, '2 hours', '6');
+      await finishedAgo(trx, newer, '10 minutes', '6');
+      await finishedAgo(trx, beside, '2 hours', '7');
+      const publication = await recordPublication(trx, {
+        ...recording(publish),
+        outputs: [pdfOutput('7')],
+      });
+      if (!publication) throw new Error('The publication was not recorded');
+      // And an image's version names this one's: however unlikely, bytes are bytes.
+      await finishedAgo(trx, underImage, '2 hours', '9');
+      await finishedAgo(trx, recent, '50 minutes', '8');
+      return {
+        swept: [alone, failed, ...twins, older, beside, underImage],
+        kept: [newer, recent, queued, publish],
+      };
+    });
+
+    const keys = await service.withTenant(production, (trx) => sweepPreviews(trx));
+
+    expect([...keys].sort()).toEqual([previewPdf('4').key, previewPdf('5').key]);
+    expect(await requestsLeft([...made.swept, ...made.kept])).toEqual(new Set(made.kept));
+    // Nothing left to sweep, so a second sweep finds nothing.
+    expect(await service.withTenant(production, (trx) => sweepPreviews(trx))).toEqual([]);
+  });
+
+  it('keeps a preview while another of its document and its second is still queued, which may yet name its key', async () => {
+    // Requested in one transaction, so in one second: the same bytes, were both to be made.
+    const { first, second } = await service.withTenant(production, async (trx) => {
+      const version = await documentWith(trx, []);
+      return {
+        first: await previewed(trx, version, ada),
+        second: await previewed(trx, version, ada),
+      };
+    });
+    await service.withTenant(production, (trx) => finishedAgo(trx, first, '2 hours', '0'));
+
+    // The second's worker may have kept the bytes and not yet recorded them: the key is not removed,
+    // and the first is kept to name it.
+    expect(await service.withTenant(production, (trx) => sweepPreviews(trx))).toEqual([]);
+    expect(await requestsLeft([first, second])).toEqual(new Set([first, second]));
+
+    // Once the second is done, it names the key itself; the first goes, and the key stays.
+    await service.withTenant(production, (trx) =>
+      recordPreview(trx, { requestId: second, ...previewPdf('0') }),
+    );
+    expect(await service.withTenant(production, (trx) => sweepPreviews(trx))).toEqual([]);
+    expect(await requestsLeft([first, second])).toEqual(new Set([second]));
   });
 });

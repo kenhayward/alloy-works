@@ -78,7 +78,9 @@ export {
   PublicationRequestView,
   PublicationSummary,
   PublicationView,
+  PreviewView,
   PublishFailureView,
+  RequestPreviewBody,
   RequestPublicationBody,
 } from './publishing.js';
 export {

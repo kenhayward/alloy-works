@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { PublicationView, RequestPublicationBody } from './publishing.js';
+import {
+  PublicationRequestView,
+  PublicationView,
+  publishingRoutes,
+  RequestPreviewBody,
+  RequestPublicationBody,
+} from './publishing.js';
 
 const VERSION = '11111111-1111-4111-8111-111111111111';
 
@@ -113,5 +119,58 @@ describe('the publishing contract (Word 1)', () => {
       viewWith([docx], { formats: ['docx'], engine: null, template: null }),
     );
     expect(word).toMatchObject({ engine: null, template: null, formats: ['docx'] });
+  });
+});
+
+describe('the preview contract (W10.2)', () => {
+  const request = {
+    id: 'r',
+    document: 'd',
+    state: 'done',
+    failures: [],
+    publication: null,
+  };
+  const links = {
+    view: 'https://store/r',
+    download: 'https://store/r-preview.pdf',
+    expiresAt: '2026-09-27T13:00:00.000Z',
+  };
+
+  it('asks for a preview by the version alone, since a preview is the PDF and nothing else', () => {
+    expect(RequestPreviewBody.safeParse({ version: VERSION }).success).toBe(true);
+    expect(RequestPreviewBody.safeParse({ version: VERSION, formats: ['pdf'] }).success).toBe(
+      false,
+    );
+    expect(RequestPreviewBody.safeParse({}).success).toBe(false);
+  });
+
+  it('is asked for by anybody who may read the document, and answers the request', () => {
+    const route = publishingRoutes.requestPreview;
+    expect(route).toMatchObject({
+      method: 'POST',
+      path: '/v1/documents/{id}/previews',
+      access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    });
+    expect(route.responses[200].schema).toBe(PublicationRequestView);
+  });
+
+  it("shows a request's kind, and a preview's links and expiry, or none", () => {
+    expect(
+      PublicationRequestView.parse({ ...request, kind: 'preview', preview: links }).preview,
+    ).toEqual(links);
+    expect(
+      PublicationRequestView.parse({ ...request, kind: 'publish', preview: null }).preview,
+    ).toBeNull();
+    expect(PublicationRequestView.safeParse(request).success).toBe(false);
+    expect(
+      PublicationRequestView.safeParse({ ...request, kind: 'draft', preview: null }).success,
+    ).toBe(false);
+    expect(
+      PublicationRequestView.safeParse({
+        ...request,
+        kind: 'preview',
+        preview: { view: links.view, expiresAt: links.expiresAt },
+      }).success,
+    ).toBe(false);
   });
 });

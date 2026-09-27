@@ -1159,6 +1159,67 @@ export async function readPublicationRequest(
   );
 }
 
+/**
+ * The preview sweep (publishing.md, "Preview"; PV-F): deletes every preview request finished an hour
+ * ago or more, done or failed, with the versions and images it recorded, and answers the keys of the
+ * done ones' PDFs that nothing left names, for the caller to remove from the tenant's store once this
+ * transaction has committed. Measured by the database's clock, which finished each request and which
+ * `publication_request_swept_only` (0036) holds every delete to.
+ *
+ * **A key is a hash, so a key another row names is kept**: a publication's output, another preview's
+ * PDF, a sample, an upload being checked or kept, or an asset's version. Only a preview could in fact
+ * share a preview's bytes - a publication says it is not approved where a preview says it is a
+ * preview, and the rest are not this document at all - but a key named anywhere is kept whoever names
+ * it, because removing bytes something still stands on is the one mistake here that cannot be undone.
+ *
+ * **Why a new preview cannot land on a key this removes.** The time a request was made, to the second,
+ * is compiled into its PDF, so two previews are the same bytes only when they are of one document
+ * version asked for in one second. They need not finish together, though: one can be retried, or wait
+ * behind other jobs, long after the other has finished and expired. Its worker keeps the bytes in the
+ * store before it records them on its request, so between the two its request is still queued and
+ * names nothing, and a sweep that removed the key then would leave it recording a PDF that is gone. So
+ * **a preview is not swept while another of its document version and its second is still queued**:
+ * it stays, still naming the key, until that one finishes - done, naming the key itself, or failed,
+ * naming none. Nothing can join that second an hour after it passed, since a request's time is the
+ * start of the transaction that inserts it. The removal after the commit is then safe: every request
+ * that could make these bytes has finished, and none that finished done names them.
+ */
+export async function sweepPreviews(trx: TenantTransaction): Promise<string[]> {
+  const gone = await trx
+    .deleteFrom('publication_request as r')
+    .where('r.kind', '=', 'preview')
+    .where('r.finished_at', '<=', sql<Date>`now() - interval '1 hour'`)
+    .where(({ not, exists, selectFrom }) =>
+      not(
+        exists(
+          selectFrom('publication_request as q')
+            .select('q.id')
+            .where('q.kind', '=', 'preview')
+            .where('q.state', '=', 'queued')
+            .whereRef('q.document_version_id', '=', 'r.document_version_id')
+            .whereRef('q.requested_at', '=', 'r.requested_at'),
+        ),
+      ),
+    )
+    .returning('r.preview_key')
+    .execute();
+  const keys = [
+    ...new Set(gone.flatMap((row) => (row.preview_key === null ? [] : [row.preview_key]))),
+  ];
+  if (keys.length === 0) return [];
+  // Read after the delete, so the requests just swept name nothing here.
+  const named = await sql<{ key: string }>`
+    select object_key as key from publication_output where object_key = any(${keys}::text[])
+    union select preview_key from publication_request where preview_key = any(${keys}::text[])
+    union select object_key from sample where object_key = any(${keys}::text[])
+    union select object_key from asset_upload
+      where object_key = any(${keys}::text[]) and state in ('checking', 'ready')
+    union select content ->> 'object' from artifact_version
+      where kind = 'asset' and content ->> 'object' = any(${keys}::text[])`.execute(trx);
+  const kept = new Set(named.rows.map((row) => row.key));
+  return keys.filter((key) => !kept.has(key));
+}
+
 /** A publication as a reader is shown it: its record, and its outputs by key. */
 export interface StoredPublication {
   readonly id: string;

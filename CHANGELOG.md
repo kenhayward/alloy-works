@@ -3,6 +3,19 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.105.0 - 2026-09-27 (PR #293)
+
+### Added
+
+- **A preview can be asked for through the API.** Anybody who may read a document, not only somebody
+  who may publish it, can ask for a preview of its latest version, as a PDF that says "Preview - not
+  approved" on every page. It is refused for the same reasons a publication would be. Only the person
+  who asked can follow it, and once it is made they get a link that shows it in the browser and one
+  that downloads it, until it expires an hour later. The document page has no Preview button yet: that
+  comes in the next release.
+- **Expired previews are cleared away.** An hour after a preview was made, or failed, it is removed
+  with its PDF, unless the same PDF is still in use elsewhere. A publication is never removed.
+
 ## 0.104.0 - 2026-09-27 (PR #292)
 
 ### Added

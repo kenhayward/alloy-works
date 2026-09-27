@@ -187,9 +187,11 @@ const PUBLISH_REQUEST = '99999999-0000-4000-8000-000000000001';
 const publishRequest = {
   id: PUBLISH_REQUEST,
   document: DOCUMENT,
+  kind: 'publish',
   state: 'failed',
   failures: [],
   publication: null,
+  preview: null,
 };
 
 /**

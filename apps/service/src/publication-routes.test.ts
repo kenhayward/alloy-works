@@ -8,6 +8,7 @@ import {
   findRole,
   grant,
   migrate,
+  recordPreview,
   recordPublication,
   removeGrant,
   seedDevelopmentContent,
@@ -17,6 +18,7 @@ import {
 import {
   freshDatabase,
   insideTransaction,
+  queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
 } from '@alloy-works/db/testing';
@@ -85,6 +87,20 @@ describe('publishing a document through the service', () => {
       'POST',
       `/v1/documents/${document.id}/publications`,
       { version: document.version, formats },
+      through,
+    );
+
+  /** Asks for a preview of the document at this version, as this caller (W10.2). */
+  const preview = (
+    as: string,
+    document: { id: string; version: string },
+    through: FastifyInstance = app,
+  ) =>
+    call(
+      as,
+      'POST',
+      `/v1/documents/${document.id}/previews`,
+      { version: document.version },
       through,
     );
 
@@ -839,6 +855,204 @@ describe('publishing a document through the service', () => {
       });
       // Refused before anything is said of it: no id of its own, no record, no link.
       expect(answer.body).not.toContain(id);
+    } finally {
+      await storeless.close();
+    }
+  });
+
+  // W10.2: a preview asked for, and followed while it lasts (publishing.md, "Preview").
+  /** A preview's PDF as a worker keeps it: in the tenant's store, under its own hash. */
+  const previewBytes = () =>
+    tenantDb.withTenant(tenant, async (trx) =>
+      (await stores.forTenant(trx, tenant)).put(
+        Buffer.from('%PDF-1.7 a stand-in preview'),
+        OUTPUT_CONTENT_TYPES.pdf,
+      ),
+    );
+
+  it('lets a reader who may not publish the document ask for a preview of its latest version, queued as one', async () => {
+    const document = await documentReferencing([(await componentIn(general, 'Scope')).id]);
+    // Alice reads General and publishes nothing.
+    expect((await publish('alice', document)).statusCode).toBe(403);
+    const answer = await preview('alice', document);
+    expect(answer.statusCode, answer.body).toBe(200);
+    const body = answer.json<{ id: string }>();
+    expect(body).toEqual({
+      id: expect.any(String),
+      document: document.id,
+      kind: 'preview',
+      state: 'queued',
+      failures: [],
+      publication: null,
+      preview: null,
+    });
+    const row = await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('publication_request')
+        .select(['kind', 'formats', 'requested_by', 'document_version_id'])
+        .where('id', '=', body.id)
+        .executeTakeFirstOrThrow(),
+    );
+    // The PDF alone, of the version the page holds, asked for by Alice.
+    expect(row).toEqual({
+      kind: 'preview',
+      formats: ['pdf'],
+      requested_by: ids.alice,
+      document_version_id: document.version,
+    });
+  });
+
+  it("shows a publish's request as a publish, with no preview", async () => {
+    const answer = await publish('grace', await documentReferencing([]));
+    expect(answer.statusCode, answer.body).toBe(200);
+    expect(answer.json()).toMatchObject({ kind: 'publish', preview: null, publication: null });
+    const followed = await call(
+      'grace',
+      'GET',
+      `/v1/publication-requests/${answer.json<{ id: string }>().id}`,
+    );
+    expect(followed.json()).toMatchObject({ kind: 'publish', preview: null });
+  });
+
+  it("refuses a preview to somebody who may not read the document, and a stale version, a format, or another language as a publish's are refused", async () => {
+    const document = await documentReferencing([]);
+    const before = await requestIds();
+    // Ivy holds nothing: the document is as if there were none, as it is to a publish.
+    const unreadable = await preview('ivy', document);
+    expect(unreadable.statusCode).toBe(404);
+    const nothing = await preview('ivy', { id: UNKNOWN, version: document.version });
+    expect(refusal(unreadable)).toEqual(refusal(nothing));
+
+    const other = await documentReferencing([(await componentIn(general, 'Scope')).id]);
+    const stale = await preview('alice', { id: other.id, version: document.version });
+    expect(stale.statusCode).toBe(409);
+    expect(stale.json()).toMatchObject({
+      code: 'version_precondition',
+      rule: 'API-037',
+      current: { id: other.version },
+    });
+    // A preview is the PDF alone: a format is not something it takes.
+    const formats = await call('alice', 'POST', `/v1/documents/${other.id}/previews`, {
+      version: other.version,
+      formats: ['pdf'],
+    });
+    expect(formats.statusCode).toBe(400);
+    expect(formats.json()).toMatchObject({ code: 'invalid_request' });
+    // Refused in the words a publish is refused in.
+    const french = await documentReferencing([], 'fr');
+    const language = await preview('alice', french);
+    expect(language.statusCode, language.body).toBe(400);
+    expect(refusal(language)).toEqual(refusal(await publish('grace', french)));
+    expect(await requestIds()).toEqual(before);
+  });
+
+  it('answers a preview to the one who asked for it alone', async () => {
+    const made = (await preview('alice', await documentReferencing([]))).json<{ id: string }>();
+    expect((await call('alice', 'GET', `/v1/publication-requests/${made.id}`)).statusCode).toBe(
+      200,
+    );
+    // Grace may publish the document, and still may not follow Alice's preview.
+    for (const somebodyElse of ['grace', 'ada', 'ivy']) {
+      const answer = await call(somebodyElse, 'GET', `/v1/publication-requests/${made.id}`);
+      expect(answer.statusCode, somebodyElse).toBe(404);
+    }
+  });
+
+  it('queues one preview for a request sent twice with one idempotency key', async () => {
+    const document = await documentReferencing([]);
+    const ask = () =>
+      app.inject({
+        method: 'POST',
+        url: `/v1/documents/${document.id}/previews`,
+        headers: { host: HOST, cookie: cookies.alice!, 'idempotency-key': 'preview-once' },
+        payload: { version: document.version },
+      });
+    const first = await ask();
+    const again = await ask();
+    expect(first.statusCode, first.body).toBe(200);
+    expect(again.headers['idempotent-replayed']).toBe('true');
+    expect(again.json()).toEqual(first.json());
+    const previews = await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('publication_request')
+        .select('id')
+        .where('document_id', '=', document.id)
+        .execute(),
+    );
+    expect(previews).toHaveLength(1);
+  });
+
+  it("shows a done preview's links and when it expires while it lasts, and none once it has expired", async () => {
+    const document = await documentReferencing([]);
+    const asked = async () => (await preview('alice', document)).json<{ id: string }>().id;
+    const lasting = await asked();
+    const stored = await previewBytes();
+    const expiresAt = await tenantDb.withTenant(tenant, (trx) =>
+      recordPreview(trx, {
+        requestId: lasting,
+        key: stored.key,
+        sha256: stored.sha256,
+        bytes: stored.size,
+      }),
+    );
+
+    const answer = await call('alice', 'GET', `/v1/publication-requests/${lasting}`);
+    expect(answer.statusCode, answer.body).toBe(200);
+    const body = answer.json<{
+      preview: { view: string; download: string; expiresAt: string };
+    }>();
+    expect(body).toMatchObject({ kind: 'preview', state: 'done', publication: null });
+    expect(body.preview.expiresAt).toBe(expiresAt!.toISOString());
+    // Shown in place: no file name, so the browser's own viewer opens it.
+    const shown = await fetch(body.preview.view);
+    expect(shown.status).toBe(200);
+    expect(shown.headers.get('content-type')).toBe('application/pdf');
+    expect(shown.headers.get('content-disposition')).toBeNull();
+    expect(await shown.text()).toBe('%PDF-1.7 a stand-in preview');
+    // Saved under the request's id, never the document's title: the link reaches the store's logs.
+    const saved = await fetch(body.preview.download);
+    expect(saved.status).toBe(200);
+    expect(saved.headers.get('content-disposition')).toBe(
+      `attachment; filename="${lasting}-preview.pdf"`,
+    );
+    expect(body.preview.download.toLowerCase()).not.toContain('dosing');
+
+    // One made two hours ago expired an hour ago, and is answered done with no links. Finished from
+    // queued, the one move a request makes, with its times set back.
+    const expired = await asked();
+    await queryAs(
+      db.adminUrl,
+      `update "${tenant.schema}".publication_request set state = 'done',
+          finished_at = now() - interval '2 hours', expires_at = now() - interval '1 hour',
+          preview_key = $2, preview_sha256 = $3, preview_bytes = $4
+        where id = $1`,
+      [expired, stored.key, stored.sha256, stored.size],
+    );
+    const gone = await call('alice', 'GET', `/v1/publication-requests/${expired}`);
+    expect(gone.statusCode, gone.body).toBe(200);
+    expect(gone.json()).toMatchObject({ kind: 'preview', state: 'done', preview: null });
+
+    // With nowhere to keep documents, one that lasts cannot be linked to; one expired needs no store.
+    const storeless = appOver(tenantDb, false);
+    try {
+      const unlinked = await call(
+        'alice',
+        'GET',
+        `/v1/publication-requests/${lasting}`,
+        undefined,
+        storeless,
+      );
+      expect(unlinked.statusCode, unlinked.body).toBe(503);
+      expect(unlinked.json()).toMatchObject({ code: 'storage_unavailable' });
+      const answered = await call(
+        'alice',
+        'GET',
+        `/v1/publication-requests/${expired}`,
+        undefined,
+        storeless,
+      );
+      expect(answered.statusCode, answered.body).toBe(200);
+      expect(answered.json()).toMatchObject({ preview: null });
     } finally {
       await storeless.close();
     }

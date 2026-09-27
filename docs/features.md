@@ -808,10 +808,20 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the most a publication can set.
   No publication has a list of equations yet, since the one layout lists only figures and tables;
   nothing chooses, makes or edits a layout or a theme, and there is only ever the one of each the
-  environment started with; and there is no preview, and no
+  environment started with; a preview can be asked for only through the API, below; and there is no
   way to approve a publication. The page asks how a publish is going for as
   long as it stays open, and a download link lasts five minutes from when the publication's page was
   opened. In the desktop app, downloading has not been checked.
+
+- **A preview, through the API.** Anybody who may read a document - not only somebody who may publish
+  it - can ask for a preview of its latest version. It is made the way a publication of that version
+  would be, refused for the same reasons, and is the PDF alone, saying **Preview - not approved** at
+  the top of every page, and once where a screen reader reads it that it is a preview of unapproved
+  content, not a publication. Nothing is published: it is not listed, searched or kept. Only the person
+  who asked can follow it, and once it is made they are given a link that shows it in the browser and
+  one that downloads it, each lasting five minutes, and when it expires, an hour after it was made.
+  After that it has no links, and a little later it is removed. **The document page has no Preview
+  button yet**, so nobody can ask for one there.
 
 ## What does not exist
 
@@ -837,7 +847,8 @@ Named explicitly so nobody has to read the source to find out:
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
   quotations, preformatted text, tables and their notes, figures, images in a line of text,
   footnotes, cross-references and equations, and a Word document of all of that: no
-  definition-list structure of PDF's own, no list of equations under the one layout, no preview, and
+  definition-list structure of PDF's own, no list of equations under the one layout, no preview on
+  the document page - a preview can be asked for only through the API - and
   no way
   to approve a
   publication.
