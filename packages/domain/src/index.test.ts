@@ -77,6 +77,8 @@ describe('the domain package', () => {
         'migrateDefinition',
         'principalIdsIn',
         'readDefinition',
+        // Read by search's projection, to say a person's value by their name (search.md).
+        'isUserValue',
         'resolveComponentFields',
         // A template's assignments at one level resolve as a component type's do (templates.md).
         'resolveAssignedFields',
@@ -84,6 +86,11 @@ describe('the domain package', () => {
         // The version record's serialisation, promoted in the storage plan that composes it.
         // What the store can hold, promoted when saving an iteration began asking (issue #127).
         'storableEverywhere',
+        // Search's projection: what a version is found by, place by place (search.md; W6.1).
+        'SEARCH_CONFIGURATIONS',
+        'configurationFor',
+        'entriesOf',
+        'searchKinds',
         'canonicaliseVersion',
         'canonicaliseVersionContent',
         'componentTypeOf',
