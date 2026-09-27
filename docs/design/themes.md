@@ -64,7 +64,7 @@ conformance suite.
 | **STY-058** | The CSS projection is generic over the property set (STY-030), so it renders every declared paragraph and character property at the theme's values rather than a chosen few; the pagination-bound properties are the only omission, marked as such in the set and shown by preview instead of approximated (STY-037) |
 | **STY-037** | Properties that depend on pagination are marked as such in the property set; the CSS projection omits them and preview shows them                                                                                                                                                                                    |
 | **STY-038** | The resolver is a pure function of theme version, catalogue versions and asset dimensions                                                                                                                                                                                                                            |
-| **STY-039** | A typeface is served to the editor from the tenant's store, and handed to Typst as a pinned font directory                                                                                                                                                                                                           |
+| **STY-039** | The pinned files are one package, `packages/fonts`, which the worker hands Typst as its only font directory and the renderer bundles for a browser and the desktop shell alike ([The theme in the editor](#the-theme-in-the-editor), ET-C)                                                                           |
 | **STY-040** | A typeface that cannot be loaded fails resolution; Typst's missing-face warning is also treated as a failure (ADR-0013)                                                                                                                                                                                              |
 | **STY-041** | The typeface artifact records the licence and whether it permits embedding, separately for PDF and for Word                                                                                                                                                                                                          |
 | **STY-042** | The PDF projection refuses a face whose licence forbids embedding                                                                                                                                                                                                                                                    |
@@ -86,6 +86,8 @@ conformance suite.
 | **CNT-094** | A block's appearance is its paragraph style; the editor has no free spacing or alignment control                                                                                                                                                                                                                     |
 | **CNT-097** | The editor loads the theme's typefaces and sets text at the theme's sizes                                                                                                                                                                                                                                            |
 | **CNT-115** | The editor sets text at the layout's measure, scaled, with zoom                                                                                                                                                                                                                                                      |
+| **CNT-122** | An image style is resolved to its size by `styledSize`, in `assemble` and in the editor alike, from the asset's pixels and the layout's frame ([The theme in the editor](#the-theme-in-the-editor))                                                                                                                  |
+| **STY-070** | A style missing or out of place, a face the renderer does not hold and a character its family cannot set are each marked on the text, never set in a silent default ([The theme in the editor](#the-theme-in-the-editor), ET-I)                                                                                      |
 | **PUB-019** | Embedding in PDF and in Word is decided per face from its licence (STY-041, STY-042, STY-052)                                                                                                                                                                                                                        |
 | **PUB-027** | The Word projection emits every style as a real Word style, named and identified from the catalogue                                                                                                                                                                                                                  |
 | **PUB-017** | A table breaks across pages as its table style says - header repeated, rows kept whole, a continuation label - which the template sets from the style ([Themes in the PDF](#themes-in-the-pdf), TH-I)                                                                                                                |
@@ -275,9 +277,10 @@ chosen for paper, and CNT-097 wants an author to see what a reader will see. Thi
 half of STY-Q04 without theme variants; whether the HTML reading format (PUB-056) needs a screen
 palette is left for when it is designed.
 
-**Typefaces come from the tenant's store**, as `@font-face` rules pointing at the typeface artifact's
-files, in both deliveries. The desktop shell has no special path; the renderer fetches from the
-service as the browser does. The product's own open faces are typeface artifacts like any other.
+**Typefaces come with the renderer**, as `@font-face` rules pointing at the pinned files, in both
+deliveries: TH-B cut typeface artifacts from T1, so the tenant's store holds none, and
+[The theme in the editor](#the-theme-in-the-editor) (ET-C) bundles the worker's pinned files instead.
+The desktop shell has no special path; it loads the same renderer.
 
 **What the editor does not render**, it does not approximate: keep-with-next, keep-together, widows
 and orphans, hyphenation, and table break behaviour. The property set marks each as pagination-bound
@@ -632,6 +635,156 @@ things here:
 - **STY-019 was claimed and not cited.** An asset version cannot be stored without its dimensions - AST
   records them on ingest - so the named failure it asked for could not arise. Ken superseded it with
   STY-078, the invariant itself, on 2026-09-26, which the asset version's own test cites.
+
+## The theme in the editor
+
+Designed on 2026-09-27 for W8 of [the rest of T1](../plans/2026-09-25-t1-remainder.md), which asks for
+STY-058, STY-039, STY-070, CNT-082, CNT-097, CNT-115, CNT-094, CNT-121, CNT-122 and STR-025. What
+exists: the theme is stored, read and recorded, and the PDF and Word are set from it; `projectCss`
+is built and tested, and nothing calls it. Everything the editor shows is set by one fixed stylesheet,
+`packages/editor/style.css`, in the application's own sans-serif at its own sizes, in a column as wide
+as the window. No route returns a theme or a layout's page. The faces live only in the worker's image,
+and the editor holds no font file. Nothing lets an author choose a style: the editor writes `body`,
+`table`, `figure` and `inline` and nothing else (TH-F). The default theme offers **one** style for
+each place, so a chooser over it would offer nothing to choose.
+
+### What the editor is given
+
+**Which theme and layout.** A component has no theme of its own. The theme a document uses is the one
+its template binds (STY-025), and one component can stand in documents with different themes. So a
+component opened on its own is shown in the **environment's default theme and layout**, and one opened
+in place on a document's page is shown in **that document's**, as `documentTheme` and `documentLayout`
+already resolve them for a publish.
+
+**The stored theme, read by the same reader** (STY-035). Two routes return the same shape:
+`GET /v1/presentation` for the environment's default, and `GET /v1/documents/{id}/presentation` for
+a document's, readable by whoever can read that document. The shape is the theme version's stored
+content, each catalogue version it binds, and the layout's frame. The renderer calls `readTheme` on
+them, the reader the store, `assemble` and the worker use, so the editor and the publisher cannot
+resolve a style differently. A resolved theme holds maps and cannot be sent as it stands. The frame is
+the two numbers of the page an image style's lengths are shares of, the measure and the text block's
+height. The third, the size of the text an image in a line stands in, is the theme's. The service
+computes the two with the domain's `textMeasure` and `textBlockHeight` from the layout's PDF format, so
+nothing else page-shaped reaches the renderer.
+
+**The faces come with the renderer** (STY-039). TH-B cut typeface artifacts from T1, so the tenant's
+store holds no face, and the editor cannot fetch one from there, as [The editor](#the-editor) above
+supposed. The pinned files move from `apps/worker/fonts/` to a package of their own,
+`packages/fonts`, with their licences and the list of files by hash that `apps/worker/src/fonts.ts`
+holds today. The worker reads them from there, and the renderer bundles them, so a browser tab and the
+Electron window, which loads the same renderer, have the same files, and neither fetches a face from
+anywhere else. The renderer writes one `@font-face` rule for each file a theme names by its hash,
+under a family name of its own, `aw-face-<typeface id>`. It never uses the family's real name, so a
+"Liberation Serif" installed on the reader's machine is never used in its place, just as Typst is
+given no system fonts. The files are 3.5 MB in all, fetched by a browser only when a rule uses them.
+
+**Coverage as data.** `covers`, which the glyph check asks, is built by the worker from each file's
+character map. The editor needs the same answers without parsing a font. `packages/fonts` holds the
+characters each family covers as ranges, generated from the files, with a test that regenerates them
+and fails on a difference, as `openapi.json` is checked. The worker keeps reading the files, and a
+test holds the two to each other.
+
+### What the editor renders
+
+**Every declared property** (STY-058, CNT-082, CNT-097). `projectCss` is widened to the whole
+property set: a paragraph's background, padding, alignment, three indents and contextual spacing; a
+mark's underline, colour, typeface, position and scale; a table style's rules, fills, banding, cell
+padding and header weight; and a typeface's `@font-face` families. Only the pagination-bound
+properties are left out, as STY-037 says. They are keep-with-next, keep-together, widow and orphan
+control, hyphenation, header repetition, rows kept whole and the continuation label. **A test fails
+when a property is added to the schema and neither projected nor listed as pagination-bound**, so the
+widening cannot stop at a sample again.
+
+- **Contextual spacing** is an adjacent-sibling rule between two paragraphs of one style, which CSS
+  keeps within one container, as the template does.
+- **The mark classes** are written by the marks' `toDOM`, which today writes bare elements.
+- **Equations** are set in the theme's maths face.
+
+**`body` means the default where it stands** (TH-E), in the editor as in the publication. The editor
+marks each paragraph with its place, from the nearest container that holds it - a list item, a
+quotation, a table's cell, a footnote, or the text - which is `assemble`'s rule. It marks it by a node
+decoration rather than by CSS selectors, which cannot say "nearest". What the template sets by role,
+the editor sets by the same role: a caption, a table's note, an attribution, preformatted text and its
+label.
+
+**The canvas is paper**, as [The editor](#the-editor) above settled: the theme's paper and ink in dark
+mode as in light. It is `.aw-canvas`, around the editing surface and around a document's read text
+alike, and every rule of the projection is scoped under it. Nothing sets typography on `.ProseMirror`,
+which a test already forbids.
+
+**The measure** (CNT-115). The canvas is the layout's measure wide, in points: 451.28pt under the
+default layout, which is about 602 CSS pixels at 100%. At 100% it is the printed size. A zoom control
+beside the editor steps through 50, 75, 100, 125, 150 and 200%, and Fit makes the measure fill the
+column. The zoom is kept per viewer in the browser, as a convenience. It is applied as one CSS custom
+property that every length in the projection is multiplied by, not by CSS `zoom` or a transform,
+under which ProseMirror's positions from coordinates and the caret can drift. A column narrower than
+the canvas scrolls sideways, which is the cost [The editor](#the-editor) accepted.
+
+**Images at their styled size** (CNT-122). The editor sizes a figure and an image in a line by
+`styledSize`, the function `assemble` sizes them by, from the asset's pixels and the frame. The asset's
+pixels are already on its version (STY-078). A figure then prints as wide as it shows.
+
+### Choosing a style
+
+**A paragraph's style** (CNT-094). The toolbar gains a Style list showing the style of the paragraph
+at the cursor.
+
+- It offers only the styles that apply where that paragraph stands (STY-006), with the place's
+  default first, labelled as the default.
+- Across a selection of several paragraphs, it offers only the styles that apply to every one.
+- A role is never offered.
+- Choosing the default stores `body`, so a paragraph moved into a list takes the list's default, as
+  TH-E has it. Choosing any other stores that style's identifier.
+- The choice is one step in the component's history, undone by Undo, and nothing else in the editor
+  sets alignment, indentation or spacing.
+
+**A table's and an image's style** (CNT-121). The Table panel gains a Table style list. The Figure
+dialog, which places a figure or an image in a line, and the Figure panel gain an Image style list,
+each over the styles that apply to what is being placed: `figure` or `inlineImage`.
+
+**The default theme gains something to choose.** Its 0.3 adds three paragraph styles for the text,
+one table style and one image style. The paragraph styles are _Lead_, larger with more space after;
+_Centred_; and _Small print_. The table style is _Banded_, with a filled bold header, banded rows and
+no vertical rules. The image style is _Half width_, a centred figure half the measure wide. All five
+are held to contrast as every style is. It is a migration, as 0025 was, moving only the product's own
+unchanged chain. The PDF and Word projections are generic over the set and need no change for them.
+
+### What will not resolve (STY-070)
+
+Where the editor cannot show what the theme says, it shows that it cannot. It never shows a silent
+default:
+
+| What                                                                      | What the editor shows                                                                                                                                                           |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A paragraph's, table's or image's style that the theme does not hold      | The block in its place's default, outlined and labelled with the style's identifier and "not in this theme": what `style_missing` names at publication                          |
+| A style that the theme holds but that does not apply where it stands      | The same, labelled "does not apply here": `style_not_applicable`                                                                                                                |
+| A typeface whose files the renderer does not hold by hash                 | A notice on the canvas naming the family. Its text is set in the application's own face, and the notice says so                                                                 |
+| A character that the family setting it cannot set, by `characterProblems` | The character marked, and its code point named on hover. This is the check the publish fails on (STY-049), asked in the same setting - body, code or maths - of the same family |
+
+The glyph check runs over the blocks a change touched, not the whole component on every keystroke.
+
+### Decisions for Ken
+
+Taken as recommended, on Ken's instruction of 2026-09-27 to continue with W8, and his to review.
+
+| #    | Decision                                                                                                                                                                                   | Recommended                                                                                                                                                                                                                                                      |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ET-A | **A component on its own is shown in the environment's default theme and layout; in place on a document's page, in that document's.**                                                      | Yes. A component has no theme of its own. The alternative, the theme of the document it was last opened in, would make one component look different depending on how you reached it.                                                                             |
+| ET-B | **The stored theme is sent to the renderer and read there by `readTheme`,** with the layout's frame computed on the service.                                                               | Yes. It is STY-035 in the plainest form: one reader. Resolving on the service would need a second, serialisable resolved shape to keep in step with the first.                                                                                                   |
+| ET-C | **The faces move to `packages/fonts`, and the renderer bundles them,** under family names of their own, never a system face.                                                               | Yes. It gives both deliveries the same files with no new route, and the files work offline in the desktop shell. Serving them from the service by hash would be the way once typeface artifacts arrive, and would change only where the `@font-face` URLs point. |
+| ET-D | **Coverage is generated data, checked against the files.**                                                                                                                                 | Yes. Parsing fonts in the browser would be a second cmap reader to keep in step with the worker's.                                                                                                                                                               |
+| ET-E | **The canvas is the measure at true size at 100%, with stepped zoom and Fit, kept per viewer;** zoom is a CSS custom property, not CSS `zoom`.                                             | Yes. True size makes a relative image width mean what it prints as. A custom property keeps ProseMirror's coordinates exact.                                                                                                                                     |
+| ET-F | **The projection covers every property but the pagination-bound, tables and images included, and a test fails on one left out.** `body` is resolved by place, by a decoration.             | Yes. It is what STY-058 asks, and the test is what stops a second partial projection.                                                                                                                                                                            |
+| ET-G | **Choosing a style.** Paragraphs from the toolbar, tables from the Table panel, images from the Figure dialog and panel; only styles that apply are offered; the default stored as `body`. | Yes. It follows TH-E and STY-006. A chooser that offered a style and was then refused would be worse than one that offers only what fits.                                                                                                                        |
+| ET-H | **The default theme 0.3 adds Lead, Centred, Small print, Banded and Half width.**                                                                                                          | Yes. Nothing edits a theme in T1, so without them the chooser offers one entry in every environment. Five styles show each chooser working without designing a house style.                                                                                      |
+| ET-I | **The markers:** a style missing or out of place, a face not held, a character not covered - shown on the text rather than refused.                                                        | Yes. STY-070 asks the editor to show the failure while it can still be fixed. Refusing to open the component would hide it.                                                                                                                                      |
+| ET-J | **STR-025 waits for K8.** No STY row gives a caption a placement, so no style can meet it.                                                                                                 | Yes. K8 recommends filing that row, a placement on table and image styles. That is a requirement for Ken to make. Once it exists, it is one property with its three projections.                                                                                 |
+| ET-K | **What the tests show.** jsdom reads the declared value each element takes from the projection's stylesheet. It does not measure a baseline.                                               | Yes. Measuring in a browser is STY-053's suite, which W13 builds once K4 decides where a browser runs. Until then, the claim that the editor matches the PDF to the point rests on ADR-0014's prototype, and says so.                                            |
+| ET-L | **Three build slices after this one.** W8.1: the faces and the presentation reach the renderer. W8.2: the canvas. W8.3: choosing a style, the markers and theme 0.3.                       | Yes. Each slice is visible on its own: faces loaded, then text set as it prints, then choices.                                                                                                                                                                   |
+
+**What W8 claims.** STY-070 and CNT-122 are claimed here from this section. The editor half of
+CNT-122 was the missing half; the publish half was built by themes 2. STY-039's claim is restated for
+the faces in `packages/fonts`. STR-025 is not claimed (ET-J).
 
 ## Safety
 

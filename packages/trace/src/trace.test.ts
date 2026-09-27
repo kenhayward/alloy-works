@@ -71,6 +71,7 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1458);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 483, from 481 (2026-09-27): W8.0 - themes.md claims STY-070 and CNT-122.
     // 481, from 479 (2026-09-27): W7.0 - service-foundations.md claims SCH-022 and SCH-064.
     // 479, from 467 (2026-09-27): W6.0 - search.md claims SCH-054, 002, 011, 012, 016, 017, 039, 046,
     // 057, 059, 062 and 066.
@@ -196,7 +197,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(481);
+    ).toBe(483);
   });
 });
 

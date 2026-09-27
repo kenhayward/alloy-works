@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.93.1 - 2026-09-27 (PR #279)
+
+### Changed
+
+- **The design for the theme in the editor.** How the editor will set a component's text in the faces,
+  sizes and spacing it will print in, at the page's width with a zoom, mark what it cannot show, and
+  let an author choose a paragraph's, a table's and an image's style. Nothing changes in the product
+  yet.
+
 ## 0.93.0 - 2026-09-27 (PR #278)
 
 ### Added
