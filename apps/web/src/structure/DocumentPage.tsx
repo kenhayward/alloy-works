@@ -42,6 +42,7 @@ import { byName } from '../metadata/people.js';
 import { UnheldFaces, ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
 import { useReadingPosition } from './position.js';
+import type { Choosing, OfferedVersion } from './VersionChoice.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -345,6 +346,12 @@ function announce(
       if (operation.matter !== undefined) {
         return `${nodeName(node, names)} ${MATTERS[operation.matter]}.`;
       }
+      if (operation.mode?.kind === 'latest') {
+        return `${nodeName(node, names)} now shows its latest version.`;
+      }
+      if (operation.mode?.kind === 'pinned') {
+        return `${nodeName(node, names)} is now pinned to a version.`;
+      }
       return `Changed ${nodeName(node, names)}.`;
     }
     case 'remove': {
@@ -433,6 +440,8 @@ export function DocumentPage({
   const [texts, setTexts] = useState<ReadonlyMap<string, unknown>>(new Map());
   // Whether the reader may edit each occurrence's component now, and who holds it (CNT-074).
   const [editable, setEditable] = useState<ReadonlyMap<string, Editable>>(new Map());
+  // The number of the version each occurrence resolves to, by node (CNT-162), from the same answer.
+  const [resolved, setResolved] = useState<ReadonlyMap<string, string>>(new Map());
   const [textsAttempt, setTextsAttempt] = useState(0);
   // The one occurrence whose component is open in place: one editor, and so one lock, at a time.
   const [editing, setEditing] = useState<string | null>(null);
@@ -445,7 +454,14 @@ export function DocumentPage({
       .then(({ data }) => {
         if (!current || !data) return;
         const contents = new Map(data.versions.map((version) => [version.id, version.content]));
+        // Checked rather than trusted: the client's bodies are `any` underneath their types.
+        const numbers = new Map(
+          data.versions.flatMap((version) =>
+            typeof version.number === 'string' ? [[version.id, version.number] as const] : [],
+          ),
+        );
         const byNode = new Map<string, unknown>();
+        const numberOf = new Map<string, string>();
         setEditable(
           new Map(
             data.occurrences.map((occurrence) => [
@@ -458,8 +474,11 @@ export function DocumentPage({
           if (occurrence.version === null) continue;
           const content = contents.get(occurrence.version);
           if (content !== undefined) byNode.set(occurrence.node, content);
+          const number = numbers.get(occurrence.version);
+          if (number !== undefined) numberOf.set(occurrence.node, number);
         }
         setTexts(byNode);
+        setResolved(numberOf);
       })
       // The text is the reading view beside the outline: where it cannot be read, the cards show
       // their titles alone, which is what they showed before it existed.
@@ -793,6 +812,40 @@ export function DocumentPage({
     [client, id, names, opened, show],
   );
 
+  // A component's versions, newest first, a page at a time (document-view.md, "Versions"): what a
+  // reference's label offers it to be pinned to. Each checked rather than trusted; null where the page
+  // could not be read, which the list says.
+  const listVersions = useCallback(
+    async (component: string, cursor: string | undefined) => {
+      const { data } = await client.GET('/v1/components/{id}/versions', {
+        params: { path: { id: component }, query: cursor === undefined ? {} : { cursor } },
+      });
+      if (!isRecord(data) || !Array.isArray(data.items)) return null;
+      const items = (data.items as unknown[]).flatMap((each): OfferedVersion[] =>
+        isRecord(each) &&
+        typeof each.id === 'string' &&
+        typeof each.number === 'string' &&
+        typeof each.createdAt === 'string'
+          ? [{ id: each.id, number: each.number, createdAt: each.createdAt }]
+          : [],
+      );
+      return { items, next: typeof data.next === 'string' ? data.next : null };
+    },
+    [client],
+  );
+  // Choosing one is the outline's own act on the reference's mode (CNT-158), which the store checks
+  // (CNT-160); the texts are read again for the version it makes, so the label then says what it is.
+  const choosing: Choosing = useMemo(
+    () => ({
+      list: listVersions,
+      choose: async (node, mode) => {
+        const answer = await apply({ operation: 'set', node, mode }, false);
+        return typeof answer !== 'string';
+      },
+    }),
+    [listVersions, apply],
+  );
+
   // Every component's edges and label, rather than on hover and focus (document-view.md, "Boundaries";
   // CNT-073): this reader's choice, kept in the browser as a convenience.
   const [boundaries, setBoundaries] = useState(keptBoundaries);
@@ -1020,6 +1073,10 @@ export function DocumentPage({
               editing={editing}
               boundaries={boundaries}
               marked={marked}
+              resolved={resolved}
+              // The version is chosen from the label in Authoring, by whoever may restructure the
+              // document (DV-F); anywhere else the label says it and offers nothing.
+              {...(document.mayEdit && authoring ? { choosing } : {})}
               {...(principalId === undefined || !authoring
                 ? {}
                 : {

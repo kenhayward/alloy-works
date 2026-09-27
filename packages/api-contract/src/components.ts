@@ -81,6 +81,27 @@ export const VersionSummary = z.object({
   note: z.string().nullable(),
 });
 
+/**
+ * A component's versions, newest first (document-view.md, "Versions"): what the document view offers
+ * a reference to be pinned to.
+ */
+export const ComponentVersionList = z.object({
+  items: z.array(
+    z.object({
+      id: z.string(),
+      number: z.string().describe('`revision.version`, as `0.2`'),
+      createdAt: z.string(),
+      author: z
+        .object({ id: z.string(), name: z.string().nullable() })
+        .nullable()
+        .describe('Who made it; null for a version nobody authored'),
+      note: z.string().nullable(),
+    }),
+  ),
+  next: nextCursor,
+});
+export type ComponentVersionList = z.infer<typeof ComponentVersionList>;
+
 export const Lock = z.object({
   holder: z.object({ id: z.string(), name: z.string().nullable() }),
   expectedRelease: z.string().describe('When it lapses unless the holder saves again'),
@@ -284,6 +305,33 @@ export const componentRoutes = {
       401: unauthenticated,
       403: {
         description: 'Never answered: a component the caller may read is one they may open',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such component in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+    },
+  },
+  listComponentVersions: {
+    operationId: 'listComponentVersions',
+    method: 'GET',
+    path: '/v1/components/{id}/versions',
+    summary: "A component's versions, newest first, a page at a time",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: ComponentParams,
+    query: PageQuery,
+    responses: {
+      200: { description: 'A page of its versions, newest first', schema: ComponentVersionList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: {
+        description:
+          'Never answered: a component the caller may read is one whose versions they may read',
         schema: ErrorBody,
       },
       404: {

@@ -327,7 +327,7 @@ describe('what each occurrence contributes, through the service', () => {
     expect(forAlice.body).not.toContain(ids.grace!);
   });
 
-  it("answers each readable occurrence's version with its content, and null for one the caller may not read", async () => {
+  it("answers each readable occurrence's version with its number and content, and null for one the caller may not read", async () => {
     const shared = await componentWith(general, 'Install the printer', [
       figure('f1', 'The paper tray'),
     ]);
@@ -364,6 +364,7 @@ describe('what each occurrence contributes, through the service', () => {
     expect(body.versions).toHaveLength(1);
     expect(body.versions[0]).toMatchObject({
       id: shared.version,
+      number: '0.2',
       content: { title: 'Install the printer' },
     });
     expect(forAlice.body).not.toContain('Calibration');

@@ -12,7 +12,9 @@ import {
   grant,
   latestVersion,
   migrate,
+  recordVersion,
   seedDevelopmentContent,
+  substanceOf,
   STARTER_COMPONENT_TYPE_ID,
   type Tenant,
   type TenantDatabase,
@@ -318,6 +320,103 @@ describe('finding and opening components through the service', () => {
           session: null,
         },
       });
+    });
+  });
+
+  describe("listing a component's versions", () => {
+    /** A fresh component at 0.1, and then 0.2 and 0.3, each Ada's and the last two with a note. */
+    const withVersions = async () => {
+      const made = await component();
+      const numbers: string[] = [made.openedFrom];
+      await tenantDb.withTenant(tenant, async (trx) => {
+        for (const [index, text] of ['Plug the printer in.', 'Switch the printer on.'].entries()) {
+          const current = (await latestVersion(trx, made.id))!;
+          const substance = substanceOf(current);
+          if (substance.kind !== 'component') throw new Error('not a component');
+          const recorded = await recordVersion(trx, {
+            artifactId: made.id,
+            openedFrom: current.id,
+            author: ids.ada!,
+            note: `Step ${index + 2}`,
+            substance: { ...substance, content: paragraphs(text) as never },
+          });
+          if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+          numbers.push(recorded.version.id);
+        }
+      });
+      return { id: made.id, versions: numbers };
+    };
+
+    it('lists every version of a component, newest first, with its number, who made it, when and its note', async () => {
+      const made = await withVersions();
+      const response = await call('alice', 'GET', `/v1/components/${made.id}/versions`);
+      expect(response.statusCode, response.body).toBe(200);
+      const body = response.json<{ items: Json[]; next: string | null }>();
+      expect(body.items).toEqual([
+        {
+          id: made.versions[2],
+          number: '0.3',
+          createdAt: expect.any(String),
+          author: { id: ids.ada, name: expect.any(String) },
+          note: 'Step 3',
+        },
+        {
+          id: made.versions[1],
+          number: '0.2',
+          createdAt: expect.any(String),
+          author: { id: ids.ada, name: expect.any(String) },
+          note: 'Step 2',
+        },
+        {
+          id: made.versions[0],
+          number: '0.1',
+          createdAt: expect.any(String),
+          author: { id: ids.ada, name: expect.any(String) },
+          note: null,
+        },
+      ]);
+      expect(body.next).toBeNull();
+    });
+
+    it('pages newest first with a cursor it gave out, and refuses one it did not', async () => {
+      const made = await withVersions();
+      const route = `/v1/components/${made.id}/versions`;
+      const first = (await call('ada', 'GET', `${route}?limit=2`)).json<{
+        items: { number: string }[];
+        next: string | null;
+      }>();
+      expect(first.items.map((each) => each.number)).toEqual(['0.3', '0.2']);
+      expect(first.next).toEqual(expect.any(String));
+      const second = await call('ada', 'GET', `${route}?limit=2&cursor=${first.next}`);
+      expect(second.statusCode, second.body).toBe(200);
+      const rest = second.json<{ items: { number: string }[]; next: string | null }>();
+      expect(rest.items.map((each) => each.number)).toEqual(['0.1']);
+      expect(rest.next).toBeNull();
+      for (const cursor of ['bm90LWEtY3Vyc29y', 'a']) {
+        const forged = await call('ada', 'GET', `${route}?cursor=${cursor}`);
+        expect(forged.statusCode, cursor).toBe(400);
+        expect(forged.json()).toMatchObject({ code: 'invalid_request' });
+      }
+    });
+
+    it('answers a component the caller may not read, and what is not a component, exactly as a missing one', async () => {
+      const untraced = (body: Json) =>
+        Object.fromEntries(Object.entries(body).filter(([member]) => member !== 'traceId'));
+      const missing = await call('grace', 'GET', `/v1/components/${MISSING}/versions`);
+      expect(missing.statusCode).toBe(404);
+      const unreadable = await call('grace', 'GET', `/v1/components/${hidden}/versions`);
+      expect(unreadable.statusCode).toBe(404);
+      expect(untraced(unreadable.json())).toEqual(untraced(missing.json()));
+      const definition = await call(
+        'ada',
+        'GET',
+        `/v1/components/${STARTER_COMPONENT_TYPE_ID}/versions`,
+      );
+      expect(definition.statusCode).toBe(404);
+      expect(untraced(definition.json())).toEqual(untraced(missing.json()));
+      expect((await call(undefined, 'GET', `/v1/components/${hidden}/versions`)).statusCode).toBe(
+        401,
+      );
     });
   });
 });

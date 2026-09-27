@@ -10,6 +10,7 @@ export {
   ComponentListQuery,
   ComponentParams,
   ComponentTypeList,
+  ComponentVersionList,
   ComponentView,
   FieldView,
   CreateComponentBody,

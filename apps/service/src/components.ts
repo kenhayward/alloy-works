@@ -14,12 +14,14 @@ import {
   listPeople,
   listComponentTypes,
   listReadableComponents,
+  listVersions,
   listSpacesFor,
   readLock,
   type LockState,
   type StoredVersion,
   type TenantTransaction,
   type VersionHeading,
+  type VersionPosition,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -69,6 +71,36 @@ export function afterCursor(cursor: string | undefined): string | undefined {
 /** The cursor a listing gives out for the id its next page starts after. */
 export function cursorAfter(after: string | null): string | null {
   return after === null ? null : Buffer.from(after, 'utf8').toString('base64url');
+}
+
+/**
+ * A cursor into an artifact's versions: the last version's number, spelled so nobody is tempted to
+ * read it. It carries no snapshot, since the versions a walk has yet to read never change (versions.ts,
+ * `listVersions`).
+ */
+export function versionCursor(position: VersionPosition | null): string | null {
+  return position === null
+    ? null
+    : Buffer.from(JSON.stringify([position.revision, position.version]), 'utf8').toString(
+        'base64url',
+      );
+}
+
+/** Where a page of versions continues, from a cursor `versionCursor` gave out; 400 for any other. */
+export function afterVersion(cursor: string | undefined): VersionPosition | undefined {
+  if (cursor === undefined) return undefined;
+  let read: unknown;
+  try {
+    read = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+  } catch {
+    read = undefined;
+  }
+  const whole = (value: unknown): value is number =>
+    typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 2_147_483_647;
+  if (!Array.isArray(read) || read.length !== 2 || !whole(read[0]) || !whole(read[1])) {
+    throw new AppError(400, 'invalid_request', 'The cursor is not one this listing gave out.');
+  }
+  return { revision: read[0], version: read[1] };
 }
 
 /** A listing's page size: 50 unless the caller asked for 1 to 100. */
@@ -246,6 +278,37 @@ export function componentHandlers(
             ...each,
           })),
         },
+      };
+    },
+
+    /**
+     * A component's versions, newest first, to whoever may read it (document-view.md, "Versions"):
+     * what the document view offers a reference to be pinned to. Anything else at this address - a
+     * definition, a document - is answered as a component that is not there, as `getComponent` does.
+     */
+    listComponentVersions: async (request: FastifyRequest, { trx }: Authorised) => {
+      const { id } = request.params as ComponentParams;
+      const query = request.query as PageQuery;
+      const after = afterVersion(query.cursor);
+      const artifact = await trx
+        .selectFrom('artifact')
+        .select('kind')
+        .where('id', '=', id)
+        .executeTakeFirst();
+      if (artifact?.kind !== 'component') throw notFound();
+      const page = await listVersions(trx, id, {
+        limit: pageLimit(query.limit),
+        ...(after === undefined ? {} : { after }),
+      });
+      return {
+        items: page.items.map((each) => ({
+          id: each.id,
+          number: `${each.revision}.${each.version}`,
+          createdAt: each.createdAt.toISOString(),
+          author: each.author,
+          note: each.note,
+        })),
+        next: versionCursor(page.next),
       };
     },
 

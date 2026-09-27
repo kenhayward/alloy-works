@@ -244,8 +244,12 @@ describe('the listings through the service', () => {
     const documents = (await get('/v1/documents?limit=100')).json<Page>();
     const document = documents.items[0]?.id;
     expect(document, 'a document to list the publications of').toBeDefined();
+    const components = (await get('/v1/components?limit=100')).json<Page>();
+    const component = components.items[0]?.id;
+    expect(component, 'a component to list the versions of').toBeDefined();
     const addressed: Record<string, string> = {
       listComponents: '/v1/components',
+      listComponentVersions: `/v1/components/${component}/versions`,
       listSpaces: '/v1/spaces',
       listComponentTypes: `/v1/spaces/${general}/component-types`,
       listDocuments: '/v1/documents',

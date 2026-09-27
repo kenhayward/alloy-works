@@ -615,6 +615,7 @@ describe('routes that check a permission', () => {
       payload: { title: 'Not mine', language: 'en-GB', direction: 'ltr' },
     }),
     getComponent: () => ({ url: `/v1/components/${dosing}`, status: 404 }),
+    listComponentVersions: () => ({ url: `/v1/components/${dosing}/versions`, status: 404 }),
     createDocument: () => ({
       url: `/v1/spaces/${clinical}/documents`,
       status: 404,

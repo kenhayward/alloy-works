@@ -137,6 +137,7 @@ export {
   createArtifact,
   latestVersion,
   versionContents,
+  listVersions,
   readVersion,
   headingOf,
   recordVersion,
@@ -147,6 +148,9 @@ export {
   type RecordAnswer,
   type StoredVersion,
   type VersionHeading,
+  type VersionContent,
+  type ListedVersion,
+  type VersionPosition,
 } from './versions.js';
 export { createRole, findRole, type Role, type RoleAnswer } from './roles.js';
 export {

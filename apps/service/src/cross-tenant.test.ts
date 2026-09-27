@@ -101,6 +101,7 @@ const OTHER_TENANT_IDS: Readonly<
   listComponentTypes: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   createComponent: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  listComponentVersions: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   createDocument: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getDocument: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   editOutline: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
