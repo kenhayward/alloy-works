@@ -16733,7 +16733,7 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 391,
+      "line": 392,
       "kind": "title"
     },
     {
@@ -16811,8 +16811,32 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 489,
+      "line": 544,
       "kind": "title"
+    },
+    {
+      "id": "MET-008",
+      "file": "apps/service/src/definition-routes.test.ts",
+      "line": 185,
+      "kind": "rule"
+    },
+    {
+      "id": "MET-024",
+      "file": "apps/service/src/definition-routes.test.ts",
+      "line": 121,
+      "kind": "title"
+    },
+    {
+      "id": "MET-031",
+      "file": "apps/service/src/definition-routes.test.ts",
+      "line": 157,
+      "kind": "rule"
+    },
+    {
+      "id": "MET-037",
+      "file": "apps/service/src/definition-routes.test.ts",
+      "line": 196,
+      "kind": "rule"
     },
     {
       "id": "API-037",
@@ -17679,6 +17703,36 @@
       "kind": "title"
     },
     {
+      "id": "MET-008",
+      "file": "packages/db/src/definitions.test.ts",
+      "line": 161,
+      "kind": "title"
+    },
+    {
+      "id": "MET-031",
+      "file": "packages/db/src/definitions.test.ts",
+      "line": 139,
+      "kind": "title"
+    },
+    {
+      "id": "MET-037",
+      "file": "packages/db/src/definitions.test.ts",
+      "line": 236,
+      "kind": "title"
+    },
+    {
+      "id": "MET-040",
+      "file": "packages/db/src/definitions.test.ts",
+      "line": 185,
+      "kind": "title"
+    },
+    {
+      "id": "MET-041",
+      "file": "packages/db/src/definitions.test.ts",
+      "line": 116,
+      "kind": "title"
+    },
+    {
       "id": "STY-025",
       "file": "packages/db/src/document-template.test.ts",
       "line": 353,
@@ -18293,7 +18347,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 298,
+      "line": 303,
       "kind": "title"
     },
     {

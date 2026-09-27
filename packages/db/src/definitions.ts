@@ -103,8 +103,13 @@ async function latestOfKind<K extends DefinitionKind>(
     const stored = await readDefinitionLatest(trx, row.id);
     if (stored?.kind === kind) read.push(stored as StoredDefinition<K>);
   }
-  return read;
+  // By name, then identifier, so what a refusal lists is in an order a person can follow and the
+  // same every time.
+  return read.sort((a, b) => byName(a.definition.name, a.id, b.definition.name, b.id));
 }
+
+const byName = (aName: string, aId: string, bName: string, bId: string) =>
+  aName < bName ? -1 : aName > bName ? 1 : aId < bId ? -1 : aId > bId ? 1 : 0;
 
 /**
  * A definition at its latest version, or undefined where this tenant holds no field, schema or
@@ -139,18 +144,16 @@ export async function listDefinitions(
   for (const kind of ['field', 'metadataSchema', 'componentType'] as const) {
     const each = await latestOfKind(trx, kind);
     all.push(
-      ...each
-        .map((stored) => ({
-          id: stored.id,
-          kind,
-          name: stored.definition.name,
-          version: {
-            id: stored.version.id,
-            revision: stored.version.revision,
-            version: stored.version.version,
-          },
-        }))
-        .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)),
+      ...each.map((stored) => ({
+        id: stored.id,
+        kind,
+        name: stored.definition.name,
+        version: {
+          id: stored.version.id,
+          revision: stored.version.revision,
+          version: stored.version.version,
+        },
+      })),
     );
   }
   return all;
@@ -189,14 +192,16 @@ export async function placesOf(trx: TenantTransaction): Promise<readonly Place[]
     .where('a.kind', '=', 'template')
     .orderBy('a.id')
     .execute();
-  for (const row of templates) {
-    const template = templateDefinitionSchema.parse(row.content);
+  const read = templates
+    .map((row) => ({ id: row.id, template: templateDefinitionSchema.parse(row.content) }))
+    .sort((a, b) => byName(a.template.name, a.id, b.template.name, b.id));
+  for (const { id, template } of read) {
     for (const level of ['document', 'section'] as const) {
       const schemas = template.schemas
         .filter((each) => each.level === level)
         .map((each) => each.schema);
       if (schemas.length > 0) {
-        places.push({ kind: 'template', id: row.id, name: template.name, level, schemas });
+        places.push({ kind: 'template', id, name: template.name, level, schemas });
       }
     }
   }

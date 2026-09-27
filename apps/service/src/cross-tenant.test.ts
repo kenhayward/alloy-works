@@ -7,6 +7,7 @@ import {
   createArtifact,
   createAssetUpload,
   createDocument,
+  createDefinition,
   createTemplate,
   createTenant,
   DEFAULT_LAYOUT_ID,
@@ -129,6 +130,8 @@ const OTHER_TENANT_IDS: Readonly<
   createTemplate: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getTemplate: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
   recordTemplateVersion: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
+  getDefinition: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
+  recordDefinitionVersion: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
 };
 
 /**
@@ -145,6 +148,30 @@ const VALID_INPUT: Readonly<
   createDocument: { payload: { title: 'Elsewhere', language: 'en-GB', direction: 'ltr' } },
   createTemplate: { payload: { definition: aTemplate() } },
   recordTemplateVersion: { payload: { openedFrom: SESSION, definition: aTemplate() } },
+  createDefinition: {
+    payload: {
+      kind: 'field',
+      definition: {
+        schemaVersion: 1,
+        name: 'Probe',
+        dataType: 'text',
+        multiplicity: 'one',
+        validation: {},
+      },
+    },
+  },
+  recordDefinitionVersion: {
+    payload: {
+      openedFrom: SESSION,
+      definition: {
+        schemaVersion: 1,
+        name: 'Probe',
+        dataType: 'text',
+        multiplicity: 'one',
+        validation: {},
+      },
+    },
+  },
   createAssetUpload: { payload: { alternative: null } },
   editOutline: {
     payload: {
@@ -247,6 +274,34 @@ const componentIdIn = (tenant: Tenant, db: TenantDatabase) =>
 
 /** A document in environment B's General space, made through the store as the route makes one, so a
  * route that opens one has a real version to find. */
+/** A field of this environment's own, named uniquely: every environment holds the starter type. */
+const definitionIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const manager = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await createDefinition(trx, {
+      kind: 'field',
+      definition: {
+        schemaVersion: 1,
+        name: `Probe ${randomUUID()}`,
+        dataType: 'text',
+        multiplicity: 'one',
+        validation: {},
+      },
+      author: manager.id,
+    });
+    if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
+    return made.definition.id;
+  });
+
 const templateIdIn = (tenant: Tenant, db: TenantDatabase) =>
   db.withTenant(tenant, async (trx) => {
     const general = await trx

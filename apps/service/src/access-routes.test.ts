@@ -21,6 +21,7 @@ import {
   recordAsset,
   recordPublication,
   requestPublication,
+  STARTER_COMPONENT_TYPE_ID,
   type NewGrant,
   type Tenant,
   type TenantDatabase,
@@ -645,6 +646,37 @@ describe('routes that check a permission', () => {
       payload: { definition: aTemplate() },
     }),
     getTemplate: () => ({ url: `/v1/templates/${plan}`, status: 404 }),
+    listDefinitions: () => ({ url: '/v1/definitions', status: 403 }),
+    createDefinition: () => ({
+      url: '/v1/definitions',
+      status: 403,
+      payload: {
+        kind: 'field',
+        definition: {
+          schemaVersion: 1,
+          name: 'Probe',
+          dataType: 'text',
+          multiplicity: 'one',
+          validation: {},
+        },
+      },
+    }),
+    // The starter component type every environment holds: a definition this principal may not read.
+    getDefinition: () => ({ url: `/v1/definitions/${STARTER_COMPONENT_TYPE_ID}`, status: 404 }),
+    recordDefinitionVersion: () => ({
+      url: `/v1/definitions/${STARTER_COMPONENT_TYPE_ID}/versions`,
+      status: 404,
+      payload: {
+        openedFrom: MISSING,
+        definition: {
+          schemaVersion: 1,
+          name: 'Probe',
+          dataType: 'text',
+          multiplicity: 'one',
+          validation: {},
+        },
+      },
+    }),
     recordTemplateVersion: () => ({
       url: `/v1/templates/${plan}/versions`,
       status: 404,
