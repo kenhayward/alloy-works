@@ -210,10 +210,14 @@ export async function placesOf(trx: TenantTransaction): Promise<readonly SchemaP
 
 /**
  * Serialises every write of a definition in this tenant, so the name check and the name's row are one
- * act: the unique index holds the rule, and this keeps a race from reaching it as an exception.
+ * act: the unique index holds the rule, and this keeps a race from reaching it as an exception. An
+ * advisory lock is the cluster's, and every tenant is a schema of one database, so the key carries the
+ * tenant's schema: two tenants never wait on each other.
  */
 async function holdDefinitions(trx: TenantTransaction): Promise<void> {
-  await sql`select pg_advisory_xact_lock(hashtext('definition_name'))`.execute(trx);
+  await sql`select pg_advisory_xact_lock(hashtext(current_schema() || ':definition_name'))`.execute(
+    trx,
+  );
 }
 
 /** The definition holding a name of this kind, other than `self`, or undefined. */

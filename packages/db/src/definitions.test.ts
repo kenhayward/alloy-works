@@ -265,6 +265,44 @@ describe('definitions through the service', () => {
     });
   });
 
+  it('serialises definition writes within one environment, and never across two', async () => {
+    const other = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Staging' },
+      hostnames: ['staging.acme.alloy.test'],
+    });
+    const grace = await service.withTenant(other, async (trx) =>
+      trx
+        .insertInto('principal')
+        .values({ issuer: ISSUER, subject: 'grace', email: null, display_name: 'Grace' })
+        .returning('id')
+        .executeTakeFirstOrThrow()
+        .then((row) => row.id),
+    );
+    // A write in Production that holds its transaction open.
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    let taken!: () => void;
+    const holding = new Promise<void>((resolve) => (taken = resolve));
+    const first = run(async (trx) => {
+      await createDefinition(trx, { kind: 'field', definition: field('Held open'), author: ada });
+      taken();
+      await held;
+    });
+    await holding;
+    // A write in Staging meanwhile is not held behind it.
+    const second = service.withTenant(other, (trx) =>
+      createDefinition(trx, { kind: 'field', definition: field('Elsewhere'), author: grace }),
+    );
+    const outcome = await Promise.race([
+      second.then((answer) => answer.answer),
+      new Promise((resolve) => setTimeout(() => resolve('blocked'), 3000)),
+    ]);
+    release();
+    await Promise.all([first, second]);
+    expect(outcome).toBe('created');
+  });
+
   it('lists every definition at its latest version, and lets the runtime role rename but never unname one', async () => {
     const listed = await run((trx) => listDefinitions(trx));
     expect(listed.find((each) => each.name === 'Topic')).toMatchObject({ kind: 'componentType' });
