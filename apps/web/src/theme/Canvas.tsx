@@ -6,6 +6,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
+import { useStyledImages } from './images.js';
 import { usePresentation, useZoom, ZOOMS, type Zoom } from './presentation.js';
 
 /** Points to CSS pixels: a CSS inch is 96 pixels and 72 points. */
@@ -89,6 +90,7 @@ const surfaceRoom = (canvas: HTMLElement) => {
  */
 export function Canvas({ children }: { children: ReactNode }) {
   const { ref, className, style } = useCanvas(surfaceRoom);
+  useStyledImages(ref);
   return (
     <div ref={ref} className={className} style={style}>
       {children}

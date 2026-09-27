@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.96.0 - 2026-09-27 (PR #282)
+
+### Added
+
+- **Tables and images as they will print.** In the editor, a table is ruled, filled, banded and padded
+  as its table style says, and a figure or an image in a line of text is the size its image style gives
+  it, worked out from the image's own pixels the same way a publication works it out. A document's page
+  shows its text the same way before you open it.
+
 ## 0.95.0 - 2026-09-27 (PR #281)
 
 ### Added

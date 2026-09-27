@@ -60,6 +60,14 @@ const CANVAS_CSS =
   '.aw-canvas .aw-text, .aw-canvas.aw-text { box-sizing: content-box; ' +
   'width: calc(var(--aw-measure) * var(--aw-zoom)); max-width: none; }\n';
 
+/** An asset version's own size, in pixels as it is displayed: what an image style resolves from. */
+export interface Pixels {
+  readonly width: number;
+  readonly height: number;
+}
+
+const PixelsContext = createContext<((asset: string) => Promise<Pixels | null>) | null>(null);
+
 const ZoomContext = createContext<{ zoom: Zoom; setZoom: (zoom: Zoom) => void } | null>(null);
 
 /**
@@ -89,6 +97,22 @@ export function PresentationProvider({
     }
   }, []);
   const zooming = useMemo(() => ({ zoom, setZoom }), [zoom, setZoom]);
+  // Each asset version's pixels, asked for once for everything this provider sets.
+  const pixelsOf = useMemo(() => {
+    const asked = new Map<string, Promise<Pixels | null>>();
+    return (asset: string) => {
+      const known = asked.get(asset);
+      if (known) return known;
+      const answer = client
+        .GET('/v1/asset-versions/{id}', { params: { path: { id: asset } } })
+        .then(
+          ({ data }) => (data ? { width: data.width, height: data.height } : null),
+          () => null,
+        );
+      asked.set(asset, answer);
+      return answer;
+    };
+  }, [client]);
 
   useEffect(() => {
     let live = true;
@@ -135,8 +159,10 @@ export function PresentationProvider({
   return (
     <PresentationContext.Provider value={presentation}>
       <ZoomContext.Provider value={zooming}>
-        {faces !== '' && <style data-aw-faces="">{faces}</style>}
-        {children}
+        <PixelsContext.Provider value={pixelsOf}>
+          {faces !== '' && <style data-aw-faces="">{faces}</style>}
+          {children}
+        </PixelsContext.Provider>
       </ZoomContext.Provider>
     </PresentationContext.Provider>
   );
@@ -150,4 +176,9 @@ export function usePresentation(): Presentation | null {
 /** The zoom a page's text is set at, and how a reader changes it; null outside any provider. */
 export function useZoom(): { zoom: Zoom; setZoom: (zoom: Zoom) => void } | null {
   return useContext(ZoomContext);
+}
+
+/** How an asset version's pixels are asked for, once each; null outside any provider. */
+export function usePixels(): ((asset: string) => Promise<Pixels | null>) | null {
+  return useContext(PixelsContext);
 }

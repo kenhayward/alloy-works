@@ -1223,7 +1223,11 @@ a narrower column scrolling sideways. The editor's markup carries the hooks thos
 paragraph's stored style as `data-style`, the place it stands in as `data-place` - by a decoration on
 the surface and by `drawPlaces` on the read text, both from `paragraphPlaces`, the nearest list item,
 quotation or cell - what the template sets by role as `data-role`, and each mark as `aw-mark-<mark>`.
-`Canvas` wraps the editing surface and `useCanvas` makes each read-text block its own canvas, so the
+A table's style is `data-table-style` on its figure and an image's `data-image-style`, and
+`projectCss` draws each table style's rules, fills, banding and padding from them (W8.3); an image is
+sized by `useStyledImages` (`apps/web/src/theme/images.ts`), which sets each at `styledSize`'s width
+from its asset version's pixels, asked once by the provider. `Canvas` wraps the editing surface and
+`useCanvas` makes each read-text block its own canvas, so the
 controls around the text keep the application's colours; both are the same element whether or not the
 theme has arrived, so ProseMirror's host is never remounted. The zoom - 50 to 200 per cent, or Fit -
 is the provider's, kept in `localStorage`; `ZoomControl` sets it on the component page and the
@@ -1239,6 +1243,7 @@ document's.
 | `domain: src/theme/css.ts`        | `projectCss`: every property but the pagination-bound           |
 | `editor: src/places.ts`           | `paragraphPlaces`, its decorations and `drawPlaces`             |
 | `web: src/theme/Canvas.tsx`       | `Canvas`, `useCanvas` and `ZoomControl`                         |
+| `web: src/theme/images.ts`        | `sizeImages` and `useStyledImages`: images at their styled size |
 
 ## One renderer, two deliveries
 

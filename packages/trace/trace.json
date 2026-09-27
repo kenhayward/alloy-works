@@ -17305,6 +17305,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-122",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 5411,
+      "kind": "title"
+    },
+    {
       "id": "CNT-147",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
       "line": 2226,

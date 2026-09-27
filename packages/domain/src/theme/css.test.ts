@@ -205,3 +205,104 @@ describe('projectCss', () => {
     );
   });
 });
+
+describe('projectCss for tables and images (W8.3)', () => {
+  /** A table style that states every property at something the default does not. */
+  function ruledAndBanded() {
+    const inputs = defaultInputs();
+    inputs.catalogues.table.styles.push({
+      id: 'banded',
+      name: 'Banded',
+      appliesTo: ['table'],
+      headerRow: { fill: '#dddddd', bold: true, rule: { width: 1.5, colour: '#333333' } },
+      headerColumn: { fill: '#eeeeee', bold: true, rule: { width: 0.75, colour: '#444444' } },
+      banding: { fill: '#f5f5f5' },
+      rules: {
+        outer: { width: 2, colour: '#111111' },
+        horizontal: { width: 0.5, colour: '#222222' },
+        vertical: 'none',
+      },
+      padding: 4,
+      breaks: { repeatHeader: true, keepRowsWhole: true, continuationLabel: false },
+    });
+    return projectCss(resolved(inputs));
+  }
+  const at = '.aw-canvas.aw-canvas [data-table-style="banded"]';
+  const z = (points: string) => `calc(${points}pt * var(--aw-zoom))`;
+
+  it("draws a table's rules, its cells' padding and its outer frame from its table style", () => {
+    const text = ruledAndBanded();
+    expect(ruleFor(text, `${at} table`)).toBe(
+      `border-collapse: collapse; border: ${z('2')} solid #111111`,
+    );
+    const cells = ruleFor(text, `${at} td`);
+    expect(cells).toContain(`padding: ${z('4')}`);
+    expect(cells).toContain(`border-block: ${z('0.5')} solid #222222`);
+    expect(cells).toContain('border-inline: none');
+    // The frame is the outer rule on every side, over the inside rules at the table's edges.
+    expect(ruleFor(text, `${at} tr:first-child > *`)).toBe(
+      `border-block-start: ${z('2')} solid #111111`,
+    );
+    expect(ruleFor(text, `${at} tr > :last-child`)).toBe(
+      `border-inline-end: ${z('2')} solid #111111`,
+    );
+  });
+
+  it('fills and embolds a header row and a header column, and rules them off from the body', () => {
+    const text = ruledAndBanded();
+    expect(ruleFor(text, `${at} [scope="col"]`)).toBe('background-color: #dddddd');
+    expect(ruleFor(text, `${at} [scope="row"]`)).toBe('background-color: #eeeeee');
+    // Bold over whatever the cell's paragraph style says, as the template sets it on the text.
+    expect(ruleFor(text, `${at} [scope="col"] [data-style]`)).toBe('font-weight: 700');
+    expect(ruleFor(text, `${at} tr:has(> [scope="col"]):not(:has(+ tr > [scope="col"])) > *`)).toBe(
+      `border-block-end: ${z('1.5')} solid #333333`,
+    );
+    expect(ruleFor(text, `${at} [scope="row"]:not(:has(+ [scope="row"]))`)).toBe(
+      `border-inline-end: ${z('0.75')} solid #444444`,
+    );
+    // And from the other side too: two cells either side of a line both state it, so the browser's
+    // choice between two collapsed borders - the wider wins - never takes the body's rule over the
+    // header's, as each cell drawing its own lines in the template never does.
+    expect(ruleFor(text, `${at} tr:has(> [scope="col"]) + tr:not(:has(> [scope="col"])) > *`)).toBe(
+      `border-block-start: ${z('1.5')} solid #333333`,
+    );
+    expect(ruleFor(text, `${at} [scope="row"]:not(:has(+ [scope="row"])) + *`)).toBe(
+      `border-inline-start: ${z('0.75')} solid #444444`,
+    );
+  });
+
+  it('bands every other body row from the first, and leaves a filled header column its own fill', () => {
+    expect(
+      ruleFor(
+        ruledAndBanded(),
+        `${at} tr:nth-child(odd of :not(:has(> [scope="col"]))) > :not([scope="row"])`,
+      ),
+    ).toBe('background-color: #f5f5f5');
+  });
+
+  it('leaves the default table as template 12 set it: every rule black at 1pt, cells 5pt, no fills', () => {
+    const table = '.aw-canvas.aw-canvas [data-table-style="table"]';
+    expect(ruleFor(css, `${table} td`)).toContain(
+      'border-block: calc(1pt * var(--aw-zoom)) solid #000000',
+    );
+    expect(ruleFor(css, `${table} [scope="col"]`)).toBe('background-color: transparent');
+    expect(css).not.toContain(`${table} tr:nth-child`);
+    expect(css).not.toContain(`${table} [scope="col"] [data-style]`);
+  });
+
+  it("aligns a figure within its band by its image style, and leaves an image's size to its style's resolution", () => {
+    expect(ruleFor(css, '.aw-canvas.aw-canvas [data-image-style="figure"] .aw-figure-image')).toBe(
+      'text-align: center',
+    );
+    // Its size is `styledSize`'s, set on the image by the editor: no fixed size of the stylesheet's
+    // stands in its way.
+    expect(
+      ruleFor(
+        css,
+        '.aw-canvas.aw-canvas [data-image-style] img, .aw-canvas.aw-canvas img[data-image-style]'.split(
+          ', ',
+        )[0]!,
+      ),
+    ).toBe('max-height: none; height: auto');
+  });
+});
