@@ -13,7 +13,7 @@ export type PeopleList = z.infer<typeof PeopleList>;
 
 /**
  * The environment's people, for a `user` field's picker (definitions.md, DE-J): everybody who has signed
- * in, a page at a time by when each first signed in, to anybody signed in. `GET /v1/principals` stays the administrators',
+ * in, a page at a time by when each first appeared - invited or signed in - to anybody signed in. `GET /v1/principals` stays the administrators',
  * since it also lists who was invited and has not come.
  */
 export const peopleRoutes = {
@@ -27,7 +27,7 @@ export const peopleRoutes = {
     query: PeopleQuery,
     responses: {
       200: {
-        description: 'A page of the people, by when each first signed in',
+        description: 'A page of the people, by when each first appeared, invited or signed in',
         schema: PeopleList,
       },
       400: {

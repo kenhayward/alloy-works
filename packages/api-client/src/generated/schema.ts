@@ -6853,7 +6853,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description A page of the people, by when each first signed in */
+            /** @description A page of the people, by when each first appeared, invited or signed in */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -340,7 +340,7 @@ export function ComponentEditor({
   useEffect(() => {
     if (!wantsPeople) return;
     let current = true;
-    // Every page, then by name: the listing gives people in the order each first signed in.
+    // Every page, then by name: the listing gives people in the order each first appeared.
     everyPage((cursor) =>
       client.GET('/v1/people', {
         params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
