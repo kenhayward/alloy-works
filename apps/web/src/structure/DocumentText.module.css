@@ -30,17 +30,55 @@
   font-variant-numeric: tabular-nums;
 }
 
-.card {
-  padding: var(--space-10) var(--space-14);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-8);
-  background: var(--surface);
+/*
+ * A component in the document's one scroll (document-view.md, "One scroll" and "Boundaries"; CNT-072,
+ * CNT-073): its heading and its text, with no chrome of its own. Its edges and its label - what it is,
+ * whether the reader may edit it and who holds it, and Open - show while the pointer or the focus is
+ * in it, for every component under Show boundaries, and round the one open in an editor. The label is
+ * transparent rather than removed, so a screen reader and the keyboard reach it where the eye does not,
+ * and it stands over the component's top edge so that showing it moves no text.
+ */
+.component {
+  position: relative;
 }
 
-.card .heading {
-  margin: 0;
-  font-size: var(--size-body);
+.component:hover,
+.component:focus-within,
+.text[data-boundaries='shown'] .component,
+.component[data-editing='true'] {
+  outline: 1px solid var(--border);
+  outline-offset: var(--space-6);
+}
+
+.label {
+  position: absolute;
+  bottom: calc(100% + var(--space-6));
+  left: calc(-1 * var(--space-6));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4) var(--space-10);
+  opacity: 0;
+  pointer-events: none;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: var(--size-body-small);
+}
+
+.component:hover > .label,
+.component:focus-within > .label,
+.text[data-boundaries='shown'] .label {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.labelName {
+  color: var(--text);
   font-weight: 600;
+}
+
+.label .state {
+  margin: 0;
 }
 
 .open {
@@ -57,30 +95,8 @@
   text-decoration: none;
 }
 
-/* Being edited, the card is the editor's own box, which carries the ring that says so. */
-.card[data-editing='true'] {
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-.cardHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-12);
-}
-
-.actions {
-  display: inline-flex;
-  flex-shrink: 0;
-  gap: var(--space-6);
-}
-
 .body {
-  margin-top: var(--space-10);
-  padding-top: var(--space-10);
-  border-top: 1px solid var(--border);
+  margin-top: var(--space-6);
   line-height: 1.6;
 }
 

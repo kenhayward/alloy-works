@@ -1229,8 +1229,9 @@ A table's style is `data-table-style` on its figure and an image's `data-image-s
 `projectCss` draws each table style's rules, fills, banding and padding from them (W8.3); an image is
 sized by `useStyledImages` (`apps/web/src/theme/images.ts`), which sets each at `styledSize`'s width
 from its asset version's pixels, asked once by the provider. `Canvas` wraps the editing surface and
-`useCanvas` makes each read-text block its own canvas, so the
-controls around the text keep the application's colours; both are the same element whether or not the
+`useCanvas` makes a document's text column one canvas (W9.1, [document-view.md](design/document-view.md)),
+its headings in the theme's heading roles and no card round a component, whose edges and label show on
+hover, on focus and under **Show boundaries**; both are the same element whether or not the
 theme has arrived, so ProseMirror's host is never remounted. The zoom - 50 to 200 per cent, or Fit -
 is the provider's, kept in `localStorage`; `ZoomControl` sets it on the component page and the
 document's. The component page is set in the environment's presentation and a document's page in the
