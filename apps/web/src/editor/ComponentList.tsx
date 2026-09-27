@@ -2,6 +2,13 @@ import type { ComponentList as Page, createApiClient } from '@alloy-works/api-cl
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ListLayout } from '../layouts/ListLayout.js';
+import {
+  Facet,
+  SortChooser,
+  toggled,
+  type FacetValue,
+  type SortOption,
+} from '../listing/Listing.js';
 import { useCreatableSpaces } from '../spaces.js';
 import { Modal } from '../layouts/Modal.js';
 import { Empty } from '../states/Empty.js';
@@ -22,6 +29,13 @@ export interface ComponentListProps {
 type Item = Page['items'][number];
 type SpaceCount = Page['spaces'][number];
 
+const SORTS: readonly SortOption[] = [
+  { sort: 'title', order: 'asc', label: 'Title, A to Z' },
+  { sort: 'title', order: 'desc', label: 'Title, Z to A' },
+  { sort: 'changed', order: 'desc', label: 'Newest changed first' },
+  { sort: 'changed', order: 'asc', label: 'Oldest changed first' },
+];
+
 /**
  * The components the signed-in person may read, in layout A: the spaces to filter by, each with how
  * many it holds, then a row per component, a page at a time. Signed out, there is nothing to list,
@@ -33,6 +47,9 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   const [total, setTotal] = useState(0);
   const [spaces, setSpaces] = useState<readonly SpaceCount[]>([]);
   const [chosen, setChosen] = useState<readonly string[]>([]);
+  const [sort, setSort] = useState<SortOption>(SORTS[0]!);
+  const [typesChosen, setTypesChosen] = useState<readonly string[]>([]);
+  const [typeFacet, setTypeFacet] = useState<readonly FacetValue[]>([]);
   const [creating, setCreating] = useState(false);
   const creatable = useCreatableSpaces(client);
   const [notice, setNotice] = useState<string | null>(null);
@@ -54,8 +71,11 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
       setLoading(true);
       try {
         const query = {
+          sort: sort.sort as 'title',
+          order: sort.order,
           ...(cursor === null ? {} : { cursor }),
           ...(chosen.length === 0 ? {} : { spaces: chosen.join(',') }),
+          ...(typesChosen.length === 0 ? {} : { types: typesChosen.join(',') }),
         };
         const { data } = await client.GET('/v1/components', { params: { query } });
         if (generation !== asking.current) return;
@@ -68,6 +88,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
         setNext(data.next);
         setTotal(data.total);
         setSpaces(data.spaces);
+        setTypeFacet(data.facets?.types ?? []);
       } catch {
         if (generation === asking.current) setFailed(cursor);
       } finally {
@@ -77,7 +98,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
         }
       }
     },
-    [client, chosen],
+    [client, chosen, sort, typesChosen],
   );
 
   useEffect(() => {
@@ -112,8 +133,15 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
     <>
       <div className={styles['filterHead']}>
         <span className={styles['overline']}>Filter</span>
-        {chosen.length > 0 && (
-          <button type="button" className={styles['clear']} onClick={() => setChosen([])}>
+        {(chosen.length > 0 || typesChosen.length > 0) && (
+          <button
+            type="button"
+            className={styles['clear']}
+            onClick={() => {
+              setChosen([]);
+              setTypesChosen([]);
+            }}
+          >
             Clear
           </button>
         )}
@@ -132,6 +160,12 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
           </label>
         ))}
       </fieldset>
+      <Facet
+        legend="Type"
+        values={typeFacet}
+        chosen={typesChosen}
+        onToggle={(value) => setTypesChosen((held) => toggled(held, value))}
+      />
     </>
   );
 
@@ -160,6 +194,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
             />
           </Modal>
         )}
+        <SortChooser options={SORTS} chosen={sort} onChoose={setSort} />
         <p className={styles['summary']}>
           {`${total} ${total === 1 ? 'component' : 'components'} you may read. Showing 1 to ${items.length}.`}
           {named.length > 0 && (

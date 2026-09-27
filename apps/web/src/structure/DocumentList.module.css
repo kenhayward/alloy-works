@@ -136,3 +136,12 @@
 .number {
   text-align: end;
 }
+
+/* The sort a listing is in (SCH-064), above its rows. */
+.sort {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0 0 var(--space-10);
+  font-size: var(--size-label);
+}

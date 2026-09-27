@@ -11,6 +11,7 @@ import { SearchPage } from '../search/SearchPage.js';
 import { DocumentList } from '../structure/DocumentList.js';
 import { DocumentPage } from '../structure/DocumentPage.js';
 import { documentAddress, documentLink } from '../structure/links.js';
+import { TemplateList } from '../structure/TemplateList.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { ComponentList } from './ComponentList.js';
 import { SpacePane } from './SpacePane.js';
@@ -30,7 +31,8 @@ function Places() {
   return (
     <nav aria-label="Workspace">
       <a href="#/components">Components</a> <a href="#/documents">Documents</a>{' '}
-      <a href="#/publications">Publications</a> <a href="#/search">Search</a>
+      <a href="#/publications">Publications</a> <a href="#/templates">Templates</a>{' '}
+      <a href="#/search">Search</a>
     </nav>
   );
 }
@@ -215,6 +217,14 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             window.location.hash = searchLink(query);
           }}
         />
+      </>
+    );
+  }
+  if (hash === '#/templates') {
+    return (
+      <>
+        <Places />
+        <TemplateList client={client} />
       </>
     );
   }

@@ -13,7 +13,6 @@ import {
   latestVersion,
   listPeople,
   listComponentTypes,
-  countReadableComponents,
   listReadableComponents,
   listSpacesFor,
   readLock,
@@ -212,19 +211,14 @@ export function componentHandlers(
       const asked = pageAsked('components', query);
       const principal = principalOf(request).principalId;
       const spaces = query.spaces?.split(',');
-      const [page, counts] = await db.withTenant(tenantOf(request), async (trx) => {
-        const listed = await listReadableComponents(
-          trx,
-          principal,
-          asked,
-          spaces === undefined ? {} : { spaces },
-        );
-        // Counted as of the walk's snapshot, so the total is what its pages can show.
-        return [listed, listed && (await countReadableComponents(trx, principal, listed.snapshot))];
-      });
-      if (!page || !counts) throw new Error('A signed-in principal is not in its own tenant');
-      const counted =
-        spaces === undefined ? counts : counts.filter((one) => spaces.includes(one.id));
+      const types = query.types?.split(',');
+      const page = await db.withTenant(tenantOf(request), (trx) =>
+        listReadableComponents(trx, principal, asked, {
+          ...(spaces === undefined ? {} : { spaces }),
+          ...(types === undefined ? {} : { types }),
+        }),
+      );
+      if (!page) throw new Error('A signed-in principal is not in its own tenant');
       return {
         items: page.items.map((item) => ({
           id: item.id,
@@ -237,8 +231,21 @@ export function componentHandlers(
           changedBy: item.changedBy,
         })),
         next: cursorFor('components', asked.sort, asked.order, page.snapshot, page.next),
-        total: counted.reduce((sum, one) => sum + one.count, 0),
-        spaces: counts.map((one) => ({ id: one.id, name: one.name, count: one.count })),
+        total: page.total,
+        // The space facet as the listing first answered it, kept beside `facets` (API-012).
+        spaces: page.facets.spaces.map((one) => ({
+          id: one.value,
+          name: one.label,
+          count: one.count,
+        })),
+        facets: {
+          spaces: page.facets.spaces.map(
+            (each: { value: string; label: string; count: number }) => ({ ...each }),
+          ),
+          types: page.facets.types.map((each: { value: string; label: string; count: number }) => ({
+            ...each,
+          })),
+        },
       };
     },
 

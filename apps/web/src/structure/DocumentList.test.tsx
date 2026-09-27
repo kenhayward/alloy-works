@@ -38,13 +38,38 @@ function listed() {
       return json(200, { items: [{ id: GENERAL, name: 'General', mayCreate: true }], next: null });
     }
     if (url.pathname !== '/v1/documents') return json(404, {});
+    // Filtered and counted as the service does: each facet with the other filter in force.
+    const spaces = url.searchParams.get('spaces')?.split(',');
+    const states = url.searchParams.get('publishing')?.split(',');
+    const all = [
+      row(MANUAL, 'Operator manual', GENERAL, 'changedSince'),
+      row(WORKBOOK, 'Training workbook', TRAINING, 'neverPublished'),
+      row(PACK, 'Commissioning pack', GENERAL, 'published'),
+    ];
+    const inSpace = (each: (typeof all)[number]) => !spaces || spaces.includes(each.space.id);
+    const inState = (each: (typeof all)[number]) => !states || states.includes(each.publishing);
+    const count = <K extends string>(
+      rows: typeof all,
+      key: (each: (typeof all)[number]) => [K, string],
+    ) => [
+      ...rows
+        .reduce((held, each) => {
+          const [value, label] = key(each);
+          const known = held.get(value);
+          held.set(value, { value, label, count: (known?.count ?? 0) + 1 });
+          return held;
+        }, new Map<string, { value: string; label: string; count: number }>())
+        .values(),
+    ];
+    const shown = all.filter((each) => inSpace(each) && inState(each));
     return json(200, {
-      items: [
-        row(MANUAL, 'Operator manual', GENERAL, 'changedSince'),
-        row(WORKBOOK, 'Training workbook', TRAINING, 'neverPublished'),
-        row(PACK, 'Commissioning pack', GENERAL, 'published'),
-      ],
+      items: shown,
       next: null,
+      total: shown.length,
+      facets: {
+        spaces: count(all.filter(inState), (each) => [each.space.id, each.space.name]),
+        publishing: count(all.filter(inSpace), (each) => [each.publishing, each.publishing]),
+      },
     });
   }) as unknown as typeof fetch;
   return createApiClient({ baseUrl: 'http://documents.test', fetch: fetching });
@@ -76,7 +101,7 @@ describe('the documents list', () => {
     render(<DocumentList client={listed()} onOpen={vi.fn()} />);
     await screen.findByRole('link', { name: 'Operator manual' });
 
-    // Counted from the documents listed.
+    // Counted by the service, each with the other filter in force.
     expect(screen.getByRole('checkbox', { name: /^General\s*2$/ })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /^Never published\s*1$/ })).toBeInTheDocument();
 
@@ -87,7 +112,7 @@ describe('the documents list', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: /^Published\s*1$/ }));
     expect(screen.queryByRole('link', { name: 'Operator manual' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Commissioning pack' })).toBeInTheDocument();
-    expect(screen.getByText(/Showing 1 of 3/)).toBeInTheDocument();
+    expect(screen.getByText('1 document matches the filter.')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(screen.getByRole('link', { name: 'Training workbook' })).toBeInTheDocument();

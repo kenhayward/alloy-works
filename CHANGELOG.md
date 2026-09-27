@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.92.0 - 2026-09-27 (PR #277)
+
+### Added
+
+- **Sort and filter every list.** Components, documents and publications can be sorted - by title or
+  when they changed, publications by when they were published - and filtered: components by space and
+  component type, documents by space and publishing state, publications by document and space. Each
+  filter says how many it would leave, counted by the service, and Show more fetches the next page.
+- **Templates has a list of its own**, beside Components, Documents and Publications, each template with
+  its space, version and when it changed, sorted and filtered by space.
+
 ## 0.91.0 - 2026-09-27 (PR #276)
 
 ### Added

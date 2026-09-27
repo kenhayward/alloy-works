@@ -31,19 +31,32 @@ const publication = (
 function listed() {
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
-    if (new URL(request.url).pathname !== '/v1/publications') return json(404, {});
+    const url = new URL(request.url);
+    if (url.pathname !== '/v1/publications') return json(404, {});
+    // Filtered and counted as the service does.
+    const documents = url.searchParams.get('documents')?.split(',');
+    const all = [
+      publication('ffffffff-0000-4000-8000-000000000003', MANUAL, 'Operator manual', '1.9', [
+        'pdf',
+        'docx',
+      ]),
+      publication('ffffffff-0000-4000-8000-000000000002', GUIDE, 'Installation guide', '2.0', [
+        'docx',
+      ]),
+      publication('ffffffff-0000-4000-8000-000000000001', MANUAL, 'Operator manual', '1.8'),
+    ];
+    const shown = all.filter((each) => !documents || documents.includes(each.document));
     return json(200, {
-      items: [
-        publication('ffffffff-0000-4000-8000-000000000003', MANUAL, 'Operator manual', '1.9', [
-          'pdf',
-          'docx',
-        ]),
-        publication('ffffffff-0000-4000-8000-000000000002', GUIDE, 'Installation guide', '2.0', [
-          'docx',
-        ]),
-        publication('ffffffff-0000-4000-8000-000000000001', MANUAL, 'Operator manual', '1.8'),
-      ],
+      items: shown,
       next: null,
+      total: shown.length,
+      facets: {
+        spaces: [],
+        documents: [
+          { value: MANUAL, label: 'Operator manual', count: 2 },
+          { value: GUIDE, label: 'Installation guide', count: 1 },
+        ],
+      },
     });
   }) as unknown as typeof fetch;
   return createApiClient({ baseUrl: 'http://publications.test', fetch: fetching });

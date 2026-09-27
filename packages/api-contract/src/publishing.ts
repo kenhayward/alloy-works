@@ -1,6 +1,6 @@
 import { outputReportSchema, publishFailureCodes } from '@alloy-works/domain';
 import { z } from 'zod';
-import { listingQuery, nextCursor } from './listing.js';
+import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
 import type { RouteContract } from './contract.js';
 import { VersionSummary } from './components.js';
 import { DocumentParams } from './documents.js';
@@ -105,9 +105,22 @@ export const PublicationSummary = z.object({
 });
 export type PublicationSummary = z.infer<typeof PublicationSummary>;
 
-export const PublicationList = z.object({ items: z.array(PublicationSummary), next: nextCursor });
+export const PublicationList = z.object({
+  items: z.array(PublicationSummary),
+  next: nextCursor,
+  total: listingTotal,
+  facets: z
+    .object({ spaces: z.array(FacetCountView), documents: z.array(FacetCountView) })
+    .describe(
+      'Each filter the listing takes, counted with the others in force and its own left out',
+    ),
+});
 
-export const PublicationListQuery = z.object(listingQuery(['published', 'title'], 'published'));
+export const PublicationListQuery = z.object({
+  ...listingQuery(['published', 'title'], 'published'),
+  spaces: idsFilter.optional().describe('Only publications in these spaces, by id'),
+  documents: idsFilter.optional().describe('Only publications of these documents, by id'),
+});
 export type PublicationListQuery = z.infer<typeof PublicationListQuery>;
 export type PublicationList = z.infer<typeof PublicationList>;
 

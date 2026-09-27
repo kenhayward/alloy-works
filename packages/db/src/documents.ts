@@ -22,15 +22,18 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
-import { readableArtifacts } from './readable-artifacts.js';
+import { readableArtifacts, readableArtifactsAs } from './readable-artifacts.js';
 import {
   checkedLimit,
+  countOf,
+  facetOf,
   isListingRequest,
   keysetPage,
   listingSorts,
   snapshotFor,
   sortColumns,
   visibleIn,
+  type FacetCount,
   type Listed,
   type ListingRequest,
   type SortOf,
@@ -220,18 +223,35 @@ export async function readDocument(
   return { id, space, version };
 }
 
+/** Narrowing the documents listing: to these spaces, and these publishing states (SCH-064). */
+export interface DocumentFilter {
+  readonly spaces?: readonly string[];
+  readonly publishing?: readonly PublishingState[];
+}
+
 /**
  * The documents a principal may read, a page at a time by keyset over the sort asked for and then the
  * id, as of the snapshot the walk's first page took (API-007, SCH-022), filtered by the readable set
- * inside the query (access.md, "The readable set"), the predicate `listReadableComponents` uses. Each
- * says whether it is published as of that snapshot too, so a walk's pages agree. Undefined when the
- * tenant holds no such principal.
+ * inside the query (access.md, "The readable set"), the predicate `listReadableComponents` uses, and by
+ * space and publishing state, each a facet counted without its own (SCH-064). Whether each is published
+ * is read from the latest publication of it the reader may read, as of that snapshot too, so a walk's
+ * pages agree. Undefined when the tenant holds no such principal.
  */
 export async function listReadableDocuments(
   trx: TenantTransaction,
   principalId: string,
   request: ListingRequest<SortOf<'documents'>> = { limit: 100 },
-): Promise<Listed<DocumentSummary> | undefined> {
+  filter: DocumentFilter = {},
+): Promise<
+  | (Listed<DocumentSummary> & {
+      readonly total: number;
+      readonly facets: {
+        readonly spaces: readonly FacetCount[];
+        readonly publishing: readonly FacetCount[];
+      };
+    })
+  | undefined
+> {
   const limit = checkedLimit(request.limit);
   const sort = request.sort ?? 'title';
   const { types, order: byDefault } = listingSorts.documents[sort];
@@ -242,41 +262,73 @@ export async function listReadableDocuments(
   if (!readable) return undefined;
   const snapshot = await snapshotFor(trx, request.snapshot);
 
-  const inner = trx
-    .selectFrom('artifact as a')
-    .innerJoin('space as s', 's.id', 'a.space_id')
-    .innerJoinLateral(
-      (eb) =>
-        eb
-          .selectFrom('artifact_version as v')
-          .select([
-            'v.id as version_id',
-            'v.revision_no',
-            'v.version_no',
-            'v.created_at',
-            sql<string>`v.content ->> 'title'`.as('title'),
-            // Every node's type, at any depth: the outline holds nothing else with one.
-            sql<number>`jsonb_array_length(jsonb_path_query_array(v.content, 'strict $.**.type ? (@ == "section")'))`.as(
-              'sections',
-            ),
-            sql<number>`jsonb_array_length(jsonb_path_query_array(v.content, 'strict $.**.type ? (@ == "reference")'))`.as(
-              'components',
-            ),
-          ])
-          .whereRef('v.artifact_id', '=', 'a.id')
-          .where(visibleIn('v.written_by', snapshot))
-          .orderBy('v.revision_no', 'desc')
-          .orderBy('v.version_no', 'desc')
-          .limit(1)
-          .as('latest'),
-      (join) => join.onTrue(),
-    )
-    .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.title'])
-    .select(['latest.revision_no', 'latest.version_no', 'latest.version_id', 'latest.created_at'])
-    .select(['latest.sections', 'latest.components'])
-    .select(sortColumns([sort === 'title' ? sql`latest.title` : sql`latest.created_at`]))
-    .where('a.kind', '=', 'document')
-    .where((eb) => readableArtifacts(eb, readable));
+  // The latest version's state against the latest publication the reader may read, as of the snapshot.
+  const publishing = sql<PublishingState>`case
+    when published.document_version_id is null then 'neverPublished'
+    when published.document_version_id = latest.version_id then 'published'
+    else 'changedSince' end`;
+
+  /** The documents the reader may read, as of the snapshot, with every filter but `leaving`. */
+  const base = (leaving?: keyof DocumentFilter) =>
+    trx
+      .selectFrom('artifact as a')
+      .innerJoin('space as s', 's.id', 'a.space_id')
+      .innerJoinLateral(
+        (eb) =>
+          eb
+            .selectFrom('artifact_version as v')
+            .select([
+              'v.id as version_id',
+              'v.revision_no',
+              'v.version_no',
+              'v.created_at',
+              sql<string>`v.content ->> 'title'`.as('title'),
+              // Every node's type, at any depth: the outline holds nothing else with one.
+              sql<number>`jsonb_array_length(jsonb_path_query_array(v.content, 'strict $.**.type ? (@ == "section")'))`.as(
+                'sections',
+              ),
+              sql<number>`jsonb_array_length(jsonb_path_query_array(v.content, 'strict $.**.type ? (@ == "reference")'))`.as(
+                'components',
+              ),
+            ])
+            .whereRef('v.artifact_id', '=', 'a.id')
+            .where(visibleIn('v.written_by', snapshot))
+            .orderBy('v.revision_no', 'desc')
+            .orderBy('v.version_no', 'desc')
+            .limit(1)
+            .as('latest'),
+        (join) => join.onTrue(),
+      )
+      .leftJoinLateral(
+        (eb) =>
+          eb
+            .selectFrom('publication as p')
+            .innerJoin('artifact as pa', 'pa.id', 'p.id')
+            .select('p.document_version_id')
+            .whereRef('p.document_id', '=', 'a.id')
+            .where(readableArtifactsAs('pa', readable))
+            .where(visibleIn('p.written_by', snapshot))
+            .orderBy('p.published_at', 'desc')
+            .orderBy('pa.created_at', 'desc')
+            .limit(1)
+            .as('published'),
+        (join) => join.onTrue(),
+      )
+      .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.title'])
+      .select(['latest.revision_no', 'latest.version_no', 'latest.version_id', 'latest.created_at'])
+      .select(['latest.sections', 'latest.components'])
+      .select(publishing.as('publishing'))
+      .select(sortColumns([sort === 'title' ? sql`latest.title` : sql`latest.created_at`]))
+      .where('a.kind', '=', 'document')
+      .where((eb) => readableArtifacts(eb, readable))
+      .$if(filter.spaces !== undefined && leaving !== 'spaces', (query) =>
+        filter.spaces!.length === 0
+          ? query.where(sql<boolean>`false`)
+          : query.where('a.space_id', 'in', [...filter.spaces!]),
+      )
+      .$if(filter.publishing !== undefined && leaving !== 'publishing', (query) =>
+        query.where(sql<boolean>`${publishing} = any(${[...filter.publishing!]}::text[])`),
+      );
   const { rows, next } = await keysetPage<{
     id: string;
     title: string;
@@ -288,56 +340,28 @@ export async function listReadableDocuments(
     created_at: Date;
     sections: number;
     components: number;
-  }>(trx, inner, types, request.order ?? byDefault, limit, request.after);
-
-  // The latest publication the reader may read of each, by the one readable-set predicate and as of
-  // the walk's snapshot: which version it was made from is all the state needs.
-  const published =
-    rows.length === 0
-      ? []
-      : await trx
-          .selectFrom('publication as p')
-          .innerJoin('artifact as a', 'a.id', 'p.id')
-          .select(['p.document_id', 'p.document_version_id'])
-          .where(
-            'p.document_id',
-            'in',
-            rows.map((row) => row.id),
-          )
-          .where((eb) => readableArtifacts(eb, readable))
-          .where(visibleIn('p.written_by', snapshot))
-          .orderBy('p.published_at', 'desc')
-          .orderBy('a.created_at', 'desc')
-          .execute();
-  const latestPublished = new Map<string, string>();
-  for (const row of published) {
-    if (!latestPublished.has(row.document_id)) {
-      latestPublished.set(row.document_id, row.document_version_id);
-    }
-  }
+    publishing: PublishingState;
+  }>(trx, base(), types, request.order ?? byDefault, limit, request.after);
 
   return {
-    items: rows.map((row) => {
-      const from = latestPublished.get(row.id);
-      return {
-        id: row.id,
-        title: row.title,
-        space: { id: row.space_id, name: row.space_name },
-        revision: row.revision_no,
-        version: row.version_no,
-        changedAt: new Date(row.created_at),
-        sections: Number(row.sections),
-        components: Number(row.components),
-        publishing:
-          from === undefined
-            ? 'neverPublished'
-            : from === row.version_id
-              ? 'published'
-              : 'changedSince',
-      };
-    }),
+    items: rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      space: { id: row.space_id, name: row.space_name },
+      revision: row.revision_no,
+      version: row.version_no,
+      changedAt: new Date(row.created_at),
+      sections: Number(row.sections),
+      components: Number(row.components),
+      publishing: row.publishing,
+    })),
     next,
     snapshot,
+    total: await countOf(trx, base()),
+    facets: {
+      spaces: await facetOf(trx, base('spaces'), 'space_id', 'space_name'),
+      publishing: await facetOf(trx, base('publishing'), 'publishing', 'publishing'),
+    },
   };
 }
 

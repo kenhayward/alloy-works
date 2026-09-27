@@ -1982,6 +1982,7 @@ export interface operations {
                 limit?: string;
                 sort?: "title" | "changed";
                 order?: "asc" | "desc";
+                types?: string;
                 spaces?: string;
             };
             header?: never;
@@ -2020,7 +2021,7 @@ export interface operations {
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
-                        /** @description How many there are in all, in the spaces asked for */
+                        /** @description How many there are with the filters in force, as of the walk this page belongs to */
                         total: number;
                         /** @description Every space the caller may read a component in, with how many: what to filter by */
                         spaces: {
@@ -2028,6 +2029,21 @@ export interface operations {
                             name: string;
                             count: number;
                         }[];
+                        /** @description Each filter the listing takes, counted with the others in force and its own left out */
+                        facets: {
+                            spaces: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                count: number;
+                            }[];
+                            types: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                count: number;
+                            }[];
+                        };
                     };
                 };
             };
@@ -3654,6 +3670,8 @@ export interface operations {
                 limit?: string;
                 sort?: "title" | "changed";
                 order?: "asc" | "desc";
+                spaces?: string;
+                publishing?: string;
             };
             header?: never;
             path?: never;
@@ -3691,6 +3709,23 @@ export interface operations {
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
+                        /** @description How many there are with the filters in force, as of the walk this page belongs to */
+                        total: number;
+                        /** @description Each filter the listing takes, counted with the others in force and its own left out */
+                        facets: {
+                            spaces: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                count: number;
+                            }[];
+                            publishing: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                count: number;
+                            }[];
+                        };
                     };
                 };
             };
@@ -5039,6 +5074,8 @@ export interface operations {
                 limit?: string;
                 sort?: "published" | "title";
                 order?: "asc" | "desc";
+                spaces?: string;
+                documents?: string;
             };
             header?: never;
             path: {
@@ -5078,6 +5115,23 @@ export interface operations {
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
+                        /** @description How many there are with the filters in force, as of the walk this page belongs to */
+                        total: number;
+                        /** @description Each filter the listing takes, counted with the others in force and its own left out */
+                        facets: {
+                            spaces: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                count: number;
+                            }[];
+                            documents: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                count: number;
+                            }[];
+                        };
                     };
                 };
             };
@@ -6011,6 +6065,7 @@ export interface operations {
                 limit?: string;
                 sort?: "title" | "changed";
                 order?: "asc" | "desc";
+                types?: string;
                 spaces?: string;
             };
             header?: never;
@@ -6420,6 +6475,7 @@ export interface operations {
                 limit?: string;
                 sort?: "title" | "changed";
                 order?: "asc" | "desc";
+                types?: string;
                 spaces?: string;
             };
             header?: never;
@@ -6933,6 +6989,7 @@ export interface operations {
                 limit?: string;
                 sort?: "title" | "changed";
                 order?: "asc" | "desc";
+                types?: string;
                 spaces?: string;
             };
             header?: never;
@@ -7159,6 +7216,8 @@ export interface operations {
                 limit?: string;
                 sort?: "published" | "title";
                 order?: "asc" | "desc";
+                spaces?: string;
+                documents?: string;
             };
             header?: never;
             path?: never;
@@ -7196,6 +7255,23 @@ export interface operations {
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
+                        /** @description How many there are with the filters in force, as of the walk this page belongs to */
+                        total: number;
+                        /** @description Each filter the listing takes, counted with the others in force and its own left out */
+                        facets: {
+                            spaces: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                count: number;
+                            }[];
+                            documents: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                count: number;
+                            }[];
+                        };
                     };
                 };
             };
@@ -7478,6 +7554,7 @@ export interface operations {
                 limit?: string;
                 sort?: "title" | "changed";
                 order?: "asc" | "desc";
+                types?: string;
                 spaces?: string;
             };
             header?: never;
@@ -9396,6 +9473,7 @@ export interface operations {
                 limit?: string;
                 sort?: "name" | "changed";
                 order?: "asc" | "desc";
+                spaces?: string;
             };
             header?: never;
             path?: never;
@@ -9426,6 +9504,17 @@ export interface operations {
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
+                        /** @description How many there are with the filters in force, as of the walk this page belongs to */
+                        total: number;
+                        /** @description Each filter the listing takes, counted with the others in force and its own left out */
+                        facets: {
+                            spaces: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                count: number;
+                            }[];
+                        };
                     };
                 };
             };

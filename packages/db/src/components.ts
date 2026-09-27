@@ -3,12 +3,15 @@ import { loadReadableSet } from './access-facts.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import {
   checkedLimit,
+  countOf,
+  facetOf,
   isListingRequest,
   keysetPage,
   listingSorts,
   sortColumns,
   snapshotFor,
   visibleIn,
+  type FacetCount,
   type Listed,
   type ListingRequest,
   type SortOf,
@@ -34,6 +37,8 @@ export interface ComponentSummary {
 /** Narrowing a listing: to the components in these spaces, when named. */
 export interface ComponentFilter {
   readonly spaces?: readonly string[];
+  /** Components written against these component types, by the type's artifact (SCH-064). */
+  readonly types?: readonly string[];
 }
 
 /** One space's share of what a principal may read: the facet a listing filters by. */
@@ -43,15 +48,24 @@ export interface SpaceCount {
   readonly count: number;
 }
 
-/** A page of components, and where the next begins, read as of the walk's first page. */
-export type ComponentPage = Listed<ComponentSummary>;
+/**
+ * A page of components, where the next begins, read as of the walk's first page, and how many there are
+ * with the filters in force, and each facet counted with the other filters and its own left out.
+ */
+export type ComponentPage = Listed<ComponentSummary> & {
+  readonly total: number;
+  readonly facets: {
+    readonly spaces: readonly FacetCount[];
+    readonly types: readonly FacetCount[];
+  };
+};
 
 /**
  * The components a principal may read, a page at a time by keyset over the sort asked for and then the
  * id, as of the snapshot the walk's first page took (API-007, SCH-022), filtered by the readable set
  * inside the query rather than by deciding each row (access.md, "The readable set") - so a page is
- * never short because rows were dropped after it was read. Undefined when the tenant holds no such
- * principal.
+ * never short because rows were dropped after it was read - and by the space and type filters, each a
+ * facet counted without its own (SCH-064). Undefined when the tenant holds no such principal.
  */
 export async function listReadableComponents(
   trx: TenantTransaction,
@@ -69,45 +83,53 @@ export async function listReadableComponents(
   if (!readable) return undefined;
   const snapshot = await snapshotFor(trx, request.snapshot);
 
-  const inner = trx
-    .selectFrom('artifact as a')
-    .innerJoin('space as s', 's.id', 'a.space_id')
-    .innerJoinLateral(
-      (eb) =>
-        eb
-          .selectFrom('artifact_version as v')
-          .select([
-            'v.revision_no',
-            'v.version_no',
-            'v.created_at',
-            'v.author_id',
-            'v.component_type_version_id',
-            sql<string>`v.content ->> 'title'`.as('title'),
-            sql<string>`v.content ->> 'language'`.as('language'),
-          ])
-          .whereRef('v.artifact_id', '=', 'a.id')
-          .where(visibleIn('v.written_by', snapshot))
-          .orderBy('v.revision_no', 'desc')
-          .orderBy('v.version_no', 'desc')
-          .limit(1)
-          .as('latest'),
-      (join) => join.onTrue(),
-    )
-    .leftJoin('artifact_version as t', 't.id', 'latest.component_type_version_id')
-    .leftJoin('principal as p', 'p.id', 'latest.author_id')
-    .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.title'])
-    .select(['latest.revision_no', 'latest.version_no', 'latest.language', 'latest.created_at'])
-    .select(['latest.author_id', 'p.display_name', 'p.email'])
-    .select(sql<string | null>`t.content ->> 'name'`.as('type'))
-    .select(sortColumns([sort === 'title' ? sql`latest.title` : sql`latest.created_at`]))
-    .where('a.kind', '=', 'component')
-    .where((eb) => readableArtifacts(eb, readable))
-    .$if(filter.spaces !== undefined, (query) =>
-      // An empty list names no space, so it matches nothing - never "every space".
-      filter.spaces!.length === 0
-        ? query.where(sql<boolean>`false`)
-        : query.where('a.space_id', 'in', [...filter.spaces!]),
-    );
+  /** The components the reader may read, as of the snapshot, with every filter but `leaving`. */
+  const base = (leaving?: keyof ComponentFilter) =>
+    trx
+      .selectFrom('artifact as a')
+      .innerJoin('space as s', 's.id', 'a.space_id')
+      .innerJoinLateral(
+        (eb) =>
+          eb
+            .selectFrom('artifact_version as v')
+            .select([
+              'v.revision_no',
+              'v.version_no',
+              'v.created_at',
+              'v.author_id',
+              'v.component_type_version_id',
+              sql<string>`v.content ->> 'title'`.as('title'),
+              sql<string>`v.content ->> 'language'`.as('language'),
+            ])
+            .whereRef('v.artifact_id', '=', 'a.id')
+            .where(visibleIn('v.written_by', snapshot))
+            .orderBy('v.revision_no', 'desc')
+            .orderBy('v.version_no', 'desc')
+            .limit(1)
+            .as('latest'),
+        (join) => join.onTrue(),
+      )
+      .leftJoin('artifact_version as t', 't.id', 'latest.component_type_version_id')
+      .leftJoin('principal as p', 'p.id', 'latest.author_id')
+      .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.title'])
+      .select(['latest.revision_no', 'latest.version_no', 'latest.language', 'latest.created_at'])
+      .select(['latest.author_id', 'p.display_name', 'p.email'])
+      .select(['t.artifact_id as type_id'])
+      .select(sql<string | null>`t.content ->> 'name'`.as('type'))
+      .select(sortColumns([sort === 'title' ? sql`latest.title` : sql`latest.created_at`]))
+      .where('a.kind', '=', 'component')
+      .where((eb) => readableArtifacts(eb, readable))
+      .$if(filter.spaces !== undefined && leaving !== 'spaces', (query) =>
+        // An empty list names no space, so it matches nothing - never "every space".
+        filter.spaces!.length === 0
+          ? query.where(sql<boolean>`false`)
+          : query.where('a.space_id', 'in', [...filter.spaces!]),
+      )
+      .$if(filter.types !== undefined && leaving !== 'types', (query) =>
+        filter.types!.length === 0
+          ? query.where(sql<boolean>`false`)
+          : query.where('t.artifact_id', 'in', [...filter.types!]),
+      );
   const { rows, next } = await keysetPage<{
     id: string;
     title: string;
@@ -121,7 +143,7 @@ export async function listReadableComponents(
     author_id: string | null;
     display_name: string | null;
     email: string | null;
-  }>(trx, inner, types, request.order ?? byDefault, limit, request.after);
+  }>(trx, base(), types, request.order ?? byDefault, limit, request.after);
 
   return {
     items: rows.map((row) => ({
@@ -140,6 +162,11 @@ export async function listReadableComponents(
     })),
     next,
     snapshot,
+    total: await countOf(trx, base()),
+    facets: {
+      spaces: await facetOf(trx, base('spaces'), 'space_id', 'space_name'),
+      types: await facetOf(trx, base('types'), 'type_id', 'type'),
+    },
   };
 }
 

@@ -218,25 +218,53 @@ export function publishingHandlers(
     ): Promise<PublicationList> => {
       const { id } = request.params as DocumentParams;
       if (!(await readDocument(trx, id))) throw notFound();
-      const asked = pageAsked('publications', request.query as PublicationListQuery);
-      const listed = await listPublications(trx, id, principalId, asked);
+      const query = request.query as PublicationListQuery;
+      const asked = pageAsked('publications', query);
+      const filter = {
+        ...(query.spaces === undefined ? {} : { spaces: query.spaces.split(',') }),
+        ...(query.documents === undefined ? {} : { documents: query.documents.split(',') }),
+      };
+      const listed = await listPublications(trx, id, principalId, asked, filter);
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
       return {
         items: listed.items.map(summaryView),
         next: cursorFor('publications', asked.sort, asked.order, listed.snapshot, listed.next),
+        total: listed.total,
+        facets: {
+          spaces: listed.facets.spaces.map(
+            (each: { value: string; label: string; count: number }) => ({ ...each }),
+          ),
+          documents: listed.facets.documents.map(
+            (each: { value: string; label: string; count: number }) => ({ ...each }),
+          ),
+        },
       };
     },
 
     /** Every publication the caller may read, of every document (interface slice 10). */
     listPublicationsEverywhere: async (request: FastifyRequest): Promise<PublicationList> => {
-      const asked = pageAsked('publications', request.query as PublicationListQuery);
+      const query = request.query as PublicationListQuery;
+      const asked = pageAsked('publications', query);
+      const filter = {
+        ...(query.spaces === undefined ? {} : { spaces: query.spaces.split(',') }),
+        ...(query.documents === undefined ? {} : { documents: query.documents.split(',') }),
+      };
       const listed = await db.withTenant(tenantOf(request), (trx) =>
-        listReadablePublications(trx, principalOf(request).principalId, asked),
+        listReadablePublications(trx, principalOf(request).principalId, asked, filter),
       );
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
       return {
         items: listed.items.map(summaryView),
         next: cursorFor('publications', asked.sort, asked.order, listed.snapshot, listed.next),
+        total: listed.total,
+        facets: {
+          spaces: listed.facets.spaces.map(
+            (each: { value: string; label: string; count: number }) => ({ ...each }),
+          ),
+          documents: listed.facets.documents.map(
+            (each: { value: string; label: string; count: number }) => ({ ...each }),
+          ),
+        },
       };
     },
 

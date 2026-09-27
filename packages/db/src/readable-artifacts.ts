@@ -1,5 +1,11 @@
 import type { ReadableSet } from '@alloy-works/domain';
-import type { Expression, ExpressionBuilder, SqlBool } from 'kysely';
+import {
+  sql,
+  type Expression,
+  type ExpressionBuilder,
+  type RawBuilder,
+  type SqlBool,
+} from 'kysely';
 import type { ArtifactTable } from './tables.js';
 
 /** Stands in for an empty list: `in ()` is not SQL, and no artifact has the nil UUID. */
@@ -32,4 +38,17 @@ export function readableArtifacts(
     ]),
     eb('a.id', 'in', listed(readable.included)),
   ]);
+}
+
+/**
+ * The same predicate over an artifact aliased `alias`, as raw SQL: for a query that reads a second
+ * artifact beside the first - a document's publications, each read on its own grants (decision D) -
+ * where the one alias `readableArtifacts` knows is already taken.
+ */
+export function readableArtifactsAs(alias: string, readable: ReadableSet): RawBuilder<SqlBool> {
+  const space = sql.ref(`${alias}.space_id`);
+  const id = sql.ref(`${alias}.id`);
+  return sql<SqlBool>`((${space} = any(${listed(readable.spaces)}::uuid[])
+    and not ${id} = any(${listed(readable.excluded)}::uuid[]))
+    or ${id} = any(${listed(readable.included)}::uuid[]))`;
 }

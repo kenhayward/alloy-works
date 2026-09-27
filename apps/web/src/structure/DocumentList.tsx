@@ -1,17 +1,25 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { whenChanged } from '../editor/changed.js';
 import { ListLayout } from '../layouts/ListLayout.js';
 import { Modal } from '../layouts/Modal.js';
 import { useCreatableSpaces } from '../spaces.js';
 import { Empty } from '../states/Empty.js';
+import {
+  Facet,
+  More,
+  SortChooser,
+  toggled,
+  type FacetValue,
+  type SortOption,
+} from '../listing/Listing.js';
+import { usePagedListing } from '../listing/usePagedListing.js';
 import { Lozenge } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
 import styles from './DocumentList.module.css';
 import { documentLink } from './links.js';
 import { NewDocument } from './NewDocument.js';
-import { everyPage } from '../paging.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -84,89 +92,96 @@ export interface DocumentListProps {
   readonly onOpen: (id: string) => void;
 }
 
-/** One facet's option: a checkbox, its label and how many of the listed documents it holds. */
-function Option({
-  label,
-  count,
-  checked,
-  onChange,
-}: {
-  label: string;
-  count: number;
-  checked: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <label className={styles['option']}>
-      <input type="checkbox" checked={checked} onChange={onChange} />
-      <span className={styles['optionName']}>{label}</span>
-      <span className={styles['count']}>{count}</span>
-    </label>
-  );
+const SORTS: readonly SortOption[] = [
+  { sort: 'title', order: 'asc', label: 'Title, A to Z' },
+  { sort: 'title', order: 'desc', label: 'Title, Z to A' },
+  { sort: 'changed', order: 'desc', label: 'Newest changed first' },
+  { sort: 'changed', order: 'asc', label: 'Oldest changed first' },
+];
+
+interface Facets {
+  readonly spaces: readonly FacetValue[];
+  readonly publishing: readonly FacetValue[];
 }
 
-const toggled = <T,>(held: readonly T[], value: T): readonly T[] =>
-  held.includes(value) ? held.filter((one) => one !== value) : [...held, value];
+const NO_FACETS: Facets = { spaces: [], publishing: [] };
+
+/** A facet as the service counted it, where the answer carries one. */
+const facetIn = (data: unknown, name: keyof Facets): readonly FacetValue[] => {
+  const facets = (data as { facets?: Record<string, unknown> } | undefined)?.facets;
+  const values = facets?.[name];
+  return Array.isArray(values)
+    ? values.filter(
+        (each): each is FacetValue =>
+          typeof each === 'object' &&
+          each !== null &&
+          typeof (each as FacetValue).value === 'string' &&
+          typeof (each as FacetValue).label === 'string' &&
+          typeof (each as FacetValue).count === 'number',
+      )
+    : [];
+};
 
 /**
  * The documents the signed-in person may read, in layout A, with **New document** as the page's one
- * primary button. `GET /v1/documents` answers them all at once, with no cursor, so the filters are
- * counted and applied here, over rows the service has already filtered by what the reader may read.
+ * primary button: a page at a time, sorted and filtered by space and by publishing state on the
+ * service, each facet counted there with the other filter in force (SCH-064).
  */
 export function DocumentList({ client, onOpen }: DocumentListProps) {
-  const [items, setItems] = useState<readonly Listed[] | null>(null);
-  const [problem, setProblem] = useState<'signedOut' | 'failed' | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [sort, setSort] = useState<SortOption>(SORTS[0]!);
   const [spaces, setSpaces] = useState<readonly string[]>([]);
   const [states, setStates] = useState<readonly Publishing[]>([]);
   const [creating, setCreating] = useState(false);
   const creatable = useCreatableSpaces(client);
-  const request = useRef(0);
+  const fetchPage = useCallback(
+    async (cursor: string | null) => {
+      const { data, response } = await client.GET('/v1/documents', {
+        params: {
+          query: {
+            sort: sort.sort as 'title',
+            order: sort.order,
+            ...(cursor === null ? {} : { cursor }),
+            ...(spaces.length === 0 ? {} : { spaces: spaces.join(',') }),
+            ...(states.length === 0 ? {} : { publishing: states.join(',') }),
+          },
+        },
+      });
+      // Checked rather than trusted, row by row, as the listing always was.
+      const items = documentsIn(data);
+      if (items === undefined) return { response };
+      const next = (data as { next?: unknown }).next;
+      const total = (data as { total?: unknown }).total;
+      return {
+        response,
+        data: {
+          items,
+          next: typeof next === 'string' ? next : null,
+          total: typeof total === 'number' ? total : items.length,
+          facets: { spaces: facetIn(data, 'spaces'), publishing: facetIn(data, 'publishing') },
+        },
+      };
+    },
+    [client, sort, spaces, states],
+  );
+  const listing = usePagedListing<Listed, Facets>(fetchPage);
 
-  const load = useCallback(async () => {
-    const generation = ++request.current;
-    setLoading(true);
-    setProblem(null);
-    try {
-      // Every page, until its filters are the service's (W7.3): the facets count what it holds.
-      const all = await everyPage((cursor) =>
-        client.GET('/v1/documents', {
-          params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
-        }),
-      );
-      if (request.current !== generation) return;
-      const listed = 'items' in all ? documentsIn({ items: all.items }) : undefined;
-      if (listed === undefined) {
-        setProblem('status' in all && all.status === 401 ? 'signedOut' : 'failed');
-        return;
-      }
-      setItems(listed);
-    } catch {
-      if (request.current === generation) setProblem('failed');
-    } finally {
-      if (request.current === generation) setLoading(false);
-    }
-  }, [client]);
-
-  useEffect(() => {
-    void load();
-    return () => {
-      request.current += 1;
-    };
-  }, [load]);
-
-  if (problem !== null) {
+  if (listing.items === null) {
+    if (listing.failed === undefined) return null;
     return (
       <section aria-labelledby="documents-heading">
         <h1 id="documents-heading">Documents</h1>
-        {problem === 'signedOut' ? (
+        {listing.signedOut ? (
           <Notice tone="signedOut">
             <p>You are signed out. Sign in again to see your documents.</p>
           </Notice>
         ) : (
           <Notice tone="failed">
             <p>The documents could not be loaded.</p>
-            <button type="button" disabled={loading} onClick={() => void load()}>
+            <button
+              type="button"
+              disabled={listing.loading}
+              onClick={() => void listing.load(null)}
+            >
               Try again
             </button>
           </Notice>
@@ -174,27 +189,18 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
       </section>
     );
   }
-  if (items === null) return null;
-
-  // The spaces the listed documents are in, by name, each counted.
-  const spaceCounts = [
-    ...items
-      .reduce((held, item) => {
-        const known = held.get(item.space.id);
-        held.set(item.space.id, { name: item.space.name, count: (known?.count ?? 0) + 1 });
-        return held;
-      }, new Map<string, { name: string; count: number }>())
-      .entries(),
-  ].sort(([, a], [, b]) => a.name.localeCompare(b.name));
-  const shown = items.filter(
-    (item) =>
-      (spaces.length === 0 || spaces.includes(item.space.id)) &&
-      (states.length === 0 || (item.publishing !== null && states.includes(item.publishing))),
-  );
+  const { items, total } = listing;
+  const facets = listing.facets ?? NO_FACETS;
   const filtered = spaces.length > 0 || states.length > 0;
   // Offered only to somebody with somewhere to create, as the components list does; a read that
   // failed still offers it, so the form can say what went wrong.
   const mayCreate = creatable.problem !== null || (creatable.spaces ?? []).length > 0;
+  // Every publishing state offered, counted where the service counted it and at none where not.
+  const publishing = PUBLISHING.map(({ state }) => ({
+    value: state,
+    label: state,
+    count: facets.publishing.find((each) => each.value === state)?.count ?? 0,
+  }));
 
   const filter = (
     <>
@@ -213,30 +219,21 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
           </button>
         )}
       </div>
-      <fieldset className={styles['facet']}>
-        <legend className={styles['overline']}>Space</legend>
-        {spaceCounts.map(([id, { name, count }]) => (
-          <Option
-            key={id}
-            label={name}
-            count={count}
-            checked={spaces.includes(id)}
-            onChange={() => setSpaces((held) => toggled(held, id))}
-          />
-        ))}
-      </fieldset>
-      <fieldset className={styles['facet']}>
-        <legend className={styles['overline']}>Publishing</legend>
-        {PUBLISHING.map(({ state, label }) => (
-          <Option
-            key={state}
-            label={label}
-            count={items.filter((item) => item.publishing === state).length}
-            checked={states.includes(state)}
-            onChange={() => setStates((held) => toggled(held, state))}
-          />
-        ))}
-      </fieldset>
+      <Facet
+        legend="Space"
+        values={facets.spaces}
+        chosen={spaces}
+        onToggle={(value) => setSpaces((held) => toggled(held, value))}
+      />
+      <Facet
+        legend="Publishing"
+        values={publishing}
+        chosen={states}
+        labelOf={(value) =>
+          PUBLISHING.find((each) => each.state === value.value)?.label ?? value.label
+        }
+        onToggle={(value) => setStates((held) => toggled(held, value as Publishing))}
+      />
     </>
   );
 
@@ -256,13 +253,22 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
             <NewDocument client={client} onCreated={onOpen} />
           </Modal>
         )}
+        <SortChooser options={SORTS} chosen={sort} onChoose={setSort} />
         <p className={styles['summary']}>
-          <span>{`${items.length} ${items.length === 1 ? 'document' : 'documents'} you may read.`}</span>
-          {filtered && <span>{`Showing ${shown.length} of ${items.length}.`}</span>}
+          <span>
+            {filtered
+              ? `${total} ${total === 1 ? 'document matches' : 'documents match'} the filter.`
+              : `${total} ${total === 1 ? 'document' : 'documents'} you may read.`}
+          </span>
+          {items.length < total && <span>{`Showing 1 to ${items.length}.`}</span>}
         </p>
         {items.length === 0 ? (
           <Empty>
-            <p>There are no documents you may read.</p>
+            <p>
+              {filtered
+                ? 'No document you may read matches the filter.'
+                : 'There are no documents you may read.'}
+            </p>
           </Empty>
         ) : (
           <div className={styles['table']}>
@@ -283,7 +289,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
                 </tr>
               </thead>
               <tbody>
-                {shown.map((item) => (
+                {items.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <a className={styles['title']} href={documentLink(item.id)}>
@@ -312,6 +318,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
             </table>
           </div>
         )}
+        <More listing={listing} what="documents" />
       </section>
     </ListLayout>
   );

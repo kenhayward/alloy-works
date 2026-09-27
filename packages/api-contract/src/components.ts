@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { listingQuery, nextCursor, pageQuery } from './listing.js';
+import { FacetCountView, idsFilter, listingQuery, nextCursor, pageQuery } from './listing.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
@@ -59,6 +59,7 @@ export type CreateComponentBody = z.infer<typeof CreateComponentBody>;
 
 export const ComponentListQuery = z.object({
   ...listingQuery(['title', 'changed'], 'title'),
+  types: idsFilter.optional().describe('Only components of these component types, by id'),
   spaces: z
     .string()
     .regex(
@@ -107,10 +108,18 @@ export const ComponentList = z.object({
     }),
   ),
   next: nextCursor,
-  total: z.number().int().describe('How many there are in all, in the spaces asked for'),
+  total: z
+    .number()
+    .int()
+    .describe('How many there are with the filters in force, as of the walk this page belongs to'),
   spaces: z
     .array(z.object({ id: z.string(), name: z.string(), count: z.number().int() }))
     .describe('Every space the caller may read a component in, with how many: what to filter by'),
+  facets: z
+    .object({ spaces: z.array(FacetCountView), types: z.array(FacetCountView) })
+    .describe(
+      'Each filter the listing takes, counted with the others in force and its own left out',
+    ),
 });
 export type ComponentList = z.infer<typeof ComponentList>;
 

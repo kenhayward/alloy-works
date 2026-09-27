@@ -17,6 +17,8 @@ export type ComponentView =
 export type FieldView = ComponentView['fields'][number];
 export type PublicationList =
   paths['/v1/publications']['get']['responses']['200']['content']['application/json'];
+export type TemplateList =
+  paths['/v1/templates']['get']['responses']['200']['content']['application/json'];
 
 /**
  * The one way a client calls the service (API-001): generated from the committed document, so a

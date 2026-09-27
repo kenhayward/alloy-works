@@ -3040,6 +3040,16 @@
             }
           },
           {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only components of these component types, by id",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
+          },
+          {
             "name": "spaces",
             "in": "query",
             "required": false,
@@ -3153,7 +3163,7 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "How many there are in all, in the spaces asked for"
+                      "description": "How many there are with the filters in force, as of the walk this page belongs to"
                     },
                     "spaces": {
                       "type": "array",
@@ -3179,13 +3189,74 @@
                         ]
                       },
                       "description": "Every space the caller may read a component in, with how many: what to filter by"
+                    },
+                    "facets": {
+                      "type": "object",
+                      "properties": {
+                        "spaces": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string",
+                                "description": "What to filter by to leave these"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "label",
+                              "count"
+                            ]
+                          }
+                        },
+                        "types": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string",
+                                "description": "What to filter by to leave these"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "label",
+                              "count"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "spaces",
+                        "types"
+                      ],
+                      "description": "Each filter the listing takes, counted with the others in force and its own left out"
                     }
                   },
                   "required": [
                     "items",
                     "next",
                     "total",
-                    "spaces"
+                    "spaces",
+                    "facets"
                   ]
                 }
               }
@@ -7279,6 +7350,26 @@
                 "desc"
               ]
             }
+          },
+          {
+            "name": "spaces",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only documents in these spaces, by id",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
+          },
+          {
+            "name": "publishing",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only documents in these publishing states: published, changedSince, neverPublished",
+              "type": "string",
+              "pattern": "^(?:published|changedSince|neverPublished)(?:,(?:published|changedSince|neverPublished)){0,2}$"
+            }
           }
         ],
         "responses": {
@@ -7363,11 +7454,79 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many there are with the filters in force, as of the walk this page belongs to"
+                    },
+                    "facets": {
+                      "type": "object",
+                      "properties": {
+                        "spaces": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string",
+                                "description": "What to filter by to leave these"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "label",
+                              "count"
+                            ]
+                          }
+                        },
+                        "publishing": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string",
+                                "description": "What to filter by to leave these"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "label",
+                              "count"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "spaces",
+                        "publishing"
+                      ],
+                      "description": "Each filter the listing takes, counted with the others in force and its own left out"
                     }
                   },
                   "required": [
                     "items",
-                    "next"
+                    "next",
+                    "total",
+                    "facets"
                   ]
                 }
               }
@@ -11814,6 +11973,26 @@
                 "desc"
               ]
             }
+          },
+          {
+            "name": "spaces",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only publications in these spaces, by id",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
+          },
+          {
+            "name": "documents",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only publications of these documents, by id",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
           }
         ],
         "responses": {
@@ -11905,11 +12084,79 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many there are with the filters in force, as of the walk this page belongs to"
+                    },
+                    "facets": {
+                      "type": "object",
+                      "properties": {
+                        "spaces": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string",
+                                "description": "What to filter by to leave these"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "label",
+                              "count"
+                            ]
+                          }
+                        },
+                        "documents": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string",
+                                "description": "What to filter by to leave these"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "label",
+                              "count"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "spaces",
+                        "documents"
+                      ],
+                      "description": "Each filter the listing takes, counted with the others in force and its own left out"
                     }
                   },
                   "required": [
                     "items",
-                    "next"
+                    "next",
+                    "total",
+                    "facets"
                   ]
                 }
               }
@@ -14584,6 +14831,16 @@
             }
           },
           {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only components of these component types, by id",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
+          },
+          {
             "name": "spaces",
             "in": "query",
             "required": false,
@@ -15560,6 +15817,16 @@
                 "asc",
                 "desc"
               ]
+            }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only components of these component types, by id",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
             }
           },
           {
@@ -16682,6 +16949,16 @@
             }
           },
           {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only components of these component types, by id",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
+          },
+          {
             "name": "spaces",
             "in": "query",
             "required": false,
@@ -17245,6 +17522,26 @@
                 "desc"
               ]
             }
+          },
+          {
+            "name": "spaces",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only publications in these spaces, by id",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
+          },
+          {
+            "name": "documents",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only publications of these documents, by id",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
           }
         ],
         "responses": {
@@ -17336,11 +17633,79 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many there are with the filters in force, as of the walk this page belongs to"
+                    },
+                    "facets": {
+                      "type": "object",
+                      "properties": {
+                        "spaces": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string",
+                                "description": "What to filter by to leave these"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "label",
+                              "count"
+                            ]
+                          }
+                        },
+                        "documents": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string",
+                                "description": "What to filter by to leave these"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "label",
+                              "count"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "spaces",
+                        "documents"
+                      ],
+                      "description": "Each filter the listing takes, counted with the others in force and its own left out"
                     }
                   },
                   "required": [
                     "items",
-                    "next"
+                    "next",
+                    "total",
+                    "facets"
                   ]
                 }
               }
@@ -18149,6 +18514,16 @@
                 "asc",
                 "desc"
               ]
+            }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only components of these component types, by id",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
             }
           },
           {
@@ -22663,6 +23038,16 @@
                 "desc"
               ]
             }
+          },
+          {
+            "name": "spaces",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only templates in these spaces, by id",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
           }
         ],
         "responses": {
@@ -22734,11 +23119,53 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many there are with the filters in force, as of the walk this page belongs to"
+                    },
+                    "facets": {
+                      "type": "object",
+                      "properties": {
+                        "spaces": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string",
+                                "description": "What to filter by to leave these"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "label",
+                              "count"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "spaces"
+                      ],
+                      "description": "Each filter the listing takes, counted with the others in force and its own left out"
                     }
                   },
                   "required": [
                     "items",
-                    "next"
+                    "next",
+                    "total",
+                    "facets"
                   ]
                 }
               }

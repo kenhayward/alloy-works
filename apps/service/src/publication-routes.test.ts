@@ -679,6 +679,8 @@ describe('publishing a document through the service', () => {
     expect((await call('ivy', 'GET', `/v1/documents/${document.id}/publications`)).json()).toEqual({
       items: [],
       next: null,
+      total: 0,
+      facets: { spaces: [], documents: [] },
     });
     // A document's id is not a publication's, and nothing deletes one: it is still there after.
     expect((await call('alice', 'GET', `/v1/publications/${document.id}`)).statusCode).toBe(404);
@@ -694,10 +696,13 @@ describe('publishing a document through the service', () => {
     await grantAt(ids.alice!, 'Reader', hidden, 'deny');
     const answer = await call('alice', 'GET', `/v1/documents/${document.id}/publications`);
     const listed = answer.json<{ items: { id: string }[] }>();
-    // No count, no position and no gap: the list is as if the refused one had never been made, and
-    // its cursor is the end of it.
-    expect(listed).toMatchObject({ next: null });
-    expect(Object.keys(listed).sort()).toEqual(['items', 'next']);
+    // No count, no position and no gap: the list is as if the refused one had never been made - its
+    // total and its facet count two - and its cursor is the end of it.
+    expect(listed).toMatchObject({ next: null, total: 2 });
+    expect(
+      (listed as unknown as { facets: { documents: { count: number }[] } }).facets.documents,
+    ).toEqual([expect.objectContaining({ count: 2 })]);
+    expect(Object.keys(listed).sort()).toEqual(['facets', 'items', 'next', 'total']);
     expect(listed.items.map((each) => each.id)).toEqual([last, first]);
     expect(answer.body).not.toContain(hidden);
     const refused = await call('alice', 'GET', `/v1/publications/${hidden}`);
