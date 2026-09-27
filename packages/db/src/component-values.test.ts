@@ -197,32 +197,34 @@ describe("a component's values, written with its iterations", () => {
         },
       }),
     );
-    expect(next.answer).toBe('recorded');
-    expect(await cut(at)).toMatchObject({
-      answer: 'values.invalid',
-      failures: [{ field: fields.market, rule: 'fixed', schemas: [review.id] }],
-    });
-    // Put back, for the tests after this one.
-    if (next.answer !== 'recorded') return;
+    if (next.answer !== 'recorded') throw new Error(next.answer);
     review = next.definition;
-    const back = await run((trx) =>
-      recordDefinitionVersion(trx, {
-        id: review.id,
-        openedFrom: review.version.id,
-        author: ada,
-        definition: {
-          schemaVersion: DEFINITION_SCHEMA_VERSION,
-          name: 'Review',
-          entries: [
-            { field: fields.market, required: false, fixed: true, default: 'uk' },
-            { field: fields.owner, required: false, fixed: false },
-            { field: fields.code, required: true, fixed: false },
-          ],
-        },
-      }),
-    );
-    if (back.answer !== 'recorded') throw new Error(back.answer);
-    review = back.definition;
+    // Put back whatever the cut answers, so no test after this one meets the other default.
+    try {
+      expect(await cut(at)).toMatchObject({
+        answer: 'values.invalid',
+        failures: [{ field: fields.market, rule: 'fixed', schemas: [review.id] }],
+      });
+    } finally {
+      const back = await run((trx) =>
+        recordDefinitionVersion(trx, {
+          id: review.id,
+          openedFrom: review.version.id,
+          author: ada,
+          definition: {
+            schemaVersion: DEFINITION_SCHEMA_VERSION,
+            name: 'Review',
+            entries: [
+              { field: fields.market, required: false, fixed: true, default: 'uk' },
+              { field: fields.owner, required: false, fixed: false },
+              { field: fields.code, required: true, fixed: false },
+            ],
+          },
+        }),
+      );
+      if (back.answer !== 'recorded') throw new Error(back.answer);
+      review = back.definition;
+    }
   });
 
   it('MET-038 refuses a user value naming no user of this tenant', async () => {
