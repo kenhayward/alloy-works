@@ -222,8 +222,9 @@ describe("a component's values, written with its iterations", () => {
           },
         }),
       );
-      if (back.answer !== 'recorded') throw new Error(back.answer);
-      review = back.definition;
+      // Asserted rather than thrown: a throw here would hide whatever the cut's assertion said.
+      expect(back.answer).toBe('recorded');
+      if (back.answer === 'recorded') review = back.definition;
     }
   });
 
