@@ -291,6 +291,11 @@ describe('the domain package', () => {
         // What a publication of a document made from one is checked against (templates.md, W4.4).
         'missingSections',
         'valueFailures',
+        // What a definition is checked against before it is written (definitions.md, W5.1).
+        'assignmentConflicts',
+        'brokenDefaults',
+        'nameKey',
+        'schemaConflicts',
       ].sort(),
     );
   });
