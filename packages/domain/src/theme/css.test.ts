@@ -76,7 +76,7 @@ describe('projectCss', () => {
     // And each is written at the value the theme declares. Panel: Liberation Mono at 12pt on 16pt,
     // whose half-leading is (16 - (1705 + 615) / 2048 x 12) / 2 = 1.203pt.
     const text = everyProperty();
-    const panel = ruleFor(text, '.aw-canvas [data-style="panel"]');
+    const panel = ruleFor(text, '.aw-canvas.aw-canvas [data-style="panel"]');
     const z = (points: string) => `calc(${points}pt * var(--aw-zoom))`;
     expect(panel.split('; ')).toEqual([
       'font-family: "aw-face-mono"',
@@ -99,14 +99,14 @@ describe('projectCss', () => {
     ]);
     // Contextual spacing: two neighbours in Panel lose the space between them, and only that.
     expect(text).toContain(
-      '.aw-canvas [data-style="panel"] + [data-style="panel"] { border-block-start-width: 0; }',
+      '.aw-canvas.aw-canvas [data-style="panel"] + [data-style="panel"] { border-block-start-width: 0; }',
     );
     expect(text).toContain(
-      '.aw-canvas [data-style="panel"]:has(+ [data-style="panel"]) { border-block-end-width: 0; }',
+      '.aw-canvas.aw-canvas [data-style="panel"]:has(+ [data-style="panel"]) { border-block-end-width: 0; }',
     );
 
     // Strong, restated: every character property, the script's size its scale times 1331/2048.
-    expect(ruleFor(text, '.aw-canvas .aw-mark-strong').split('; ')).toEqual([
+    expect(ruleFor(text, '.aw-canvas.aw-canvas .aw-mark-strong').split('; ')).toEqual([
       'font-weight: 400',
       'font-style: italic',
       'text-decoration-line: underline',
@@ -121,53 +121,56 @@ describe('projectCss', () => {
   it("STY-050 CNT-082 spaces blocks by adding one's space after to the next's space before, never collapsing them", () => {
     // A block's spaces are transparent borders, which never collapse into each other as margins do.
     // The body: no space before, 2.75pt after.
-    const body = ruleFor(css, '.aw-canvas [data-place="text"][data-style="body"]');
+    const body = ruleFor(css, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]');
     expect(body).toContain('border: 0 solid transparent');
     expect(body).toContain('border-block-width: 0 calc(2.75pt * var(--aw-zoom))');
     expect(css).not.toMatch(/margin-(top|bottom|block-start|block-end):/);
   });
 
-  it("STY-051 moves each line's extra space above it, as Word does, by cancelling CSS's split", () => {
+  it("moves each line's extra space above it, as Word does, by cancelling CSS's split", () => {
     // CSS puts half of a line's extra space above and half below. Word puts all of it above.
     // Half-leading = (line spacing - (ascent + descent) x size) / 2: 1.084pt for body at 11pt on
     // 14.35pt. Adding it above and taking it back below as a margin - which can go negative where
     // padding cannot - leaves it all above.
-    const body = ruleFor(css, '.aw-canvas [data-place="text"][data-style="body"]');
+    const body = ruleFor(css, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]');
     expect(body).toContain('margin-block: 0 calc(-1.084pt * var(--aw-zoom))');
     expect(body).toContain('padding-block: calc(1.084pt * var(--aw-zoom)) 0');
   });
 
   it('CNT-097 sets text in the face the theme declares, never a face of the same name on the machine, at the size it declares', () => {
-    const body = ruleFor(css, '.aw-canvas [data-place="text"][data-style="body"]');
+    const body = ruleFor(css, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]');
     expect(body).toContain('font-family: "aw-face-serif"');
     expect(body).toContain('font-size: calc(11pt * var(--aw-zoom))');
     expect(css).not.toContain('Liberation');
-    expect(css).toContain('.aw-canvas math { font-family: "aw-face-maths"; }');
+    expect(css).toContain('.aw-canvas.aw-canvas math { font-family: "aw-face-maths"; }');
     // Inline code in the monospaced face at 0.8 of the text it stands in.
-    const code = ruleFor(css, '.aw-canvas .aw-mark-inlineCode');
+    const code = ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-inlineCode');
     expect(code).toContain('font-family: "aw-face-mono"');
     expect(code).toContain('font-size: 0.8em');
   });
 
   it('sets a stored body in the default of the place it stands in, and each role in its own style', () => {
-    const quotation = ruleFor(css, '.aw-canvas [data-place="quotation"][data-style="body"]');
+    const quotation = ruleFor(
+      css,
+      '.aw-canvas.aw-canvas [data-place="quotation"][data-style="body"]',
+    );
     expect(quotation).toContain(
       'margin-inline: calc(11pt * var(--aw-zoom)) calc(11pt * var(--aw-zoom))',
     );
     // The footnote's paragraphs are always in the footnote's place.
-    expect(ruleFor(css, '.aw-canvas .aw-footnote-paragraph[data-style="body"]')).toContain(
-      'font-size: calc(9.35pt * var(--aw-zoom))',
-    );
+    expect(
+      ruleFor(css, '.aw-canvas.aw-canvas .aw-footnote-paragraph[data-style="body"]'),
+    ).toContain('font-size: calc(9.35pt * var(--aw-zoom))');
     // A term is set in its list item's default, and carries no stored style.
-    expect(ruleFor(css, '.aw-canvas [data-place="listItem"]:not([data-style])')).toContain(
-      'font-size: calc(11pt * var(--aw-zoom))',
-    );
+    expect(
+      ruleFor(css, '.aw-canvas.aw-canvas [data-place="listItem"]:not([data-style])'),
+    ).toContain('font-size: calc(11pt * var(--aw-zoom))');
     // A stored body never means the style called Body: it means the default where it stands.
-    expect(css).not.toMatch(/\.aw-canvas \[data-style="body"\]/);
+    expect(css).not.toMatch(/\.aw-canvas\.aw-canvas \[data-style="body"\]/);
     for (const role of ['caption', 'tableNote', 'attribution', 'preformatted']) {
-      expect(() => ruleFor(css, `.aw-canvas [data-role="${role}"]`), role).not.toThrow();
+      expect(() => ruleFor(css, `.aw-canvas.aw-canvas [data-role="${role}"]`), role).not.toThrow();
     }
-    expect(() => ruleFor(css, '.aw-canvas pre[data-language]::before')).not.toThrow();
+    expect(() => ruleFor(css, '.aw-canvas.aw-canvas pre[data-language]::before')).not.toThrow();
   });
 
   it('CNT-115 scales every length by the canvas zoom, and writes none in any other unit but ems of the text', () => {
@@ -187,7 +190,7 @@ describe('projectCss', () => {
   });
 
   it("states every property of a mark, the text's own where its style states none, so no browser default shows", () => {
-    expect(ruleFor(css, '.aw-canvas .aw-mark-hyperlink').split('; ')).toEqual([
+    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-hyperlink').split('; ')).toEqual([
       'font-weight: inherit',
       'font-style: inherit',
       'text-decoration-line: none',
@@ -196,7 +199,9 @@ describe('projectCss', () => {
       'vertical-align: baseline',
       'font-size: inherit',
     ]);
-    expect(ruleFor(css, '.aw-canvas .aw-mark-strong')).toContain('font-weight: 700');
-    expect(ruleFor(css, '.aw-canvas .aw-mark-subscript')).toContain('vertical-align: sub');
+    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-strong')).toContain('font-weight: 700');
+    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-subscript')).toContain(
+      'vertical-align: sub',
+    );
   });
 });

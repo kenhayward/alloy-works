@@ -1,4 +1,4 @@
-import { markTypes } from '@alloy-works/domain';
+import { CANVAS, markTypes } from '@alloy-works/domain';
 import { readFileSync } from 'node:fs';
 import { Mark, type ParseRule, type TagParseRule } from 'prosemirror-model';
 import { describe, expect, it } from 'vitest';
@@ -382,6 +382,44 @@ describe('the lists in the editor schema', () => {
 });
 
 describe('the editor stylesheet', () => {
+  it("stays beneath every rule a theme writes on the canvas, so a theme's link colour or alignment is never overruled", () => {
+    // A theme's rules are scoped under `CANVAS`, two classes, and select by a class or an attribute
+    // more: three class-weight selectors at least. The editor's own stylesheet, which sets text where no
+    // theme has arrived, must stay below that on every element a theme styles. What it draws before or
+    // after an element - a placeholder, a label's position - is its own, and no theme rule reaches it.
+    expect(CANVAS).toBe('.aw-canvas.aw-canvas');
+    const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8');
+    const selectors = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{[^{}]*\}/g)]
+      .flatMap((match) => match[1]!.split(',').map((selector) => selector.trim()))
+      .filter((selector) => !selector.includes('::') && !selector.startsWith('@'))
+      // Only a rule whose element is one a theme styles: a paragraph, a term, preformatted text, a
+      // quotation, a caption, a table's note, an attribution, an equation, and each mark's element.
+      .filter(
+        (selector) =>
+          /(^|[\s>+~])(p|dt|pre|blockquote|figcaption|footer|math|a|em|strong|u|sub|sup|code|q|dfn|span)(?=$|[.[:])|\.aw-language$|\.aw-table-note$|\.aw-attribution$|\.aw-figure-caption$|\.aw-table-caption$/.test(
+            selector
+              .split(/\s+/)
+              .at(-1)!
+              .replace(/^[>+~]/, ' '),
+          ) ||
+          /\s(p|dt|pre|footer|figcaption|a|em|strong|u|sub|sup|code|q)(\[[^\]]*\]|\.[\w-]+)*$/.test(
+            selector,
+          ),
+      );
+    const weight = (selector: string) => {
+      const bare = selector.replace(/:not\(([^)]*)\)/g, ' $1');
+      return {
+        ids: (bare.match(/#[\w-]+/g) ?? []).length,
+        classes: (bare.match(/\.[\w-]+|\[[^\]]+\]|:(?!:)[\w-]+/g) ?? []).length,
+      };
+    };
+    for (const selector of selectors) {
+      const { ids, classes } = weight(selector);
+      expect(ids, selector).toBe(0);
+      expect(classes, selector).toBeLessThan(3);
+    }
+  });
+
   it('styles every mark the schema can render', () => {
     const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8');
     // A rule at a time, comments stripped first: a selector counts only when it heads a real

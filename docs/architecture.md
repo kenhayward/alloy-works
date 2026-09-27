@@ -84,8 +84,9 @@ padding, none wider than twice it (`table_rule_over_text`), and returns every
 refusal at once; the default theme, `DEFAULT_THEME`, and its catalogues under fixed
 version identifiers - 0.2, with 0.1 frozen as `FIRST_DEFAULT_THEME` and `FIRST_DEFAULT_CATALOGUES`;
 and three projections - `projectTypst`, the data template 13 reads, which `assemble` uses, beside
-`projectTypst12`, template 12's, frozen - and `projectCss` and `projectStylesXml`, which nothing calls yet and which leave out
-what they name in their doc comments, since the editor and Word slices finish them. The zod schemas
+`projectTypst12`, template 12's, frozen - `projectCss`, which the renderer sets a component's text
+by (W8.2, [The theme in the editor](#the-theme-in-the-editor)), and `projectStylesXml`, which the Word
+writer's styles come from. The zod schemas
 stay inside the package: the store and `assemble` read a theme only through the reader.
 
 Dependencies point one way: `apps/web` depends on `@alloy-works/domain`, on `@alloy-works/editor` -

@@ -82,6 +82,11 @@ a transparent border rather than padding, so a paragraph's fill is clipped insid
 The canvas's own two rules - the measure, and scrolling sideways - are injected with the theme's
 rather than imported, so a test in jsdom reads them. Each read-text block is its own canvas, so the
 page's controls around the text keep the application's colours in dark mode.
+The final review found the editor's own stylesheet outranking the theme where it names an element as
+well as two classes - a link's `a[href]`, an attribution's `footer` - so the theme's rules name the
+canvas twice, `CANVAS`, and a test holds the stylesheet beneath them. The frame the stylesheet drew
+round preformatted text stands down on the canvas, as the quotation's rule does: a style has no border,
+and the page prints none.
 
 ## W8.3: Tables and images by their styles
 

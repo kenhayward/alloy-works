@@ -83,8 +83,8 @@ export function projectCss(theme: ResolvedTheme): string {
     `.aw-canvas { background: ${theme.paper}; color: ${ink}; }`,
     // A quotation is inset by its paragraphs' own indents, as the template sets it; the editor's own
     // inset and rule stand down.
-    '.aw-canvas blockquote { margin: 0; padding: 0; border: 0; }',
-    `.aw-canvas math { font-family: "${faceFamily(theme.maths.id)}"; }`,
+    `${CANVAS} blockquote { margin: 0; padding: 0; border: 0; }`,
+    `${CANVAS} math { font-family: "${faceFamily(theme.maths.id)}"; }`,
   ];
 
   for (const style of theme.paragraphStyles.values()) {
@@ -94,7 +94,7 @@ export function projectCss(theme: ResolvedTheme): string {
     if (style.properties.contextualSpacing) {
       const neighbours = selectors.filter((selector) => !selector.includes('::'));
       const pairs = neighbours.flatMap((first) =>
-        neighbours.map((second) => [first, second.replace('.aw-canvas ', '')] as const),
+        neighbours.map((second) => [first, second.replace(`${CANVAS} `, '')] as const),
       );
       rules.push(
         `${pairs.map(([first, second]) => `${first} + ${second}`).join(', ')} ` +
@@ -111,7 +111,7 @@ export function projectCss(theme: ResolvedTheme): string {
       style.properties,
       style.typeface && faceFamily(style.typeface.id),
     );
-    rules.push(`.aw-canvas .aw-mark-${mark} { ${declarations.join('; ')}; }`);
+    rules.push(`${CANVAS} .aw-mark-${mark} { ${declarations.join('; ')}; }`);
   }
 
   return rules.join('\n') + '\n';
@@ -123,15 +123,15 @@ export function projectCss(theme: ResolvedTheme): string {
  * where it stands, which the place selectors say.
  */
 function selectorsOf(theme: ResolvedTheme, id: string): string[] {
-  const selectors = id === 'body' ? [] : [`.aw-canvas [data-style="${id}"]`];
+  const selectors = id === 'body' ? [] : [`${CANVAS} [data-style="${id}"]`];
   for (const place of PLACES) {
     if (theme.places[place] !== id) continue;
     if (place === 'footnote') {
-      selectors.push('.aw-canvas .aw-footnote-paragraph[data-style="body"]');
+      selectors.push(`${CANVAS} .aw-footnote-paragraph[data-style="body"]`);
     } else {
       selectors.push(
-        `.aw-canvas [data-place="${place}"][data-style="body"]`,
-        `.aw-canvas [data-place="${place}"]:not([data-style])`,
+        `${CANVAS} [data-place="${place}"][data-style="body"]`,
+        `${CANVAS} [data-place="${place}"]:not([data-style])`,
       );
     }
   }
@@ -139,12 +139,21 @@ function selectorsOf(theme: ResolvedTheme, id: string): string[] {
     if (theme.roles[role] !== id) continue;
     selectors.push(
       role === 'preformattedLabel'
-        ? '.aw-canvas pre[data-language]::before'
-        : `.aw-canvas [data-role="${role}"]`,
+        ? `${CANVAS} pre[data-language]::before`
+        : `${CANVAS} [data-role="${role}"]`,
     );
   }
   return selectors;
 }
+
+/**
+ * The canvas, named twice: the same element, at two classes' weight, so that every rule the theme writes
+ * outranks the editor's own stylesheet, whose rules reach two classes and an element at most -
+ * `.aw-text a[href]`, `.aw-text footer.aw-attribution` - and which would otherwise set a link's colour
+ * or an attribution's alignment over the theme's (`packages/editor/src/schema.test.ts` holds the
+ * stylesheet below it).
+ */
+export const CANVAS = '.aw-canvas.aw-canvas';
 
 const ALIGN = { start: 'start', end: 'end', centre: 'center', justify: 'justify' } as const;
 
@@ -166,6 +175,9 @@ function paragraphDeclarations(style: ResolvedParagraphStyle): string[] {
     `text-indent: ${zoomed(p.firstLineIndent)}`,
     `margin-block: 0 ${zoomed(-halfLeading)}`,
     `margin-inline: ${zoomed(p.startIndent)} ${zoomed(p.endIndent)}`,
+    // No rule of its own: a style has no border property, so the frame the editor's stylesheet draws
+    // round preformatted text stands down on the canvas, as the quotation's does - the page prints the
+    // style's fill and padding and no frame, and the canvas shows the page.
     'border: 0 solid transparent',
     `border-block-width: ${zoomed(p.spaceBefore)} ${zoomed(p.spaceAfter)}`,
     `padding-block: ${zoomed(halfLeading + padding)} ${zoomed(padding)}`,
