@@ -16631,7 +16631,7 @@
         },
         {
           "id": "STY-039",
-          "howItIsMet": "A typeface is served to the editor from the tenant's store, and handed to Typst as a pinned font directory"
+          "howItIsMet": "The pinned files are one package, `packages/fonts`, which the worker hands Typst as its only font directory and the renderer bundles for a browser and the desktop shell alike ([The theme in the editor](#the-theme-in-the-editor), ET-C)"
         },
         {
           "id": "STY-040",
@@ -16716,6 +16716,14 @@
         {
           "id": "CNT-115",
           "howItIsMet": "The editor sets text at the layout's measure, scaled, with zoom"
+        },
+        {
+          "id": "CNT-122",
+          "howItIsMet": "An image style is resolved to its size by `styledSize`, in `assemble` and in the editor alike, from the asset's pixels and the layout's frame ([The theme in the editor](#the-theme-in-the-editor))"
+        },
+        {
+          "id": "STY-070",
+          "howItIsMet": "A style missing or out of place, a face the renderer does not hold and a character its family cannot set are each marked on the text, never set in a silent default ([The theme in the editor](#the-theme-in-the-editor), ET-I)"
         },
         {
           "id": "PUB-019",
