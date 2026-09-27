@@ -61,8 +61,8 @@ export async function listReadableComponents(
 ): Promise<ComponentPage | undefined> {
   const limit = checkedLimit(request.limit);
   const sort = request.sort ?? 'title';
-  const { type, order: byDefault } = listingSorts.components[sort];
-  if (!isListingRequest(request, type)) {
+  const { types, order: byDefault } = listingSorts.components[sort];
+  if (!isListingRequest(request, types)) {
     throw new Error('A page request names a cursor no listing gave out');
   }
   const readable = await loadReadableSet(trx, principalId);
@@ -99,7 +99,7 @@ export async function listReadableComponents(
     .select(['latest.revision_no', 'latest.version_no', 'latest.language', 'latest.created_at'])
     .select(['latest.author_id', 'p.display_name', 'p.email'])
     .select(sql<string | null>`t.content ->> 'name'`.as('type'))
-    .select(sortColumns(sort === 'title' ? sql`latest.title` : sql`latest.created_at`))
+    .select(sortColumns([sort === 'title' ? sql`latest.title` : sql`latest.created_at`]))
     .where('a.kind', '=', 'component')
     .where((eb) => readableArtifacts(eb, readable))
     .$if(filter.spaces !== undefined, (query) =>
@@ -110,7 +110,6 @@ export async function listReadableComponents(
     );
   const { rows, next } = await keysetPage<{
     id: string;
-    sort_text: string;
     title: string;
     space_id: string;
     space_name: string;
@@ -122,7 +121,7 @@ export async function listReadableComponents(
     author_id: string | null;
     display_name: string | null;
     email: string | null;
-  }>(trx, inner, type, request.order ?? byDefault, limit, request.after);
+  }>(trx, inner, types, request.order ?? byDefault, limit, request.after);
 
   return {
     items: rows.map((row) => ({

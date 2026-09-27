@@ -205,8 +205,8 @@ export async function listReadableTemplates(
 ): Promise<Listed<TemplateSummary> | undefined> {
   const limit = checkedLimit(request.limit);
   const sort = request.sort ?? 'name';
-  const { type, order: byDefault } = listingSorts.templates[sort];
-  if (!isListingRequest(request, type)) {
+  const { types, order: byDefault } = listingSorts.templates[sort];
+  if (!isListingRequest(request, types)) {
     throw new Error('A page request names a cursor no listing gave out');
   }
   const readable = await loadReadableSet(trx, principalId);
@@ -236,12 +236,11 @@ export async function listReadableTemplates(
     )
     .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.name'])
     .select(['latest.version_id', 'latest.revision_no', 'latest.version_no', 'latest.created_at'])
-    .select(sortColumns(sort === 'name' ? sql`latest.name` : sql`latest.created_at`))
+    .select(sortColumns([sort === 'name' ? sql`latest.name` : sql`latest.created_at`]))
     .where('a.kind', '=', 'template')
     .where((eb) => readableArtifacts(eb, readable));
   const { rows, next } = await keysetPage<{
     id: string;
-    sort_text: string;
     name: string;
     space_id: string;
     space_name: string;
@@ -249,7 +248,7 @@ export async function listReadableTemplates(
     revision_no: number;
     version_no: number;
     created_at: Date;
-  }>(trx, inner, type, request.order ?? byDefault, limit, request.after);
+  }>(trx, inner, types, request.order ?? byDefault, limit, request.after);
   return {
     items: rows.map((row) => ({
       id: row.id,

@@ -300,7 +300,9 @@ version's time, `published` the publication's (LI-C).
 
 ### Paging that neither repeats nor skips
 
-Every sort is its key and then the artifact's id, which is unique, so the order is total (SCH-042), and
+Every sort is its key - for publications by time, the time and then when each was recorded, since a
+publication's time is to the second - and then the artifact's id, which is unique, so the order is
+total (SCH-042), and
 a page is read by keyset: the rows after the last one shown, `(key, id) > (last key, last id)` in the
 sort's direction, never an offset (API-007, LI-E).
 

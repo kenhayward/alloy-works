@@ -22,7 +22,7 @@ interface Written {
   readonly s: string;
   readonly o: SortOrder;
   readonly n: string;
-  readonly k: string;
+  readonly k: readonly string[];
   readonly i: string;
 }
 
@@ -47,7 +47,7 @@ export function cursorFor<L extends ListingName>(
     s: sort,
     o: order,
     n: snapshot,
-    k: next.key,
+    k: next.keys,
     i: next.id,
   };
   return Buffer.from(JSON.stringify(written), 'utf8').toString('base64url');
@@ -69,10 +69,10 @@ export function pageAsked<L extends ListingName>(
 ): ListingRequest<SortOf<L>> & { readonly sort: SortOf<L>; readonly order: SortOrder } {
   const sorts = listingSorts[listing] as Record<
     string,
-    { type: 'text' | 'timestamptz'; order: SortOrder }
+    { types: readonly ('text' | 'timestamptz')[]; order: SortOrder }
   >;
   const sort = (query.sort ?? Object.keys(sorts)[0]!) as SortOf<L>;
-  const { type, order: byDefault } = sorts[sort]!;
+  const { types, order: byDefault } = sorts[sort]!;
   const order = query.order ?? byDefault;
   const limit = query.limit === undefined ? PAGE : Number(query.limit);
   if (query.cursor === undefined) return { sort, order, limit };
@@ -90,7 +90,7 @@ export function pageAsked<L extends ListingName>(
     written.s !== sort ||
     written.o !== order ||
     typeof written.n !== 'string' ||
-    typeof written.k !== 'string' ||
+    !Array.isArray(written.k) ||
     typeof written.i !== 'string'
   ) {
     throw refusedCursor();
@@ -99,9 +99,9 @@ export function pageAsked<L extends ListingName>(
     sort,
     order,
     limit,
-    after: { key: written.k, id: written.i },
+    after: { keys: written.k, id: written.i },
     snapshot: written.n,
   };
-  if (!isListingRequest(request, type)) throw refusedCursor();
+  if (!isListingRequest(request, types)) throw refusedCursor();
   return request;
 }

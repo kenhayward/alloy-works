@@ -1174,8 +1174,8 @@ async function readablePublications(
 ): Promise<Listed<PublicationSummary> | undefined> {
   const limit = checkedLimit(request.limit);
   const sort = request.sort ?? 'published';
-  const { type, order: byDefault } = listingSorts.publications[sort];
-  if (!isListingRequest(request, type)) {
+  const { types, order: byDefault } = listingSorts.publications[sort];
+  if (!isListingRequest(request, types)) {
     throw new Error('A page request names a cursor no listing gave out');
   }
   const readable = await loadReadableSet(trx, principalId);
@@ -1187,13 +1187,24 @@ async function readablePublications(
     .innerJoin('principal as pr', 'pr.id', 'p.publisher')
     .innerJoin('artifact_version as v', 'v.id', 'p.document_version_id')
     .select([...publicationColumns, sql<string>`v.content ->> 'title'`.as('title')])
-    .select(sortColumns(sort === 'published' ? sql`p.published_at` : sql`v.content ->> 'title'`))
+    .select(
+      sortColumns(
+        sort === 'published'
+          ? [sql`p.published_at`, sql`a.created_at`]
+          : [sql`v.content ->> 'title'`],
+      ),
+    )
     .$if(documentId !== null, (query) => query.where('p.document_id', '=', documentId!))
     .where((eb) => readableArtifacts(eb, readable))
     .where(visibleIn('p.written_by', snapshot));
-  const { rows, next } = await keysetPage<
-    Parameters<typeof summaryOf>[0] & { readonly sort_text: string }
-  >(trx, inner, type, request.order ?? byDefault, limit, request.after);
+  const { rows, next } = await keysetPage<Parameters<typeof summaryOf>[0]>(
+    trx,
+    inner,
+    types,
+    request.order ?? byDefault,
+    limit,
+    request.after,
+  );
   return {
     items: rows.map((row) => summaryOf({ ...row, published_at: new Date(row.published_at) })),
     next,

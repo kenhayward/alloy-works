@@ -12,32 +12,39 @@ export type SortOrder = 'asc' | 'desc';
 /** A sort key's type, as Postgres compares it: text by the database's collation, or a time. */
 export type KeyType = 'text' | 'timestamptz';
 
-/** Each listing's sorts, the default first, each with its type and its own default order (LI-C). */
+/**
+ * Each listing's sorts, the default first, each with its keys' types and its own default order (LI-C).
+ * A sort is one key or more, and then the id: a publication's time is to the second, so two published
+ * in one second are told apart by when each was recorded before their ids are reached.
+ */
 export const listingSorts = {
   components: {
-    title: { type: 'text', order: 'asc' },
-    changed: { type: 'timestamptz', order: 'desc' },
+    title: { types: ['text'], order: 'asc' },
+    changed: { types: ['timestamptz'], order: 'desc' },
   },
   documents: {
-    title: { type: 'text', order: 'asc' },
-    changed: { type: 'timestamptz', order: 'desc' },
+    title: { types: ['text'], order: 'asc' },
+    changed: { types: ['timestamptz'], order: 'desc' },
   },
   publications: {
-    published: { type: 'timestamptz', order: 'desc' },
-    title: { type: 'text', order: 'asc' },
+    published: { types: ['timestamptz', 'timestamptz'], order: 'desc' },
+    title: { types: ['text'], order: 'asc' },
   },
   templates: {
-    name: { type: 'text', order: 'asc' },
-    changed: { type: 'timestamptz', order: 'desc' },
+    name: { types: ['text'], order: 'asc' },
+    changed: { types: ['timestamptz'], order: 'desc' },
   },
-} as const satisfies Record<string, Record<string, { type: KeyType; order: SortOrder }>>;
+} as const satisfies Record<
+  string,
+  Record<string, { types: readonly KeyType[]; order: SortOrder }>
+>;
 
 export type ListingName = keyof typeof listingSorts;
 export type SortOf<L extends ListingName> = keyof (typeof listingSorts)[L] & string;
 
-/** Where the previous page ended: the last row's sort key, as Postgres spells it, and its id. */
+/** Where the previous page ended: the last row's sort keys, as Postgres spells them, and its id. */
 export interface Keyset {
-  readonly key: string;
+  readonly keys: readonly string[];
   readonly id: string;
 }
 
@@ -68,11 +75,19 @@ const TIME = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?[+-]\d{2}(?::\d{
  * keyset whose id is an id and whose key is of the sort's type. A caller answers one that is not as a
  * cursor the listing did not give out, rather than let Postgres fail on it.
  */
-export function isListingRequest(request: ListingRequest<string>, type: KeyType): boolean {
+export function isListingRequest(
+  request: ListingRequest<string>,
+  types: readonly KeyType[],
+): boolean {
   if (request.snapshot !== undefined && !SNAPSHOT.test(request.snapshot)) return false;
   if (request.after === undefined) return true;
-  if (!UUID.test(request.after.id)) return false;
-  return type === 'text' ? request.after.key.length <= 2000 : TIME.test(request.after.key);
+  const { keys, id } = request.after;
+  if (!UUID.test(id) || !Array.isArray(keys) || keys.length !== types.length) return false;
+  return types.every((type, index) => {
+    const key = keys[index];
+    if (typeof key !== 'string') return false;
+    return type === 'text' ? key.length <= 2000 : TIME.test(key);
+  });
 }
 
 /** Throws unless the limit is an integer 1 to 100 (API-007) - the rule every listing shares. */
@@ -102,40 +117,51 @@ export function visibleIn(column: string, snapshot: string): RawBuilder<SqlBool>
   return sql<SqlBool>`(${written} is null or pg_visible_in_snapshot(${written}, ${snapshot}::pg_snapshot))`;
 }
 
-/** A listing's sort key, and the same key spelled as text for a cursor: the columns `keysetPage` reads. */
-export function sortColumns(key: RawBuilder<unknown>) {
-  return [key.as('sort_key'), sql<string>`(${key})::text`.as('sort_text')] as const;
+/**
+ * A listing's sort keys, each also spelled as text for a cursor: the columns `keysetPage` reads,
+ * `sort_key_<n>` and `sort_text_<n>`.
+ */
+export function sortColumns(keys: readonly RawBuilder<unknown>[]) {
+  return keys.flatMap((key, index) => [
+    key.as(`sort_key_${index}`),
+    sql<string>`(${key})::text`.as(`sort_text_${index}`),
+  ]);
 }
 
 /**
- * One page of `inner` - a query selecting at least `id`, `sort_key` and `sort_text`, the key spelled
- * as text - by keyset over the key and then the id, in the order asked: the rows after `after`, never
- * an offset (API-007, SCH-022). Answers the page's rows and where the next begins.
+ * One page of `inner` - a query selecting at least `id` and each key's `sort_key_<n>` and `sort_text_<n>`
+ * - by keyset over the keys and then the id, in the order asked: the rows after `after`, never an offset
+ * (API-007, SCH-022). Answers the page's rows and where the next begins.
  */
-export async function keysetPage<Row extends { readonly id: string; readonly sort_text: string }>(
+export async function keysetPage<Row extends { readonly id: string }>(
   trx: TenantTransaction,
   inner: Compilable,
-  type: KeyType,
+  types: readonly KeyType[],
   order: SortOrder,
   limit: number,
   after: Keyset | undefined,
 ): Promise<{ readonly rows: readonly Row[]; readonly next: Keyset | null }> {
   const direction = sql.raw(order === 'asc' ? 'asc' : 'desc');
   const past = sql.raw(order === 'asc' ? '>' : '<');
-  const cast = sql.raw(type);
-  const { rows } = await sql<Row>`
+  const columns = types.map((_, index) => sql.ref(`x.sort_key_${index}`));
+  const { rows } = await sql<Row & Record<string, unknown>>`
     select x.* from (${inner}) as x
     where ${
       after === undefined
         ? sql`true`
-        : sql`(x.sort_key, x.id) ${past} (${after.key}::${cast}, ${after.id}::uuid)`
+        : sql`(${sql.join(columns)}, x.id) ${past} (${sql.join(
+            types.map((type, index) => sql`${after.keys[index]}::${sql.raw(type)}`),
+          )}, ${after.id}::uuid)`
     }
-    order by x.sort_key ${direction}, x.id ${direction}
+    order by ${sql.join(columns.map((column) => sql`${column} ${direction}`))}, x.id ${direction}
     limit ${limit + 1}`.execute(trx);
   const shown = rows.slice(0, limit);
   const last = shown[shown.length - 1];
   return {
     rows: shown,
-    next: rows.length > limit && last !== undefined ? { key: last.sort_text, id: last.id } : null,
+    next:
+      rows.length > limit && last !== undefined
+        ? { keys: types.map((_, index) => String(last[`sort_text_${index}`])), id: last.id }
+        : null,
   };
 }

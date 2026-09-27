@@ -234,8 +234,8 @@ export async function listReadableDocuments(
 ): Promise<Listed<DocumentSummary> | undefined> {
   const limit = checkedLimit(request.limit);
   const sort = request.sort ?? 'title';
-  const { type, order: byDefault } = listingSorts.documents[sort];
-  if (!isListingRequest(request, type)) {
+  const { types, order: byDefault } = listingSorts.documents[sort];
+  if (!isListingRequest(request, types)) {
     throw new Error('A page request names a cursor no listing gave out');
   }
   const readable = await loadReadableSet(trx, principalId);
@@ -274,12 +274,11 @@ export async function listReadableDocuments(
     .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.title'])
     .select(['latest.revision_no', 'latest.version_no', 'latest.version_id', 'latest.created_at'])
     .select(['latest.sections', 'latest.components'])
-    .select(sortColumns(sort === 'title' ? sql`latest.title` : sql`latest.created_at`))
+    .select(sortColumns([sort === 'title' ? sql`latest.title` : sql`latest.created_at`]))
     .where('a.kind', '=', 'document')
     .where((eb) => readableArtifacts(eb, readable));
   const { rows, next } = await keysetPage<{
     id: string;
-    sort_text: string;
     title: string;
     space_id: string;
     space_name: string;
@@ -289,7 +288,7 @@ export async function listReadableDocuments(
     created_at: Date;
     sections: number;
     components: number;
-  }>(trx, inner, type, request.order ?? byDefault, limit, request.after);
+  }>(trx, inner, types, request.order ?? byDefault, limit, request.after);
 
   // The latest publication the reader may read of each, by the one readable-set predicate and as of
   // the walk's snapshot: which version it was made from is all the state needs.

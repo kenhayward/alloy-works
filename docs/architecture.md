@@ -1065,7 +1065,8 @@ wrong. `assemble` fails a request holding failures, so the publication fails nam
 
 Components, documents, publications and templates are each listed a page at a time by one rule
 (service-foundations.md, "Listings and idempotency, in T1"; W7). Each takes `cursor`, `limit`, `sort`
-and `order`, sorts by its key and then the artifact's id - a total order - and reads a page by keyset,
+and `order`, sorts by its keys and then the artifact's id - a total order; a publication's time is to
+the second, so two in one second are told apart by when each was recorded - and reads a page by keyset,
 the rows after the last one shown, never an offset (API-007). A listing is read **as of its first
 page**: that page records the database's snapshot, and every later one keeps only the versions and
 publications the snapshot could see, by the transaction each records as `written_by` (0032), so a walk
