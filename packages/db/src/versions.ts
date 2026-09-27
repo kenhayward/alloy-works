@@ -131,7 +131,14 @@ function prepare(substance: VersionSubstance): VersionSubstance {
   }
   if (substance.kind === 'document') {
     // An outline carries no `id`: a document's identity is its artifact row's, as a component's is.
-    return { kind: 'document', content: parseOutlineDocument(substance.content) };
+    // Its values are its template's fields', written already checked (templates.md, "Values"), and
+    // left out where there are none, so a document with none digests as it did before templates.
+    const values = substance.values ?? {};
+    return {
+      kind: 'document',
+      content: parseOutlineDocument(substance.content),
+      ...(Object.keys(values).length === 0 ? {} : { values }),
+    };
   }
   if (substance.kind === 'layout') {
     // A layout carries no `id` either: it is a definition in no space, identified by its artifact row.
@@ -174,6 +181,8 @@ async function insertVersion(
   digests = versionDigests(substance),
 ): Promise<StoredVersion> {
   const component = substance.kind === 'component' ? substance : undefined;
+  const values =
+    component?.values ?? (substance.kind === 'document' ? substance.values : undefined) ?? {};
   const row = await trx
     .insertInto('artifact_version')
     .values({
@@ -186,7 +195,7 @@ async function insertVersion(
       schema_version: substance.content.schemaVersion,
       content: JSON.stringify(substance.content),
       content_hash: digests.contentHash,
-      metadata_values: JSON.stringify(component?.values ?? {}),
+      metadata_values: JSON.stringify(values),
       not_carried: JSON.stringify(component?.notCarried ?? []),
       component_type_version_id: component ? componentTypeOf(component.definitions) : null,
       version_digest: digests.versionDigest,
@@ -339,6 +348,13 @@ export function substanceOf(stored: StoredVersion): VersionSubstance {
       values: stored.values,
       notCarried: stored.notCarried,
       definitions: stored.definitions,
+    };
+  }
+  if (stored.kind === 'document') {
+    return {
+      kind: 'document',
+      content: stored.content as Extract<VersionSubstance, { kind: 'document' }>['content'],
+      values: stored.values,
     };
   }
   return { kind: stored.kind, content: stored.content } as VersionSubstance;

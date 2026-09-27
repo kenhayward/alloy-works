@@ -173,6 +173,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0027_word_layout_and_outputs',
       '0028_templates',
+      '0029_document_template',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

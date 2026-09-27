@@ -34,10 +34,15 @@ export type DefinitionSubstance = {
   [K in DefinitionKind]: { readonly kind: K; readonly content: DefinitionOf[K] };
 }[DefinitionKind];
 
-/** A document version says its outline, and nothing else. */
+/**
+ * A document version says its outline, and the values of the fields its template applies to it
+ * (templates.md, "Values"). A document made blank, or before templates, has none, and says so by
+ * leaving `values` out or empty alike: both serialise as the empty object its digest was taken over.
+ */
 export type DocumentSubstance = {
   readonly kind: 'document';
   readonly content: OutlineDocument;
+  readonly values?: MetadataValues;
 };
 
 /**
@@ -127,17 +132,20 @@ export function canonicaliseVersionContent(substance: VersionSubstance): string 
  * One canonical JSON document of five members in lexicographic order - `componentType`, `content`,
  * `definitions`, `notCarried`, `values` - composed from each member's own canonical form rather than
  * by serialising one object, because content's rule that `marks` is a set must not reach a metadata
- * field whose identifier happens to be `marks` (MET-030). A definition version holds the same five
- * members, with no type, no definitions and no values, so every row's digest has one shape.
+ * field whose identifier happens to be `marks` (MET-030). A document version holds its values and
+ * nothing else of the three; a definition version holds the same five members, with no type, no
+ * definitions and no values, so every row's digest has one shape.
  */
 export function canonicaliseVersion(substance: VersionSubstance): string {
   const component = substance.kind === 'component' ? substance : undefined;
+  const values =
+    component?.values ?? (substance.kind === 'document' ? substance.values : undefined);
   const members: readonly (readonly [string, string])[] = [
     ['componentType', canonicalJson(component ? componentTypeOf(component.definitions) : null)],
     ['content', canonicaliseVersionContent(substance)],
     ['definitions', canonicaliseDefinitions(component?.definitions ?? [])],
     ['notCarried', canonicaliseNotCarried(component?.notCarried ?? [])],
-    ['values', canonicaliseValues(component?.values ?? {})],
+    ['values', canonicaliseValues(values ?? {})],
   ];
   return `{${members.map(([name, value]) => `${JSON.stringify(name)}:${value}`).join(',')}}`;
 }

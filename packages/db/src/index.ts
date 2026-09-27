@@ -241,6 +241,7 @@ export {
 } from './components.js';
 export {
   createDocument,
+  documentTemplate,
   editOutline,
   listReadableDocuments,
   readableComponents,

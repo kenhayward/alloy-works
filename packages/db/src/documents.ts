@@ -3,18 +3,22 @@ import {
   applyOutlineOperation,
   blockIdentifierFrom,
   decide,
+  materialiseTemplate,
   OUTLINE_SCHEMA_VERSION,
   outlineDocumentSchema,
   readOutline,
+  resolveTemplate,
   walkOutline,
   type OutlineDocument,
   type OutlineNode,
   type OutlineOperation,
+  type UnresolvedReference,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
+import { readTemplate, templateReferences } from './templates.js';
 import {
   createArtifact,
   latestVersion,
@@ -39,6 +43,8 @@ export interface NewDocument {
   readonly language: string;
   readonly direction: 'ltr' | 'rtl';
   readonly author: string;
+  /** The template to make it from, at its latest version (templates.md); a blank document without. */
+  readonly template?: string;
 }
 
 export type CreateDocumentAnswer =
@@ -46,7 +52,11 @@ export type CreateDocumentAnswer =
   /** This environment holds no such space. */
   | { readonly answer: 'space.missing' }
   /** The title, language or direction is not one the outline accepts. */
-  | { readonly answer: 'content.invalid' };
+  | { readonly answer: 'content.invalid' }
+  /** No template by that id that the author may read (TE-I): nothing tells the two apart. */
+  | { readonly answer: 'template.missing' }
+  /** A reference the template makes does not resolve now (TPL-004), each named; nothing is written. */
+  | { readonly answer: 'template.unresolved'; readonly unresolved: readonly UnresolvedReference[] };
 
 /**
  * What one structural act answers: the version chain's own answers, or a refusal from the outline -
@@ -119,19 +129,66 @@ export async function createDocument(
     return { answer: 'content.invalid' };
   }
 
-  const content: OutlineDocument = {
-    schemaVersion: OUTLINE_SCHEMA_VERSION,
-    title,
-    language: input.language,
-    direction: input.direction,
-    nodes: [],
-  };
+  const heading = { title, language: input.language, direction: input.direction };
+  if (input.template === undefined) {
+    const content: OutlineDocument = {
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
+      ...heading,
+      nodes: [],
+    };
+    const version = await createArtifact(trx, {
+      author: input.author,
+      spaceId: input.spaceId,
+      substance: { kind: 'document', content },
+    });
+    return { answer: 'created', version };
+  }
+
+  // From a template (templates.md, "Making a document from a template"): read at its latest version
+  // where the author may read it, resolved, and materialised - all in this transaction, so a template
+  // that fails any step leaves nothing behind.
+  if (!UUID.test(input.template)) return { answer: 'template.missing' };
+  const facts = await loadFacts(trx, input.author, { kind: 'artifact', id: input.template });
+  if (!facts || !decide('read', facts).allowed) return { answer: 'template.missing' };
+  const template = await readTemplate(trx, input.template);
+  if (!template) return { answer: 'template.missing' };
+  const resolved = resolveTemplate(
+    template.definition,
+    await templateReferences(trx, template.definition),
+  );
+  if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
+  const { outline, values } = materialiseTemplate(resolved, heading, newNodeIdentifier);
   const version = await createArtifact(trx, {
     author: input.author,
     spaceId: input.spaceId,
-    substance: { kind: 'document', content },
+    substance: { kind: 'document', content: outline, values },
   });
+  await trx
+    .insertInto('document_template')
+    .values({
+      document_id: version.artifactId,
+      template_id: template.id,
+      template_version_id: template.version.id,
+    })
+    .execute();
   return { answer: 'created', version };
+}
+
+/**
+ * The template, and the version of it, a document was made from (TPL-025), or undefined for a
+ * document made blank. Everything a document takes from its template is read at this version, so a
+ * template's later version changes nothing about it (TPL-027).
+ */
+export async function documentTemplate(
+  trx: TenantTransaction,
+  documentId: string,
+): Promise<{ readonly template: string; readonly version: string } | undefined> {
+  const row = await trx
+    .selectFrom('document_template')
+    .select(['template_id', 'template_version_id'])
+    .where('document_id', '=', documentId)
+    .executeTakeFirst();
+  return row && { template: row.template_id, version: row.template_version_id };
 }
 
 /**
@@ -381,6 +438,7 @@ export async function editOutline(
     artifactId: input.artifactId,
     openedFrom: input.openedFrom,
     author: input.author,
-    substance: { kind: 'document', content: applied.outline },
+    // The document's values are not the outline's to change, so they are carried as they stand.
+    substance: { kind: 'document', content: applied.outline, values: opened.values },
   });
 }

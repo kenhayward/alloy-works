@@ -4,6 +4,11 @@ import type { ContentDocument } from '../content/model/document.js';
 import { DEFINITION_SCHEMA_VERSION } from '../metadata/definition.js';
 import { fieldDefinitionSchema } from '../metadata/field.js';
 import { canonicalJson } from '../stored/canonical.js';
+import {
+  canonicaliseOutline,
+  OUTLINE_SCHEMA_VERSION,
+  type OutlineDocument,
+} from '../structure/outline.js';
 
 import {
   canonicaliseVersion,
@@ -163,6 +168,29 @@ describe('the canonical serialisation of a whole version', () => {
     expect(canonicaliseVersion({ kind: 'field', content: field })).toBe(
       `{"componentType":null,"content":${canonicalJson(field)},"definitions":[],"notCarried":[],"values":{}}`,
     );
+  });
+
+  it("reads a document's values into the values member, and one with none digests as it did", () => {
+    const outline: OutlineDocument = {
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
+      title: 'The dosing report',
+      language: 'en-GB',
+      direction: 'ltr',
+      nodes: [],
+    };
+    // A document version made before templates says no values, and its serialisation is the one it
+    // was digested over: the member was the empty object then and is still.
+    expect(canonicaliseVersion({ kind: 'document', content: outline })).toBe(
+      `{"componentType":null,"content":${canonicaliseOutline(outline)},"definitions":[],"notCarried":[],"values":{}}`,
+    );
+    expect(canonicaliseVersion({ kind: 'document', content: outline, values: {} })).toBe(
+      canonicaliseVersion({ kind: 'document', content: outline }),
+    );
+    // One made from a template says its values, under the rule a component's take: a field whose
+    // identifier is `marks` keeps its order.
+    expect(
+      canonicaliseVersion({ kind: 'document', content: outline, values: { marks: ['b', 'a'] } }),
+    ).toContain('"values":{"marks":["b","a"]}');
   });
 
   // Pinned, and never edited: every stored version digest is SHA-256 over this serialisation, so a
