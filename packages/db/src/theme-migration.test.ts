@@ -57,6 +57,20 @@ import type { StoredVersion } from './versions.js';
 
 const ISSUER = 'https://idp.example';
 
+/**
+ * The theme `publicationInputs` hands the job for a request - the version the request recorded, read
+ * with the catalogue versions it names - read as `publicationInputs` reads it, in an environment
+ * migrated only to 0026: `publicationInputs` reads the request's kind too, which 0035 added.
+ */
+async function themeHandedAt0026(trx: TenantTransaction, requestId: string) {
+  const { theme_version_id } = await trx
+    .selectFrom('publication_request')
+    .select('theme_version_id')
+    .where('id', '=', requestId)
+    .executeTakeFirstOrThrow();
+  return { versionId: theme_version_id!, theme: await themeAt(trx, theme_version_id!) };
+}
+
 /** A theme and the catalogues it names, as the domain reads them from its own data. */
 function read(theme: Theme, catalogues: ReadonlyMap<string, unknown>): ResolvedTheme {
   const outcome = readTheme(theme, catalogues);
@@ -288,6 +302,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0032_listing_snapshot',
       '0033_idempotency',
       '0034_default_theme_choices',
+      '0035_previews',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -677,8 +692,8 @@ describe('migration 0025, which gives the default theme its table and image styl
       return {
         made: requested,
         handed: {
-          waiting: (await publicationInputs(trx, waiting))!.theme,
-          made: (await publicationInputs(trx, requested))!.theme,
+          waiting: await themeHandedAt0026(trx, waiting),
+          made: await themeHandedAt0026(trx, requested),
         },
       };
     });
@@ -923,8 +938,8 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
         requester: ada,
       });
       return {
-        waiting: (await publicationInputs(trx, waiting))!.theme,
-        made: (await publicationInputs(trx, made))!.theme,
+        waiting: await themeHandedAt0026(trx, waiting),
+        made: await themeHandedAt0026(trx, made),
       };
     });
     expect(handed).toEqual({
@@ -956,6 +971,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0032_listing_snapshot',
       '0033_idempotency',
       '0034_default_theme_choices',
+      '0035_previews',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -997,6 +1013,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0032_listing_snapshot',
       '0033_idempotency',
       '0034_default_theme_choices',
+      '0035_previews',
     ]);
 
     const chain = await themeChain(tenant);
@@ -1117,6 +1134,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
 
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0034_default_theme_choices',
+      '0035_previews',
     ]);
 
     // The theme is at 0.4, under its fixed identifier, unauthored, on top of 0.3; each revised
@@ -1194,6 +1212,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
 
       expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
         '0034_default_theme_choices',
+        '0035_previews',
       ]);
 
       // The catalogue is left at the environment's own version, with nothing of the product's on top.
@@ -1235,6 +1254,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
 
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0034_default_theme_choices',
+      '0035_previews',
     ]);
 
     // The theme is left at the environment's own 0.4, with nothing of the product's on top, and still

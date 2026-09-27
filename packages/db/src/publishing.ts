@@ -449,6 +449,13 @@ export type PublicationRequestAnswer =
  * occurrence, and the job, all in one transaction. A request with failures is still queued: `assemble` adds its own for
  * what the publisher can read, and the author is told once (PUB-052). The formats are recorded PDF
  * first, whichever order they were asked in: a set, spelled one way.
+ *
+ * **A preview is asked for here too, by the same code path** (publishing.md, "Preview"; PUB-006):
+ * every check and refusal above is a publish's, and it records the same versions, layout and theme a
+ * publish of that version would. It differs in three things: it is the PDF alone (PV-C), so a format
+ * beyond it is refused by name; it is recorded as a preview; and its job is a `preview`. Who may ask
+ * for one - `read` on the document, where a publish needs `publish` - is the caller's to decide, as
+ * `publish` is (PV-B).
  */
 export async function requestPublication(
   trx: TenantTransaction,
@@ -457,8 +464,11 @@ export async function requestPublication(
     readonly version: string;
     readonly formats: readonly string[];
     readonly requester: string;
+    /** A publish unless told: a preview of that version, marked as one and kept for an hour. */
+    readonly kind?: 'publish' | 'preview';
   },
 ): Promise<PublicationRequestAnswer> {
+  const kind = input.kind ?? 'publish';
   const latest = await latestVersion(trx, input.documentId);
   if (!latest || latest.kind !== 'document') return { answer: 'document.missing' };
   if (latest.id !== input.version) {
@@ -469,8 +479,15 @@ export async function requestPublication(
   // declared one (templates.md) - recorded by its key: the job publishes under that version, whatever
   // the layout becomes before it runs.
   const layout = await documentLayout(trx, input.documentId);
+  // Under a layout that makes no PDF a preview of one is refused here too, naming `pdf`.
   const unsupported = unsupportedFormats(layout.layout, input.formats);
   if (unsupported.length > 0) return { answer: 'format.unsupported', formats: unsupported };
+  // A preview is the PDF alone (PV-C): Word's pagination would be our guess at Word's, which is why
+  // CNT-095 was narrowed. Each format beyond it is named once, in the order asked.
+  if (kind === 'preview') {
+    const beyond = [...new Set(input.formats.filter((format) => format !== 'pdf'))];
+    if (beyond.length > 0) return { answer: 'format.unsupported', formats: beyond };
+  }
   // The contract refuses both; this function is public, and would otherwise record a request for
   // formats nobody named, or one format twice.
   if (input.formats.length === 0 || new Set(input.formats).size !== input.formats.length) {
@@ -552,6 +569,8 @@ export async function requestPublication(
       layout_version_id: layout.versionId,
       theme_id: theme.artifactId,
       theme_version_id: theme.versionId,
+      // A preview names its kind; a publish is the column's default, as every request before 0035 was.
+      ...(kind === 'preview' ? { kind } : {}),
     })
     .returning(['id'])
     .executeTakeFirstOrThrow();
@@ -580,7 +599,8 @@ export async function requestPublication(
       )
       .execute();
   }
-  await enqueueJob(trx, 'publish', request.id);
+  // A job kind of its own, on the one queue, so a deployment can give previews workers of their own.
+  await enqueueJob(trx, kind, request.id);
   return { answer: 'requested', request: { id: request.id, state: 'queued' } };
 }
 
@@ -588,6 +608,8 @@ export async function requestPublication(
 export interface PublicationInputs {
   readonly request: {
     readonly id: string;
+    /** What the job makes of it (0035): a publication, or a preview, which records none. */
+    readonly kind: 'publish' | 'preview';
     readonly documentId: string;
     readonly documentVersionId: string;
     readonly requestedBy: string;
@@ -643,6 +665,7 @@ export async function publicationInputs(
     .leftJoin('artifact_version as l', 'l.id', 'r.layout_version_id')
     .select([
       'r.id',
+      'r.kind',
       'r.document_id',
       'r.document_version_id',
       'r.requested_by',
@@ -726,6 +749,7 @@ export async function publicationInputs(
   return {
     request: {
       id: request.id,
+      kind: request.kind,
       documentId: request.document_id,
       documentVersionId: request.document_version_id,
       requestedBy: request.requested_by,
@@ -815,6 +839,7 @@ export async function recordPublication(
     .innerJoin('artifact as a', 'a.id', 'r.document_id')
     .select([
       'r.id',
+      'r.kind',
       'r.state',
       'r.document_id',
       'r.document_version_id',
@@ -831,6 +856,13 @@ export async function recordPublication(
     .where('r.id', '=', input.requestId)
     .forUpdate('r')
     .executeTakeFirst();
+  // A preview makes no publication (PV-A): reaching here with one is a bug in the caller, refused
+  // before anything is written, as 0035's `publication_recorded_whole` would refuse it at commit.
+  if (request?.kind === 'preview') {
+    throw new Error(
+      `The request ${request.id} is a preview, which records no publication: record it with recordPreview`,
+    );
+  }
   if (!request || request.state !== 'queued') return undefined;
   if (request.failures.length > 0) {
     throw new Error(
@@ -987,14 +1019,85 @@ async function insertPublication(
   return artifact.id;
 }
 
+/** A preview's PDF as it is recorded on its request: in the tenant's store by its hash. */
+export interface NewPreview {
+  readonly requestId: string;
+  readonly key: string;
+  readonly sha256: string;
+  readonly bytes: number;
+}
+
+/**
+ * A preview made (publishing.md, "Preview"; PV-A, PV-F): its PDF recorded on its request, which is
+ * finished done and expires an hour later. Nothing else is written - no artifact, no publication, no
+ * inputs and no outputs - so nothing lists it, searches it or keeps it. **The request's row is locked
+ * first**, as `recordPublication` locks it, so a second worker racing an expired lease waits, then
+ * finds it done and records nothing. Answers when it expires, or undefined where the request had
+ * already finished or does not exist.
+ *
+ * A publish request has a publication to record, not a preview, and a request carrying failures has
+ * nothing to record: `assemble` refuses it. Reaching here with either is a bug in the caller, thrown
+ * before anything is written, as 0035's checks would otherwise refuse only at the row.
+ */
+export async function recordPreview(
+  trx: TenantTransaction,
+  input: NewPreview,
+): Promise<Date | undefined> {
+  const request = await trx
+    .selectFrom('publication_request')
+    .select(['id', 'kind', 'state', 'failures'])
+    .where('id', '=', input.requestId)
+    .forUpdate()
+    .executeTakeFirst();
+  if (!request) return undefined;
+  if (request.kind !== 'preview') {
+    throw new Error(
+      `The request ${request.id} is a publish, which records a publication and never a preview: record it with recordPublication`,
+    );
+  }
+  if (request.state !== 'queued') return undefined;
+  if (request.failures.length > 0) {
+    throw new Error(
+      `The request ${request.id} carries failures, so it has no preview to record: fail it instead`,
+    );
+  }
+  const done = await trx
+    .updateTable('publication_request')
+    .set({
+      state: 'done',
+      finished_at: sql<Date>`now()`,
+      // An hour after it finished, read by the one clock that finished it (PV-F).
+      expires_at: sql<Date>`now() + interval '1 hour'`,
+      preview_key: input.key,
+      preview_sha256: input.sha256,
+      preview_bytes: input.bytes,
+    })
+    .where('id', '=', request.id)
+    .returning('expires_at')
+    .executeTakeFirstOrThrow();
+  return done.expires_at!;
+}
+
 /** A request as its requester is shown it. */
 export interface StoredPublicationRequest {
   readonly id: string;
   readonly documentId: string;
   readonly requestedBy: string;
+  /** A publish, or a preview (0035). */
+  readonly kind: 'publish' | 'preview';
   readonly state: 'queued' | 'done' | 'failed';
   readonly failures: readonly PublishFailure[];
   readonly publication: string | null;
+  /**
+   * A done preview's PDF and when it expires; null for anything else - a publish always, and a preview
+   * still queued or failed. Whether it has expired is the caller's to decide against its own clock.
+   */
+  readonly preview: {
+    readonly key: string;
+    readonly sha256: string;
+    readonly bytes: number;
+    readonly expiresAt: Date;
+  } | null;
 }
 
 /**
@@ -1016,8 +1119,13 @@ export async function readPublicationRequest(
       'r.id',
       'r.document_id',
       'r.requested_by',
+      'r.kind',
       'r.state',
       'r.failures',
+      'r.preview_key',
+      'r.preview_sha256',
+      'r.preview_bytes',
+      'r.expires_at',
       'p.id as publication',
     ])
     .where('r.id', '=', id)
@@ -1027,9 +1135,26 @@ export async function readPublicationRequest(
       id: row.id,
       documentId: row.document_id,
       requestedBy: row.requested_by,
+      kind: row.kind,
       state: row.state,
       failures: row.failures as PublishFailure[],
       publication: row.publication,
+      // 0035 holds all four to a done preview and to nothing else; read only there regardless, so
+      // nothing can make a publish request read as a preview.
+      preview:
+        row.kind === 'preview' &&
+        row.state === 'done' &&
+        row.preview_key !== null &&
+        row.preview_sha256 !== null &&
+        row.preview_bytes !== null &&
+        row.expires_at !== null
+          ? {
+              key: row.preview_key,
+              sha256: row.preview_sha256,
+              bytes: row.preview_bytes,
+              expiresAt: row.expires_at,
+            }
+          : null,
     }
   );
 }

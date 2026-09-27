@@ -3,6 +3,7 @@ import { publishedImagePath, type PublishingAsset } from '@alloy-works/domain';
 import {
   failPublicationRequest,
   publicationInputs,
+  recordPreview,
   recordPublication,
   type NewPublicationOutput,
   type TenantDatabase,
@@ -127,6 +128,12 @@ async function keep(store: TenantStore, bytes: Uint8Array, format: 'pdf' | 'docx
  * whole, every output or none (docs/design/publishing.md, "The request and the job"; Word 1, ruling
  * R12). The worker decides nothing: the request recorded, as its publisher, which formats it asked
  * for, which version each occurrence takes and which it could not read, and this reads exactly those.
+ *
+ * **It runs a preview too** (publishing.md, "Preview"; PUB-006), registered for the `preview` job and
+ * told which it is by the request, never by the job: the same inputs through the same `assemble`, told
+ * the status, so every page says it is a preview (PUB-005); the PDF alone, which is all a preview asks
+ * for, kept in the same store the same way; and ended by `recordPreview`, which records the PDF on the
+ * request and no publication. A preview fails as a publish does, by `failed`, in the same words.
  */
 export function publishJob(deps: {
   readonly db: TenantDatabase;
@@ -169,7 +176,11 @@ export function publishJob(deps: {
       }
 
       const { formats } = request;
+      const preview = request.kind === 'preview';
       const assembled = assemble({
+        // A preview says so on every page in the layout's words (PUB-005), and is otherwise assembled
+        // exactly as a publish of the same request would be (PUB-006).
+        status: preview ? 'preview' : 'draft',
         // Told the formats, so it refuses what only the PDF's engine cannot set where a PDF is asked
         // for, and what Word cannot carry yet where Word is (Word 1, rulings R2 and R3): a request for
         // both fails if either would, before either output is made.
@@ -240,6 +251,28 @@ export function publishJob(deps: {
           sha256: stored.sha256,
           bytes: stored.size,
         });
+      }
+      if (preview) {
+        // The PDF alone, which is all a preview asks for (0035 holds its request to it), recorded on
+        // the request, in its own transaction, as a publication is: a record the database refuses is
+        // the store stage's, and the object stays behind, keyed by its hash, and nothing refers to it.
+        const [pdf] = outputs;
+        if (pdf?.format !== 'pdf' || outputs.length !== 1) {
+          throw new Error('A preview is the PDF alone, and this one made something else');
+        }
+        await deps.db
+          .withTenant(tenant, (trx) =>
+            recordPreview(trx, {
+              requestId: request.id,
+              key: pdf.key,
+              sha256: pdf.sha256,
+              bytes: pdf.bytes,
+            }),
+          )
+          .catch((error: unknown) => {
+            throw new StoreFailed('The preview could not be recorded.', { cause: error });
+          });
+        return;
       }
       // Its own transaction: a record that fails ends it, rolled back whole, and the request is failed
       // - after the last attempt - in a fresh one by `failed`, never in the one that caught the error.

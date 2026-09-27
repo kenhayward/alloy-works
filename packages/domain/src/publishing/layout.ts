@@ -45,8 +45,14 @@ import { DRAFT_NOTICE } from './published.js';
  * (PUB-014). A layout stored at version 4 reads as one without, for version 2's reason: which page an
  * author would give Word is not a migration's to guess. The PDF page stays required - every layout
  * makes the PDF, the one output a page number cites (PUB-065).
+ *
+ * **Version 6 added `words.preview`** (the preview, PV-D): what a preview says in place of the draft's
+ * notice on every page, and in place of its sentence where assistive technology reads it once - that
+ * it is a preview of unapproved content (PUB-005) - in the layout's language. **Required of a layout
+ * written at version 6**, and absent from one stored earlier, which reads as having none for version
+ * 3's reason: a preview under it fails by name rather than printing English.
  */
-export const LAYOUT_SCHEMA_VERSION = 5;
+export const LAYOUT_SCHEMA_VERSION = 6;
 
 /** The sequences a generated list can list: those a caption-bearing block takes (CNT-081, STR-041). */
 export const LISTED_SEQUENCES = ['figure', 'table', 'equation'] as const;
@@ -102,8 +108,9 @@ export interface Layout {
   /**
    * The words the product sets itself: the contents' title, the draft notice and its sentence, what
    * a relative reference prints either side of its target - both, or neither where the layout has no
-   * words for them - and what a continued table's label adds, which only a layout stored before
-   * schema version 4 lacks.
+   * words for them - what a continued table's label adds, which only a layout stored before
+   * schema version 4 lacks, and what a preview says in place of the notice and its sentence, which
+   * only a layout stored before schema version 6 lacks.
    */
   words: {
     contents: string;
@@ -112,6 +119,7 @@ export interface Layout {
     above?: string | undefined;
     below?: string | undefined;
     continued?: string | undefined;
+    preview?: { notice: string; sentence: string } | undefined;
   };
   /** The numbering scheme, in structure.md's shape, labels included (PUB-011, STR-013, STR-024). */
   scheme: NumberingScheme;
@@ -152,9 +160,10 @@ const settable = (text: string) => !codePoints(text).some(disallowed);
 
 /**
  * Words the product sets as the layout's: the contents' title, the draft notice, a relative
- * reference's _above_ and _below_, and a continued table's _continued_. Each must show something - a
- * blank notice, or one of only zero-width characters, would remove the draft's mark from every page,
- * which no layout may do, and a blank _above_ would print a reference as nothing.
+ * reference's _above_ and _below_, a continued table's _continued_, and a preview's notice and
+ * sentence. Each must show something - a blank notice, or one of only zero-width characters, would
+ * remove the draft's mark from every page, which no layout may do, a blank preview notice a preview's,
+ * and a blank _above_ would print a reference as nothing.
  */
 const words = z
   .string()
@@ -229,7 +238,8 @@ const pageFormatSchema = (side: z.ZodNumber) =>
  * layout - the document page reads a reference's _above_ and _below_ from it (cross-references 2,
  * ruling R9) without reading the rest, exactly as it already reads the numbering scheme apart.
  * `continued` is optional here, as a layout stored before schema version 4 reads without it; that a
- * layout written at 4 states it is `layoutSchema`'s to say.
+ * layout written at 4 states it is `layoutSchema`'s to say. So is `preview`, for a layout stored
+ * before schema version 6.
  */
 export const layoutWordsSchema = z
   .strictObject({
@@ -239,6 +249,7 @@ export const layoutWordsSchema = z
     above: words.optional(),
     below: words.optional(),
     continued: words.optional(),
+    preview: z.strictObject({ notice: words, sentence: words }).optional(),
   })
   .refine(
     ({ above, below }) => (above === undefined) === (below === undefined),
@@ -286,10 +297,10 @@ const upgradedLayoutSchema: z.ZodType<Layout> = z
   .refine(storableEverywhere, CANNOT_BE_STORED);
 
 /**
- * **A layout as it is written at the current schema version**: from version 4 on, with the words a
- * continued table's label adds (themes 2, ruling R2), since a writer knows its own language's.
+ * A layout as it was written at schema versions 4 and 5: with the words a continued table's label adds
+ * (themes 2, ruling R2), since a writer knows its own language's, and not yet with a preview's.
  */
-export const layoutSchema: z.ZodType<Layout> = upgradedLayoutSchema.refine(
+const continuedLayoutSchema: z.ZodType<Layout> = upgradedLayoutSchema.refine(
   (layout) => layout.words.continued !== undefined,
   {
     message: "A layout from schema version 4 on gives the words a continued table's label adds",
@@ -297,8 +308,25 @@ export const layoutSchema: z.ZodType<Layout> = upgradedLayoutSchema.refine(
   },
 );
 
+/**
+ * **A layout as it is written at the current schema version**: from version 4 on, with the words a
+ * continued table's label adds (themes 2, ruling R2), and from version 6 on with the words a preview
+ * says (PV-D), since a writer knows its own language's.
+ */
+export const layoutSchema: z.ZodType<Layout> = continuedLayoutSchema.refine(
+  (layout) => layout.words.preview !== undefined,
+  {
+    message:
+      "A layout from schema version 6 on gives the words a preview's notice and sentence say",
+    path: ['words', 'preview'],
+  },
+);
+
 /** The version from which a layout is written with the words a continued table's label adds. */
 const CONTINUED_SINCE = 4;
+
+/** The version from which a layout is written with the words a preview says. */
+const PREVIEW_SINCE = 6;
 
 /** The one entry point for a layout at the current schema version, as it is written. */
 export function parseLayout(value: unknown): Layout {
@@ -306,17 +334,19 @@ export function parseLayout(value: unknown): Layout {
 }
 
 /**
- * A stored layout, migrated and parsed: held to `layoutSchema` where it was written at a version that
- * required the words a continued table's label adds, and to what an older version reads as where it
- * was written before, so a layout stored at version 3 reads with no words for a continued table while
- * one stored at 4 or 5 without them is refused. Throws, as `parseLayout` does.
+ * A stored layout, migrated and parsed: held to what the version it was written at required, and to
+ * what an older version reads as where it was written before. So a layout stored at version 3 reads
+ * with no words for a continued table while one stored at 4 or 5 without them is refused, and one
+ * stored at 5 reads with no words for a preview while one stored at 6 without them is refused.
+ * Throws, as `parseLayout` does.
  */
 function parseStoredLayout(value: unknown): Layout {
   const migrated = migrateStored(value, layoutMigrationChain);
   const written = (value as { schemaVersion: unknown }).schemaVersion;
-  return typeof written === 'number' && written >= CONTINUED_SINCE
-    ? parseLayout(migrated)
-    : upgradedLayoutSchema.parse(migrated);
+  if (typeof written !== 'number' || written < CONTINUED_SINCE) {
+    return upgradedLayoutSchema.parse(migrated);
+  }
+  return written >= PREVIEW_SINCE ? parseLayout(migrated) : continuedLayoutSchema.parse(migrated);
 }
 
 // A read-time projection, as every chain's is: the stored bytes never change.
@@ -336,6 +366,8 @@ export const layoutMigrationChain: MigrationChain = {
     3: (layout) => layout,
     // Version 4 had no Word page, and reads as a layout that makes no Word, for version 2's reason.
     4: (layout) => layout,
+    // Version 5 had no words for a preview, and reads as having none, for version 2's reason.
+    5: (layout) => layout,
   },
 };
 
@@ -517,14 +549,45 @@ export const FIFTH_DEFAULT_LAYOUT: Layout4 = (() => {
 })();
 
 /**
- * The default layout as it stands, **version 0.6**: 0.5 with a Word page, the PDF page's values copied
- * (Word 1, ruling R4) - A4, an inch margin, the same running matter and page numbering - at schema
- * version 5. Copied, not shared: each is the layout's to change apart from the other (PUB-012).
+ * A layout as schema version 5 stored it: a Word page, and no words for a preview. The shape of the
+ * default layout's 0.6 row, which is frozen at it.
+ */
+export type Layout5 = Omit<Layout, 'schemaVersion' | 'words'> & {
+  schemaVersion: 5;
+  words: Omit<Layout['words'], 'preview'>;
+};
+
+/**
+ * **The default layout's version 0.6, as migration 0027 stored it**: 0.5 with a Word page, the PDF
+ * page's values copied (Word 1, ruling R4) - A4, an inch margin, the same running matter and page
+ * numbering. Copied, not shared: each is the layout's to change apart from the other (PUB-012).
+ * Frozen, at schema 5, for 0.2's reason, and checked as 0.2 is to read through today's chain.
+ */
+export const SIXTH_DEFAULT_LAYOUT: Layout5 = (() => {
+  const layout: Layout5 = {
+    ...FIFTH_DEFAULT_LAYOUT,
+    schemaVersion: 5,
+    formats: { pdf: defaultPdf, docx: defaultPdf },
+  };
+  parseStoredLayout(layout);
+  return layout;
+})();
+
+/**
+ * The default layout as it stands, **version 0.7**: 0.6 with the words a preview says in place of the
+ * draft's notice and its sentence (PV-D), in its language, English, at schema version 6.
  */
 export const defaultLayout: Layout = parseLayout({
-  ...FIFTH_DEFAULT_LAYOUT,
+  ...SIXTH_DEFAULT_LAYOUT,
   schemaVersion: LAYOUT_SCHEMA_VERSION,
-  formats: { pdf: defaultPdf, docx: defaultPdf },
+  words: {
+    ...SIXTH_DEFAULT_LAYOUT.words,
+    preview: {
+      notice: 'Preview - not approved',
+      sentence:
+        'Preview - not approved. This is a preview of unapproved content, not a publication.',
+    },
+  },
 });
 
 /**

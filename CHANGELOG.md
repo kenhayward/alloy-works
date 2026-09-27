@@ -3,6 +3,19 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.104.0 - 2026-09-27 (PR #292)
+
+### Added
+
+- **Previews are being prepared.** The product can now make a preview of a document the way it makes
+  a publication, from the same version of every part of the document, as a PDF that says "Preview -
+  not approved" on every page and once to a screen reader, where a publication says "Not approved".
+  A preview is not a publication: nothing lists it or searches it, and it is kept for an hour.
+  Nothing asks for one yet: asking for a preview from the document page, and seeing it beside the
+  text, come in the next releases.
+- **The default layout says what a preview is called.** Its new version gives the words a preview
+  prints.
+
 ## 0.103.1 - 2026-09-27 (PR #291)
 
 ### Changed

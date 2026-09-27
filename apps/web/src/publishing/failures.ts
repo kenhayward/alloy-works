@@ -333,6 +333,11 @@ export function failureWords(failure: Failure): string {
     // `detail` is the style's identifier, as `style_missing` names one.
     case 'continuation_words_missing':
       return `This table's style, ${failure.detail ?? ''}, labels each page the table continues onto, but the publication's layout has no words for the label. The layout or the theme has to change before this document can be published.`;
+    // W10.1 (PV-D): a preview says so in the layout's words, and this layout has none - one stored
+    // before its schema 6 - so, as `continuation_words_missing`, it blames the layout and never says to
+    // try again.
+    case 'preview_words_missing':
+      return "The layout has no words for a preview's notice, so it cannot mark a preview as one. The layout has to change before this document can be previewed.";
     // Figures 5's ruling R7: an image set in a line has only the line's room, or its cell's.
     case 'image_too_wide':
       return 'An image in a line of text is wider than the room it stands in. Use a narrower image, or make it a figure.';

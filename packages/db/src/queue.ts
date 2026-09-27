@@ -2,8 +2,12 @@ import { Kysely, PostgresDialect, sql } from 'kysely';
 import { createPool } from './pool.js';
 import type { PlatformTables, TenantTransaction } from './tables.js';
 
-/** The kinds of work there are. A worker refuses a kind it does not know. */
-export type JobKind = 'sample_pdf' | 'publish' | 'ingest';
+/**
+ * The kinds of work there are. A worker refuses a kind it does not know. A `preview` is a publish
+ * request of kind preview, run by the publish handler, and a kind of its own so a deployment can give
+ * previews workers of their own (publishing.md, "Preview").
+ */
+export type JobKind = 'sample_pdf' | 'publish' | 'preview' | 'ingest';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {

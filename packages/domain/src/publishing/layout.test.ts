@@ -16,6 +16,7 @@ import {
   PUBLISHING_FORMATS,
   readLayout,
   SECOND_DEFAULT_LAYOUT,
+  SIXTH_DEFAULT_LAYOUT,
   speaksFor,
   THIRD_DEFAULT_LAYOUT,
   unsupportedFormats,
@@ -71,7 +72,7 @@ describe('a layout', () => {
       },
     };
     const expected: Layout = {
-      schemaVersion: 5,
+      schemaVersion: 6,
       language: 'en',
       words: {
         contents: 'Contents',
@@ -82,6 +83,12 @@ describe('a layout', () => {
         below: 'below',
         // Version 0.5's: what a continued table's label adds after its label (themes 2, ruling R2).
         continued: '(continued)',
+        // Version 0.7's: what a preview says in place of the draft's notice and sentence (PV-D).
+        preview: {
+          notice: 'Preview - not approved',
+          sentence:
+            'Preview - not approved. This is a preview of unapproved content, not a publication.',
+        },
       },
       scheme: defaultNumberingScheme,
       matter: {
@@ -97,7 +104,7 @@ describe('a layout', () => {
       // Version 0.6's Word page is its PDF page, copied (Word 1, ruling R4).
       formats: { pdf: page, docx: page },
     };
-    expect(LAYOUT_SCHEMA_VERSION).toBe(5);
+    expect(LAYOUT_SCHEMA_VERSION).toBe(6);
     expect(PUBLISHING_FORMATS).toEqual(['pdf', 'docx']);
     expect(defaultLayout).toEqual(expected);
     expect(parseLayout(defaultLayout)).toEqual(expected);
@@ -152,11 +159,82 @@ describe('a layout', () => {
   it("keeps the default layout's 0.5, as migration 0025 stored it at schema 4, and 0.6 is 0.5 with a Word page copying its PDF page", () => {
     expect(FIFTH_DEFAULT_LAYOUT.schemaVersion).toBe(4);
     expect(FIFTH_DEFAULT_LAYOUT.formats).not.toHaveProperty('docx');
-    expect(defaultLayout).toEqual({
+    expect(SIXTH_DEFAULT_LAYOUT).toEqual({
       ...FIFTH_DEFAULT_LAYOUT,
       schemaVersion: 5,
       formats: { pdf: FIFTH_DEFAULT_LAYOUT.formats.pdf, docx: FIFTH_DEFAULT_LAYOUT.formats.pdf },
     });
+  });
+
+  it("keeps the default layout's 0.6, as migration 0027 stored it at schema 5, and 0.7 is 0.6 with the words a preview says", () => {
+    expect(SIXTH_DEFAULT_LAYOUT.schemaVersion).toBe(5);
+    expect(SIXTH_DEFAULT_LAYOUT.words).not.toHaveProperty('preview');
+    expect(defaultLayout).toEqual({
+      ...SIXTH_DEFAULT_LAYOUT,
+      schemaVersion: 6,
+      words: {
+        ...SIXTH_DEFAULT_LAYOUT.words,
+        preview: {
+          notice: 'Preview - not approved',
+          sentence:
+            'Preview - not approved. This is a preview of unapproved content, not a publication.',
+        },
+      },
+    });
+  });
+
+  it('reads a layout stored at schema version 5 as one with no words for a preview', () => {
+    // A migration cannot know another language's words for a preview, as it could not know its
+    // continued (PV-D): a preview under it fails by name rather than printing English.
+    const read = readLayout(JSON.parse(JSON.stringify(SIXTH_DEFAULT_LAYOUT)), {
+      artifact: 'layout-artifact',
+      version: 'layout-version',
+    });
+    if (!read.ok) throw new Error(read.failure);
+    expect(read.layout).toEqual({ ...SIXTH_DEFAULT_LAYOUT, schemaVersion: LAYOUT_SCHEMA_VERSION });
+    expect(read.layout.words).not.toHaveProperty('preview');
+
+    // Stored at 5 without the words a continued table adds is still refused: 4 required them.
+    const without = JSON.parse(JSON.stringify(SIXTH_DEFAULT_LAYOUT)) as Layout;
+    delete without.words.continued;
+    const refused = readLayout(without, { artifact: 'layout-artifact', version: 'layout-version' });
+    expect(refused.ok === false && refused.failure).toMatch(/continued table/);
+  });
+
+  it("requires a layout written at schema version 6 to give a preview's notice and sentence, words that say something", () => {
+    const without = copy();
+    delete without.words.preview;
+    expect(() => parseLayout(without)).toThrow(/preview/);
+    // Stored at 6 without them is refused on reading too: only an older version reads as having none.
+    const stored = readLayout(JSON.parse(JSON.stringify(without)), {
+      artifact: 'layout-artifact',
+      version: 'layout-version',
+    });
+    expect(stored).toMatchObject({ ok: false, artifact: 'layout-artifact' });
+    expect(stored.ok === false && stored.failure).toMatch(/preview/);
+
+    const french = copy();
+    french.words.preview = { notice: 'Aperçu - non approuvé', sentence: 'Aperçu non approuvé.' };
+    expect(parseLayout(french).words.preview).toEqual(french.words.preview);
+
+    for (const said of ['notice', 'sentence'] as const) {
+      const blank = copy();
+      blank.words.preview![said] = '   ';
+      expect(() => parseLayout(blank), said).toThrow(/say something/);
+      const nul = copy();
+      nul.words.preview![said] = `Pre${String.fromCharCode(0)}view`;
+      expect(() => parseLayout(nul), said).toThrow(/cannot be stored/);
+      const long = copy();
+      long.words.preview![said] = 'x'.repeat(201);
+      expect(() => parseLayout(long), said).toThrow();
+      const missing = copy();
+      Reflect.deleteProperty(missing.words.preview!, said);
+      expect(() => parseLayout(missing), said).toThrow();
+    }
+    // Closed as every member of a layout is: nothing it does not declare.
+    const more = copy();
+    (more.words.preview as unknown as Record<string, string>).title = 'Preview';
+    expect(() => parseLayout(more)).toThrow();
   });
 
   it('reads a layout stored at schema version 4 as one that makes no Word document', () => {
@@ -167,7 +245,7 @@ describe('a layout', () => {
       version: 'layout-version',
     });
     if (!read.ok) throw new Error(read.failure);
-    expect(read.layout).toEqual({ ...FIFTH_DEFAULT_LAYOUT, schemaVersion: 5 });
+    expect(read.layout).toEqual({ ...FIFTH_DEFAULT_LAYOUT, schemaVersion: LAYOUT_SCHEMA_VERSION });
     expect(read.layout.formats).not.toHaveProperty('docx');
     expect(unsupportedFormats(read.layout, ['pdf', 'docx'])).toEqual(['docx']);
 
@@ -321,6 +399,7 @@ describe('a layout', () => {
       expect(read.layout.words).not.toHaveProperty('above');
       expect(read.layout.words).not.toHaveProperty('below');
       expect(read.layout.words).not.toHaveProperty('continued');
+      expect(read.layout.words).not.toHaveProperty('preview');
     }
   });
 
@@ -337,6 +416,7 @@ describe('a layout', () => {
       notice: DRAFT_NOTICE.page,
       noticeSentence: DRAFT_NOTICE.text,
       continued: '(continued)',
+      preview: defaultLayout.words.preview,
     });
 
     for (const alone of ['above', 'below'] as const) {
@@ -371,6 +451,9 @@ describe('a layout', () => {
     // No words for a continued table, as a layout stored before schema 4 reads.
     const older = { ...defaultLayout.words };
     delete older.continued;
+    expect(layoutWordsSchema.parse(older)).toEqual(older);
+    // Nor for a preview, as a layout stored before schema 6 reads.
+    delete older.preview;
     expect(layoutWordsSchema.parse(older)).toEqual(older);
   });
 

@@ -574,6 +574,8 @@ describe('template 4 lays out the page', () => {
         notice: 'For review',
         noticeSentence: 'For review. Nobody has approved this publication yet.',
         continued: '(continued)',
+        // Required of a layout written at schema 6, and set only on a preview's pages.
+        preview: defaultLayout.words.preview,
       },
     });
     const { read } = await compiled(FIXTURE, reviewing);

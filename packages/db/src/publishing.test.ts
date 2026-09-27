@@ -23,6 +23,8 @@ import {
   failPublicationRequest,
   publicationInputs,
   readPublication,
+  readPublicationRequest,
+  recordPreview,
   recordPublication,
   requestPublication,
   resolveOccurrences,
@@ -33,6 +35,7 @@ import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import {
   freshDatabase,
+  queryAs,
   TEST_PASSWORDS,
   untilBlockedBy,
   type TestDatabase,
@@ -475,14 +478,14 @@ describe('requesting and recording a publication', () => {
           },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.6 since 0027, so the version recorded after it is 0.7.
-        expect((await defaultLayout(trx)).number).toBe('0.7');
+        // The default is at 0.7 since 0035, so the version recorded after it is 0.8.
+        expect((await defaultLayout(trx)).number).toBe('0.8');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.layout).toEqual({ versionId: declared.versionId, layout: declared.layout });
         // The document's version as `revision.version` (VER-009): a first version is 0.1.
         expect(inputs!.revision).toBe('0.1');
-        // Thrown to roll the layout's 0.7 back: the rest of the suite publishes under the default.
+        // Thrown to roll the layout's 0.8 back: the rest of the suite publishes under the default.
         throw rolledBack;
       }),
     ).rejects.toBe(rolledBack);
@@ -922,6 +925,7 @@ describe('requesting and recording a publication', () => {
       const inputs = await publicationInputs(trx, id);
       expect(inputs!.request).toEqual({
         id,
+        kind: 'publish',
         documentId: version.artifactId,
         documentVersionId: version.id,
         requestedBy: ada,
@@ -1049,6 +1053,470 @@ describe('requesting and recording a publication', () => {
     expect(
       await service.withTenant(production, (trx) => recordPublication(trx, recording(queued))),
     ).toBeDefined();
+  });
+
+  /** Asks for a preview of a version, as the PDF unless told; answers the request's id. */
+  const previewed = async (
+    trx: TenantTransaction,
+    version: StoredVersion,
+    requester: string,
+    formats: readonly string[] = ['pdf'],
+  ) => {
+    const answer = await requestPublication(trx, {
+      documentId: version.artifactId,
+      version: version.id,
+      formats,
+      requester,
+      kind: 'preview',
+    });
+    if (answer.answer !== 'requested') throw new Error(answer.answer);
+    return answer.request.id;
+  };
+  /** A preview's PDF in the tenant's own store, over bytes the store need not hold. */
+  const previewPdf = (fill = 'f') => ({
+    key: `${production.role}/sha256/${fill.repeat(64)}`,
+    sha256: fill.repeat(64),
+    bytes: 1000,
+  });
+  /** The job queued for a request: its kind, read as the platform holds it. */
+  const jobKindOf = async (requestId: string) =>
+    (
+      await queryAs(db.adminUrl, 'select kind from platform.job where subject_id = $1', [requestId])
+    ).rows.map((row: { kind: string }) => row.kind);
+
+  it('asks for a preview as a publish is asked for: the same versions, layout, theme and refusals recorded, the PDF alone, and a preview job queued', async () => {
+    const { publish, preview, open } = await service.withTenant(production, async (trx) => {
+      const shared = await component(trx, general, ada, 'Install the printer');
+      const secret = await component(trx, quality, grace, 'Calibration');
+      const open = reference(shared.artifactId);
+      const version = await documentWith(trx, [
+        section('Method', [open, reference(secret.artifactId)]),
+      ]);
+      return {
+        publish: await requested(trx, version, ada),
+        preview: await previewed(trx, version, ada),
+        open,
+      };
+    });
+    const { rows, occurrences, inputs, read } = await service.withTenant(
+      production,
+      async (trx) => ({
+        rows: await trx
+          .selectFrom('publication_request')
+          .select([
+            'id',
+            'kind',
+            'formats',
+            'state',
+            'failures',
+            'document_version_id',
+            'layout_version_id',
+            'theme_version_id',
+            'preview_key',
+            'expires_at',
+          ])
+          .where('id', 'in', [publish, preview])
+          .execute(),
+        occurrences: await trx
+          .selectFrom('publication_request_occurrence')
+          .select(['request_id', 'node', 'version_id'])
+          .where('request_id', 'in', [publish, preview])
+          .execute(),
+        inputs: await publicationInputs(trx, preview),
+        read: await readPublicationRequest(trx, preview),
+      }),
+    );
+    const rowOf = (id: string) => rows.find((row) => row.id === id)!;
+    /** A request's row but for its id and its kind. */
+    const apart = (id: string) =>
+      Object.fromEntries(
+        Object.entries(rowOf(id)).filter(([column]) => column !== 'id' && column !== 'kind'),
+      );
+    expect([rowOf(publish).kind, rowOf(preview).kind]).toEqual(['publish', 'preview']);
+    const asPublished = apart(publish);
+    const asPreviewed = apart(preview);
+    // Everything else alike: the PDF, the document's version, the layout and theme it is set under,
+    // and the component the publisher may not read refused by its node, as a publish refuses it.
+    expect(asPreviewed).toEqual(asPublished);
+    expect(asPreviewed).toMatchObject({ formats: ['pdf'], state: 'queued', preview_key: null });
+    expect((asPreviewed.failures as { code: string }[]).map((each) => each.code)).toEqual([
+      'occurrence_unreadable',
+    ]);
+    const taken = (id: string) =>
+      occurrences
+        .filter((each) => each.request_id === id)
+        .map(({ node, version_id }) => ({ node, version_id }));
+    expect(taken(preview)).toEqual(taken(publish));
+    expect(taken(preview).map((each) => each.node)).toEqual([open.id]);
+    // Its own kind of job, on the one queue, and read back as a preview.
+    expect(await jobKindOf(publish)).toEqual(['publish']);
+    expect(await jobKindOf(preview)).toEqual(['preview']);
+    expect(inputs!.request.kind).toBe('preview');
+    expect(read).toMatchObject({ kind: 'preview', state: 'queued', preview: null });
+  });
+
+  it('refuses a preview in any format but the PDF alone, naming those beyond it, and records nothing', async () => {
+    const counted = () =>
+      service.withTenant(production, (trx) =>
+        trx
+          .selectFrom('publication_request')
+          .select('id')
+          .execute()
+          .then((rows) => rows.length),
+      );
+    const before = await counted();
+    const answers = await service.withTenant(production, async (trx) => {
+      const version = await documentWith(trx, []);
+      const ask = (formats: string[]) =>
+        requestPublication(trx, {
+          documentId: version.artifactId,
+          version: version.id,
+          formats,
+          requester: ada,
+          kind: 'preview',
+        });
+      return [await ask(['pdf', 'docx']), await ask(['docx']), await ask(['docx', 'pdf'])];
+    });
+    // The default layout makes Word, so it is the preview that refuses it (PV-C), never the layout.
+    expect(answers).toEqual([
+      { answer: 'format.unsupported', formats: ['docx'] },
+      { answer: 'format.unsupported', formats: ['docx'] },
+      { answer: 'format.unsupported', formats: ['docx'] },
+    ]);
+    expect(await counted()).toBe(before);
+  });
+
+  it("records a preview's PDF and when it expires, once, and nothing of a publication", async () => {
+    const before = await publications();
+    const { id, expiresAt, again, row, read } = await service.withTenant(
+      production,
+      async (trx) => {
+        const version = await documentWith(trx, []);
+        const id = await previewed(trx, version, ada);
+        const expiresAt = await recordPreview(trx, { requestId: id, ...previewPdf() });
+        // A second worker racing an expired lease finds it done and records nothing.
+        const again = await recordPreview(trx, { requestId: id, ...previewPdf('e') });
+        const row = await trx
+          .selectFrom('publication_request')
+          .selectAll()
+          .where('id', '=', id)
+          .executeTakeFirstOrThrow();
+        return { id, expiresAt, again, row, read: await readPublicationRequest(trx, id) };
+      },
+    );
+    expect(again).toBeUndefined();
+    expect(row).toMatchObject({
+      kind: 'preview',
+      state: 'done',
+      failures: [],
+      preview_key: previewPdf().key,
+      preview_sha256: previewPdf().sha256,
+      preview_bytes: 1000,
+    });
+    // An hour after it finished (PV-F).
+    expect(row.expires_at!.getTime() - row.finished_at!.getTime()).toBe(60 * 60 * 1000);
+    expect(expiresAt).toEqual(row.expires_at);
+    expect(read).toEqual({
+      id,
+      documentId: row.document_id,
+      requestedBy: ada,
+      kind: 'preview',
+      state: 'done',
+      failures: [],
+      publication: null,
+      preview: {
+        key: previewPdf().key,
+        sha256: previewPdf().sha256,
+        bytes: 1000,
+        expiresAt: row.expires_at,
+      },
+    });
+    // No artifact, publication, input or output: nothing lists it, searches it or keeps it.
+    expect(await publications()).toEqual(before);
+  });
+
+  it('records a preview only by recordPreview and a publication only by recordPublication, and a preview carrying a refusal by neither', async () => {
+    const { publish, preview, refused } = await service.withTenant(production, async (trx) => {
+      const version = await documentWith(trx, []);
+      const secret = await component(trx, quality, grace, 'Calibration');
+      const hidden = await documentWith(trx, [section('Method', [reference(secret.artifactId)])]);
+      return {
+        publish: await requested(trx, version, ada),
+        preview: await previewed(trx, version, ada),
+        refused: await previewed(trx, hidden, ada),
+      };
+    });
+    await expect(
+      service.withTenant(production, (trx) =>
+        recordPreview(trx, { requestId: publish, ...previewPdf() }),
+      ),
+    ).rejects.toThrow(/a publish/);
+    await expect(
+      service.withTenant(production, (trx) => recordPublication(trx, recording(preview))),
+    ).rejects.toThrow(/a preview/);
+    await expect(
+      service.withTenant(production, (trx) =>
+        recordPreview(trx, { requestId: refused, ...previewPdf() }),
+      ),
+    ).rejects.toThrow(/carries failures/);
+    for (const id of [publish, preview, refused]) {
+      expect((await stateOf(id)).state, id).toBe('queued');
+    }
+    // A publish request is never read as a preview.
+    const read = await service.withTenant(production, (trx) =>
+      readPublicationRequest(trx, publish),
+    );
+    expect(read).toMatchObject({ kind: 'publish', preview: null, publication: null });
+  });
+
+  it('lets the runtime role finish a preview done only with its PDF, in its own store, and a publish never with one', async () => {
+    const { publish, preview, version, under } = await service.withTenant(
+      production,
+      async (trx) => {
+        const version = await documentWith(trx, []);
+        const publish = await requested(trx, version, ada);
+        const under = await trx
+          .selectFrom('publication_request')
+          .select(['layout_id', 'layout_version_id', 'theme_id', 'theme_version_id'])
+          .where('id', '=', publish)
+          .executeTakeFirstOrThrow();
+        return { publish, preview: await previewed(trx, version, ada), version, under };
+      },
+    );
+    const refused = async (statement: ReturnType<typeof sql>, why: RegExp) =>
+      expect(service.withTenant(production, (trx) => statement.execute(trx))).rejects.toThrow(why);
+    const { key, sha256 } = previewPdf();
+    const other = 'e'.repeat(64);
+
+    // A preview done without its PDF, or with part of it.
+    await refused(
+      sql`update publication_request set state = 'done', finished_at = now() where id = ${preview}`,
+      /publication_request_preview_whole/,
+    );
+    await refused(
+      sql`update publication_request set state = 'done', finished_at = now(), preview_key = ${key},
+            preview_sha256 = ${sha256}, preview_bytes = 1000 where id = ${preview}`,
+      /publication_request_preview_whole/,
+    );
+    // Its PDF on a preview that failed.
+    await refused(
+      sql`update publication_request set state = 'failed', finished_at = now(),
+            failures = '[{"stage":"store","code":"store_failed","node":null,"block":null,"detail":null}]',
+            preview_key = ${key}, preview_sha256 = ${sha256}, preview_bytes = 1000,
+            expires_at = now() + interval '1 hour'
+          where id = ${preview}`,
+      /publication_request_preview_whole/,
+    );
+    // A publish with any of a preview's columns.
+    await refused(
+      sql`update publication_request set state = 'done', finished_at = now(), preview_key = ${key},
+            preview_sha256 = ${sha256}, preview_bytes = 1000, expires_at = now() + interval '1 hour'
+          where id = ${publish}`,
+      /publication_request_preview_only/,
+    );
+    await refused(
+      sql`update publication_request set state = 'done', finished_at = now(),
+            expires_at = now() + interval '1 hour' where id = ${publish}`,
+      /publication_request_preview_only/,
+    );
+    // A PDF that is not what it says: a key not ending in its own digest, a digest that is not one,
+    // no bytes, or an expiry other than an hour after it finished.
+    const capitals = sha256.toUpperCase();
+    for (const [why, pdf] of [
+      ['a key naming other bytes', { key: `${production.role}/sha256/${other}`, sha256, bytes: 1 }],
+      [
+        'a digest in capitals',
+        { key: `${production.role}/sha256/${capitals}`, sha256: capitals, bytes: 1 },
+      ],
+      ['no bytes', { key, sha256, bytes: 0 }],
+    ] as const) {
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`update publication_request set state = 'done', finished_at = now(),
+                preview_key = ${pdf.key}, preview_sha256 = ${pdf.sha256},
+                preview_bytes = ${pdf.bytes}, expires_at = now() + interval '1 hour'
+              where id = ${preview}`.execute(trx),
+        ),
+        why,
+      ).rejects.toThrow(/publication_request_preview_output/);
+    }
+    await refused(
+      sql`update publication_request set state = 'done', finished_at = now(), preview_key = ${key},
+            preview_sha256 = ${sha256}, preview_bytes = 1000, expires_at = now()
+          where id = ${preview}`,
+      /publication_request_preview_output/,
+    );
+    // Kept for longer than the hour a preview lasts (PV-F): the links follow the expiry.
+    await refused(
+      sql`update publication_request set state = 'done', finished_at = now(), preview_key = ${key},
+            preview_sha256 = ${sha256}, preview_bytes = 1000, expires_at = now() + interval '1 year'
+          where id = ${preview}`,
+      /publication_request_preview_output/,
+    );
+    // Kept in another tenant's store: the key is the tenant's own, as an output's is.
+    await refused(
+      sql`update publication_request set state = 'done', finished_at = now(),
+            preview_key = ${`t_other/sha256/${sha256}`}, preview_sha256 = ${sha256},
+            preview_bytes = 1000, expires_at = now() + interval '1 hour'
+          where id = ${preview}`,
+      /its own tenant's store/,
+    );
+    // A preview asking for Word, or both, and one inserted with a PDF it has not made.
+    for (const formats of [sql`array['pdf', 'docx']`, sql`array['docx']`]) {
+      await refused(
+        sql`insert into publication_request (document_id, document_version_id, formats, requested_by,
+              kind, layout_id, layout_version_id, theme_id, theme_version_id)
+            values (${version.artifactId}, ${version.id}, ${formats}, ${ada}, 'preview',
+              ${under.layout_id}, ${under.layout_version_id}, ${under.theme_id},
+              ${under.theme_version_id})`,
+        /publication_request_preview_pdf_alone/,
+      );
+    }
+    await refused(
+      sql`insert into publication_request (document_id, document_version_id, formats, requested_by,
+            kind, preview_key, layout_id, layout_version_id, theme_id, theme_version_id)
+          values (${version.artifactId}, ${version.id}, array['pdf'], ${ada}, 'preview', ${key},
+            ${under.layout_id}, ${under.layout_version_id}, ${under.theme_id},
+            ${under.theme_version_id})`,
+      /permission denied/,
+    );
+
+    // Whole, it is done, by the grant the runtime role holds; and then changes no more.
+    await service.withTenant(production, (trx) =>
+      sql`update publication_request set state = 'done', finished_at = now(), preview_key = ${key},
+            preview_sha256 = ${sha256}, preview_bytes = 1000, expires_at = now() + interval '1 hour'
+          where id = ${preview}`.execute(trx),
+    );
+    await refused(
+      sql`update publication_request set preview_bytes = 2 where id = ${preview}`,
+      /finished once/,
+    );
+    await refused(
+      sql`update publication_request set expires_at = now() + interval '1 year' where id = ${preview}`,
+      /finished once/,
+    );
+    expect(await stateOf(publish)).toMatchObject({ state: 'queued' });
+  });
+
+  it("freezes a request's kind when it is finished, whatever role finishes it", async () => {
+    const publish = await service.withTenant(production, async (trx) =>
+      requested(trx, await documentWith(trx, []), ada),
+    );
+    const failed = JSON.stringify([
+      { stage: 'store', code: 'store_failed', node: null, block: null, detail: null },
+    ]);
+    // The runtime role may not write the kind at all after the insert.
+    await expect(
+      service.withTenant(production, (trx) =>
+        sql`update publication_request set state = 'failed', finished_at = now(),
+              failures = ${failed}::jsonb, kind = 'preview'
+            where id = ${publish}`.execute(trx),
+      ),
+    ).rejects.toThrow(/permission denied/);
+    // And a role that may is refused by the rule every finish is held to: a failed publish turned
+    // into a failed preview would otherwise pass every check.
+    await expect(
+      queryAs(
+        db.adminUrl,
+        `update "${production.schema}".publication_request
+            set state = 'failed', finished_at = now(), failures = $2::jsonb, kind = 'preview'
+          where id = $1`,
+        [publish, failed],
+      ),
+    ).rejects.toThrow(/finished once/);
+    expect(await stateOf(publish)).toMatchObject({ state: 'queued' });
+  });
+
+  it('refuses at commit a publication recorded for a preview, however whole', async () => {
+    const { preview, publish } = await service.withTenant(production, async (trx) => {
+      const version = await documentWith(trx, []);
+      return {
+        publish: await requested(trx, version, ada),
+        preview: await previewed(trx, version, ada),
+      };
+    });
+    const sha = 'a'.repeat(64);
+    /**
+     * A publication inserted whole beside its request, as `recordPublication` would insert it, and
+     * the request marked done: a preview's with its PDF, which a publish's may not carry.
+     */
+    const forge = (requestId: string, asPreview: boolean) =>
+      service.withTenant(production, async (trx) => {
+        const request = await trx
+          .selectFrom('publication_request')
+          .selectAll()
+          .where('id', '=', requestId)
+          .executeTakeFirstOrThrow();
+        const artifact = await trx
+          .insertInto('artifact')
+          .values({ kind: 'publication', space_id: general })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        const made = recording(requestId);
+        await trx
+          .insertInto('publication')
+          .values({
+            id: artifact.id,
+            request_id: requestId,
+            document_id: request.document_id,
+            document_version_id: request.document_version_id,
+            publisher: request.requested_by,
+            published_at: request.requested_at,
+            approval: 'none',
+            formats: ['pdf'],
+            engine: 'typst',
+            engine_version: '0.15.1',
+            template: 'publication',
+            template_version: 13,
+            pipeline_version: '13',
+            fonts: JSON.stringify(made.fonts),
+            data_sha256: made.dataSha256,
+            numbering: JSON.stringify(made.numbering),
+            layout_id: request.layout_id,
+            layout_version_id: request.layout_version_id,
+            theme_id: request.theme_id,
+            theme_version_id: request.theme_version_id,
+          })
+          .execute();
+        await trx
+          .insertInto('publication_input')
+          .values({
+            publication_id: artifact.id,
+            version_id: request.document_version_id,
+            node: null,
+          })
+          .execute();
+        await trx
+          .insertInto('publication_output')
+          .values({
+            publication_id: artifact.id,
+            format: 'pdf',
+            object_key: `${production.role}/sha256/${sha}`,
+            sha256: sha,
+            bytes: 1,
+            standard: 'ua-1',
+            producer: 'typst',
+            producer_version: '13',
+            report: '[]',
+          })
+          .execute();
+        await (
+          asPreview
+            ? sql`update publication_request set state = 'done', finished_at = now(),
+                  preview_key = ${`${production.role}/sha256/${sha}`}, preview_sha256 = ${sha},
+                  preview_bytes = 1, expires_at = now() + interval '1 hour'
+                where id = ${requestId}`
+            : sql`update publication_request set state = 'done', finished_at = now()
+                where id = ${requestId}`
+        ).execute(trx);
+        return artifact.id;
+      });
+    const before = await publications();
+    await expect(forge(preview, true)).rejects.toThrow(/recorded whole/);
+    expect(await publications()).toEqual(before);
+    expect(await stateOf(preview)).toMatchObject({ state: 'queued' });
+    // The same forgery of a publish's commits: the preview's kind is all that refused it.
+    expect(await forge(publish, false)).toBeDefined();
   });
 
   it('records every version a publication read, what made it, and its output by its own digest', async () => {

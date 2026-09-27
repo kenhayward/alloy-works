@@ -21,9 +21,12 @@ const db = createTenantDatabase(config.databaseUrl);
 const queue = createJobQueue(config.databaseUrl);
 const stores = createObjectStores(config.objectStore, config.objectStoreKey);
 const typst = createTypst({ binary: config.typstBinary, fonts });
+// A preview is the publish handler's too, which reads which it is from the request (W10.1).
+const publish = publishJob({ db, stores, typst, fonts });
 const handlers: Record<string, JobHandler> = {
   sample_pdf: sampleJob({ db, stores, typst }),
-  publish: publishJob({ db, stores, typst, fonts }),
+  publish,
+  preview: publish,
   ingest: ingestJob({ db, stores }),
 };
 
