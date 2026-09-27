@@ -13,6 +13,8 @@ export type ComponentList =
   paths['/v1/components']['get']['responses']['200']['content']['application/json'];
 export type ComponentView =
   paths['/v1/components/{id}']['get']['responses']['200']['content']['application/json'];
+/** One field of a component as its view carries it (definitions.md, "A component's"). */
+export type FieldView = ComponentView['fields'][number];
 export type PublicationList =
   paths['/v1/publications']['get']['responses']['200']['content']['application/json'];
 

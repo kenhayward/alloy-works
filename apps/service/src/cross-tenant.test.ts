@@ -251,7 +251,8 @@ const componentIdIn = (tenant: Tenant, db: TenantDatabase) =>
     const type: ComponentTypeDefinition = {
       schemaVersion: DEFINITION_SCHEMA_VERSION,
       id: randomUUID(),
-      name: 'Topic',
+      // Named apart from the starter Topic, and from every other made here (MET-031).
+      name: `Probe type ${randomUUID()}`,
       assignments: [],
     };
     const madeType = await createArtifact(trx, {

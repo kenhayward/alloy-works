@@ -16733,7 +16733,7 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 392,
+      "line": 393,
       "kind": "title"
     },
     {
@@ -16799,7 +16799,7 @@
     {
       "id": "CNT-143",
       "file": "apps/service/src/component-creation.test.ts",
-      "line": 221,
+      "line": 223,
       "kind": "title"
     },
     {
@@ -16811,7 +16811,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 544,
+      "line": 545,
       "kind": "title"
     },
     {
@@ -17123,97 +17123,97 @@
     {
       "id": "AST-015",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3580,
+      "line": 3681,
       "kind": "title"
     },
     {
       "id": "AST-039",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3498,
+      "line": 3599,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3183,
+      "line": 3284,
       "kind": "title"
     },
     {
       "id": "CNT-036",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3945,
+      "line": 4046,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4064,
+      "line": 4165,
       "kind": "title"
     },
     {
       "id": "CNT-044",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4732,
+      "line": 4833,
       "kind": "title"
     },
     {
       "id": "CNT-048",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4760,
+      "line": 4861,
       "kind": "title"
     },
     {
       "id": "CNT-063",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 520,
+      "line": 621,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2995,
+      "line": 3096,
       "kind": "title"
     },
     {
       "id": "CNT-080",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4805,
+      "line": 4906,
       "kind": "title"
     },
     {
       "id": "CNT-087",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3803,
+      "line": 3904,
       "kind": "title"
     },
     {
       "id": "CNT-098",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2112,
+      "line": 2213,
       "kind": "title"
     },
     {
       "id": "CNT-147",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2122,
+      "line": 2223,
       "kind": "title"
     },
     {
       "id": "CNT-152",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2513,
+      "line": 2614,
       "kind": "title"
     },
     {
       "id": "CNT-169",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 1287,
+      "line": 1388,
       "kind": "title"
     },
     {
       "id": "CNT-173",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 330,
+      "line": 431,
       "kind": "title"
     },
     {
@@ -17255,13 +17255,19 @@
     {
       "id": "CNT-066",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 223,
+      "line": 228,
       "kind": "title"
     },
     {
       "id": "CNT-070",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 260,
+      "line": 284,
+      "kind": "title"
+    },
+    {
+      "id": "MET-021",
+      "file": "apps/web/src/metadata/FieldsForm.test.tsx",
+      "line": 52,
       "kind": "title"
     },
     {
@@ -17273,19 +17279,19 @@
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3214,
+      "line": 3218,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3367,
+      "line": 3375,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3661,
+      "line": 3673,
       "kind": "title"
     },
     {
@@ -17297,13 +17303,13 @@
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3865,
+      "line": 3877,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3701,
+      "line": 3713,
       "kind": "title"
     },
     {
@@ -17717,31 +17723,31 @@
     {
       "id": "MET-008",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 161,
+      "line": 190,
       "kind": "title"
     },
     {
       "id": "MET-031",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 139,
+      "line": 140,
       "kind": "title"
     },
     {
       "id": "MET-037",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 236,
+      "line": 265,
       "kind": "title"
     },
     {
       "id": "MET-040",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 185,
+      "line": 214,
       "kind": "title"
     },
     {
       "id": "MET-041",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 116,
+      "line": 117,
       "kind": "title"
     },
     {

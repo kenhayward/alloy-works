@@ -1027,6 +1027,21 @@ field.
 | `db: src/editing.ts`, `promotion.ts`                     | Values with an iteration, and the cut's fixed check                             |
 | `api-contract: components.ts`, `editing.ts`, `people.ts` | `FieldView` and the view's metadata, `values` on an iteration, the people route |
 
+The **metadata panel** (W5.3) is a region of the component editor beside the surface, in the `F6`
+ring, wherever the component's type gives it fields. It holds `FieldsForm`, which renders a field per
+data type - a `dateTime` entered in the author's zone and stored with its offset by `instantFor` - runs
+`validate` on every change and shows each failure beside its field and in a live region, and hands
+every change on but a value of the wrong kind. The session sends the values whole with every save,
+beside the content. A definition's name is held by `createArtifact` and renamed by `recordVersion`,
+whatever path writes it.
+
+| Where                              | What                                                              |
+| ---------------------------------- | ----------------------------------------------------------------- |
+| `web: src/metadata/FieldsForm.tsx` | The form, its inputs and its live validation                      |
+| `web: src/metadata/dateTime.ts`    | `instantFor` and `localIn`: a local date and time and its instant |
+| `web: src/editor/session.ts`       | `values` beside `snapshot`, sent whole with every save            |
+| `db: src/dev-content.ts`           | Development's Procedure type and Calibrate the scanner            |
+
 ## One renderer, two deliveries
 
 `apps/web` **is** the web application, and it is also the thing the Electron window loads. There is

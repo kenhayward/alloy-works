@@ -1,4 +1,5 @@
 // packages/db/src/components.test.ts
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { countReadableComponents, listReadableComponents } from './components.js';
@@ -23,6 +24,8 @@ describe('listing the components a principal may read', () => {
   let ada: string;
   let grace: string;
   let seeded: string;
+  // Development's second component, the Procedure the seed makes for the metadata panel (W5.3).
+  let procedure: string;
   let others: string[];
   let hidden: string;
 
@@ -53,6 +56,14 @@ describe('listing the components a principal may read', () => {
           .executeTakeFirstOrThrow()
           .then((row) => row.id);
       ada = await who('ada');
+      procedure = (
+        await trx
+          .selectFrom('artifact_version')
+          .select('artifact_id')
+          .where('kind', '=', 'component')
+          .where(sql<boolean>`content ->> 'title' = 'Calibrate the scanner'`)
+          .executeTakeFirstOrThrow()
+      ).artifact_id;
       grace = await who('grace');
       const first = (await latestVersion(trx, seeded))!;
       const general = await trx
@@ -116,7 +127,9 @@ describe('listing the components a principal may read', () => {
     const page = await service.withTenant(production, (trx) =>
       listReadableComponents(trx, ada, { limit: 50 }),
     );
-    expect(page?.items.map((item) => item.id).sort()).toEqual([seeded, ...others].sort());
+    expect(page?.items.map((item) => item.id).sort()).toEqual(
+      [seeded, procedure, ...others].sort(),
+    );
     expect(page?.items.find((item) => item.id === seeded)).toMatchObject({
       id: seeded,
       title: 'Install the printer',
@@ -166,7 +179,9 @@ describe('listing the components a principal may read', () => {
     const inGeneral = await service.withTenant(production, (trx) =>
       listReadableComponents(trx, ada, { limit: 50 }, { spaces: [general.space_id!] }),
     );
-    expect(inGeneral?.items.map((item) => item.id).sort()).toEqual([seeded, ...others].sort());
+    expect(inGeneral?.items.map((item) => item.id).sort()).toEqual(
+      [seeded, procedure, ...others].sort(),
+    );
     const inQuality = await service.withTenant(production, (trx) =>
       listReadableComponents(trx, grace, { limit: 50 }, { spaces: [quality.space_id!] }),
     );
@@ -178,8 +193,8 @@ describe('listing the components a principal may read', () => {
     const forGrace = await service.withTenant(production, (trx) =>
       countReadableComponents(trx, grace),
     );
-    expect(forAda?.find((space) => space.name === 'General')?.count).toBe(4);
-    expect(forGrace).toEqual([{ id: expect.any(String), name: 'General', count: 3 }]);
+    expect(forAda?.find((space) => space.name === 'General')?.count).toBe(5);
+    expect(forGrace).toEqual([{ id: expect.any(String), name: 'General', count: 4 }]);
     const nobody = await service.withTenant(production, (trx) =>
       countReadableComponents(trx, '00000000-0000-4000-8000-000000000000'),
     );
@@ -190,7 +205,7 @@ describe('listing the components a principal may read', () => {
     const seen = await all(grace, 50);
     expect(seen.map((item) => item.id)).not.toContain(others[0]);
     expect(seen.map((item) => item.id)).not.toContain(hidden);
-    expect(seen).toHaveLength(3);
+    expect(seen).toHaveLength(4);
   });
 
   it('pages in a stable order, every component once, however small the page', async () => {
@@ -214,7 +229,8 @@ describe('listing the components a principal may read', () => {
       development,
     );
     expect(elsewhere.map((item) => item.id)).not.toContain(seeded);
-    expect(elsewhere).toHaveLength(1);
+    // Development's own two: its printer and its Procedure.
+    expect(elsewhere).toHaveLength(2);
     const stranger = await service.withTenant(development, (trx) =>
       listReadableComponents(trx, ada, { limit: 50 }),
     );
@@ -235,7 +251,7 @@ describe('listing the components a principal may read', () => {
     });
     const seen = await all(grace, 50);
     expect(seen.map((item) => item.id).sort()).toEqual(
-      [seeded, others[1]!, others[2]!, hidden].sort(),
+      [seeded, procedure, others[1]!, others[2]!, hidden].sort(),
     );
   });
 
@@ -266,7 +282,7 @@ describe('listing the components a principal may read', () => {
       return row.id;
     });
     const seen = await all(priya, 50);
-    expect(seen.map((item) => item.id).sort()).toEqual([seeded, ...others].sort());
+    expect(seen.map((item) => item.id).sort()).toEqual([seeded, procedure, ...others].sort());
   });
 
   it('includes what a group grant on a space reaches, for its member', async () => {

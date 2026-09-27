@@ -58,6 +58,8 @@ const settle = async () => {
 class FakeService implements SessionService {
   readonly calls: string[] = [];
   readonly saved: { sequence: number; openedFrom: string; text: string }[] = [];
+  /** The values each save carried, in order: undefined for a save that carried none. */
+  readonly savedValues: (Readonly<Record<string, unknown>> | undefined)[] = [];
   /** The session id this fake is currently claimed under - changes only when `claim` is asked for a
    * fresh one (fix round 2, finding 2), and survives everything else, including a release: one session
    * id per window (decision 14), same as the real adapter. */
@@ -98,8 +100,10 @@ class FakeService implements SessionService {
     openedFrom: string,
     content: ContentDocument,
     signal?: AbortSignal,
+    values?: Readonly<Record<string, unknown>>,
   ): Promise<SaveResult> {
     this.calls.push(`save ${sequence}`);
+    this.savedValues.push(values);
     const paragraph = content.content[0];
     const text =
       paragraph?.type === 'paragraph'
@@ -141,7 +145,7 @@ class FakeService implements SessionService {
   }
 }
 
-function harness() {
+function harness(values?: () => Readonly<Record<string, unknown>>) {
   const clock = new FakeClock();
   const service = new FakeService();
   let text = 'Unbox the printer.';
@@ -184,6 +188,7 @@ function harness() {
       refusedPending.push(hadPending);
     },
     onVersion: (version) => versions.push(version),
+    ...(values === undefined ? {} : { values }),
   });
   const type = (next: string) => {
     text = next;
@@ -228,6 +233,25 @@ describe('the editing session', () => {
     await clock.advance(1);
     expect(service.saved).toEqual([{ sequence: 1, openedFrom: 'v1', text: 'Unbox' }]);
     expect(session.view()).toMatchObject({ save: 'saved', savedAt: 2_000 });
+  });
+
+  it("sends the component's values, whole, with every save, and none where it holds none", async () => {
+    let held: Record<string, unknown> = { 'field-code': 'A1' };
+    const { clock, service, session, type } = harness(() => held);
+    type('Unbox');
+    await clock.advance(2_000);
+    held = { 'field-code': 'A12', 'field-owner': null };
+    session.changed();
+    await clock.advance(2_000);
+    expect(service.savedValues).toEqual([
+      { 'field-code': 'A1' },
+      { 'field-code': 'A12', 'field-owner': null },
+    ]);
+    // A session over a component with no fields sends content alone, as it always has.
+    const bare = harness();
+    bare.type('Unbox');
+    await bare.clock.advance(2_000);
+    expect(bare.service.savedValues).toEqual([undefined]);
   });
 
   it('saves at least every ten seconds while changes keep coming', async () => {

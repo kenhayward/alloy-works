@@ -1,8 +1,10 @@
 // packages/db/src/dev-content.test.ts
 import { decide } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadFacts } from './access-facts.js';
 import { bootstrapCluster } from './bootstrap.js';
+import { componentFieldsNow } from './component-values.js';
 import { STARTER_COMPONENT_TYPE_ID } from './creation.js';
 import { seedDevelopmentContent } from './dev-content.js';
 import { inviteFirstAdministrator } from './first-administrator.js';
@@ -197,5 +199,36 @@ describe('the development content', () => {
       ['conclusion', true],
     ]);
     expect(definition.changes.reorder).toBe(false);
+  });
+
+  it('makes a Procedure component in General whose type gives it fields, however often it runs', async () => {
+    const run = () =>
+      service.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: ISSUER }));
+    await run();
+    await run();
+    const found = await service.withTenant(tenant, async (trx) => {
+      const procedures = await trx
+        .selectFrom('artifact_version as v')
+        .select(['v.artifact_id', 'v.component_type_version_id'])
+        .where('v.kind', '=', 'component')
+        .where(sql<boolean>`v.content ->> 'title' = 'Calibrate the scanner'`)
+        .execute();
+      const latest = await latestVersion(trx, procedures[0]!.artifact_id);
+      const { definitions, effective } = await componentFieldsNow(trx, latest!);
+      return {
+        components: new Set(procedures.map((each) => each.artifact_id)).size,
+        type: definitions.type.definition.name,
+        fields: effective.map((each) => [each.field.name, each.field.dataType, each.required]),
+      };
+    });
+    expect(found).toEqual({
+      components: 1,
+      type: 'Procedure',
+      fields: [
+        ['Owner', 'user', true],
+        ['Due', 'date', false],
+        ['Reviewer', 'text', false],
+      ],
+    });
   });
 });

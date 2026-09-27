@@ -109,6 +109,10 @@ const componentBody = (id: string, title: string, mayEdit = false) => ({
   },
   mayEdit,
   lock: null,
+  type: { id: 'type-topic', name: 'Topic' },
+  fields: [],
+  schemas: [],
+  values: {},
 });
 
 /**

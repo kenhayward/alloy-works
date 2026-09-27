@@ -177,7 +177,9 @@ describe('creating a component through the service', () => {
   it('MET-011 gives a component exactly one component type, chosen when it is created', async () => {
     const types = await call('ada', 'GET', `/v1/spaces/${general}/component-types`);
     expect(types.statusCode).toBe(200);
+    // The starter Topic, and development's Procedure, whose components have fields.
     expect(types.json<{ items: unknown[] }>().items).toEqual([
+      { id: expect.any(String), name: 'Procedure', isDefault: false },
       { id: STARTER_COMPONENT_TYPE_ID, name: 'Topic', isDefault: true },
     ]);
 

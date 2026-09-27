@@ -71,12 +71,17 @@ export interface SessionService {
    * any longer instead of letting it run to completion unread.
    */
   claim(move: boolean, fresh: boolean, signal?: AbortSignal): Promise<ClaimResult>;
-  /** `signal`: as `claim`'s - aborted when this save loses its race against `timing.claimMs`. */
+  /**
+   * `signal`: as `claim`'s - aborted when this save loses its race against `timing.claimMs`.
+   * `values`: the component's values, whole, where the session holds them (definitions.md); absent,
+   * the service keeps those of the version the session opened from.
+   */
   save(
     sequence: number,
     openedFrom: string,
     content: ContentDocument,
     signal?: AbortSignal,
+    values?: Readonly<Record<string, unknown>>,
   ): Promise<SaveResult>;
   /** Never raced against a timeout, so never carries a signal to abort. */
   cut(openedFrom: string): Promise<CutResult>;
@@ -155,6 +160,12 @@ export interface SessionOptions {
   readonly version: VersionRef;
   /** The whole content as the editor holds it now, through `fromEditor`. */
   readonly snapshot: () => ContentDocument;
+  /**
+   * The component's values as the metadata panel holds them now, sent whole with every save beside
+   * the content (definitions.md, "A component's"). Absent for a component with no fields, whose saves
+   * carry content alone.
+   */
+  readonly values?: () => Readonly<Record<string, unknown>>;
   readonly onChange: (view: SessionView) => void;
   /**
    * A claim was refused: the held changes are the component's to undo and offer as text.
@@ -400,7 +411,7 @@ export function createSession(options: SessionOptions): Session {
       }, timing.claimMs);
     });
     const result = await Promise.race([
-      service.save(sent, version.id, content, controller.signal),
+      service.save(sent, version.id, content, controller.signal, options.values?.()),
       timedOut,
     ]);
     cancel(timer);
@@ -742,6 +753,7 @@ export function createSession(options: SessionOptions): Session {
         }
         if (content !== null) {
           const body = content;
+          const held = options.values?.();
           const openedFrom = version.id;
           const alreadyInFlight = inFlight;
           dirty = false;
@@ -761,11 +773,11 @@ export function createSession(options: SessionOptions): Session {
             // typing silently instead of racing anything.
             void alreadyInFlight.then(() => {
               sequence += 1;
-              void service.save(sequence, openedFrom, body).catch(() => {});
+              void service.save(sequence, openedFrom, body, undefined, held).catch(() => {});
             });
           } else {
             sequence += 1;
-            void service.save(sequence, openedFrom, body).catch(() => {});
+            void service.save(sequence, openedFrom, body, undefined, held).catch(() => {});
           }
         }
       }

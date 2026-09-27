@@ -73,6 +73,7 @@ import {
   type SessionView,
   type Timing,
 } from './session.js';
+import { FieldsForm } from '../metadata/FieldsForm.js';
 import { useStatus } from '../shell/Status.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
@@ -307,6 +308,32 @@ export function ComponentEditor({
   // would put it back over whatever the page said since - a paste, a refused header field.
   const sessionNotice = useRef<string | null>(null);
   const controls = useRef<Session | null>(null);
+  // The metadata panel's region, beside the surface wherever the component has fields; its values as
+  // the author holds them, which the session reads whole at every save (definitions.md); and who a
+  // `user` field may name.
+  const metadataRegion = useRef<HTMLElement | null>(null);
+  const [values, setValues] = useState<Record<string, unknown>>({});
+  // Each time the values are put back rather than changed, the form is drawn anew.
+  const [valuesDrawn, setValuesDrawn] = useState(0);
+  const heldValues = useRef<Record<string, unknown>>({});
+  const [people, setPeople] = useState<readonly { id: string; name: string }[]>([]);
+  // Read only where a field names a person: a component with none has no one to pick.
+  const wantsPeople =
+    (loaded.state === 'open' || loaded.state === 'readOnly') &&
+    loaded.component.fields.some((each) => each.dataType === 'user');
+  useEffect(() => {
+    if (!wantsPeople) return;
+    let current = true;
+    client
+      .GET('/v1/people')
+      .then(({ data }) => {
+        if (current && data) setPeople(data.items);
+      })
+      .catch(() => {});
+    return () => {
+      current = false;
+    };
+  }, [client, wantsPeople]);
   // A stale GET-time lock is only true until this session has claimed or released it itself (fix
   // round 1, minor): once that happens, the initial snapshot can no longer be trusted, so it is never
   // shown again for the life of this session.
@@ -546,6 +573,8 @@ export function ComponentEditor({
           setLoaded({ state: 'unreadable', component: data });
           return;
         }
+        heldValues.current = { ...data.values };
+        setValues(heldValues.current);
         setLoaded(
           opened.editable
             ? { state: 'open', component: data }
@@ -600,6 +629,8 @@ export function ComponentEditor({
         ...(selection ? { selection } : {}),
       });
     let base = opened.doc;
+    // The values' own base, as `base` is the text's: what a refused claim puts the fields back to.
+    let baseValues: Record<string, unknown> = { ...component.values };
     let phase: SessionView['phase'] = 'reading';
     keptIsCurrent.current = false;
     /**
@@ -634,6 +665,8 @@ export function ComponentEditor({
       timing: timingRef.current,
       version: { id: component.version.id, number: component.version.number },
       snapshot: () => fromEditor(view.state.doc),
+      // A component with no fields saves its content alone, as it always has.
+      ...(component.fields.length > 0 ? { values: () => heldValues.current } : {}),
       onChange: (next) => {
         const previous = phase;
         phase = next.phase;
@@ -676,6 +709,11 @@ export function ComponentEditor({
         // filled `kept` with exactly this text must not add a second copy of it (fix round 2, minor).
         captureKept();
         view.updateState(fresh(base));
+        // And the fields, which are held changes too: what was typed into them is not applied either,
+        // and the form is drawn afresh so no input keeps what it held (W5.3 review).
+        heldValues.current = baseValues;
+        setValues(baseValues);
+        setValuesDrawn((drawn) => drawn + 1);
         // `updateState` does not go through `dispatch` above, so nothing else refreshes `header`
         // (review round 1, item 1): left alone, it would keep showing whatever was typed right up to
         // the refusal, and the next keystroke into that stale field would resend it - resurrecting
@@ -688,6 +726,7 @@ export function ComponentEditor({
         // rather than jumping back to the start (fix round 1, minor).
         const { selection } = view.state;
         base = view.state.doc;
+        baseValues = heldValues.current;
         view.updateState(fresh(base, selection));
         // As above: cutting changes nothing about the header, but this keeps that an invariant the
         // surface enforces rather than one a future change could silently break.
@@ -826,6 +865,7 @@ export function ComponentEditor({
       figureRegion.current,
       pasteRegion.current,
       place.current,
+      metadataRegion.current,
     ].filter((region) => region !== null);
     if (ring.length === 0) return;
     event.preventDefault();
@@ -1183,6 +1223,30 @@ export function ComponentEditor({
             {/* The surface's region: ProseMirror mounts into it, and F6 lands on this element
                 itself where what it holds cannot take the focus, such as a component being read. */}
             <div ref={place} className={styles['surface']} tabIndex={-1} />
+            {/* Beside the surface, wherever the type gives the component fields: its values are
+                part of the iteration, saved with the content (definitions.md, "Shown as they
+                arise"). A change is a change like any typed on the surface, and claims the lock. */}
+            {shown.fields.length > 0 && (
+              <section
+                ref={metadataRegion}
+                aria-label={`Fields of ${shown.type.name}`}
+                className={styles['fields']}
+              >
+                <FieldsForm
+                  key={valuesDrawn}
+                  fields={shown.fields}
+                  schemas={shown.schemas}
+                  values={values}
+                  people={people}
+                  readOnly={!mayFormat || loaded.state !== 'open'}
+                  onChange={(next) => {
+                    heldValues.current = next;
+                    setValues(next);
+                    controls.current?.changed();
+                  }}
+                />
+              </section>
+            )}
             {kept !== null && (
               <label>
                 Text that was not saved

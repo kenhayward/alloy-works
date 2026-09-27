@@ -121,8 +121,8 @@ describe('definitions through the service', () => {
 
   it('MET-024 decides making and changing a definition by managing definitions, at the tenant', async () => {
     // Ada holds roles in General and nothing at the tenant: she may not make a definition.
-    expect((await make('ada', 'field', field('Owner'))).statusCode).toBe(403);
-    const made = await make('grace', 'field', field('Owner'));
+    expect((await make('ada', 'field', field('Custodian'))).statusCode).toBe(403);
+    const made = await make('grace', 'field', field('Custodian'));
     expect(made.statusCode, made.body).toBe(200);
     const owner = made.json<DefinitionBody>();
     expect(owner).toMatchObject({ kind: 'field', version: { number: '0.1' } });
@@ -132,28 +132,28 @@ describe('definitions through the service', () => {
       (
         await call('ada', 'POST', `/v1/definitions/${owner.id}/versions`, {
           openedFrom: owner.version.id,
-          definition: field('Owner of record'),
+          definition: field('Custodian of record'),
         })
       ).statusCode,
     ).toBe(404);
     expect((await call('ada', 'GET', '/v1/definitions')).statusCode).toBe(403);
     expect((await call('ada', 'GET', `/v1/definitions/${owner.id}`)).statusCode).toBe(404);
     const read = await call('grace', 'GET', `/v1/definitions/${owner.id}`);
-    expect(read.json<DefinitionBody>().definition.name).toBe('Owner');
+    expect(read.json<DefinitionBody>().definition.name).toBe('Custodian');
     const listed = await call('grace', 'GET', '/v1/definitions');
     expect(listed.json<{ items: { name: string }[] }>().items.map((each) => each.name)).toContain(
-      'Owner',
+      'Custodian',
     );
     const changed = await call('grace', 'POST', `/v1/definitions/${owner.id}/versions`, {
       openedFrom: owner.version.id,
-      definition: field('Owner of record'),
+      definition: field('Custodian of record'),
     });
     expect(changed.json<DefinitionBody>()).toMatchObject({ version: { number: '0.2' } });
   });
 
   it('refuses each check by its code, its rule and what it names', async () => {
-    // A name taken (MET-031): the field the test before renamed Owner of record.
-    const taken = await make('grace', 'field', field('owner OF record'));
+    // A name taken (MET-031): the field the test before renamed Custodian of record.
+    const taken = await make('grace', 'field', field('custodian OF record'));
     expect(taken.statusCode).toBe(400);
     expect(taken.json()).toMatchObject({ code: 'definition_name_taken', rule: 'MET-031' });
     // Two schemas a component type assigns disagreeing (MET-008).

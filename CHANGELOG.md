@@ -3,6 +3,22 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.83.0 - 2026-09-27 (PR #266)
+
+### Added
+
+- **A component's fields, beside its text.** A component whose type gives it fields shows them in a
+  Fields panel beside what you are writing, reached with F6: text, numbers, dates, times, a date and
+  time in your own time zone, a switch and a person, one value or a list. What a schema requires is
+  marked and what it fixes cannot be changed. Each value is checked as you type, and what is missing
+  or wrong is said beside it and read out, but saved all the same, with the text. Development has a
+  Procedure, Calibrate the scanner, to try it on.
+
+### Fixed
+
+- A field, schema or component type made any other way than through the definitions API - as
+  development's are - now keeps its name to itself, so another of its kind cannot take it.
+
 ## 0.82.0 - 2026-09-27 (PR #265)
 
 ### Added

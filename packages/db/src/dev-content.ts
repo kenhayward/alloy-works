@@ -3,6 +3,7 @@ import {
   TEMPLATE_SCHEMA_VERSION,
   definitionsFor,
 } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import { currentDefinitionsFor, defaultComponentType } from './creation.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
@@ -140,7 +141,10 @@ export async function seedDevelopmentContent(
     .where('space_id', '=', general.id)
     .orderBy('created_at')
     .executeTakeFirst();
-  if (seeded) return { componentId: seeded.id, created: false };
+  if (seeded) {
+    await seedProcedure(trx, general.id, grace);
+    return { componentId: seeded.id, created: false };
+  }
 
   const typeId = await defaultComponentType(trx);
   if (!typeId) throw new Error('This environment declares no default component type');
@@ -185,6 +189,8 @@ export async function seedDevelopmentContent(
       definitions: definitionsFor(definitions.type, definitions.schemas, definitions.fields),
     },
   });
+  // After the printer, so the printer stays the component this answers on every run.
+  await seedProcedure(trx, general.id, grace);
   return { componentId: component.artifactId, created: true };
 }
 
@@ -264,4 +270,101 @@ async function seedReportTemplate(trx: TenantTransaction, space: string, designe
     },
   });
   if (made.answer !== 'created') throw new Error(`The Report template was refused: ${made.answer}`);
+}
+
+/** Development's Procedure type and what it assigns. Fixed, so a rerun finds them. */
+const OWNER_FIELD = '0d5e7a11-0000-4000-8000-00000000f1e2';
+const DUE_FIELD = '0d5e7a11-0000-4000-8000-00000000f1e3';
+const SIGN_OFF_SCHEMA = '0d5e7a11-0000-4000-8000-00000000c4e4';
+const PROCEDURE_TYPE = '0d5e7a11-0000-4000-8000-0000000071e5';
+
+/**
+ * A component type whose components have fields to fill in, and one component of it in General
+ * (definitions.md, W5): Procedure, assigning Sign-off - who owns it, required, and when it is due -
+ * and development's Review, beside it. Made once; the component is found by its title.
+ */
+async function seedProcedure(trx: TenantTransaction, space: string, author: string) {
+  const identity = (id: string, name: string) =>
+    ({ schemaVersion: DEFINITION_SCHEMA_VERSION, id, name }) as const;
+  const field = async (id: string, name: string, dataType: 'user' | 'date') => {
+    if (await latestVersion(trx, id)) return;
+    await createArtifact(trx, {
+      author,
+      substance: {
+        kind: 'field',
+        content: { ...identity(id, name), dataType, multiplicity: 'one', validation: {} },
+      },
+    });
+  };
+  await field(OWNER_FIELD, 'Owner', 'user');
+  await field(DUE_FIELD, 'Due', 'date');
+  if (!(await latestVersion(trx, SIGN_OFF_SCHEMA))) {
+    await createArtifact(trx, {
+      author,
+      substance: {
+        kind: 'metadataSchema',
+        content: {
+          ...identity(SIGN_OFF_SCHEMA, 'Sign-off'),
+          entries: [
+            { field: OWNER_FIELD, required: true, fixed: false },
+            { field: DUE_FIELD, required: false, fixed: false },
+          ],
+        },
+      },
+    });
+  }
+  if (!(await latestVersion(trx, PROCEDURE_TYPE))) {
+    await createArtifact(trx, {
+      author,
+      substance: {
+        kind: 'componentType',
+        content: {
+          ...identity(PROCEDURE_TYPE, 'Procedure'),
+          assignments: [
+            { schema: SIGN_OFF_SCHEMA, requires: [] },
+            { schema: REVIEW_SCHEMA, requires: [] },
+          ],
+        },
+      },
+    });
+  }
+  const exists = await trx
+    .selectFrom('artifact_version')
+    .select('artifact_id')
+    .where('kind', '=', 'component')
+    .where(sql<boolean>`content ->> 'title' = 'Calibrate the scanner'`)
+    .executeTakeFirst();
+  if (exists) return;
+  const definitions = await currentDefinitionsFor(trx, PROCEDURE_TYPE);
+  if (!definitions) throw new Error('The Procedure type was not made');
+  await createArtifact(trx, {
+    author,
+    spaceId: space,
+    substance: {
+      kind: 'component',
+      content: {
+        schemaVersion: 1,
+        title: 'Calibrate the scanner',
+        language: 'en-GB',
+        direction: 'ltr',
+        content: [
+          {
+            type: 'paragraph',
+            id: 'seed-calibrate',
+            style: 'body',
+            content: [
+              {
+                type: 'text',
+                value: 'Scan the calibration sheet and compare it with the reference print.',
+                marks: [],
+              },
+            ],
+          },
+        ],
+      },
+      values: {},
+      notCarried: [],
+      definitions: definitionsFor(definitions.type, definitions.schemas, definitions.fields),
+    },
+  });
 }
