@@ -22,21 +22,38 @@ are never in it.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                    |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| **SCH-005** | The permission set is computed for each search and applied as a predicate inside the query, never to a result list afterwards    |
-| **SCH-007** | Counts and facets are aggregates over the same predicate as the results, in the same query                                       |
-| **SCH-008** | The projection lives in the tenant's schema, and the search role can reach no other (ADR-0008)                                   |
-| **SCH-009** | Permissions are read at each search, so a change applies to the next one. The stated delay is none                               |
-| **SCH-010** | Every filtering path has a test that searches as a user who may read nothing matching, and asserts empty results and zero counts |
-| **SCH-013** | Meaning is searched in the same query as words, restricted by the same predicate                                                 |
-| **SCH-014** | Every result carries a label: matched words, meaning, or both                                                                    |
-| **SCH-029** | The projection is rebuilt from current versions and the embedding store; nothing in it exists anywhere else                      |
-| **SCH-031** | Without the embedding model, search returns the words half and says meaning is unavailable; without the database, it says so     |
-| **SCH-032** | Ranking may use tenant-wide statistics; the predicate still applies before results, counts and facets are computed               |
-| **SCH-033** | The budget is measured by the conformance suite against a generated tenant of a million components, for three kinds of user      |
-| **SCH-034** | Counting stops at the cap, over the visible rows, and the interface returns the count as a lower bound                           |
-| **SCH-035** | The vector strategy is chosen by the size of the visible set, and a test asserts a full page for a user who can see very little  |
+| ID          | How it is met                                                                                                                                                                                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **SCH-005** | The permission set is computed for each search and applied as a predicate inside the query, never to a result list afterwards                                                                                                                                                                                            |
+| **SCH-007** | Counts and facets are aggregates over the same predicate as the results, in the same query                                                                                                                                                                                                                               |
+| **SCH-008** | The projection lives in the tenant's schema, and the search role can reach no other (ADR-0008)                                                                                                                                                                                                                           |
+| **SCH-009** | Permissions are read at each search, so a change applies to the next one. The stated delay is none                                                                                                                                                                                                                       |
+| **SCH-010** | Every filtering path has a test that searches as a user who may read nothing matching, and asserts empty results and zero counts                                                                                                                                                                                         |
+| **SCH-013** | Meaning is searched in the same query as words, restricted by the same predicate                                                                                                                                                                                                                                         |
+| **SCH-014** | Every result carries a label: matched words, meaning, or both                                                                                                                                                                                                                                                            |
+| **SCH-029** | The projection is rebuilt from current versions and the embedding store; nothing in it exists anywhere else                                                                                                                                                                                                              |
+| **SCH-031** | Without the embedding model, search returns the words half and says meaning is unavailable; without the database, it says so                                                                                                                                                                                             |
+| **SCH-032** | Ranking may use tenant-wide statistics; the predicate still applies before results, counts and facets are computed                                                                                                                                                                                                       |
+| **SCH-033** | The budget is measured by the conformance suite against a generated tenant of a million components, for three kinds of user                                                                                                                                                                                              |
+| **SCH-034** | Counting stops at the cap, over the visible rows, and the interface returns the count as a lower bound                                                                                                                                                                                                                   |
+| **SCH-035** | The vector strategy is chosen by the size of the visible set, and a test asserts a full page for a user who can see very little                                                                                                                                                                                          |
+| **SCH-054** | Every kind the product holds is a `search_entry` - a component, a document, each of its sections, a publication, a template, an asset, a field, a metadata schema and a component type - written with the version that makes it what it is ([Searching words, in T1](#searching-words-in-t1))                            |
+| **SCH-002** | Each entry's text is its content's every block - a caption and a figure's alternative text among them - its title, and its values rendered as words, each a `search_text` row of its own                                                                                                                                 |
+| **SCH-011** | A query is Postgres's web search syntax - a phrase in quotes, `-word` excluding, `or` - and a term written `name:word` or `name:"a phrase"` is looked for only in the place `name` names: `title`, or a metadata field by its name                                                                                       |
+| **SCH-012** | Query and text are both NFC-normalised, as ingest normalises content (CNT-056), and both folded by the same text search configuration, so two strings a reader cannot tell apart match                                                                                                                                   |
+| **SCH-016** | Every result carries a passage from the place it matched, the matched words marked, cut to about thirty words                                                                                                                                                                                                            |
+| **SCH-017** | Every result names the place it matched - a block of a component, a section of a document, a field's value - and links to it there                                                                                                                                                                                       |
+| **SCH-039** | A query with nothing to search for, one that excludes and asks for nothing, a scope naming no field, and a phrase left open are each answered by a named outcome with a sentence, never an error page, never the whole corpus and never an empty page                                                                    |
+| **SCH-046** | The facet dimensions are declared: kind, space, component type, owner, when it last changed in five named ranges, and each metadata field whose data type facets - a boolean, a person, a date by month, a text of one value. Each dimension's counts are computed with every other filter in force and its own left out |
+| **SCH-057** | A result links by identity - the artifact's id and the place's own id, never a position. Where the place is no longer in the version the reader opens, the page says so by name and shows the version it opened, which is the newest                                                                                     |
+| **SCH-059** | Results are narrowed by kind, space, a metadata value, owner - who made the artifact - and a date range, each a filter over the same predicate                                                                                                                                                                           |
+| **SCH-062** | Component type is a filter and a facet over components; a field facets across every entry whose values hold it - a component's, a document's, a section's - however it came to hold it                                                                                                                                   |
+| **SCH-066** | An entry's rows are written in the transaction that writes its version, so new and changed words are findable the moment the version is: the interval is none, measured by a test that searches in the next transaction                                                                                                  |
+
+**IAM-075 is not claimed here.** It asks that search indexes, caches, secrets and publications each be
+tenant-scoped. The search half is answered - the projection lives in the tenant's schema and the
+runtime role reaches no other (SCH-008) - but caches, secrets and publications are other designs', and
+claiming the whole on search's half is the claim this apparatus exists to refuse.
 
 **SCH-050 is not claimed here.** It replaces SCH-027 and names the interval that SCH-027 only asked
 for - provisionally p95 within 60 seconds, never above five minutes. Half of it is already met, and
@@ -152,6 +169,121 @@ before, or the point at which counting stopped would itself be a signal.
 - **The plan test**: search runs with custom plans, since a regression here is otherwise invisible.
 - **The budget** (SCH-033): the conformance suite generates a tenant of a million components, as the
   spike did, and measures p95 for three kinds of user.
+
+## Searching words, in T1
+
+W6 builds the words half. Meaning (SCH-013, SCH-014, SCH-035) is tranche T5 and waits on an embedding
+model; everything above about it stands, unbuilt (SE-A).
+
+### What is an entry
+
+| Kind                          | Its permission                                       | Its text                                                                                                                                |
+| ----------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Component                     | Its own, in its space                                | Its title; each block's words - a caption, an alternative text, a cell's paragraphs and a footnote's as blocks of their own; its values |
+| Document                      | Its own, in its space                                | Its title; its values                                                                                                                   |
+| Section                       | Its document's                                       | Its title; its values                                                                                                                   |
+| Publication                   | Its own, in its space                                | Its document's title at the published version, and its version number                                                                   |
+| Template                      | Its own, in its space                                | Its name; its starting sections' titles                                                                                                 |
+| Asset                         | Its own, in its space                                | Its default description                                                                                                                 |
+| Field, schema, component type | The tenant's `read`, as access.md reads a definition | Its name; a schema's entries' field names; a type's schemas' names                                                                      |
+
+A **section is an entry of its own**, keyed by the document and its node, with the document's
+permission columns: finding the section that says a thing is the point of SCH-017. Values are rendered
+as words by data type - a person by name, a date as written, a boolean by its field's name when true.
+
+### The tables
+
+`search_entry` holds one row per entry: its kind, the artifact, the node for a section, the version
+it was read from, the space, its title, who made it (`owner`: the author of the artifact's first
+version), when it last changed, its component type, and its values as stored - the columns the
+predicate, the filters and the facets read. `search_text` holds one row per place in it: the entry,
+the place (`title`, `values`, a block's id, a node's id), the text, and its `tsvector` in the entry's
+text search configuration, indexed with GIN. A result is an entry; the place is where it matched,
+the best of its matching rows by rank.
+
+The configuration comes from the entry's language by a fixed map from the primary subtag to the
+configurations Postgres ships (`en` to `english` and so on), and `simple` for the rest, so stemming is
+right where Postgres knows the language and harmless where it does not.
+
+### Written with the version
+
+`createArtifact` and `recordVersion` rewrite an artifact's entries - and a document's sections' - in the
+transaction that writes its version, so a new or changed thing is findable the moment its version is
+(SCH-066). Values are part of a version, so they move with it. A component placed in a document changes
+nothing of the document's entries: the component is found as itself. **A publication has no versions**
+
+- it is recorded by `recordPublication`, never by the chain - so recording one writes its entry, in the
+  same transaction, as the third place entries are written.
+
+An environment that holds versions from before the projection has its entries made once, by
+`reindexSearch` over every artifact's latest version and every publication, run by the worker's
+`search.reindex` job. **The migration runner enqueues it**, not the migration: a tenant migration runs
+as the tenant's owner role, which can neither write the platform's job table nor name its own tenant
+there, while `migrate`, which applies each tenant's migrations and knows its id, inserts the job for
+every tenant whose run applied 0031.
+
+### The query
+
+`parseQuery` in `packages/domain` reads the text: NFC first (SCH-012), then scoped terms -
+`title:word`, `Reviewer:Ada`, `"Due date":2026` - lifted out, and the rest handed to Postgres's
+`websearch_to_tsquery`. What cannot be searched is answered by name, never run (SCH-039):
+
+| Outcome            | When                                                              | Says                                                                 |
+| ------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `empty`            | Nothing but spaces                                                | Type what to look for                                                |
+| `nothing_to_match` | Only exclusions, or only words the language's configuration drops | What was excluded, and that it needs something to look for beside it |
+| `unknown_field`    | A scope naming neither `title` nor a field the reader can see     | The name, and that no field is called that                           |
+| `results`          | Anything else, a page of none included                            | The results, the count and whether it is a lower bound               |
+
+An open quote is closed at the end of the query rather than refused, which is what
+`websearch_to_tsquery` does and what a reader means.
+
+### One query
+
+The search runs as one statement: the readable set as parameters, the predicate on `search_entry`
+(the listings' own `readableArtifacts`, and the tenant's `read` for a definition), the filters in force,
+the text matched on `search_text`, the best place per entry by `ts_rank`, bounded as above, and the
+passage made by `ts_headline` on that place's text only (SCH-016). Counts and each facet are aggregates
+in the same statement over the same predicate, capped at 1,000 with a flag (SCH-034), each facet with
+every other filter in force and its own left out (SCH-046).
+
+### Filters and facets
+
+| Dimension      | Filter                        | Facet                                                                                                        |
+| -------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Kind           | One or more kinds             | Each kind                                                                                                    |
+| Space          | One or more spaces            | Each space the reader may read                                                                               |
+| Component type | One or more types             | Each type, over components                                                                                   |
+| Owner          | One or more people            | Each person                                                                                                  |
+| Changed        | A range, named or from and to | Today, this week, this month, this year, earlier                                                             |
+| A field        | A value, by the field         | Its values, where its data type facets: boolean, person, date by month, text of one value; the ten commonest |
+
+A field facets across every entry whose values hold it, whichever schema applied it and at whichever
+level (SCH-062): the values column is the stored values, keyed by the field.
+
+### The page
+
+**Search** is a page of the application: the query, the outcome's sentence or the results, and the
+facets beside them. A result shows its kind, title, space, the passage and where it was found, and
+links there by identity (SCH-057): a component's block through the component's page, a section through
+the document's node link (STR-044), a field's value through its artifact. A component or document page
+opened on a place its current version no longer holds says so by name - the place is no longer there -
+and shows its newest version, which is the version it opens.
+
+### Decisions
+
+Taken as recommended on Ken's instruction of 2026-09-27 to continue after W5, each open to his review.
+
+| #    | Decision                                                                                                                                                                        |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SE-A | T1 searches words; meaning is T5, designed above and not built                                                                                                                  |
+| SE-B | One entry per artifact at its latest version and one per document section; one text row per place, so a result names where it matched                                           |
+| SE-C | Entries are written in the version's transaction, and a publication's when it is recorded; existing environments are indexed once by a worker job the migration runner enqueues |
+| SE-D | The query is Postgres's web search syntax plus `name:term` scopes; an open quote closes at the end                                                                              |
+| SE-E | Facets are declared by dimension and, for a field, by its data type; the ten commonest values of a text field, never an open list                                               |
+| SE-F | Owner is the author of the artifact's first version; changed is its latest version's time                                                                                       |
+| SE-G | A result's link lands on the newest version and says by name when the place it names is gone                                                                                    |
+| SE-H | Definitions are found by anyone with the tenant's `read`, as access.md reads them; a section by whoever may read its document                                                   |
 
 ## Open questions
 
