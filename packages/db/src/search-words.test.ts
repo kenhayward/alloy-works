@@ -287,7 +287,26 @@ describe('searching words', () => {
       const answer = await search(ivy, query);
       expect({ query, answer }).toEqual({
         query,
-        answer: { outcome: 'results', count: 0, capped: false, items: [] },
+        answer: {
+          outcome: 'results',
+          count: 0,
+          capped: false,
+          items: [],
+          // Nor does any facet count what she may not see.
+          facets: {
+            kinds: [],
+            spaces: [],
+            componentTypes: [],
+            owners: [],
+            changed: ['today', 'week', 'month', 'year', 'earlier'].map((value) => ({
+              value,
+              label: value,
+              count: 0,
+              capped: false,
+            })),
+            fields: [],
+          },
+        },
       });
     }
     // A field is a definition, read at the tenant, which Ivy may not: its name scopes nothing for her.

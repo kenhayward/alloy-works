@@ -279,7 +279,16 @@ every other filter in force and its own left out (SCH-046).
 | A field        | A value, by the field         | Its values, where its data type facets: boolean, person, date by month, text of one value; the ten commonest |
 
 A field facets across every entry whose values hold it, whichever schema applied it and at whichever
-level (SCH-062): the values column is the stored values, keyed by the field.
+level (SCH-062): the values column is the stored values, keyed by the field. A field facets, filters and
+scopes only for a reader who may read it - at the tenant, as access.md reads a definition - so a reader
+of one space finds its components by their words but is offered no field to narrow them by.
+
+The changed ranges are each within the next - today is this week too - and `earlier` is before this
+year began, in the database's zone; a range of days, from and to, is the filter's other form. A facet
+value's `value` is what its filter takes: a kind, an id, a range, or a field's value as its data type
+facets it - `true` or `false`, a person's id, a date's `YYYY-MM`, a text as written - and its `label`
+what a reader is shown. Every count, a facet's included, is exact over what the reader may see and
+shown past 1,000 as at least 1,000 (SCH-034).
 
 ### The page
 

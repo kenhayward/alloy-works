@@ -96,7 +96,13 @@ export {
   DefinitionView,
 } from './definitions.js';
 export { PeopleList } from './people.js';
-export { SearchAnswerView, SearchQuery, SearchResultView } from './search.js';
+export {
+  FacetValueView,
+  SearchAnswerView,
+  SearchFacetsView,
+  SearchQuery,
+  SearchResultView,
+} from './search.js';
 export { allRoutes, API_VERSION, routes, SESSION_COOKIE } from './routes.js';
 export {
   AccessAnswers,

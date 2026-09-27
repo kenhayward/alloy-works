@@ -18210,6 +18210,104 @@
               "type": "string",
               "pattern": "^(?:[1-9]|[1-4][0-9]|50)$"
             }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only these kinds, separated by commas",
+              "type": "string",
+              "pattern": "^(?:component|document|section|publication|template|asset|field|metadataSchema|componentType)(?:,(?:component|document|section|publication|template|asset|field|metadataSchema|componentType)){0,8}$"
+            }
+          },
+          {
+            "name": "space",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only in these spaces, by id, separated by commas",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only components of these types, by id, separated by commas",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
+          },
+          {
+            "name": "owner",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only what these people made, by id, separated by commas",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
+          },
+          {
+            "name": "changed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only what last changed within this range; `earlier` is before this year",
+              "type": "string",
+              "enum": [
+                "today",
+                "week",
+                "month",
+                "year",
+                "earlier"
+              ]
+            }
+          },
+          {
+            "name": "changedFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only what last changed on or after this day",
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "changedTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only what last changed on or before this day",
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "value",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only what holds this value of a field, as `<field id>:<value>`, the value as the field's facet gives it; repeated for more, several of one field either of them",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:.{1,500}$"
+                },
+                {
+                  "maxItems": 20,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:.{1,500}$"
+                  }
+                }
+              ]
+            }
           }
         ],
         "responses": {
@@ -18395,6 +18493,231 @@
                             ]
                           }
                         },
+                        "facets": {
+                          "type": "object",
+                          "properties": {
+                            "kinds": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "description": "What to filter by to leave these"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "How many it would leave, up to 1,000"
+                                  },
+                                  "capped": {
+                                    "type": "boolean",
+                                    "description": "Whether more than the count, which is then a lower bound"
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "label",
+                                  "count",
+                                  "capped"
+                                ]
+                              }
+                            },
+                            "spaces": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "description": "What to filter by to leave these"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "How many it would leave, up to 1,000"
+                                  },
+                                  "capped": {
+                                    "type": "boolean",
+                                    "description": "Whether more than the count, which is then a lower bound"
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "label",
+                                  "count",
+                                  "capped"
+                                ]
+                              }
+                            },
+                            "componentTypes": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "description": "What to filter by to leave these"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "How many it would leave, up to 1,000"
+                                  },
+                                  "capped": {
+                                    "type": "boolean",
+                                    "description": "Whether more than the count, which is then a lower bound"
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "label",
+                                  "count",
+                                  "capped"
+                                ]
+                              }
+                            },
+                            "owners": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "description": "What to filter by to leave these"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "How many it would leave, up to 1,000"
+                                  },
+                                  "capped": {
+                                    "type": "boolean",
+                                    "description": "Whether more than the count, which is then a lower bound"
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "label",
+                                  "count",
+                                  "capped"
+                                ]
+                              }
+                            },
+                            "changed": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "description": "What to filter by to leave these"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "How many it would leave, up to 1,000"
+                                  },
+                                  "capped": {
+                                    "type": "boolean",
+                                    "description": "Whether more than the count, which is then a lower bound"
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "label",
+                                  "count",
+                                  "capped"
+                                ]
+                              },
+                              "description": "Each declared range, in order: today, week, month, year, earlier"
+                            },
+                            "fields": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "field": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "values": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "value": {
+                                          "type": "string",
+                                          "description": "What to filter by to leave these"
+                                        },
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "count": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991,
+                                          "description": "How many it would leave, up to 1,000"
+                                        },
+                                        "capped": {
+                                          "type": "boolean",
+                                          "description": "Whether more than the count, which is then a lower bound"
+                                        }
+                                      },
+                                      "required": [
+                                        "value",
+                                        "label",
+                                        "count",
+                                        "capped"
+                                      ]
+                                    },
+                                    "description": "Its ten commonest values"
+                                  }
+                                },
+                                "required": [
+                                  "field",
+                                  "name",
+                                  "dataType",
+                                  "values"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "kinds",
+                            "spaces",
+                            "componentTypes",
+                            "owners",
+                            "changed",
+                            "fields"
+                          ],
+                          "description": "Every declared dimension, each counted with the other filters in force and its own left out"
+                        },
                         "message": {
                           "type": "string",
                           "description": "The outcome in a sentence, for the reader"
@@ -18405,6 +18728,7 @@
                         "count",
                         "capped",
                         "items",
+                        "facets",
                         "message"
                       ]
                     }
@@ -18414,7 +18738,7 @@
             }
           },
           "400": {
-            "description": "An offset or a limit out of range",
+            "description": "An offset or a limit out of range, or a filter that is not one",
             "content": {
               "application/json": {
                 "schema": {
