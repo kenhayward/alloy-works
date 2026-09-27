@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.81.0 - 2026-09-27 (PR #262)
+
+### Added
+
+- **Fields, metadata schemas and component types can be made and changed through the API** by a
+  Definitions manager. Every change is a new version. A change is refused, saying what and where,
+  when it would give a definition a name another of its kind has, make two schemas disagree about a
+  field's default on a component type or a template, or make a schema's default invalid for its
+  field. No page makes or changes one yet.
+
 ## 0.80.2 - 2026-09-27 (PR #264)
 
 ### Fixed

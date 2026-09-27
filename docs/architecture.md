@@ -400,6 +400,7 @@ version and each structural act records the next (see
 | `migrations/tenant/0027_word_layout_and_outputs`       | The default layout's 0.6 at layout schema 5, with a Word page, inserted only where the layout is still 0025's unchanged 0.5; and a publication's formats, its engine and template null without a PDF, and one output per format with its producer and report (see [publishing](#publishing))                                                                                                      |
 | `migrations/tenant/0028_templates`                     | `template` as a kind, in exactly one space, whose versions are authored ([templates.md](design/templates.md))                                                                                                                                                                                                                                                                                     |
 | `migrations/tenant/0029_document_template`             | A document version's metadata values, and `document_template`, insert-only, naming the template version a document was made from ([templates.md](design/templates.md))                                                                                                                                                                                                                            |
+| `migrations/tenant/0030_definition_names`              | `definition_name`, one folded name per field, schema and component type, unique per kind (MET-031), filled from every definition's latest version ([definitions.md](design/definitions.md))                                                                                                                                                                                                       |
 | `src/version-digest.ts`                                | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                                                                                                                                                                                                                                                                     |
 | `src/spaces.ts`                                        | `createSpace`                                                                                                                                                                                                                                                                                                                                                                                     |
 | `src/versions.ts`                                      | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `substanceOf`, and `recordVersion`, each taking a component, a document, a definition or a layout; `createArtifact` refuses a layout, a theme and a catalogue, which only their migrations make, and `recordVersion` a theme and a catalogue, whose versions `themes.ts` reads whole before it writes them through `recordReadVersion` |
@@ -986,6 +987,30 @@ any refusal at the door; a template that no longer resolves is `values_unresolve
 | `db: src/publishing.ts`           | `requestPublication`'s two checks, through `documentRules`        |
 | `service: src/publishing.ts`      | The refusals, each message naming what is missing or does not fit |
 | `api-contract: publishing.ts`     | `PublicationRefusal`'s `sections`, `failures` and `unresolved`    |
+
+## Definitions
+
+Fields, metadata schemas and component types are made and changed through `/v1/definitions`
+([definitions.md](design/definitions.md), W5): `manage_definitions` at the tenant for a write, `read`
+for a read, as access.md reads a definition. The service allocates a definition's identifier and cuts
+every change as a version through `recordVersion`. Before either, under a transaction-scoped advisory
+lock that serialises definition writes, a definition is checked in order:
+
+1. What it names exists: `definition_unresolved`, with each missing field or schema and each stranded
+   `requires`.
+2. Its own defaults pass their fields (`checkSchema`): `definition_invalid`.
+3. Its name is free, folded by `nameKey` and held by `definition_name`: `definition_name_taken`, MET-031.
+4. Its kind's own check against what uses it:
+   - a component type's schemas disagreeing about a default (`assignmentConflicts`): `assignment_conflict`, MET-008;
+   - a schema version disagreeing with a schema beside it at any place, meaning a component type or a template level at its latest version (`placesOf`, `schemaConflicts`): `schema_conflict`, MET-040, naming every place;
+   - a field version refusing a schema's default for it (`brokenDefaults`): `field_breaks_default`, MET-037.
+
+| Where                          | What                                                                                                 |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `domain: metadata/manage.ts`   | `nameKey`, `assignmentConflicts`, `schemaConflicts`, `brokenDefaults`                                |
+| `db: src/definitions.ts`       | `createDefinition`, `recordDefinitionVersion`, `readDefinitionLatest`, `listDefinitions`, `placesOf` |
+| `api-contract: definitions.ts` | The four routes; a payload read by its kind's own schema, with no `id`                               |
+| `service: src/definitions.ts`  | The handlers, each refusal with its code and rule                                                    |
 
 ## One renderer, two deliveries
 

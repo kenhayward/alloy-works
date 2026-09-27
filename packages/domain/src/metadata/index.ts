@@ -32,3 +32,5 @@ export type { CarriedForward, NotCarried } from './carry.js';
 export { definitionsFor, canonicaliseValues, canonicaliseNotCarried } from './record.js';
 export type { DefinitionRef, Versioned } from './record.js';
 export { checkWrittenValues, writtenValues } from './write.js';
+export { assignmentConflicts, brokenDefaults, nameKey, schemaConflicts } from './manage.js';
+export type { BrokenDefault, SchemaPlace, SchemaPlaceName, SchemaConflict } from './manage.js';

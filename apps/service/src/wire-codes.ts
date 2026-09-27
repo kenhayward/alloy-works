@@ -38,6 +38,12 @@ const WIRE_CODES = {
   'values.unresolved': 'values_unresolved',
   'section.required': 'section_required',
   'metadata.invalid': 'metadata_invalid',
+  'definition.unresolved': 'definition_unresolved',
+  'definition.invalid': 'definition_invalid',
+  'definition.name_taken': 'definition_name_taken',
+  'assignment.conflict': 'assignment_conflict',
+  'schema.conflict': 'schema_conflict',
+  'field.breaks_default': 'field_breaks_default',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -68,6 +74,11 @@ const RULES: Partial<Record<DottedCode, string>> = {
   // A publication's door, for a document made from a template (templates.md, TE-H).
   'section.required': 'TPL-013',
   'metadata.invalid': 'TPL-055',
+  // A definition checked against what uses it before it is written (definitions.md, DE-E).
+  'definition.name_taken': 'MET-031',
+  'assignment.conflict': 'MET-008',
+  'schema.conflict': 'MET-040',
+  'field.breaks_default': 'MET-037',
 };
 
 /** The wire's spelling of a store's dotted answer. */

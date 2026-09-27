@@ -107,7 +107,18 @@ invalid value, and never refuses a cut for one`.
 
 ## What the build changed
 
-Filled in as each pull request lands.
+**W5.0 (PR #261).** The review found the design's two reads asking `manage_definitions`, where
+access.md reads a definition by `read`; they ask `read` now, and only making and changing a definition
+asks `manage_definitions`. MET-024's test cites the writes.
+
+**W5.1.** Definition writes take a transaction-scoped advisory lock, so the name check and the name's
+row are one act and a race meets the lock rather than the unique index. The review found its key the
+same in every tenant - an advisory lock is the cluster's, and tenants are schemas of one database - so
+one tenant's write waited on another's; the key carries the tenant's schema now, held by a test. Definitions are read, and
+places listed, by name, so a refusal lists them in the same order every time. The body that makes a
+definition is one object whose payload is read by its kind's schema in a refinement, because a route's
+body must be an object schema; a version's payload is read against the definition's own kind by the
+service.
 
 ## Done when
 

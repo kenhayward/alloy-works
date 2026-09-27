@@ -19,6 +19,10 @@ describe('the rule behind a refusal', () => {
       ['template.unresolved', 'template_unresolved', 'TPL-004'],
       ['section.required', 'section_required', 'TPL-013'],
       ['metadata.invalid', 'metadata_invalid', 'TPL-055'],
+      ['definition.name_taken', 'definition_name_taken', 'MET-031'],
+      ['assignment.conflict', 'assignment_conflict', 'MET-008'],
+      ['schema.conflict', 'schema_conflict', 'MET-040'],
+      ['field.breaks_default', 'field_breaks_default', 'MET-037'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');
@@ -50,6 +54,10 @@ describe('the rule behind a refusal', () => {
       // missing required value is TPL-055's, refused at publication and not here.
       'values.invalid',
       'values.unresolved',
+      // What a definition names that is not there, and a schema's own invalid default: the
+      // definition's own shape, which no requirement names (definitions.md, DE-E).
+      'definition.unresolved',
+      'definition.invalid',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

@@ -85,6 +85,15 @@ export {
   TemplateVersionBody,
   TemplateView,
 } from './templates.js';
+export {
+  CreateDefinitionBody,
+  DefinitionKind,
+  DefinitionList,
+  DefinitionParams,
+  DefinitionRefusal,
+  DefinitionVersionBody,
+  DefinitionView,
+} from './definitions.js';
 export { allRoutes, API_VERSION, routes, SESSION_COOKIE } from './routes.js';
 export {
   AccessAnswers,

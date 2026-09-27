@@ -410,6 +410,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   retitled or moved still counts - or while its values, or a section's, do not satisfy the fields its
   template asks for. The page says which sections, or which values, by name, and nothing is queued.
 
+- **Fields, schemas and component types, through the API.** Somebody who may manage definitions - the
+  Definitions manager role - makes and changes fields, metadata schemas and component types through
+  `/v1/definitions`, each change a new version. Before one is written it is checked against everything
+  that uses it: a name another definition of its kind already has, compared regardless of case and
+  spacing; a component type whose schemas disagree about a field's default; a schema version whose
+  default would disagree with a schema used beside it on any component type or template, naming every
+  such place; and a field version that would make a schema's default for it invalid, naming each.
+  Anybody who may read the whole environment may list and read them. No page makes or changes one yet.
+
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath
   its outline, and before it a choice of **PDF**, **Word** or **PDF and Word**, PDF unless they choose
