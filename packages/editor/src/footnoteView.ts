@@ -9,7 +9,7 @@ import {
   TextSelection,
   type Transaction,
 } from 'prosemirror-state';
-import { StepMap } from 'prosemirror-transform';
+import { AddNodeMarkStep, AttrStep, RemoveNodeMarkStep, StepMap } from 'prosemirror-transform';
 import { EditorView, type NodeView } from 'prosemirror-view';
 
 import { equationView } from './equationView.js';
@@ -81,7 +81,18 @@ export function footnoteView(
     const offset = StepMap.offset(pos + 1);
     for (const each of transactions) {
       for (const step of each.steps) {
-        const mapped = step.map(offset);
+        // An attribute's step is moved, not mapped: an offset reads as content inserted before the
+        // footnote's first position, and `AttrStep.map` drops a step whose position that insertion
+        // reaches - so a paragraph style chosen in the footnote's text never reached the component.
+        // A node mark's steps are moved alike, for the same reason.
+        const mapped =
+          step instanceof AttrStep
+            ? new AttrStep(step.pos + pos + 1, step.attr, step.value)
+            : step instanceof AddNodeMarkStep
+              ? new AddNodeMarkStep(step.pos + pos + 1, step.mark)
+              : step instanceof RemoveNodeMarkStep
+                ? new RemoveNodeMarkStep(step.pos + pos + 1, step.mark)
+                : step.map(offset);
         if (mapped !== null) outerTr.step(mapped);
       }
     }

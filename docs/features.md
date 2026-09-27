@@ -220,6 +220,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   hyphenation, keeping lines together, a table's header repeated on each page and a floated figure's
   place on its page are left to the publication.
 
+- **Choosing a style.** **Paragraph style**, beside the formatting toolbar, sets the style of the
+  paragraphs the selection touches, from the styles the theme offers where they stand - a paragraph in
+  running text, in a list, in a quotation or in a table's cell each has its own - with the default
+  there first. It is the only way a paragraph's alignment, indents or spacing change. **Table style**
+  in the Table panel sets a table's, and **Image style** in the Figure dialog and the Figure panel sets
+  a figure's or an image's in a line of text. Undo takes a choice back. The environment's theme offers
+  one style of each yet, so each list has one entry until it offers more.
+
 - **Making a component.** On the list of components, **New component** offers the spaces you may create
   in, a title, a base language such as `en-GB`, a direction, and the component type the environment
   offers. Creating makes version 0.1 with one empty paragraph and opens it. Above the surface, the
@@ -780,7 +788,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the most a publication can set.
   No publication has a list of equations yet, since the one layout lists only figures and tables;
   nothing chooses, makes or edits a layout or a theme, and there is only ever the one of each the
-  environment started with, and no style to choose for a paragraph; and there is no preview, and no
+  environment started with; and there is no preview, and no
   way to approve a publication. The page asks how a publish is going for as
   long as it stays open, and a download link lasts five minutes from when the publication's page was
   opened. In the desktop app, downloading has not been checked.

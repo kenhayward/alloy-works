@@ -15,14 +15,19 @@ const FUNCTION = /\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\(/;
 const NAMED =
   /\b(?:black|white|red|green|blue|yellow|orange|purple|pink|gr[ae]y|navy|teal|silver|maroon|olive|lime|aqua|fuchsia|brown|cyan|magenta|gold|indigo|violet)\b/i;
 
-/** Every source a screen is styled or built from: not tests, not the test setup, not a build. */
+/**
+ * Every source a screen is styled or built from: not tests, not their fixtures - a theme a test is set
+ * in is data, whose colours are the theme's - not the test setup, not a build.
+ */
 function sources(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) {
       return ['test', 'node_modules', 'dist'].includes(entry.name) ? [] : sources(path);
     }
-    return /\.(?:css|tsx?)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name) ? [path] : [];
+    return /\.(?:css|tsx?)$/.test(entry.name) && !/\.(?:test|fixture)\.tsx?$/.test(entry.name)
+      ? [path]
+      : [];
   });
 }
 

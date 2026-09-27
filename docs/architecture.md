@@ -1234,16 +1234,18 @@ is the provider's, kept in `localStorage`; `ZoomControl` sets it on the componen
 document's. The component page is set in the environment's presentation and a document's page in the
 document's.
 
-| Where                             | What                                                            |
-| --------------------------------- | --------------------------------------------------------------- |
-| `fonts: src/coverage.ts`          | Each family's characters as ranges, generated and drift-checked |
-| `domain: src/theme/faces.ts`      | `projectFontFaces` and `faceFamily`                             |
-| `service: src/presentation.ts`    | The two routes                                                  |
-| `web: src/theme/presentation.tsx` | `PresentationProvider` and `usePresentation`                    |
-| `domain: src/theme/css.ts`        | `projectCss`: every property but the pagination-bound           |
-| `editor: src/places.ts`           | `paragraphPlaces`, its decorations and `drawPlaces`             |
-| `web: src/theme/Canvas.tsx`       | `Canvas`, `useCanvas` and `ZoomControl`                         |
-| `web: src/theme/images.ts`        | `sizeImages` and `useStyledImages`: images at their styled size |
+| Where                             | What                                                                        |
+| --------------------------------- | --------------------------------------------------------------------------- |
+| `fonts: src/coverage.ts`          | Each family's characters as ranges, generated and drift-checked             |
+| `domain: src/theme/faces.ts`      | `projectFontFaces` and `faceFamily`                                         |
+| `service: src/presentation.ts`    | The two routes                                                              |
+| `web: src/theme/presentation.tsx` | `PresentationProvider` and `usePresentation`                                |
+| `domain: src/theme/css.ts`        | `projectCss`: every property but the pagination-bound                       |
+| `editor: src/places.ts`           | `paragraphPlaces`, its decorations and `drawPlaces`                         |
+| `web: src/theme/Canvas.tsx`       | `Canvas`, `useCanvas` and `ZoomControl`                                     |
+| `web: src/theme/images.ts`        | `sizeImages` and `useStyledImages`: images at their styled size             |
+| `editor: src/styles.ts`           | `setParagraphStyle`, `setTableStyle`, `setImageStyle` and `paragraphsAt`    |
+| `web: src/theme/StyleChoice.tsx`  | The style lists: what each offers, from the theme, and the lists themselves |
 
 ## One renderer, two deliveries
 

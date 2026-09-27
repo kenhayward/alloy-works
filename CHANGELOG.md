@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.97.0 - 2026-09-27 (PR #283)
+
+### Added
+
+- **Choose a style.** A Paragraph style list beside the toolbar sets how the selected paragraphs
+  look, from the styles your theme offers where they stand, and Undo takes it back. A table's style is
+  chosen in the Table panel, and a figure's or an image's in the Figure dialog when you place it and in
+  the Figure panel afterwards. The environment's theme offers one style of each for now.
+
 ## 0.96.0 - 2026-09-27 (PR #282)
 
 ### Added

@@ -82,6 +82,7 @@ import { Waiting } from '../states/Waiting.js';
 import { everyPage } from '../paging.js';
 import { byName } from '../metadata/people.js';
 import { Canvas } from '../theme/Canvas.js';
+import { ParagraphStyle } from '../theme/StyleChoice.js';
 
 /**
  * The Equation dialog, loaded the first time it opens, and Temml with it (equations 1's final review,
@@ -1181,6 +1182,10 @@ export function ComponentEditor({
                   (action === 'equation' && openEquation(view)))
               }
             />
+            {/* The style of the paragraphs the selection touches, from the theme's catalogue: the
+                only way a paragraph's alignment, indents and spacing change (CNT-094). */}
+            {/* Of the footnote's own text while one is open, as the toolbar's buttons are. */}
+            {editing !== null && <ParagraphStyle view={editing} enabled={mayFormat} />}
             {!shown.mayEdit && (
               <Notice tone="readOnly">
                 <p>You may read this component but not edit it.</p>
@@ -1327,7 +1332,7 @@ export function ComponentEditor({
             upload={(bytes, alternative) =>
               uploadImage(client, { space: shown.space.id, bytes, alternative })
             }
-            onDone={({ assetVersion, alternative }) => {
+            onDone={({ assetVersion, alternative, imageStyle }) => {
               // The phase as it is now, from the session, not as this render saw it: the lock can
               // be lost while the image is checked, and a command dispatches whatever the surface's
               // own `editable` says (figures 2, final review).
@@ -1338,9 +1343,9 @@ export function ComponentEditor({
               const dispatch = surface.dispatch.bind(surface);
               const command =
                 figureDialog === 'Figure'
-                  ? insertFigure(assetVersion, alternative, newBlockIdentifier)
+                  ? insertFigure(assetVersion, alternative, newBlockIdentifier, imageStyle)
                   : figureDialog === 'Image'
-                    ? insertImage(assetVersion, alternative)
+                    ? insertImage(assetVersion, alternative, imageStyle)
                     : // Replacing what the panel is about: an inline image selected whole, or the
                       // figure the cursor stands in.
                       imageAt(surface.state) !== null

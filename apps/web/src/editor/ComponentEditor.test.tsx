@@ -21,7 +21,7 @@ import { describeEquation } from './speech.js';
 import { designTiming } from './session.js';
 import { ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
-import { DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
+import { CHOOSING_PRESENTATION, DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
 
 shimRangeMeasurement();
 
@@ -109,8 +109,14 @@ function open(
   timing = quick,
   strict = false,
   extra: Partial<React.ComponentProps<typeof ComponentEditor>> = {},
+  /** Where given, the editor is set in this presentation, as a page sets it (themes.md, W8). */
+  presentation?: unknown,
 ) {
-  const { client, asked } = service(answers);
+  const { client, asked } = service(
+    presentation === undefined
+      ? answers
+      : { 'GET /v1/presentation': () => json(200, presentation), ...answers },
+  );
   let view: EditorView | undefined;
   const editor = (
     <ComponentEditor
@@ -123,7 +129,13 @@ function open(
       {...extra}
     />
   );
-  render(strict ? <StrictMode>{editor}</StrictMode> : editor);
+  const placed =
+    presentation === undefined ? (
+      editor
+    ) : (
+      <PresentationProvider client={client}>{editor}</PresentationProvider>
+    );
+  render(strict ? <StrictMode>{placed}</StrictMode> : placed);
   const surface = async () => {
     await screen.findByRole('textbox', { name: 'Content of Install the printer' });
     // ProseMirror puts the surface into the page itself, outside React, so the surface is there
@@ -3559,7 +3571,7 @@ describe('a figure in the editor (figures 2)', () => {
       () => json(200, { sequence: at + 1, lock }),
     ]),
   );
-  const openWith = (stored: unknown, extra: Record<string, Answer> = {}) =>
+  const openWith = (stored: unknown, extra: Record<string, Answer> = {}, presentation?: unknown) =>
     open(
       {
         'GET /v1/components/{id}': () => json(200, opened({ content: stored })),
@@ -3569,10 +3581,12 @@ describe('a figure in the editor (figures 2)', () => {
       },
       quick,
       true,
+      {},
+      presentation,
     );
   const figureOf = (view: EditorView) =>
     fromEditor(view.state.doc).content.find((block) => block.type === 'figure') as
-      { id: string; asset: string; alternative: unknown } | undefined;
+      { id: string; asset: string; imageStyle: string; alternative: unknown } | undefined;
   const aFigure = (alternative: unknown) =>
     blocksOf(para('b1', 'Before.'), {
       type: 'figure',
@@ -3598,6 +3612,79 @@ describe('a figure in the editor (figures 2)', () => {
       within(dialog).getByLabelText('Image'),
       new File([pngBytes], 'shapes.png', { type: 'image/png' }),
     );
+
+  it("CNT-121 gives a figure the image style chosen from the image catalogue, placing it and in its panel, offering only a figure's", async () => {
+    // Placed: the dialog offers the figure styles of the environment's theme, and places it in the one chosen.
+    const { surface } = openWith(
+      content('Unbox the printer.'),
+      { ...uploads(RED), ...assetVersion(RED, null) },
+      CHOOSING_PRESENTATION,
+    );
+    const view = await surface();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Figure' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Figure' });
+    const offered = await within(dialog).findByLabelText('Image style');
+    expect([...(offered as HTMLSelectElement).options].map((option) => option.text)).toEqual([
+      'Figure',
+      'Half width',
+    ]);
+    await userEvent.selectOptions(offered, 'Half width');
+    await chooseImage(dialog);
+    await userEvent.click(within(dialog).getByLabelText('It is decorative'));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+    await waitFor(() =>
+      expect(figureOf(view)).toMatchObject({ asset: RED, imageStyle: 'half-width' }),
+    );
+
+    // Changed: the panel offers the same, and sets the one chosen.
+    caretInCaption(view);
+    const panel = await screen.findByRole('group', { name: 'Figure' });
+    const list = within(panel).getByLabelText('Image style') as HTMLSelectElement;
+    expect(list).toHaveValue('half-width');
+    expect([...list.options].map((option) => option.text)).toEqual(['Figure', 'Half width']);
+    await userEvent.selectOptions(list, 'Figure');
+    await waitFor(() => expect(figureOf(view)).toMatchObject({ imageStyle: 'figure' }));
+  });
+
+  it('CNT-121 gives an image in a line the image style chosen from the image catalogue, placing it and in its panel', async () => {
+    const { surface } = openWith(
+      content('Unbox the printer.'),
+      { ...uploads(RED), ...assetVersion(RED, null) },
+      CHOOSING_PRESENTATION,
+    );
+    const view = await surface();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Image' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Image' });
+    const offered = await within(dialog).findByLabelText('Image style');
+    // An image in a line's styles, never a figure's.
+    expect([...(offered as HTMLSelectElement).options].map((option) => option.text)).toEqual([
+      'Inline image',
+      'Icon',
+    ]);
+    await userEvent.selectOptions(offered, 'Icon');
+    await chooseImage(dialog);
+    await userEvent.click(within(dialog).getByLabelText('It is decorative'));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+    const stored = () => JSON.stringify(fromEditor(view.state.doc).content);
+    await waitFor(() => expect(stored()).toContain('"imageStyle":"icon"'));
+
+    // Selected whole, the image's panel offers the same, and sets the one chosen.
+    act(() => {
+      let at = -1;
+      view.state.doc.descendants((node, pos) => {
+        if (at === -1 && node.type.name === 'image') at = pos;
+        return at === -1;
+      });
+      view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, at)));
+    });
+    const panel = await screen.findByRole('group', { name: 'Image' });
+    const list = within(panel).getByLabelText('Image style');
+    expect(list).toHaveValue('icon');
+    await userEvent.selectOptions(list, 'Inline image');
+    await waitFor(() => expect(stored()).toContain('"imageStyle":"inline"'));
+  });
 
   it("AST-039 makes a figure from an image described in the language the author chose, and gives it its own text in the component's", async () => {
     const { asked, surface } = openWith(content('Unbox the printer.'), {
@@ -5523,5 +5610,176 @@ describe('the surface set in the theme\'s type, at the layout\'s measure (themes
     );
     await screen.findByLabelText('Title');
     expect(view!.dom.closest('.aw-canvas')).toBeNull();
+  });
+});
+
+describe("choosing a block's style from the theme's catalogues (themes.md, ET-G)", () => {
+  const saves = Object.fromEntries(
+    Array.from({ length: 64 }, (_, at) => [
+      `PUT /v1/components/{id}/iterations/{session}/${at + 1}`,
+      () => json(200, { sequence: at + 1, lock }),
+    ]),
+  );
+  const withQuotationAndTable = {
+    ...content('Unbox the printer.'),
+    content: [
+      ...content('Unbox the printer.').content,
+      {
+        type: 'blockquote',
+        id: 'q1',
+        content: [
+          {
+            type: 'paragraph',
+            id: 'b2',
+            style: 'body',
+            content: [{ type: 'text', value: 'Keep the box.', marks: [] }],
+          },
+        ],
+      },
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [{ type: 'text', value: 'Readings', marks: [] }],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [
+              {
+                content: [
+                  {
+                    type: 'paragraph',
+                    id: 'c1',
+                    style: 'body',
+                    content: [{ type: 'text', value: 'Tray', marks: [] }],
+                  },
+                ],
+                colspan: 1,
+                rowspan: 1,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const openChoosing = () =>
+    open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: withQuotationAndTable })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        ...saves,
+      },
+      quick,
+      true,
+      {},
+      CHOOSING_PRESENTATION,
+    );
+  /** The caret just inside the text block reading `text`. */
+  const caretIn = (view: EditorView, text: string) =>
+    act(() => {
+      let at = -1;
+      view.state.doc.descendants((node, pos) => {
+        if (at === -1 && node.isTextblock && node.textContent === text) at = pos + 1;
+        return at === -1;
+      });
+      view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(at))));
+    });
+  const optionsOf = (list: HTMLElement) =>
+    [...(list as HTMLSelectElement).options].map((option) => option.text);
+
+  it("CNT-094 sets a paragraph's appearance only by a named style from the theme's catalogue, offering those that apply where it stands", async () => {
+    const { surface } = openChoosing();
+    const view = await surface();
+    caretIn(view, 'Unbox the printer.');
+    const list = await screen.findByLabelText('Paragraph style');
+    // Running text: its default, and the styles for running text. Not the quotation's, and never a
+    // heading or a caption, which the template sets by role.
+    expect(optionsOf(list)).toEqual(['Body (default)', 'Lead', 'Plain']);
+    await userEvent.selectOptions(list, 'Lead');
+    await waitFor(() =>
+      expect(view.dom.querySelector('p[data-style="lead"]')?.textContent).toBe(
+        'Unbox the printer.',
+      ),
+    );
+    expect(fromEditor(view.state.doc).content[0]).toMatchObject({ style: 'lead' });
+
+    // In a quotation: the quotation's default, and a quotation's style.
+    caretIn(view, 'Keep the box.');
+    await waitFor(() =>
+      expect(optionsOf(screen.getByLabelText('Paragraph style'))).toEqual([
+        'Quotation (default)',
+        'Plain',
+        'Pull quote',
+      ]),
+    );
+    expect(screen.getByLabelText('Paragraph style')).toHaveValue('body');
+  });
+
+  it('offers across paragraphs in different places only the styles that apply in all of them, and sets them all', async () => {
+    const { surface } = openChoosing();
+    const view = await surface();
+    // From the running text into the quotation.
+    act(() => {
+      const spans: number[] = [];
+      view.state.doc.descendants((node, pos) => {
+        if (
+          node.isTextblock &&
+          ['Unbox the printer.', 'Keep the box.'].includes(node.textContent)
+        ) {
+          spans.push(pos + 2);
+        }
+      });
+      view.dispatch(
+        view.state.tr.setSelection(
+          Selection.fromJSON(view.state.doc, { type: 'text', anchor: spans[0], head: spans[1] }),
+        ),
+      );
+    });
+    const list = await screen.findByLabelText('Paragraph style');
+    // No one default names both, and only Plain applies in both.
+    expect(optionsOf(list)).toEqual(['Default', 'Plain']);
+    await userEvent.selectOptions(list, 'Plain');
+    await waitFor(() => expect(view.dom.querySelectorAll('p[data-style="plain"]')).toHaveLength(2));
+  });
+
+  it("chooses a footnote's paragraph style in the footnote's own editor, from the styles a footnote takes", async () => {
+    const { surface } = openChoosing();
+    const view = await surface();
+    act(() => {
+      let at = -1;
+      view.state.doc.descendants((node, pos) => {
+        if (at === -1 && node.isTextblock && node.textContent === 'Unbox the printer.') {
+          at = pos + 1 + node.content.size;
+        }
+        return at === -1;
+      });
+      view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(at))));
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Footnote' }));
+    await screen.findByRole('textbox', { name: 'Footnote text' });
+    const list = await screen.findByLabelText('Paragraph style');
+    expect(optionsOf(list)).toEqual(['Footnote (default)', 'Small note']);
+    await userEvent.selectOptions(list, 'Small note');
+    await waitFor(() =>
+      expect(JSON.stringify(fromEditor(view.state.doc).content[0])).toContain(
+        '"style":"small-note"',
+      ),
+    );
+  });
+
+  it("chooses a table's style in the Table panel, from the table catalogue", async () => {
+    const { surface } = openChoosing();
+    const view = await surface();
+    caretIn(view, 'Tray');
+    const panel = await screen.findByRole('group', { name: 'Table' });
+    const list = within(panel).getByLabelText('Table style');
+    expect(optionsOf(list)).toEqual(['Table', 'Banded']);
+    expect(list).toHaveValue('table');
+    await userEvent.selectOptions(list, 'Banded');
+    await waitFor(() =>
+      expect(view.dom.querySelector('figure[data-table-style="banded"]')).not.toBeNull(),
+    );
   });
 });

@@ -27,6 +27,8 @@ export interface TableAt {
   /** Where the table's `tableFigure` starts. */
   readonly pos: number;
   readonly id: string | null;
+  /** Its table style, which the Table panel's Table style list shows. */
+  readonly style: string;
   readonly headerRows: number;
   readonly headerColumns: number;
   readonly rows: number;
@@ -45,6 +47,7 @@ export function tableAt(state: EditorState): TableAt | null {
     return {
       pos: $from.before(depth),
       id: (node.attrs.id as string | null) ?? null,
+      style: node.attrs.style as string,
       headerRows: node.attrs.headerRows as number,
       headerColumns: node.attrs.headerColumns as number,
       rows: map.height,

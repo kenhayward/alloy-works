@@ -33,6 +33,8 @@ export interface ImageAt {
   /** Where the `image` node starts. */
   readonly pos: number;
   readonly asset: string;
+  /** Its image style, which the Figure panel's Image style list shows. */
+  readonly imageStyle: string;
   readonly alternative: Alternative;
 }
 
@@ -43,6 +45,7 @@ export function imageAt(state: EditorState): ImageAt | null {
   return {
     pos: selection.from,
     asset: selection.node.attrs.asset as string,
+    imageStyle: selection.node.attrs.imageStyle as string,
     alternative: selection.node.attrs.alternative as Alternative,
   };
 }
@@ -54,7 +57,12 @@ export function imageAt(state: EditorState): ImageAt | null {
  * an attribution, a caption and preformatted text take none. An own text that says nothing is not
  * stored, as a figure's is not.
  */
-export function insertImage(asset: string, alternative: Alternative): Command {
+export function insertImage(
+  asset: string,
+  alternative: Alternative,
+  /** The image style it is placed in, chosen in the dialog; the schema's default unsaid (ET-G). */
+  imageStyle = 'inline',
+): Command {
   return (state, dispatch) => {
     const given = kept(alternative);
     const { $from, $to } = state.selection;
@@ -62,7 +70,7 @@ export function insertImage(asset: string, alternative: Alternative): Command {
       return false;
     }
     if (dispatch) {
-      const image = imageNode.create({ asset, imageStyle: 'inline', alternative: given });
+      const image = imageNode.create({ asset, imageStyle, alternative: given });
       const tr = state.tr.replaceSelectionWith(image, false);
       const after = tr.mapping.map(state.selection.to);
       dispatch(tr.setSelection(TextSelection.create(tr.doc, after)).scrollIntoView());

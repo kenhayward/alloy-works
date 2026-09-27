@@ -15,6 +15,8 @@ export interface FigureAt {
   readonly pos: number;
   readonly id: string | null;
   readonly asset: string;
+  /** Its image style, which the Figure panel's Image style list shows. */
+  readonly imageStyle: string;
   readonly alternative: Alternative;
 }
 
@@ -28,6 +30,7 @@ export function figureAt(state: EditorState): FigureAt | null {
       pos: $from.before(depth),
       id: (node.attrs.id as string | null) ?? null,
       asset: node.attrs.asset as string,
+      imageStyle: node.attrs.imageStyle as string,
       alternative: node.attrs.alternative as Alternative,
     };
   }
@@ -40,6 +43,7 @@ export function figureAt(state: EditorState): FigureAt | null {
       pos: state.selection.from,
       id: (selected.attrs.id as string | null) ?? null,
       asset: selected.attrs.asset as string,
+      imageStyle: selected.attrs.imageStyle as string,
       alternative: selected.attrs.alternative as Alternative,
     };
   }
@@ -81,6 +85,8 @@ export function insertFigure(
   asset: string,
   alternative: Alternative,
   newIdentifier: () => string,
+  /** The image style it is placed in, chosen in the dialog; the schema's default unsaid (ET-G). */
+  imageStyle = 'figure',
 ): Command {
   return (state, dispatch) => {
     const given = kept(alternative);
@@ -94,7 +100,7 @@ export function insertFigure(
     if (!parent.canReplaceWith(at, empty ? index + 1 : at, figureNode)) return false;
     if (dispatch) {
       const figure = figureNode.create(
-        { id: newIdentifier(), asset, imageStyle: 'figure', alternative: given },
+        { id: newIdentifier(), asset, imageStyle, alternative: given },
         [figureCaptionNode.create()],
       );
       const start = empty ? $from.before(depth) : $from.after(depth);
