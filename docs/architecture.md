@@ -1097,8 +1097,8 @@ A search is `GET /v1/search?q=` (W6.2), open to anybody signed in and answered o
 `name:word` for a field by its folded name - handing the rest on in Postgres's web search syntax, and
 names the queries it will not run: `empty`, and `nothing_to_match` for one that only excludes.
 `searchWords` in `packages/db` resolves each scope - `unknown_field` for a name no field the reader may
-read has - and runs one statement: the readable set as access.md's predicate, a definition by the
-tenant's `read`; the free words against each entry's vector and each scoped term against its place;
+read has - and runs one statement: the readable set as access.md's predicate, a definition read at the
+tenant and refused, as anything is, by a grant on itself; the free words against each entry's vector and each scoped term against its place;
 the count, capped at 1,000 over what matched; and for each result on the page its best place by
 `ts_rank` and a passage from that place by `ts_headline`, its matched words marked. The service says
 each outcome in a sentence.

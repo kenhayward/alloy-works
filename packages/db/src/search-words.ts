@@ -67,8 +67,8 @@ function piecesOf(passage: string | null): PassagePiece[] {
 
 /**
  * Searches as `principal`: undefined where the tenant holds no such principal. A scoped term's name is
- * `title`, or a field's by its folded name - read only by whoever may read definitions, the tenant's
- * `read` (SE-H), so a field is no scope for anybody else and says nothing of what it holds.
+ * `title`, or a field's by its folded name - only for a reader who may read that field, as access.md
+ * reads a definition (SE-H), so a field is no scope for anybody else and says nothing of what it holds.
  */
 export async function searchWords(
   trx: TenantTransaction,
@@ -87,15 +87,19 @@ export async function searchWords(
     if (nameKey(term.name) === 'title') {
       place = 'title';
     } else {
-      const field = readable.tenant
-        ? await trx
-            .selectFrom('definition_name')
-            .select('artifact_id')
-            .where('kind', '=', 'field')
-            .where('name_key', '=', nameKey(term.name))
-            .executeTakeFirst()
-        : undefined;
-      if (!field) return { outcome: 'unknown_field', name: term.name };
+      const field = await trx
+        .selectFrom('definition_name')
+        .select('artifact_id')
+        .where('kind', '=', 'field')
+        .where('name_key', '=', nameKey(term.name))
+        .executeTakeFirst();
+      // A field is read as any artifact in no space is: at the tenant, unless a grant on it refuses
+      // it, or by a grant on it alone. One the reader may not read is no scope for them.
+      const readableField =
+        field !== undefined &&
+        ((readable.tenant && !readable.excluded.includes(field.artifact_id)) ||
+          readable.included.includes(field.artifact_id));
+      if (!readableField) return { outcome: 'unknown_field', name: term.name };
       place = `field:${field.artifact_id}`;
     }
     const holds = sql<SqlBool>`exists (
@@ -118,8 +122,9 @@ export async function searchWords(
   const limit = Math.min(Math.max(page.limit ?? SEARCH_PAGE, 1), SEARCH_PAGE_MAX);
   const offset = Math.min(Math.max(page.offset ?? 0, 0), SEARCH_COUNT_CAP);
 
-  // The readable set as access.md's predicate, and a definition by the tenant's read: an artifact in no
-  // space is read at the tenant. A section is its document's, by the document's artifact.
+  // The readable set as access.md's predicate, word for word: an artifact in no space - a definition -
+  // is read at the tenant, and refused like any other by a grant on itself. A section is its
+  // document's, by the document's artifact.
   const { rows } = await sql<{
     total: string;
     kind: SearchKind | null;
@@ -137,10 +142,10 @@ export async function searchWords(
              ts_rank(e.vector, websearch_to_tsquery(e.configuration, ${parsed.anyOf})) as rank
       from search_entry e
       where (
-          (e.space_id = any(${[...readable.spaces]}::uuid[])
+          ((e.space_id = any(${[...readable.spaces]}::uuid[])
+              or (e.space_id is null and ${readable.tenant}::boolean))
             and not e.artifact_id = any(${[...readable.excluded]}::uuid[]))
           or e.artifact_id = any(${[...readable.included]}::uuid[])
-          or (e.space_id is null and ${readable.tenant}::boolean)
         )
         and ${words}
         and ${places.length === 0 ? sql<SqlBool>`true` : sql.join(places, sql` and `)}

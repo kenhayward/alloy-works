@@ -546,7 +546,7 @@ describe('the citations in the committed model', () => {
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
   // 438, from 432 (2026-09-27): W6.2 - SCH-011, SCH-012, SCH-016, SCH-017 and SCH-010 in
-  // packages/db's search-words.test.ts, and SCH-039 in apps/service's search-routes.test.ts.
+  // packages/db's search-words.test.ts, SCH-010's second test a grant refusing a definition itself, and SCH-039 in apps/service's search-routes.test.ts.
   // 432, from 429 (2026-09-27): W6.1 - SCH-002 in packages/domain's search/entries.test.ts, and
   // SCH-054 and SCH-066 in packages/db's search.test.ts.
   // 429, from 428 (2026-09-27): W5.5 - MET-023 in the store's test of a component's values.

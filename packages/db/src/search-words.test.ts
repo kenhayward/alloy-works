@@ -297,6 +297,48 @@ describe('searching words', () => {
     });
   });
 
+  it('SCH-010 finds nothing a grant on the thing itself refuses, a definition included', async () => {
+    const made = await service.withTenant(production, (trx) =>
+      everyKind(trx, { author: ada, spaceId: general, word: 'Ibex', role: production.role }),
+    );
+    // Hal reads the whole tenant, and is refused read on one field, one component type and one
+    // component by grants on each of them.
+    const hal = await service.withTenant(production, async (trx) => {
+      const id = await person(trx, 'hal', 'Hal');
+      const reader = await findRole(trx, 'Reader');
+      await grant(trx, {
+        roleId: reader!.id,
+        subject: { principal: id },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+      for (const artifact of [reviewer, made.componentType, made.component]) {
+        await grant(trx, {
+          roleId: reader!.id,
+          subject: { principal: id },
+          level: { kind: 'artifact', id: artifact },
+          effect: 'deny',
+          grantedBy: ada,
+        });
+      }
+      return id;
+    });
+
+    const kinds = itemsOf(await search(hal, 'ibex')).map((each) => each.kind);
+    expect(kinds).not.toContain('componentType');
+    expect(kinds).not.toContain('component');
+    // What he may read is still there: the schema beside the refused type, and the field beside it.
+    expect(kinds).toEqual(expect.arrayContaining(['metadataSchema', 'field', 'document']));
+    expect(itemsOf(await search(hal, 'reviewer'))).toEqual([]);
+    // Nor is a refused field a scope, which would find what is written under it elsewhere.
+    expect(await search(hal, 'Reviewer:grace')).toEqual({
+      outcome: 'unknown_field',
+      name: 'Reviewer',
+    });
+    expect(await search(ada, 'Reviewer:grace')).toMatchObject({ outcome: 'results' });
+  });
+
   it('answers a query with nothing to look for by name, never with everything', async () => {
     expect(await search(ada, '  ')).toEqual({ outcome: 'empty' });
     expect(await search(ada, '-lever')).toEqual({
