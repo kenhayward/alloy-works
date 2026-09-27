@@ -16,6 +16,7 @@ import {
   type OutlineDocument,
   type OutlineNode,
   type OutlineOperation,
+  type OutlineViewNode,
   type PublishedNode,
 } from '@alloy-works/domain';
 import {
@@ -3350,6 +3351,242 @@ describe('the address of every node', () => {
       expect(screen.getByRole('tree', { name: 'Outline' })).toBeInTheDocument();
       // Publishing changes nothing in the document, and stays for whoever may publish (DV-D).
       expect(screen.getByRole('button', { name: /^Publish as/ })).toBeInTheDocument();
+    });
+  });
+
+  describe('which version each component is (document-view.md, "Versions")', () => {
+    const FOLLOWING = 'aaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const PINNED = 'bbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const APPROVED = 'cccccccccccccccccccccccccc';
+    const WITHHELD = 'dddddddddddddddddddddddddd';
+    const SECRET = 'cccccccc-0000-4000-8000-000000000009';
+    const V1 = 'bbbbbbbb-0000-4000-8000-000000000001';
+    const V2 = 'bbbbbbbb-0000-4000-8000-000000000002';
+    const V3 = 'bbbbbbbb-0000-4000-8000-000000000003';
+    const NUMBERS: Record<string, string> = { [V1]: '0.1', [V2]: '0.2', [V3]: '0.3' };
+    const printer = (words: string) => ({
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: words, marks: [] }],
+        },
+      ],
+    });
+    const placed = (
+      id: string,
+      component: string,
+      mode: Extract<OutlineNode, { type: 'reference' }>['mode'],
+    ): OutlineNode => ({ ...reference(id, 'latest'), component, mode }) as OutlineNode;
+    afterEach(() => {
+      try {
+        window.localStorage.removeItem('alloy-works.mode');
+      } catch {
+        // Storage refused: nothing was kept.
+      }
+    });
+
+    /**
+     * A document placing the printer at its latest, pinned to 0.1 and waiting on revisions, and a
+     * component the reader may not read. The texts route resolves each as the service does, from the
+     * outline as it now stands - the latest is 0.3 - and the versions route lists the printer's three,
+     * or answers as `versions` says for the cursor it was sent.
+     */
+    const listedVersion = (id: string) => ({
+      id,
+      number: NUMBERS[id],
+      createdAt: '2026-09-20T09:00:00.000Z',
+      author: { id: ADA, name: 'Ada' },
+      note: null,
+    });
+    async function openVersions(
+      may: { document: boolean },
+      versions: (cursor: string | null) => Response = () =>
+        json(200, { items: [V3, V2, V1].map(listedVersion), next: null }),
+    ) {
+      const fake = service(
+        outline([
+          placed(FOLLOWING, PRINTER, { kind: 'latest' }),
+          placed(PINNED, PRINTER, { kind: 'pinned', version: V1 }),
+          placed(APPROVED, PRINTER, { kind: 'approved' }),
+          placed(WITHHELD, SECRET, { kind: 'latest' }),
+        ]),
+        { mayEdit: may.document, mayRead: (component) => component !== SECRET },
+      );
+      const listed: string[] = [];
+      const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const request = input instanceof Request ? input : new Request(String(input), init);
+        const path = new URL(request.url).pathname;
+        if (path === `/v1/documents/${DOCUMENT}/texts`) {
+          const occurrences: unknown[] = [];
+          const resolved = new Set<string>();
+          const walk = (nodes: readonly OutlineViewNode[]) => {
+            for (const node of nodes) {
+              if (node.type === 'reference') {
+                const version =
+                  node.component === null || node.mode.kind === 'approved'
+                    ? null
+                    : node.mode.kind === 'pinned'
+                      ? node.mode.version
+                      : V3;
+                if (version !== null) resolved.add(version);
+                occurrences.push({
+                  node: node.id,
+                  version,
+                  mayEdit: node.component !== null,
+                  lock: null,
+                });
+              }
+              walk(node.children);
+            }
+          };
+          const now = fake.latest();
+          walk(now.outline.nodes as readonly OutlineViewNode[]);
+          return json(200, {
+            document: DOCUMENT,
+            version: { id: now.version.id, number: now.version.number },
+            occurrences,
+            versions: [...resolved].map((id) => ({
+              id,
+              number: NUMBERS[id],
+              content: printer(`The printer at ${NUMBERS[id]}.`),
+            })),
+          });
+        }
+        if (path === `/v1/components/${PRINTER}/versions`) {
+          listed.push(path);
+          return versions(new URL(request.url).searchParams.get('cursor'));
+        }
+        return fake.fetch(request);
+      }) as typeof globalThis.fetch;
+      const shown = render(
+        <DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />,
+      );
+      const text = await screen.findByRole('region', { name: "The document's text" });
+      await within(text).findByText('The printer at 0.3.');
+      return { fake, text, shown, listed };
+    }
+    const labelOf = (text: HTMLElement, node: string) =>
+      text.querySelector<HTMLElement>(`[data-node="${node}"] [data-label]`)!;
+
+    it('CNT-162 shows in each label the version a reference resolves to, and whether it is pinned or at the latest', async () => {
+      const { text } = await openVersions({ document: false });
+      await waitFor(() =>
+        expect(labelOf(text, FOLLOWING)).toHaveTextContent('Version 0.3, latest'),
+      );
+      expect(labelOf(text, PINNED)).toHaveTextContent('Version 0.1, pinned');
+      // Approved resolves to nothing until revisions exist, and says so as the outline does (DV-G).
+      expect(labelOf(text, APPROVED)).toHaveTextContent('waiting on revisions');
+      expect(labelOf(text, APPROVED)).not.toHaveTextContent(/Version/);
+      // A component the reader may not read shows neither which version nor how it is placed.
+      const withheld = labelOf(text, WITHHELD);
+      expect(withheld).toHaveTextContent('Not yours to read');
+      expect(withheld).not.toHaveTextContent(/Version|latest|pinned/);
+      // Shown, not offered: the reader may not restructure this document.
+      expect(within(text).queryByRole('button', { name: /^Version/ })).toBeNull();
+    });
+
+    it('CNT-158 lets an author choose, in Authoring, the version a component reference shows, from its label, and shows it chosen', async () => {
+      const { fake, text, listed } = await openVersions({ document: true });
+      const label = () => labelOf(text, FOLLOWING);
+      const chooser = await within(label()).findByRole('button', {
+        name: /^Version 0\.3, latest/,
+      });
+      expect(chooser).toHaveAttribute('aria-expanded', 'false');
+      await userEvent.click(chooser);
+      const menu = await within(label()).findByRole('menu');
+      const items = await within(menu).findAllByRole('menuitemradio');
+      // Always the latest, then each version, newest first; never approved (DV-G).
+      expect(items.map((each) => each.textContent)).toEqual([
+        'Always the latest',
+        expect.stringMatching(/^Version 0\.3/),
+        expect.stringMatching(/^Version 0\.2/),
+        expect.stringMatching(/^Version 0\.1/),
+      ]);
+      expect(items[0]).toHaveAttribute('aria-checked', 'true');
+      expect(items[0]).toHaveFocus();
+      // The keyboard moves through it, and Escape closes it with the focus back on the version.
+      await userEvent.keyboard('{ArrowDown}');
+      expect(items[1]).toHaveFocus();
+      await userEvent.keyboard('{Escape}');
+      expect(within(label()).queryByRole('menu')).toBeNull();
+      expect(chooser).toHaveFocus();
+      // Reopened from the keyboard, and 0.1 chosen: the outline's own act, pinned to that version.
+      await userEvent.keyboard('{Enter}');
+      const again = await within(label()).findByRole('menu');
+      await userEvent.click(within(again).getByRole('menuitemradio', { name: /^Version 0\.1/ }));
+      await waitFor(() => expect(fake.edits()).toHaveLength(1));
+      expect(fake.edits()[0]!.body).toMatchObject({
+        operation: { operation: 'set', node: FOLLOWING, mode: { kind: 'pinned', version: V1 } },
+      });
+      // The texts are read again, and the label shows what it now is.
+      await waitFor(() => expect(label()).toHaveTextContent('Version 0.1, pinned'));
+      expect(listed.length).toBeGreaterThan(0);
+      // And back to the latest, from the pinned one.
+      await userEvent.click(within(label()).getByRole('button', { name: /^Version 0\.1, pinned/ }));
+      const third = await within(label()).findByRole('menu');
+      await userEvent.click(
+        within(third).getByRole('menuitemradio', { name: 'Always the latest' }),
+      );
+      await waitFor(() => expect(fake.edits()).toHaveLength(2));
+      expect(fake.edits()[1]!.body).toMatchObject({
+        operation: { operation: 'set', node: FOLLOWING, mode: { kind: 'latest' } },
+      });
+      await waitFor(() => expect(label()).toHaveTextContent('Version 0.3, latest'));
+    });
+
+    it('CNT-158 offers the choice only in Authoring, and only to whoever may restructure the document', async () => {
+      const { text, shown } = await openVersions({ document: true });
+      await within(labelOf(text, FOLLOWING)).findByRole('button', { name: /^Version 0\.3/ });
+      await userEvent.click(
+        within(screen.getByRole('radiogroup', { name: 'Mode' })).getByRole('radio', {
+          name: 'Reading',
+        }),
+      );
+      expect(within(text).queryByRole('button', { name: /^Version/ })).toBeNull();
+      expect(labelOf(text, FOLLOWING)).toHaveTextContent('Version 0.3, latest');
+      shown.unmount();
+      window.localStorage.removeItem('alloy-works.mode');
+      // In Authoring, for the components they may edit, but not the document: shown, not offered.
+      const other = await openVersions({ document: false });
+      expect(screen.getByRole('radio', { name: 'Authoring' })).toBeChecked();
+      await waitFor(() =>
+        expect(labelOf(other.text, FOLLOWING)).toHaveTextContent('Version 0.3, latest'),
+      );
+      expect(within(other.text).queryByRole('button', { name: /^Version/ })).toBeNull();
+      expect(other.listed).toEqual([]);
+    });
+
+    it('reads the versions a page at a time, and again after a failure, the focus kept in the list', async () => {
+      let answered = 0;
+      const { text } = await openVersions({ document: true }, (cursor) => {
+        answered += 1;
+        if (answered === 1) return json(500, { code: 'internal', message: 'x', traceId: 't' });
+        return cursor === null
+          ? json(200, { items: [V3, V2].map(listedVersion), next: 'b2xkZXI' })
+          : json(200, { items: [V1].map(listedVersion), next: null });
+      });
+      const label = () => labelOf(text, FOLLOWING);
+      await userEvent.click(await within(label()).findByRole('button', { name: /^Version 0\.3/ }));
+      const menu = await within(label()).findByRole('menu');
+      await within(menu).findByText('The versions could not be read.');
+      const latest = within(menu).getByRole('menuitemradio', { name: 'Always the latest' });
+      expect(latest).toHaveFocus();
+      await userEvent.click(within(menu).getByRole('menuitem', { name: 'Try again' }));
+      await within(menu).findByRole('menuitemradio', { name: /^Version 0\.2/ });
+      expect(latest).toHaveFocus();
+      expect(within(menu).queryByRole('menuitemradio', { name: /^Version 0\.1/ })).toBeNull();
+      // The older page, asked for from the list's end: its first version takes the focus.
+      await userEvent.click(within(menu).getByRole('menuitem', { name: 'Older versions' }));
+      const oldest = await within(menu).findByRole('menuitemradio', { name: /^Version 0\.1/ });
+      await waitFor(() => expect(oldest).toHaveFocus());
+      expect(within(menu).queryByRole('menuitem', { name: 'Older versions' })).toBeNull();
+      expect(within(menu).getAllByRole('menuitemradio')).toHaveLength(4);
     });
   });
 

@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.103.0 - 2026-09-27 (PR #290)
+
+### Added
+
+- **Which version a document shows, and choosing it.** Each component's label in a document says the
+  version the document shows - "Version 0.3, latest" when it follows the component's latest, "Version
+  0.1, pinned" when it is pinned to one. In Authoring, where you may change the document, the version
+  is a button listing "Always the latest" and every version of the component, newest first; choosing
+  one changes the document, and can be undone like any other change.
+
 ## 0.102.0 - 2026-09-27 (PR #289)
 
 ### Added

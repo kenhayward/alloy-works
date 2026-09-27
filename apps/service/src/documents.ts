@@ -391,7 +391,7 @@ export function documentHandlers(
      * The text of every component the latest version places, as this caller is shown it (interface
      * slice 9): resolved by the same `numberingInputs` as the contributions route, so a component they
      * may not read is never read and its occurrence answers `null`, and each resolved version's
-     * content read once, in one query.
+     * content and number read once, in one query - the number is what the view's label shows (CNT-162).
      */
     getDocumentTexts: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as DocumentParams;
@@ -439,10 +439,16 @@ export function documentHandlers(
           return { ...occurrence, mayEdit: known?.mayEdit ?? false, lock: known?.lock ?? null };
         }),
         versions: resolved.flatMap((version) => {
-          const content = contents.get(version);
-          return content === undefined
+          const held = contents.get(version);
+          return held === undefined
             ? []
-            : [{ id: version, content: content as Record<string, unknown> }];
+            : [
+                {
+                  id: version,
+                  number: `${held.revision}.${held.version}`,
+                  content: held.content as Record<string, unknown>,
+                },
+              ];
         }),
       };
     },

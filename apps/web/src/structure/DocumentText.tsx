@@ -37,6 +37,7 @@ import { nodeName, titleText, type Names } from './tree.js';
 import { innerWidth, useCanvas } from '../theme/Canvas.js';
 import { useStyledImages } from '../theme/images.js';
 import { useUnresolvedMarks } from '../theme/check.js';
+import { VersionChoice, versionSaid, type Choosing } from './VersionChoice.js';
 
 /** The room the document's column has for its measure, at Fit: its own, inside its padding. */
 const ownRoom = (element: HTMLElement) => innerWidth(element);
@@ -277,6 +278,8 @@ export function DocumentText({
   contributions = NOTHING_KNOWN,
   boundaries = false,
   marked = null,
+  resolved,
+  choosing,
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
@@ -303,6 +306,13 @@ export function DocumentText({
   boundaries?: boolean;
   /** The node a link took the reader to, marked until they choose another (STR-045). */
   marked?: string | null;
+  /** The number of the version each occurrence resolves to, by node, where the reader is told one. */
+  resolved?: ReadonlyMap<string, string>;
+  /**
+   * How a reference's version is chosen from its label (CNT-158): given only in Authoring, to a
+   * reader who may restructure the document. Without it the label says the version and offers nothing.
+   */
+  choosing?: Choosing;
 }) {
   // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072).
   const column = useRef<HTMLElement>(null);
@@ -372,9 +382,10 @@ export function DocumentText({
           data-marked={marked === node.id ? 'true' : undefined}
         >
           <div className={styles['component']} data-component="" data-editing={editing === node.id}>
-            {/* The component's label (CNT-073): what it is, whether the reader may edit it and who
-                holds it, and Open - seen on hover, on focus and under Show boundaries, and always
-                there for a screen reader. While it is being edited the editor's own strip says it. */}
+            {/* The component's label (CNT-073): what it is, which version and how it is placed
+                (CNT-162), whether the reader may edit it and who holds it, and Open - seen on hover, on
+                focus and under Show boundaries, and always there for a screen reader. While it is
+                being edited the editor's own strip says it. */}
             {!(editing === node.id && editor && node.component !== null) && (
               <div className={styles['label']} data-label="">
                 <span className={styles['labelName']}>{nodeName(node, names)}</span>
@@ -382,6 +393,19 @@ export function DocumentText({
                   <Lozenge kind="notYoursToRead">Not yours to read</Lozenge>
                 ) : (
                   <>
+                    {choosing ? (
+                      <VersionChoice
+                        node={node}
+                        component={node.component}
+                        name={nodeName(node, names)}
+                        said={versionSaid(node.mode, resolved?.get(node.id))}
+                        choosing={choosing}
+                      />
+                    ) : (
+                      <span className={styles['versionSaid']}>
+                        {versionSaid(node.mode, resolved?.get(node.id))}
+                      </span>
+                    )}
                     <EditableState
                       state={editable?.get(node.id)}
                       openHere={openComponent !== null && openComponent === node.component}

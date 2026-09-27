@@ -78,3 +78,16 @@ takes the reader there and marks the heading until another node is chosen. **The
 2. `GET /v1/components/{id}/versions`, paged, read permission; the label's chooser in Authoring sets the
    reference's mode through the outline's `set`.
 3. Tests: CNT-162, CNT-158, and the route's.
+
+**W9.4, as built.** The texts route names each resolved version once with its number beside its
+content, read in the same query (`versionContents`), and `GET /v1/components/{id}/versions` lists a
+component's versions newest first to whoever may read it, anything else at that address answered as a
+missing component. It pages by keyset over `(revision_no, version_no)` with a cursor naming the last
+version's number and no snapshot, since the chain is append-only and a walk's remaining pages cannot
+change. The label says `Version 0.3, latest` or `Version 0.1, pinned`, _waiting on revisions_ for
+approved, and nothing of a component the reader may not read; in Authoring, where the document's
+`mayEdit` is true, it is `VersionChoice` (`apps/web/src/structure/VersionChoice.tsx`), a menu of
+**Always the latest** and each version with the day it was made, older pages behind **Older
+versions**. A choice is the page's own `apply`, so it is announced, undone and refused as every outline
+act is, and the texts are read again for the version it records. An approved reference's label is a
+button too, offering the two it may become, never approved itself (DV-G).

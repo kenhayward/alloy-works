@@ -265,10 +265,13 @@ export const DocumentTextsView = z.object({
     .array(
       z.object({
         id: z.string(),
+        number: z.string().describe('`revision.version`, as `0.2`'),
         content: z.record(z.string(), z.unknown()).describe("The version's content document"),
       }),
     )
-    .describe('Each version an occurrence resolved to, once, however many occurrences name it'),
+    .describe(
+      'Each version an occurrence resolved to, once, however many occurrences name it, with its number',
+    ),
 });
 export type DocumentTextsView = z.infer<typeof DocumentTextsView>;
 

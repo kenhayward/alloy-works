@@ -87,6 +87,84 @@
   margin: 0;
 }
 
+/*
+ * Which version the reference resolves to, and whether it is pinned or follows the latest (CNT-162);
+ * in Authoring, for whoever may restructure the document, a button opening the list of the component's
+ * versions to choose from (CNT-158), set below it as the header's popovers are.
+ */
+.versionSaid {
+  font-variant-numeric: tabular-nums;
+}
+
+.versionHolder {
+  position: relative;
+}
+
+/* A label whose list is open stands over the labels of the components below it. */
+.label:focus-within {
+  z-index: 2;
+}
+
+.version {
+  padding: var(--space-4) var(--space-8);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-6);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.version:hover,
+.version[aria-expanded='true'] {
+  background: var(--accent-weak);
+}
+
+.versions {
+  position: absolute;
+  top: calc(100% + var(--space-6));
+  right: 0;
+  z-index: var(--z-dropdown);
+  display: flex;
+  flex-direction: column;
+  min-width: 14rem;
+  max-height: 20rem;
+  overflow-y: auto;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  box-shadow: var(--shadow-menu);
+  white-space: nowrap;
+}
+
+.versions > button {
+  padding: var(--space-6) var(--space-10);
+  border: 0;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.versions > button:hover,
+.versions > button:focus-visible {
+  background: var(--accent-weak);
+}
+
+.versions > button[aria-checked='true'] {
+  font-weight: 600;
+}
+
+.versions .versionsSaid {
+  margin: 0;
+  padding: var(--space-6) var(--space-10);
+  color: var(--muted);
+}
+
 .open {
   flex-shrink: 0;
   padding: var(--space-4) var(--space-12);

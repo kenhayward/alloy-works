@@ -20,6 +20,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
+import { checkedLimit } from './listing.js';
 import { indexVersion } from './search.js';
 import type { TenantTransaction } from './tables.js';
 import { versionDigests } from './version-digest.js';
@@ -323,22 +324,112 @@ export async function readVersion(
 }
 
 /** The latest version of an artifact, or undefined when this tenant holds no such artifact. */
+/** A version's content and its number, `revision.version`, and nothing else of it. */
+export interface VersionContent {
+  readonly revision: number;
+  readonly version: number;
+  readonly content: unknown;
+}
+
 /**
- * The content of each of these versions, by id, in one query: for a caller that has already decided
- * which versions may be read - the text of a document, resolved by `numberingInputs` - and needs
- * nothing of each but what it holds. An id that names no version is simply absent.
+ * The content and the number of each of these versions, by id, in one query: for a caller that has
+ * already decided which versions may be read - the text of a document, resolved by `numberingInputs` -
+ * and needs nothing of each but what it holds and which it is. An id that names no version is simply
+ * absent.
  */
 export async function versionContents(
   trx: TenantTransaction,
   ids: readonly string[],
-): Promise<ReadonlyMap<string, unknown>> {
+): Promise<ReadonlyMap<string, VersionContent>> {
   if (ids.length === 0) return new Map();
   const rows = await trx
     .selectFrom('artifact_version')
-    .select(['id', 'content'])
+    .select(['id', 'content', 'revision_no', 'version_no'])
     .where('id', 'in', [...ids])
     .execute();
-  return new Map(rows.map((row) => [row.id, row.content]));
+  return new Map(
+    rows.map((row) => [
+      row.id,
+      { revision: row.revision_no, version: row.version_no, content: row.content },
+    ]),
+  );
+}
+
+/** One version as a listing of an artifact's versions shows it: its heading, with its author named. */
+export interface ListedVersion {
+  readonly id: string;
+  readonly revision: number;
+  readonly version: number;
+  readonly createdAt: Date;
+  readonly note: string | null;
+  readonly author: { readonly id: string; readonly name: string | null } | null;
+}
+
+/** Where a page of an artifact's versions ended: the last version's number. */
+export interface VersionPosition {
+  readonly revision: number;
+  readonly version: number;
+}
+
+/**
+ * A page of an artifact's versions, newest first (document-view.md, "Versions"): the ones after
+ * `after`, by keyset over `(revision_no, version_no)` descending, and where the next page begins, or
+ * null at the end. The caller has decided the artifact may be read.
+ *
+ * **No snapshot**, unlike the content listings (listing.ts): a version is immutable and the chain is
+ * append-only, so a later version only ever arrives before the first page, never inside a walk
+ * already past it - the pages a walk has yet to read hold exactly what they held when it began.
+ */
+export async function listVersions(
+  trx: TenantTransaction,
+  artifactId: string,
+  page: { readonly limit: number; readonly after?: VersionPosition },
+): Promise<{ readonly items: readonly ListedVersion[]; readonly next: VersionPosition | null }> {
+  const limit = checkedLimit(page.limit);
+  if (!UUID.test(artifactId)) return { items: [], next: null };
+  const { after } = page;
+  const rows = await trx
+    .selectFrom('artifact_version as v')
+    .leftJoin('principal as p', 'p.id', 'v.author_id')
+    .select([
+      'v.id',
+      'v.revision_no',
+      'v.version_no',
+      'v.created_at',
+      'v.note',
+      'v.author_id',
+      'p.display_name',
+      'p.email',
+    ])
+    .where('v.artifact_id', '=', artifactId)
+    .$if(after !== undefined, (query) =>
+      query.where(
+        sql<boolean>`(v.revision_no, v.version_no) < (${after!.revision}, ${after!.version})`,
+      ),
+    )
+    .orderBy('v.revision_no', 'desc')
+    .orderBy('v.version_no', 'desc')
+    .limit(limit + 1)
+    .execute();
+  const shown = rows.slice(0, limit);
+  const last = shown[shown.length - 1];
+  return {
+    items: shown.map((row) => ({
+      id: row.id,
+      revision: row.revision_no,
+      version: row.version_no,
+      createdAt: row.created_at,
+      note: row.note,
+      author:
+        row.author_id === null
+          ? null
+          : { id: row.author_id, name: row.display_name ?? row.email ?? null },
+    })),
+    next:
+      rows.length > limit && last !== undefined
+        ? { revision: last.revision_no, version: last.version_no }
+        : null,
+  };
 }
 
 export async function latestVersion(
