@@ -16066,7 +16066,7 @@
         },
         {
           "id": "SCH-022",
-          "howItIsMet": "Every listing pages by keyset over its sort key and then the artifact's id, a total order, so a page never repeats or skips what the one before it showed however the set changes between them ([Listings and idempotency, in T1](#listings-and-idempotency-in-t1))"
+          "howItIsMet": "Every listing pages by keyset over its sort key and then the artifact's id, a total order, and is read as of its first page's snapshot - each version and publication knowing the transaction that wrote it - so a walk is over one set no later write moves, and never repeats or skips ([Listings and idempotency, in T1](#listings-and-idempotency-in-t1))"
         },
         {
           "id": "SCH-064",
