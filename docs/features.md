@@ -829,7 +829,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the words a publish uses; one that has expired says so and offers a new one. A second preview
   replaces the first, and closing the pane forgets it. Where the window is narrow, the pane goes
   below the text, as the panel of publications does. The page asks how a preview is going for as long
-  as it stays open.
+  as it stays open. Closing the pane puts the focus back on **Preview**. In the desktop app, neither
+  the preview's viewer nor its download has been checked.
 
 ## What does not exist
 

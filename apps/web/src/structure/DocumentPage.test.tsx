@@ -4806,12 +4806,14 @@ describe('a preview beside the text (W10.3)', () => {
     // Beside the text, in the grid the text is in, in a column of its own after it: the text narrows.
     const layout = text.closest('[data-previewing]');
     expect(layout).toHaveAttribute('data-previewing', 'true');
-    expect(pane.closest('[data-previewing]')).toBe(layout);
+    // A column of the grid's own, never inside another: jsdom lays nothing out, so where the columns
+    // fall is read from the stylesheet's own rules.
+    expect(pane.parentElement).toBe(layout);
     expect(ruleOf(".layout[data-previewing='true']")).toMatch(
       /grid-template-columns:[^;]*minmax\(0, 1fr\) minmax\(0, 1fr\) var\(--dock-panel\)/,
     );
-    expect(ruleOf('.text')).toMatch(/grid-column: 3/);
-    expect(ruleOf('.preview')).toMatch(/grid-column: 4/);
+    expect(ruleOf('.text')).toMatch(/grid-column: 3;/);
+    expect(ruleOf('.preview')).toMatch(/grid-column: 4;/);
     // Without leaving the editor: the same editor, open where it was, holding its text.
     expect(within(text).getByRole('textbox', { name: 'Content of Install the printer' })).toBe(
       editor,

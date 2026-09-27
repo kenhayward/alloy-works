@@ -42,6 +42,8 @@ export function useFollowing(client: Client) {
   const follow = useCallback(
     (request: string, first: number, settle: (answer: unknown) => boolean) => {
       const ask = (wait: number) => {
+        // One timer at a time: one left waiting would ask again unseen, and outlive the page.
+        if (waiting.current !== null) clearTimeout(waiting.current);
         waiting.current = setTimeout(() => {
           waiting.current = null;
           client.GET('/v1/publication-requests/{id}', { params: { path: { id: request } } }).then(

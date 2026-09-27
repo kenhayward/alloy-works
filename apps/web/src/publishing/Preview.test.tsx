@@ -65,10 +65,13 @@ function Previewed({
   fetch,
   followMs,
   followed,
+  stubbed = true,
 }: {
   fetch: typeof globalThis.fetch;
   followMs: number;
   followed: string[];
+  /** False to follow a download as the page does, not into `followed`. */
+  stubbed?: boolean;
 }) {
   const preview = usePreview({
     client: createApiClient({ baseUrl: 'http://acme.example.test', fetch }),
@@ -76,7 +79,7 @@ function Previewed({
     version: { id: VERSION, number: '0.3' },
     title: 'The dosing report',
     followMs,
-    follow: (url) => followed.push(url),
+    ...(stubbed ? { follow: (url: string) => void followed.push(url) } : {}),
   });
   return (
     <>
@@ -90,11 +93,11 @@ function Previewed({
   );
 }
 
-const open = (fetch: typeof globalThis.fetch, followMs = 0) => {
+const open = (fetch: typeof globalThis.fetch, followMs = 0, stubbed = true) => {
   const followed: string[] = [];
   const shown = render(
     <StrictMode>
-      <Previewed fetch={fetch} followMs={followMs} followed={followed} />
+      <Previewed fetch={fetch} followMs={followMs} followed={followed} stubbed={stubbed} />
     </StrictMode>,
   );
   return { ...shown, followed };
@@ -337,6 +340,112 @@ describe('a preview on the document page (W10.3)', () => {
     expect(screen.queryByRole('region', { name: 'Preview' })).toBeNull();
     expect(document.querySelector('iframe')).toBeNull();
     expect(screen.queryByText('The preview is shown beside the text.')).toBeNull();
+  });
+
+  it('follows a download in a hidden frame, so the page is never left and an editor never asks to stay', async () => {
+    let asked = 0;
+    const fake = service({
+      [`POST /v1/documents/${DOCUMENT}/previews`]: [queued()],
+      [`GET /v1/publication-requests/${REQUEST}`]: () => {
+        asked += 1;
+        return done(asked);
+      },
+    });
+    open(fake.fetch, 0, false);
+    const before = window.location.href;
+    await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    await within(await screen.findByRole('region', { name: 'Preview' })).findByTitle(
+      'Preview of The dosing report',
+    );
+    await userEvent.click(within(pane()).getByRole('button', { name: 'Download the PDF' }));
+    await waitFor(() =>
+      expect(document.querySelector(`iframe[src="${links(2).download}"]`)).not.toBeNull(),
+    );
+    const frame = document.querySelector(`iframe[src="${links(2).download}"]`)!;
+    expect(frame).toHaveAttribute('hidden');
+    expect(pane().contains(frame)).toBe(false);
+    expect(window.location.href).toBe(before);
+    frame.remove();
+  });
+
+  it("shows and follows no link but the web's, whatever a request answers", async () => {
+    const odd = {
+      view: 'javascript:alert(1)',
+      download: 'javascript:alert(2)',
+      expiresAt: EXPIRES,
+    };
+    const fake = service({
+      [`POST /v1/documents/${DOCUMENT}/previews`]: [queued()],
+      [`GET /v1/publication-requests/${REQUEST}`]: [{ ...done(1), preview: odd }],
+    });
+    const { followed } = open(fake.fetch);
+    await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    expect(
+      await screen.findByText('The preview could not be followed. Preview it again.'),
+    ).toBeInTheDocument();
+    expect(document.querySelector('iframe')).toBeNull();
+    expect(followed).toEqual([]);
+  });
+
+  it('drops a download answered after its preview was closed or replaced', async () => {
+    for (const then of ['close', 'replace'] as const) {
+      let release: (answer: unknown) => void = () => {};
+      let asked = 0;
+      const fake = service({
+        [`POST /v1/documents/${DOCUMENT}/previews`]: [queued(), queued(SECOND)],
+        // The first answer shows it; the download's read waits until the test lets it go.
+        [`GET /v1/publication-requests/${REQUEST}`]: () => {
+          asked += 1;
+          return asked === 1 ? done(1) : new Promise((resolve) => (release = resolve));
+        },
+        [`GET /v1/publication-requests/${SECOND}`]: [done(2, SECOND)],
+      });
+      const { followed, unmount } = open(fake.fetch);
+      await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
+      await within(await screen.findByRole('region', { name: 'Preview' })).findByTitle(
+        'Preview of The dosing report',
+      );
+      await userEvent.click(within(pane()).getByRole('button', { name: 'Download the PDF' }));
+      await waitFor(() => expect(asked).toBe(2));
+      if (then === 'close') {
+        await userEvent.click(within(pane()).getByRole('button', { name: 'Close the preview' }));
+      } else {
+        await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
+        await waitFor(() =>
+          expect(within(pane()).getByTitle('Preview of The dosing report')).toHaveAttribute(
+            'src',
+            links(2).view,
+          ),
+        );
+      }
+      // Its answer arrives late, and says the first has expired: it moves nothing now.
+      release({ ...done(1), preview: null });
+      await pause(20);
+      expect(followed, then).toEqual([]);
+      if (then === 'close') {
+        expect(screen.queryByRole('region', { name: 'Preview' }), then).toBeNull();
+      } else {
+        expect(within(pane()).getByTitle('Preview of The dosing report'), then).toHaveAttribute(
+          'src',
+          links(2).view,
+        );
+      }
+      unmount();
+    }
+  });
+
+  it('gives the focus back to Preview when the pane is closed', async () => {
+    const fake = service({
+      [`POST /v1/documents/${DOCUMENT}/previews`]: [queued()],
+      [`GET /v1/publication-requests/${REQUEST}`]: [done(1)],
+    });
+    open(fake.fetch);
+    await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    await within(await screen.findByRole('region', { name: 'Preview' })).findByTitle(
+      'Preview of The dosing report',
+    );
+    await userEvent.click(within(pane()).getByRole('button', { name: 'Close the preview' }));
+    expect(screen.getByRole('button', { name: 'Preview' })).toHaveFocus();
   });
 
   it('asks nothing more once the page closes while it waits to ask again, or with an answer on its way', async () => {

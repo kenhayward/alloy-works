@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useId, useRef, useState } from 'react';
+import { useId, useRef, useState, type RefObject } from 'react';
 
 import { Icon } from '../editor/Icon.js';
 import { Waiting } from '../states/Waiting.js';
@@ -27,12 +27,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+/** A link the web can follow: nothing else a request answers is shown in a frame or followed. */
+function isWebLink(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  try {
+    const { protocol } = new URL(value);
+    return protocol === 'https:' || protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
 /** A `PreviewView`, checked member by member: the client's bodies are `any`. Null where there is none. */
 function linksIn(value: unknown): Links | null {
   if (
     !isRecord(value) ||
-    typeof value.view !== 'string' ||
-    typeof value.download !== 'string' ||
+    !isWebLink(value.view) ||
+    !isWebLink(value.download) ||
     typeof value.expiresAt !== 'string' ||
     Number.isNaN(Date.parse(value.expiresAt))
   ) {
@@ -66,12 +77,31 @@ type Pane =
   | { readonly state: 'failed'; readonly failures: readonly Failure[] }
   | { readonly state: 'expired' };
 
+/** How long a hidden frame following a download is kept, which a download needs only to begin. */
+const FRAME_KEPT_MS = 60_000;
+
+/**
+ * Follows a download in a hidden frame, never in the page: a navigation of the page would ask an editor
+ * with unsaved text whether to leave (its `beforeunload`), and would leave the application behind an
+ * error page the store answers without a file (W10.3's review). A frame's navigation asks nothing, a
+ * file it is answered with is saved, and anything else stays hidden.
+ */
+function followInFrame(url: string): void {
+  const frame = window.document.createElement('iframe');
+  frame.hidden = true;
+  frame.src = url;
+  window.document.body.append(frame);
+  setTimeout(() => frame.remove(), FRAME_KEPT_MS);
+}
+
 export interface Previewing {
   readonly asking: Asking;
   readonly pane: Pane | null;
   readonly ask: () => Promise<void>;
   readonly close: () => void;
   readonly download: () => Promise<void>;
+  /** **Preview**, which the focus goes back to when the pane closes. */
+  readonly button: RefObject<HTMLButtonElement | null>;
 }
 
 /**
@@ -86,7 +116,8 @@ export interface Previewing {
  * request again for a fresh link when it is pressed. Once the request answers with no preview, or not
  * at all, the preview has expired and been swept, and the pane says so. A second preview replaces the
  * first, and closing the pane forgets it: an answer on its way for a preview no longer shown is
- * dropped.
+ * dropped. A preview still being made when the pane closes is still shown once it is made: the author
+ * asked for it, and closing put away the one before.
  */
 export function usePreview({
   client,
@@ -94,7 +125,7 @@ export function usePreview({
   version,
   title,
   followMs = FOLLOW_MS,
-  follow: followLink = (url) => window.location.assign(url),
+  follow: followLink = followInFrame,
 }: {
   readonly client: Client;
   readonly document: string;
@@ -113,6 +144,7 @@ export function usePreview({
   // The request whose preview the pane shows, written where it is answered or closed: a download's
   // answer for any other is dropped.
   const shown = useRef<string | null>(null);
+  const button = useRef<HTMLButtonElement | null>(null);
 
   const ask = async () => {
     if (version === null) return;
@@ -139,6 +171,14 @@ export function usePreview({
         }
         if (answer.state === 'done') {
           const links = linksIn(answer.preview);
+          // Links that are not the web's are no preview to show, and not an expired one either.
+          if (links === null && answer.preview !== null) {
+            setAsking({
+              state: 'refused',
+              words: 'The preview could not be followed. Preview it again.',
+            });
+            return true;
+          }
           shown.current = links === null ? null : request;
           setPane(
             links === null
@@ -167,6 +207,8 @@ export function usePreview({
     shown.current = null;
     setPane(null);
     setAsking((now) => (now.state === 'working' ? now : { state: 'idle' }));
+    // The close button goes with the pane: the focus goes back to what opened it (WCAG 2.4.3).
+    button.current?.focus();
   };
 
   const download = async () => {
@@ -201,13 +243,14 @@ export function usePreview({
     }
   };
 
-  return { asking, pane, ask, close, download };
+  return { asking, pane, ask, close, download, button };
 }
 
 /** **Preview**, for anybody who may read the document: waits while one is being made. */
 export function PreviewButton({ preview }: { readonly preview: Previewing }) {
   return (
     <button
+      ref={preview.button}
       type="button"
       disabled={preview.asking.state === 'working'}
       onClick={() => void preview.ask()}

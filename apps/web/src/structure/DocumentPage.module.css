@@ -154,7 +154,8 @@
     grid-row: auto;
   }
 
-  /* Where the dock goes below the text, so does the preview, the whole width, before the dock. */
+  /* Where the dock goes below the text, so does the preview, the whole width, after the dock's details
+   * and before the rest of it. */
   .layout[data-previewing='true'],
   .layout[data-previewing='true'][data-collapsed='true'] {
     grid-template-columns: var(--outline-width) 6px minmax(0, 1fr);
