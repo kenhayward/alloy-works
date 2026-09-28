@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.121.1 - 2026-09-28 (PR #323)
+
+### Changed
+
+- **The plan for finishing publishing is marked done.** Every part of it has landed: each PDF
+  checked for accessibility, six heading levels, the regression corpus, unnumbered figures and
+  tables, caption placement by style, Word's report of what it cannot carry, and the desktop's
+  spelling checker and symbol palette. The next workstream is the browser suite.
+
 ## 0.121.0 - 2026-09-28 (PR #322)
 
 ### Added
