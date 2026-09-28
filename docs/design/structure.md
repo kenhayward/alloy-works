@@ -487,8 +487,9 @@ no longer there or as not applying, when the held title gives way to the outline
 overwriting it, or the author has been signed out, when it is not sent and the page says so. **Every
 act but a retitle - a move by key or pointer, an undo, a page-break change, an add or a remove - made
 while an act is in flight is ignored**, with `aria-busy` the only sign; the select goes on showing what
-the node holds. That is a known limit, not a rule, and it is left for the browser suite to show
-whether anybody meets it - a second `Alt+Down` pressed before the first is answered is the likeliest.
+the node holds. That is a known limit, not a rule - a second `Alt+Down` pressed before the first is
+answered is the likeliest way to meet it, and the browser suite shows that it sends one move and not
+two. Whether anybody meets it in use is still for a person to find.
 
 **The cycle check runs before the version is recorded** (STR-057). A reachability walk from this
 document over the reference index, in the write transaction, refusing with `outline_cycle` and naming
@@ -508,7 +509,9 @@ arrow-key movement, `Home` and `End`, as component-editor.md's toolbar is, and e
 what it did - a move, what moved and where it landed. The pointer drags a
 node onto another to make it the last child, onto the gap before one to put it there, or onto **Move
 to the end of the document**. `Alt+Left` is the browser's Back on Windows and Linux, so the tree takes
-every `Alt` and arrow key it is given, and only a browser can show that this is enough.
+every `Alt` and arrow key it is given. The browser suite's `tests/browser/src/outline.test.ts` shows
+all of this in Chromium, each act read back from the service, and that every such key reaches the
+window with its default already prevented; headless Chromium has no Back of its own to show more.
 
 ## Numbering
 
@@ -1112,8 +1115,9 @@ cycle once there is an index to walk, and record - never rebasing one person's a
 - **An empty outline** (STR-054): a document created, read, numbered and listed with no nodes, with
   no error anywhere.
 - **Accessibility**, which needs a browser: the panel's keymap, its announcements and its focus
-  handling, in the suite component-editor.md's build plan introduces. **No release claims STR-006
-  without it.**
+  handling, by keyboard alone, by the browser's own drag and drop, and through the API, in the browser
+  suite's `outline.test.ts` (W13.1), which cites STR-006, with axe-core over the outline panel in each
+  state it reaches.
 - **Navigation at several hundred nodes**: the service's share, STR-063, is measured in
   `apps/service/src/navigation-budget.test.ts`, at a declared reference configuration of 500 nodes and
   400 occurrences, against p95 250 ms and a maximum of 500 ms, in every `pnpm test`. **The interface's

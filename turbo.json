@@ -62,6 +62,12 @@
         "ALLOY_E2E_IDP_ISSUER",
         "ALLOY_E2E_STORE_AT"
       ]
+    },
+    "@alloy-works/browser#test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false,
+      "passThroughEnv": ["ALLOY_BROWSER_SERVICE", "ALLOY_BROWSER_API", "ALLOY_BROWSER_IDP"]
     }
   }
 }

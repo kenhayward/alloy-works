@@ -10,6 +10,9 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/.turbo/**',
       '**/coverage/**',
+      // The pinned tools each fetch script unpacks, git-ignored: Chromium's among them carries
+      // scripts of its own, which nobody here wrote.
+      '**/.tools/**',
       // Spike build output, on the same terms as dist: a bundle nobody wrote.
       'spikes/**/out/**',
     ],

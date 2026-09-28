@@ -3,6 +3,22 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.122.0 - 2026-09-28 (PR #TBD)
+
+### Added
+
+- **The app is now tested in a real browser on every change.** A pinned Chromium drives the app
+  against the whole system, the way a person uses it: signed in through the sign-in page, with the
+  page's own errors and warnings failing the test that caused them, and the accessibility checks a
+  machine can make run as it goes. The first tests edit a document's outline by keyboard alone, by
+  dragging with the mouse and through the API, and check what each change was announced as and where
+  the focus went. Run them with `pnpm test:browser` once the stack is up.
+
+### Fixed
+
+- **A section's title now keeps the spaces you type.** Two spaces in a row, or a space at the end
+  while you were still typing, were drawn as one or dropped in the title field beside the outline.
+
 ## 0.121.2 - 2026-09-28 (PR #324)
 
 ### Changed

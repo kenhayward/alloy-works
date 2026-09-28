@@ -5,15 +5,23 @@
 `.github/workflows/ci.yml` runs on every push to `main` and every pull request. A second push to the
 same branch cancels the first, so no minutes go to a commit nobody is waiting on.
 
-| Step              | Command                          | Blocking today?          |
-| ----------------- | -------------------------------- | ------------------------ |
-| Install           | `pnpm install --frozen-lockfile` | **Yes**                  |
-| Lint              | `pnpm lint`                      | No - `continue-on-error` |
-| Format            | `pnpm format`                    | No - `continue-on-error` |
-| Typecheck         | `pnpm typecheck`                 | No - `continue-on-error` |
-| Build             | `pnpm build`                     | No - `continue-on-error` |
-| Test              | `pnpm test`                      | No - `continue-on-error` |
-| Traceability gate | `pnpm trace gate`                | **Yes**                  |
+| Step      | Command                          | Blocking today?          |
+| --------- | -------------------------------- | ------------------------ |
+| Install   | `pnpm install --frozen-lockfile` | **Yes**                  |
+| Lint      | `pnpm lint`                      | No - `continue-on-error` |
+| Format    | `pnpm format`                    | No - `continue-on-error` |
+| Typecheck | `pnpm typecheck`                 | No - `continue-on-error` |
+| Build     | `pnpm build`                     | No - `continue-on-error` |
+| Test      | `pnpm test`                      | No - `continue-on-error` |
+
+The whole-system job builds the compose stack and drives it, and a third job reads what both wrote:
+
+| Job               | Step              | Command                                             | Blocking today? |
+| ----------------- | ----------------- | --------------------------------------------------- | --------------- |
+| The whole system  | Chromium          | `pnpm --filter @alloy-works/browser fetch-chromium` | **Yes**         |
+| The whole system  | End to end        | `pnpm test:e2e`                                     | **Yes**         |
+| The whole system  | Browser           | `pnpm test:browser`                                 | **Yes**         |
+| Traceability gate | Traceability gate | `pnpm trace gate`                                   | **Yes**         |
 
 Install is deliberately **not** `continue-on-error`: a lock file that will not install should stop
 the run, because every step after it would be testing a tree nobody agreed to. And it is
@@ -22,8 +30,13 @@ lock file names, which is the entire reason for committing one.
 
 ### The traceability gate is the first real check in this pipeline
 
-`pnpm trace gate` runs after `Test`, because it reads the JSON reports that step writes to
-`.trace-results/`, and it is the first step in this file that is **not** `continue-on-error`. That is
+`pnpm trace gate` runs in a job of its own, after the build job and the whole-system job, because it
+reads the JSON reports both write to `.trace-results/`: the build job's `Test`, and the whole-system
+job's end-to-end and browser suites, each uploaded as an artifact (`trace-results-build` and
+`trace-results-system`) and downloaded into one `.trace-results/` before the gate runs. It runs unless
+the run was cancelled, so a failed suite is read and refused rather than skipped, and a whole-system
+job that wrote no report at all - the stack never came up - fails its download rather than passing
+without it. It is **not** `continue-on-error`, and neither is the browser step. That is
 safe precisely because of what the gate checks: `docs/specification/baselines/` declares the
 requirements this release is answerable for, each with its own evidence, so the gate passes on the
 day the baseline lands - it fails only when a later change breaks a requirement the baseline already
@@ -79,8 +92,8 @@ When the baseline is agreed, in one PR:
 
 1. Remove every `continue-on-error: true` from `.github/workflows/ci.yml`.
 2. Confirm the job is green on `main` before, not after.
-3. Enable branch protection on `main` requiring the **Lint, typecheck, build and test** check, and
-   requiring a pull request to merge.
+3. Enable branch protection on `main` requiring the **Lint, typecheck, build and test**, **The whole
+   system** and **Traceability gate** checks, and requiring a pull request to merge.
 4. Update the table above and delete this section.
 
 Once it is a gate: **a PR that does not go green does not merge** - no exceptions, no local merges

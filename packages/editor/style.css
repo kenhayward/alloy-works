@@ -19,6 +19,16 @@
   margin: 0 0 var(--space-10);
 }
 
+/*
+ * A section's title field (`mountTitleEditor`) is a ProseMirror surface too, and needs the same: the
+ * spaces an author types kept as typed, and no warning from the view. Found by the browser suite, whose
+ * console gate the view's warning failed; jsdom computes no style, so the view never warned there.
+ */
+.aw-title-field {
+  white-space: pre-wrap;
+  white-space: break-spaces;
+}
+
 .ProseMirror {
   position: relative;
 }

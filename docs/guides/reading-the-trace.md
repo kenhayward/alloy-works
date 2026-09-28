@@ -300,8 +300,10 @@ requirement a design only partly answers is the one failure this whole apparatus
 
 ### The gate is enforced, not advisory
 
-`pnpm trace gate` runs in CI on every push and pull request, and it is the **only** check in this
-repository's pipeline that is not advisory. The others - lint, format, typecheck, build, test - carry
+`pnpm trace gate` runs in CI on every push and pull request, in a job of its own that reads every
+suite's report - the build job's, and the whole-system job's end-to-end and browser suites' - so a
+requirement a browser test cites is verified there too. It is the **only** check in this
+repository's pipeline that is not advisory, beside the whole-system job's own suites. The others - lint, format, typecheck, build, test - carry
 `continue-on-error` while the repository establishes its baseline, which
 [`../ci-and-releases.md`](../ci-and-releases.md) explains. A pull request that breaks the traceability
 chain fails.
