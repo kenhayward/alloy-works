@@ -5332,7 +5332,7 @@
       "id": "IAM-033",
       "area": "IAM",
       "statement": "Service identities must be distinct from user identities, and must not be created by impersonating a person",
-      "tranche": "T1",
+      "tranche": "T5",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 254
@@ -16035,7 +16035,7 @@
         },
         {
           "id": "IAM-034",
-          "howItIsMet": "An API token is a row with explicit scopes, a subset of its creator's, and an expiry that cannot be left unset"
+          "howItIsMet": "An API token is a row with explicit scopes, chosen from the closed permission set, and an expiry that cannot be left unset; the scopes mask its creator's grants at every decision, so it can do less than its creator and never more (TK-A)"
         },
         {
           "id": "IAM-035",

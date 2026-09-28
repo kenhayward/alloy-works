@@ -386,6 +386,56 @@ which IAM-044 forbids requesting. A principal who signs in with Google is placed
 administrator or not at all, and a tenant that wants its directory to drive access is a tenant that
 configures its own provider.
 
+### Groups and Access, as W12 builds them
+
+[The T1 audit](<../reviews/T1 - Audit against the code.md>) found groups built as tables with nothing to
+make, list or fill them, no group claim read at sign-in, and **Access** only on a component. W12 builds
+them ([W12](../plans/2026-09-28-w12-identity.md)).
+
+**Provider groups** (IAM-009). The organisation's provider configuration gains the name of the claim that
+carries group values, `groups` by default.
+
+- The claim is read from the ID token alone, under the basic scopes. No groups scope is ever asked for
+  (IAM-044).
+- A provider that puts groups in the ID token only under a scope of its own must be configured to put
+  them there under `openid` or `profile`. Microsoft Entra's group membership claims and Okta's groups
+  claim can both be.
+- At every sign-in through the organisation's provider, the principal's memberships of provider groups
+  are brought into line with the claim. Only the memberships that differ change, each taking the access
+  epoch.
+- A claim that is absent or not a list of strings counts as no groups. A group only lost by a
+  misconfigured provider fails closed.
+- The Google route asserts none, as above.
+- The stand-in provider asserts groups for its invented users, so tests and development can sign in as a
+  member.
+
+**Groups made and filled** (`GET` and `POST /v1/groups`, `PUT /v1/groups/{id}/members`, `DELETE
+/v1/groups/{id}`, all `administer` at the tenant).
+
+- A group is either the environment's own, with members an administrator names, or stands for one value
+  the provider asserts, with members the sign-ins decide.
+- A provider group's members cannot be named by hand.
+- Deleting a group deletes its grants with it, and takes the epoch.
+- **Access** offers a group as well as a person when giving a grant.
+
+**Access everywhere** (IAM-029). The Access panel opens on a document and a template as it does on a
+component, and on a space and the environment from Administration. At every level, an administrator
+chooses a person and reads every permission with its answer, the level that decided it and the grants
+that did (IAM-030). An explanation names the group a grant came through by its name, not "a group".
+
+#### Decisions for Ken
+
+Each is taken as recommended here, on Ken's instruction of 2026-09-28 to continue with W12, and is his to
+review.
+
+| #    | Decision                                                                                                             | Instead of                                                                                                      |
+| ---- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| GP-A | **Groups come from the ID token under the basic scopes**, the provider configured to put them there                  | Asking for a groups scope or reading a directory API, which IAM-044 forbids                                     |
+| GP-B | **A missing or malformed claim is no groups**, so memberships are removed                                            | Leaving memberships as they were, which keeps access a directory has taken away whenever the claim goes missing |
+| GP-C | **An administrator makes each provider group for one value**, and a value with no group means nothing here           | A group made for every value a claim carries, which fills the environment with a directory's every group        |
+| GP-D | **Memberships follow the claim at sign-in only**; the bound IAM-056 asks for, and a push from the provider, are T2's | Re-reading the directory on a timer, which needs a scope and a credential the product does not hold             |
+| GP-E | **Access opens at every level and on every kind**, and names a group by its name                                     | Access on a component alone, where the audit found it                                                           |
+
 ## Deciding
 
 `decide(question, facts)` is pure. The question is a principal, a permission and a target, and a
@@ -514,22 +564,22 @@ every route has the cross-tenant test IAM-004 already requires plus one as a pri
 
 ## Routes
 
-| Route                                                   | Needs                                       | Does                                                                                                                        |
-| ------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `GET /v1/spaces`                                        | Signed in                                   | The spaces the caller may read, and whether they may create in each                                                         |
-| `POST /v1/spaces`, `PATCH /v1/spaces/{id}`              | `administer`, tenant                        | Creates or renames a space                                                                                                  |
-| `GET /v1/roles?level=`                                  | `administer` at the level or above          | The roles a grant can name, to anyone who may grant at that level                                                           |
-| `GET /v1/principals?level=`                             | `administer` at the level or above          | Everybody who has signed in or been invited, to choose a subject or a person to explain                                     |
-| `GET`, `POST /v1/invitations`                           | `administer`, tenant                        | Lists every invitation; invites an address or renews its invitation                                                         |
-| `DELETE /v1/invitations/{id}`                           | `administer`, tenant                        | Withdraws an invitation nobody has accepted, with its principal and every grant to it                                       |
-| `POST /v1/roles`; `PUT`, `DELETE /v1/roles/{id}`        | `administer`, tenant                        | Creates, changes and removes roles, with the role and lock-out guards above                                                 |
-| `GET`, `POST /v1/groups`; `PUT /v1/groups/{id}/members` | `administer`, tenant                        | Lists and creates groups; sets a tenant-managed group's members                                                             |
-| `GET /v1/grants?level=`                                 | `administer` at the level or above          | The grants made at one level                                                                                                |
-| `POST /v1/grants`, `DELETE /v1/grants/{id}`             | `administer` at the level or above          | Makes or removes a grant; a grant the caller may not manage answers as one that does not exist                              |
-| `GET /v1/access/external`                               | `administer`, tenant                        | Every external principal, each grant reaching them with its level and expiry, and what those grants let them read (IAM-051) |
-| `PUT /v1/principals/{id}/kind`                          | `administer`, tenant                        | Marks a principal external or not, under the lock-out guard. Nothing in T1 offers it on screen                              |
-| `GET /v1/access?target=`                                | `read` on the target                        | The caller's own answer for every permission on it, and `modesFor` - what the renderer offers from                          |
-| `GET /v1/access/explain?principal=&target=`             | `administer` at the target's level or above | Every permission for that principal on that target, each with its full explanation (IAM-029 to IAM-031)                     |
+| Route                                                                             | Needs                                       | Does                                                                                                                        |
+| --------------------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/spaces`                                                                  | Signed in                                   | The spaces the caller may read, and whether they may create in each                                                         |
+| `POST /v1/spaces`, `PATCH /v1/spaces/{id}`                                        | `administer`, tenant                        | Creates or renames a space                                                                                                  |
+| `GET /v1/roles?level=`                                                            | `administer` at the level or above          | The roles a grant can name, to anyone who may grant at that level                                                           |
+| `GET /v1/principals?level=`                                                       | `administer` at the level or above          | Everybody who has signed in or been invited, to choose a subject or a person to explain                                     |
+| `GET`, `POST /v1/invitations`                                                     | `administer`, tenant                        | Lists every invitation; invites an address or renews its invitation                                                         |
+| `DELETE /v1/invitations/{id}`                                                     | `administer`, tenant                        | Withdraws an invitation nobody has accepted, with its principal and every grant to it                                       |
+| `POST /v1/roles`; `PUT`, `DELETE /v1/roles/{id}`                                  | `administer`, tenant                        | Creates, changes and removes roles, with the role and lock-out guards above                                                 |
+| `GET`, `POST /v1/groups`; `PUT /v1/groups/{id}/members`; `DELETE /v1/groups/{id}` | `administer`, tenant                        | Lists and creates groups; sets a tenant-managed group's members; deletes a group with its grants                            |
+| `GET /v1/grants?level=`                                                           | `administer` at the level or above          | The grants made at one level                                                                                                |
+| `POST /v1/grants`, `DELETE /v1/grants/{id}`                                       | `administer` at the level or above          | Makes or removes a grant; a grant the caller may not manage answers as one that does not exist                              |
+| `GET /v1/access/external`                                                         | `administer`, tenant                        | Every external principal, each grant reaching them with its level and expiry, and what those grants let them read (IAM-051) |
+| `PUT /v1/principals/{id}/kind`                                                    | `administer`, tenant                        | Marks a principal external or not, under the lock-out guard. Nothing in T1 offers it on screen                              |
+| `GET /v1/access?target=`                                                          | `read` on the target                        | The caller's own answer for every permission on it, and `modesFor` - what the renderer offers from                          |
+| `GET /v1/access/explain?principal=&target=`                                       | `administer` at the target's level or above | Every permission for that principal on that target, each with its full explanation (IAM-029 to IAM-031)                     |
 
 A target is spelled `tenant`, `space:<id>` or `artifact:<id>`.
 

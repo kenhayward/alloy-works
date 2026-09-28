@@ -40,7 +40,9 @@ against the code** subsection in the change history of each requirements documen
 by [the T1 remainder plan](../plans/2026-09-25-t1-remainder.md). Its K7 rewordings, agreed on 2026-09-26, are
 answered by a **Ken's answer to the T1 audit's rewordings** subsection in each document they changed. Its K2,
 the warm range preview, decided on 2026-09-27 by [ADR-0027](../decisions/0027-the-warm-range-preview-leaves-t1.md), is
-answered by a **Ken's answer to the warm range preview (K2)** subsection in CNT and PUB.
+answered by a **Ken's answer to the warm range preview (K2)** subsection in CNT and PUB. Its K3, service
+identities and tokens, decided on 2026-09-28 by [ADR-0028](../decisions/0028-personal-api-tokens-in-t1.md), is
+answered by a **Ken's answer to service identities and tokens (K3)** subsection in IAM.
 
 **They are not edited to match what happened.** A review is evidence of what was visible at the time
 it was written, and rewriting it afterwards would destroy exactly that. Where a reviewer was wrong,

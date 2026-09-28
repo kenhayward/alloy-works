@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.109.1 - 2026-09-28 (PR #299)
+
+### Changed
+
+- **API tokens are planned, and they will be your own.** The next releases let you issue yourself a
+  token for a script, limited to less than you may do, with an expiry, and revoked the moment you ask.
+  Tokens that belong to no person come in a later release, which a new decision record explains. Groups
+  from your organisation's directory, and seeing what anyone may do anywhere, are planned beside them.
+  Nothing changes for you in this release.
+
 ## 0.109.0 - 2026-09-28 (PR #298)
 
 ### Added
