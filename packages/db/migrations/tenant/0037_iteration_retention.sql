@@ -46,15 +46,21 @@ declare
   cut timestamptz;
   window_days integer;
 begin
-  select later.created_at into cut
-    from artifact_version opened
-    join artifact_version later
-      on later.artifact_id = opened.artifact_id
-     and (later.revision_no, later.version_no) > (opened.revision_no, opened.version_no)
-   where opened.id = old.opened_from
-   order by later.revision_no, later.version_no
-   limit 1;
-  select iteration_retention_days into window_days from editing_policy;
+  -- Both read by the table's own schema, never the search path: a session's temporary tables are
+  -- searched first, and one named for either would decide the guard (W11.1's final review).
+  execute format(
+    'select later.created_at
+       from %1$I.artifact_version opened
+       join %1$I.artifact_version later
+         on later.artifact_id = opened.artifact_id
+        and (later.revision_no, later.version_no) > (opened.revision_no, opened.version_no)
+      where opened.id = $1
+      order by later.revision_no, later.version_no
+      limit 1',
+    tg_table_schema
+  ) into cut using old.opened_from;
+  execute format('select iteration_retention_days from %I.editing_policy', tg_table_schema)
+    into window_days;
   if cut is null or window_days is null or cut + make_interval(days => window_days) > now() then
     raise exception
       'iteration: kept until the next version is cut, and for the window after it';

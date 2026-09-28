@@ -74,19 +74,27 @@ describe("the environment's editing settings through the service", () => {
         SECRET_SIGN_IN_STATE: 'test-only-state-key-0123456789abcdef',
       }),
     });
-    for (const user of ['ada', 'grace', 'alice']) {
+    for (const user of ['ada', 'grace', 'alice', 'ivy']) {
       cookies[user] = await signIn(app, HOST, user, idp.issuer);
       ids[user] = (
         await app.inject({ url: '/v1/me', headers: { host: HOST, cookie: cookies[user]! } })
       ).json<{ id: string }>().id;
     }
-    // Ada administers the environment; Grace administers one space only; Alice holds nothing.
+    // Ada administers the environment; Grace administers one space only; Ivy authors across the
+    // whole environment, which is no administering of it; Alice holds nothing.
     await tenantDb.withTenant(tenant, async (trx) => {
       const administrator = (await findRole(trx, 'Administrator'))!.id;
       const clinical = (await createSpace(trx, 'Clinical')).id;
       await grant(trx, {
         roleId: administrator,
         subject: { principal: ids.ada! },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ids.ada!,
+      });
+      await grant(trx, {
+        roleId: (await findRole(trx, 'Author'))!.id,
+        subject: { principal: ids.ivy! },
         level: { kind: 'tenant' },
         effect: 'allow',
         grantedBy: ids.ada!,
@@ -109,7 +117,7 @@ describe("the environment's editing settings through the service", () => {
   });
 
   it('VER-004 states the window, 30 days by default, to anybody signed in, and to nobody else', async () => {
-    for (const user of ['ada', 'grace', 'alice']) {
+    for (const user of ['ada', 'grace', 'alice', 'ivy']) {
       const answer = await call(user, 'GET');
       expect(answer.statusCode, user).toBe(200);
       expect(answer.json(), user).toEqual({ iterationRetentionDays: 30 });
@@ -118,7 +126,7 @@ describe("the environment's editing settings through the service", () => {
   });
 
   it("VER-004 lets an administrator of the environment change the window, and refuses anybody else's change", async () => {
-    for (const user of ['grace', 'alice']) {
+    for (const user of ['grace', 'alice', 'ivy']) {
       const refused = await call(user, 'PUT', { iterationRetentionDays: 7 });
       expect(refused.statusCode, user).toBe(403);
       expect(refused.json(), user).toMatchObject({ code: 'forbidden' });
