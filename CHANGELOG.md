@@ -12,8 +12,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   twenty footnotes, a table crossing three pages, a three-hundred-page document edited near its
   fortieth page, equations everywhere an equation can stand, page numbers and running heads in every
   matter, typefaces, a long document's contents and lists, and the same bytes made twice - are now
-  published through the product's own pipeline on every change, and each must come out as it did when
-  the engine was chosen. Nothing changes in what you publish.
+  published through the product's own pipeline on every change, and each must come out as the product sets
+  it today. Nothing changes in what you publish.
 - **Each publishing problem ever reported has a check of its own**, named by its issue: those fixed
   must stay fixed, and those still open - such as a table's caption left at the foot of a page, a tab
   lost from a PDF, or a section marked to start a new page that does not - are recorded as they stand,

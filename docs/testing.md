@@ -209,7 +209,7 @@ creates and alters no role (the one cluster-wide row it can write, an existing t
 
 `apps/worker/src/regression.test.ts` holds the corpus, one suite (W14's decision W-F): the publishing
 engine spike's nine cases, grown by a case for every publishing defect filed (PUB-087), and the keep
-rules' cases (PUB-092). **Every publishing defect gets a case here, named by its issue number in its
+rules' cases. **Every publishing defect gets a case here, named by its issue number in its
 title, in the pull request that fixes it**, holding the document that showed it and the outcome that
 is now right, so the corpus is the record of what has gone wrong and cannot again. A case is a
 document, not Typst source: it goes through `assemble`, under the default layout and theme unless it
@@ -252,7 +252,9 @@ It holds, in its own describe blocks:
   since a citation cannot resolve until LIB in T6; and case 9's second machine, since the suite runs
   on one.
 - **The defects fixed**, by issue: #145 (a publication set in the pinned faces alone), #158 (a second
-  level of bullets in a glyph the faces have, moved here from `template.test.ts`) and #253 (a figure a
+  level of bullets in a glyph the faces have, moved here from `template.test.ts`; the refusal is
+  fixed, and the issue stays open for what it asks besides, a theme's markers checked against its
+  faces) and #253 (a figure a
   condition hides numbered, listed and referred to as though it were not there); and, in a describe
   of its own citing nothing, since PUB-087 is the PDF's, Word's #7 (a Word publication's heading and
   footnote numbers and a heading's spacing, held against the product's writer, since the defect's
@@ -261,10 +263,12 @@ It holds, in its own describe blocks:
   #235 - so that a change which moves one goes red here, and the pull request that fixes one turns its
   case round to the outcome its issue asks for and moves it among the fixed. These cite no
   requirement: they assert what is wrong.
-- **The keep rules** (PUB-092), moved here from `themes.test.ts`: keep-with-next, keep-together where
+- **The keep rules**, moved here from `themes.test.ts`: keep-with-next, keep-together where
   the page allows it and not where it does not, and widow and orphan control, each measured across the
   foot of a small page on a grid of 12pt lines, and each read from the same style as the Word writer's
-  own rule, `w:keepNext`, `w:keepLines` and `w:widowControl`.
+  own rule, `w:keepNext`, `w:keepLines` and `w:widowControl`. They cite STY-008 where they show a
+  style's keeping, and not PUB-092, which asks each engine's pages to show the rules holding: nothing
+  yet measures where Word itself breaks a page (themes.md names the gap).
 
 A defect that was not in publishing output has no case here: the content model's (#88, a caption held
 as a string; #122 to #125), the editor's and the paste's, and the worker's retrying of a job its

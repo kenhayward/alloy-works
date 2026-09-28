@@ -92,7 +92,16 @@ conformance suite.
 | **PUB-027** | The Word projection emits every style as a real Word style, named and identified from the catalogue                                                                                                                                                                                                                  |
 | **PUB-017** | A table breaks across pages as its table style says - header repeated, rows kept whole, a continuation label - which the template sets from the style ([Themes in the PDF](#themes-in-the-pdf), TH-I)                                                                                                                |
 | **TAB-032** | The same, from the table's side                                                                                                                                                                                                                                                                                      |
-| **PUB-092** | Widow and orphan control, keep-with-next and keep-together are paragraph style properties, each passed to Typst as its own rule - the two costs, `sticky`, `breakable: false` - as measured, and to Word as `w:widowControl`, `w:keepNext` and `w:keepLines`; the publishing regression corpus gains a case for each |
+
+**PUB-092 is not claimed: Word's own page breaks are not measured.** Widow and orphan control,
+keep-with-next and keep-together are paragraph style properties, each passed to Typst as its own rule -
+the two costs, `sticky`, `breakable: false` - and to Word as `w:widowControl`, `w:keepNext` and
+`w:keepLines`. The publishing regression corpus (`regression.test.ts`, since W14.3) shows every one of
+them holding in the PDF wherever the page allows, and reaching Word as `w:keepNext`, `w:keepLines` and
+`w:widowControl`, on or stated off, from the same style. Nothing yet measures where Word itself breaks a
+page, which PUB-092's "shown to hold" asks of each engine; the Word check (`word-check.test.ts`), which
+opens the writer's documents in Word, is where it could be measured. Until then the claim stands
+dropped, as word-output.md says of Word.
 
 **STY-075 is not claimed**: the scripts the supported locales admit have no list until LOC-038
 declares one, and which faces answer it is decided then. STY-074, its T1 half, is claimed.
@@ -490,16 +499,9 @@ the editor's; STY-077 and STY-075, T2's and T6's; PUB-092, which names each engi
 STY-058 and STY-070, the editor's. **STY-009 is cited today by a prototype test over a character catalogue
 of two marks of the nine**; themes 1's character catalogue covers all nine and its test replaces that citation.
 
-**PUB-092 is cited since W14.3.** Themes 1's four pagination cases - keep-with-next, keep-together,
-keep-together only where the page allows it, and widow and orphan control - moved from
-`themes.test.ts` into the publishing regression corpus (`regression.test.ts`), and each now also reads
-the rule from the same style as the Word writer projects it, `w:keepNext`, `w:keepLines` and
-`w:widowControl`, on or stated off. So each rule is declared by a style, passed to each engine as that
-engine's own, and shown by the corpus - the PDF's, as PUB-087 defines it - to hold wherever the page
-allows. What nothing measures is where Word itself breaks a page: Word is handed its own rule and
-paginates by it, and the Word check reads no page break. That is the reading on which PUB-092 is
-cited; were it read to ask for Word's pages too, the Word half would be a gap, as word-output.md said
-of Word 1. STY-008's keeping half is cited by the same cases, as it was in `themes.test.ts`.
+**Since W14.3** themes 1's four pagination cases live in the publishing regression corpus, each also
+reading its rule from the same style as Word's; STY-008's keeping half is cited there, as it was in
+`themes.test.ts`, and PUB-092 stays uncited for the gap named beside the table above.
 
 ### What was built
 

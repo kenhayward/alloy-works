@@ -30,9 +30,17 @@ import type { PublishedBlock, PublishedInline, PublishedNode } from './published
  * `contributionsOf`, `number`, `referenceResolver`, `listOf` - the test composes them the other way
  * round and shows the output differs. Where the types forbid the swap, the test says so and shows the
  * refusal with `@ts-expect-error`, which `pnpm typecheck` holds: were the types to allow the swap,
- * the directive would be unused and the typecheck would fail. Where the two stages are one walk inside
- * `assemble` - generating, checking and projecting - so neither swaps, the test shows what the later
- * one reads of the earlier.
+ * the directive would be unused and the typecheck would fail.
+ *
+ * The last stages are not functions a test can reorder. `assemble` runs, in this order: conditions
+ * over each occurrence's content, contributions, the outline's own conditions, `number`, the check
+ * that Word would number alike where Word is asked for, the references, one walk over the document
+ * that checks each block and projects it at once, and then the generated matter - whether the
+ * contents and each list the layout declares has an entry - and the check that there is something to
+ * publish, which reads it; the projection is returned only where no check failed. So the walk's checks
+ * read nothing generation makes, and the one check that does comes after it: the test shows that check
+ * reading generation's answer, and shows a document that fails a check never projected, which the
+ * types refuse too.
  */
 
 const id = (name: string) => name.padEnd(26, 'a');
@@ -200,6 +208,10 @@ describe('the resolution order, each adjacent pair of stages that exists', () =>
     contributionsOf(content);
     expect(tableLabels(inOrder)).toEqual({ t2: 'Table 1.1', t3: 'Table 1.2' });
     expect(tableLabels(early)).toEqual({});
+    // And the product numbers in order: what `assemble` publishes is the numbering counted first.
+    const made = assemble(input());
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    expect(tableLabels(made.numbering)).toEqual(tableLabels(inOrder));
     // And the outline's own condition stage, which `number` reads the contributions through, cannot
     // be skipped or come after it: a `Resolved` is not the `Conditioned` that `number` takes.
     const unconditioned = resolve(outline, new Map([[id('calib'), contributionsOf(content)]]));
@@ -261,7 +273,7 @@ describe('the resolution order, each adjacent pair of stages that exists', () =>
     ]);
   });
 
-  it('PUB-098 generates before the checks: a declared contents that generates no entry is checked as none, and a document with nothing else is refused', () => {
+  it('PUB-098 generates before the check that reads it: a declared contents that generates no entry is checked as none, and a document with nothing else is refused', () => {
     // No cover, a contents to three levels declared, and no node: before generation, a check could
     // read only the declaration, which promises a contents, and would pass an empty artifact.
     const bare = parseLayout({
@@ -281,7 +293,7 @@ describe('the resolution order, each adjacent pair of stages that exists', () =>
     expect(made).toMatchObject({ ok: false, failures: [{ code: 'nothing_to_publish' }] });
   });
 
-  it('PUB-098 checks before projecting: a document that fails a check is never projected, and the types give a refused assembly no document to read', () => {
+  it('PUB-098 returns a projection only where every check passed: a document that fails one is never projected, and the types give a refused assembly no document to read', () => {
     // A character no face here sets: the glyph check fails the document.
     const made = assemble(input({ covers: (codePoint) => codePoint !== 0x59 }));
     expect(made.ok).toBe(false);
