@@ -55,7 +55,7 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 > be marked unnumbered, published under its caption alone and left out of its list (`publishing/14`,
 > template 14; [Tables](#tables)). The defined
 > term, condition, suggestion and comment marks, a citation, a variable and a binding,
-> veraPDF on every publication, preview and review in Word are later slices'
+> preview and review in Word are later slices'
 > ([Build order](#build-order)); a block equation wider than its
 > line is still set past the page's edge ([Equations](#equations), its open item); and nothing
 > chooses or edits a layout or a theme yet. [`../architecture.md`](../architecture.md) describes what is built, and
@@ -107,7 +107,7 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **PUB-031** | Blocks are published in the document's order and tagged in it. Two things are drawn elsewhere, and each is tagged where the document has it: a figure its style floats, drawn at the head or the foot of its page, is read between the blocks either side of it, and in Word its text box is anchored in a paragraph of its own at the same place; a footnote, drawn at the foot of its page, is read inside the paragraph it stands in, where its anchor is. In Word a footnote is Word's own, and where Word reads it is Word's. That a table's header repeated on a later page is not read again is TAB-050's. Measured (W1.3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | **PUB-034** | The published document carries the document's language, each occurrence's base language where it differs and each `language` mark; the template sets `text(lang)` for each, and the Word writer sets `w:lang` ([word-output.md](word-output.md))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **PUB-069** | Each run carries its passage's language to the engine - a component's own, a language mark's - and in Word it is the run's `w:lang`, which Word hyphenates by where the document asks it to. Typst hyphenates by it, and a language it has no patterns for is not hyphenated at all, never as the document's. It breaks lines by it too: Croatian, Czech, Polish, Portuguese, Slovak and Spanish repeat a hyphen already in the text at the start of the next line, and CJK breaks by its own rules, which no pinned face sets in T1 (STY-075). Otherwise the lines were the same in every language probed - English, French, German, Welsh, Turkish, Greek, Russian, Ukrainian, Serbian and Hebrew, with the pinned faces, compared line by line at 52 measures. Measured on Typst 0.15.1 over Latin text: patterns for Afrikaans, Albanian, Catalan, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Hungarian, Icelandic, Italian, Kurdish, Latin, Lithuanian, Norwegian (`no`, `nb`, `nn`), Polish, Portuguese, Slovak, Slovenian, Spanish, Swedish, Turkish and Turkmen; none for Basque, Breton, Esperanto, Frisian, Galician, Indonesian, Irish, Latvian, Luxembourgish, Malay, Maltese, Northern Sami, Occitan, Romanian, Scottish Gaelic, Swahili, Vietnamese or Welsh. Patterns for scripts other than Latin were not probed (W1.3) |
-| **PUB-091** | veraPDF checks every PDF in the worker against its PDF/UA-1 profile; its report is stored as an object and referenced from the publication's output row                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **PUB-091** | veraPDF checks every PDF in the worker against its PDF/UA-1 profile, after the publication is recorded (ADR-0030), by a `check_pdf` job queued in the transaction that records it, and queued again by the worker's sweep where it gave up; its report is retained whole - veraPDF's JSON, as it wrote it, in the tenant's store by its hash, as the PDF is - and summarised beside the publication in `publication_check`, one row per PDF output, insert-only: veraPDF's version, the profile, compliant or not, each rule failed with veraPDF's words for it, and the report's key, digest and size. Its page shows the summary and offers the report to download (W14.1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | **PUB-037** | The layout's `contents.depth` reaches Typst's `outline`, which selects the headings the template sets with `number`'s numbers, so the depth is the layout's and only the page is the engine's (decision C of the second slice); `contents(conditioned, numbering, depth)` is what a worker test measures the compiled entries against                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | **PUB-038** | The layout's `lists` names sequences; each is one `listOf` call, set like the contents                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **PUB-042** | `contents` and `listOf` take the numbering table made after `conditions`, and the checks and projection read only the conditioned document                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -1121,12 +1121,21 @@ sequenceDiagram
     W->>O: fetch pinned assets
     W->>W: assemble: resolve to project, every failure collected
     W->>W: Typst: data.json, template, fonts; PDF/UA-1; creation time pinned
-    W->>W: veraPDF over the PDF
-    W->>O: put the PDF and the report by hash
-    W->>D: one transaction: publication artifact, record, inputs, outputs; request done
+    W->>O: put the PDF by hash
+    W->>D: one transaction: publication artifact, record, inputs, outputs, its check_pdf job; request done
     R->>S: GET /v1/publication-requests/{id}, while the page is open
     S-->>R: the request's state, and every failure once it has failed
+    Note over W,D: after the record commits (ADR-0030, W-B)
+    W->>D: claim check_pdf; read the PDF's key and digest as the tenant's role
+    W->>O: get the PDF, held to its digest
+    W->>W: veraPDF, kept warm, over the PDF against PDF/UA-1
+    W->>O: put veraPDF's whole report by hash
+    W->>D: publication_check: the verdict, the rules failed, the report's key
 ```
+
+**The check is a job of its own** since W14.1: `check_pdf`, queued in the transaction that records
+the publication and claimed once it commits, so a publication is recorded before it is checked and
+the check lies outside the span PUB-102 measures.
 
 **Two job kinds**, `publish` and `preview`, on the existing queue. A job names the request; the
 request names everything else. The worker runs each compile in a fresh directory holding `data.json`,
@@ -1386,7 +1395,9 @@ a publication is made of, so PUB-050 is a grant, as VER-008 is.
 | `publication_request_occurrence` | Insert-only: request, node, the version it took                                                                                                                                                                                                                                                                                                                         |
 | `publication`                    | Insert-only; its id is its artifact's. The request's id (unique, no foreign key), document, document version, publisher, `published_at`, `approval` (`none`; T3 adds `baseline` and `baseline_id`), formats, the layout version it was made under or none, engine, template, pipeline, fonts, `data_sha256`, the numbering table as JSON                                |
 | `publication_input`              | Insert-only: publication, a version it read, and the node for an occurrence. The foreign key restricts deletion                                                                                                                                                                                                                                                         |
-| `publication_output`             | Insert-only: publication, format, object key, SHA-256, size, the standard it was compiled to, and the accessibility report's object                                                                                                                                                                                                                                     |
+| `publication_output`             | Insert-only: publication, format, object key, SHA-256, size, the standard it was compiled to, and, since 0027, its producer and its report                                                                                                                                                                                                                              |
+| `publication_check`              | Insert-only, since 0040: a PDF output's check by veraPDF, its version, the profile, compliant or not, the rules failed, veraPDF's whole report by its key, digest and size in the tenant's store, and when                                                                                                                                                              |
+| `publication_check_given_up`     | Insert-only, since 0041: a PDF output whose checks gave up three times, which the sweep left, with how many had and when                                                                                                                                                                                                                                                |
 
 **Settled now because they would be migrations later.** The occurrence resolution is recorded per node,
 not as a set. `approval` is a closed column from the first row, so T3 widens a check rather than
@@ -1403,8 +1414,8 @@ trigger lets it finish once, from queued to done or failed, and only the move to
 the failures; `done` is refused while the request carries any. An occurrence is taken only while its
 request is queued, and so are a publication's inputs and its output, whose object key must name its
 own digest in its own tenant's store. `publication_output` has no column for the accessibility
-report the table above lists: nothing runs veraPDF over a publication yet, so there is no report
-object to hold (slice 5's per-publication check adds both, PUB-091). A constraint trigger checked at
+report the table above lists, and never gained one: an output is never updated, so the check W14.1
+runs over every publication's PDF is a row of its own, `publication_check` (0040, below). A constraint trigger checked at
 commit refuses a publication not recorded whole: its request done and matching, its artifact in the
 document's space, exactly one output, and its inputs exactly the document's version and each version
 the request recorded. **Three gaps are named rather than closed**, each reachable only by SQL
@@ -1435,6 +1446,56 @@ what finishing never changes, and its commit-time rule gains one condition: the 
 version `is not distinct from` its request's, so a publication can neither name another layout nor
 drop the one it was made under.
 
+**As built, migration 0040 keeps a publication's check** (W14.1, W-C). veraPDF's verdict is a row of
+its own, `publication_check`, keyed to the PDF output it checked and deleted with it and its
+publication, which nothing in the product deletes: the checker (`verapdf`) and its version, the
+profile (`ua1`), `compliant`, `failed_rules` - an array of `{ clause, test, description? }`, at most
+200 and a quarter of a megabyte, a compliant check holding none - veraPDF's whole report as
+`report_key`, `report_sha256` and `report_bytes`, and `checked_at`, the database's time. The runtime
+role selects it and inserts it by those columns alone, and never updates or deletes it; a second
+insert for one output is refused by its key, which `recordPublicationCheck` answers as `already`.
+`publication_output` has no column for the report the table above once listed as an object on it: the
+output is never updated (0017), and the check follows it. **The report is kept whole**, because
+PUB-091 asks for the report to be retained with the publication, not a summary of it: veraPDF's JSON,
+as it wrote it, is put in the tenant's store by its hash before the row names it, the key naming its
+digest by a check and the tenant's own prefix by `publication_check_report_in_own_store`, which reads
+`tg_table_schema` as 0017's output trigger does. The summary columns are what the page shows; the
+report is what an auditor downloads, and its checks by object are there for whoever needs them. The
+preview sweep keeps any key a check's report names, as it keeps every other key something names.
+
+**As built, a check that gave up is queued again** (W14.1). The queue gives a `check_pdf` three
+attempts, after which nothing retried it and its publication would say it was not yet checked for
+ever. The worker's interval sweep, `sweepUncheckedPublications`, queues another, in every tenant, for
+each publication with a PDF and no check five minutes after it was recorded - ADR-0030's bound - with
+no `check_pdf` job waiting or running for it. Whether a job is waiting is the queue's to answer: a
+tenant's own role may insert into `platform.job` and never read it, while the worker's `aw_worker`
+reads it already, so the sweep asks the queue as the worker (`JobQueue.waiting`) and then the tenant
+as the tenant, and no grant is widened. The alternative, a `check_requested_at` on the publication's
+check kept by the tenant, would have been a second record of what the queue already holds, and would
+need an update grant on a table that is otherwise insert-only.
+
+**As built, the sweep stops asking** (W14.1, from its final review). A check that can never succeed -
+a PDF that sends veraPDF past its time on every attempt - would otherwise be queued again at every
+sweep for ever. The sweep asks the queue, as the worker, how many of each subject's `check_pdf` jobs
+have given up (`JobQueue.givenUp`; nothing deletes a job, so it counts every one there has been), and
+once a publication's have given up `CHECK_GIVE_UPS`, three times - the one queued as it was recorded
+and two the sweep queued again, nine attempts in all - it queues no more. It records that it left it
+in the tenant's `publication_check_given_up` (migration 0041): one row per PDF output, keyed to the
+output, insert-only for the runtime role by its publication, format and count alone, timed by the
+database. The count is the queue's, which no tenant's role may read; the row is what the sweep
+decided from it, written as the tenant, where the service reads it with the publication. It answers
+the page's fourth state: `GET /v1/publications/{id}` gives the PDF a `checkState` - `pending`, not yet
+checked; `passed` or `failed`, as its check says; `gave_up`, where its checks gave up for good - and
+the page says **Could not be checked for accessibility.**, not that it is not checked yet. A check
+recorded afterwards, by a job queued by hand, is what stands. `publicationsToCheckAgain` passes over a
+publication left, so a hundred left can never fill a sweep's hundred.
+
+**The first sweep after deployment checks what was published before.** A publication recorded before
+0040, when nothing queued a check, has a PDF, no check and no `check_pdf` job at all, which is what the
+sweep looks for: the first sweep after 0040 queues a check for each, oldest first, at most a hundred
+(`RECHECK_LIMIT`) in each tenant per sweep, and each sweep after it the next hundred, ten minutes
+apart by default, until none is left.
+
 **As built, migration 0027 widens the record for Word** (Word 1). A request's and a publication's
 `formats` are `{pdf}`, `{docx}` or `{pdf, docx}`, spelled PDF first; a publication's engine and
 template are null exactly where it has no PDF; `publication_output` takes `docx`, with a null
@@ -1444,14 +1505,14 @@ one output per format the publication names, where it held exactly one.
 
 ## Routes
 
-| Route                                  | Permission        | Does                                                                                                                                             |
-| -------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `POST /v1/documents/{id}/publications` | Publish, artifact | `version`, `formats`. Decides, resolves and queues; answers the request                                                                          |
-| `POST /v1/documents/{id}/previews`     | Read, artifact    | `version`. The same refusals as a publish, and `format.unsupported` where the layout makes no PDF; a PDF alone                                   |
-| `GET /v1/publication-requests/{id}`    | Its requester     | State, kind and failures, and a done preview's links to view and download it and when it expires, while it lasts. Anybody else is answered `404` |
-| `GET /v1/documents/{id}/publications`  | Read, artifact    | The document's publications the caller may read, newest first, each with publisher, time, version, formats and approval                          |
-| `GET /v1/publications`                 | Signed in         | Every publication the caller may read, of every document, newest first, filtered by the readable set; unpaged                                    |
-| `GET /v1/publications/{id}`            | Read, artifact    | The record, and two signed links per output, valid five minutes: `download`, which saves it, and `view`, which a browser shows                   |
+| Route                                  | Permission        | Does                                                                                                                                                                                                                                                                                                         |
+| -------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /v1/documents/{id}/publications` | Publish, artifact | `version`, `formats`. Decides, resolves and queues; answers the request                                                                                                                                                                                                                                      |
+| `POST /v1/documents/{id}/previews`     | Read, artifact    | `version`. The same refusals as a publish, and `format.unsupported` where the layout makes no PDF; a PDF alone                                                                                                                                                                                               |
+| `GET /v1/publication-requests/{id}`    | Its requester     | State, kind and failures, and a done preview's links to view and download it and when it expires, while it lasts. Anybody else is answered `404`                                                                                                                                                             |
+| `GET /v1/documents/{id}/publications`  | Read, artifact    | The document's publications the caller may read, newest first, each with publisher, time, version, formats and approval                                                                                                                                                                                      |
+| `GET /v1/publications`                 | Signed in         | Every publication the caller may read, of every document, newest first, filtered by the readable set; unpaged                                                                                                                                                                                                |
+| `GET /v1/publications/{id}`            | Read, artifact    | The record, and two signed links per output, valid five minutes: `download`, which saves it, and `view`, which a browser shows; and the PDF's `check`, what veraPDF found with a signed link to its whole report, or none until it has run, and its `checkState`: `pending`, `passed`, `failed` or `gave_up` |
 
 `format_unsupported`, `layout_language` and `page_reference_without_pdf` are refused at the door, before
 anything is queued; everything else is the job's. A signed link's file name is the publication's id,
@@ -1470,14 +1531,14 @@ not `202`: a permission-checked handler cannot set its status.
 
 ## Where the code lives
 
-| Where                   | What                                                                                                                                                                                                                                                                                                                                    |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | `src/publishing/`: `layout.ts` (the layout schema closed at its first version, the product's default, `readLayout`, `speaksFor` and `unsupportedFormats`), `PublishedDocument`, `assemble` and its stages, the failure vocabulary, the MathML-to-tree converter; the theme module exported for the first time, for its Typst projection |
-| `packages/db`           | The two migrations, the Publisher role, `src/layouts.ts` (`defaultLayout`, the environment's declared layout at its latest version), `requestPublication` (decide, resolve, record under the layout, enqueue), `publicationInputs`, `recordPublication`, the listing, and `JobKind` gaining `publish` and `preview`                     |
-| `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                        |
-| `apps/service`          | The handlers; the document and numbering routes answering the document's layout and numbering with its scheme; nothing on the stream, since the requester follows the request by asking (decision G of the first publishing plan)                                                                                                       |
-| `apps/worker`           | `jobs/publish.ts`, the compile root and its flags, the font directory and its refusal when empty, and `templates/publication/1/` to `13/`, chosen by the published document's schema; veraPDF in its test suite (`src/testing/verapdf.ts`), never in the job                                                                            |
-| `apps/web`              | **Publish** and **Preview** on the document page for those who may, the publications beneath the outline, a publication's page with its download, the failure list naming each place in the outline, and the outline panel and its lists numbering with the layout's scheme                                                             |
+| Where                   | What                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/domain`       | `src/publishing/`: `layout.ts` (the layout schema closed at its first version, the product's default, `readLayout`, `speaksFor` and `unsupportedFormats`), `PublishedDocument`, `assemble` and its stages, the failure vocabulary, the MathML-to-tree converter; the theme module exported for the first time, for its Typst projection         |
+| `packages/db`           | The two migrations, the Publisher role, `src/layouts.ts` (`defaultLayout`, the environment's declared layout at its latest version), `requestPublication` (decide, resolve, record under the layout, enqueue), `publicationInputs`, `recordPublication`, the listing, and `JobKind` gaining `publish` and `preview`                             |
+| `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                                |
+| `apps/service`          | The handlers; the document and numbering routes answering the document's layout and numbering with its scheme; nothing on the stream, since the requester follows the request by asking (decision G of the first publishing plan)                                                                                                               |
+| `apps/worker`           | `jobs/publish.ts`, the compile root and its flags, the font directory and its refusal when empty, and `templates/publication/1/` to `13/`, chosen by the published document's schema; the `check_pdf` job and the worker's veraPDF, kept warm (`src/jobs/check.ts`, `src/verapdf.ts`), and veraPDF in its test suite (`src/testing/verapdf.ts`) |
+| `apps/web`              | **Publish** and **Preview** on the document page for those who may, the publications beneath the outline, a publication's page with its download, the failure list naming each place in the outline, and the outline panel and its lists numbering with the layout's scheme                                                                     |
 
 ## Verification
 
@@ -1495,6 +1556,13 @@ not `202`: a permission-checked handler cannot set its status.
 - **The regression corpus**: the spike's nine cases, grown by every defect, compiled on every change
   to the template, the engine or `assemble`, and checked by veraPDF; a person reviews the Matterhorn
   checkpoints on it when the engine or template changes.
+- **Every publication checked** (PUB-091): a publish records its publication with its `check_pdf`
+  queued, and the job keeps what veraPDF found - a PDF/UA-1 PDF passed, an untagged one failed with its
+  rules named, and veraPDF's whole report, byte for byte, in the tenant's store by its hash; a check
+  left queued when its worker dies after recording is taken by the next worker, one that gave up is
+  queued again by the sweep until it has given up three times and then left, recorded as one that
+  could not be checked, a publication recorded before checks were queued is checked by the first sweep
+  after, a hundred at a time, and a second run records nothing (`apps/worker/src/check.test.ts`).
 - **The budget** (PUB-085, unclaimed until slice 5): a generated 300-page reference document of
   prose, figures, tables, equations and footnotes, from request to publication, measured in the worker
   suite.
@@ -1519,12 +1587,16 @@ not `202`: a permission-checked handler cannot set its status.
 
 | ID  | Question                                                                                                                                                                                                                                                                                                                                        |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New | Whether veraPDF's Java runtime belongs in the worker image or a sidecar. The image grows by roughly 200 MB either way. Slice 1 runs it only in the test suite, in its own container (Ken's answer B); this stays open for slice 5's per-publication check                                                                                       |
 | New | How long a finished request is kept. A week is a guess                                                                                                                                                                                                                                                                                          |
-| New | Whether PUB-085's ten-second p95 is met by a warm veraPDF or by changing the requirement, since a cold veraPDF takes 11.2 s a page and PUB-091 asks for its report on every publication. Ken deferred it to slice 5; PUB-085 is unclaimed until then                                                                                            |
 | New | When the page stops asking about a request. It asks a second after publishing, then twice as long each time up to half a minute, and never stops while the page is open: a request no worker takes is asked about every thirty seconds for as long as the page stays open. A limit, and what the page says when it is reached, are not designed |
 | New | What a publication's page does once its download link expires. The link is signed for five minutes when the page opens; a page left open longer offers a link the store refuses, until the page is opened again. Signing on demand, or re-reading the publication when the link is followed, would answer it                                    |
 | New | Whether the desktop app saves a download at all. The link leaves the renderer's origin for the store's, and the Electron shell handles neither `will-navigate` nor `setWindowOpenHandler` for it; nothing has checked what the window does with it, and it is to be checked by hand                                                             |
+
+Answered by W14 ([the plan](../plans/2026-09-28-w14-publishing-finished.md)): whether veraPDF's Java
+runtime belongs in the worker image or a sidecar - the image, by decision W-A, each worker keeping one
+veraPDF warm, on Debian's Java, as W14.1 built it; and whether PUB-085's ten-second p95 is met by a
+warm veraPDF or by changing the requirement - the requirement, by ADR-0030, which records a
+publication before its report joins it and supersedes PUB-085 with PUB-102.
 
 Answered by 1a of the first publishing plan: whether Typst's heading levels seven to nine pass veraPDF
 (they do - see the table above and [What was run](#what-was-run)) and which faces the default theme
@@ -1761,6 +1833,9 @@ see. This section records what each changed against what this design said before
   are the data's and the template's hash does not cover them.
 - **veraPDF runs in the suites only.** The job does not run it, so no report is stored and a
   publication's output row references none; slice 5's per-publication check adds both (PUB-091).
+  Since [W14.1](../plans/2026-09-28-w14-publishing-finished.md), every publication's PDF is checked in
+  a `check_pdf` job of its own, after the publication is recorded, and its report is kept beside the
+  output in `publication_check`, not on it.
 - **What the page shows.** A failure's place is named against the outline the page holds when it is
   answered, not the version published, so a part moved since may show another number, and one removed
   since reads **A part no longer in this document**; neither names a component. Failures of the engine
@@ -1928,8 +2003,12 @@ Each slice is a plan, lands into something that runs, and cites only what its te
    13 setting tables and images from their styles and giving the quotation its set-off back by
    contextual spacing. Its claims are themes.md's.
 5. **Accessible output, checked.** veraPDF per publication and its report kept; the budget measured.
-   Cites PUB-091; claims and cites PUB-085 once a warm checker or a changed requirement settles it
-   against PUB-091 (Ken's deferral). The reading order of floats was verified, and PUB-031 claimed,
+   **The check is built** ([W14.1](../plans/2026-09-28-w14-publishing-finished.md)): veraPDF and its
+   runtime in the worker image, a `check_pdf` job queued as a publication is recorded and queued again
+   by the sweep where it gave up, three give-ups at most before it is left and recorded as one that could
+   not be checked (0041), its verdict in `publication_check` (0040) and on the publication's
+   page, and its whole report in the tenant's store, offered there to download. Cites PUB-091. PUB-085, superseded by
+   PUB-102 under ADR-0030, is measured by W14.2, which the check leaves outside the measured span. The reading order of floats was verified, and PUB-031 claimed,
    by the T1 test debt (W1.3).
    PUB-090 stays unclaimed, since slice 1 measured headings from level seven read as paragraphs.
 6. **Preview - built.** The whole-document preview (PUB-005, PUB-006, CNT-150), W10 of the rest of

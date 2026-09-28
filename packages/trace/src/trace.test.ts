@@ -555,11 +555,16 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
-  // 515, from 505 (2026-09-28): W14.4 - STR-071 in packages/domain's structure/lists.test.ts,
+  // 516, from 506 (2026-09-28): W14.4 (the merge brought W14.1's 506) - STR-071 in packages/domain's structure/lists.test.ts,
   // structure/references.test.ts, publishing/assemble.test.ts and word/write.test.ts, in
   // packages/editor's referenceText.test.ts, in apps/web's editor/ComponentEditor.test.tsx and in
   // apps/worker's tables.test.ts, figures.test.ts and word.test.ts; TAB-034 in assemble.test.ts.
   // numbering.test.ts's five STR-070 tests cite STR-071 instead, which supersedes it.
+  // 506, from 505 (2026-09-28): W14.1 - PUB-091 in apps/worker's check.test.ts, seven tests in one
+  // file: a publication's PDF checked and its verdict kept, veraPDF's whole report retained, a failing
+  // PDF's rules named, a check left queued by a worker that died after recording taken by the next, a
+  // check that gave up queued again by the sweep, one that gave up three times left, and the
+  // publications recorded before checks were queued checked by the first sweep after.
   // 505, unchanged (2026-09-28): W14.7's final review - CNT-178 superseded CNT-148, and the two
   // tests that cited CNT-148 cite CNT-178 instead.
   // 505, from 502 (2026-09-28): W14.7 - CNT-148 in apps/desktop's shell.test.ts, where each
@@ -656,7 +661,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(515);
+    expect(model.citations).toHaveLength(516);
   });
 
   it('cites no identifier the corpus does not hold', () => {

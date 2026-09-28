@@ -396,6 +396,36 @@ export function publishingHandlers(
                   // bytes open in the browser's own viewer, which is how the publication page shows
                   // them.
                   view: await store.signedLink(output.key, DOWNLOAD_SECONDS),
+                  // What veraPDF found, once the check that follows the recording has run (W14.1).
+                  check: output.check && {
+                    checker: output.check.checker,
+                    checkerVersion: output.check.checkerVersion,
+                    profile: output.check.profile,
+                    compliant: output.check.compliant,
+                    failedRules: output.check.failedRules.map((rule) => ({ ...rule })),
+                    // veraPDF's whole report, kept by its hash as the PDF is, and saved as the
+                    // publication's id: never the title, which would reach the store's logs.
+                    report: {
+                      bytes: output.check.report.bytes,
+                      sha256: output.check.report.sha256,
+                      download: await store.signedLink(
+                        output.check.report.key,
+                        DOWNLOAD_SECONDS,
+                        `${publication.id}-verapdf.json`,
+                      ),
+                    },
+                    checkedAt: output.check.checkedAt.toISOString(),
+                  },
+                  // Where it stands, the check first: a check recorded after the sweep gave up
+                  // on it - one queued by hand - is what stands.
+                  checkState:
+                    output.check !== null
+                      ? output.check.compliant
+                        ? ('passed' as const)
+                        : ('failed' as const)
+                      : output.checkGaveUp
+                        ? ('gave_up' as const)
+                        : ('pending' as const),
                 }
               : {
                   ...common,

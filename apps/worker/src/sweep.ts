@@ -1,4 +1,13 @@
-import { sweepIterations, sweepPreviews, type TenantDatabase } from '@alloy-works/db';
+import {
+  CHECK_GIVE_UPS,
+  enqueueJob,
+  publicationsToCheckAgain,
+  recordCheckGivenUp,
+  sweepIterations,
+  sweepPreviews,
+  type JobQueue,
+  type TenantDatabase,
+} from '@alloy-works/db';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import type { WorkerLog } from './worker.js';
 
@@ -47,6 +56,71 @@ export async function sweepExpiredIterations(db: TenantDatabase, log: WorkerLog)
     }
   }
   return removed;
+}
+
+/**
+ * The check sweep (W14.1, ADR-0030), in every tenant: each publication with a PDF still unchecked five
+ * minutes after it was recorded, with no `check_pdf` job waiting or running for it, has one queued
+ * again. Its check gave up after its last attempt - veraPDF would not start, the store would not
+ * answer - and nothing else would ever try it again, leaving its page saying it is not yet checked. A
+ * publication recorded before 0040, when nothing queued a check, is one with no check at all, and is
+ * queued the same way: the first sweep after 0040 checks them, a hundred in each tenant at a time.
+ *
+ * But only so often: once a publication's checks have given up `CHECK_GIVE_UPS` times, the sweep
+ * queues no more, and records that it left it (0041), so its page says it could not be checked rather
+ * than that it is not checked yet. A check that can never succeed - a PDF that sends veraPDF past its
+ * time every time - is tried nine times, not for ever.
+ *
+ * The queue is read by the worker's own role, which may, before the tenant's publications are: a
+ * tenant's role may enqueue and never read the queue, and this widens neither. Read in that order, a
+ * check that finishes between the two has recorded its row before its job was finished, so it is not
+ * asked for again; and a publication recorded between them is under five minutes old. Two workers
+ * sweeping at once may each queue one, which costs one check that finds it checked and asks veraPDF
+ * nothing, and a give-up counted twice the next time.
+ *
+ * A tenant whose sweep fails is logged and passed over. Answers how many checks were queued, and how
+ * many publications were left.
+ */
+export async function sweepUncheckedPublications(
+  db: TenantDatabase,
+  queue: Pick<JobQueue, 'waiting' | 'givenUp'>,
+  log: WorkerLog,
+  now: Date = new Date(),
+): Promise<{ readonly queued: number; readonly left: number }> {
+  let queued = 0;
+  let left = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      const waiting = await queue.waiting(tenant.id, 'check_pdf');
+      const givenUp = await queue.givenUp(tenant.id, 'check_pdf');
+      const swept = await db.withTenant(tenant, async (trx) => {
+        const again = await publicationsToCheckAgain(trx, { now, waiting });
+        const done = { queued: 0, left: 0 };
+        for (const publication of again) {
+          const giveUps = givenUp.get(publication) ?? 0;
+          if (giveUps >= CHECK_GIVE_UPS) {
+            await recordCheckGivenUp(trx, publication, giveUps);
+            done.left += 1;
+          } else {
+            await enqueueJob(trx, 'check_pdf', publication);
+            done.queued += 1;
+          }
+        }
+        return done;
+      });
+      queued += swept.queued;
+      left += swept.left;
+      if (swept.left > 0) {
+        log.warn(
+          { tenant: tenant.id, left: swept.left },
+          'left publications whose checks gave up every time',
+        );
+      }
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the check sweep failed in a tenant');
+    }
+  }
+  return { queued, left };
 }
 
 /**

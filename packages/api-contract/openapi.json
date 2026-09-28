@@ -22068,6 +22068,107 @@
                               "view": {
                                 "type": "string",
                                 "description": "A link to the same bytes, valid for five minutes, that a browser shows rather than saves"
+                              },
+                              "check": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "checker": {
+                                        "type": "string",
+                                        "const": "verapdf"
+                                      },
+                                      "checkerVersion": {
+                                        "type": "string",
+                                        "description": "veraPDF's own version, as its report names it"
+                                      },
+                                      "profile": {
+                                        "type": "string",
+                                        "const": "ua1",
+                                        "description": "The profile it checked against: PDF/UA-1"
+                                      },
+                                      "compliant": {
+                                        "type": "boolean"
+                                      },
+                                      "failedRules": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "clause": {
+                                              "type": "string",
+                                              "description": "The clause of ISO 14289-1 the rule belongs to"
+                                            },
+                                            "test": {
+                                              "type": "integer",
+                                              "minimum": -9007199254740991,
+                                              "maximum": 9007199254740991,
+                                              "description": "The rule's test within its clause"
+                                            },
+                                            "description": {
+                                              "description": "What the rule asks for, in veraPDF's words",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "clause",
+                                            "test"
+                                          ]
+                                        },
+                                        "description": "Each rule the PDF failed; none where it passed"
+                                      },
+                                      "report": {
+                                        "type": "object",
+                                        "properties": {
+                                          "bytes": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "sha256": {
+                                            "type": "string"
+                                          },
+                                          "download": {
+                                            "type": "string",
+                                            "description": "A link to veraPDF's whole report, its JSON, valid for five minutes, saved as `{id}-verapdf.json`"
+                                          }
+                                        },
+                                        "required": [
+                                          "bytes",
+                                          "sha256",
+                                          "download"
+                                        ],
+                                        "description": "veraPDF's whole report, as it wrote it, kept with the publication"
+                                      },
+                                      "checkedAt": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "checker",
+                                      "checkerVersion",
+                                      "profile",
+                                      "compliant",
+                                      "failedRules",
+                                      "report",
+                                      "checkedAt"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "What veraPDF found of the PDF against PDF/UA-1; none until it has been checked, which follows the recording"
+                              },
+                              "checkState": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "passed",
+                                  "failed",
+                                  "gave_up"
+                                ],
+                                "description": "Where the PDF's check stands: `pending`, not yet checked; `passed` or `failed`, as its check says; `gave_up`, not checked and never to be, its checks having given up as often as they are tried"
                               }
                             },
                             "required": [
@@ -22079,7 +22180,9 @@
                               "producerVersion",
                               "report",
                               "download",
-                              "view"
+                              "view",
+                              "check",
+                              "checkState"
                             ]
                           },
                           {

@@ -9,6 +9,8 @@ import type { ColumnType, Generated, Transaction } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
 import type { AssetUploadTable } from './assets-tables.js';
 import type {
+  PublicationCheckGivenUpTable,
+  PublicationCheckTable,
   PublicationInputTable,
   PublicationOutputTable,
   PublicationAssetTable,
@@ -431,6 +433,8 @@ export interface TenantTables {
   publication: PublicationTable;
   publication_input: PublicationInputTable;
   publication_output: PublicationOutputTable;
+  publication_check: PublicationCheckTable;
+  publication_check_given_up: PublicationCheckGivenUpTable;
   document_template: DocumentTemplateTable;
   definition_name: DefinitionNameTable;
   publication_request_asset: PublicationRequestAssetTable;
