@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
 
 import { keepEditingAgain } from '../editor/editing-storage.js';
@@ -18,6 +18,11 @@ const clearSessionStorage = () => {
     // A test that took storage away puts it back itself.
   }
 };
+
+// A `find` or `waitFor` waits three seconds, not Testing Library's one: a file's first mount loads the
+// editor, which on CI's runner has taken over a second (issue #302). A test still fails where what it
+// waits for never comes.
+configure({ asyncUtilTimeout: 3_000 });
 
 beforeEach(() => {
   clearSessionStorage();

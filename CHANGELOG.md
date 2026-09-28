@@ -22,6 +22,13 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   and `DELETE /v1/principals/{id}/tokens/{token}` revokes one; both need you to administer the
   environment and to be signed in, never a token.
 
+## 0.110.1 - 2026-09-28 (PR #303)
+
+### Fixed
+
+- The renderer's tests no longer fail on a slower build machine while a file's first page is still
+  loading the editor (issue #302). Nothing changes in the application.
+
 ## 0.110.0 - 2026-09-28 (PR #300)
 
 ### Added
