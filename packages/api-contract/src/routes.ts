@@ -203,10 +203,13 @@ export const routes = {
     path: '/v1/samples',
     summary: 'Ask for a sample PDF of this environment, which a worker makes',
     tenantScoped: true,
-    access: { check: 'session' },
+    // Development scaffolding that writes a row and queues a job: a session alone, so a token with no
+    // scopes does nothing but read (service-foundations.md, TK-B).
+    access: { check: 'session', credential: 'session' },
     responses: {
       202: { description: 'Asked for; a worker will make it', schema: Sample },
       401: unauthenticated,
+      403: tokenNotAllowed,
       503: {
         description: 'This environment has nowhere to keep documents yet',
         schema: ErrorBody,

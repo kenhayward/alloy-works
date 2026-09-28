@@ -174,7 +174,7 @@ export function componentHandlers(
     listSpaces: async (request: FastifyRequest) => {
       const asked = pageAsked('spaces', request.query as PageQuery);
       const spaces = await db.withTenant(tenantOf(request), (trx) =>
-        listSpacesFor(trx, principalOf(request).principalId, asked, scopesOf(request)),
+        listSpacesFor(trx, principalOf(request).principalId, scopesOf(request), asked),
       );
       return {
         items: [...spaces.items],

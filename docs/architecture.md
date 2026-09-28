@@ -541,40 +541,45 @@ service-foundations.md's TK-A to TK-F). It acts as them, can do no more than the
 less, and expires. There is no page for it yet: the account page's tokens are W12.2's.
 
 **The request path.** For every route that checks anything, the hook reads `Authorization` before the
-cookie. A header there must be `Bearer awt_` and 43 base64url characters, or the request is `401
-unauthenticated`, whatever cookie it also carries. The secret is hashed with SHA-256 and looked up in
-`api_token` inside `withTenant`, joined to its principal and unexpired; not found, revoked or expired is
-`401 unauthenticated`, and a token issued by another environment is simply not there. Found, it records
-the use when the last is more than a minute old, and sets `request.principal` and `request.credential =
-{ kind: 'token', scopes }`. Without the header, the session cookie is read as before, and
+cookie. Only the `Bearer` scheme, in any case, is a credential of ours: a header naming any other -
+`Basic` from a reverse proxy in front, `Negotiate` - is passed over, and the cookie decides. A `Bearer`
+header must be `Bearer awt_` and 43 base64url characters, or the request is `401 unauthenticated`,
+whatever cookie it also carries. The secret is hashed with SHA-256 and looked up in `api_token` inside
+`withTenant`, joined to its principal and unexpired; not found, revoked or expired is `401
+unauthenticated`, and a token issued by another environment is simply not there. Found, it records the
+use when the last is more than a minute old, and sets `request.principal` and `request.credential = {
+kind: 'token', scopes }`. Without the header, the session cookie is read as before, and
 `request.credential` is `{ kind: 'session' }`.
 
 **Session-only routes.** A route declaring `credential: 'session'` refuses a found token `403
-token_not_allowed`: signing out, the event stream and the three token routes. The token is looked up
-first, so one revoked or from another environment is still `401` there. A stolen token cannot mint a
-successor, and no stream is held open on a token after it is revoked. The published document says the
-same: those operations take the `session` scheme, and every other authenticated one `session` or
-`token`, an HTTP bearer.
+token_not_allowed`: signing out, the event stream, the three token routes, and `POST /v1/samples`, the
+development sample, which writes a row and queues a job. The token is looked up first, so one revoked or
+from another environment is still `401` there. A stolen token cannot mint a successor, and no stream is
+held open on a token after it is revoked. The published document says the same: those operations take
+the `session` scheme, and every other authenticated one `session` or `token`, an HTTP bearer.
 
 **The mask, in every decision.** `authorise` adds the request's scopes to the facts it loads, so the
 route's decision and every decision its handler takes from `Authorised.facts` are masked: `mayEdit` on a
 component, `mayEdit` and `mayPublish` on a document and in the outline's answers, `mayDesign` on a
-template, `GET /v1/access`, and `administer` "at its level or above". `authoriseAt` takes a `Caller`, the
-principal and the scopes, for a level a handler finds for itself (an upload's space, a preview's
-document). The texts route masks each component's `mayEdit` with the document's scopes, since
-`loadFactsFor` reads no request; `listSpacesFor` takes the scopes for `mayCreate`. What is not masked,
-by TK-B: the read gate in `authorise`, the readable sets behind search and listings, a template or
-component read on a document's behalf, and `GET /v1/access/explain`, which explains another principal's
-grants rather than this request's. A scope never lifts a refusal: `denied`, `not_granted` and `capped`
-keep their reasons, and `scoped` masks only an allow.
+template, `GET /v1/access`, and `administer` "at its level or above". `authoriseAt` takes a `Caller`,
+the principal and the scopes, for a level a handler finds for itself (an upload's space, a preview's
+document); `putAssetUploadBytes` decides `create` on the upload's space through it, so a token without
+`create` cannot fill an upload its creator's session began. The texts route masks each component's
+`mayEdit` with the document's scopes, since `loadFactsFor` reads no request; `listSpacesFor` takes the
+scopes for `mayCreate`, a parameter every caller must pass, `undefined` for a session. What is not
+masked, by TK-B: the read gate in `authorise`, `POST /v1/documents/{id}/previews`, which is decided on
+`read` (PV-B), so a token with no scopes may ask for a preview, the readable sets behind search and
+listings, a template or component read on a document's behalf, and `GET /v1/access/explain`, which
+explains another principal's grants rather than this request's. A scope never lifts a refusal: `denied`,
+`not_granted` and `capped` keep their reasons, and `scoped` masks only an allow.
 
 **The routes**, each the caller's own and each taking a session alone:
 
-| Route                    | What                                                                                                                                                                                                                                                                                                                                              |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /v1/tokens`         | The caller's tokens, paged by id: name, scopes, created, expires and last used; never a secret or a hash                                                                                                                                                                                                                                          |
-| `POST /v1/tokens`        | `{ name, scopes, expiresAt }`: a name of 1 to 80 characters, trimmed; scopes from the closed set without `read`, each once, else `400`; an expiry required, and `400 token_expiry_invalid` unless it is after the transaction's clock and at most 365 days past it. Answers the token and `secret`, `awt_` and 32 random bytes as base64url, once |
-| `DELETE /v1/tokens/{id}` | Revokes one of the caller's own by deleting its row: `204`, and the next request with it is `401`. Anybody else's is `404`                                                                                                                                                                                                                        |
+| Route                    | What                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/tokens`         | The caller's tokens, paged by id: name, scopes, created, expires and last used; never a secret or a hash                                                                                                                                                                                                                                                                          |
+| `POST /v1/tokens`        | `{ name, scopes, expiresAt }`: a name of 1 to 80 characters, trimmed; scopes from the closed set without `read`, each once, else `400`; an expiry required, and `400 token_expiry_invalid` unless it is after the transaction's clock and at most 365 days past it. Answers the token and `secret`, `awt_` and 32 random bytes as base64url, once, with `Cache-Control: no-store` |
+| `DELETE /v1/tokens/{id}` | Revokes one of the caller's own by deleting its row: `204`, and the next request with it is `401`. Anybody else's is `404`                                                                                                                                                                                                                                                        |
 
 **What is kept.** Only the hash, in the tenant's schema. The secret is in the one answer that issues it and
 nowhere else: the request log never writes a header, and a test holds the log lines of a token issued,

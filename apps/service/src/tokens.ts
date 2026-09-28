@@ -39,9 +39,19 @@ export function newTokenSecret(): string {
 }
 
 /**
- * The secret an Authorization header carries, if it is a bearer holding something shaped like one of
- * ours; undefined for any other header, which the request path refuses as unauthenticated rather than
- * falling back to the cookie - a caller who sent a credential meant that one.
+ * Whether an Authorization header names the Bearer scheme, however well or badly it follows it. Only
+ * that scheme is a credential of ours: any other - `Basic` from a reverse proxy in front, `Negotiate`
+ * from a browser on a domain - is passed over and the cookie decides (W12.1's final review), since
+ * refusing it would sign out every browser behind such a proxy. Schemes are case-insensitive (RFC 9110).
+ */
+export function isBearer(header: string): boolean {
+  return /^Bearer(?:[ ]|$)/i.test(header);
+}
+
+/**
+ * The secret a Bearer header carries, if it is shaped like one of ours; undefined for any other, which
+ * the request path refuses as unauthenticated rather than falling back to the cookie - a caller who
+ * sent a bearer meant that one.
  */
 export function bearerSecret(header: string): string | undefined {
   const match = /^Bearer[ ]+(\S+)$/i.exec(header);
@@ -93,7 +103,7 @@ export function tokenHandlers(
       return { items: page.items.map(tokenView), next: cursorAfter(page.after) };
     },
 
-    createToken: async (request: FastifyRequest): Promise<TokenIssued> => {
+    createToken: async (request: FastifyRequest, reply: FastifyReply): Promise<TokenIssued> => {
       const body = request.body as CreateTokenBody;
       const expiresAt = new Date(body.expiresAt);
       const secret = newTokenSecret();
@@ -119,6 +129,8 @@ export function tokenHandlers(
           expiresAt,
         });
       });
+      // The secret, once: never kept by a cache between the service and the caller (final review).
+      void reply.header('Cache-Control', 'no-store');
       return { ...tokenView(issued), secret };
     },
 

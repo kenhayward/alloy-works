@@ -8818,6 +8818,24 @@ export interface operations {
                     };
                 };
             };
+            /** @description token_not_allowed: this takes a signed-in session, never a token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
             /** @description This environment has nowhere to keep documents yet */
             503: {
                 headers: {

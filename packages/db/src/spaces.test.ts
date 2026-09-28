@@ -1,3 +1,4 @@
+import type { Permission } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { artifactKinds, spacedKinds } from './artifact-kind.js';
@@ -140,8 +141,15 @@ describe('spaces and artifacts', () => {
       if (!('granted' in read)) throw new Error(`refused: ${read.refused}`);
     });
 
-    expect((await service.withTenant(production, (trx) => listSpacesFor(trx, ada))).items).toEqual([
+    const listed = (scopes: readonly Permission[] | undefined) =>
+      service.withTenant(production, (trx) => listSpacesFor(trx, ada, scopes));
+    expect((await listed(undefined)).items).toEqual([
       { id: general.id, name: 'Editorial', mayCreate: true },
+      { id: quality.id, name: 'Review', mayCreate: false },
+    ]);
+    // Through a token that may not create, the same spaces are listed and none may be created in.
+    expect((await listed(['edit'])).items).toEqual([
+      { id: general.id, name: 'Editorial', mayCreate: false },
       { id: quality.id, name: 'Review', mayCreate: false },
     ]);
 
@@ -174,7 +182,7 @@ describe('spaces and artifacts', () => {
       if (!('granted' in granted)) throw new Error(`refused: ${granted.refused}`);
     });
     const seenFromProduction = await service.withTenant(production, (trx) =>
-      listSpacesFor(trx, elsewhere),
+      listSpacesFor(trx, elsewhere, undefined),
     );
     expect(seenFromProduction.items.map((space) => space.name)).not.toContain('Editorial');
     expect(seenFromProduction.items.map((space) => space.name)).not.toContain('Review');
