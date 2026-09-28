@@ -297,7 +297,11 @@ const BODY = 'body';
  */
 const SLICE_ONE_FAMILY = 'Liberation Serif';
 
-/** The heading roles, the first level's first: a node deeper than the sixth takes the sixth's. */
+/**
+ * The heading roles, the first level's first: a node deeper than the sixth takes the sixth's, which
+ * only Word sets, since the PDF refuses it under a layout (`heading_too_deep`). Six, as PDF/UA-1's
+ * headings are.
+ */
 const HEADINGS = [
   'heading1',
   'heading2',
@@ -392,9 +396,10 @@ export function assemble(given: AssembleInput): Assembled {
    * **The failures that are the PDF engine's own** (Word 1, ruling R2): what the pinned Typst and the
    * PDF's page cannot do - a line or an image wider than the PDF's measure, a caption too long for its
    * page, a header cell the engine would grow the header by, a footnote or a reference's target in a
-   * header row the engine sets on every page, and a table's continuation label the PDF sets - said
-   * only where a PDF is asked for. Everything else is the document's, or the layout's or the theme's,
-   * and is said whatever is asked for. Held by identity, since two failures alike in every member may
+   * header row the engine sets on every page, a table's continuation label the PDF sets, and a heading
+   * nested deeper than PDF/UA-1's six levels under a layout (W14.2) - said only where a PDF is asked
+   * for. Everything else is the document's, or the layout's or the theme's, and is said whatever is
+   * asked for. Held by identity, since two failures alike in every member may
    * be one of each.
    *
    * **A construct refused this way stays in the published document** (Word 2, ruling R2): a line too
@@ -1714,6 +1719,14 @@ export function assemble(given: AssembleInput): Assembled {
 
   /** A node and every node beneath it, in the matter of the top-level node that holds them. */
   const project = (node: OutlineNode, depth: number, matter: OutlineMatter): PublishedNode => {
+    // Every node is a heading at its depth, a section's title or a component's. PDF/UA-1 has six, and
+    // the pinned engine tags a deeper one as a paragraph, so the PDF refuses it by name (PUB-103,
+    // ADR-0031); Word numbers and tags nine, and the node stays in the document for it. Under a layout
+    // alone: a request made before layouts keeps saying what it always said, as template 1's frozen
+    // bytes do, and one queued before W14.2 is not refused for a reason it was never told of.
+    if (layout !== null && depth > HEADINGS.length) {
+      failures.push(pdfOnly(failure('compose', 'heading_too_deep', node.id, null, null)));
+    }
     const numberText = numbers.get(node.id) ?? null;
     if (numberText !== null) check(numberText, node.id, null, titleFamilies(depth));
     const anchor = nodeAnchor(node.id);

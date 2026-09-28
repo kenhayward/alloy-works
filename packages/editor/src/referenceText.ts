@@ -70,7 +70,10 @@ export const BROKEN_COMPONENT_REFERENCE = 'Broken reference to another component
  * the author has to choose another form - never the caption printed in the number's place, which
  * would read wrongly in a sentence written around a number and hide the change from the author.
  */
-export function unavailableReference(target: ReferenceTarget, display: CrossReferenceDisplay): string {
+export function unavailableReference(
+  target: ReferenceTarget,
+  display: CrossReferenceDisplay,
+): string {
   const word = kindWord(target.kind);
   const wantsNumber = display === 'number' || display === 'numberAndTitle';
   if (wantsNumber && target.unnumbered) return `${word} not numbered - choose another form`;

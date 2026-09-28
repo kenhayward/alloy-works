@@ -302,7 +302,7 @@ describe("checking a publication's PDF with veraPDF, after it is recorded", () =
     await db?.drop();
   });
 
-  it('PUB-091 records a publication with its check queued in the same transaction, and keeps what veraPDF found of its PDF: PDF/UA-1, passed', async () => {
+  it('PUB-091 PUB-103 records a publication with its check queued in the same transaction, and keeps what veraPDF found of its PDF: PDF/UA-1, passed', async () => {
     const request = await requested();
 
     expect(await work()).toBe('done');

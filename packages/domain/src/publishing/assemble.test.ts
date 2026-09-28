@@ -1607,6 +1607,25 @@ describe('assemble for a request made before layouts', () => {
       nodes: [],
     });
   });
+
+  it('keeps publishing a heading nested deeper than six levels, as it always did, refusing it only under a layout (W14.2)', () => {
+    // A request made before layouts keeps saying what it always said: template 1 is frozen, and a
+    // request queued before W14.2 is not refused for a reason it was never told of.
+    const at = (depth: number) => `level${String.fromCharCode(96 + depth)}`;
+    const chain = (depth: number): object => ({
+      ...section(at(depth), `Level ${depth}`),
+      children: depth === 8 ? [reference('calib')] : [chain(depth + 1)],
+    });
+    const assembled = assemble(before({ outline: outline([chain(1)]) }));
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    interface Deep {
+      readonly depth: number;
+      readonly children: readonly Deep[];
+    }
+    const deepest = (nodes: readonly Deep[]): number =>
+      Math.max(0, ...nodes.map((node) => Math.max(node.depth, deepest(node.children))));
+    expect(deepest(assembled.document.nodes)).toBe(9);
+  });
 });
 
 describe('a quotation and preformatted text, published (editor 5)', () => {
@@ -5768,6 +5787,55 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(failuresFor(over)).toEqual({ pdf: [spans], docx: [], both: [spans] });
     const [tabled] = blocksOf(assemble({ ...over, formats: ['docx'] }));
     expect(tabled).toMatchObject({ type: 'table', id: 't1', headerRows: 1 });
+  });
+
+  it('PUB-103 refuses for the PDF, by name, each heading nested deeper than six levels - a section and a component alike - and publishes all nine levels for Word', () => {
+    // A node's name by its depth, a letter, since an identifier holds no digit past 7.
+    const at = (name: string, depth: number) => `${name}${String.fromCharCode(96 + depth)}`;
+    // Sections nested eight deep, the eighth placing a component, so a heading at the ninth; and a
+    // component at the sixth beside the sixth section, as deep as a PDF tags a heading.
+    const chain = (depth: number): object => ({
+      ...section(at('level', depth), `Level ${depth}`),
+      children:
+        depth === 8
+          ? [reference(at('placed', 9))]
+          : [...(depth === 5 ? [reference(at('placed', 6))] : []), chain(depth + 1)],
+    });
+    const over = input({
+      outline: outline([chain(1)]),
+      occurrences: new Map([
+        [id(at('placed', 6)), component([paragraph('b1', text('Set the tray.'))])],
+        [id(at('placed', 9)), component([paragraph('b1', text('Then wait.'))])],
+      ]),
+    });
+    const tooDeep = (node: string) => ({
+      stage: 'compose',
+      code: 'heading_too_deep',
+      node: id(node),
+      block: null,
+      detail: null,
+    });
+    const refused = [tooDeep(at('level', 7)), tooDeep(at('level', 8)), tooDeep(at('placed', 9))];
+    expect(failuresFor(over)).toEqual({ pdf: refused, docx: [], both: refused });
+
+    // Word numbers and tags nine levels, so its document holds every heading at its own depth.
+    const docx = assemble({ ...over, formats: ['docx'] });
+    if (!docx.ok) throw new Error(JSON.stringify(docx.failures));
+    const depths = (nodes: readonly PublishedNode[]): [string, number][] =>
+      nodes.flatMap((node): [string, number][] => [
+        [node.id, node.depth],
+        ...depths(node.children),
+      ]);
+    expect(depths(docx.document.nodes)).toEqual([
+      ...[1, 2, 3, 4, 5].map((depth) => [id(at('level', depth)), depth]),
+      [id(at('placed', 6)), 6],
+      ...[6, 7, 8].map((depth) => [id(at('level', depth)), depth]),
+      [id(at('placed', 9)), 9],
+    ]);
+    // Six levels are as deep as a PDF tags a heading, and refused for nothing: the same outline from
+    // its fourth level down, whose deepest component stands at the sixth.
+    const six = input({ outline: outline([chain(4)]), occurrences: over.occurrences });
+    expect(failuresOf(assemble(six))).toEqual([]);
   });
 
   it("reports a footnote in a table's header row, which the PDF's engine sets on every page, only where the PDF is asked for, and publishes it for Word", () => {

@@ -622,6 +622,34 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Publish again');
   });
 
+  it('names a heading nested too deep for a PDF, where it is, pointing at Word where the layout makes Word (W14.2)', async () => {
+    // W-E: nothing else is wrong with the document, and Word, which tags nine levels, can be made.
+    const fake = failing([
+      { stage: 'compose', code: 'heading_too_deep', node: 'n7', block: null, detail: null },
+    ]);
+    open(fake.fetch, true, 0, ['pdf', 'docx']);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      '1.1 Calibration: This heading is nested more than six levels deep, which a PDF cannot tag as a heading. Move it up a level, or publish this document to Word alone.',
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
+  it('names a heading nested too deep for a PDF without offering Word, where the layout has no Word page (W14.2)', async () => {
+    // The layout makes the PDF alone, so Word is not there to be offered.
+    const fake = failing([
+      { stage: 'compose', code: 'heading_too_deep', node: 'n7', block: null, detail: null },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      '1.1 Calibration: This heading is nested more than six levels deep, which a PDF cannot tag as a heading. Move it up a level.',
+    );
+    expect(why).not.toHaveTextContent('Word');
+  });
+
   it('names a cross-reference Word would not print as the PDF does, and why, pointing at the PDF', async () => {
     // Word 3's ruling R5: `detail` is `<form>:<why>`, and the reference is the author's to change.
     const refused = (detail: string) => ({

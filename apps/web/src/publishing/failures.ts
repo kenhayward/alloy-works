@@ -198,8 +198,11 @@ const FORMS: Readonly<Record<string, string>> = {
  * What a failure says to the author, in words: never a code, never an engine's diagnostic, and never
  * anything of a component they may not read - an unreadable place is named by where it is, which the
  * caller supplies, and this says only that a component is there.
+ *
+ * `wordOffered` is whether Word could be asked for instead: a publish under a layout with a Word page.
+ * A preview is always a PDF, and a layout with no Word page makes none, so neither offers it.
  */
-export function failureWords(failure: Failure): string {
+export function failureWords(failure: Failure, wordOffered = false): string {
   switch (failure.code) {
     case 'occurrence_unreadable':
       return 'A component you may not read is placed here. Only someone who may read every component can publish this document.';
@@ -388,6 +391,11 @@ export function failureWords(failure: Failure): string {
       const why = (failure.detail ?? '').split(':')[1] ?? '';
       return `${REFERENCE_NOT_IN_WORD[why] ?? 'A cross-reference here cannot be printed by Word as the PDF prints it.'} Publish this document as a PDF only, or change the cross-reference.`;
     }
+    // W14.2 (W-E, ADR-0031): the place names the heading, a section's or a component's; nothing else in
+    // the document is wrong, and Word, which tags nine levels, can be made of it - where Word can be
+    // asked for at all, which a preview and a layout with no Word page cannot.
+    case 'heading_too_deep':
+      return `This heading is nested more than six levels deep, which a PDF cannot tag as a heading. Move it up a level${wordOffered ? ', or publish this document to Word alone' : ''}.`;
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

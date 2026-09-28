@@ -661,8 +661,16 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   cannot be published yet; a cross-reference to something the document does not hold, or asking for
   what its target cannot show; a table with no caption, or whose header cell reaches down into rows that
   are not header rows; an equation that cannot be set, has no description, or would print with no
-  number; a defined term, which has no control and no published form yet; or a character no typeface
-  can set.
+  number; a defined term, which has no control and no published form yet; a character no typeface
+  can set; or, for a PDF, a heading nested more than six levels deep - a section or a component seven
+  levels down or more - which an accessible PDF cannot tag as a heading, so a screen reader would read
+  it as an ordinary paragraph. Move it up a level, or, where the layout makes Word, publish the
+  document to Word alone, which keeps all nine levels an outline can have; a preview, which is always
+  a PDF, and a layout with no Word page say only to move it up.
+
+  **A long document publishes quickly.** A 300-page document of prose, figures, tables, equations and
+  footnotes publishes in about a second and a half on a developer's machine, from asking for it to the
+  publication being recorded, measured each time the worker's tests run.
 
   **Tables are published.** A table prints under its caption, which begins with its number -
   **Table 1.1** - and a screen reader is told the caption is the table's. Its header rows are marked
@@ -735,7 +743,8 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   document, made from the same version at the same time as its PDF, which a recipient can edit and
   restyle as their own. Its paragraphs are in the theme's styles, as real Word styles - change
   **Heading 1** in Word and every level-one heading follows - and its headings are numbered by Word,
-  from the layout's numbering, so moving one renumbers the rest; a heading holds only its title. It
+  from the layout's numbering, so moving one renumbers the rest; a heading holds only its title, and
+  a heading nested seven to nine levels deep, which a PDF refuses, is Word's Heading 7 to Heading 9. It
   opens with the cover, then the contents as Word's own table of contents, whose page numbers Word
   fills in when it opens, once the reader agrees to update the document; every page carries **Not approved** at its head
   and, after the cover, the running head and foot, the part named by the heading the page is in; front matter is
