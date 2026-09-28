@@ -105,6 +105,24 @@ describe("a tenant's own corner of the object store", () => {
     }
   });
 
+  it("holds a client for each tenant, signing with that tenant's own credential, so no tenant's handle writes with another's", async () => {
+    // A fresh set of stores, asked for each tenant in turn and then the first again: each handle's
+    // client stays its own tenant's, which the store's policy refuses on any other prefix.
+    const fresh = createObjectStores(store.settings, store.sealingKey);
+    const first = await service.withTenant(a, (trx) => fresh.forTenant(trx, a));
+    const second = await service.withTenant(b, (trx) => fresh.forTenant(trx, b));
+    const again = await service.withTenant(a, (trx) => fresh.forTenant(trx, a));
+    for (const [handle, tenant, words] of [
+      [first, a, 'first of a'],
+      [second, b, 'second of b'],
+      [again, a, 'again of a'],
+    ] as const) {
+      const stored = await handle.put(bytes(words), 'application/pdf');
+      expect(stored.key.startsWith(`${tenant.role}/`)).toBe(true);
+      expect(await handle.get(stored.key)).toEqual(bytes(words));
+    }
+  });
+
   it("refuses a key that is not this tenant's before it asks the store", async () => {
     await expect(forA.get(`${b.role}/sha256/${'0'.repeat(64)}`)).rejects.toThrow(/this tenant/);
     await expect(forA.signedLink('../elsewhere', 60)).rejects.toThrow(/this tenant/);

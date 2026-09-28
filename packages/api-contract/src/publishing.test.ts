@@ -99,6 +99,39 @@ describe('the publishing contract (Word 1)', () => {
     ).toBe(false);
   });
 
+  it("serves what Word cannot carry of the PDF's structure, each by its place - a quoted phrase's and inline code's always a block's - a numbered equation by its label too, the maths once, the titles Word sets as body text once and a list of figures it cannot link (W14.6)", () => {
+    const place = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 'q1' };
+    const report = [
+      { kind: 'description_language_lost', ...place, block: 'f1' },
+      { kind: 'quotation_not_structure', ...place },
+      { kind: 'preformatted_not_structure', ...place, block: 'c1' },
+      { kind: 'definition_list_not_structure', ...place, block: 'd1' },
+      { kind: 'quoted_phrase_not_structure', ...place, block: 'p1' },
+      { kind: 'inline_code_not_structure', ...place, block: 'p1' },
+      { kind: 'equation_numbered_as_table', ...place, block: 'e1', label: 'Equation 1.1' },
+      { kind: 'equation_alternative_lost' },
+      { kind: 'maths_coverage_unchecked', wordFamily: 'Cambria Math' },
+      { kind: 'titles_not_headings', titles: ['document', 'contents', 'lists'] },
+      { kind: 'list_not_linked', sequence: 'figure' },
+    ];
+    expect(PublicationView.parse(viewWith([{ ...docx, report }])).outputs[0]!.report).toEqual(
+      report,
+    );
+    for (const wrong of [
+      { kind: 'quotation_not_structure', ...place, block: null },
+      { kind: 'quoted_phrase_not_structure', ...place, block: null },
+      { kind: 'inline_code_not_structure', ...place, block: null },
+      { kind: 'equation_numbered_as_table', ...place },
+      { kind: 'maths_coverage_unchecked' },
+      { kind: 'titles_not_headings', titles: ['contents'] },
+      { kind: 'list_not_linked', sequence: 'table' },
+    ]) {
+      expect(PublicationView.safeParse(viewWith([{ ...docx, report: [wrong] }])).success).toBe(
+        false,
+      );
+    }
+  });
+
   it('shows each output with its format, standard, producer and report, and a view link for the PDF alone', () => {
     const both = PublicationView.parse(viewWith([pdf, docx]));
     expect(both.outputs).toEqual([pdf, docx]);

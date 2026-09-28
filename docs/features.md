@@ -784,6 +784,20 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   cannot set. A term stands a little further from its definition in Word than in the PDF, and an
   item that opens with a nested list or preformatted text a line lower.
 
+  **What Word cannot carry for a screen reader is said too.** The PDF tells a screen reader that a
+  quotation is a quotation, that preformatted text and inline code are code, that a quoted phrase is
+  a quotation and that a definition list is a list; it announces the document's title, the title of
+  the contents and the titles of the lists after it as headings; and every entry in its list of
+  figures is a link. Word has no mark for a quotation, code or a list of terms, so the
+  publication's page says which a Word document holds, once for each and counting the places it
+  holds them: quotations, preformatted text, definition lists, quoted phrases and inline code. Word
+  sets the titles as
+  ordinary paragraphs, so that its own contents does not list them, and the page says so once. Where
+  a figure floats, the list of figures in Word does not link to the figures, since Word would then
+  list that figure with no page, and the page says so. An image's description in a language other
+  than the document's has that language written beside the image in Word, but whether a screen
+  reader reads the description in it has not been checked, so the page names those too.
+
   **Footnotes and cross-references reach Word.** A footnote is Word's own, its mark in the text and
   its note at the foot of the page Word sets the mark on, numbered by Word from 1 again in the front
   matter, the body and the appendices, as the PDF numbers them - in a paragraph, a table's cell or a
@@ -806,24 +820,26 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   editor, made from the same mathematics the PDF prints - never a picture of it. One in a line of
   text stays in its line, wherever the PDF prints one: running text, a list, a quotation, a term, an
   attribution, a table's cell, header rows and note, a caption, a footnote and a section's title. A
-  block equation stands in its own paragraph, centred. A numbered one
-  has its number at the right, beside it in a row of two cells with no borders, numbered by Word -
-  _Equation i_ in front matter, from 1 in the body and _Equation A.1_ in an appendix under the default
-  layout - so moving one renumbers the rest; a cross-reference to it is a field Word updates, and a
-  layout's list of equations follows the contents as the lists of figures and tables do. Word sets
-  its equations in Cambria Math, since STIX Two Math cannot be carried in a Word document, and the
-  publication's page says so; Word reads its equations to a screen reader itself, so the description
-  written in the editor is not needed there. Some things look different from the PDF: in a line of
-  text, the limits of a sum stand beside it in Word rather than above and below; a numbered equation
-  too wide for its line breaks over lines beside its number in Word, where the PDF runs it past the
-  margin with its number below; two numbered equations in a row read to a screen reader as one table
-  of two rows, since a numbered equation is a row of a table in Word; lines aligned together in a
-  line of text are centred on it in Word; and where Word makes the contents, the lists after it and
-  the running heads again from a section's title or a caption, an equation in it becomes its
-  characters in a row - _x²_ reads _x2_, and a fraction its top then its bottom - which the
-  publication's page says of each heading and caption it happens to. A mathematical character Word's
-  maths typeface lacks is drawn from another typeface, without a word said. An equation the
-  typesetter cannot set is refused for Word as for the PDF.
+  block equation stands in its own paragraph, centred. A numbered one has its number at the right,
+  beside it in a row of two cells with no borders, numbered by Word - _Equation i_ in front matter,
+  from 1 in the body and _Equation A.1_ in an appendix under the default layout - so moving one
+  renumbers the rest; a cross-reference to it is a field Word updates, and a layout's list of
+  equations follows the contents as the lists of figures and tables do. Word sets its equations in
+  Cambria Math, since STIX Two Math cannot be carried in a Word document, and the publication's page
+  says so; Word reads its equations to a screen reader itself, not by the description written in the
+  editor, which it has nowhere to keep, and the page says that too. Some things look different from
+  the PDF: in a line of text, the limits of a sum stand beside it in Word rather than above and
+  below; a numbered equation too wide for its line breaks over lines beside its number in Word,
+  where the PDF runs it past the margin with its number below; two numbered equations in a row read
+  to a screen reader as one table of two rows, since a numbered equation is a row of a table in
+  Word, which the page says of each numbered equation; lines aligned together in a line of text are
+  centred on it in Word; and where Word makes the contents, the lists after it and the running heads
+  again from a section's title or a caption, an equation in it becomes its characters in a row -
+  _x²_ reads _x2_, and a fraction its top then its bottom - which the publication's page says of
+  each heading and caption it happens to. A mathematical character Word's maths typeface lacks is
+  drawn from another typeface; nothing checks which characters Cambria Math has, so the page says
+  once that they are not checked. An equation the typesetter cannot set is refused for Word as for
+  the PDF.
 
   **Everything a document holds now reaches Word.** What is refused for Word is refused by name, can
   still be published as a PDF alone, and is of three kinds, each something Word would print
