@@ -2090,8 +2090,12 @@ Serif`, `Liberation Mono` or `STIX Two Math`) since themes 1, which set the glyp
 - **`assemble` told its formats, and what it answers for Word** (Word 1). `AssembleInput.formats` is
   required, at least one. The PDF engine's own refusals - a line, caption or image too wide for the
   PDF's measure, a table's header spanning its body, a footnote or a reference target in a header
-  row and a missing continuation label's words - are tagged as they are made and said only where
-  `pdf` is asked for, and since Word 3 none of them drops its construct from the published document.
+  row, a missing continuation label's words and, since W14.2, a node nested deeper than six levels
+  under a layout (`heading_too_deep`, naming it: PDF/UA-1 has six heading levels and the pinned Typst
+  tags a seventh as a paragraph, ADR-0031; a request made before layouts keeps publishing as it
+  always did) - are tagged as they are made and said only where `pdf` is asked for,
+  and since Word 3 none of them drops its construct from the published document, so Word publishes
+  a deeper node at its own heading level, to its ninth.
   Since Word 4 every `equation_unrenderable` reason is said for every format, since a refusal leaves
   no maths tree and Word, like the PDF, is written from the tree alone. Where `docx` is, `word_not_yet`
   named each construct the writer did not write yet, until Word 4 wrote the last, equations; it names
@@ -2535,9 +2539,25 @@ faces, images })`, pure and deterministic - a fixed zip time, the parts in a fix
   runs that job with the suite's in its stead (`suiteChecker`). `apps/worker/src/marks.test.ts` is the same pattern over
   a marked document: every mark set, the links reaching the page, a quoted phrase given no quotation
   marks of its own, one run heard in another language, and veraPDF over the result. The corpus itself
-  holds three cases: nine heading levels, which veraPDF
-  passes; a PDF not made to PDF/UA-1, which veraPDF must fail; and `assemble`'s verdict on sixteen
-  character probes held to the engine's.
+  holds these cases: six heading levels, which veraPDF passes, each tagged `H1` to `H6`; nine
+  heading levels, refused for the PDF by name from the seventh and published to Word as its nine
+  heading styles, with the engine's `P` for levels seven to nine kept as a tripwire (W14.2); a PDF not
+  made to PDF/UA-1, which veraPDF must fail; `assemble`'s verdict on sixteen character probes held to
+  the engine's; and the code face's dropped letter.
+- **The publishing budget** (PUB-102, W14.2). `apps/worker/src/publishing-budget.test.ts` declares
+  a 311-page reference document - 30 chapters, each a component of 100 blocks, 150 each of figures,
+  tables, numbered equations and footnotes and 2,400 paragraphs of prose - seeded through the store,
+  and publishes it eleven times from `requestPublication` to the publication `processNext` records,
+  the publish job alone among the handlers. The first is held to the maximum alone; the other ten
+  are held to a p95 of ten seconds and a maximum of thirty where `CI` is not `true`, and recorded only
+  on CI's runner, as STR-063's navigation budget is. The `check_pdf` each publication queues (W14.1)
+  is settled outside the measured span before the next publish: the first's and the last's by the
+  run's veraPDF, each held to join its publication within five minutes of its recording and to pass
+  PDF/UA-1, and the others' passed over unchecked. The configuration - CPU, operating system,
+  memory, Node, Typst and PostgreSQL - and the pages and parts read back off the PDF are written into
+  the test's `meta`, which the JSON reporter carries into `.trace-results/worker.json`. It runs in the
+  ordinary suite, in about fifty seconds. `config.test.ts` holds the worker's defaults to the five
+  minutes for a check whose first attempt fails: two leases, the queue's first backoff and a poll.
 - **The Open XML validator and the Word check.** `apps/worker/tools/ooxml-check/` is a .NET 8
   console program over the Open XML SDK's `OpenXmlValidator` (`DocumentFormat.OpenXml` 3.5.1, Office
   2019's rules), its packages pinned by a NuGet lock file and restored from nuget.org alone, built

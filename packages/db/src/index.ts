@@ -130,6 +130,7 @@ export {
 export {
   createJobQueue,
   enqueueJob,
+  retryDelayMs,
   JOB_CHANNEL,
   type Job,
   type JobKind,

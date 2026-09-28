@@ -13569,6 +13569,7 @@
                               "list_not_in_word",
                               "cross_reference_not_in_word",
                               "preview_words_missing",
+                              "heading_too_deep",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -14656,6 +14657,7 @@
                               "list_not_in_word",
                               "cross_reference_not_in_word",
                               "preview_words_missing",
+                              "heading_too_deep",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -21306,6 +21308,7 @@
                               "list_not_in_word",
                               "cross_reference_not_in_word",
                               "preview_words_missing",
+                              "heading_too_deep",
                               "engine_failed",
                               "store_failed"
                             ]
