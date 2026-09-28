@@ -1272,8 +1272,8 @@ words, each naming its place in the outline.
 **The words are the layout's.** Layout schema 6 gives `words` a `preview` member, `notice` and
 `sentence`. The default layout's 0.7 says **Preview - not approved** and **Preview - not approved.
 This is a preview of unapproved content, not a publication.** `assemble`, told the status is
-`preview`, sets those two in place of the draft's notice and sentence. So template 13 prints the
-preview's notice on every page and its sentence once as tagged text at the start, where it prints the
+`preview`, sets those two in place of the draft's notice and sentence. So template 13 - and template
+14 since W14.4 - prints the preview's notice on every page and its sentence once as tagged text at the start, where it prints the
 draft's, and changes nowhere else. A layout stored before schema 6 has no preview words, and a preview
 under it fails naming them, at the compose stage, as a continued table under a layout with no word for
 it does.
@@ -1311,6 +1311,10 @@ to review.
 | PV-F | **Kept an hour for its asker, then swept with its request**, the PDF removed only when nothing else names its key                                                                | Kept until the document next changes, which needs every save to find and void the previews of every document that uses the component   |
 | PV-G | **A pane beside the text on the document page**, in both modes, showing the PDF in the browser's viewer                                                                          | A page of its own, which is leaving the editor (CNT-150); or pages drawn by us, which is the range preview                             |
 | PV-H | **Measured, not budgeted.** W10 times a preview of a 300-page document from the request to the PDF and records it; no test holds a number, because CNT-151 is T3's               | A budget test in T1, answering for a number ADR-0027 moved out                                                                         |
+
+PV-E's "template 14" was the next number when it was written. W14.4 took template 14 for a figure
+or a table left unnumbered, so a preview's prefix to the metadata title, if it is ever made, takes
+a later template.
 
 ### The warm range preview, T3's
 

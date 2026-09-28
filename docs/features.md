@@ -673,8 +673,9 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
 
   **A table or a figure left unnumbered** prints under its caption alone, still its caption to a
   screen reader, and the next one takes the number it would have had. It is not in the list of tables
-  or of figures, in the PDF or in Word, where it is not counted either. A reference to it prints its
-  caption; one asking for its number is refused, naming it, since it has none.
+  or of figures, in the PDF or in Word, where it is not counted either. A reference to it names it by
+  its caption; one asking for its number shows in the editor as _Table not numbered - choose another
+  form_, drawn apart as a broken one is, and is refused when you publish, naming it, since it has none.
 
   **A figure prints** with its number and its caption below it, no wider than the text and no taller
   than 60 per cent of the page's text area, so a tall image is made smaller rather than running off

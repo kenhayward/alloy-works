@@ -178,15 +178,17 @@ const EQUATION_PROBLEMS: Readonly<Record<string, string>> = {
  * since the header repeats it and a repeated label refuses the compile (cross-references 2, task 4).
  * An equation has no title of its own (equations 2, ruling R7 - its number is its label, and what it
  * says is maths, which a reference cannot print as words), and neither does a section or a caption
- * whose title holds one, which `title` and `numberAndTitle` now cover as well.
+ * whose title holds one, which `title` and `numberAndTitle` now cover as well. A figure or a table
+ * the author left unnumbered has no number either (STR-071, W14.4), which `number` and
+ * `numberAndTitle` name, as `number` names an unnumbered equation.
  */
 const FORMS: Readonly<Record<string, string>> = {
   number:
-    'A cross-reference asks for a number, and what it points at has none: a paragraph, a list, or a section with no number of its own.',
+    'A cross-reference asks for a number, and what it points at has none: a paragraph, a list, a section with no number of its own, a figure or a table left unnumbered, or an unnumbered equation.',
   title:
     'A cross-reference asks for a title, and what it points at has none: a paragraph, a list, a footnote, or an equation. A section or a caption holding an equation has none either, since the equation cannot be printed as a title.',
   numberAndTitle:
-    'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, an equation, or a section with no number of its own. A section or a caption holding an equation is missing one too, since the equation cannot be printed as a title.',
+    'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, an equation, a section with no number of its own, or a figure or a table left unnumbered. A section or a caption holding an equation is missing one too, since the equation cannot be printed as a title.',
   page: "A cross-reference asks for a page. A section's title cannot hold one, since the running heads and the contents set the title again in a different place; nor can something standing in a table's header row, which the page repeats.",
   relative:
     "A cross-reference asks for above or below. Either this publication's layout has no words for them, or what it points at stands in a table's header row, which repeats.",

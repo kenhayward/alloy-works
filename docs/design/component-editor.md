@@ -594,12 +594,18 @@ library's act, and T2's.
 image keeps the figure's number and every cross-reference to it.
 
 **A figure or a table marked unnumbered can still be pointed at** (STR-071, W14.4): unlike an
-unnumbered equation it has a caption, which is what a reference to it prints. The **Reference**
-dialog offers it by its kind and caption, _Table: Readings_, and in the title, page and above or
-below forms alone, since `targetForms` drops the number forms of a target marked `unnumbered`. On the
-surface a reference to one shows its caption where the component is edited in a document, and its
-kind and caption, _Table: Readings_, on its own, as any target with no number does; one stored in a
-number form, before the figure or table was marked, shows the same and fails the publish by name.
+unnumbered equation it has a caption, which names it. The **Reference** dialog offers it by its kind
+and caption, _Table: Readings_, and in the title, page and above or below forms alone, since
+`targetForms` drops the number forms of a target marked `unnumbered`. **The live document decides**:
+the page's numbering is refetched only for a new version of the document, so where it still numbers
+a figure or a table the author has just marked unnumbered, the dialog (`referenceOptions`) and the
+surface (`referencesShown`) take the live figure or table over it. On the surface a reference to one
+prints what its form asks - its caption, the page of it, above or below - in a document or on its
+own. **One stored in a number form, before the figure or table was marked, shows as unavailable**
+(W14's W-N): _Table not numbered - choose another form_, drawn apart as a broken reference is, rather
+than its caption in the number's place, which would read wrongly in a sentence written around a
+number and hide the change; opening the dialog on it keeps its target and chooses its first form,
+title, and the publish refuses it by name, as it refuses a number of an unnumbered equation.
 
 **Copying a figure within the product keeps it**, asset version and all, through the product's own
 clipboard type; a paste into a component in another space is allowed where the author may read the

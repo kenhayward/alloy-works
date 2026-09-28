@@ -415,13 +415,44 @@ describe('what a component offers a reference of its own (cross-references 1, ru
     ]);
   });
 
-  it('shows a reference to a table marked unnumbered as its caption, in a title form or a number form it was stored in', () => {
-    for (const display of ['title', 'number', 'numberAndTitle'] as const) {
+  it('shows a reference to a table marked unnumbered as its caption in a title form, and a number form it was stored in as unavailable (W-N)', () => {
+    const shownAs = (display: CrossReferenceDisplay, context: ReferenceContext | 'own' | null) => {
       const doc = docOf(
         { ...table('t1', 'Layout only'), numbered: false } as BlockNode,
         para('b1', ref({ kind: 'block', block: 't1' }, display)),
       );
-      expect(onlyText(doc, { targets: ownTargets(doc) }), display).toBe('Layout only');
+      return shown(doc, context === 'own' ? { targets: ownTargets(doc) } : context)[0];
+    };
+    const unavailable = { text: 'Table not numbered - choose another form', broken: true };
+    for (const context of ['own', null] as const) {
+      expect(shownAs('title', context), `${context}`).toEqual({
+        text: 'Layout only',
+        broken: false,
+      });
+      expect(shownAs('page', context), `${context}`).toEqual({
+        text: 'page of Layout only',
+        broken: false,
+      });
+      expect(shownAs('number', context), `${context}`).toEqual(unavailable);
+      expect(shownAs('numberAndTitle', context), `${context}`).toEqual(unavailable);
     }
+  });
+
+  it('trusts the live table over a page that numbered it before it was marked unnumbered', () => {
+    // The page's numbering is refetched only for a new version of the document, so it can still say
+    // _Table 1.2_ of a table the author has just marked unnumbered in this session.
+    const stale = {
+      targets: [target({ kind: 'block', block: 't1' }, 'table', 'Table 1.2', 'Old')],
+    };
+    const doc = (display: CrossReferenceDisplay) =>
+      docOf(
+        { ...table('t1', 'Layout only'), numbered: false } as BlockNode,
+        para('b1', ref({ kind: 'block', block: 't1' }, display)),
+      );
+    expect(shown(doc('number'), stale)).toEqual([
+      { text: 'Table not numbered - choose another form', broken: true },
+    ]);
+    expect(onlyText(doc('title'), stale)).toBe('Layout only');
+    expect(onlyText(doc('relative'), stale)).toBe('above');
   });
 });

@@ -1993,7 +1993,7 @@ Serif`, `Liberation Mono` or `STIX Two Math`) since themes 1, which set the glyp
   told which it is by the request's kind from `publicationInputs`, never by the job's. For a preview it
   passes `status: 'preview'` to `assemble`, which sets the layout's `words.preview` - at layout schema
   6, the default layout's 0.7 saying **Preview - not approved** - as the published document's
-  `words.notice` and `words.noticeSentence`, so template 13 prints the preview's notice on every page
+  `words.notice` and `words.noticeSentence`, so the current template (14, since W14.4) prints the preview's notice on every page
   and its sentence once as tagged text where it prints the draft's, and changes nowhere else
   (PUB-005); a layout with no words for a preview, one stored before schema 6, fails it
   `preview_words_missing`. It makes the PDF alone, keeps it in the tenant's store by its hash, and ends

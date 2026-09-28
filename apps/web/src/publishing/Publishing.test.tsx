@@ -979,13 +979,13 @@ describe('publishing from the document page', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
     const why = await screen.findByRole('list', { name: 'Why it could not be published' });
     expect(why).toHaveTextContent(
-      'A cross-reference asks for a number, and what it points at has none: a paragraph, a list, or a section with no number of its own.',
+      'A cross-reference asks for a number, and what it points at has none: a paragraph, a list, a section with no number of its own, a figure or a table left unnumbered, or an unnumbered equation.',
     );
     expect(why).toHaveTextContent(
       'A cross-reference asks for a title, and what it points at has none: a paragraph, a list, a footnote, or an equation. A section or a caption holding an equation has none either, since the equation cannot be printed as a title.',
     );
     expect(why).toHaveTextContent(
-      'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, an equation, or a section with no number of its own. A section or a caption holding an equation is missing one too, since the equation cannot be printed as a title.',
+      'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, an equation, a section with no number of its own, or a figure or a table left unnumbered. A section or a caption holding an equation is missing one too, since the equation cannot be printed as a title.',
     );
     expect(why).toHaveTextContent(
       "A cross-reference asks for a page. A section's title cannot hold one, since the running heads and the contents set the title again in a different place; nor can something standing in a table's header row, which the page repeats.",

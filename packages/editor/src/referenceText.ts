@@ -1,6 +1,7 @@
 import {
   kindWord,
   printed,
+  targetForms,
   type CrossReferenceDisplay,
   type CrossReferenceTarget,
   type ReferenceKind,
@@ -53,6 +54,17 @@ export const BROKEN_REFERENCE = 'Broken reference';
 /** A broken reference to a section, and one to another component: what each pointed at, named. */
 export const BROKEN_SECTION_REFERENCE = 'Broken reference to a section';
 export const BROKEN_COMPONENT_REFERENCE = 'Broken reference to another component';
+
+/**
+ * What a reference shows where it asks its target for a form the target has not got, which the publish
+ * would refuse (`cross_reference_form_unavailable`): a number of a figure or a table the author has
+ * marked unnumbered (W14's W-N). Drawn apart, as a broken one is, since the author has to choose
+ * another form - never the caption printed in the number's place, which would read wrongly in a
+ * sentence written around a number and hide the change from the author.
+ */
+export function unavailableReference(kind: ReferenceKind): string {
+  return `${kindWord(kind)} not numbered - choose another form`;
+}
 
 /**
  * What a reference to another component says where there is no document to find that component in.
@@ -119,9 +131,21 @@ export function referencesShown(
       const own = held.get(target.block);
       if (own === undefined) {
         shown.push({ pos, text: BROKEN_REFERENCE, broken: true });
-      } else if (found !== undefined) {
-        const relative = own.pos < pos + offset ? 'above' : 'below';
-        shown.push({ pos, text: printed(found, display, relative, context?.words), broken: false });
+        return false;
+      }
+      const relative = own.pos < pos + offset ? 'above' : 'below';
+      // The live document decides whether a figure or a table is numbered (STR-071): the page's
+      // numbering is refetched only for a new version of the document, so it may still number one the
+      // author has just marked unnumbered.
+      const printing = unnumberedTarget(own.node, target) ?? found;
+      if (printing !== undefined && !targetForms(printing).includes(display)) {
+        shown.push({ pos, text: unavailableReference(printing.kind), broken: true });
+      } else if (printing !== undefined) {
+        shown.push({
+          pos,
+          text: printed(printing, display, relative, context?.words),
+          broken: false,
+        });
       } else {
         shown.push({ pos, text: named(own.node), broken: false });
       }
@@ -159,6 +183,23 @@ function identified(component: Node): Map<string, Held> {
     return true;
   });
   return held;
+}
+
+/**
+ * A figure or a table the live document marks unnumbered, as a target: its kind and its caption, no
+ * label, and `unnumbered`, so `targetForms` offers no number form of it. Undefined for anything else.
+ */
+function unnumberedTarget(node: Node, target: CrossReferenceTarget): ReferenceTarget | undefined {
+  if (node.attrs.numbered !== false || CAPTIONS[node.type.name] === undefined) return undefined;
+  const caption = captionOf(node);
+  return {
+    target,
+    kind: kindOf(node),
+    label: null,
+    title: caption === '' ? null : caption,
+    relative: null,
+    unnumbered: true,
+  };
 }
 
 /** The kind of block a `block` target names, told from the live document. */

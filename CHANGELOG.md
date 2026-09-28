@@ -12,8 +12,9 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   figure. It keeps its caption, which it still needs to be published, and prints under that caption
   alone, in the PDF and in Word; the next table or figure takes the number it would have had, and it
   is left out of the lists of tables and of figures. The Reference dialog still offers it, by its
-  caption, and a reference to it prints that caption; one asking for its number is refused by name
-  when you publish, since it has none. Publications already made are unchanged (issue #129).
+  caption, for its title, its page or above or below. A reference that asks for its number shows as
+  unavailable in the editor, telling you to choose another form, and is refused by name when you
+  publish, since it has none. Publications already made are unchanged (issue #129).
 
 ## 0.114.0 - 2026-09-28 (PR #311)
 

@@ -126,7 +126,12 @@ export function referenceOptions(
   };
   const mine = own.map((each) => {
     const found = numbered.get(keyOf(each.target));
-    return found === undefined
+    // The live document decides whether a figure or a table is numbered (STR-071): the page's
+    // numbering is refetched only for a new version, so it may still number one the author has just
+    // marked unnumbered - offered by its caption, printed as the surface prints it - or still call one
+    // unnumbered that has just been numbered again, whose number the page does not know yet.
+    if (each.unnumbered) return option(each, true);
+    return found === undefined || found.unnumbered
       ? option(each, false)
       : option({ ...found, relative: each.relative }, true);
   });
