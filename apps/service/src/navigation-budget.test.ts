@@ -2,7 +2,6 @@ import { randomBytes } from 'node:crypto';
 import { arch, availableParallelism, cpus, loadavg, platform } from 'node:os';
 import {
   bootstrapCluster,
-  configureOrganisationSignIn,
   createComponent,
   createDocument,
   createTenant,
@@ -30,7 +29,7 @@ import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
 import { bindingBudget } from './test/budget.js';
-import { signIn } from './test/sign-in.js';
+import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 const HOST = 'acme.alloy.test';
 const MATHML = '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>a</mi></math>';
@@ -182,10 +181,9 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: [HOST],
     });
-    await configureOrganisationSignIn(db.adminUrl, tenant, {
+    await configureStandIn(db.adminUrl, tenant, {
       issuer: idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
     });
     tenantDb = createTenantDatabase(db.serviceUrl);
     await tenantDb.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: idp.issuer }));
@@ -193,7 +191,8 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
       db: tenantDb,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
     });
     cookie = await signIn(app, HOST, 'grace', idp.issuer);
     const grace = (await call('GET', '/v1/me')).json<{ id: string }>().id;

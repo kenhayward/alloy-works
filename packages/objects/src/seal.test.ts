@@ -11,6 +11,13 @@ describe('a sealed store secret', () => {
     expect(open(key, 'acme', seal(key, 'acme', SECRET))).toBe(SECRET);
   });
 
+  it('opens a credential sealed before the scheme moved to packages/db, so no stored credential is lost', () => {
+    // Sealed once by this package's own seal code as it was on main before the move, for `acme`.
+    const sealed =
+      'v1.T5MGS-Id98v6oh4k.0Gwg15HadX7JtIQENByjzw.E2HCQq2cCQDNNgoOAnRNQvLZfmQjeoKK-provPtFOK6qh6BrKg';
+    expect(open(Buffer.alloc(32, 7), 'acme', sealed)).toBe('a-store-secret-sealed-before-the-move');
+  });
+
   it('does not open for another tenant, however it got there', () => {
     const sealed = seal(key, 'acme', SECRET);
     expect(() => open(key, 'acmedev', sealed)).toThrow(SealedSecretRefused);

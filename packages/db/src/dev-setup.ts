@@ -7,6 +7,7 @@ import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
 import { addHostnames, createTenant } from './provision.js';
+import { sealingKey } from './seal.js';
 import { configureOrganisationSignIn, permitGoogleSignIn } from './sign-in.js';
 import { createTenantDatabase } from './tenant-database.js';
 import { TEST_PASSWORDS } from './testing/database.js';
@@ -16,6 +17,11 @@ const server =
 const database = 'alloy_dev';
 // The stand-in answers somewhere else when the compose stack runs it.
 const standInIssuer = process.env.STAND_IN_ISSUER ?? 'http://127.0.0.1:9090';
+// Each environment's client secret is sealed into its own schema with the key the service opens it
+// with, the development default unless the environment says otherwise, as the object store's setup does.
+const key = sealingKey(
+  process.env.SECRET_OBJECT_STORE_KEY ?? 'ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=',
+);
 
 function inDatabase(url: string, name: string, user?: string, password?: string): string {
   const parsed = new URL(url);
@@ -78,11 +84,15 @@ for (const environment of environments) {
   if ('invited' in answer && !answer.renewed) {
     console.log(`Ada is invited to administer ${environment.hostnames[0]}`);
   }
-  await configureOrganisationSignIn(adminUrl, named, {
-    issuer: standInIssuer,
-    clientId: 'alloy-dev',
-    secretName: 'stand_in',
-  });
+  // The stand-in's development client and its secret, as `packages/stand-in-idp` declares them.
+  // Configuring again seals the secret afresh, so this is also how an environment set up before
+  // secrets were sealed catches up.
+  await configureOrganisationSignIn(
+    adminUrl,
+    named,
+    { issuer: standInIssuer, clientId: 'alloy-dev', clientSecret: 'stand-in-dev-secret' },
+    key,
+  );
 }
 // Something to edit, and Ada and Grace allowed to edit it: nothing in the product grants a content
 // role or creates a component yet. As the service's own login, so it is written the way the service

@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 import { allRoutes } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
-  configureOrganisationSignIn,
   createArtifact,
   createAssetUpload,
   createDocument,
@@ -40,7 +39,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
-import { signIn } from './test/sign-in.js';
+import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 const A = 'acme.alloy.test';
 const B = 'dev.acme.alloy.test';
@@ -661,10 +660,9 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
       });
       if (host === A) a = tenant;
       if (host === B) b = tenant;
-      await configureOrganisationSignIn(db.adminUrl, tenant, {
+      await configureStandIn(db.adminUrl, tenant, {
         issuer: idp.issuer,
         clientId: 'alloy',
-        secretName: 'stand_in',
       });
     }
     tenantDb = createTenantDatabase(db.serviceUrl);
@@ -672,7 +670,8 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
       db: tenantDb,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
     });
     fromA = await signIn(app, A, 'ada', idp.issuer);
     for (const route of withParameters) {
