@@ -145,3 +145,11 @@ export interface PublicationCheckTable {
   report_bytes: ColumnType<number, number, never>;
   checked_at: ColumnType<Date, never, never>;
 }
+
+/** A PDF whose check the sweep gave up on for good, after its checks gave up this often (0041). */
+export interface PublicationCheckGivenUpTable {
+  publication_id: ColumnType<string, string, never>;
+  format: ColumnType<'pdf', 'pdf', never>;
+  give_ups: ColumnType<number, number, never>;
+  given_up_at: ColumnType<Date, never, never>;
+}

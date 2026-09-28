@@ -17266,43 +17266,43 @@
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 422,
+      "line": 423,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 357,
+      "line": 358,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 450,
+      "line": 451,
       "kind": "rule"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 658,
+      "line": 659,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 600,
+      "line": 601,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 539,
+      "line": 540,
       "kind": "rule"
     },
     {
       "id": "PUB-095",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 467,
+      "line": 468,
       "kind": "rule"
     },
     {
@@ -18370,25 +18370,25 @@
     {
       "id": "PUB-014",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 331,
+      "line": 332,
       "kind": "title"
     },
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 949,
+      "line": 950,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 423,
+      "line": 424,
       "kind": "title"
     },
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 814,
+      "line": 815,
       "kind": "title"
     },
     {
@@ -19960,13 +19960,13 @@
     {
       "id": "AST-005",
       "file": "tests/e2e/src/stack.test.ts",
-      "line": 458,
+      "line": 483,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "tests/e2e/src/stack.test.ts",
-      "line": 388,
+      "line": 413,
       "kind": "title"
     }
   ]

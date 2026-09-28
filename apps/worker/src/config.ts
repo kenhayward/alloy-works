@@ -15,6 +15,11 @@ export interface WorkerConfig {
   readonly typstBinary: string;
   /** veraPDF's launcher, which the worker keeps warm to check each publication's PDF (W14.1). */
   readonly verapdfCommand: string;
+  /**
+   * veraPDF's JVM options, `JAVA_OPTS`, where the deployment gives them: the worker adds a heap limit
+   * where they name none (`javaOptionsWithHeapLimit`), and nothing else of its environment.
+   */
+  readonly verapdfJavaOptions?: string;
   readonly workerId: string;
   readonly pollIntervalMs: number;
   readonly leaseMs: number;
@@ -40,8 +45,11 @@ const Environment = z.object({
     }),
   TYPST_BINARY: z.string().min(1).optional(),
   VERAPDF_COMMAND: z.string().min(1).optional(),
+  JAVA_OPTS: z.string().optional(),
   WORKER_ID: z.string().min(1).optional(),
   POLL_INTERVAL_MS: z.coerce.number().int().min(100).default(5000),
+  // How long a claimed job is held before another worker may take it; veraPDF's start and check are
+  // each given a third of it (`veraPdfTimeouts`), so a check never outlives its job's lease.
   LEASE_MS: z.coerce.number().int().min(1000).default(120_000),
   SWEEP_INTERVAL_MS: z.coerce.number().int().min(1000).default(600_000),
   LOG_LEVEL: z
@@ -67,6 +75,7 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
     objectStoreKey: Buffer.from(data.SECRET_OBJECT_STORE_KEY, 'base64'),
     typstBinary: data.TYPST_BINARY ?? typstBinaryPath(),
     verapdfCommand: data.VERAPDF_COMMAND ?? VERAPDF_COMMAND,
+    ...(data.JAVA_OPTS === undefined ? {} : { verapdfJavaOptions: data.JAVA_OPTS }),
     workerId: data.WORKER_ID ?? `${hostname()}-${process.pid}`,
     pollIntervalMs: data.POLL_INTERVAL_MS,
     leaseMs: data.LEASE_MS,

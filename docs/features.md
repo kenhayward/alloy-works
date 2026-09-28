@@ -616,7 +616,9 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   clause and in veraPDF's words; until the check has run, which is moments after publishing, the page
   says **Not yet checked for accessibility.** **Download the full report** saves veraPDF's whole
   report, which is kept with the publication. A check that cannot run is tried again, and a
-  publication whose check gave up is checked again a few minutes later. Who may read a publication is decided on the
+  publication whose check gave up is checked again up to about fifteen minutes later; one whose
+  check has given up three times is left, and its page says **Could not be checked for
+  accessibility.** PDFs published before checking began are checked soon after it arrives. Who may read a publication is decided on the
   publication, so somebody given a single document does not see its publications unless given them
   too. When a document cannot be published you are told every reason at once, each at its place in the
   outline: a component you may not read, without saying which; a footnote or any other block that

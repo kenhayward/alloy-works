@@ -191,24 +191,44 @@ const PdfCheckView = z.object({
 });
 
 /** A PDF: PDF/UA-1, made by Typst under the publication's template, with nothing to report. */
-const PdfOutputView = z.object({
-  format: z.literal('pdf'),
-  bytes: z.number().int(),
-  sha256: z.string(),
-  standard: z.literal('ua-1'),
-  producer: z.literal('typst'),
-  producerVersion: z.string().describe('The template version it was set by'),
-  report: z.tuple([]),
-  download,
-  view: z
-    .string()
-    .describe(
-      'A link to the same bytes, valid for five minutes, that a browser shows rather than saves',
+const PdfOutputView = z
+  .object({
+    format: z.literal('pdf'),
+    bytes: z.number().int(),
+    sha256: z.string(),
+    standard: z.literal('ua-1'),
+    producer: z.literal('typst'),
+    producerVersion: z.string().describe('The template version it was set by'),
+    report: z.tuple([]),
+    download,
+    view: z
+      .string()
+      .describe(
+        'A link to the same bytes, valid for five minutes, that a browser shows rather than saves',
+      ),
+    check: PdfCheckView.nullable().describe(
+      'What veraPDF found of the PDF against PDF/UA-1; none until it has been checked, which follows the recording',
     ),
-  check: PdfCheckView.nullable().describe(
-    'What veraPDF found of the PDF against PDF/UA-1; none until it has been checked, which follows the recording',
-  ),
-});
+    checkState: z
+      .enum(['pending', 'passed', 'failed', 'gave_up'])
+      .describe(
+        "Where the PDF's check stands: `pending`, not yet checked; `passed` or `failed`, as its check says; `gave_up`, not checked and never to be, its checks having given up as often as they are tried",
+      ),
+  })
+  .superRefine((output, context) => {
+    // The state says what the check does, and never otherwise.
+    const expected =
+      output.check === null
+        ? ['pending', 'gave_up']
+        : [output.check.compliant ? 'passed' : 'failed'];
+    if (!expected.includes(output.checkState)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['checkState'],
+        message: `A PDF's check state is ${expected.join(' or ')} where its check is ${output.check === null ? 'none' : 'recorded'}`,
+      });
+    }
+  });
 
 /** A Word document: no PDF standard, made by the Word writer, and what it could not carry. */
 const DocxOutputView = z.object({

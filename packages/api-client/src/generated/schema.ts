@@ -9320,6 +9320,11 @@ export interface operations {
                                 };
                                 checkedAt: string;
                             } | null;
+                            /**
+                             * @description Where the PDF's check stands: `pending`, not yet checked; `passed` or `failed`, as its check says; `gave_up`, not checked and never to be, its checks having given up as often as they are tried
+                             * @enum {string}
+                             */
+                            checkState: "pending" | "passed" | "failed" | "gave_up";
                         } | {
                             /** @constant */
                             format: "docx";

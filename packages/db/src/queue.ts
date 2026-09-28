@@ -58,6 +58,13 @@ export interface JobQueue {
    * may enqueue work and never read the queue, and this widens neither.
    */
   waiting(tenantId: string, kind: JobKind): Promise<string[]>;
+  /**
+   * Each subject of a tenant's jobs of one kind that gave up - their last attempt failed, or their
+   * worker never came back from it - with how many of them did: for a sweep deciding whether to queue
+   * another. Nothing deletes a job, so the count is every one there has been. The worker's to ask, as
+   * `waiting` is.
+   */
+  givenUp(tenantId: string, kind: JobKind): Promise<ReadonlyMap<string, number>>;
   close(): Promise<void>;
 }
 
@@ -147,6 +154,15 @@ export function createJobQueue(url: string): JobQueue {
          where tenant_id = ${tenantId} and kind = ${kind} and subject_id is not null
            and finished_at is null and failed_at is null`.execute(db);
       return rows.map((row) => row.subject_id);
+    },
+
+    async givenUp(tenantId, kind) {
+      const { rows } = await sql<{ subject_id: string; given_up: number }>`
+        select subject_id, count(*)::int as given_up from platform.job
+         where tenant_id = ${tenantId} and kind = ${kind} and subject_id is not null
+           and failed_at is not null
+         group by subject_id`.execute(db);
+      return new Map(rows.map((row) => [row.subject_id, row.given_up]));
     },
 
     close: () => db.destroy(),

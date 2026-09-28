@@ -24,6 +24,11 @@ interface Output {
   readonly report: readonly ReportEntry[];
   /** What veraPDF found of the PDF, once checked; none before, and never any for Word. */
   readonly check: Check | null;
+  /**
+   * Whether the PDF's checks all gave up, so none is coming: said apart from one not yet checked. An
+   * older service's answer names no state, and is read as not yet checked.
+   */
+  readonly checkGaveUp: boolean;
 }
 
 /** One rule the PDF failed, as veraPDF numbers it, with its words where it has them. */
@@ -124,6 +129,7 @@ function shownIn(data: unknown): Shown | undefined {
             producerVersion: typeof each.producerVersion === 'string' ? each.producerVersion : null,
             report: each.format === 'docx' ? reportIn(each.report) : [],
             check: each.format === 'pdf' ? checkIn(each.check) : null,
+            checkGaveUp: each.format === 'pdf' && each.checkState === 'gave_up',
           },
         ]
       : [],
@@ -230,9 +236,16 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             Made with Typst {shown.engine} and publication template {shown.template}.
           </p>
         )}
-        {/* Checked by veraPDF after it was recorded (W14.1, ADR-0030): until then, it says so. */}
+        {/* Checked by veraPDF after it was recorded (W14.1, ADR-0030): until then, it says so, and
+            where its checks all gave up, that it could not be checked. */}
         {pdf !== undefined && (
-          <p>{pdf.check === null ? 'Not yet checked for accessibility.' : checkWords(pdf.check)}</p>
+          <p>
+            {pdf.check !== null
+              ? checkWords(pdf.check)
+              : pdf.checkGaveUp
+                ? 'Could not be checked for accessibility.'
+                : 'Not yet checked for accessibility.'}
+          </p>
         )}
         {pdf?.check != null && pdf.check.failedRules.length > 0 && (
           <ul aria-label="Rules the PDF failed">

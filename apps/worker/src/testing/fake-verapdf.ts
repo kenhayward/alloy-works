@@ -7,8 +7,10 @@
 //
 // What it answers is decided by the PDF's bytes, so a test says what should happen by what it checks:
 // `PASS` is compliant, `FAIL` fails two rules, `DIE` exits without answering, `STRAY` answers with a
-// report outside its directory, and `ELSEWHERE` answers for another file. It notes each start and each
-// report it writes, a line each, in the file FAKE_VERAPDF_LOG names.
+// report outside its directory, and `ELSEWHERE` answers for another file. It notes each start, the
+// names in the environment it was given and its JAVA_OPTS, and each report it writes, a line each, in
+// the file FAKE_VERAPDF_LOG names. Given FAKE_VERAPDF_SILENT, it starts and never says it is ready, as a
+// JVM that hangs on start would.
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -61,7 +63,11 @@ const failed = {
 };
 
 note(`started ${process.pid}`);
-process.stdout.write(`${reported('', null)}\n`);
+note(`env ${JSON.stringify(Object.keys(process.env).sort())}`);
+note(`java-opts ${process.env['JAVA_OPTS'] ?? ''}`);
+if (process.env['FAKE_VERAPDF_SILENT'] === undefined) {
+  process.stdout.write(`${reported('', null)}\n`);
+}
 
 createInterface({ input: process.stdin }).on('line', (path) => {
   const pdf = readFileSync(path, 'latin1');

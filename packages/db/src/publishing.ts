@@ -1300,15 +1300,28 @@ export async function publicationToCheck(
 /** How long after its publication is recorded its check may take (ADR-0030), before a sweep asks again. */
 export const CHECK_WITHIN_MS = 5 * 60_000;
 
-/** The most publications one sweep queues a check for in one tenant: the rest wait for the next. */
-const RECHECK_LIMIT = 100;
+/**
+ * The most publications one sweep queues a check for, or leaves, in one tenant: the rest wait for the
+ * next. The first sweep after 0040 finds every publication recorded before it unchecked, with no check
+ * ever queued, and checks them a hundred at a time.
+ */
+export const RECHECK_LIMIT = 100;
 
 /**
- * The publications whose PDF is still unchecked this long after they were recorded, and whose check
- * is not among `waiting` - the subjects of the tenant's `check_pdf` jobs still to run, which the
- * caller reads from the queue first. Its check gave up, then, after its last attempt: the sweep queues
- * another. Oldest first, and at most a hundred. Recorded is when its request was finished, by the
- * database's clock, or when it was published where the request has gone.
+ * How many of a publication's checks may give up before the sweep leaves it for good (0041): the one
+ * queued as it was recorded, and two the sweep queued again. Each gives up after the queue's three
+ * attempts: nine in all, the last at least fifteen minutes after the publication was recorded, since
+ * the sweep asks again only five minutes on, and sweeps ten minutes apart by default.
+ */
+export const CHECK_GIVE_UPS = 3;
+
+/**
+ * The publications whose PDF is still unchecked this long after they were recorded, whose check is
+ * not among `waiting` - the subjects of the tenant's `check_pdf` jobs still to run, which the caller
+ * reads from the queue first - and which the sweep has not left for good (0041). Its check gave up,
+ * then, after its last attempt, or was never queued, as for a publication recorded before 0040: the
+ * sweep queues another, or leaves it. Oldest first, and at most a hundred. Recorded is when its
+ * request was finished, by the database's clock, or when it was published where the request has gone.
  */
 export async function publicationsToCheckAgain(
   trx: TenantTransaction,
@@ -1325,8 +1338,12 @@ export async function publicationsToCheckAgain(
     .leftJoin('publication_check as c', (join) =>
       join.onRef('c.publication_id', '=', 'o.publication_id').onRef('c.format', '=', 'o.format'),
     )
+    .leftJoin('publication_check_given_up as g', (join) =>
+      join.onRef('g.publication_id', '=', 'o.publication_id').onRef('g.format', '=', 'o.format'),
+    )
     .select('p.id')
     .where('c.publication_id', 'is', null)
+    .where('g.publication_id', 'is', null)
     .where(recorded, '<=', before)
     .where(sql<boolean>`p.id <> all(${[...options.waiting]}::uuid[])`)
     .orderBy(recorded)
@@ -1334,6 +1351,23 @@ export async function publicationsToCheckAgain(
     .limit(RECHECK_LIMIT)
     .execute();
   return rows.map((row) => row.id);
+}
+
+/**
+ * Records that the sweep left a publication's PDF unchecked for good, its checks having given up
+ * `giveUps` times, once: `recorded`, or `already` where another sweep did first, which is kept.
+ */
+export async function recordCheckGivenUp(
+  trx: TenantTransaction,
+  publicationId: string,
+  giveUps: number,
+): Promise<'recorded' | 'already'> {
+  const inserted = await trx
+    .insertInto('publication_check_given_up')
+    .values({ publication_id: publicationId, format: 'pdf', give_ups: giveUps })
+    .onConflict((conflict) => conflict.columns(['publication_id', 'format']).doNothing())
+    .executeTakeFirst();
+  return inserted.numInsertedOrUpdatedRows === 1n ? 'recorded' : 'already';
 }
 
 /**
@@ -1402,6 +1436,11 @@ export interface StoredPublication {
     readonly report: OutputReport;
     /** What veraPDF found of the PDF, once it has been checked; none before, and none for Word. */
     readonly check: StoredPublicationCheck | null;
+    /**
+     * Whether the PDF's check was given up for good (0041): its checks gave up as often as the sweep
+     * queues them, and none is coming. Never for Word. A check recorded afterwards is what stands.
+     */
+    readonly checkGaveUp: boolean;
   }[];
 }
 
@@ -1470,6 +1509,11 @@ export async function readPublication(
     ])
     .where('publication_id', '=', id)
     .execute();
+  const givenUp = await trx
+    .selectFrom('publication_check_given_up')
+    .select('format')
+    .where('publication_id', '=', id)
+    .execute();
   // In the order the publication names its formats, the PDF first.
   const order = (format: PublishingFormat) => row.formats.indexOf(format);
   return {
@@ -1488,6 +1532,7 @@ export async function readPublication(
         // does not parse is a broken store, thrown, as a component that does not read is.
         report: parseOutputReport(each.report),
         check: checkOf(checks.find((check) => check.format === each.format)),
+        checkGaveUp: givenUp.some((row) => row.format === each.format),
       })),
   };
 }

@@ -25,6 +25,7 @@ import {
   readPublication,
   readPublicationRequest,
   recordPreview,
+  recordCheckGivenUp,
   recordPublication,
   recordPublicationCheck,
   requestPublication,
@@ -2273,6 +2274,7 @@ describe('requesting and recording a publication', () => {
         report: [],
         // Not yet checked: the check joins it afterwards (ADR-0030).
         check: null,
+        checkGaveUp: false,
       },
       {
         format: 'docx',
@@ -2284,6 +2286,7 @@ describe('requesting and recording a publication', () => {
         producerVersion: 'word/2',
         report: docxOutput().report,
         check: null,
+        checkGaveUp: false,
       },
     ]);
   });
@@ -2574,6 +2577,86 @@ describe('requesting and recording a publication', () => {
       ],
       ['docx', null],
     ]);
+  });
+
+  it("records once that a PDF's check was given up for good, which the runtime role can never change, and reads it with the PDF alone", async () => {
+    const { id, word } = await service.withTenant(production, async (trx) => ({
+      id: (await recordPublication(trx, {
+        ...recording(await requestedAs(['pdf', 'docx'])),
+        outputs: [pdfOutput(), docxOutput()],
+      }))!,
+      word: (await recordPublication(trx, {
+        ...recording(await requestedAs(['docx'])),
+        outputs: [docxOutput('e')],
+      }))!,
+    }));
+    const gaveUp = async () =>
+      (await service.withTenant(production, (trx) => readPublication(trx, id)))!.outputs.map(
+        (each) => [each.format, each.checkGaveUp],
+      );
+    expect(await gaveUp()).toEqual([
+      ['pdf', false],
+      ['docx', false],
+    ]);
+
+    expect(await service.withTenant(production, (trx) => recordCheckGivenUp(trx, id, 3))).toBe(
+      'recorded',
+    );
+    expect(await service.withTenant(production, (trx) => recordCheckGivenUp(trx, id, 4))).toBe(
+      'already',
+    );
+
+    expect(await gaveUp()).toEqual([
+      ['pdf', true],
+      ['docx', false],
+    ]);
+    const rows = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication_check_given_up')
+        .selectAll()
+        .where('publication_id', '=', id)
+        .execute(),
+    );
+    expect(rows).toEqual([
+      { publication_id: id, format: 'pdf', give_ups: 3, given_up_at: expect.any(Date) },
+    ]);
+
+    // Never changed, never deleted, never timed by its caller; only a PDF the publication has, and
+    // only after a check has given up at least once.
+    for (const [statement, refusal] of [
+      [
+        sql`update publication_check_given_up set give_ups = 1 where publication_id = ${id}`,
+        /permission denied/,
+      ],
+      [
+        sql`delete from publication_check_given_up where publication_id = ${id}`,
+        /permission denied/,
+      ],
+      [
+        sql`insert into publication_check_given_up (publication_id, format, give_ups, given_up_at)
+            values (${id}, 'pdf', 3, now())`,
+        /permission denied/,
+      ],
+      [
+        sql`insert into publication_check_given_up (publication_id, format, give_ups)
+            values (${word}, 'pdf', 3)`,
+        /publication_check_given_up_publication_id_format_fkey/,
+      ],
+      [
+        sql`insert into publication_check_given_up (publication_id, format, give_ups)
+            values (${word}, 'docx', 3)`,
+        /publication_check_given_up_format_check/,
+      ],
+      [
+        sql`insert into publication_check_given_up (publication_id, format, give_ups)
+            values (${id}, 'pdf', 0)`,
+        /publication_check_given_up_give_ups_check/,
+      ],
+    ] as const) {
+      await expect(service.withTenant(production, (trx) => statement.execute(trx))).rejects.toThrow(
+        refusal,
+      );
+    }
   });
 
   it('refuses a record whose outputs are not its request formats, or whose report is not one, and keeps nothing', async () => {

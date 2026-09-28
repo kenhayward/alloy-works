@@ -516,12 +516,12 @@ describe("checking a publication's PDF with veraPDF, after it is recorded", () =
     const queued = await recordedOver(await untagged());
 
     // Under five minutes after it was recorded, its check is still within ADR-0030's bound.
-    expect(await sweep(new Date())).toBe(0);
+    expect(await sweep(new Date())).toEqual({ queued: 0, left: 0 });
     expect(await checkJobsOf(gaveUp)).toHaveLength(1);
 
     // Five minutes on, the sweep queues one check, for the publication whose check gave up.
     const later = new Date(Date.now() + 6 * 60_000);
-    expect(await sweep(later)).toBe(1);
+    expect(await sweep(later)).toEqual({ queued: 1, left: 0 });
     expect(await checkJobsOf(gaveUp)).toMatchObject([
       { finished: false, attempts: 3 },
       { finished: false, attempts: 0, locked_by: null },
@@ -529,7 +529,7 @@ describe("checking a publication's PDF with veraPDF, after it is recorded", () =
     expect(await checkJobsOf(checked)).toHaveLength(1);
     expect(await checkJobsOf(queued)).toHaveLength(1);
     // The next sweep finds that check waiting, and queues no other.
-    expect(await sweep(later)).toBe(0);
+    expect(await sweep(later)).toEqual({ queued: 0, left: 0 });
 
     // And the check queued again is done, as is the one that was waiting all along.
     while ((await work()) !== 'idle') {
@@ -537,6 +537,96 @@ describe("checking a publication's PDF with veraPDF, after it is recorded", () =
     }
     expect(await checkOf(gaveUp)).toMatchObject({ compliant: false });
     expect(await checkOf(queued)).toMatchObject({ compliant: false });
-    expect(await sweep(later)).toBe(0);
+    expect(await sweep(later)).toEqual({ queued: 0, left: 0 });
   }, 120_000);
+
+  /** Whether the publication's PDF is recorded as one whose check was given up for good (0041). */
+  const gaveUpOn = async (publication: string) =>
+    (await service.withTenant(tenant, (trx) => readPublication(trx, publication)))!.outputs.find(
+      (each) => each.format === 'pdf',
+    )!.checkGaveUp;
+
+  // After the sweep's first test, as it is: each asks the sweep of every publication in the tenant.
+  it('PUB-091 leaves a publication whose check has given up three times, queueing no more, and records that it could not be checked', async () => {
+    const broken: Checker = {
+      check: async () => {
+        throw new Error('veraPDF could not start: spawn /opt/verapdf/verapdf ENOENT');
+      },
+      close: async () => {},
+    };
+    const eager: JobQueue = {
+      ...queue,
+      fail: (job, reason) => queue.fail(job, reason, { retryInMs: 0 }),
+    };
+    /** One check, all three of its attempts, each failing: the check gives up. */
+    const givesUp = async () => {
+      for (const outcome of ['retry', 'retry', 'failed']) {
+        expect(
+          await processNext({
+            queue: eager,
+            db: worker,
+            handlers: { check_pdf: checkJob({ db: worker, stores, checker: broken }) },
+            workerId: 'worker-1',
+            leaseMs: 60_000,
+            log,
+          }),
+        ).toBe(outcome);
+      }
+    };
+    const later = new Date(Date.now() + 6 * 60_000);
+    const sweep = () => sweepUncheckedPublications(worker, queue, log, later);
+
+    const never = await recordedOver(await untagged());
+    await givesUp();
+    expect(await sweep()).toEqual({ queued: 1, left: 0 });
+    await givesUp();
+    expect(await sweep()).toEqual({ queued: 1, left: 0 });
+    expect(await gaveUpOn(never)).toBe(false);
+    await givesUp();
+
+    // Three checks, each given up after its last attempt: the sweep queues no fourth, and records
+    // that the publication could not be checked, for its page to say so.
+    expect(await sweep()).toEqual({ queued: 0, left: 1 });
+    expect(await checkJobsOf(never)).toHaveLength(3);
+    expect(await checkOf(never)).toBeNull();
+    expect(await gaveUpOn(never)).toBe(true);
+    // And every sweep after it passes it over.
+    expect(await sweep()).toEqual({ queued: 0, left: 0 });
+    expect(await work()).toBe('idle');
+  }, 120_000);
+
+  it('PUB-091 checks the publications recorded before checks were queued, from the first sweep after, a hundred a sweep in each tenant', async () => {
+    const pdf = await untagged();
+    // Recorded before 0040, when nothing queued a check: a publication with a PDF and no check_pdf
+    // job at all, as `recordedOver` leaves one once its queued check is taken away.
+    const before: string[] = [];
+    for (let n = 0; n < 101; n++) before.push(await recordedOver(pdf));
+    await queryAs(
+      db.adminUrl,
+      "delete from platform.job where kind = 'check_pdf' and subject_id = any($1::uuid[])",
+      [before],
+    );
+    const later = new Date(Date.now() + 6 * 60_000);
+    const sweep = () => sweepUncheckedPublications(worker, queue, log, later);
+
+    // The first sweep queues a hundred, the oldest first; the next the one left over; then none.
+    expect(await sweep()).toEqual({ queued: 100, left: 0 });
+    const queuedFirst = (
+      await queryAs(
+        db.adminUrl,
+        "select subject_id from platform.job where kind = 'check_pdf' and subject_id = any($1::uuid[])",
+        [before],
+      )
+    ).rows.map((row: { subject_id: string }) => row.subject_id);
+    expect(queuedFirst.sort()).toEqual(before.slice(0, 100).sort());
+    expect(await sweep()).toEqual({ queued: 1, left: 0 });
+    expect(await sweep()).toEqual({ queued: 0, left: 0 });
+
+    while ((await work()) !== 'idle') {
+      // Each check in turn.
+    }
+    for (const publication of before) {
+      expect(await checkOf(publication)).toMatchObject({ compliant: false });
+    }
+  }, 300_000);
 });

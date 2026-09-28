@@ -37,6 +37,7 @@ const pdf = {
   download: 'https://store/p.pdf',
   view: 'https://store/p',
   check: null,
+  checkState: 'pending',
 };
 const docx = {
   format: 'docx',
@@ -128,9 +129,9 @@ describe('the publishing contract (Word 1)', () => {
       report: { bytes: 4096, sha256: 'a'.repeat(64), download: 'https://store/r.json' },
       checkedAt: '2026-09-28T10:00:00.000Z',
     };
-    expect(PublicationView.parse(viewWith([{ ...pdf, check }])).outputs[0]).toMatchObject({
-      check,
-    });
+    expect(
+      PublicationView.parse(viewWith([{ ...pdf, check, checkState: 'failed' }])).outputs[0],
+    ).toMatchObject({ check });
     expect(PublicationView.parse(viewWith([pdf])).outputs[0]).toMatchObject({ check: null });
     const unreported: Partial<typeof check> = { ...check };
     delete unreported.report;
@@ -142,7 +143,46 @@ describe('the publishing contract (Word 1)', () => {
       unreported,
       { ...check, report: { bytes: 4096, sha256: 'a'.repeat(64) } },
     ]) {
-      expect(PublicationView.safeParse(viewWith([{ ...pdf, check: wrong }])).success).toBe(false);
+      expect(
+        PublicationView.safeParse(viewWith([{ ...pdf, check: wrong, checkState: 'failed' }]))
+          .success,
+      ).toBe(false);
+    }
+  });
+
+  it("says where the PDF's check stands - not yet checked, passed, failed or given up - and only as its check says", () => {
+    const check = (compliant: boolean) => ({
+      checker: 'verapdf',
+      checkerVersion: '1.30.2',
+      profile: 'ua1',
+      compliant,
+      failedRules: compliant ? [] : [{ clause: '7.1', test: 10 }],
+      report: { bytes: 4096, sha256: 'a'.repeat(64), download: 'https://store/r.json' },
+      checkedAt: '2026-09-28T10:00:00.000Z',
+    });
+    for (const [state, found] of [
+      ['pending', null],
+      ['gave_up', null],
+      ['passed', check(true)],
+      ['failed', check(false)],
+    ] as const) {
+      expect(
+        PublicationView.parse(viewWith([{ ...pdf, check: found, checkState: state }])).outputs[0],
+      ).toMatchObject({ checkState: state });
+    }
+    // A state its check contradicts, one there is no such state as, and none at all.
+    for (const [state, found] of [
+      ['passed', null],
+      ['gave_up', check(false)],
+      ['pending', check(true)],
+      ['failed', check(true)],
+      ['passed', check(false)],
+      ['unknown', null],
+      [undefined, null],
+    ] as const) {
+      const output: Record<string, unknown> = { ...pdf, check: found, checkState: state };
+      if (state === undefined) delete output.checkState;
+      expect(PublicationView.safeParse(viewWith([output])).success, String(state)).toBe(false);
     }
   });
 

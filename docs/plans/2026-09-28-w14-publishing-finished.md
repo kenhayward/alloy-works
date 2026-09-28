@@ -112,6 +112,31 @@ worker, `JobQueue.waiting`, since a tenant's own role may insert into `platform.
 and neither grant is widened. A check that gives up every time is queued again at every sweep, ten
 minutes apart by default, which the log says; that is the cost of never leaving one unchecked for good.
 
+**From the final review:** six findings, each answered in this slice. **veraPDF no longer inherits
+the worker's environment**: `startLocalVeraPdf` started it with `...process.env`, the database URL
+and the store's key among it; it now gets `PATH`, `JAVA_HOME`, the locale and `JAVA_OPTS` alone
+(`veraPdfEnvironment`), which the stand-in veraPDF, now noting the names it was given, shows against
+a parent holding `DATABASE_URL`, `SECRET_*`, `PG*`, `AWS_*` and `NODE_OPTIONS`. **A check that can
+never succeed stops being queued**: the reverse of the paragraph above. `JobQueue.givenUp` counts
+each subject's given-up jobs, and once a publication's checks have given up three times
+(`CHECK_GIVE_UPS`) the sweep leaves it and records so in migration 0041's
+`publication_check_given_up`, written as the tenant because the count is in a queue no tenant's role
+may read; `GET /v1/publications/{id}` gives the PDF a `checkState`, `pending`, `passed`, `failed` or
+`gave_up`, held by the contract to agree with `check`, and the page says **Could not be checked for
+accessibility.** The same sweep checks the publications recorded before 0040, a hundred in each tenant
+per sweep, now tested with 101 of them. **A check cannot outlive its lease**: veraPDF was given two
+minutes to start and two to check under a two-minute lease; it now gets a third of `LEASE_MS` for
+each (`veraPdfTimeouts`). **The JVM is given a heap limit**, `-XX:MaxRAMPercentage=50`, where
+`JAVA_OPTS` names none, and `JAVA_OPTS` and `LEASE_MS` are documented in `deploy/`; a worker starting
+removes the `aw-verapdf-<pid>-*` directories a gone worker left, its directories now named by its
+process id. The reviewer's check that veraPDF's XMP parser refuses an external DTD, an external
+general entity and a parameter entity, with no request made, is written into the architecture and
+`deploy/README.md`, beside the note that Debian's runtime floats with its updates. **The e2e publish
+now waits for the check** and asserts it passed, polling for up to two minutes; CI's whole-system job
+runs it, and it has not been run locally. The stale design and architecture text - veraPDF inside the
+publish job, the answered open questions, "nothing runs veraPDF over a publication yet" - is
+corrected, and the version is 0.115.0, since W14.7 took 0.114.0 as #311.
+
 ## W14.2: Six levels, and the budget
 
 1. `assemble` refuses a heading deeper than six for PDF, `heading_too_deep`, naming the section.

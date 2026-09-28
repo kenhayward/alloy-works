@@ -154,20 +154,29 @@ Each image refuses to start without its configuration and says which variable is
 than failing somewhere further in. The compose file sets all of them, and the two `*.env.example`
 files above set the same ones for a run from source; these are the ones worth knowing:
 
-| Variable                           | Read by         | What it does                                                           |
-| ---------------------------------- | --------------- | ---------------------------------------------------------------------- |
-| `DATABASE_URL`                     | service, worker | Which database, as which login role                                    |
-| `RENDERER_ROOT`                    | service         | Where the built renderer is; without it, the API and nothing else      |
-| `OBJECT_STORE_ENDPOINT`, `_BUCKET` | service, worker | The object store, which must be an address a browser can follow too    |
-| `SECRET_OBJECT_STORE_KEY`          | service, worker | Seals each environment's store credential before it is stored          |
-| `VERAPDF_COMMAND`                  | worker          | veraPDF's launcher; the image's own, `/opt/verapdf/verapdf`, unset     |
-| `SWEEP_INTERVAL_MS`                | worker          | How often the sweeps run, a check that gave up queued again among them |
-| `SIGN_IN_HOST`, `GOOGLE_CLIENT_ID` | service         | The Google route; set together or not at all                           |
-| `DEV_EXTRA_HOSTNAME`               | setup           | An extra address for the development environment                       |
-| `ALLOY_SERVICE_URL`                | the desktop app | Which environment its window opens                                     |
+| Variable                           | Read by         | What it does                                                                                          |
+| ---------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                     | service, worker | Which database, as which login role                                                                   |
+| `RENDERER_ROOT`                    | service         | Where the built renderer is; without it, the API and nothing else                                     |
+| `OBJECT_STORE_ENDPOINT`, `_BUCKET` | service, worker | The object store, which must be an address a browser can follow too                                   |
+| `SECRET_OBJECT_STORE_KEY`          | service, worker | Seals each environment's store credential before it is stored                                         |
+| `VERAPDF_COMMAND`                  | worker          | veraPDF's launcher; the image's own, `/opt/verapdf/verapdf`, unset                                    |
+| `JAVA_OPTS`                        | worker          | veraPDF's JVM options; `-XX:MaxRAMPercentage=50` added where they name no heap limit                  |
+| `LEASE_MS`                         | worker          | How long a claimed job is held, two minutes unset; veraPDF gets a third to start and a third to check |
+| `SWEEP_INTERVAL_MS`                | worker          | How often the sweeps run, a check that gave up queued again among them                                |
+| `SIGN_IN_HOST`, `GOOGLE_CLIENT_ID` | service         | The Google route; set together or not at all                                                          |
+| `DEV_EXTRA_HOSTNAME`               | setup           | An extra address for the development environment                                                      |
+| `ALLOY_SERVICE_URL`                | the desktop app | Which environment its window opens                                                                    |
 
 Secrets arrive as `SECRET_*` variables and never reach a log: the configuration the service logs at
-start-up names them, never their values.
+start-up names them, never their values. veraPDF, a child of the worker, is started with `PATH`, the
+locale and `JAVA_OPTS` and none of the worker's other variables, so it holds neither the database URL
+nor the store's key. Give `JAVA_OPTS` a heap limit sized to the worker's container, `-Xmx` or
+`-XX:MaxRAMPercentage`; without one, the worker sets half the container's memory. veraPDF has the
+worker's network access, but its XMP parser refuses external entities: an external DTD, an external
+general entity and a parameter entity in a PDF's metadata were each refused with no request made, in
+the final review of the check. Its Java runtime, Debian's `openjdk-17-jre-headless`, floats with
+Debian's updates, as the `node:24-bookworm-slim` base does.
 
 ## What is not here yet
 

@@ -313,8 +313,8 @@ describe('a publication at its own address', () => {
     expect(aside).not.toHaveTextContent(/checked/i);
   });
 
-  /** A PDF output, checked by veraPDF as given, or not yet. */
-  const checkedPdf = (check: unknown) => ({
+  /** A PDF output, checked by veraPDF as given, or not yet, or given up on where it says so. */
+  const checkedPdf = (check: unknown, checkState?: string) => ({
     format: 'pdf',
     bytes: 30_000,
     sha256: 'a'.repeat(64),
@@ -325,6 +325,13 @@ describe('a publication at its own address', () => {
     download: LINK,
     view: LINK,
     check,
+    checkState:
+      checkState ??
+      (check === null
+        ? 'pending'
+        : (check as { compliant: boolean }).compliant
+          ? 'passed'
+          : 'failed'),
   });
   const REPORT_LINK = 'https://store.example/report?signed';
   const check = (compliant: boolean, failedRules: unknown[]) => ({
@@ -358,6 +365,24 @@ describe('a publication at its own address', () => {
     expect(within(aside).queryByRole('list', { name: /failed/ })).toBeNull();
     // Nor is there a report to download before the check has written one.
     expect(within(aside).queryByRole('link', { name: 'Download the full report' })).toBeNull();
+  });
+
+  it('says a PDF whose checks all gave up could not be checked, which is not the same as not yet', async () => {
+    open(json(200, { ...record, outputs: [checkedPdf(null, 'gave_up')] }));
+    const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+
+    expect(within(aside).getByText('Could not be checked for accessibility.')).toBeInTheDocument();
+    expect(aside).not.toHaveTextContent('Not yet checked');
+    expect(within(aside).queryByRole('link', { name: 'Download the full report' })).toBeNull();
+  });
+
+  it("says a PDF with no check in an older service's answer, which names no state, is not yet checked", async () => {
+    const older: Record<string, unknown> = checkedPdf(null);
+    delete older.checkState;
+    open(json(200, { ...record, outputs: [older] }));
+    const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+
+    expect(within(aside).getByText('Not yet checked for accessibility.')).toBeInTheDocument();
   });
 
   it("says a PDF veraPDF passed was checked for PDF/UA-1 and passed, naming veraPDF's version", async () => {

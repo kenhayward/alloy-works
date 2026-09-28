@@ -552,9 +552,11 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
-  // 503, from 502 (2026-09-28): W14.1 - PUB-091 in apps/worker's check.test.ts, three tests in one
-  // file: a publication's PDF checked and its verdict kept, a failing PDF's rules named, and a check
-  // left queued by a worker that died after recording taken by the next.
+  // 503, from 502 (2026-09-28): W14.1 - PUB-091 in apps/worker's check.test.ts, seven tests in one
+  // file: a publication's PDF checked and its verdict kept, veraPDF's whole report retained, a failing
+  // PDF's rules named, a check left queued by a worker that died after recording taken by the next, a
+  // check that gave up queued again by the sweep, one that gave up three times left, and the
+  // publications recorded before checks were queued checked by the first sweep after.
   // 502, from 500 (2026-09-28): W12.4 - IAM-029 in apps/web's access/AccessPanel.test.tsx, where an
   // administrator chooses a person and reads every permission with its answer on a document, a
   // template, a space and the environment; and IAM-030 in apps/service's access-routes.test.ts, where

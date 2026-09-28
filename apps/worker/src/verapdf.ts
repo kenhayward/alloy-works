@@ -1,5 +1,5 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -119,8 +119,27 @@ export interface ServerModeHost {
   cleanUp(child: ChildProcessWithoutNullStreams | null): Promise<void>;
 }
 
-/** How long one check may take once the process is up, and how long the process may take to start. */
+/**
+ * How long one check may take once the process is up, and how long the process may take to start,
+ * where nothing says otherwise: the suite's, whose checks hold no lease. The worker's own are a third
+ * of its lease each (`veraPdfTimeouts`).
+ */
 export const CHECK_TIMEOUT = 120_000;
+
+/**
+ * How long the worker's veraPDF may take to start, and then to check one PDF, under a queue lease of
+ * `leaseMs`: a third of it each, so a cold start and a check together take at most two thirds of the
+ * lease, and the job's other work - the PDF read from the store, the report kept, the row recorded -
+ * has the last third. A check that could outlive its lease would be taken by a second worker while
+ * the first still ran it.
+ */
+export function veraPdfTimeouts(leaseMs: number): {
+  readonly startTimeout: number;
+  readonly checkTimeout: number;
+} {
+  const third = Math.floor(leaseMs / 3);
+  return { startTimeout: third, checkTimeout: third };
+}
 
 /** How long a closing veraPDF is given to exit once its stdin ends, before it is ended for it. */
 const CLOSE_TIMEOUT = 10_000;
@@ -143,9 +162,10 @@ const CLOSE_TIMEOUT = 10_000;
  */
 export function startServerMode(
   host: ServerModeHost,
-  options: { readonly checkTimeout?: number } = {},
+  options: { readonly checkTimeout?: number; readonly startTimeout?: number } = {},
 ): WarmVeraPdf {
   const checkTimeout = options.checkTimeout ?? CHECK_TIMEOUT;
+  const startTimeout = options.startTimeout ?? CHECK_TIMEOUT;
   let started: Promise<Started> | null = null;
   let ended = false;
   let count = 0;
@@ -220,7 +240,7 @@ export function startServerMode(
         end(new Error(`veraPDF ${host.name} stopped reading: ${reason.message}`)),
       );
 
-      await host.report(await line());
+      await host.report(await line(startTimeout));
     } catch (reason) {
       abandon(reason as Error);
       await host.cleanUp(child);
@@ -317,20 +337,112 @@ export interface Checker {
 export const VERAPDF_COMMAND = '/opt/verapdf/verapdf';
 
 /**
+ * The JVM's heap limit where `JAVA_OPTS` names none: half the memory the container is given, which
+ * the JVM reads from its cgroup. Left to itself, a JVM takes a quarter of the machine's memory,
+ * whatever else the worker - Typst among it - needs of it.
+ */
+export const DEFAULT_HEAP_LIMIT = '-XX:MaxRAMPercentage=50';
+
+/** The options that set the JVM's largest heap, any one of which is a limit named. */
+const HEAP_LIMIT = /(^|\s)(-Xmx\S+|-XX:MaxHeapSize=\S+|-XX:MaxRAM=\S+|-XX:MaxRAMPercentage=\S+)/;
+
+/** `JAVA_OPTS` as the worker gives it to veraPDF: as given, with the default heap limit if none. */
+export function javaOptionsWithHeapLimit(given: string | undefined): string {
+  const options = (given ?? '').trim();
+  if (HEAP_LIMIT.test(options)) return options;
+  return options === '' ? DEFAULT_HEAP_LIMIT : `${DEFAULT_HEAP_LIMIT} ${options}`;
+}
+
+/**
+ * What veraPDF's launcher needs of the worker's environment, and nothing else: the path it finds
+ * `java` on, the Java runtime where one is named, and the locale; on Windows, where the suite's
+ * stand-in runs, what any process needs to start. Never the rest - the worker's database URL, its
+ * store's key, anything a deployment adds - which a child reading PDFs has no business holding.
+ */
+const INHERITED = ['PATH', 'JAVA_HOME', 'LANG', 'LC_ALL', 'TZ'];
+const INHERITED_ON_WINDOWS = ['SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP'];
+
+/** The environment veraPDF is started with: what `INHERITED` names of `parent`, and `extra`. */
+export function veraPdfEnvironment(
+  parent: Readonly<Record<string, string | undefined>>,
+  extra: Readonly<Record<string, string>>,
+): Record<string, string> {
+  const wanted = new Set(
+    process.platform === 'win32' ? [...INHERITED, ...INHERITED_ON_WINDOWS] : INHERITED,
+  );
+  const env: Record<string, string> = {};
+  for (const [name, value] of Object.entries(parent)) {
+    // Windows names its variables in any case - `Path` among them - and matches them in none.
+    const known = process.platform === 'win32' ? name.toUpperCase() : name;
+    if (value !== undefined && wanted.has(known)) env[name] = value;
+  }
+  return { ...env, ...extra };
+}
+
+/** Where each of the worker's veraPDFs keeps its PDFs and reports: the worker's process id, then its own. */
+const DIRECTORY_PREFIX = 'aw-verapdf-';
+
+/** The directories this process's veraPDFs are using now, which no sweep of its own removes. */
+const inUse = new Set<string>();
+
+/**
+ * Removes what a veraPDF of a worker that has gone left under `root`: each `aw-verapdf-<pid>-*`
+ * directory whose process is not running, and each of this process's id that it is not using, which
+ * a worker before it left - restarted in the same container, where process ids begin again. Another
+ * live worker's is left alone. Run as the worker starts; answers how many it removed.
+ */
+export async function removeStaleVeraPdfDirectories(root: string = tmpdir()): Promise<number> {
+  let removed = 0;
+  for (const entry of await readdir(root, { withFileTypes: true })) {
+    const pid = new RegExp(`^${DIRECTORY_PREFIX}(\\d+)-`).exec(entry.name)?.[1];
+    if (!entry.isDirectory() || pid === undefined) continue;
+    const path = join(root, entry.name);
+    const stale = Number(pid) === process.pid ? !inUse.has(resolve(path)) : !running(Number(pid));
+    if (!stale) continue;
+    await rm(path, { recursive: true, force: true });
+    removed += 1;
+  }
+  return removed;
+}
+
+/** Whether a process of this id is running: signal 0 asks, and sends nothing. */
+function running(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    // Refused is someone else's process, which is running.
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
+
+/**
  * The worker's veraPDF: one process, a child of the worker, started on the first check and kept warm
  * (W-A), started again for the next check after it dies, and ended when the worker closes it.
  *
  * Each PDF is written to a directory of the process's own, and its reports are written to another:
  * `java.io.tmpdir`, set through `JAVA_OPTS`, which veraPDF's launcher passes to the JVM - so a report
- * path that is not directly in that directory is no report of this process's, and is refused.
+ * path that is not directly in that directory is no report of this process's, and is refused. The
+ * directory is named by the worker's process id, so a worker that starts after one died removes what
+ * it left (`removeStaleVeraPdfDirectories`).
+ *
+ * It is started with a minimal environment (`veraPdfEnvironment`), never the worker's own, and with
+ * `javaOptions` - the deployment's `JAVA_OPTS` - given a heap limit where they name none.
  * `command` is veraPDF's launcher, and `args` go before its own; a test points them at a stand-in.
  */
 export function startLocalVeraPdf(options: {
   readonly command: string;
   readonly args?: readonly string[];
-  /** More of the environment, beside the worker's own. */
+  /** More of the environment, beside the little of the worker's that veraPDF is given. */
   readonly env?: Readonly<Record<string, string>>;
+  /** The JVM's options, `JAVA_OPTS`: the deployment's. */
+  readonly javaOptions?: string;
+  /** The environment it is started from, of which it takes only what `veraPdfEnvironment` names. */
+  readonly inherit?: Readonly<Record<string, string | undefined>>;
+  /** Where its directories are made; the system's temporary directory unless a test says. */
+  readonly root?: string;
   readonly checkTimeout?: number;
+  readonly startTimeout?: number;
 }): Checker {
   const serve = (): WarmVeraPdf => {
     let directory: string | null = null;
@@ -340,19 +452,25 @@ export function startLocalVeraPdf(options: {
       {
         name: options.command,
         async prepare() {
-          directory = await mkdtemp(join(tmpdir(), 'aw-verapdf-'));
+          directory = await mkdtemp(
+            join(options.root ?? tmpdir(), `${DIRECTORY_PREFIX}${process.pid}-`),
+          );
+          inUse.add(resolve(directory));
           await mkdir(pdfs());
           await mkdir(reports());
         },
         spawn() {
           // Unquoted by the launcher, as `$JAVA_OPTS` is: the temporary directory has no spaces.
-          const javaOptions = `${process.env['JAVA_OPTS'] ?? ''} -Djava.io.tmpdir=${reports()}`;
+          const javaOptions = `${javaOptionsWithHeapLimit(options.javaOptions)} -Djava.io.tmpdir=${reports()}`;
           return spawn(
             options.command,
             [...(options.args ?? []), '--servermode', '--flavour', 'ua1', '--format', 'json'],
             {
               stdio: 'pipe',
-              env: { ...process.env, ...options.env, JAVA_OPTS: javaOptions.trim() },
+              env: veraPdfEnvironment(options.inherit ?? process.env, {
+                ...options.env,
+                JAVA_OPTS: javaOptions,
+              }),
             },
           );
         },
@@ -390,10 +508,16 @@ export function startLocalVeraPdf(options: {
             child.kill('SIGKILL');
             await exited;
           }
-          if (directory !== null) await rm(directory, { recursive: true, force: true });
+          if (directory !== null) {
+            await rm(directory, { recursive: true, force: true });
+            inUse.delete(resolve(directory));
+          }
         },
       },
-      options.checkTimeout === undefined ? {} : { checkTimeout: options.checkTimeout },
+      {
+        ...(options.checkTimeout === undefined ? {} : { checkTimeout: options.checkTimeout }),
+        ...(options.startTimeout === undefined ? {} : { startTimeout: options.startTimeout }),
+      },
     );
   };
 

@@ -48,6 +48,8 @@ export {
   recordPreview,
   recordPublication,
   recordPublicationCheck,
+  recordCheckGivenUp,
+  CHECK_GIVE_UPS,
   requestPublication,
   resolveOccurrences,
   sweepPreviews,

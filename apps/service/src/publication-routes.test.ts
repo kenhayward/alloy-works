@@ -10,6 +10,7 @@ import {
   grant,
   migrate,
   recordPreview,
+  recordCheckGivenUp,
   recordPublication,
   recordPublicationCheck,
   removeGrant,
@@ -799,6 +800,7 @@ describe('publishing a document through the service', () => {
         view: expect.any(String),
         // Not yet checked by veraPDF: the check joins a publication after it is recorded (ADR-0030).
         check: null,
+        checkState: 'pending',
       },
       {
         format: 'docx',
@@ -824,9 +826,9 @@ describe('publishing a document through the service', () => {
     const id = await published(await requested('grace', await documentReferencing([])));
     const pdfOf = async () =>
       (await call('alice', 'GET', `/v1/publications/${id}`)).json<{
-        outputs: { format: string; check: unknown }[];
+        outputs: { format: string; check: unknown; checkState: string }[];
       }>().outputs[0]!;
-    expect(await pdfOf()).toMatchObject({ format: 'pdf', check: null });
+    expect(await pdfOf()).toMatchObject({ format: 'pdf', check: null, checkState: 'pending' });
 
     // veraPDF's whole report, kept by the worker in the tenant's store by its hash.
     const report = '{"report":{"jobs":[]}}';
@@ -846,7 +848,11 @@ describe('publishing a document through the service', () => {
       });
     });
 
-    const { check } = (await pdfOf()) as { check: { report: { download: string } } };
+    const { check, checkState } = (await pdfOf()) as {
+      check: { report: { download: string } };
+      checkState: string;
+    };
+    expect(checkState).toBe('failed');
     expect(check).toEqual({
       checker: 'verapdf',
       checkerVersion: '1.30.2',
@@ -871,6 +877,34 @@ describe('publishing a document through the service', () => {
     );
     expect(saved.headers.get('content-type')).toBe('application/json');
     expect(await saved.text()).toBe(report);
+  });
+
+  it("opens a publication whose PDF's check was given up for good as one that could not be checked, until a check is recorded", async () => {
+    const id = await published(await requested('grace', await documentReferencing([])));
+    const pdfOf = async () =>
+      (await call('alice', 'GET', `/v1/publications/${id}`)).json<{
+        outputs: { format: string; check: unknown; checkState: string }[];
+      }>().outputs[0]!;
+    expect(await pdfOf()).toMatchObject({ check: null, checkState: 'pending' });
+
+    // The worker's sweep, leaving it after its checks gave up three times.
+    await tenantDb.withTenant(tenant, (trx) => recordCheckGivenUp(trx, id, 3));
+    expect(await pdfOf()).toMatchObject({ check: null, checkState: 'gave_up' });
+
+    // A check recorded afterwards - by one queued by hand - is what stands.
+    await tenantDb.withTenant(tenant, async (trx) => {
+      const kept = await (
+        await stores.forTenant(trx, tenant)
+      ).put(Buffer.from('{"report":{"jobs":[]}}', 'utf8'), 'application/json');
+      await recordPublicationCheck(trx, {
+        publicationId: id,
+        checkerVersion: '1.30.2',
+        compliant: true,
+        failedRules: [],
+        report: { key: kept.key, sha256: kept.sha256, bytes: kept.size },
+      });
+    });
+    expect(await pdfOf()).toMatchObject({ checkState: 'passed' });
   });
 
   it('opens a Word-only publication with no PDF engine or template', async () => {

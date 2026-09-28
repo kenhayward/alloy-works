@@ -17,7 +17,7 @@ import {
   sweepUncheckedPublications,
 } from './sweep.js';
 import { createTypst } from './typst.js';
-import { startLocalVeraPdf } from './verapdf.js';
+import { removeStaleVeraPdfDirectories, startLocalVeraPdf, veraPdfTimeouts } from './verapdf.js';
 import { processNext, type JobHandler } from './worker.js';
 
 const config = loadWorkerConfig(process.env);
@@ -30,8 +30,21 @@ const stores = createObjectStores(config.objectStore, config.objectStoreKey);
 const typst = createTypst({ binary: config.typstBinary, fonts });
 // A preview is the publish handler's too, which reads which it is from the request (W10.1).
 const publish = publishJob({ db, stores, typst, fonts });
-// One veraPDF for this worker, started on the first check and kept warm (W14.1, W-A).
-const checker = startLocalVeraPdf({ command: config.verapdfCommand });
+// What a veraPDF of a worker that died left in the temporary directory, removed before this one's;
+// a directory that will not go is no reason not to start.
+const stale = await removeStaleVeraPdfDirectories().catch((error: unknown) => {
+  log.warn({ err: error }, "a gone worker's veraPDF directories were not removed");
+  return 0;
+});
+if (stale > 0) log.info({ removed: stale }, "removed a gone worker's veraPDF directories");
+// One veraPDF for this worker, started on the first check and kept warm (W14.1, W-A), with little of
+// this process's environment and none of its secrets, and waiting a third of the lease each for its
+// start and for a check, so a check never outlives its job's lease.
+const checker = startLocalVeraPdf({
+  command: config.verapdfCommand,
+  ...(config.verapdfJavaOptions === undefined ? {} : { javaOptions: config.verapdfJavaOptions }),
+  ...veraPdfTimeouts(config.leaseMs),
+});
 const handlers: Record<string, JobHandler> = {
   sample_pdf: sampleJob({ db, stores, typst }),
   publish,
@@ -60,9 +73,13 @@ const sweep = setInterval(() => {
   void sweepExpiredIterations(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired iterations'))
     .catch((error: unknown) => log.error({ err: error }, 'iteration sweep failed'));
-  // Checks that gave up, five minutes after their publication was recorded, queued again (W14.1).
+  // Checks that gave up, five minutes after their publication was recorded, queued again, and those
+  // that gave up three times left (W14.1).
   void sweepUncheckedPublications(db, queue, log)
-    .then((queued) => queued > 0 && log.warn({ queued }, 'queued checks that had given up'))
+    .then(
+      ({ queued }) =>
+        queued > 0 && log.warn({ queued }, 'queued checks that had given up or never ran'),
+    )
     .catch((error: unknown) => log.error({ err: error }, 'check sweep failed'));
 }, config.sweepIntervalMs);
 

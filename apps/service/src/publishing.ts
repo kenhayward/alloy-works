@@ -416,6 +416,16 @@ export function publishingHandlers(
                     },
                     checkedAt: output.check.checkedAt.toISOString(),
                   },
+                  // Where it stands, the check first: a check recorded after the sweep gave up
+                  // on it - one queued by hand - is what stands.
+                  checkState:
+                    output.check !== null
+                      ? output.check.compliant
+                        ? ('passed' as const)
+                        : ('failed' as const)
+                      : output.checkGaveUp
+                        ? ('gave_up' as const)
+                        : ('pending' as const),
                 }
               : {
                   ...common,

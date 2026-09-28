@@ -169,6 +169,39 @@ describe('the job queue', () => {
     expect(await queue.waiting(a.id, 'ingest')).toEqual([]);
   });
 
+  it("answers each subject of a tenant's jobs of one kind that gave up after their last attempt, with how many did, and no other", async () => {
+    const subject = (n: number) => `88888888-0000-4000-8000-${String(n).padStart(12, '0')}`;
+    const check = (tenant: Tenant, id: string) =>
+      service.withTenant(tenant, (trx) => enqueueJob(trx, 'check_pdf', id));
+    // Two checks of one subject given up, one of another, and one of a third still waiting.
+    for (const n of [1, 1, 2, 3]) await check(a, subject(n));
+    await check(b, subject(4)); // another tenant's, given up
+    await service.withTenant(a, (trx) => enqueueJob(trx, 'publish', subject(5))); // another kind's
+    await queryAs(
+      db.adminUrl,
+      `update platform.job set attempts = max_attempts, failed_at = now(), last_error = 'check_failed'
+        where subject_id = any($1::uuid[])`,
+      [[subject(1), subject(2), subject(4), subject(5)]],
+    );
+    // One of a subject finished after a retry: attempts spent, and done, not given up.
+    await check(a, subject(6));
+    await queryAs(
+      db.adminUrl,
+      'update platform.job set attempts = 2, finished_at = now() where subject_id = $1',
+      [subject(6)],
+    );
+
+    /** What the queue answers of this test's own subjects, beside those an earlier test left. */
+    const ours = (answer: ReadonlyMap<string, number>) =>
+      [...answer].filter(([id]) => id.startsWith('88888888-')).sort();
+    expect(ours(await queue.givenUp(a.id, 'check_pdf'))).toEqual([
+      [subject(1), 2],
+      [subject(2), 1],
+    ]);
+    expect(ours(await queue.givenUp(b.id, 'check_pdf'))).toEqual([[subject(4), 1]]);
+    expect(await queue.givenUp(a.id, 'ingest')).toEqual(new Map());
+  });
+
   it('knows every tenant, and one by name', async () => {
     const all = await service.tenants();
     expect(all.map((tenant) => tenant.id).sort()).toEqual([a.id, b.id].sort());

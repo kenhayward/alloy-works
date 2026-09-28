@@ -22159,6 +22159,16 @@
                                   }
                                 ],
                                 "description": "What veraPDF found of the PDF against PDF/UA-1; none until it has been checked, which follows the recording"
+                              },
+                              "checkState": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "passed",
+                                  "failed",
+                                  "gave_up"
+                                ],
+                                "description": "Where the PDF's check stands: `pending`, not yet checked; `passed` or `failed`, as its check says; `gave_up`, not checked and never to be, its checks having given up as often as they are tried"
                               }
                             },
                             "required": [
@@ -22171,7 +22181,8 @@
                               "report",
                               "download",
                               "view",
-                              "check"
+                              "check",
+                              "checkState"
                             ]
                           },
                           {
