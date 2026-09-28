@@ -34,13 +34,14 @@ import type { PublishedBlock, PublishedInline, PublishedNode } from './published
  *
  * The last stages are not functions a test can reorder. `assemble` runs, in this order: conditions
  * over each occurrence's content, contributions, the outline's own conditions, `number`, the check
- * that Word would number alike where Word is asked for, the references, one walk over the document
- * that checks each block and projects it at once, and then the generated matter - whether the
- * contents and each list the layout declares has an entry - and the check that there is something to
- * publish, which reads it; the projection is returned only where no check failed. So the walk's checks
- * read nothing generation makes, and the one check that does comes after it: the test shows that check
- * reading generation's answer, and shows a document that fails a check never projected, which the
- * types refuse too.
+ * that Word would number alike where Word is asked for, the checks of the document's title and
+ * language, of a preview's words and of the layout's own words, the references, one walk over the
+ * document that checks each block and projects it at once, and then the generated matter: the
+ * contents, then the check that there is something to publish, which reads it, then the lists. The
+ * projection is returned only where no check failed. So the walk's checks read nothing generation
+ * makes, and the one check that does comes after what it reads: the test shows that check reading
+ * generation's answer, and shows a document that fails a check never projected, which the types
+ * refuse too.
  */
 
 const id = (name: string) => name.padEnd(26, 'a');
@@ -208,8 +209,18 @@ describe('the resolution order, each adjacent pair of stages that exists', () =>
     contributionsOf(content);
     expect(tableLabels(inOrder)).toEqual({ t2: 'Table 1.1', t3: 'Table 1.2' });
     expect(tableLabels(early)).toEqual({});
-    // And the product numbers in order: what `assemble` publishes is the numbering counted first.
-    const made = assemble(input());
+    // And the product numbers in order: what `assemble` publishes is the numbering counted first. The
+    // same tables with no reference among them, so that a numbering made too early reaches this
+    // assertion rather than failing the references that name its numbers.
+    const unreferenced = parseContentDocument({
+      ...stored,
+      content: [
+        table('t1', [text('Hidden')]),
+        table('t2', [text('Pressures')]),
+        table('t3', [text('Readings')]),
+      ],
+    });
+    const made = assemble(input({ occurrences: new Map([[id('calib'), unreferenced]]) }));
     if (!made.ok) throw new Error(JSON.stringify(made.failures));
     expect(tableLabels(made.numbering)).toEqual(tableLabels(inOrder));
     // And the outline's own condition stage, which `number` reads the contributions through, cannot

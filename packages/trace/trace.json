@@ -15648,7 +15648,7 @@
       "owns": [
         {
           "id": "PUB-098",
-          "howItIsMet": "The order is stated under [The order](#the-order): resolve occurrences, conditions over content, contributions, number, references, generated matter, checks, projection. `order.test.ts` tests each adjacent pair: swapped where the code lets a test swap them, the output differing; refused at compile time where the types forbid it; and, where `assemble` runs the last stages in its own order - one walk that checks and projects each block, then the generated matter and the check for something to publish, which reads it - that check shown reading generation's answer, and a projection returned only where every check passed"
+          "howItIsMet": "The order is stated under [The order](#the-order): resolve occurrences, conditions over content, contributions, number, references, generated matter, checks, projection. `order.test.ts` tests each adjacent pair: swapped where the code lets a test swap them, the output differing; refused at compile time where the types forbid it; and, where `assemble` runs the last stages in its own order - after the Word numbering check, the checks of the title, the language, a preview's words and the layout's words, then the references, one walk that checks and projects each block, then the contents, the check for something to publish, which reads it, and the lists - that check shown reading generation's answer, and a projection returned only where every check passed"
         },
         {
           "id": "PUB-005",
@@ -18065,7 +18065,7 @@
     {
       "id": "PUB-098",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 980,
+      "line": 981,
       "kind": "title"
     },
     {
@@ -18077,7 +18077,7 @@
     {
       "id": "STY-008",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 1285,
+      "line": 1288,
       "kind": "title"
     },
     {
@@ -19445,7 +19445,7 @@
     {
       "id": "PUB-098",
       "file": "packages/domain/src/publishing/order.test.ts",
-      "line": 164,
+      "line": 165,
       "kind": "title"
     },
     {

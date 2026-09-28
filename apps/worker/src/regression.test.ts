@@ -657,6 +657,7 @@ describe("PUB-087 the engine spike's nine cases, through the pipeline", () => {
     // Counted from the body's first page: the contents and the lists before it print pages, and would
     // print others were a heading or a figure moved to another, which is theirs to do.
     const body = before.pageLabels!.indexOf('1');
+    expect(body).toBeGreaterThan(0);
     expect(page - body).toBeGreaterThan(30);
     const differs = (index: number) =>
       JSON.stringify(after.taggedText[index]) !== JSON.stringify(before.taggedText[index]);
@@ -1014,6 +1015,8 @@ describe('the resolution order, in the PDF', () => {
     );
     const read = await readPdf(pdf);
     const body = read.pageLabels!.indexOf('1');
+    // The body starts after the cover and the front matter, so there are pages before it to read.
+    expect(body).toBeGreaterThan(0);
     // Every page before the body - the contents and the lists - as a reader is told it.
     const listed = read.taggedText.slice(0, body).flat().join(' ').replace(/\s+/g, ' ');
     expect(listed).toContain('Table 1.2 Readings after Table 1.1');

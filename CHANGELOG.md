@@ -22,7 +22,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 ### Changed
 
 - **The order in which a publication is put together is tested stage by stage**: each step is shown to
-  change the result if it came before the one ahead of it, or to be impossible to put there at all.
+  change the result if it came before the one ahead of it, or, where two steps cannot be swapped,
+  shown refused by the types or by the later step reading what the earlier made.
 - **Keeping a heading with its paragraph, keeping a paragraph together and avoiding lone lines at a
   page's edge** are checked both in the PDF and in the rules a Word document is given, from the same
   style.
