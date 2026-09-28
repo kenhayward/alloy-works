@@ -15,7 +15,7 @@ import {
   type ShapeEntry,
 } from './testing/api.js';
 import { SERVICE } from './testing/addresses.js';
-import { checkAxe } from './testing/axe.js';
+import { checkAxe, type Sign } from './testing/axe.js';
 import { withPage } from './testing/page.js';
 
 /**
@@ -147,6 +147,40 @@ async function drag(page: Page, source: Locator, target: () => Locator): Promise
   await page.mouse.up();
 }
 
+/** The outline flattened to each node's level and title, in the order the tree draws them. */
+function flattened(shape: readonly ShapeEntry[], level = 1): [number, string][] {
+  return shape.flatMap((entry): [number, string][] =>
+    typeof entry === 'string'
+      ? [[level, entry]]
+      : [[level, entry[0] as string], ...flattened(entry.slice(1), level + 1)],
+  );
+}
+
+/**
+ * The tree drawing `shape`: what axe checks after an act is the tree the act left, not the one
+ * before it, however quickly the announcement and the service answered.
+ */
+function drawnAs(tree: Locator, shape: readonly ShapeEntry[]): Sign {
+  const wanted = JSON.stringify(flattened(shape));
+  let seen = '';
+  return {
+    get said() {
+      return `the tree draws ${seen}, not ${wanted}`;
+    },
+    holds: async () => {
+      seen = JSON.stringify(
+        await tree.evaluate((root) =>
+          [...root.querySelectorAll('[role="treeitem"]')].map((node) => [
+            Number(node.getAttribute('aria-level')),
+            document.getElementById(node.getAttribute('aria-labelledby') ?? '')?.textContent ?? '',
+          ]),
+        ),
+      );
+      return seen === wanted;
+    },
+  };
+}
+
 const OUTLINE_PANEL = '[data-panel="outline"]';
 
 describe('the outline in a browser', () => {
@@ -157,7 +191,10 @@ describe('the outline in a browser', () => {
     const document = await makeDocument(client, 'The outline by keyboard', START);
     await withPage(async (page) => {
       const tree = await open(page, document);
-      await checkAxe(page, 'the outline as opened', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'the outline as opened', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, ['Alpha', ['Beta', 'Beta one'], 'Gamma']),
+      });
 
       await tabIntoTree(page);
       const alpha = find(nodesOf(document), 'Alpha').id;
@@ -176,7 +213,10 @@ describe('the outline in a browser', () => {
       ]);
       const delta = find(nodesOf(await readDocument(client, document.id)), 'Delta').id;
       await vi.waitFor(async () => expect(await focused(page)).toBe(`treeitem:${delta}`));
-      await checkAxe(page, 'a section added', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'a section added', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, ['Alpha', 'Delta', ['Beta', 'Beta one'], 'Gamma']),
+      });
 
       // Move among siblings.
       await page.keyboard.press('Alt+ArrowDown');
@@ -188,7 +228,10 @@ describe('the outline in a browser', () => {
         'Gamma',
       ]);
       await vi.waitFor(async () => expect(await focused(page)).toBe(`treeitem:${delta}`));
-      await checkAxe(page, 'a section moved down', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'a section moved down', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, ['Alpha', ['Beta', 'Beta one'], 'Delta', 'Gamma']),
+      });
 
       await page.keyboard.press('Alt+ArrowUp');
       await announced(page, 'Moved Delta after Alpha.');
@@ -199,7 +242,10 @@ describe('the outline in a browser', () => {
         'Gamma',
       ]);
       await vi.waitFor(async () => expect(await focused(page)).toBe(`treeitem:${delta}`));
-      await checkAxe(page, 'a section moved up', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'a section moved up', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, ['Alpha', 'Delta', ['Beta', 'Beta one'], 'Gamma']),
+      });
 
       // Demote and promote.
       await page.keyboard.press('Alt+ArrowRight');
@@ -210,7 +256,10 @@ describe('the outline in a browser', () => {
         'Gamma',
       ]);
       await vi.waitFor(async () => expect(await focused(page)).toBe(`treeitem:${delta}`));
-      await checkAxe(page, 'a section demoted', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'a section demoted', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, [['Alpha', 'Delta'], ['Beta', 'Beta one'], 'Gamma']),
+      });
 
       // The address follows the chosen node, and Delta stays chosen: Back is all that could move it.
       const address = page.url();
@@ -233,7 +282,10 @@ describe('the outline in a browser', () => {
           prevented: true,
         })),
       );
-      await checkAxe(page, 'a section promoted', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'a section promoted', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, ['Alpha', 'Delta', ['Beta', 'Beta one'], 'Gamma']),
+      });
 
       // Retitle, in Title, the next stop after the tree.
       await page.keyboard.press('Tab');
@@ -249,7 +301,10 @@ describe('the outline in a browser', () => {
         'Gamma',
       ]);
       expect(await focused(page)).toMatch(/Title$/);
-      await checkAxe(page, 'a section retitled', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'a section retitled', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, ['Alpha', 'Epsilon', ['Beta', 'Beta one'], 'Gamma']),
+      });
 
       // Starts on, past Equation.
       await page.keyboard.press('Tab');
@@ -262,6 +317,12 @@ describe('the outline in a browser', () => {
       expect(await focused(page)).toMatch(/^select:/);
       await checkAxe(page, 'a section set to start on a new page', task.meta, {
         within: OUTLINE_PANEL,
+        shows: drawnAs(tree, [
+          'Alpha',
+          'Epsilon, starts on a new page',
+          ['Beta', 'Beta one'],
+          'Gamma',
+        ]),
       });
 
       // Remove, back in the tree: Delete, and the question answered.
@@ -271,13 +332,19 @@ describe('the outline in a browser', () => {
       expect(await focused(page)).toBe(`treeitem:${delta}`);
       await page.keyboard.press('Delete');
       await page.getByRole('group', { name: 'Confirm removal' }).waitFor();
-      await checkAxe(page, 'the removal asked about', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'the removal asked about', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: page.getByRole('group', { name: 'Confirm removal' }),
+      });
       await page.keyboard.press('Enter');
       await announced(page, 'Removed Epsilon.');
       expect(await held(client, document)).toEqual(['Alpha', ['Beta', 'Beta one'], 'Gamma']);
       await vi.waitFor(async () => expect(await focused(page)).toBe(`treeitem:${alpha}`));
       await expect(item(tree, 'Alpha').getAttribute('aria-selected')).resolves.toBe('true');
-      await checkAxe(page, 'a section removed', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'a section removed', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, ['Alpha', ['Beta', 'Beta one'], 'Gamma']),
+      });
 
       // And not one pointer press, from the first key to the last.
       expect((await actsOf(page)).pointer).toBe(0);
@@ -301,7 +368,13 @@ describe('the outline in a browser', () => {
         ['Alpha', 'Gamma'],
         ['Beta', 'Beta one'],
       ]);
-      await checkAxe(page, 'a section dropped onto another', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'a section dropped onto another', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, [
+          ['Alpha', 'Gamma'],
+          ['Beta', 'Beta one'],
+        ]),
+      });
 
       // Onto the gap before one: there, among its siblings.
       await drag(page, row('Gamma'), () => tree.locator(`[data-drop="before:${beta}"]`));
@@ -309,13 +382,17 @@ describe('the outline in a browser', () => {
       expect(await held(client, document)).toEqual(['Alpha', 'Gamma', ['Beta', 'Beta one']]);
       await checkAxe(page, 'a section dropped before another', task.meta, {
         within: OUTLINE_PANEL,
+        shows: drawnAs(tree, ['Alpha', 'Gamma', ['Beta', 'Beta one']]),
       });
 
       // Onto the end of the document.
       await drag(page, row('Alpha'), () => page.getByText('Move to the end of the document'));
       await announced(page, 'Moved Alpha after Beta.');
       expect(await held(client, document)).toEqual(['Gamma', ['Beta', 'Beta one'], 'Alpha']);
-      await checkAxe(page, 'a section dropped at the end', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'a section dropped at the end', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, ['Gamma', ['Beta', 'Beta one'], 'Alpha']),
+      });
 
       // Insert: Alpha chosen by a click, **Add section** clicked, a title typed and **Add** clicked.
       await row('Alpha').click();
@@ -330,7 +407,10 @@ describe('the outline in a browser', () => {
         'Alpha',
         'Delta',
       ]);
-      await checkAxe(page, 'a section added by pointer', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'a section added by pointer', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, ['Gamma', ['Beta', 'Beta one'], 'Alpha', 'Delta']),
+      });
 
       // Retitle: a click into **Title**, the words typed, and a click away, which commits them.
       const title = page.getByRole('textbox', { name: 'Title' });
@@ -345,7 +425,10 @@ describe('the outline in a browser', () => {
         'Alpha',
         'Epsilon',
       ]);
-      await checkAxe(page, 'a section retitled by pointer', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'a section retitled by pointer', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, ['Gamma', ['Beta', 'Beta one'], 'Alpha', 'Epsilon']),
+      });
 
       // Starts on: the select clicked open and a choice made. Its list is drawn by the browser
       // outside the page, where no pointer event can reach, so the choice is made as the list makes
@@ -358,6 +441,12 @@ describe('the outline in a browser', () => {
       expect(epsilon.pageBreak).toBe('page');
       await checkAxe(page, 'a section set to start on a new page by pointer', task.meta, {
         within: OUTLINE_PANEL,
+        shows: drawnAs(tree, [
+          'Gamma',
+          ['Beta', 'Beta one'],
+          'Alpha',
+          'Epsilon, starts on a new page',
+        ]),
       });
 
       // Remove: **Remove section** clicked, and the question's **Remove** clicked.
@@ -366,7 +455,10 @@ describe('the outline in a browser', () => {
       await question.getByRole('button', { name: 'Remove', exact: true }).click();
       await announced(page, 'Removed Epsilon.');
       expect(await held(client, document)).toEqual(['Gamma', ['Beta', 'Beta one'], 'Alpha']);
-      await checkAxe(page, 'a section removed by pointer', task.meta, { within: OUTLINE_PANEL });
+      await checkAxe(page, 'a section removed by pointer', task.meta, {
+        within: OUTLINE_PANEL,
+        shows: drawnAs(tree, ['Gamma', ['Beta', 'Beta one'], 'Alpha']),
+      });
     });
   });
 

@@ -136,6 +136,34 @@ export const ATTESTATION_MIN_LENGTH = 30;
  * already been checked. One predicate, one bar, so the two can never quietly disagree about what
  * counts as substantial.
  */
+/**
+ * The identifiers an `inherited` row rests on: one, or several separated by commas, every one of which
+ * must be included and met. Several is how a requirement verified only by two others together says so -
+ * CNT-078, by CNT-177's audit and CNT-176's suite - so a baseline cannot meet it from either alone.
+ */
+export function inheritedFrom(by: string): string[] {
+  return by.split(',').map((each) => each.trim());
+}
+
+/**
+ * The records under `docs/audits/` an attestation names, which the gate asks are there when it is told
+ * how to look.
+ */
+export function recordsNamed(by: string): string[] {
+  // Up to the next space, comma, semicolon, bracket or backtick, and without a closing full stop: the
+  // path as the row sets it off, whatever it is, for `isRecordOf` to judge.
+  return [...by.matchAll(/docs\/audits\/[^\s,;)`]*/g)].map((match) => match[0].replace(/\.+$/, ''));
+}
+
+/**
+ * Whether `path` is a record of release `version`: `docs/audits/<version>/<name>.md` and nothing else -
+ * never a folder, another release's record, or a path that climbs out of `docs/audits/`.
+ */
+export function isRecordOf(path: string, version: string): boolean {
+  const match = /^docs\/audits\/([0-9A-Za-z.+-]+)\/[a-z0-9-]+\.md$/.exec(path);
+  return match !== null && match[1] === version;
+}
+
 export function attestationIsSubstantial(by: string): boolean {
   return by.length >= ATTESTATION_MIN_LENGTH && ATTESTATION_DATE.test(by);
 }

@@ -31,10 +31,13 @@
   gap: var(--space-4) var(--space-16);
 }
 
+/* Each choice at least 24px tall, so a radio button's 13px has the spacing WCAG 2.5.8 asks of a small
+   target: stacked with the targets' 4px gap they stood 23px apart, and axe failed them (W13.2). */
 .choice {
   display: inline-flex;
   align-items: center;
   gap: var(--space-6);
+  min-height: 24px;
   margin: 0;
 }
 

@@ -61,7 +61,7 @@
 }
 
 .warning {
-  color: var(--warn);
+  color: var(--warn-text);
 }
 
 .hint {

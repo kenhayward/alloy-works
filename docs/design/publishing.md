@@ -161,6 +161,15 @@ refused by name, which W14 builds; PUB-104 keeps the person-judged review, verif
 **W14.2 claims PUB-103** in the table above: the nine-level case is now refused for the PDF from its
 seventh level and published to Word, and a six-level case holds the headings' tags.
 
+**PUB-104 is not claimed, although W13.2 gave it a procedure.** It asks for the review "whenever
+the engine, the template or the pipeline changes". What W13.2 built answers it before each release:
+[the audit guide](../guides/auditing-a-release.md) makes the review on the regression corpus's PDFs,
+kept for it where `ALLOY_CORPUS_PDFS` names a directory, and a release's baseline attests it with the
+record in `docs/audits/<version>/matterhorn.md`. So a change to the engine, the template or the
+pipeline merged between two releases waits for the next release's review, and nothing reviews it when
+it changes. That is the gap. Whether the review belongs to each release rather than to each change -
+superseding PUB-104 with a row that says so - is Ken's to decide.
+
 **PUB-085 is not claimed either.** It asks for a declared 300-page reference document to publish, from
 the request to the recorded publication, at a p95 of ten seconds, and PUB-091 asks for veraPDF's
 report on every publication. Measured in the worker's suite, a cold veraPDF takes 11.2 seconds of wall
@@ -185,26 +194,26 @@ the ten the requirement allows.
 
 ## What this document does not own
 
-Fifty-nine claims. What is left out is either answered only in part, answered with another design,
+Sixty claims. What is left out is either answered only in part, answered with another design,
 or not T1's.
 
-| Left unclaimed                       | Why                                                                                                                                                                                                                                            |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PUB-090, PUB-104                     | Beside the table above. PUB-090 is superseded by PUB-103, veraPDF on every publication and six heading levels, claimed above since W14.2, and PUB-104, the person-judged review, verified by attestation (ADR-0031)                            |
-| PUB-085                              | Beside the table above. PUB-085 is superseded by PUB-102, the report joining the publication within five minutes of its recording (ADR-0030), claimed above since W14.2                                                                        |
-| PUB-004                              | Nothing in T1 approves anything: baselines are T3 and revisions LIF's. Every T1 publication is a draft (decision A); an approved one arrives with `baseline_id`                                                                                |
-| PUB-089                              | An **approval page** has nothing to show until LIF records approvals; it is T3's since Ken's answer, and waits for them                                                                                                                        |
-| PUB-017                              | A table's header rows repeat and it breaks across pages ([Tables](#tables)); how it breaks is its table style's (STY-013), and themes.md claims it ([Themes in the PDF](themes.md#themes-in-the-pdf), TH-I)                                    |
-| PUB-092                              | How each style property reaches the engine is themes.md's projection, measured there - the two costs, `sticky` and `breakable: false`; unclaimed, since nothing measures Word's own page breaks (themes.md names the gap)                      |
-| PUB-097                              | A citation is a link to its entry in the bibliography, and cannot be until LIB gives it entries to link to, in T6. PUB-022 was left unclaimed for this half alone; PUB-096, its other half, is claimed above                                   |
-| PUB-043, PUB-046, PUB-075 to PUB-077 | Same inputs give the same bytes (decision K, measured). But the image carries **one** Typst, so a publication made on an earlier engine cannot be made again once it is replaced. Keeping every recorded engine runnable is VER-041's and T3's |
-| PUB-044, PUB-045, PUB-082            | T3's records. The creation time is already the only varying value and the only time the layout can print                                                                                                                                       |
-| PUB-068, PUB-070 to PUB-072          | Typst overflows an unbreakable block silently. Detecting what cannot be laid out needs the template to measure and refuse, which is designed as a rule ([Failure](#failure-retry-and-what-an-author-sees)) and not as checks                   |
-| PUB-020                              | PDF/A is a layout member away, and not T1                                                                                                                                                                                                      |
-| CNT-151, CNT-096                     | The warm range preview is T3's by [ADR-0027](../decisions/0027-the-warm-range-preview-leaves-t1.md), with CNT-151; CNT-096 repeated CNT-151 and is withdrawn                                                                                   |
-| CNT-128                              | A hyperlink is a PDF link here; word-output.md designs Word's and claims it                                                                                                                                                                    |
-| TPL-013, TPL-055                     | A required section and document-level fields need TPL's link from a document to its template, which does not exist (finding 5). TPL-030 repeated TPL-013 and is withdrawn                                                                      |
-| STR-030                              | REU's, T4                                                                                                                                                                                                                                      |
+| Left unclaimed                       | Why                                                                                                                                                                                                                                                                |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| PUB-090, PUB-104                     | Beside the table above. PUB-090 is superseded by PUB-103, veraPDF on every publication and six heading levels, claimed above since W14.2, and PUB-104, the person-judged review, verified by attestation (ADR-0031), which a release reviews and a change does not |
+| PUB-085                              | Beside the table above. PUB-085 is superseded by PUB-102, the report joining the publication within five minutes of its recording (ADR-0030), claimed above since W14.2                                                                                            |
+| PUB-004                              | Nothing in T1 approves anything: baselines are T3 and revisions LIF's. Every T1 publication is a draft (decision A); an approved one arrives with `baseline_id`                                                                                                    |
+| PUB-089                              | An **approval page** has nothing to show until LIF records approvals; it is T3's since Ken's answer, and waits for them                                                                                                                                            |
+| PUB-017                              | A table's header rows repeat and it breaks across pages ([Tables](#tables)); how it breaks is its table style's (STY-013), and themes.md claims it ([Themes in the PDF](themes.md#themes-in-the-pdf), TH-I)                                                        |
+| PUB-092                              | How each style property reaches the engine is themes.md's projection, measured there - the two costs, `sticky` and `breakable: false`; unclaimed, since nothing measures Word's own page breaks (themes.md names the gap)                                          |
+| PUB-097                              | A citation is a link to its entry in the bibliography, and cannot be until LIB gives it entries to link to, in T6. PUB-022 was left unclaimed for this half alone; PUB-096, its other half, is claimed above                                                       |
+| PUB-043, PUB-046, PUB-075 to PUB-077 | Same inputs give the same bytes (decision K, measured). But the image carries **one** Typst, so a publication made on an earlier engine cannot be made again once it is replaced. Keeping every recorded engine runnable is VER-041's and T3's                     |
+| PUB-044, PUB-045, PUB-082            | T3's records. The creation time is already the only varying value and the only time the layout can print                                                                                                                                                           |
+| PUB-068, PUB-070 to PUB-072          | Typst overflows an unbreakable block silently. Detecting what cannot be laid out needs the template to measure and refuse, which is designed as a rule ([Failure](#failure-retry-and-what-an-author-sees)) and not as checks                                       |
+| PUB-020                              | PDF/A is a layout member away, and not T1                                                                                                                                                                                                                          |
+| CNT-151, CNT-096                     | The warm range preview is T3's by [ADR-0027](../decisions/0027-the-warm-range-preview-leaves-t1.md), with CNT-151; CNT-096 repeated CNT-151 and is withdrawn                                                                                                       |
+| CNT-128                              | A hyperlink is a PDF link here; word-output.md designs Word's and claims it                                                                                                                                                                                        |
+| TPL-013, TPL-055                     | A required section and document-level fields need TPL's link from a document to its template, which does not exist (finding 5). TPL-030 repeated TPL-013 and is withdrawn                                                                                          |
+| STR-030                              | REU's, T4                                                                                                                                                                                                                                                          |
 
 ## Three kinds of output, and why T1 makes only two
 
@@ -1612,7 +1621,8 @@ not `202`: a permission-checked handler cannot set its status.
   component id, version or title, asserted over the whole response.
 - **The regression corpus**: the spike's nine cases, grown by every defect, compiled on every change
   to the template, the engine or `assemble`, and checked by veraPDF; a person reviews the Matterhorn
-  checkpoints on it when the engine or template changes. Its heading cases since W14.2 (PUB-103): six
+  checkpoints on its PDFs, kept by `ALLOY_CORPUS_PDFS`, before each release (the audit guide) - not
+  on each change to the engine or the template, which is PUB-104's gap, beside the table. Its heading cases since W14.2 (PUB-103): six
   levels, tagged `H1` to `H6`, which veraPDF passes; and nine, refused for the PDF by name from the
   seventh and published to Word as its nine heading styles, with the document compiled once more to
   keep the engine's `P` for levels seven to nine as a tripwire for lifting the cap. Built by W14.3

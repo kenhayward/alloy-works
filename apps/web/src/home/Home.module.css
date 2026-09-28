@@ -21,9 +21,11 @@
   font-size: var(--size-greeting);
 }
 
+/* In the text's own colour, not muted: the panel is translucent over the dark backdrop, so it is grey
+   where it stands, and muted text on it measured 2.2:1 against WCAG's 4.5 (axe, W13.2). */
 .environment {
   margin: var(--space-4) 0 var(--space-20);
-  color: var(--muted);
+  color: var(--text);
   font-size: var(--size-body-small);
 }
 

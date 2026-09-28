@@ -30,11 +30,33 @@ describe('the page console gate', () => {
     ).rejects.toThrow(/uncaught: nobody caught this/);
   });
 
-  it('lets a test that provokes noise on purpose say so', async () => {
-    allowPageNoise();
+  it('lets a test that provokes noise on purpose say which', async () => {
+    allowPageNoise(/on purpose/);
     await withPage(async (page) => {
       await page.setContent('<script>console.error("on purpose")</script>');
     });
+  });
+
+  it('still fails a test that allowed some noise on any other console error, naming it', async () => {
+    allowPageNoise(/on purpose/);
+    await expect(
+      withPage(async (page) => {
+        await page.setContent(
+          '<script>console.error("on purpose"); console.error("by accident")</script>',
+        );
+      }),
+    ).rejects.toThrow(/not quiet[\s\S]*console\.error: by accident/);
+  });
+
+  it('still fails a test that allowed some noise on an uncaught exception, naming it', async () => {
+    allowPageNoise(/on purpose/);
+    await expect(
+      withPage(async (page) => {
+        await page.setContent(
+          '<script>console.error("on purpose"); throw new Error("nobody caught this")</script>',
+        );
+      }),
+    ).rejects.toThrow(/uncaught: nobody caught this/);
   });
 
   it('re-arms for the next test', async () => {

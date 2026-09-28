@@ -328,7 +328,9 @@ as a level-one heading for the same reason: Typst's own title is role-mapped to 
 the whole role tree, so an engine that changed either would be caught. Reading order, and the other Matterhorn checkpoints only a
 person can judge - whether a heading sounds like a heading, whether a table's structure matches what it
 shows - are read from the same cases by hand when the engine or the template changes; they are not run
-by any suite.
+by any suite. **The corpus keeps its PDFs for that review** where `ALLOY_CORPUS_PDFS` names a
+directory, each named by the case that compiled it (`testing/keep.ts`); the
+[audit guide](guides/auditing-a-release.md) says how to run it so.
 
 ## The publishing budget
 
@@ -561,8 +563,8 @@ its report from "no report at all" as it exempts e2e's, while still refusing one
 stale; CI's gate job refuses to run without it, and without e2e's. Its report is
 `.trace-results/browser.json`. Its files run one at a time, since every file drives the one stack.
 The workspace has two configurations: `vitest.config.ts`, the suite, run by its `test:browser` script,
-and `vitest.pin.config.ts`, the pin's tests alone, which need no stack and are its `test` script - so
-`pnpm test` runs them on every machine, into `.trace-results/browser-pin.json`.
+and `vitest.pin.config.ts`, the tests that need no stack - the pin's, and `undecided`'s - which are its
+`test` script, so `pnpm test` runs them on every machine, into `.trace-results/browser-pin.json`.
 
 **Vitest runs it, over `playwright-core` as a library** - not Playwright Test, whose report
 `packages/trace` would not read. A test takes a page from `withPage` (`src/testing/page.ts`): a fresh
@@ -591,7 +593,8 @@ its own - a small document is a handful of requests - titled with what it is for
 
 **The page's console is gated** as the jsdom suite's is: a `console.error`, a `console.warn` or an
 uncaught exception in the page fails the test that caused it, naming what was said and where. A test
-that provokes one on purpose calls `allowPageNoise()`, and the gate re-arms for the next test. There
+that provokes one on purpose calls `allowPageNoise()` with a pattern for each thing it provokes, and
+anything else the page says still fails it; the gate re-arms for the next test. There
 are no retries: a flaky test is fixed, or quarantined in its own pull request with an issue. The gate
 found one on its first run - a section's title field had no `white-space` rule, so ProseMirror warned
 and collapsed the spaces an author typed - which jsdom, computing no style, never could.
@@ -600,8 +603,11 @@ and collapsed the spaces an author typed - which jsdom, computing no style, neve
 `wcag21aa` and `wcag22aa` - through `checkAxe` (`src/testing/axe.ts`), with the pinned `axe-core`
 injected by its own source. A violation fails the test unless it is on the allow-list in that file,
 which is compared exactly - a violation not on it fails, and one on it that axe no longer finds fails
-until it is taken off - and is empty. What axe marks `incomplete`, needing a person, is written into
-the test's `meta` for the audit, never failed on.
+until it is taken off - and is empty; `axe.test.ts` holds it to that over pages of its own. A failure
+names each element's markup and what axe measured there. What axe marks `incomplete`, needing a
+person, is written into the test's `meta` for the audit, never failed on, and `pnpm --filter
+@alloy-works/browser undecided` prints it from the last run's report, state by state
+([the audit guide](guides/auditing-a-release.md)).
 
 **Where it finds the stack.** Three variables, each defaulting to the compose stack's own address, and
 passed through by turbo:
@@ -629,7 +635,30 @@ docker compose -p aw-browser -f deploy/compose.yaml down -v
 whenever the stack came up; neither step is `continue-on-error`. Its report goes to the traceability
 gate's own job with the rest ([CI, branches and releases](ci-and-releases.md)).
 
-**What it covers so far.** `outline.test.ts` edits a document's outline the three ways STR-006 names,
+**What it covers so far.** `accessibility.test.ts` (W13.2, CNT-176) runs axe over every state of the
+editor and the document view a person reaches, and the screens every way into them passes, each
+reached by the pointer or the keyboard: signed out, Home, the four lists, Search, API tokens and
+Administration's sections; a component made through the API holding every block and mark the editor
+makes - its figure and inline image uploaded and proved by the worker first - with the cursor in each,
+each dialog and panel open, the paste report, the title strip's fields, and a save the service is made
+to refuse; and a document placing it, in Reading and Authoring, boundaries shown, a node chosen and
+one reached by a link, the version chooser, a section's title and its Equation dialog, the removal
+question, the component opened in place, the preview pane, and a publish and its publication. It
+found six violations, each fixed in W13.2: muted text on tinted grounds (the token darkened), the
+environment's name on Home's translucent panel, the account chip's white text under the pointer on
+base.css's pale hover, the Reference dialog's radio buttons 23 pixels apart where WCAG 2.5.8 asks 24,
+and the publication page's warning in an orange too faint for text.
+
+**Each state is waited for by its own content, and `checkAxe` refuses to run without it.** A move
+inside the app - a link followed, a panel opened - changes the page after the network has gone quiet,
+so a wait for the network or the faces returns at once and axe checks the screen before, which passes
+having checked nothing. The first version of the test waited so, and its review found a dozen states
+checked that way: the lists after the first, Search, API tokens, Administration's sections, the
+Recovery panel, a quotation with the Table panel still up, the publication page. So every `checkAxe`
+names what its state is known by - `shows`, an element or a condition such as the cursor standing in
+a quotation, and `hides`, what the state before left - and asks for each before axe runs and again
+after, without waiting: a step that has not arrived fails there, naming what is missing.
+`outline.test.ts` names each state by the tree it draws. `outline.test.ts` edits a document's outline the three ways STR-006 names,
 each act read back from the service: by keyboard alone - insert, move, promote and demote, retitle in
 **Title**, **Starts on**, and remove after its question - with no pointer press sent, the focus kept
 where the act was made, each act's announcement read from the live region, and every `Alt` and arrow

@@ -993,6 +993,15 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   below the text, as the panel of publications does. The page asks how a preview is going for as long
   as it stays open. Closing the pane puts the focus back on **Preview**. In the desktop app, neither
   the preview's viewer nor its download has been checked.
+- **Checked against WCAG 2.2 AA in a real browser, on every change.** Every change to the product is
+  checked in Chromium, against the whole system, by axe-core's automated checks of WCAG 2.2 AA in every
+  state of the editor and the document page a person reaches - each kind of block and mark, each
+  dialog and panel, a save that failed, Reading and Authoring, the outline, versions, the preview and
+  publishing - and on Home, the lists, Search, API tokens and Administration; a failure stops the
+  change. What that does not mean: automated checks find only some of what makes a page hard to use
+  without sight or without a mouse, so the product does not claim WCAG 2.2 AA until a person has also
+  audited a release with a keyboard and a screen reader, and recorded it, as
+  [the audit guide](guides/auditing-a-release.md) describes. No release has been audited yet.
 
 ## What does not exist
 

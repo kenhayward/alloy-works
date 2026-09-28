@@ -15169,6 +15169,18 @@
         {
           "id": "CNT-152",
           "howItIsMet": "A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; **OK anyway** then applies it"
+        },
+        {
+          "id": "CNT-176",
+          "howItIsMet": "The browser suite's `accessibility.test.ts` (W13.2) runs axe-core over WCAG 2.2 AA's automatable criteria in every state of the editor and the document view a person reaches - the cursor in each block and mark, each dialog and each panel open, the title strip's fields, a save that failed, Reading and Authoring, the outline, the version chooser, the preview and the publishing panel - in the pinned Chromium against the whole stack, in CI's whole-system job on every push and pull request. A violation fails it unless the suite's allow-list holds it by rule, element and state, with the issue filed for it"
+        },
+        {
+          "id": "CNT-177",
+          "howItIsMet": "Before each release a person audits the editor against WCAG 2.2 AA by [the audit guide](../guides/auditing-a-release.md): the criteria no automated check reaches, by keyboard and with a screen reader, in the states the suite checks, with what axe could not decide beside them. The record is committed as `docs/audits/<version>/wcag.md`, and the release's baseline verifies CNT-177 by `attestation`, naming who looked and when"
+        },
+        {
+          "id": "CNT-078",
+          "howItIsMet": "By the two above together, and never by a test: a baseline declares CNT-078 `inherited` from `CNT-177, CNT-176`, and the gate meets a requirement inherited from several only when every one of them is included and met, so the editor is said to meet WCAG 2.2 AA only in a release whose suite passed and whose audit a person made. An attestation naming its record under `docs/audits/` is refused where the file is not there, and the guide refuses the audit while the suite's allow-list holds anything. No test title cites it"
         }
       ]
     },
@@ -18136,25 +18148,25 @@
     {
       "id": "PUB-087",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 462,
+      "line": 469,
       "kind": "title"
     },
     {
       "id": "PUB-098",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 981,
+      "line": 988,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 157,
+      "line": 164,
       "kind": "title"
     },
     {
       "id": "STY-008",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 1288,
+      "line": 1295,
       "kind": "title"
     },
     {
@@ -20258,9 +20270,15 @@
       "kind": "title"
     },
     {
+      "id": "CNT-176",
+      "file": "tests/browser/src/accessibility.test.ts",
+      "line": 244,
+      "kind": "title"
+    },
+    {
       "id": "STR-006",
       "file": "tests/browser/src/outline.test.ts",
-      "line": 153,
+      "line": 187,
       "kind": "title"
     },
     {

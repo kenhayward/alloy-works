@@ -211,6 +211,54 @@ Only these could change the plan; everything else is built as written.
 6. Tests: CNT-176, on the test that runs axe over every state; the allow-list's exactness citing
    nothing.
 
+**W13.2, as built** (PR #327). What it found, and what departs from the above:
+
+- **What axe found**, on the first run over 82 states: five violations, all small, all fixed in the
+  slice with the axe test as the failing test, so **the allow-list is empty** and nothing was filed.
+  `--muted` (#6b7280) measured 4.44:1 on `--accent-weak` and 4.41 on `--chip-bg` - the current
+  component in the space pane, the selected text a Link or Language dialog quotes, the saving chip -
+  so the token is darkened to #646b78, 4.9 on both, rather than each place patched; the environment's
+  name on Home measured 2.2 on the panel's translucent white over the dark backdrop, and takes the
+  text's colour; the account chip under the pointer took base.css's pale hover behind its white text,
+  1.08; and the Reference dialog's radio buttons stood 23 pixels apart where 2.5.8 asks 24. CI's first run found a sixth, which the local runs had not reached: the publication page's "Not approved" notice in `--warn` (#d97706), 3.2:1 on white, so warning words take a new `--warn-text` (#b45309, 5.0:1) while `--warn` stays for borders and dots, where 3:1 suffices. What axe
+  left undecided - 98 elements' contrast over something it cannot measure, and two links in text - is
+  in each test's `meta`, and `undecided` prints it for the audit.
+- **The fixture is a component made through the API as the editor makes one**: created, its lock
+  claimed, an iteration saved and Done editing cutting the version (`testing/component.ts`), its
+  figure and inline image uploaded and proved by the worker first, and its content every block and
+  mark (`testing/every-block.ts`), the equations' MathML taken once from the pinned Temml. A fresh one
+  per test, as W13.1's documents are.
+- **Five tests, not one**: the screen signed out and the screens around the editor, cited by nothing,
+  since they are not the editor; the editor; a save that failed; and the document view. The screen
+  signed out and the failed save stand alone because the browser reports a refused request in the
+  page's console - the renderer's `/v1/me` answered 401, each save 503 - which only those two tests
+  allow.
+- **The Matterhorn review needed the corpus's PDFs**, which the suite kept nowhere a person could open
+  them: `ALLOY_CORPUS_PDFS` now keeps each, named by its case (`apps/worker/src/testing/keep.ts`), and
+  the guide runs the corpus so.
+- **`docs/audits/` has a README** saying what the folder holds and that a record is never edited, as
+  `docs/reviews/`'s does; the records themselves arrive with the first audited release.
+- **The final review found states checked vacuously**, and CI's sixth violation was one of them. The
+  first version waited for the network and the faces after each move, which return at once after a
+  move inside the app, so axe checked the screen before: the documents, publications and templates
+  lists (the components list was checked four times), Search's results, API tokens, Administration's
+  sections, the Recovery panel, the cursor in a quotation with the Table panel still up, and the
+  publication page; and "a figure chosen" never opened its panel, because a click on a figure's
+  picture selects nothing (issue #335) - the panel opens from its caption. Each state is now waited
+  for by its own content, and `checkAxe` takes what the state is known by (`shows`) and what it
+  leaves behind (`hides`) and refuses to run without them, before axe and after; run on the old
+  waits, it failed in the first state each of three tests moved to by a click. `outline.test.ts` names
+  each state by the tree it draws, and showed no race.
+- **`allowPageNoise` takes the patterns a test provokes**, and still fails on anything else the page
+  says; the two tests that use it name a 401 from `/v1/me` and a 503 from a save.
+- **CNT-078 is inherited from two**: `pnpm trace gate` now meets a requirement whose `inherited` row
+  names several identifiers only when every one is included and met, so a baseline declares
+  `CNT-078 | inherited | CNT-177, CNT-176` and cannot meet it from the audit alone; and it refuses an
+  attestation naming a record under `docs/audits/` that is not there.
+- **PUB-104 is not claimed.** Its statement asks for the review whenever the engine, the template or
+  the pipeline changes; the guide makes it before each release, so a change merged between releases
+  waits for it. publishing.md names the gap; superseding PUB-104 with a per-release row is Ken's.
+
 ## W13.3: The budgets
 
 1. Question 2 first, on the reference machine: the view opened and jumped in, measured as step 4 will.

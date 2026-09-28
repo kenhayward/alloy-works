@@ -53,6 +53,12 @@ a.chip {
   border-color: var(--header-text);
 }
 
+/* Specific enough to beat base.css's pale hover for every button, which put the account chip's white
+   text on --accent-weak at 1.08:1 under the pointer (axe, W13.2): on the band a hover is its border. */
+.chip:hover:not(:disabled) {
+  background: transparent;
+}
+
 .mark {
   display: block;
 }

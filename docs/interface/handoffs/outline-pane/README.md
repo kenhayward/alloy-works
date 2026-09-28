@@ -219,6 +219,8 @@ Colour: `#f6f7f9` `--bg` · `#ffffff` `--surface` · `#fbfcfd` `--surface-2` · 
 `#6b7280` `--muted` · `#e3e6ea` `--border` · `#cbd2d9` `--input-border` · `#2563eb` `--accent` ·
 `#eff6ff` `--accent-weak` · `#93c5fd` `--ring` · `#f1f5f9` `--chip-bg`.
 
+_Since W13.2, `--muted` is #646b78, darker than the #6b7280 drawn here: the drawn value measured under WCAG's 4.5:1 on `--accent-weak` and `--chip-bg`. [`tokens.css`](../../../../apps/web/src/theme/tokens.css) is the source; the drawings keep what was drawn._
+
 Type: 20px `--size-doc-title` (section headings in the text) · 14px `--size-body` (root row title) ·
 13px `--size-body-small` (tab, tree rows) · 12px `--size-label` (version, status bar) · 11px
 `--size-overline` (the `OUTLINE` and rail labels). Weights 650 (root title, headings), 600 (tab,
