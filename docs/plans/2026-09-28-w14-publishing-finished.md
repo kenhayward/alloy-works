@@ -193,6 +193,18 @@ PDF, passes nothing. A request made before layouts is not refused `heading_too_d
 refusals under a layout are gated, since template 1 is frozen and a request queued before W14.2 keeps
 saying what it always said.
 
+**After W14.1 merged.** Each publication now queues a `check_pdf` as it is recorded, which the budget
+test's next `processNext` took ahead of its next publish; the test settles each outside the measured
+span, checking the warm-up's and the last sample's with the run's veraPDF and passing over the rest.
+It measures PUB-102's other bound, the report joining within five minutes of the record: 23.6 seconds
+for veraPDF's first check and 6.2 warm, both passing PDF/UA-1. Under the worker's defaults a check
+whose first attempt fails ends its second by 120 + 2 + 5 + 120 = 247 seconds, which `config.test.ts`
+now holds; a third attempt may take 376, and a check that gives up all three waits for the sweep, so
+publishing.md says the bound holds to the second attempt and names the rest. No timing of W14.1's was
+changed. PUB-103 is cited on `check.test.ts`'s test of a publication recorded with its check queued
+and checked against PDF/UA-1, and its row says how each clause is met, a failure found after the
+record shown on the page, never refused.
+
 ## W14.3: The regression corpus, and the order
 
 1. The spike's nine cases ported; a case for each publishing defect filed; the keep rules' cases moved

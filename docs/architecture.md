@@ -2536,12 +2536,16 @@ faces, images })`, pure and deterministic - a fixed zip time, the parts in a fix
   a 311-page reference document - 30 chapters, each a component of 100 blocks, 150 each of figures,
   tables, numbered equations and footnotes and 2,400 paragraphs of prose - seeded through the store,
   and publishes it eleven times from `requestPublication` to the publication `processNext` records,
-  the publish job alone among the handlers. The first is reported and not held; the other ten are held
-  to a p95 of ten seconds and a maximum of thirty where `CI` is not `true`, and recorded only on CI's
-  runner, as STR-063's navigation budget is. The configuration - CPU, operating system, memory, Node,
-  Typst and PostgreSQL - and the pages and parts read back off the PDF are written into the test's
-  `meta`, which the JSON reporter carries into `.trace-results/worker.json`. It runs in the ordinary
-  suite, in about twenty seconds.
+  the publish job alone among the handlers. The first is held to the maximum alone; the other ten
+  are held to a p95 of ten seconds and a maximum of thirty where `CI` is not `true`, and recorded only
+  on CI's runner, as STR-063's navigation budget is. The `check_pdf` each publication queues (W14.1)
+  is settled outside the measured span before the next publish: the first's and the last's by the
+  run's veraPDF, each held to join its publication within five minutes of its recording and to pass
+  PDF/UA-1, and the others' passed over unchecked. The configuration - CPU, operating system,
+  memory, Node, Typst and PostgreSQL - and the pages and parts read back off the PDF are written into
+  the test's `meta`, which the JSON reporter carries into `.trace-results/worker.json`. It runs in the
+  ordinary suite, in about fifty seconds. `config.test.ts` holds the worker's defaults to the five
+  minutes for a check whose first attempt fails: two leases, the queue's first backoff and a poll.
 - **The Open XML validator and the Word check.** `apps/worker/tools/ooxml-check/` is a .NET 8
   console program over the Open XML SDK's `OpenXmlValidator` (`DocumentFormat.OpenXml` 3.5.1, Office
   2019's rules), its packages pinned by a NuGet lock file and restored from nuget.org alone, built

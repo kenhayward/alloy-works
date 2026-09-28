@@ -11,7 +11,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   tables, equations and footnotes publishes to PDF in about a second and a half on a developer's
   machine, from asking for it to the publication being recorded. The worker's tests measure it and
   hold it to ten seconds on a developer's machine, and record the machine it was measured on beside
-  the result.
+  the result. Its accessibility check reaches the publication's page within seconds after that, and
+  is held to five minutes.
 
 ### Changed
 

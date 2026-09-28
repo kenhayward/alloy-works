@@ -293,12 +293,22 @@ ten are the samples. With ten samples the nearest-rank p95 is the slowest of the
 held to ten seconds. The measured span leaves out the HTTP route that asks for the publish and the
 time a request waits in the queue for a worker.
 
-It is part of the ordinary worker suite, since it takes about twenty seconds, and needs nothing the
+Each publication queues its `check_pdf` as it is recorded (W14.1), which the next `processNext` would
+take ahead of the next publish, so each is settled outside the measured span before the next is asked
+for. The warm-up's and the last sample's are checked by the run's veraPDF (`suiteChecker`), and the
+time from the publication recorded - its request's `finished_at` - to its `publication_check` row's
+`checked_at` is PUB-102's other bound, held to five minutes where the budget binds: the warm-up's
+includes veraPDF's first start, and the last sample's is warm. Both must pass PDF/UA-1. The other nine
+checks are passed over unchecked, since a check of 311 pages takes several seconds and each would tell
+no more than the last. W14.2 measured 23.6 seconds for the first and 6.2 warm.
+
+It is part of the ordinary worker suite, since it takes about fifty seconds, and needs nothing the
 suite does not. **It binds where `CI` is not `true`, and records only on CI's runner**, as STR-063's
 navigation budget does (`apps/service/src/test/budget.ts`): a shared runner's speed is not the declared
-reference configuration, and a green CI run does not show the budget met. Either way the configuration it ran on - CPU, operating system, memory, Node,
-Typst and PostgreSQL - the document's pages and parts, and the p50, p95, maximum and each sample's
-request and job times are written into the test's `meta`, which the JSON reporter carries into
+reference configuration, and a green CI run does not show the budget met. Either way the
+configuration it ran on - CPU, operating system, memory, Node, Typst and PostgreSQL - the document's
+pages and parts, the p50, p95, maximum and each sample's request and job times, and the two reports'
+times after recording are written into the test's `meta`, which the JSON reporter carries into
 `.trace-results/worker.json`, and printed at the end of the run. To measure it alone:
 
 ```bash

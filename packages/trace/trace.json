@@ -15744,11 +15744,11 @@
         },
         {
           "id": "PUB-103",
-          "howItIsMet": "Every PDF is tagged to PDF/UA-1 and checked by veraPDF against its profile (PUB-091). Every node is a heading at its depth, a section's title or a component's, and the pinned Typst tags one below the sixth level as a paragraph, which veraPDF passes (measured, the regression corpus): so `assemble` refuses each node nested deeper than six levels where a PDF is asked for under a layout, `heading_too_deep`, naming it, and Word, which numbers and tags nine, publishes it (ADR-0031, W-E). A request made before layouts keeps saying what it always said, as its other refusals do, and is not refused so. The page's words offer Word alone only to a publish under a layout with a Word page: a preview is always a PDF, and a layout with no Word page makes none. The corpus's six-level case passes veraPDF with `H1` to `H6` tagged"
+          "howItIsMet": "Each clause, and how it is met. **Tagged**: every PDF is compiled by the pinned Typst to PDF/UA-1, `--pdf-standard ua-1` under `--features a11y-extras`, which tags it. **Checked on every publication**: `recordPublication` queues a `check_pdf` in the transaction that records a publication with a PDF, and the job checks the PDF against veraPDF's PDF/UA-1 profile and keeps its whole report beside the publication (PUB-091; queued again by the sweep where it gave up). **Passes**: held by the template and the regression corpus, not by a refusal - the corpus compiles the template's output through veraPDF on every change to the template or the engine, the six-level case passing with `H1` to `H6` tagged, and the budget's 311-page reference document passes every time it is checked. What the corpus shows the engine cannot tag, `assemble` refuses before anything is made: every node is a heading at its depth, a section's title or a component's, and the pinned Typst tags one below the sixth level as a paragraph, which veraPDF passes (measured, the regression corpus), so `assemble` refuses each node nested deeper than six levels where a PDF is asked for under a layout, `heading_too_deep`, naming it, and Word, which numbers and tags nine, publishes it (ADR-0031, W-E). A request made before layouts keeps saying what it always said, as its other refusals do, and is not refused so. The page's words offer Word alone only to a publish under a layout with a Word page: a preview is always a PDF, and a layout with no Word page makes none. **A publication that fails is shown, never hidden**: the check follows the record (ADR-0030), so a PDF veraPDF fails is not refused; it stays recorded, and its page says it failed and names each rule, as it says one that could not be checked. A failure found after recording is a defect in the template or the engine, which a case in the corpus then holds"
         },
         {
           "id": "PUB-102",
-          "howItIsMet": "The reference document is declared in `apps/worker/src/publishing-budget.test.ts`: 30 chapters, each placing a component of 100 blocks - 150 each of figures, tables, numbered equations and footnotes, and 2,400 paragraphs of prose - set to 311 pages. It is published eleven times from `requestPublication` to the publication `processNext` records, the first reported and held to the maximum and the other ten held to a p95 of ten seconds and a maximum of thirty on a developer's machine, stated against [the reference configuration](../testing.md#the-reference-configuration) that `docs/testing.md` declares, and recorded only on CI's runner (W-D), with the configuration and the document's pages and parts written beside the result in `.trace-results/worker.json`. As with STR-063, a run on CI's runner is held to neither bound, so a green CI run does not show the budget met. The measured span runs from `requestPublication` to the recorded publication, in process: it leaves out the HTTP route that asks for the publish and the time a request waits in the queue for a worker. The conformance report joins the publication after it is recorded, as a job of its own (ADR-0030), outside the measured span"
+          "howItIsMet": "The reference document is declared in `apps/worker/src/publishing-budget.test.ts`: 30 chapters, each placing a component of 100 blocks - 150 each of figures, tables, numbered equations and footnotes, and 2,400 paragraphs of prose - set to 311 pages. It is published eleven times from `requestPublication` to the publication `processNext` records, the first reported and held to the maximum and the other ten held to a p95 of ten seconds and a maximum of thirty on a developer's machine, stated against [the reference configuration](../testing.md#the-reference-configuration) that `docs/testing.md` declares, and recorded only on CI's runner (W-D), with the configuration and the document's pages and parts written beside the result in `.trace-results/worker.json`. As with STR-063, a run on CI's runner is held to neither bound, so a green CI run does not show the budget met. The measured span runs from `requestPublication` to the recorded publication, in process: it leaves out the HTTP route that asks for the publish and the time a request waits in the queue for a worker. The conformance report joins the publication after it is recorded, as a job of its own (ADR-0030), outside that span, **within five minutes**: the same test takes each check at once, as a free worker does, and measures from the request's `finished_at` to the `publication_check` row's `checked_at`, by the database's clock, bound to five minutes where the budget binds - 23.6 seconds for veraPDF's first check, its JVM starting, and 6.2 warm, on the reference configuration. A check whose first attempt fails still joins within five minutes under the worker's defaults, which `config.test.ts` holds: an attempt ends within its lease, 120 seconds, whether it throws - veraPDF's start and check a third of the lease each - or its worker dies and the lease runs out; the queue retries after 2 seconds and an idle worker asks within a poll, 5 seconds; so a second attempt ends by 120 + 2 + 5 + 120 = 247 seconds. The bound is not held past that - see beside the table"
         },
         {
           "id": "PUB-037",
@@ -17845,6 +17845,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-103",
+      "file": "apps/worker/src/check.test.ts",
+      "line": 305,
+      "kind": "title"
+    },
+    {
       "id": "CNT-080",
       "file": "apps/worker/src/equations.test.ts",
       "line": 426,
@@ -18033,7 +18039,7 @@
     {
       "id": "PUB-102",
       "file": "apps/worker/src/publishing-budget.test.ts",
-      "line": 149,
+      "line": 156,
       "kind": "title"
     },
     {

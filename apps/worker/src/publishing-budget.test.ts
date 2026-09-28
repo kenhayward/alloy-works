@@ -33,16 +33,23 @@ import { readPdf } from './testing/pdf.js';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
+import { checkJob } from './jobs/check.js';
 import { publishJob } from './jobs/publish.js';
+import { suiteChecker } from './testing/verapdf.js';
 import { TYPST_RELEASE } from './typst-release.js';
 import { createTypst, typstBinaryPath } from './typst.js';
-import { processNext, type WorkerLog } from './worker.js';
+import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 
 /**
  * PUB-102's budget: a publish of the reference document, from the request to the recorded
  * publication, at or under ten seconds at the 95th percentile, and no sample above thirty.
  */
 const BUDGET = { p95: 10_000, max: 30_000 } as const;
+/**
+ * PUB-102's other bound: the conformance report (PUB-091) joins the publication within five minutes of
+ * its recording - from the request finished, by the database's clock, to its `publication_check` row.
+ */
+const REPORT_WITHIN = 300_000;
 /**
  * Held to both bounds on a developer's machine, and stated against the reference configuration that
  * docs/testing.md declares; recorded only on a shared CI runner, whose speed varies from run to run
@@ -158,6 +165,8 @@ describe('PUB-102 publishes the 300-page reference document within the budget', 
   let document: { id: string; version: string };
   const log: WorkerLog = { info: () => {}, warn: () => {}, error: () => {} };
   let handlers: Parameters<typeof processNext>[0]['handlers'];
+  /** The `check_pdf` job over the run's warm veraPDF, as the worker's own is warm after its first. */
+  let check: JobHandler;
   // The configuration the budget was measured on, recorded beside the result (PUB-102).
   const configuration = {
     platform: `${platform()} ${release()} ${arch()}`,
@@ -197,6 +206,7 @@ describe('PUB-102 publishes the 300-page reference document within the budget', 
     // report joins a publication after it is recorded, as a job of its own (ADR-0030), so it is no
     // part of what PUB-102 measures.
     handlers = { publish: publishJob({ db: worker, stores, typst, fonts }) };
+    check = checkJob({ db: worker, stores, checker: suiteChecker });
     const image = await sharp({
       create: { width: 800, height: 400, channels: 3, background: { r: 40, g: 90, b: 160 } },
     })
@@ -385,12 +395,60 @@ describe('PUB-102 publishes the 300-page reference document within the budget', 
     };
   };
 
-  it('PUB-102 publishes the declared 300-page reference document to a recorded PDF at or under ten seconds at p95, no sample above thirty, recording the configuration beside the result', async ({
+  /**
+   * The check a publish queued, run at once outside the measured span, as a free worker takes it:
+   * veraPDF over the publication's PDF, its report kept. Answers how long after the publication was
+   * recorded its report joined it, by the database's clock - the request's `finished_at`, which the
+   * sweep's five minutes are counted from, to the `publication_check` row's `checked_at`.
+   */
+  const checked = async (request: string) => {
+    const outcome = await processNext({
+      queue,
+      db: worker,
+      handlers: { check_pdf: check },
+      workerId: 'worker-1',
+      leaseMs: 120_000,
+      log,
+    });
+    if (outcome !== 'done') throw new Error(`The check was ${outcome}`);
+    const row = await service.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('publication as p')
+        .innerJoin('publication_request as r', 'r.id', 'p.request_id')
+        .innerJoin('publication_check as c', 'c.publication_id', 'p.id')
+        .select(['r.finished_at', 'c.checked_at', 'c.compliant'])
+        .where('p.request_id', '=', request)
+        .executeTakeFirstOrThrow(),
+    );
+    return {
+      afterRecording: row.checked_at.getTime() - row.finished_at!.getTime(),
+      compliant: row.compliant,
+    };
+  };
+
+  /** A queued check completed without asking veraPDF anything, outside the measured span. */
+  const passedOver = async () => {
+    const skip: JobHandler = { run: async () => {}, failed: async () => {} };
+    const outcome = await processNext({
+      queue,
+      db: worker,
+      handlers: { check_pdf: skip },
+      workerId: 'worker-1',
+      leaseMs: 120_000,
+      log,
+    });
+    if (outcome !== 'done') throw new Error(`The check was ${outcome}`);
+  };
+
+  it('PUB-102 publishes the declared 300-page reference document to a recorded PDF at or under ten seconds at p95, no sample above thirty, its conformance report joining it within five minutes, recording the configuration beside the result', async ({
     task,
   }) => {
     // The first publish, which warms the worker, reads the document it made: the reference document
     // is what the budget is stated against, so its size is measured, not assumed.
     const first = await publish();
+    // Its check, which starts the run's veraPDF where nothing has yet: the worker's is cold for its
+    // first check too.
+    const firstReport = await checked(first.request);
     const row = await service.withTenant(tenant, (trx) =>
       trx
         .selectFrom('publication as p')
@@ -428,7 +486,15 @@ describe('PUB-102 publishes the 300-page reference document within the budget', 
     expect(read.pages).toBeLessThanOrEqual(PAGES.most);
 
     const samples: Awaited<ReturnType<typeof publish>>[] = [];
-    for (let index = 0; index < SAMPLES; index += 1) samples.push(await publish());
+    for (let index = 0; index < SAMPLES; index += 1) {
+      samples.push(await publish());
+      // Outside the measured span, and before the next publish is asked for, which the check queued
+      // ahead of it would otherwise run inside: the last sample's checked by the warm veraPDF, and the
+      // others' passed over unchecked, since a check of 311 pages takes several seconds and each would
+      // tell no more than the last.
+      if (index < SAMPLES - 1) await passedOver();
+    }
+    const lastReport = await checked(samples[SAMPLES - 1]!.request);
     const totals = samples.map((each) => each.total);
     const measured = {
       samples: SAMPLES,
@@ -439,6 +505,14 @@ describe('PUB-102 publishes the 300-page reference document within the budget', 
       // Of which, asking for the publish, and the job running to the recorded publication.
       requestSeconds: samples.map((each) => seconds(each.asking)),
       jobSeconds: samples.map((each) => seconds(each.job)),
+      // From a publication recorded to its conformance report joining it, by the database's clock,
+      // its check taken at once by a free worker: the warm-up's, veraPDF's first, and the last
+      // sample's, with veraPDF warm.
+      reportSeconds: {
+        first: seconds(firstReport.afterRecording),
+        warm: seconds(lastReport.afterRecording),
+      },
+      reportsCompliant: firstReport.compliant && lastReport.compliant,
     };
     // What the JSON reporter writes beside this result in `.trace-results/worker.json`: the
     // configuration, the document and the measurement - before the budget is held to them, so a
@@ -456,6 +530,12 @@ describe('PUB-102 publishes the 300-page reference document within the budget', 
       expect(Math.max(...totals)).toBeLessThanOrEqual(BUDGET.max);
       // The warm-up is a measured sample too, and PUB-102 allows none above thirty seconds.
       expect(first.total).toBeLessThanOrEqual(BUDGET.max);
+      // And every report joins its publication within five minutes of its recording.
+      for (const each of [firstReport, lastReport]) {
+        expect(each.afterRecording).toBeLessThanOrEqual(REPORT_WITHIN);
+      }
     }
+    // The reference document is published as PDF/UA-1 that veraPDF passes, every time (PUB-103).
+    expect(measured.reportsCompliant).toBe(true);
   }, 900_000);
 });

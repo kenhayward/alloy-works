@@ -554,6 +554,8 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 510, from 509 (2026-09-28): W14.2 after W14.1 - PUB-103 in apps/worker's check.test.ts too,
+  // where a publication is recorded with its check queued and its PDF checked against PDF/UA-1.
   // 509, from 506 (2026-09-28): W14.2 - PUB-103 in packages/domain's assemble.test.ts, where a node
   // deeper than six levels is refused for the PDF by name, and in apps/worker's regression.test.ts,
   // where six levels pass veraPDF tagged H1 to H6 and nine are refused for the PDF and published to
@@ -659,7 +661,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(509);
+    expect(model.citations).toHaveLength(510);
   });
 
   it('cites no identifier the corpus does not hold', () => {
