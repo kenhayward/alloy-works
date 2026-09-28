@@ -146,6 +146,10 @@ describe('the access epoch', () => {
         );
         return made === false && removed === false ? false : true;
       },
+      'access_policy.external_cap_days': () =>
+        whileHeld((trx) =>
+          trx.updateTable('access_policy').set({ external_cap_days: 120 }).execute(),
+        ),
       'artifact.space_id': async () => {
         // The runtime role holds no UPDATE on artifact, so this is the owner's write, as a later
         // migration moving content would be.

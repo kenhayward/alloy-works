@@ -133,6 +133,10 @@ describe('a transaction that declared it only decides', () => {
           trx.deleteFrom('access_grant').where('id', '=', grantId).execute(),
         );
       },
+      'access_policy.external_cap_days': () =>
+        deciding((trx) =>
+          trx.updateTable('access_policy').set({ external_cap_days: 120 }).execute(),
+        ),
       'artifact.space_id': async () => {
         // The owner's write, as the runtime role holds no UPDATE on artifact: the trigger refuses it
         // whoever makes it.

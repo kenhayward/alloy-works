@@ -21,6 +21,13 @@ alter table access_grant
   add constraint access_grant_group_id_fkey
     foreign key (group_id) references access_group on delete cascade;
 
+-- Every decision now reads the tenant's cap on external access (IAM-049): an allow reaching an external
+-- principal past it confers nothing, however it arrived - a provider asserting them into a group,
+-- which nothing refuses at sign-in, among the ways. So the cap is a fact a decision reads, and a change
+-- to it takes the epoch as 0010's triggers do for the rest.
+create trigger access_policy_cap_changed after update of external_cap_days on access_policy
+  for each row execute function access_changed();
+
 -- A provider value is something a claim can carry: never empty.
 alter table access_group
   add constraint access_group_provider_value_filled check (provider_value <> '');

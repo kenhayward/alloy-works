@@ -30,6 +30,12 @@ export interface AccessFacts {
   readonly grants: readonly AccessGrant[];
   readonly now: Date;
   /**
+   * The tenant's cap on how far past `now` an external principal's access may reach, in days
+   * (IAM-049, `access_policy.external_cap_days`). Read by every decision about an external principal,
+   * so an allow reaching past it confers nothing however it arrived.
+   */
+  readonly externalCapDays: number;
+  /**
    * The scopes of the token the request was made with (service-foundations.md, TK-A): a mask over the
    * principal's grants, never a grant of its own. Undefined for a session, which is not masked.
    */
@@ -80,16 +86,21 @@ function walkFor(permission: Permission, chain: readonly Level[]): readonly Leve
   return chain;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 /**
- * An external principal's allows at the tenant, and allows with no expiry, are not read (IAM-049,
- * IAM-071). That covers what no administrator made - a provider asserting an external principal
- * into a group - which cannot be refused where it happens. A denial is never ignored on that
- * account: it can only remove access, so nothing a provider asserts needs refusing there, and
- * dropping it would let an untimed or tenant-wide denial of a group lose to a narrower allow.
+ * An external principal's allows at the tenant, allows with no expiry, and allows expiring later than
+ * the tenant's cap from now, are not read (IAM-049, IAM-071). A grant made to them, or a group they
+ * joined by an administrator's hand, is refused those where it is made; this holds the rule whatever
+ * path the grant arrives by - a provider asserting an external principal into a group, which nobody
+ * can refuse at sign-in, or a principal marked external after their grants were made. A denial is
+ * never ignored on that account: it can only remove access, and dropping it would let an untimed,
+ * far-reaching or tenant-wide denial of a group lose to a narrower allow.
  */
 function readable(grant: AccessGrant, facts: AccessFacts): boolean {
   if (facts.principal.kind !== 'external' || grant.effect === 'deny') return true;
-  return grant.level.kind !== 'tenant' && grant.expiresAt !== null;
+  if (grant.level.kind === 'tenant' || grant.expiresAt === null) return false;
+  return grant.expiresAt.getTime() <= facts.now.getTime() + facts.externalCapDays * DAY_MS;
 }
 
 function through(grant: AccessGrant, facts: AccessFacts): string | null | undefined {

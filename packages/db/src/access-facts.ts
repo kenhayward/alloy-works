@@ -15,6 +15,7 @@ import type { TenantTransaction } from './tables.js';
  */
 export const accessFactSources = [
   'access_grant',
+  'access_policy.external_cap_days',
   'artifact.space_id',
   'group_member',
   'principal.kind',
@@ -94,6 +95,19 @@ async function principalOf(trx: TenantTransaction, principalId: string) {
     .orderBy('group_id')
     .execute();
   return { principal, groups: groups.map((row) => row.group_id) };
+}
+
+/**
+ * The tenant's cap on how far an external principal's access may reach, in days (IAM-049): read by
+ * every decision, so an allow reaching an external principal past it - through a provider's group,
+ * which nothing refuses at sign-in - confers nothing.
+ */
+async function externalCapOf(trx: TenantTransaction): Promise<number> {
+  const row = await trx
+    .selectFrom('access_policy')
+    .select('external_cap_days')
+    .executeTakeFirstOrThrow();
+  return row.external_cap_days;
 }
 
 /** The target and every level above it, or undefined when the tenant holds no such target. */
@@ -223,7 +237,8 @@ export async function loadFacts(
   const chain = who && (await chainOf(trx, target));
   if (!who || !chain) return undefined;
   const grants = await grantsReaching(trx, principalId, who.groups, now, chain);
-  return { principal: who.principal, groups: who.groups, chain, grants, now };
+  const externalCapDays = await externalCapOf(trx);
+  return { principal: who.principal, groups: who.groups, chain, grants, now, externalCapDays };
 }
 
 /**
@@ -258,6 +273,7 @@ export async function loadFactsFor(
   const levels = [...chains.values()].flat();
   const grants =
     levels.length === 0 ? [] : await grantsReaching(trx, principalId, who.groups, now, levels);
+  const externalCapDays = await externalCapOf(trx);
   const on = (level: Level, chain: readonly Level[]) =>
     chain.some(
       (link) =>
@@ -273,6 +289,7 @@ export async function loadFactsFor(
         chain,
         grants: grants.filter((reached) => on(reached.level, chain)),
         now,
+        externalCapDays,
       },
     ]),
   );
@@ -312,5 +329,6 @@ export async function loadReadableSet(
     artifacts: new Map(artifacts.map((row) => [row.id, row.space_id])),
     grants,
     now,
+    externalCapDays: await externalCapOf(trx),
   });
 }

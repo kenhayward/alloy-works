@@ -51,6 +51,7 @@ function facts(
     chain,
     grants,
     now: NOW,
+    externalCapDays: 90,
   } satisfies AccessFacts;
 }
 

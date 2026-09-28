@@ -49,6 +49,7 @@ function facts(
     chain: [artifact, space, tenant],
     grants,
     now: NOW,
+    externalCapDays: 90,
     scopes,
   };
 }

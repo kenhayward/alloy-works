@@ -370,5 +370,42 @@ describe('groups: made, filled, deleted, and followed from the provider (access.
       expect((await membersOf(authors)).map((each) => each.principal_id)).toContain(alice);
       expect(await may(alice, 'create', { kind: 'space', id: clinical })).toBe(false);
     });
+
+    it("IAM-049 holds an external principal a provider group reaches to the tenant's cap: an allow reaching past it confers nothing", async () => {
+      const day = 24 * 60 * 60 * 1000;
+      const [archive, visits] = await within(async (trx) => [
+        (await createSpace(trx, 'Archive')).id,
+        (await createSpace(trx, 'Visits')).id,
+      ]);
+      const partners = await made('Directory partners', 'partners');
+      const visitors = await made('Directory visitors', 'visitors');
+      // Made while neither group holds an external member, so nothing refuses them where they are made.
+      await give({
+        roleId: roles.Reader!,
+        subject: { group: partners },
+        level: { kind: 'space', id: archive },
+        effect: 'allow',
+        expiresAt: new Date(Date.now() + 5 * 365 * day),
+      });
+      await give({
+        roleId: roles.Reader!,
+        subject: { group: visitors },
+        level: { kind: 'space', id: visits },
+        effect: 'allow',
+        expiresAt: new Date(Date.now() + 30 * day),
+      });
+      const cap = await within((trx) =>
+        trx.selectFrom('access_policy').select('external_cap_days').executeTakeFirstOrThrow(),
+      );
+      expect(cap.external_cap_days).toBe(90);
+
+      await within((trx) => syncProviderGroups(trx, alice, ['partners', 'visitors']));
+      await within((trx) => syncProviderGroups(trx, grace, ['partners']));
+      expect((await membersOf(partners)).map((each) => each.principal_id)).toContain(alice);
+
+      expect(await may(alice, 'read', { kind: 'space', id: archive })).toBe(false);
+      expect(await may(alice, 'read', { kind: 'space', id: visits })).toBe(true);
+      expect(await may(grace, 'read', { kind: 'space', id: archive })).toBe(true);
+    });
   });
 });
