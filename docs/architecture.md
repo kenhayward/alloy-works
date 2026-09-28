@@ -1625,6 +1625,13 @@ Rules that hold for every channel added later:
 - Channels are namespaced (`alloy-works:`) so an unrelated handler cannot answer them, and the
   channel name and the injected global name are pinned by tests in `apps/desktop/src/shell.test.ts`.
   A rename on one side without the other is a blank window, not a build error.
+- Every handler **answers the renderer and nothing else**: it refuses a call whose frame is not the
+  renderer's own address - its origin where it is served, its file where it is loaded from disk
+  (`isRenderer` in `shell.ts`). And the window **stays on the renderer**: a link out of it opens in the
+  system browser, a page never opens a window of its own, and anything the system would run is
+  refused (`navigationDecision`, `opensExternally`). A sign-in that has left for the identity provider
+  goes on, since the provider's pages navigate, and the bridge refuses whatever page it is on (issue
+  #309).
 
 ## Data flow today
 

@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, Tray, app, ipcMain, nativeTheme } from 'electron';
+import { BrowserWindow, Menu, Tray, app, ipcMain, nativeTheme, shell } from 'electron';
 import path from 'node:path';
 
 import {
@@ -12,7 +12,11 @@ import {
   DEV_SERVER_URL,
   PLATFORM_INFO_CHANNEL,
   describePlatform,
+  isRenderer,
+  navigationDecision,
+  opensExternally,
   resolveRendererTarget,
+  type RendererTarget,
 } from './shell.js';
 
 // Windows reads this to decide which icon a taskbar button, jump list or toast notification
@@ -23,6 +27,9 @@ app.setAppUserModelId(APP_USER_MODEL_ID);
 // and the icon vanishes from the tray some seconds after startup.
 let tray: Tray | null = null;
 let mainWindow: BrowserWindow | null = null;
+// Where the renderer is, once the first window has worked it out: what the navigation guard and every
+// IPC handler hold a page to (issue #309).
+let rendererTarget: RendererTarget | null = null;
 
 function createWindow(): void {
   const window = new BrowserWindow({
@@ -50,6 +57,21 @@ function createWindow(): void {
     devServerUrl: DEV_SERVER_URL,
     rendererIndexHtml: rendererIndexHtml(app.getAppPath(), app.isPackaged),
     serviceUrl: process.env.ALLOY_SERVICE_URL,
+  });
+
+  rendererTarget = target;
+
+  // The window stays on the renderer: a link out of it opens in the system browser, and a page never
+  // opens a window of its own (issue #309). The decisions are shell.ts's.
+  window.webContents.on('will-navigate', (event, url) => {
+    const decision = navigationDecision(url, window.webContents.getURL(), target);
+    if (decision.allow) return;
+    event.preventDefault();
+    if (decision.openExternally) void shell.openExternal(decision.openExternally);
+  });
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    if (opensExternally(url)) void shell.openExternal(url);
+    return { action: 'deny' };
   });
 
   if (target.kind === 'url') {
@@ -95,7 +117,16 @@ function createTray(): void {
   nativeTheme.on('updated', () => tray?.setImage(currentTrayIcon()));
 }
 
-ipcMain.handle(PLATFORM_INFO_CHANNEL, () => describePlatform(process.versions));
+/** Whether an IPC call comes from the renderer, and no page the window was taken to (issue #309). */
+function fromRenderer(event: Electron.IpcMainInvokeEvent): boolean {
+  const url = event.senderFrame?.url;
+  return rendererTarget !== null && url !== undefined && isRenderer(url, rendererTarget);
+}
+
+ipcMain.handle(PLATFORM_INFO_CHANNEL, (event) => {
+  if (!fromRenderer(event)) throw new Error('Refused: not the renderer.');
+  return describePlatform(process.versions);
+});
 
 void app.whenReady().then(() => {
   // Unpackaged on macOS the Dock shows Electron's icon, because there is no bundle to read one

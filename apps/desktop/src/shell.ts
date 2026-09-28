@@ -54,6 +54,65 @@ export function resolveRendererTarget(location: RendererLocation): RendererTarge
     : { kind: 'url', value: location.devServerUrl };
 }
 
+/** A path on disk as the `file:` address a window shows for it, written without `node:url`, which the preload cannot require. */
+function fileAddress(path: string): string {
+  const forward = path.split(String.fromCharCode(92)).join('/');
+  return encodeURI(forward.startsWith('/') ? `file://${forward}` : `file:///${forward}`);
+}
+
+/**
+ * Whether an address is the renderer itself (issue #309): served, its origin; loaded from disk, its
+ * own file, whatever fragment the renderer's routing is at. Anything else - another site, another
+ * file, something that is not an address - is not, and is refused the bridge and the window.
+ */
+export function isRenderer(url: string, target: RendererTarget): boolean {
+  let address: URL;
+  try {
+    address = new URL(url);
+  } catch {
+    return false;
+  }
+  if (target.kind === 'url') {
+    try {
+      return address.origin === new URL(target.value).origin;
+    } catch {
+      return false;
+    }
+  }
+  if (address.protocol !== 'file:') return false;
+  const own = new URL(fileAddress(target.value));
+  return decodeURI(address.pathname) === decodeURI(own.pathname);
+}
+
+/** An address the system may open outside the app: the web and mail, never a file or a scheme it would run. */
+export function opensExternally(url: string): boolean {
+  try {
+    return ['https:', 'http:', 'mailto:'].includes(new URL(url).protocol);
+  } catch {
+    return false;
+  }
+}
+
+export type NavigationDecision =
+  { readonly allow: true } | { readonly allow: false; readonly openExternally?: string };
+
+/**
+ * What the window does when a page asks to go to `url` from `from` (issue #309). The renderer stays
+ * the renderer: a link out of it opens in the system browser, never in the window that holds the
+ * bridge, and anything the system would run is refused. A sign-in that has already left the
+ * renderer for the identity provider goes on, since the provider's own pages navigate - its forms
+ * post, its steps follow each other - and the bridge refuses whatever page it is on (`isRenderer`).
+ */
+export function navigationDecision(
+  url: string,
+  from: string,
+  target: RendererTarget,
+): NavigationDecision {
+  if (isRenderer(url, target)) return { allow: true };
+  if (!isRenderer(from, target)) return { allow: true };
+  return opensExternally(url) ? { allow: false, openExternally: url } : { allow: false };
+}
+
 /**
  * The return type is the renderer's own PlatformInfo, so a change to the contract fails typecheck
  * here rather than showing up as a wrong value in the window.
