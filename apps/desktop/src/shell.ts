@@ -63,7 +63,7 @@ export function describePlatform(versions: { electron?: string | undefined }): P
 }
 
 /**
- * The spelling checker's languages (CNT-148, W-K): the renderer asks for the base languages of the
+ * The spelling checker's languages (CNT-178, W-K): the renderer asks for the base languages of the
  * components open, and the main process sets the dictionaries Electron has for them. One channel,
  * one argument, checked in the main process.
  */

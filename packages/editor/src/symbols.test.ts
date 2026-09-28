@@ -95,8 +95,12 @@ describe('inserting a symbol (W14.7)', () => {
   it('replaces the text selected, as typing does, and takes the marks of the text it stands in', () => {
     const strong: Mark = { type: 'strong', id: 'm1' };
     const state = within(stateOf(documentOf(paragraph('p1', text('Error +- 2', strong)))), 0, 6, 8);
-    const { next } = run(state, insertSymbol(PLUS_MINUS));
+    const { next, transactions } = run(state, insertSymbol(PLUS_MINUS));
     expect(stored(next)).toEqual([paragraph('p1', text(`Error ${PLUS_MINUS} 2`, strong))]);
+    // Over a range too, one transaction - not a delete and then an insert - so one undo puts the
+    // text that was selected back.
+    expect(transactions).toBe(1);
+    expect(stored(run(next, undo).next)).toEqual(stored(state));
   });
 
   it('stands wherever text is typed: preformatted text, a caption and a footnote among them', () => {
@@ -150,9 +154,26 @@ describe('inserting a symbol (W14.7)', () => {
     expect(transactions).toBe(0);
   });
 
-  it('refuses anything but one character, or text with a line break in it', () => {
+  it('refuses anything but one visible character: no line break, format, private-use or lone surrogate', () => {
     const state = within(stateOf(documentOf(paragraph('p1', text('Where')))), 0, 0);
-    for (const refused of ['', 'ab', '\n', String.fromCodePoint(0x3b1, 0x3b2)]) {
+    for (const refused of [
+      '',
+      'ab',
+      '\n',
+      String.fromCodePoint(0x3b1, 0x3b2),
+      // The line and paragraph separators, which break a line as surely as a newline does.
+      String.fromCharCode(0x2028),
+      String.fromCharCode(0x2029),
+      // Half of a pair of UTF-16 units, which is no character at all.
+      String.fromCharCode(0xd835),
+      String.fromCharCode(0xdc9c),
+      // A format character, invisible - a zero-width space, a right-to-left mark.
+      String.fromCharCode(0x200b),
+      String.fromCharCode(0x200f),
+      // And private use, which means nothing outside the face that happens to draw it.
+      String.fromCharCode(0xe000),
+      String.fromCodePoint(0xf0000),
+    ]) {
       expect(run(state, insertSymbol(refused)).handled, JSON.stringify(refused)).toBe(false);
     }
     // One character is one code point, however many UTF-16 units spell it.

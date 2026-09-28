@@ -5915,7 +5915,7 @@ describe("the spelling checker's languages (W14.7)", () => {
     return { bridge, asked };
   };
 
-  it("CNT-148 keeps the browser's checker on the surface, and asks the desktop's for the component's base language on opening and as it changes", async () => {
+  it("CNT-178 keeps the browser's checker on the surface, and asks the desktop's for the component's base language on opening and as it changes", async () => {
     const { bridge, asked } = recording();
     const { surface } = open(
       {
@@ -5924,7 +5924,8 @@ describe("the spelling checker's languages (W14.7)", () => {
         ...everySave,
       },
       quick,
-      // In StrictMode, as the application runs it: opened twice over, and asked once.
+      // In StrictMode, as the application runs it. That a list already asked for is not asked
+      // again, however often the editor mounts, is spelling.test.ts's to show, not this test's.
       true,
       { bridge },
     );
@@ -5992,7 +5993,11 @@ describe('the symbol palette (W14.7)', () => {
       () => json(200, { sequence: at + 1, lock }),
     ]),
   );
-  const openWith = (stored: unknown, overrides: Record<string, unknown> = {}) =>
+  const openWith = (
+    stored: unknown,
+    overrides: Record<string, unknown> = {},
+    presentation?: unknown,
+  ) =>
     open(
       {
         'GET /v1/components/{id}': () => json(200, opened({ content: stored, ...overrides })),
@@ -6001,6 +6006,8 @@ describe('the symbol palette (W14.7)', () => {
       },
       quick,
       true,
+      {},
+      presentation,
     );
   const opens = () => screen.findByRole('dialog', { name: 'Symbols' });
   const symbol = (dialog: HTMLElement, name: string) =>
@@ -6039,11 +6046,18 @@ describe('the symbol palette (W14.7)', () => {
     expect(
       within(within(dialog).getByRole('grid', { name: 'Scientific and technical' })).getByRole(
         'button',
-        { name: 'Degree Celsius' },
+        { name: 'Degree sign' },
       ),
     ).toBeInTheDocument();
     // The first of them holds the focus as it opens.
     expect(symbol(dialog, 'Plus-minus sign')).toHaveFocus();
+    // With no theme to ask, every one is offered: the surface's own check marks any its face lacks.
+    expect(
+      within(dialog)
+        .getAllByRole('button')
+        .filter((each) => each.getAttribute('aria-disabled') === 'true'),
+    ).toEqual([]);
+    expect(within(dialog).queryByText(/are dimmed/)).toBeNull();
 
     await userEvent.click(symbol(dialog, 'Greek small letter alpha'));
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -6051,6 +6065,70 @@ describe('the symbol palette (W14.7)', () => {
     // Back on the surface, after the character, where typing it would have left the caret.
     await waitFor(() => expect(view.hasFocus()).toBe(true));
     expect(view.state.selection.from).toBe(1 + 7);
+  });
+
+  it('dims what the typeface at the cursor lacks, pointing to an equation, and inserts only what it has', async () => {
+    const { surface } = openWith(
+      blocksOf(para('b1', 'Angle  is small.'), {
+        type: 'preformatted',
+        id: 'p1',
+        text: 'x = 1',
+      }),
+      {},
+      DEFAULT_PRESENTATION,
+    );
+    const view = await surface();
+    caretAt(view, 6);
+    await userEvent.click(screen.getByRole('button', { name: 'Symbols' }));
+    let dialog = await opens();
+    // For all is not in the default serif, which sets running text: it stays in its place,
+    // disabled, and says why - once the presentation has arrived to say which face that is.
+    const forAll = await within(dialog).findByRole('button', {
+      name: 'For all, not in Liberation Serif; use an equation',
+    });
+    // Said once, above the grids.
+    expect(
+      within(dialog).getAllByText(
+        'Symbols the typeface here does not have are dimmed; set them in an equation.',
+      ),
+    ).toHaveLength(1);
+    expect(forAll).toHaveAttribute('aria-disabled', 'true');
+    expect(forAll).toHaveTextContent(String.fromCodePoint(0x2200));
+    // Choosing it inserts nothing, and leaves the palette open for another.
+    await userEvent.click(forAll);
+    expect(screen.getByRole('dialog', { name: 'Symbols' })).toBeInTheDocument();
+    expect(textsOf(view)).toEqual(['Angle  is small.', '']);
+    // It can still be reached from the keyboard, so the grid stays one grid: and Enter does nothing.
+    forAll.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(textsOf(view)).toEqual(['Angle  is small.', '']);
+    await userEvent.keyboard('{ArrowRight}');
+    expect(
+      within(dialog).getByRole('button', {
+        name: 'There exists, not in Liberation Serif; use an equation',
+      }),
+    ).toHaveFocus();
+
+    // What the serif has inserts as ever.
+    const alpha = symbol(dialog, 'Greek small letter alpha');
+    expect(alpha).not.toHaveAttribute('aria-disabled');
+    await userEvent.click(alpha);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(textsOf(view)[0]).toBe(`Angle ${ALPHA} is small.`);
+
+    // In preformatted text the question is asked of the face that sets code.
+    let code = -1;
+    view.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'preformatted') code = pos;
+    });
+    selectText(view, code + 2, code + 2);
+    await userEvent.click(screen.getByRole('button', { name: 'Symbols' }));
+    dialog = await opens();
+    expect(
+      within(dialog).getByRole('button', {
+        name: 'For all, not in Liberation Mono; use an equation',
+      }),
+    ).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('moves through a group by the arrow keys, Home and End, and on to the next group by Tab', async () => {

@@ -12,7 +12,7 @@ export interface Spelling {
 const spellings = new WeakMap<PlatformBridge, Spelling>();
 
 /**
- * The one list of languages for a bridge (CNT-148): every component open holds its base language in
+ * The one list of languages for a bridge (CNT-178): every component open holds its base language in
  * it, and the bridge is told the list whenever it changes - on the desktop, the dictionaries the
  * spelling checker uses. A list emptied by the last component closing is not told, because setting
  * none would switch the desktop's checker off for the page's other text fields too; nor is a list the

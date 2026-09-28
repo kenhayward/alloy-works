@@ -118,7 +118,7 @@ export { mountTitleEditor, type TitleEditor, type TitleEditorOptions } from './t
 export { renderContent } from './render.js';
 export { paragraphPlaces } from './places.js';
 export { paragraphsAt, setImageStyle, setParagraphStyle, setTableStyle } from './styles.js';
-export { setStyleCheck } from './resolution.js';
+export { setStyleCheck, textWhereAt } from './resolution.js';
 export { canInsertSymbol, insertSymbol } from './symbols.js';
 export type { StyleCheck, TextWhere, Unresolved } from './resolution.js';
 export { NodeSelection, Selection } from 'prosemirror-state';

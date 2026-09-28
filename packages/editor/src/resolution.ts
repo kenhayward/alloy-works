@@ -1,6 +1,12 @@
 import type { Place, Role } from '@alloy-works/domain';
 import type { Node } from 'prosemirror-model';
-import { Plugin, PluginKey, type EditorState, type Transaction } from 'prosemirror-state';
+import {
+  Plugin,
+  PluginKey,
+  TextSelection,
+  type EditorState,
+  type Transaction,
+} from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
 import { paragraphPlaces } from './places.js';
@@ -202,6 +208,42 @@ export function styleCheckPlugin(): Plugin {
 /** The marks a surface's state holds for what will not resolve, or none. */
 export function unresolvedOf(state: EditorState): DecorationSet {
   return styleCheckKey.getState(state)?.marks ?? DecorationSet.empty;
+}
+
+/**
+ * Where the text typed at the selection would stand, as far as which face sets it (W14.7, W-M): the
+ * paragraph's style and its place - a footnote's own paragraph in the footnote's, a term in its list
+ * item's - or the role its block is set in; and whether it is set as code, from the marks typing there
+ * would carry, as `insertText` chooses them. Null where no text is typed - something selected whole, or
+ * a block whose face nothing here names - which a caller takes as "not known", never as "covered".
+ */
+export function textWhereAt(state: EditorState): TextWhere | null {
+  const { selection } = state;
+  if (!(selection instanceof TextSelection)) return null;
+  const { $from, $to } = selection;
+  const block = $from.parent;
+  if (!block.isTextblock) return null;
+  const marks =
+    state.storedMarks ?? (selection.empty ? $from.marks() : ($from.marksAcross($to) ?? []));
+  const inlineCode = marks.some((mark) => mark.type.name === 'inlineCode');
+  const style = (block.attrs.style as string | undefined) ?? 'body';
+  const where = (paragraph: TextWhere['paragraph'], role: TextWhere['role']): TextWhere => ({
+    paragraph,
+    role,
+    code: inlineCode || role === 'preformatted',
+    inlineCode,
+  });
+  if (block.type.name === 'footnoteParagraph') {
+    return where({ style, place: 'footnote' }, null);
+  }
+  if (block.type.name === 'term') return where({ style: 'body', place: 'listItem' }, null);
+  if (block.type.name === 'paragraph') {
+    const start = $from.before();
+    const found = paragraphPlaces(state.doc).find((each) => each.pos === start);
+    return found === undefined ? null : where({ style, place: found.place }, null);
+  }
+  const role = ROLE_OF[block.type.name];
+  return role === undefined ? null : where(null, role);
 }
 
 /** The theme's check a surface holds, which a footnote's own editor asks of its own text. */

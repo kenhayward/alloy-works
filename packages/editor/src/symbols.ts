@@ -15,8 +15,13 @@ export function canInsertSymbol(state: EditorState): boolean {
   );
 }
 
-/** One character that is not a control character, a line break among them. */
-const ONE_CHARACTER = /^\P{Cc}$/u;
+/**
+ * One character that can stand visibly in a line of text: not a control character, a newline among
+ * them; not the line or paragraph separator, which break a line as surely; not a format character,
+ * which is invisible; not private use, which means nothing outside the face that draws it; and not half
+ * of a surrogate pair, which is no character at all.
+ */
+const ONE_CHARACTER = /^[^\p{Cc}\p{Cs}\p{Zl}\p{Zp}\p{Cf}\p{Co}]$/u;
 
 /**
  * Types a symbol at the selection, as the author typing it would (CNT-057): one transaction, replacing

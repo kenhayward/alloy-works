@@ -148,7 +148,7 @@ describe('spellCheckRequest', () => {
 });
 
 describe('spellCheckerLanguages', () => {
-  it('CNT-148 maps the languages of the components open to the dictionaries Electron has', () => {
+  it('CNT-178 maps the languages of the components open to the dictionaries Electron has', () => {
     expect(spellCheckerLanguages(['en-GB'], AVAILABLE)).toEqual(['en-GB']);
     expect(spellCheckerLanguages(['en-GB', 'de-DE'], AVAILABLE)).toEqual(['en-GB', 'de-DE']);
   });

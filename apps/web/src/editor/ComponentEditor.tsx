@@ -15,6 +15,7 @@ import {
   insertImage,
   insertReference,
   insertSymbol,
+  textWhereAt,
   replaceFigureImage,
   replaceImageAsset,
   headerOf,
@@ -110,7 +111,7 @@ import { everyPage } from '../paging.js';
 import { byName } from '../metadata/people.js';
 import { Canvas } from '../theme/Canvas.js';
 import { ParagraphStyle } from '../theme/StyleChoice.js';
-import { styleCheckFor } from '../theme/check.js';
+import { styleCheckFor, typefaceAt } from '../theme/check.js';
 import { UnheldFaces } from '../theme/Canvas.js';
 import { usePresentation } from '../theme/presentation.js';
 
@@ -165,7 +166,7 @@ export interface ComponentEditorProps {
   readonly referenceContext?: ReferenceContext | null;
   /**
    * The seam to whatever hosts the page, told the component's base language while it is open, for the
-   * spelling checker (CNT-148); the host's own otherwise. Given in tests.
+   * spelling checker (CNT-178); the host's own otherwise. Given in tests.
    */
   readonly bridge?: PlatformBridge;
 }
@@ -337,7 +338,7 @@ export function ComponentEditor({
   }, [status, notice]);
   const [header, setHeader] = useState<Header | null>(null);
   // The spelling checker checks against the component's base language while it is open, and again
-  // as it changes (CNT-148). A run in another language is not checked at all (CNT-147), so its
+  // as it changes (CNT-178). A run in another language is not checked at all (CNT-147), so its
   // language is not asked for.
   const baseLanguage = header?.language ?? null;
   useEffect(() => {
@@ -1947,6 +1948,14 @@ export function ComponentEditor({
         // Beside the article, as the prompt is, and for the same reason.
         createPortal(
           <SymbolPalette
+            // The face that sets the text where the cursor is, which dims what it lacks (W-M); every
+            // character is offered until the presentation says which that is.
+            typeface={(() => {
+              const where = symbolizing.isDestroyed ? null : textWhereAt(symbolizing.state);
+              return presentation?.state === 'ready' && where !== null
+                ? typefaceAt(presentation.theme, presentation.unheld, where)
+                : null;
+            })()}
             onChoose={(character) => {
               // As the Equation dialog asks: the phase as it is now, since the lock can be lost while
               // the palette stands.

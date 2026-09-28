@@ -1,5 +1,8 @@
+import { readTheme } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 
+import { typefaceAt } from '../theme/check.js';
+import { DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
 import { SYMBOL_GROUPS } from './symbols.js';
 
 const every = SYMBOL_GROUPS.flatMap((group) => group.symbols);
@@ -40,5 +43,44 @@ describe("the symbol palette's characters (W14.7)", () => {
   it('offers no character twice, and gives no two the same name', () => {
     expect(new Set(every.map((each) => each.codePoint)).size).toBe(every.length);
     expect(new Set(every.map((each) => each.name)).size).toBe(every.length);
+  });
+});
+
+describe("the symbol palette's characters, against the default theme's text face (W14.7, W-M)", () => {
+  const read = readTheme(
+    DEFAULT_PRESENTATION.theme.content,
+    new Map(DEFAULT_PRESENTATION.theme.catalogues.map((each) => [each.versionId, each.content])),
+  );
+  if (!read.ok) throw new Error('the default theme does not read');
+  // Running text in the default theme, as a caret in a paragraph of it stands.
+  const running = typefaceAt(read.theme, [], {
+    paragraph: { style: 'body', place: 'text' },
+    role: null,
+    code: false,
+    inlineCode: false,
+  });
+  const lacked = (codePoints: readonly number[]) =>
+    codePoints.filter((codePoint) => running!.lacks(String.fromCodePoint(codePoint)));
+
+  it('is asked of the family that sets running text, the default serif', () => {
+    expect(running?.family).toBe('Liberation Serif');
+  });
+
+  // Greek is what an author reaches for most, and all of it is set in the default serif.
+  it('finds every Greek letter in the default serif', () => {
+    const greek = SYMBOL_GROUPS.find((group) => group.name === 'Greek')!;
+    expect(lacked(greek.symbols.map((each) => each.codePoint))).toEqual([]);
+  });
+
+  // What the palette's first editor test inserts and names are in it too, so it shows one that inserts.
+  it("finds the characters the palette's first editor test uses in the default serif", () => {
+    expect(lacked([0x00b1, 0x2211, 0x00b0, 0x03b1, 0x03a9, 0x00be])).toEqual([]);
+  });
+
+  // And some of the palette is not: the maths an author is pointed to an equation for.
+  it('lacks some mathematical symbols, which the palette dims', () => {
+    expect(
+      lacked([0x2200, 0x2203, 0x2208, 0x2282, 0x2205, 0x21d2, 0x2207, 0x211d, 0x2103]),
+    ).toEqual([0x2200, 0x2203, 0x2208, 0x2282, 0x2205, 0x21d2, 0x2207, 0x211d, 0x2103]);
   });
 });

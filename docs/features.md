@@ -172,13 +172,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   browser's own checker marks misspelt words with the dictionaries you have enabled in it; a page
   cannot choose them, so a component in a language your browser has no dictionary for is checked
   against whatever it has. In the desktop app on Windows and Linux, the app checks each component
-  against its base language's dictionary - the dictionary for that language and region where there is
-  one, otherwise the nearest the app has, such as French for `fr-CA` - and changes it when you change
-  the component's language; with several components open it checks against all their languages at
-  once. Right-click a misspelt word for up to five suggestions and **Add to dictionary**. On macOS the
-  desktop app uses the system's own spelling checker, which chooses its languages itself, so the
-  component's language is not set there. A run marked with another language is not checked at all.
-  The first time the desktop app needs a dictionary it does not have, it downloads it from Google.
+  against its base language's dictionary - the dictionary for that language and region where there
+  is one, otherwise the nearest the app has, such as French for `fr-CA` - and changes it when you
+  change the component's language; with several components open it checks against all their
+  languages at once. Right-click a misspelt word for up to five suggestions and **Add to
+  dictionary**; a word you add is kept in the app's own dictionary, and cannot yet be removed. On
+  macOS the desktop app uses the system's own spelling checker, which chooses its languages itself,
+  so the component's language is not set there. A run marked with another language is not checked at
+  all. The first time the desktop app needs a dictionary it does not have, it downloads it from
+  Google.
 
   **Lists, in three kinds.** **Bulleted list**, **Numbered list** and **Definition list** sit on the
   same toolbar, each with a shortcut, and each turns the paragraph the cursor is in into a list of
@@ -406,17 +408,21 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   a publication cannot print as words.
 
 - **Symbols.** **Symbols** on the formatting toolbar, or `Ctrl+Shift+M` (`Cmd+Shift+M` on a Mac),
-  opens a palette of characters a keyboard does not have, in three groups: **Mathematical** - such as
-  plus-minus, not equal to, less-than or equal to, summation, integral, infinity and the number sets;
-  **Greek**, small and capital letters and the variant forms; and **Scientific and technical** - such
-  as the degree sign, degrees Celsius and Fahrenheit, per mille, the Planck constant and arrows for a
-  reaction. Each is a button named by its Unicode name, such as _Greek small letter alpha_, which a
-  screen reader says and a tooltip shows. The arrow keys move through a group, `Home` and `End` reach
-  its first and last, and `Tab` moves on to the next group. Choosing one types it where the cursor
-  was, as if you had typed it - in any text, a footnote's included - and puts you back there;
-  `Escape` puts you back without typing anything. It is unavailable while you may only read the
-  component, as the other buttons are. It is not a map of every character there is: that is your
-  operating system's.
+  opens a palette of characters a keyboard does not have, in three groups: **Mathematical** - such
+  as plus-minus, not equal to, less-than or equal to, summation, integral, square root and infinity;
+  **Greek**, small and capital letters and the variant forms; and **Scientific and technical** -
+  such as the degree sign, per mille and arrows. Each is a button named by its Unicode name, such as
+  _Greek small letter alpha_, which a screen reader says and a tooltip shows. The palette dims the
+  symbols the typeface where your cursor is does not have - in the default theme, such as for all,
+  element of, the number sets and degrees Celsius - and says so above them: each stays in its place,
+  named as not in that typeface, and choosing it types nothing, because a publication could not set
+  it; set it in an equation instead. In preformatted text and inline code it asks the code typeface.
+  Until the theme has loaded every symbol is offered, and the text marks any its typeface lacks. The
+  arrow keys move through a group, `Home` and `End` reach its first and last, and `Tab` moves on to
+  the next group. Choosing one types it where the cursor was, as if you had typed it - in any text,
+  a footnote's included - and puts you back there; `Escape` puts you back without typing anything.
+  It is unavailable while you may only read the component, as the other buttons are. It is not a map
+  of every character there is: that is your operating system's.
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.

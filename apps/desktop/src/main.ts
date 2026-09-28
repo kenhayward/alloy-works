@@ -126,7 +126,7 @@ function createTray(): void {
 
 ipcMain.handle(PLATFORM_INFO_CHANNEL, () => describePlatform(process.versions));
 
-// The spelling checker's languages (CNT-148): what the renderer sent is checked in shell.ts, never
+// The spelling checker's languages (CNT-178): what the renderer sent is checked in shell.ts, never
 // trusted, and a refusal is logged without what was sent.
 ipcMain.handle(SPELL_CHECK_LANGUAGES_CHANNEL, (event, requested: unknown) => {
   const { session } = event.sender;

@@ -50,3 +50,20 @@
   outline: 2px solid var(--ring);
   outline-offset: 1px;
 }
+
+/* A character the typeface at the cursor lacks (W-M): in its place, dimmed, and inert on hover. */
+.symbol[aria-disabled='true'] {
+  color: var(--muted);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.symbol[aria-disabled='true']:hover {
+  background: var(--surface);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--size-body-small);
+  color: var(--muted);
+}

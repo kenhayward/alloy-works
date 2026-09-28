@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 
 import shell from '../layouts/Modal.module.css';
+import type { Typeface } from '../theme/check.js';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './SymbolPalette.module.css';
@@ -14,7 +15,16 @@ export interface SymbolPaletteProps {
   readonly onChoose: (character: string) => void;
   /** Closed with nothing chosen: Escape or Close. */
   readonly onCancel: () => void;
+  /**
+   * The typeface that sets the text where the cursor is (W-M), whose missing characters are dimmed;
+   * null or absent where that is not known, and then every character is offered.
+   */
+  readonly typeface?: Typeface | null;
 }
+
+/** What the palette says, once, where the typeface at the cursor lacks some of what it offers. */
+export const DIMMED_NOTE =
+  'Symbols the typeface here does not have are dimmed; set them in an equation.';
 
 /** A group's symbols in rows of `PALETTE_COLUMNS`, as the grid's rows hold them. */
 const rowsOf = <T,>(items: readonly T[]): T[][] => {
@@ -35,9 +45,25 @@ const rowsOf = <T,>(items: readonly T[]): T[][] => {
  * right by one, up and down by a row - and stop at its edges, Home and End reach its first and last,
  * and Tab moves on to the next group, where the stop is wherever it was left, then to Close, and
  * round again. The keyboard is held inside, as every dialog here holds it.
+ *
+ * **What the typeface at the cursor lacks is dimmed** (W-M), not hidden: a character the face setting
+ * the text there does not have would fail the publish (STY-049), so its cell stays where it is -
+ * reachable by the arrows, so the grid keeps its shape - but is disabled, inserts nothing, and is named
+ * as not in that family, pointing to an equation, which is where such maths is set.
  */
-export function SymbolPalette({ onChoose, onCancel }: SymbolPaletteProps) {
+export function SymbolPalette({ onChoose, onCancel, typeface = null }: SymbolPaletteProps) {
   const id = useId();
+  const lacking = useMemo(
+    () =>
+      new Set(
+        typeface === null
+          ? []
+          : SYMBOL_GROUPS.flatMap((group) => group.symbols)
+              .filter((symbol) => typeface.lacks(symbol.character))
+              .map((symbol) => symbol.codePoint),
+      ),
+    [typeface],
+  );
   const dialog = useRef<HTMLDivElement | null>(null);
   // Which symbol of each group holds that group's one tab stop.
   const [stops, setStops] = useState<readonly number[]>(() => SYMBOL_GROUPS.map(() => 0));
@@ -122,6 +148,7 @@ export function SymbolPalette({ onChoose, onCancel }: SymbolPaletteProps) {
             </span>
             Symbols
           </h2>
+          {lacking.size > 0 && <p className={own['note']}>{DIMMED_NOTE}</p>}
           {SYMBOL_GROUPS.map((group, g) => (
             <section key={group.name} className={own['group']}>
               <h3 id={`${id}-group-${g}`} className={own['name']}>
@@ -137,6 +164,10 @@ export function SymbolPalette({ onChoose, onCancel }: SymbolPaletteProps) {
                   <div role="row" key={r} className={own['row']}>
                     {row.map((symbol, c) => {
                       const index = r * PALETTE_COLUMNS + c;
+                      const lacked = typeface !== null && lacking.has(symbol.codePoint);
+                      const label = lacked
+                        ? `${symbol.name}, not in ${typeface.family}; use an equation`
+                        : symbol.name;
                       return (
                         <div role="gridcell" key={symbol.codePoint}>
                           <button
@@ -145,14 +176,18 @@ export function SymbolPalette({ onChoose, onCancel }: SymbolPaletteProps) {
                             ref={(element) => {
                               (buttons.current[g] ??= [])[index] = element;
                             }}
-                            aria-label={symbol.name}
-                            title={symbol.name}
+                            aria-label={label}
+                            title={label}
+                            // Disabled but focusable, so the arrows still cross it.
+                            aria-disabled={lacked ? 'true' : undefined}
                             tabIndex={stops[g] === index ? 0 : -1}
                             // A click moves the stop too, so Tab comes back to where the author was.
                             onFocus={() =>
                               setStops((now) => now.map((stop, at) => (at === g ? index : stop)))
                             }
-                            onClick={() => onChoose(symbol.character)}
+                            onClick={() => {
+                              if (!lacked) onChoose(symbol.character);
+                            }}
                           >
                             {symbol.character}
                           </button>
