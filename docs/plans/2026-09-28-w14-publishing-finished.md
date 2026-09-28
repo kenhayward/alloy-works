@@ -68,6 +68,78 @@ last of the editor's T1 features, a spelling checker in the desktop app and a sy
 5. Tests: PUB-091 (a publication's PDF checked and its report kept; a failing PDF's rules named); the
    check re-queued when a worker dies after recording.
 
+**W14.1, as built.** Migration 0040 adds `publication_check`, keyed to the PDF output it checked (so it
+names only a PDF the publication has, and goes with it) as well as to the publication, insert-only for
+the runtime role by its found columns alone, `checked_at` the database's, `failed_rules` held to its
+shape and to 200 entries, a compliant check holding none, and veraPDF's whole report - its JSON, as it
+wrote it, which PUB-091 asks to be retained, not a summary of it - as `report_key`, `report_sha256` and
+`report_bytes`, kept by the job in the tenant's store by its hash before the row names it, the key held
+to its digest by a check and to the tenant's own prefix by a trigger reading `tg_table_schema`, as
+0017's is for an output. `recordPublication` queues `check_pdf`,
+subject the publication, inside its savepoint, for a publication with a PDF; `publicationToCheck`,
+`recordPublicationCheck` (answering `recorded` or `already`) and `readPublication`'s `check` on each
+output read and write it; `GET /v1/publications/{id}` offers the report as a link signed for
+`DOWNLOAD_SECONDS` that saves it as `{id}-verapdf.json`, and the page as **Download the full report**.
+The worker's `src/verapdf.ts` now holds the server-mode protocol,
+`startServerMode`, over a `ServerModeHost` - how the process starts, how a PDF reaches it and a report
+comes back, and what it leaves - with `verdictOf`, which reads veraPDF's version from its own report
+and each failed rule with its words, and keeps the report's text whole; the suite's warm veraPDF (`testing/verapdf-server.ts`) is a Docker
+host over it, and the worker's, `startLocalVeraPdf`, a child process whose reports are held to a
+`java.io.tmpdir` of its own, started again after it dies. The seam the job sees is `Checker`, a
+`check(pdf)` answering a verdict; `check.test.ts` gives the job the suite's (`suiteChecker`), and
+`verapdf.test.ts` drives the local one against a stand-in veraPDF run by Node, since no Java runtime is
+on a developer's machine or CI's. Two things were found by inspecting the pinned image rather than
+assumed: it is Alpine, so its Java runtime is built against musl, and it is published for x86-64 alone.
+The first build copied that runtime and musl's loader into the worker image, which made an arm64
+worker's veraPDF an x86-64 one; review sent it back, since the worker image is built for both
+architectures. So W-A is answered in part otherwise than it was written: **only `/opt/verapdf`, the
+jars and the launcher, is copied from the pinned image**, taken as `VERAPDF_PLATFORM`, `linux/amd64`,
+and they run on Debian's `openjdk-17-jre-headless`, installed in the worker stage with
+`--no-install-recommends` for whichever architecture it is built for; veraPDF 1.30.2 asks for Java 11
+or later, and its launcher finds `java` on the path. Built locally for x86-64, the image ran
+`verapdf --version` and, as the `node` user, the worker's own `startLocalVeraPdf` passed a PDF/UA-1
+PDF and failed an untagged one (5-1, 7.1-9, 7.1-10) - a cold check in about 0.7 seconds, a warm one in
+about 30 milliseconds. Built for arm64 under emulation, the whole worker target built, its
+`verapdf --version` among it, and the same runtime and jars passed and failed the same two PDFs; no
+arm64 machine has run the worker natively. The image's `VERAPDF_IMAGE` build argument is the one place
+its digest is written in `deploy/`, and `image.test.ts` holds it equal to the suite's, and holds the
+worker stage to copying `/opt/verapdf` alone and installing Debian's runtime. **The worker image grew
+by about 238 MB uncompressed** - Debian's runtime 220 MB of it, where the musl runtime was 51 MB - to
+230 MB compressed from 135 MB before veraPDF. The suites that publish and then take the next job
+(`publish.test.ts`, `themes.test.ts`) run each check they meet and pass over it (`testing/work.ts`),
+since every publication now queues one ahead of the next job. **A check that gives up is queued
+again**: after its last attempt, the worker's interval sweep, `sweepUncheckedPublications`, queues
+another for each publication with a PDF, no check, recorded more than five minutes ago (ADR-0030's
+bound, `CHECK_WITHIN_MS`) and no `check_pdf` waiting or running for it - asked of the queue as the
+worker, `JobQueue.waiting`, since a tenant's own role may insert into `platform.job` and never read it,
+and neither grant is widened. A check that gives up every time is queued again at every sweep, ten
+minutes apart by default, which the log says; that is the cost of never leaving one unchecked for good.
+
+**From the final review:** six findings, each answered in this slice. **veraPDF no longer inherits
+the worker's environment**: `startLocalVeraPdf` started it with `...process.env`, the database URL
+and the store's key among it; it now gets `PATH`, `JAVA_HOME`, the locale and `JAVA_OPTS` alone
+(`veraPdfEnvironment`), which the stand-in veraPDF, now noting the names it was given, shows against
+a parent holding `DATABASE_URL`, `SECRET_*`, `PG*`, `AWS_*` and `NODE_OPTIONS`. **A check that can
+never succeed stops being queued**: the reverse of the paragraph above. `JobQueue.givenUp` counts
+each subject's given-up jobs, and once a publication's checks have given up three times
+(`CHECK_GIVE_UPS`) the sweep leaves it and records so in migration 0041's
+`publication_check_given_up`, written as the tenant because the count is in a queue no tenant's role
+may read; `GET /v1/publications/{id}` gives the PDF a `checkState`, `pending`, `passed`, `failed` or
+`gave_up`, held by the contract to agree with `check`, and the page says **Could not be checked for
+accessibility.** The same sweep checks the publications recorded before 0040, a hundred in each tenant
+per sweep, now tested with 101 of them. **A check cannot outlive its lease**: veraPDF was given two
+minutes to start and two to check under a two-minute lease; it now gets a third of `LEASE_MS` for
+each (`veraPdfTimeouts`). **The JVM is given a heap limit**, `-XX:MaxRAMPercentage=50`, where
+`JAVA_OPTS` names none, and `JAVA_OPTS` and `LEASE_MS` are documented in `deploy/`; a worker starting
+removes the `aw-verapdf-<pid>-*` directories a gone worker left, its directories now named by its
+process id. The reviewer's check that veraPDF's XMP parser refuses an external DTD, an external
+general entity and a parameter entity, with no request made, is written into the architecture and
+`deploy/README.md`, beside the note that Debian's runtime floats with its updates. **The e2e publish
+now waits for the check** and asserts it passed, polling for up to two minutes; CI's whole-system job
+runs it, and it has not been run locally. The stale design and architecture text - veraPDF inside the
+publish job, the answered open questions, "nothing runs veraPDF over a publication yet" - is
+corrected, and the version is 0.115.0, since W14.7 took 0.114.0 as #311.
+
 ## W14.2: Six levels, and the budget
 
 1. `assemble` refuses a heading deeper than six for PDF, `heading_too_deep`, naming the section.

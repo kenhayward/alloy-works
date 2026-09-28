@@ -221,8 +221,9 @@ describe('the whole system', () => {
       body: { version: placed!.version.id, formats: ['pdf'] },
     });
     let publication: string | null = null;
-    // The job takes seconds; this bounds the wait rather than asserting a particular duration - the
-    // veraPDF check that would take longer is not part of the job, only of the worker's own suite.
+    // The job takes seconds; this bounds the wait rather than asserting a particular duration. The
+    // veraPDF check is not part of it: it is a job of its own, run after the publication is recorded
+    // (ADR-0030), and waited for below.
     await vi.waitFor(
       async () => {
         const { data } = await api.GET('/v1/publication-requests/{id}', {
@@ -251,7 +252,31 @@ describe('the whole system', () => {
     // The image carries the pinned faces and the template: a publication set in anything else, or
     // in nothing, is the failure this test exists for (#145).
     expect(pdf.body.toString('latin1')).toContain('LiberationSerif');
-  }, 120_000);
+
+    // And the worker image's own veraPDF checks it against PDF/UA-1 once it is recorded (PUB-091,
+    // W14.1): a job of its own, whose first run starts the JVM cold. Polled until the check is no
+    // longer pending, allowing for the start and a retry, rather than timed; a check that gave up
+    // stops the wait, and fails below by its state.
+    let checked: unknown = null;
+    await vi.waitFor(
+      async () => {
+        const { data, response } = await api.GET('/v1/publications/{id}', {
+          params: { path: { id: publication! } },
+        });
+        expect(response.status).toBe(200);
+        const output = data!.outputs.find((each) => each.format === 'pdf');
+        expect(output?.format).toBe('pdf');
+        if (output?.format !== 'pdf') return;
+        expect(output.checkState).not.toBe('pending');
+        checked = { state: output.checkState, check: output.check };
+      },
+      { timeout: 120_000, interval: 1_000 },
+    );
+    expect(checked).toMatchObject({
+      state: 'passed',
+      check: { checker: 'verapdf', profile: 'ua1', compliant: true, failedRules: [] },
+    });
+  }, 240_000);
 
   it('publishes under the layout: its cover, its own front matter, the contents, running heads and the notice', async () => {
     const api = client();

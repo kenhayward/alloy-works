@@ -5,9 +5,10 @@ import type { PlatformTables, TenantTransaction } from './tables.js';
 /**
  * The kinds of work there are. A worker refuses a kind it does not know. A `preview` is a publish
  * request of kind preview, run by the publish handler, and a kind of its own so a deployment can give
- * previews workers of their own (publishing.md, "Preview").
+ * previews workers of their own (publishing.md, "Preview"). A `check_pdf` is veraPDF over a recorded
+ * publication's PDF, its subject the publication, queued as the publication is recorded (W14.1, W-B).
  */
-export type JobKind = 'sample_pdf' | 'publish' | 'preview' | 'ingest';
+export type JobKind = 'sample_pdf' | 'publish' | 'preview' | 'ingest' | 'check_pdf';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {
@@ -51,6 +52,19 @@ export interface JobQueue {
   ): Promise<'retry' | 'failed'>;
   /** Jobs whose claims ran out with no attempts left: their workers never came back. */
   abandoned(): Promise<Job[]>;
+  /**
+   * The subjects of a tenant's jobs of one kind still to run or running - neither finished nor given
+   * up - for a sweep deciding whether a job is still coming. The worker's to ask: a tenant's own role
+   * may enqueue work and never read the queue, and this widens neither.
+   */
+  waiting(tenantId: string, kind: JobKind): Promise<string[]>;
+  /**
+   * Each subject of a tenant's jobs of one kind that gave up - their last attempt failed, or their
+   * worker never came back from it - with how many of them did: for a sweep deciding whether to queue
+   * another. Nothing deletes a job, so the count is every one there has been. The worker's to ask, as
+   * `waiting` is.
+   */
+  givenUp(tenantId: string, kind: JobKind): Promise<ReadonlyMap<string, number>>;
   close(): Promise<void>;
 }
 
@@ -132,6 +146,23 @@ export function createJobQueue(url: string): JobQueue {
            and locked_until < now()
         returning id, tenant_id, kind, subject_id, attempts, max_attempts`.execute(db);
       return rows.map(asJob);
+    },
+
+    async waiting(tenantId, kind) {
+      const { rows } = await sql<{ subject_id: string }>`
+        select distinct subject_id from platform.job
+         where tenant_id = ${tenantId} and kind = ${kind} and subject_id is not null
+           and finished_at is null and failed_at is null`.execute(db);
+      return rows.map((row) => row.subject_id);
+    },
+
+    async givenUp(tenantId, kind) {
+      const { rows } = await sql<{ subject_id: string; given_up: number }>`
+        select subject_id, count(*)::int as given_up from platform.job
+         where tenant_id = ${tenantId} and kind = ${kind} and subject_id is not null
+           and failed_at is not null
+         group by subject_id`.execute(db);
+      return new Map(rows.map((row) => [row.subject_id, row.given_up]));
     },
 
     close: () => db.destroy(),

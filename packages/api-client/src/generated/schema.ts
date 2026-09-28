@@ -9290,6 +9290,41 @@ export interface operations {
                             download: string;
                             /** @description A link to the same bytes, valid for five minutes, that a browser shows rather than saves */
                             view: string;
+                            /** @description What veraPDF found of the PDF against PDF/UA-1; none until it has been checked, which follows the recording */
+                            check: {
+                                /** @constant */
+                                checker: "verapdf";
+                                /** @description veraPDF's own version, as its report names it */
+                                checkerVersion: string;
+                                /**
+                                 * @description The profile it checked against: PDF/UA-1
+                                 * @constant
+                                 */
+                                profile: "ua1";
+                                compliant: boolean;
+                                /** @description Each rule the PDF failed; none where it passed */
+                                failedRules: {
+                                    /** @description The clause of ISO 14289-1 the rule belongs to */
+                                    clause: string;
+                                    /** @description The rule's test within its clause */
+                                    test: number;
+                                    /** @description What the rule asks for, in veraPDF's words */
+                                    description?: string;
+                                }[];
+                                /** @description veraPDF's whole report, as it wrote it, kept with the publication */
+                                report: {
+                                    bytes: number;
+                                    sha256: string;
+                                    /** @description A link to veraPDF's whole report, its JSON, valid for five minutes, saved as `{id}-verapdf.json` */
+                                    download: string;
+                                };
+                                checkedAt: string;
+                            } | null;
+                            /**
+                             * @description Where the PDF's check stands: `pending`, not yet checked; `passed` or `failed`, as its check says; `gave_up`, not checked and never to be, its checks having given up as often as they are tried
+                             * @enum {string}
+                             */
+                            checkState: "pending" | "passed" | "failed" | "gave_up";
                         } | {
                             /** @constant */
                             format: "docx";

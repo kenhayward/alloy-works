@@ -247,6 +247,8 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0037_iteration_retention',
       '0038_api_tokens',
       '0039_groups',
+      '0040_publication_check',
+      '0041_publication_check_given_up',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -268,6 +270,11 @@ describe('migration 0018, which gives every environment its default layout', () 
       {
         relname: 'publication_asset',
         tgname: 'publication_asset_while_queued',
+        tgenabled: 'O',
+      },
+      {
+        relname: 'publication_check',
+        tgname: 'publication_check_report_in_own_store',
         tgenabled: 'O',
       },
       {
@@ -587,6 +594,8 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0037_iteration_retention',
       '0038_api_tokens',
       '0039_groups',
+      '0040_publication_check',
+      '0041_publication_check_given_up',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -700,6 +709,8 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0037_iteration_retention',
       '0038_api_tokens',
       '0039_groups',
+      '0040_publication_check',
+      '0041_publication_check_given_up',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -795,6 +806,8 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0037_iteration_retention',
       '0038_api_tokens',
       '0039_groups',
+      '0040_publication_check',
+      '0041_publication_check_given_up',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -835,6 +848,8 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0037_iteration_retention',
       '0038_api_tokens',
       '0039_groups',
+      '0040_publication_check',
+      '0041_publication_check_given_up',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     const chain = await service.withTenant({ ...tenant, id }, (trx) =>
@@ -951,6 +966,8 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0037_iteration_retention',
       '0038_api_tokens',
       '0039_groups',
+      '0040_publication_check',
+      '0041_publication_check_given_up',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -984,6 +1001,8 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0037_iteration_retention',
       '0038_api_tokens',
       '0039_groups',
+      '0040_publication_check',
+      '0041_publication_check_given_up',
     ]);
     const { declared, fifth } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -1083,6 +1102,8 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0037_iteration_retention',
       '0038_api_tokens',
       '0039_groups',
+      '0040_publication_check',
+      '0041_publication_check_given_up',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1139,6 +1160,8 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0037_iteration_retention',
       '0038_api_tokens',
       '0039_groups',
+      '0040_publication_check',
+      '0041_publication_check_given_up',
     ]);
     const { declared, sixth, inputs } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -1240,6 +1263,8 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0037_iteration_retention',
       '0038_api_tokens',
       '0039_groups',
+      '0040_publication_check',
+      '0041_publication_check_given_up',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1283,6 +1308,8 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0037_iteration_retention',
       '0038_api_tokens',
       '0039_groups',
+      '0040_publication_check',
+      '0041_publication_check_given_up',
     ]);
     const { declared, seventh, inputs, row } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),

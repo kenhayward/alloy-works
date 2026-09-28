@@ -4729,8 +4729,8 @@ describe('cross-references in the editor (cross-references 1)', () => {
   const stale = {
     targets: [
       {
-        target: { kind: 'block', block: 't1' },
-        kind: 'table',
+        target: { kind: 'block' as const, block: 't1' },
+        kind: 'table' as const,
         label: 'Table 1.2',
         title: 'Readings',
         relative: null,
