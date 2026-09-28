@@ -533,11 +533,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   away. The token is shown once, as `awt_` and 43 characters, and only a hash of it is kept. A script
   sends it as `Authorization: Bearer ...` and acts as you: it reads what you may read, and does only what
   you may do and its permissions include, so a token made to edit cannot publish, and a token given
-  permissions you do not hold gains none of them. A token with no permissions reads and does nothing
-  else. `GET /v1/tokens` lists yours, with when each was last used, and `DELETE /v1/tokens/{id}` revokes
-  one: the next request with it is refused. A token cannot issue, list or revoke tokens, sign out or open
-  the event stream; those take a signed-in session. There is no page for tokens yet, and an
-  administrator cannot yet list or revoke somebody else's.
+  permissions you do not hold gains none of them. A token with no permissions reads, and may ask for a
+  preview, and does nothing else. `GET /v1/tokens` lists yours, with when each was last used, and
+  `DELETE /v1/tokens/{id}` revokes one: the next request with it is refused. A token cannot issue, list
+  or revoke tokens, sign out, open the event stream or ask for a sample; those take a signed-in session.
+  There is no page for tokens yet, and an administrator cannot yet list or revoke somebody else's.
 
 - **Retrying safely through the API.** A request that makes or changes something can carry an
   `Idempotency-Key`; sent again with the same key - after an answer that was lost - it is answered as it

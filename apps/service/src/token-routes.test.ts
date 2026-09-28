@@ -1,6 +1,7 @@
 // apps/service/src/token-routes.test.ts
 import { createHash } from 'node:crypto';
 import { Writable } from 'node:stream';
+import { crc32, deflateSync } from 'node:zlib';
 import {
   bootstrapCluster,
   configureOrganisationSignIn,
@@ -14,6 +15,8 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import { createObjectStores } from '@alloy-works/objects';
+import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -25,6 +28,29 @@ import { signIn } from './test/sign-in.js';
 const HOST = 'acme.alloy.test';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const SECRET = /^awt_[A-Za-z0-9_-]{43}$/;
+
+const chunk = (type: string, data: Buffer) => {
+  const body = Buffer.concat([Buffer.from(type, 'latin1'), data]);
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(body));
+  return Buffer.concat([length, body, crc]);
+};
+
+/** A real PNG, one red pixel. */
+const png = () => {
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(1, 0);
+  header.writeUInt32BE(1, 4);
+  header.set([8, 2, 0, 0, 0], 8);
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', header),
+    chunk('IDAT', deflateSync(Buffer.from([0, 255, 0, 0]))),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+};
 
 interface Issued {
   readonly id: string;
@@ -38,6 +64,7 @@ interface Issued {
 
 describe('personal tokens (service-foundations.md, "Personal tokens, as W12 builds them")', () => {
   let db: TestDatabase;
+  let objects: TestObjectStore;
   let idp: StandInProvider;
   let tenantDb: TenantDatabase;
   let app: FastifyInstance;
@@ -87,6 +114,7 @@ describe('personal tokens (service-foundations.md, "Personal tokens, as W12 buil
 
   beforeAll(async () => {
     db = await freshDatabase();
+    objects = await testObjectStore();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
     await migrate(db.migratorUrl);
     idp = await startStandInProvider({
@@ -103,6 +131,7 @@ describe('personal tokens (service-foundations.md, "Personal tokens, as W12 buil
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: [HOST],
     });
+    await objects.setUp(db.adminUrl, tenant);
     await configureOrganisationSignIn(db.adminUrl, tenant, {
       issuer: idp.issuer,
       clientId: 'alloy',
@@ -121,6 +150,7 @@ describe('personal tokens (service-foundations.md, "Personal tokens, as W12 buil
       }),
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      objects: createObjectStores(objects.settings, objects.sealingKey),
     });
     for (const user of ['ada', 'grace', 'alice']) {
       cookies[user] = await signIn(app, HOST, user, idp.issuer);
@@ -175,6 +205,7 @@ describe('personal tokens (service-foundations.md, "Personal tokens, as W12 buil
     await app.close();
     await tenantDb.close();
     await idp.close();
+    await objects.drop();
     await db.drop();
   });
 
@@ -190,6 +221,17 @@ describe('personal tokens (service-foundations.md, "Personal tokens, as W12 buil
       const row = await stored(issued.id);
       expect(row?.token_hash).toBe(createHash('sha256').update(issued.secret).digest('hex'));
       expect(JSON.stringify(row)).not.toContain(issued.secret);
+    });
+
+    it('answers the secret with Cache-Control: no-store, so no cache between keeps it', async () => {
+      const response = await call('POST', '/v1/tokens', as('grace'), {
+        name: 'Cached nowhere',
+        scopes: [],
+        expiresAt: inDays(30),
+      });
+      expect(response.statusCode, response.body).toBe(200);
+      expect(response.json<Issued>().secret).toMatch(SECRET);
+      expect(response.headers['cache-control']).toBe('no-store');
     });
 
     it("lists the caller's own tokens, never a secret or a hash, and nobody else's", async () => {
@@ -297,19 +339,36 @@ describe('personal tokens (service-foundations.md, "Personal tokens, as W12 buil
       expect(me.json()).toMatchObject({ id: ids.grace, displayName: 'Grace' });
     });
 
-    it('refuses a malformed Authorization header, and a bearer that is not a token, even beside a good cookie', async () => {
+    it('refuses a malformed bearer, and one that is not a token, even beside a good cookie', async () => {
       for (const authorization of [
-        'Basic Z3JhY2U6c2VjcmV0',
         'Bearer',
         'Bearer ',
+        'bearer ',
         'Bearer not-a-token',
         `Bearer awt_${'a'.repeat(42)}`,
         `Bearer awt_${'a'.repeat(43)}`,
         `Bearer awt_${'a'.repeat(43)} extra`,
+        `bearer awt_${'a'.repeat(43)}`,
       ]) {
         const response = await call('GET', '/v1/me', { ...as('grace'), authorization });
         expect(response.statusCode, authorization).toBe(401);
         expect(response.json()).toMatchObject({ code: 'unauthenticated' });
+      }
+    });
+
+    it('passes over any other scheme, which a proxy in front may have added, and lets the cookie decide', async () => {
+      for (const authorization of [
+        'Basic Z3JhY2U6c2VjcmV0',
+        'Negotiate YIIBhwYGKwYBBQUCoIIBezCCAXeg',
+        'Digest username="grace"',
+        'Bearerish awt_x',
+      ]) {
+        const signedIn = await call('GET', '/v1/me', { ...as('grace'), authorization });
+        expect(signedIn.statusCode, authorization).toBe(200);
+        expect(signedIn.json()).toMatchObject({ id: ids.grace });
+        const alone = await call('GET', '/v1/me', { authorization });
+        expect(alone.statusCode, authorization).toBe(401);
+        expect(alone.json()).toMatchObject({ code: 'unauthenticated' });
       }
     });
 
@@ -420,15 +479,24 @@ describe('personal tokens (service-foundations.md, "Personal tokens, as W12 buil
       expect(explained.statusCode).toBe(403);
     });
 
-    it('IAM-034 reads through a token with no scopes, and does nothing else', async () => {
+    it('IAM-034 reads through a token with no scopes, and may ask for a preview, and does nothing else', async () => {
       const issued = await issue('grace', []);
       expect(await allowedOn(issued.secret, `artifact:${dosing}`)).toEqual(['read']);
       expect(
         (await call('GET', `/v1/components/${dosing}`, bearer(issued.secret))).statusCode,
       ).toBe(200);
-      expect((await call('GET', `/v1/documents/${report}`, bearer(issued.secret))).statusCode).toBe(
-        200,
+      const opened = await call('GET', `/v1/documents/${report}`, bearer(issued.secret));
+      expect(opened.statusCode).toBe(200);
+      // A preview is decided on read (PV-B): seeing the pages is reading, so a token may ask for one.
+      const previewed = await call(
+        'POST',
+        `/v1/documents/${report}/previews`,
+        bearer(issued.secret),
+        {
+          version: opened.json<{ version: { id: string } }>().version.id,
+        },
       );
+      expect(previewed.statusCode, previewed.body).toBe(200);
       const listed = await call('GET', '/v1/components', bearer(issued.secret));
       expect(listed.json<{ items: { id: string }[] }>().items.map((item) => item.id)).toContain(
         dosing,
@@ -444,6 +512,45 @@ describe('personal tokens (service-foundations.md, "Personal tokens, as W12 buil
         { title: 'Not by this token', language: 'en-GB', direction: 'ltr' },
       );
       expect(created.statusCode).toBe(403);
+      const document = await call(
+        'POST',
+        `/v1/spaces/${clinical}/documents`,
+        bearer(issued.secret),
+        { title: 'Not by this token', language: 'en-GB', direction: 'ltr' },
+      );
+      expect(document.statusCode).toBe(403);
+      // The development sample writes and queues a job, and takes a session alone.
+      const sampled = await call('POST', '/v1/samples', bearer(issued.secret));
+      expect(sampled.statusCode).toBe(403);
+      expect(sampled.json()).toMatchObject({ code: 'token_not_allowed' });
+    });
+
+    it("IAM-034 refuses a token without create the bytes of an upload its creator's session began, and lets one scoped to create fill it", async () => {
+      const begun = await call('POST', `/v1/spaces/${clinical}/asset-uploads`, as('grace'), {
+        alternative: null,
+      });
+      expect(begun.statusCode, begun.body).toBe(200);
+      const upload = begun.json<{ id: string }>().id;
+      const fill = (secret: string) =>
+        app.inject({
+          method: 'PUT',
+          url: `/v1/asset-uploads/${upload}/bytes`,
+          headers: {
+            host: HOST,
+            ...bearer(secret),
+            'content-type': 'application/octet-stream',
+          },
+          payload: png(),
+        });
+      // Decided by `authoriseAt` on the upload's space, which the route's path does not name.
+      const editing = await issue('grace', ['edit']);
+      const refused = await fill(editing.secret);
+      expect(refused.statusCode, refused.body).toBe(403);
+      expect(refused.json()).toMatchObject({ code: 'forbidden' });
+      const creating = await issue('grace', ['create']);
+      const filled = await fill(creating.secret);
+      expect(filled.statusCode, filled.body).toBe(200);
+      expect(filled.json()).toMatchObject({ id: upload, reason: null });
     });
 
     it('says in every answer that a token may not do what its scopes leave out: mayEdit, mayPublish and mayCreate', async () => {

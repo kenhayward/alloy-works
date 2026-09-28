@@ -51,13 +51,14 @@ export interface SpaceForPrincipal {
  *
  * `scopes` are the scopes of the token the listing was asked with, undefined for a session: a mask over
  * `mayCreate`, as over every decision (service-foundations.md, TK-A). Which spaces are listed is not
- * masked, since reading never is (TK-B).
+ * masked, since reading never is (TK-B). Required, and ahead of the page asked for, so no caller can
+ * leave a token's scopes out by forgetting them (W12.1's final review).
  */
 export async function listSpacesFor(
   trx: TenantTransaction,
   principalId: string,
+  scopes: readonly Permission[] | undefined,
   request: ListingRequest<SortOf<'spaces'>> = { limit: 100 },
-  scopes?: readonly Permission[],
 ): Promise<Listed<SpaceForPrincipal>> {
   const limit = checkedLimit(request.limit);
   const { types, order } = listingSorts.spaces.name;

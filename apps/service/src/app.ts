@@ -78,7 +78,13 @@ import {
 import { signState, verifyState } from './sign-in-state.js';
 import { streamToViewer } from './stream.js';
 import { cachedResolver } from './tenants.js';
-import { bearerSecret, tokenHandlers, tokenNotAllowed, unauthenticated } from './tokens.js';
+import {
+  bearerSecret,
+  isBearer,
+  tokenHandlers,
+  tokenNotAllowed,
+  unauthenticated,
+} from './tokens.js';
 import type { ZodTypeProvider } from './type-provider.js';
 
 declare module 'fastify' {
@@ -744,9 +750,10 @@ export function buildApp(options: AppOptions): FastifyInstance {
       // simply not there (IAM-003).
       onRequest.push(async (request) => {
         // A bearer first, and alone: a request carrying one is decided by it whatever cookie it also
-        // carries, and one that is not a token of ours is refused rather than passed over.
+        // carries, and one that is not a token of ours is refused rather than passed over. Any other
+        // scheme is not ours to read, and the cookie decides (W12.1's final review).
         const authorization = request.headers.authorization;
-        if (authorization !== undefined) {
+        if (authorization !== undefined && isBearer(authorization)) {
           const secret = bearerSecret(authorization);
           const holder =
             secret === undefined

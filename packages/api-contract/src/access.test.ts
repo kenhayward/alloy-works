@@ -77,13 +77,13 @@ describe('what each route checks', () => {
     }
   });
 
-  it('takes a session alone for signing out, the event stream and managing tokens (TK-D), each declaring the 403 a token is refused with', () => {
+  it('takes a session alone for signing out, the event stream, managing tokens (TK-D) and the development sample, each declaring the 403 a token is refused with', () => {
     const sessionAlone = allRoutes
       .filter((route) => route.access.check !== 'none' && route.access.credential === 'session')
       .map((route) => route.operationId)
       .sort();
     expect(sessionAlone).toEqual(
-      ['createToken', 'listTokens', 'openStream', 'revokeToken', 'signOut'].sort(),
+      ['createToken', 'listTokens', 'openStream', 'requestSample', 'revokeToken', 'signOut'].sort(),
     );
     for (const route of allRoutes) {
       if (route.access.check === 'none' || route.access.credential !== 'session') continue;
