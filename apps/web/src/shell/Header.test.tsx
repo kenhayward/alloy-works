@@ -201,6 +201,22 @@ describe('the header band', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('opens API tokens from the account chip, and closes it', async () => {
+    render(
+      <Header
+        module="Components"
+        fetch={serviceThat({ ...signedIn, '/v1/tokens': { items: [], next: null } })}
+      />,
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'API tokens' }));
+    const dialog = screen.getByRole('dialog', { name: 'API tokens' });
+    expect(await within(dialog).findByText('You have no API tokens.')).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('offers no Theme while there is one theme', async () => {
     render(<Header module="Components" fetch={serviceThat(signedIn)} />);
 

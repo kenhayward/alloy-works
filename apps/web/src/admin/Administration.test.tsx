@@ -130,6 +130,88 @@ describe('Administration', () => {
     expect(screen.queryByText('You may not manage access here.')).toBeNull();
   });
 
+  it("lets an administrator open a person's tokens from People, and revoke one after asking", async () => {
+    const token = {
+      id: '11111111-1111-4111-8111-111111111111',
+      name: 'Nightly import',
+      scopes: ['edit'],
+      createdAt: '2026-09-01T09:00:00.000Z',
+      expiresAt: '2026-12-01T09:00:00.000Z',
+      lastUsedAt: null,
+    };
+    const deleted: string[] = [];
+    const answers: Record<string, () => Response> = {
+      ...everything,
+      '/v1/principals/p1/tokens': () => json(200, { items: [token], next: null }),
+    };
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (request.method === 'DELETE') {
+        deleted.push(url.pathname);
+        return json(200, { revoked: token.id });
+      }
+      const answer = answers[url.pathname];
+      return answer ? answer() : json(404, {});
+    }) as unknown as typeof fetch;
+    const client = createApiClient({ baseUrl: 'http://admin.test', fetch: fetching });
+    render(<Administration client={client} about={null} onClose={vi.fn()} />);
+
+    await userEvent.click(section('People and invitations'));
+    const people = await screen.findByRole('table', { name: 'People' });
+    // Somebody invited who has not signed in yet has no tokens to list.
+    expect(within(people).queryByRole('button', { name: /^Tokens of ivy/ })).toBeNull();
+    await userEvent.click(within(people).getByRole('button', { name: 'Tokens of Ada' }));
+    const tokens = await screen.findByRole('table', { name: 'Tokens of Ada' });
+    expect(within(tokens).getByRole('cell', { name: 'Nightly import' })).toBeInTheDocument();
+    expect(within(tokens).getByRole('cell', { name: 'read, edit' })).toBeInTheDocument();
+
+    await userEvent.click(within(tokens).getByRole('button', { name: 'Revoke Nightly import' }));
+    expect(deleted).toEqual([]);
+    await userEvent.click(screen.getByRole('button', { name: 'Revoke token' }));
+    expect(await screen.findByText('Revoked Nightly import.')).toBeInTheDocument();
+    expect(deleted).toEqual([`/v1/principals/p1/tokens/${token.id}`]);
+    expect(screen.queryByRole('table', { name: 'Tokens of Ada' })).toBeNull();
+    expect(screen.getByText('Ada has no API tokens.')).toBeInTheDocument();
+    expect(tokens).not.toBeInTheDocument();
+
+    // And back to the people.
+    await userEvent.click(screen.getByRole('button', { name: 'Back to people' }));
+    expect(await screen.findByRole('table', { name: 'People' })).toBeInTheDocument();
+  });
+
+  it("keeps focus in Administration going to a person's tokens and back, though each button that had it goes", async () => {
+    const answers: Record<string, () => Response> = {
+      ...everything,
+      '/v1/principals/p1/tokens': () => json(200, { items: [], next: null }),
+    };
+    const { client } = service(answers);
+    const onClose = vi.fn();
+    render(<Administration client={client} about={null} onClose={onClose} />);
+    const dialog = screen.getByRole('dialog', { name: 'Administration' });
+
+    await userEvent.click(section('People and invitations'));
+    const people = await screen.findByRole('table', { name: 'People' });
+    await userEvent.click(within(people).getByRole('button', { name: 'Tokens of Ada' }));
+    // On the person's tokens heading, which the Tokens button gave way to.
+    expect(document.activeElement).toBe(
+      within(dialog).getByRole('heading', { name: 'Tokens of Ada' }),
+    );
+    expect(await screen.findByText('Ada has no API tokens.')).toBeInTheDocument();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Back to people' }));
+    // Back on the Tokens button it left from.
+    expect(document.activeElement).toBe(
+      within(screen.getByRole('table', { name: 'People' })).getByRole('button', {
+        name: 'Tokens of Ada',
+      }),
+    );
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    // So Escape still closes Administration.
+    await userEvent.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('says which version this is in About, beside what it is given', async () => {
     const { client } = service(everything);
     render(

@@ -78,10 +78,13 @@ export {
 export { buildOpenApi, type OpenApiDocument } from './openapi.js';
 export {
   CreateTokenBody,
+  PrincipalTokenParams,
+  PrincipalTokensParams,
   TokenIssued,
   TokenList,
   TokenListQuery,
   TokenParams,
+  TokenRevoked,
   TokenScope,
   TokenView,
 } from './tokens.js';

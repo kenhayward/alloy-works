@@ -141,7 +141,12 @@ const OTHER_TENANT_IDS: Readonly<
   recordTemplateVersion: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
   getDefinition: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   recordDefinitionVersion: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
-  revokeToken: async (tenant, db) => ({ id: await tokenIdIn(tenant, db) }),
+  revokeToken: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).token }),
+  listPrincipalTokens: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).principal }),
+  revokePrincipalToken: async (tenant, db) => {
+    const { principal, token } = await tokenIn(tenant, db);
+    return { id: principal, token };
+  },
 };
 
 /**
@@ -510,12 +515,23 @@ const invitationIdIn = (tenant: Tenant, db: TenantDatabase) =>
     return made.invited.id;
   });
 
-/** A personal token in `tenant`, of a principal of its own, kept as its hash as any token is. */
-async function tokenIdIn(tenant: Tenant, db: TenantDatabase): Promise<string> {
+/**
+ * A personal token in `tenant`, of a principal of its own, kept as its hash as any token is: each call
+ * a person and a token of their own, since a hash and a subject are each held once.
+ */
+async function tokenIn(
+  tenant: Tenant,
+  db: TenantDatabase,
+): Promise<{ readonly principal: string; readonly token: string }> {
   return db.withTenant(tenant, async (trx) => {
     const principal = await trx
       .insertInto('principal')
-      .values({ issuer: 'https://idp.example', subject: 'ivy', email: null, display_name: null })
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
       .returning('id')
       .executeTakeFirstOrThrow();
     const token = await trx
@@ -523,13 +539,13 @@ async function tokenIdIn(tenant: Tenant, db: TenantDatabase): Promise<string> {
       .values({
         principal_id: principal.id,
         name: 'Elsewhere',
-        token_hash: 'f'.repeat(64),
+        token_hash: randomUUID().replaceAll('-', '').padEnd(64, 'f'),
         scopes: [],
         expires_at: new Date(IN_A_MONTH),
       })
       .returning('id')
       .executeTakeFirstOrThrow();
-    return token.id;
+    return { principal: principal.id, token: token.id };
   });
 }
 

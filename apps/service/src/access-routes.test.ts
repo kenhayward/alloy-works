@@ -747,6 +747,11 @@ describe('routes that check a permission', () => {
       payload: { email: 'ivy@example.com' },
     }),
     withdrawInvitation: () => ({ url: `/v1/invitations/${MISSING}`, status: 403 }),
+    listPrincipalTokens: () => ({ url: `/v1/principals/${ids.alice}/tokens`, status: 403 }),
+    revokePrincipalToken: () => ({
+      url: `/v1/principals/${ids.alice}/tokens/${MISSING}`,
+      status: 403,
+    }),
     setEditingSettings: () => ({
       url: '/v1/settings/editing',
       status: 403,

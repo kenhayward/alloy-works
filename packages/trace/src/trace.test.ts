@@ -694,6 +694,7 @@ describe('scanning the repository for test files', () => {
     // 30, from 29: publishing/Preview.test.tsx, which cites nothing.
     // 31, from 30 (2026-09-28): editor/Recovery.test.tsx, which cites CNT-067 and CNT-090.
     // 32, from 31 (2026-09-28): editor/Reload.test.tsx, which cites CNT-069, CNT-067 and CNT-169.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(32);
+    // 33, from 32 (2026-09-28): account/ApiTokens.test.tsx, which cites nothing.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(33);
   });
 });

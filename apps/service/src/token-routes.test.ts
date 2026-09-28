@@ -156,8 +156,17 @@ describe('personal tokens (service-foundations.md, "Personal tokens, as W12 buil
       cookies[user] = await signIn(app, HOST, user, idp.issuer);
       ids[user] = (await call('GET', '/v1/me', as(user))).json<{ id: string }>().id;
     }
-    // Grace authors and publishes in Clinical; Alice authors there and may not publish.
+    // Grace authors and publishes in Clinical; Alice authors there and may not publish. Ada
+    // administers the environment, and holds nothing in Clinical.
     await tenantDb.withTenant(tenant, async (trx) => {
+      const administrator = await findRole(trx, 'Administrator');
+      await grant(trx, {
+        roleId: administrator!.id,
+        subject: { principal: ids.ada! },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ids.ada!,
+      });
       clinical = (await createSpace(trx, 'Clinical')).id;
       for (const [role, who] of [
         ['Author', 'grace'],
@@ -328,6 +337,88 @@ describe('personal tokens (service-foundations.md, "Personal tokens, as W12 buil
       const expired = await call('GET', '/v1/me', bearer(issued.secret));
       expect(expired.statusCode).toBe(401);
       expect(expired.json()).toMatchObject({ code: 'unauthenticated' });
+    });
+  });
+
+  describe('listed and revoked by an administrator of the environment (TK-E)', () => {
+    const MISSING = '00000000-0000-4000-8000-000000000000';
+    const theirs = (who: string) => `/v1/principals/${ids[who]!}/tokens`;
+
+    it("IAM-035 lets an administrator list Grace's tokens and revoke one, refused at Grace's very next request", async () => {
+      const issued = await issue('grace', ['edit'], 'Left with Grace');
+      expect((await call('GET', '/v1/me', bearer(issued.secret))).statusCode).toBe(200);
+
+      const listed = await call('GET', theirs('grace'), as('ada'));
+      expect(listed.statusCode, listed.body).toBe(200);
+      const items = listed.json<{ items: Record<string, unknown>[] }>().items;
+      expect(items).toContainEqual({
+        id: issued.id,
+        name: 'Left with Grace',
+        scopes: ['edit'],
+        createdAt: issued.createdAt,
+        expiresAt: issued.expiresAt,
+        lastUsedAt: expect.any(String),
+      });
+      expect(listed.body).not.toContain('awt_');
+      expect(listed.body).not.toContain((await stored(issued.id))!.token_hash);
+
+      const revoked = await call('DELETE', `${theirs('grace')}/${issued.id}`, as('ada'));
+      expect(revoked.statusCode, revoked.body).toBe(200);
+      expect(revoked.json()).toEqual({ revoked: issued.id });
+      const after = await call('GET', '/v1/me', bearer(issued.secret));
+      expect(after.statusCode).toBe(401);
+      expect(after.json()).toMatchObject({ code: 'unauthenticated' });
+      const own = await call('GET', '/v1/tokens', as('grace'));
+      expect(own.json<{ items: Issued[] }>().items.map((item) => item.id)).not.toContain(issued.id);
+    });
+
+    it('lists only the person named: nobody else, the administrator included', async () => {
+      const graces = await issue('grace', [], 'Grace alone');
+      const adas = await issue('ada', [], 'Ada alone');
+      const listed = await call('GET', theirs('grace'), as('ada'));
+      const shown = listed.json<{ items: Issued[] }>().items.map((item) => item.id);
+      expect(shown).toContain(graces.id);
+      expect(shown).not.toContain(adas.id);
+    });
+
+    it("refuses anybody who may not administer the environment, Grace herself included, and leaves Grace's token working", async () => {
+      const issued = await issue('grace', ['edit']);
+      for (const who of ['alice', 'grace']) {
+        const listed = await call('GET', theirs('grace'), as(who));
+        expect(listed.statusCode, who).toBe(403);
+        expect(listed.json()).toMatchObject({ code: 'forbidden' });
+        const revoked = await call('DELETE', `${theirs('grace')}/${issued.id}`, as(who));
+        expect(revoked.statusCode, who).toBe(403);
+        expect(revoked.json()).toMatchObject({ code: 'forbidden' });
+      }
+      expect((await call('GET', '/v1/me', bearer(issued.secret))).statusCode).toBe(200);
+    });
+
+    it('refuses a token at both, even one scoped to administer, as it does every route managing tokens (TK-D)', async () => {
+      const adas = await issue('ada', ['administer']);
+      const graces = await issue('grace', ['edit']);
+      for (const [method, url] of [
+        ['GET', theirs('grace')],
+        ['DELETE', `${theirs('grace')}/${graces.id}`],
+      ] as const) {
+        const response = await call(method, url, bearer(adas.secret));
+        expect(response.statusCode, `${method} ${url}`).toBe(403);
+        expect(response.json()).toMatchObject({ code: 'token_not_allowed' });
+      }
+      expect((await call('GET', '/v1/me', bearer(graces.secret))).statusCode).toBe(200);
+    });
+
+    it('answers a person who is not here, and a token that is not the named person, as not found', async () => {
+      const graces = await issue('grace', ['edit']);
+      const nobody = await call('GET', `/v1/principals/${MISSING}/tokens`, as('ada'));
+      expect(nobody.statusCode).toBe(404);
+      expect(nobody.json()).toMatchObject({ code: 'not_found' });
+      const elsewhere = await call('DELETE', `${theirs('alice')}/${graces.id}`, as('ada'));
+      expect(elsewhere.statusCode).toBe(404);
+      expect(elsewhere.json()).toMatchObject({ code: 'not_found' });
+      const gone = await call('DELETE', `${theirs('grace')}/${MISSING}`, as('ada'));
+      expect(gone.statusCode).toBe(404);
+      expect((await call('GET', '/v1/me', bearer(graces.secret))).statusCode).toBe(200);
     });
   });
 
