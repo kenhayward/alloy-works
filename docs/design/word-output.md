@@ -1344,7 +1344,9 @@ none for named on the publication - would be claimed here; that is a change to P
 through the requirement form.
 
 **Not cited, and why.** The Word check cites PUB-029 alone, as before, since CI skips it. PUB-092 and
-STY-053 wait for Word's pagination and its style properties to be measured where Word runs, PUB-073
+STY-053 wait for Word's pagination and its style properties to be measured where Word runs (since
+W14.3 the regression corpus shows each keep rule reaching Word as its own property, and themes.md
+names the gap that is left: Word's own page breaks), PUB-073
 for T3's baselines, and PUB-028, review in Word, is T6.
 
 **Left, for anyone after T1.** Nothing of WO-M is left. Open: the two questions under

@@ -15657,7 +15657,7 @@
       "owns": [
         {
           "id": "PUB-098",
-          "howItIsMet": "The order is stated under [The order](#the-order): resolve occurrences, conditions over content, contributions, number, references, generated matter, checks, projection. Each stage takes the previous stage's type, and a test builds a document whose output differs under every adjacent swap"
+          "howItIsMet": "The order is stated under [The order](#the-order): resolve occurrences, conditions over content, contributions, number, references, generated matter, checks, projection. `order.test.ts` tests each adjacent pair: swapped where the code lets a test swap them, the output differing; refused at compile time where the types forbid it; and, where `assemble` runs the last stages in its own order - after the Word numbering check, the checks of the title, the language, a preview's words and the layout's words, then the references, one walk that checks and projects each block, then the contents, the check for something to publish, which reads it, and the lists - that check shown reading generation's answer, and a projection returned only where every check passed"
         },
         {
           "id": "PUB-005",
@@ -15805,7 +15805,7 @@
         },
         {
           "id": "PUB-087",
-          "howItIsMet": "The regression corpus - the spike's cases, grown by a case for every defect - is compiled on every change to the template, the engine or `assemble`, and each case holds its expected outcome and its veraPDF verdict ([Verification](#verification))"
+          "howItIsMet": "The regression corpus - the spike's nine cases, grown by a case for every defect, named by its issue - is compiled on every change to the template, the engine or `assemble`, and each case holds its expected outcome, and where it is a question of structure its veraPDF verdict ([Verification](#verification))"
         },
         {
           "id": "PUB-088",
@@ -16935,10 +16935,6 @@
         {
           "id": "TAB-032",
           "howItIsMet": "The same, from the table's side"
-        },
-        {
-          "id": "PUB-092",
-          "howItIsMet": "Widow and orphan control, keep-with-next and keep-together are paragraph style properties, each passed to Typst as its own rule - the two costs, `sticky`, `breakable: false` - as measured, and to Word as `w:widowControl`, `w:keepNext` and `w:keepLines`; the publishing regression corpus gains a case for each"
         }
       ]
     },
@@ -17512,19 +17508,19 @@
     {
       "id": "CNT-044",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5178,
+      "line": 5180,
       "kind": "title"
     },
     {
       "id": "CNT-048",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5206,
+      "line": 5208,
       "kind": "title"
     },
     {
       "id": "CNT-057",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 6390,
+      "line": 6392,
       "kind": "title"
     },
     {
@@ -17542,13 +17538,13 @@
     {
       "id": "CNT-080",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5251,
+      "line": 5253,
       "kind": "title"
     },
     {
       "id": "CNT-082",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5718,
+      "line": 5720,
       "kind": "title"
     },
     {
@@ -17560,13 +17556,13 @@
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 6167,
+      "line": 6169,
       "kind": "title"
     },
     {
       "id": "CNT-097",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5707,
+      "line": 5709,
       "kind": "title"
     },
     {
@@ -17578,7 +17574,7 @@
     {
       "id": "CNT-115",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5735,
+      "line": 5737,
       "kind": "title"
     },
     {
@@ -17590,7 +17586,7 @@
     {
       "id": "CNT-122",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5753,
+      "line": 5755,
       "kind": "title"
     },
     {
@@ -17620,13 +17616,13 @@
     {
       "id": "CNT-178",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 6282,
+      "line": 6284,
       "kind": "title"
     },
     {
       "id": "SCH-057",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5595,
+      "line": 5597,
       "kind": "title"
     },
     {
@@ -17638,13 +17634,13 @@
     {
       "id": "STY-070",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5961,
+      "line": 5963,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5851,
+      "line": 5853,
       "kind": "title"
     },
     {
@@ -18116,9 +18112,27 @@
       "kind": "title"
     },
     {
+      "id": "PUB-087",
+      "file": "apps/worker/src/regression.test.ts",
+      "line": 462,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-098",
+      "file": "apps/worker/src/regression.test.ts",
+      "line": 981,
+      "kind": "title"
+    },
+    {
       "id": "PUB-103",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 120,
+      "line": 157,
+      "kind": "title"
+    },
+    {
+      "id": "STY-008",
+      "file": "apps/worker/src/regression.test.ts",
+      "line": 1288,
       "kind": "title"
     },
     {
@@ -18196,13 +18210,13 @@
     {
       "id": "PUB-019",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1545,
+      "line": 1360,
       "kind": "title"
     },
     {
       "id": "PUB-069",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1132,
+      "line": 947,
       "kind": "title"
     },
     {
@@ -18214,25 +18228,25 @@
     {
       "id": "STY-009",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 778,
+      "line": 681,
       "kind": "title"
     },
     {
       "id": "STY-010",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 871,
+      "line": 774,
       "kind": "title"
     },
     {
       "id": "STY-042",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1545,
+      "line": 1360,
       "kind": "title"
     },
     {
       "id": "STY-074",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1217,
+      "line": 1032,
       "kind": "title"
     },
     {
@@ -19541,6 +19555,12 @@
       "id": "PUB-012",
       "file": "packages/domain/src/publishing/layout.test.ts",
       "line": 259,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-098",
+      "file": "packages/domain/src/publishing/order.test.ts",
+      "line": 165,
       "kind": "title"
     },
     {

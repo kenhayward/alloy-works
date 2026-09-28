@@ -22,7 +22,7 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   outside the app. An environment that has changed its own table or image styles keeps them, with
   their captions where they always were.
 
-## 0.119.0 - 2026-09-28 (PR #317)
+## 0.120.0 - 2026-09-28 (PR #317)
 
 ### Added
 
@@ -36,6 +36,31 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   publish, since it has none. So does a reference asking for the number of an equation left
   unnumbered, and one asking for something its target never has, such as a footnote's title, says
   so. Publications already made are unchanged (issue #129).
+
+## 0.119.0 - 2026-09-28 (PR #320)
+
+### Added
+
+- **Every change to publishing is checked against the documents that tested the publishing engine
+  first.** The nine documents the engine was chosen with - tagged headings, lists, tables and figures,
+  twenty footnotes, a table crossing three pages, a three-hundred-page document edited near its
+  fortieth page, equations everywhere an equation can stand, page numbers and running heads in every
+  matter, typefaces, a long document's contents and lists, and the same bytes made twice - are now
+  published through the product's own pipeline on every change, and each must come out as the product sets
+  it today. Nothing changes in what you publish.
+- **Each publishing problem ever reported has a check of its own**, named by its issue: those fixed
+  must stay fixed, and those still open - such as a table's caption left at the foot of a page, a tab
+  lost from a PDF, or a section marked to start a new page that does not - are recorded as they stand,
+  so any change to them is noticed.
+
+### Changed
+
+- **The order in which a publication is put together is tested stage by stage**: each step is shown to
+  change the result if it came before the one ahead of it, or, where two steps cannot be swapped,
+  shown refused by the types or by the later step reading what the earlier made.
+- **Keeping a heading with its paragraph, keeping a paragraph together and avoiding lone lines at a
+  page's edge** are checked both in the PDF and in the rules a Word document is given, from the same
+  style.
 
 ## 0.118.0 - 2026-09-28 (PR #315)
 

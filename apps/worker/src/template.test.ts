@@ -495,11 +495,12 @@ const body = (id: string, value: string) => ({
 });
 
 describe('the published list shapes that are easy to read past', () => {
-  // Lists are read in full against the PDF in `lists.test.ts`. These three are here, beside the
+  // Lists are read in full against the PDF in `lists.test.ts`. These two are here, beside the
   // template that must read them, because each is a real published spelling a reader skims over: a
-  // start of 0, which is falsy in every language this pipeline is written in; an item that came out
-  // of `assemble` with nothing in it at all, which must still make a valid `LI` under PDF/UA-1; and
-  // a second level of bullets, which the template sets a marker for and Typst does not.
+  // start of 0, which is falsy in every language this pipeline is written in; and an item that came
+  // out of `assemble` with nothing in it at all, which must still make a valid `LI` under PDF/UA-1. A
+  // second level of bullets, which the template sets a marker for and Typst does not, was a third,
+  // and is issue #158's case in the regression corpus (`regression.test.ts`).
   const typst = createTypst({ binary: typstBinaryPath(), fonts });
   const at = new Date('2026-09-20T00:00:00Z');
 
@@ -582,48 +583,4 @@ describe('the published list shapes that are easy to read past', () => {
       'L LI Lbl Span LBody P LI Lbl LBody L LI Lbl LBody P LI Lbl LBody',
     );
   }, 120_000);
-
-  it('sets a second level of bullets in a glyph the pinned faces have, rather than refusing', async () => {
-    // The whole reason `#set list(marker: ...)` is in the template. Typst's own second-level marker
-    // is U+2023 TRIANGULAR BULLET, which Liberation Serif does not have, and the worker compiles
-    // with `--ignore-embedded-fonts`, so the engine cannot fall back to a face of its own: a
-    // two-level bulleted list exits 1, which the worker reports as `TypstRefused` and nothing else -
-    // no cause and no diagnostic, by design, since a diagnostic quotes content. Measured by hand
-    // against the pinned engine: without the marker set this very fixture is
-    // `PDF/UA-1 error: the text "..." could not be displayed with font "Liberation Serif"`.
-    // Delete that line from the template and this is the test that says so.
-    const document = await holding([
-      {
-        type: 'list',
-        id: 'U1',
-        kind: 'unordered',
-        items: [
-          {
-            content: [
-              body('u1', 'Wipe the tray'),
-              {
-                type: 'list',
-                id: 'U2',
-                kind: 'unordered',
-                items: [{ content: [body('u2', 'Twice')] }],
-              },
-            ],
-          },
-        ],
-      },
-    ]);
-    const read = await readPdf(
-      await typst.compile(
-        PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
-        JSON.stringify(document),
-        at,
-      ),
-    );
-    const said = read.taggedText.flat().join(' ').replace(/\s+/g, ' ');
-    // Disc at the top level and circle below it, as the template's comment names them. Written as
-    // escapes rather than the characters themselves, so no source file in this repository carries a
-    // glyph a diff or a terminal can hide.
-    expect(said).toContain('\u{2022} Wipe the tray');
-    expect(said).toContain('\u{25E6} Twice');
-  });
 });
