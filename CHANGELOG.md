@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.110.0 - 2026-09-28 (PR #300)
+
+### Added
+
+- **API tokens for your own scripts.** Signed in, you can issue yourself a token through the API, with a
+  name, the permissions it may use and an expiry no more than a year away. A script sends it as a bearer
+  token and acts as you, but never as more: it reads what you may read, and does only what you may do and
+  its permissions include. A token made to edit cannot publish, even when you can, and giving a token a
+  permission you do not hold gains it nothing. A token with no permissions reads and does nothing else.
+- **Shown once, kept as a hash.** The token is shown once when it is issued, starting `awt_` so a secret
+  scanner can spot one committed by mistake. Only a hash of it is kept, and it is never written to a
+  log.
+- **Revoked the moment you say.** List your tokens, with when each was last used, and revoke one: the
+  next request made with it is refused. An expired token is refused the same way, and nothing extends
+  one - issue a new one instead.
+- A token cannot issue, list or revoke tokens, sign out or open the live event stream: those still need
+  you signed in. A token from one environment is refused by every other.
+- There is no page for tokens yet; the account page lists, issues and revokes them in the next release.
+
 ## 0.109.1 - 2026-09-28 (PR #299)
 
 ### Changed

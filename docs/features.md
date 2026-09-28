@@ -513,6 +513,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   A search with nothing to look for says why. What you save is found the moment it is saved.
   `GET /v1/search` answers the same search.
 
+- **Tokens for your own scripts, through the API.** Signed in, you can issue yourself an API token for a
+  script: `POST /v1/tokens` with a name, the permissions it may use and when it expires, at most 365 days
+  away. The token is shown once, as `awt_` and 43 characters, and only a hash of it is kept. A script
+  sends it as `Authorization: Bearer ...` and acts as you: it reads what you may read, and does only what
+  you may do and its permissions include, so a token made to edit cannot publish, and a token given
+  permissions you do not hold gains none of them. A token with no permissions reads and does nothing
+  else. `GET /v1/tokens` lists yours, with when each was last used, and `DELETE /v1/tokens/{id}` revokes
+  one: the next request with it is refused. A token cannot issue, list or revoke tokens, sign out or open
+  the event stream; those take a signed-in session. There is no page for tokens yet, and an
+  administrator cannot yet list or revoke somebody else's.
+
 - **Retrying safely through the API.** A request that makes or changes something can carry an
   `Idempotency-Key`; sent again with the same key - after an answer that was lost - it is answered as it
   was the first time, and nothing is made twice. The same key for a different request is refused.
@@ -883,6 +894,9 @@ Named explicitly so nobody has to read the source to find out:
   images in a line of text, footnotes, cross-references and equations, and a published Word document
   of all of that. The one sample document is a
   fixed template with no content of yours in it.
+- No page for API tokens: a person issues, lists and revokes their own through the API alone, and
+  nobody can revoke another person's yet. No token belongs to anything but a person, so a script that
+  must outlive its author has nothing to run as.
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
