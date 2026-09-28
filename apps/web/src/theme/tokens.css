@@ -125,6 +125,8 @@
   /* State */
   --danger: #b91c1c;
   --warn: #d97706;
+  /* Warning words on the page: --warn is 3.2:1 on white, enough for a border but not for text. */
+  --warn-text: #b45309;
   --ok: #16a34a;
   --chip-bg: #f1f5f9;
   --concept-bg: #ecfeff;

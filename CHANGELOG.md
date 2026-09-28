@@ -26,6 +26,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **Your name in the header stays visible under the mouse pointer**, where it turned white on a pale
   background.
 - **The choices in the Reference dialog are further apart**, so each is easier to hit.
+- **Warning words are darker orange**, such as a publication's "Not approved" notice and a warning in
+  the Link dialog, which were too faint on white to read comfortably.
 
 ## 0.122.0 - 2026-09-28 (PR #326)
 

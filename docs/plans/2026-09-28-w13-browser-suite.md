@@ -220,7 +220,7 @@ Only these could change the plan; everything else is built as written.
   so the token is darkened to #646b78, 4.9 on both, rather than each place patched; the environment's
   name on Home measured 2.2 on the panel's translucent white over the dark backdrop, and takes the
   text's colour; the account chip under the pointer took base.css's pale hover behind its white text,
-  1.08; and the Reference dialog's radio buttons stood 23 pixels apart where 2.5.8 asks 24. What axe
+  1.08; and the Reference dialog's radio buttons stood 23 pixels apart where 2.5.8 asks 24. CI's first run found a sixth, which the local runs had not reached: the publication page's "Not approved" notice in `--warn` (#d97706), 3.2:1 on white, so warning words take a new `--warn-text` (#b45309, 5.0:1) while `--warn` stays for borders and dots, where 3:1 suffices. What axe
   left undecided - 98 elements' contrast over something it cannot measure, and two links in text - is
   in each test's `meta`, and `undecided` prints it for the audit.
 - **The fixture is a component made through the API as the editor makes one**: created, its lock

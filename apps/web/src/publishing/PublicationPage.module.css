@@ -43,7 +43,7 @@
 }
 
 .notApproved {
-  color: var(--warn);
+  color: var(--warn-text);
   font-weight: 700;
   font-size: var(--size-label);
   letter-spacing: 0.04em;
