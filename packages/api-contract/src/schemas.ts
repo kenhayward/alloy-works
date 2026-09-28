@@ -106,8 +106,10 @@ export const AccessExplanation = z.object({
       permission: PermissionName,
       allowed: z.boolean(),
       reason: z
-        .enum(['allowed', 'denied', 'not_granted', 'capped'])
-        .describe('capped: an external principal, refused whatever the grants say'),
+        .enum(['allowed', 'denied', 'not_granted', 'capped', 'scoped'])
+        .describe(
+          'capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it',
+        ),
       level: z
         .string()
         .nullable()

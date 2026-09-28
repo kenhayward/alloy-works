@@ -22,7 +22,7 @@ import {
 import { ADMITTED_FORMATS, ASSET_MAX_BYTES, readImageHeader } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
-import { authoriseAt, notFound, type Authorised } from './access.js';
+import { authoriseAt, callerOf, notFound, type Authorised } from './access.js';
 import { AppError, storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 
@@ -129,7 +129,7 @@ export function assetHandlers(
         const upload = await theirs(request, trx);
         // `create` in the space, decided again now that something will be made in it: a grant
         // removed since the upload was made stops it here (final review, finding 6).
-        await authoriseAt(trx, principalOf(request).principalId, 'create', {
+        await authoriseAt(trx, callerOf(request), 'create', {
           kind: 'space',
           id: upload.spaceId,
         });

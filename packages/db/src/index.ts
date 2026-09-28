@@ -189,6 +189,15 @@ export {
   type PersonSummary,
 } from './access-listings.js';
 export {
+  findApiToken,
+  issueApiToken,
+  listApiTokens,
+  revokeApiToken,
+  TOKEN_TOUCH_AFTER_MS,
+  type ApiTokenHolder,
+  type StoredApiToken,
+} from './api-tokens.js';
+export {
   accessFactSources,
   decideOnly,
   loadFacts,

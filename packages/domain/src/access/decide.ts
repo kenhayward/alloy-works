@@ -29,6 +29,11 @@ export interface AccessFacts {
   readonly chain: readonly Level[];
   readonly grants: readonly AccessGrant[];
   readonly now: Date;
+  /**
+   * The scopes of the token the request was made with (service-foundations.md, TK-A): a mask over the
+   * principal's grants, never a grant of its own. Undefined for a session, which is not masked.
+   */
+  readonly scopes?: readonly Permission[] | undefined;
 }
 
 /** A grant that decided, and the group it reached the principal through, or null for directly. */
@@ -37,8 +42,12 @@ export type DecidingGrant = AccessGrant & { readonly through: string | null };
 export interface Decision {
   readonly permission: Permission;
   readonly allowed: boolean;
-  /** `capped`: an external principal, refused whatever the walk found, which `level` still names. */
-  readonly reason: 'allowed' | 'denied' | 'not_granted' | 'capped';
+  /**
+   * `capped`: an external principal, refused whatever the walk found, which `level` still names.
+   * `scoped`: allowed by the grants, and refused because the token the request was made with is not
+   * scoped to it; `level` and `grants` still name the allow it masked.
+   */
+  readonly reason: 'allowed' | 'denied' | 'not_granted' | 'capped' | 'scoped';
   /** The level that decided; null when no level said anything. */
   readonly level: Level | null;
   /** The grants that decided at that level: the denials, or else the allows. */
@@ -100,6 +109,17 @@ export function decide(permission: Permission, facts: AccessFacts): Decision {
   const walked = walk(permission, facts);
   if (facts.principal.kind === 'external' && externalCap.includes(permission)) {
     return { ...walked, allowed: false, reason: 'capped' };
+  }
+  // A token's scopes mask only what the grants allow (TK-A): a refusal keeps its own reason, so a
+  // scope never reads as though it could have granted anything (IAM-062), and reading is never
+  // masked (TK-B).
+  if (
+    walked.allowed &&
+    facts.scopes !== undefined &&
+    permission !== 'read' &&
+    !facts.scopes.includes(permission)
+  ) {
+    return { ...walked, allowed: false, reason: 'scoped' };
   }
   return walked;
 }

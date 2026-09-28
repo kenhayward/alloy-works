@@ -12,6 +12,7 @@ import { invitationRoutes } from './invitations.js';
 import { managingAccessRoutes } from './managing-access.js';
 import { publishingRoutes } from './publishing.js';
 import { templateRoutes } from './templates.js';
+import { tokenRoutes } from './tokens.js';
 import {
   AccessAnswers,
   AccessExplanation,
@@ -35,6 +36,12 @@ export const SESSION_COOKIE = '__Host-aw_session';
 
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
+  schema: ErrorBody,
+} as const;
+
+/** A token presented to a route that takes a session alone (service-foundations.md, TK-D). */
+const tokenNotAllowed = {
+  description: 'token_not_allowed: this takes a signed-in session, never a token',
   schema: ErrorBody,
 } as const;
 
@@ -157,10 +164,11 @@ export const routes = {
     path: '/v1/stream',
     summary: 'What is happening in this environment, as it happens',
     tenantScoped: true,
-    access: { check: 'session' },
+    access: { check: 'session', credential: 'session' },
     responses: {
       200: { description: 'The stream: a snapshot, then what happens next', stream: true },
       401: unauthenticated,
+      403: tokenNotAllowed,
       503: { description: 'This environment cannot stream yet', schema: ErrorBody },
     },
   },
@@ -170,10 +178,11 @@ export const routes = {
     path: '/v1/sign-out',
     summary: 'End this session, wherever it is in use',
     tenantScoped: true,
-    access: { check: 'session' },
+    access: { check: 'session', credential: 'session' },
     responses: {
       204: { description: 'Signed out, everywhere this session was in use' },
       401: unauthenticated,
+      403: tokenNotAllowed,
     },
   },
   getMe: {
@@ -194,10 +203,13 @@ export const routes = {
     path: '/v1/samples',
     summary: 'Ask for a sample PDF of this environment, which a worker makes',
     tenantScoped: true,
-    access: { check: 'session' },
+    // Development scaffolding that writes a row and queues a job: a session alone, so a token with no
+    // scopes does nothing but read (service-foundations.md, TK-B).
+    access: { check: 'session', credential: 'session' },
     responses: {
       202: { description: 'Asked for; a worker will make it', schema: Sample },
       401: unauthenticated,
+      403: tokenNotAllowed,
       503: {
         description: 'This environment has nowhere to keep documents yet',
         schema: ErrorBody,
@@ -262,6 +274,7 @@ export const routes = {
   ...searchRoutes,
   ...presentationRoutes,
   ...settingsRoutes,
+  ...tokenRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

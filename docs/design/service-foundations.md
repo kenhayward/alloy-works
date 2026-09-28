@@ -196,7 +196,8 @@ W12 builds the rest of this section ([W12](../plans/2026-09-28-w12-identity.md))
 - The scopes are part of the facts every decision reads. So a route's decision, a handler's own and a
   `mayEdit` flag in an answer are all masked alike, and none of them says a token may do what it may not.
 - **Reading is never masked.** A token reads what its creator reads, so the readable sets that search,
-  listings and the outline filter by stay as they are. A token with no scopes is a read-only token.
+  listings and the outline filter by stay as they are. A token with no scopes is a read-only token,
+  which may also ask for a preview, since a preview is decided on `read` (PV-B).
 
 **Issued once, kept as a hash.**
 
@@ -209,13 +210,15 @@ W12 builds the rest of this section ([W12](../plans/2026-09-28-w12-identity.md))
 **Presented as a bearer.**
 
 - A request carrying `Authorization: Bearer awt_...` is decided by that token alone, whatever cookie it
-  also carries.
+  also carries. Only the `Bearer` scheme is ours: a header naming another, such as `Basic` from a proxy
+  in front, is passed over and the cookie decides.
 - The request path hashes the token and looks it up inside `withTenant` as it does a session. Not found,
   expired or revoked is a 401.
 - `last_used_at` is written at most once a minute.
 - **A token cannot manage tokens, sign out, or open the event stream.** Those routes declare that they
   take a session alone. So a stolen token cannot mint another that outlives it, and no connection is
-  held open on a token after it is revoked (IAM-067).
+  held open on a token after it is revoked (IAM-067). The development sample, which writes a row and
+  queues a job, takes a session alone too, so a token with no scopes writes nothing.
 
 **Revoked by deleting its row** (IAM-035, IAM-055):
 
@@ -233,14 +236,14 @@ when each was last used. It issues one, showing the secret once with a way to co
 Each is taken as recommended here, on Ken's instruction of 2026-09-28 to continue with W12, and is his to
 review.
 
-| #    | Decision                                                                                                                                | Instead of                                                                                                            |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| TK-A | **Scopes are a mask over the creator's grants**, read by every decision as a fact, and a permission outside them is refused as `scoped` | Scopes as grants of their own, which would hold a permission outside a role (IAM-062)                                 |
-| TK-B | **Reading is never masked**: a token reads what its creator reads, and a token with no scopes reads and does nothing else               | A `read` scope, which would have every readable set in search, listings and the outline learn about tokens            |
-| TK-C | **An expiry is required, at most 365 days**, and nothing extends a token                                                                | Tokens without expiry, which IAM-034 forbids; or renewal, which would let one leaked token live on                    |
-| TK-D | **A token cannot manage tokens, sign out, or open the event stream**                                                                    | Every route open to a token, which lets a stolen token mint a successor, and holds a connection open after revocation |
-| TK-E | **A tenant administrator lists and revokes anybody's tokens**                                                                           | Only their owner, which leaves a departed person's tokens working until each expires                                  |
-| TK-F | **The secret carries the prefix `awt_`**, and only its hash is kept                                                                     | An unmarked secret, which secret scanners cannot tell from noise                                                      |
+| #    | Decision                                                                                                                                              | Instead of                                                                                                            |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| TK-A | **Scopes are a mask over the creator's grants**, read by every decision as a fact, and a permission outside them is refused as `scoped`               | Scopes as grants of their own, which would hold a permission outside a role (IAM-062)                                 |
+| TK-B | **Reading is never masked**: a token reads what its creator reads, and a token with no scopes reads, and may ask for a preview, and does nothing else | A `read` scope, which would have every readable set in search, listings and the outline learn about tokens            |
+| TK-C | **An expiry is required, at most 365 days**, and nothing extends a token                                                                              | Tokens without expiry, which IAM-034 forbids; or renewal, which would let one leaked token live on                    |
+| TK-D | **A token cannot manage tokens, sign out, or open the event stream**                                                                                  | Every route open to a token, which lets a stolen token mint a successor, and holds a connection open after revocation |
+| TK-E | **A tenant administrator lists and revokes anybody's tokens**                                                                                         | Only their owner, which leaves a departed person's tokens working until each expires                                  |
+| TK-F | **The secret carries the prefix `awt_`**, and only its hash is kept                                                                                   | An unmarked secret, which secret scanners cannot tell from noise                                                      |
 
 ## The request path
 

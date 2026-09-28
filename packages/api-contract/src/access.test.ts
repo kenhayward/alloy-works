@@ -60,15 +60,34 @@ describe('what each route checks', () => {
     }
   });
 
-  it('asks for a session in the published document exactly where a route checks anything', () => {
+  it('asks for a session or a token in the published document exactly where a route checks anything, and a session alone where it takes nothing else', () => {
     const document = buildOpenApi(allRoutes);
     for (const route of allRoutes) {
       const operation = document.paths[route.path]?.[route.method.toLowerCase()] as {
         security: unknown[];
       };
+      const sessionAlone = route.access.check !== 'none' && route.access.credential === 'session';
       expect(operation.security, route.operationId).toEqual(
-        route.access.check === 'none' ? [] : [{ session: [] }],
+        route.access.check === 'none'
+          ? []
+          : sessionAlone
+            ? [{ session: [] }]
+            : [{ session: [] }, { token: [] }],
       );
+    }
+  });
+
+  it('takes a session alone for signing out, the event stream, managing tokens (TK-D) and the development sample, each declaring the 403 a token is refused with', () => {
+    const sessionAlone = allRoutes
+      .filter((route) => route.access.check !== 'none' && route.access.credential === 'session')
+      .map((route) => route.operationId)
+      .sort();
+    expect(sessionAlone).toEqual(
+      ['createToken', 'listTokens', 'openStream', 'requestSample', 'revokeToken', 'signOut'].sort(),
+    );
+    for (const route of allRoutes) {
+      if (route.access.check === 'none' || route.access.credential !== 'session') continue;
+      expect(route.responses[403], route.operationId).toBeDefined();
     }
   });
 });

@@ -3,6 +3,7 @@ export {
   isPermission,
   permissions,
   principalKinds,
+  tokenScopes,
   type Permission,
   type PrincipalKind,
 } from './permissions.js';

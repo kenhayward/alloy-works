@@ -29,6 +29,7 @@ import {
   DEFINITION_SCHEMA_VERSION,
   TEMPLATE_SCHEMA_VERSION,
   definitionsFor,
+  tokenScopes,
   type ComponentTypeDefinition,
 } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
@@ -46,6 +47,9 @@ const authenticated = allRoutes.filter((route) => route.access.check !== 'none')
 
 /** An editing session and a version id, well formed: what the request's shape needs, and no more. */
 const SESSION = '11111111-1111-4111-8111-111111111111';
+
+/** A month from when the suite loads: an expiry any token route accepts. */
+const IN_A_MONTH = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
 /** A template definition any environment resolves: the default theme and layout, one section. */
 const aTemplate = () => ({
@@ -137,6 +141,7 @@ const OTHER_TENANT_IDS: Readonly<
   recordTemplateVersion: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
   getDefinition: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   recordDefinitionVersion: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
+  revokeToken: async (tenant, db) => ({ id: await tokenIdIn(tenant, db) }),
 };
 
 /**
@@ -193,6 +198,7 @@ const VALID_INPUT: Readonly<
   getIteration: { query: `session=${SESSION}` },
   cutVersion: { payload: { session: SESSION, openedFrom: SESSION } },
   invite: { payload: { email: 'ivy@example.com' } },
+  createToken: { payload: { name: 'Elsewhere', scopes: [], expiresAt: IN_A_MONTH } },
   setEditingSettings: { payload: { iterationRetentionDays: 7 } },
   makeGrant: {
     payload: { role: SESSION, subject: { principal: SESSION }, level: 'tenant', effect: 'allow' },
@@ -504,6 +510,29 @@ const invitationIdIn = (tenant: Tenant, db: TenantDatabase) =>
     return made.invited.id;
   });
 
+/** A personal token in `tenant`, of a principal of its own, kept as its hash as any token is. */
+async function tokenIdIn(tenant: Tenant, db: TenantDatabase): Promise<string> {
+  return db.withTenant(tenant, async (trx) => {
+    const principal = await trx
+      .insertInto('principal')
+      .values({ issuer: 'https://idp.example', subject: 'ivy', email: null, display_name: null })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const token = await trx
+      .insertInto('api_token')
+      .values({
+        principal_id: principal.id,
+        name: 'Elsewhere',
+        token_hash: 'f'.repeat(64),
+        scopes: [],
+        expires_at: new Date(IN_A_MONTH),
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return token.id;
+  });
+}
+
 /** The same, as a query's target names it. */
 const componentIn = async (tenant: Tenant, db: TenantDatabase) =>
   `artifact:${await componentIdIn(tenant, db)}`;
@@ -557,6 +586,8 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
   let tenantDb: TenantDatabase;
   let app: FastifyInstance;
   let fromA = '';
+  /** A personal token issued in environment A, scoped to everything a token may be. */
+  let tokenFromA = '';
   let a: Tenant;
   let b: Tenant;
   let foreignPrincipal = '';
@@ -618,6 +649,14 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
         grantedBy: ada,
       });
     });
+    const issued = await app.inject({
+      method: 'POST',
+      url: '/v1/tokens',
+      headers: { host: A, cookie: fromA },
+      payload: { name: 'Everything', scopes: [...tokenScopes], expiresAt: IN_A_MONTH },
+    });
+    if (issued.statusCode !== 200) throw new Error(`No token was issued: ${issued.body}`);
+    tokenFromA = issued.json<{ secret: string }>().secret;
     for (const route of withQueryTargets) {
       const query = OTHER_TENANT_QUERIES[route.operationId];
       if (query) othersQueries[route.operationId] = await query(b, tenantDb);
@@ -666,6 +705,19 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
         method: route.method,
         ...request(name, fill(route.path, othersIds[name] ?? {})),
         headers: { host: B, cookie: fromA },
+      });
+      expect(response.statusCode).toBe(401);
+      expect(response.json()).toMatchObject({ code: 'unauthenticated' });
+    },
+  );
+
+  it.each(authenticated.map((route) => [route.operationId, route] as const))(
+    '%s refuses a token from another environment, whatever the route takes',
+    async (name, route) => {
+      const response = await app.inject({
+        method: route.method,
+        ...request(name, fill(route.path, othersIds[name] ?? {})),
+        headers: { host: B, authorization: `Bearer ${tokenFromA}` },
       });
       expect(response.statusCode).toBe(401);
       expect(response.json()).toMatchObject({ code: 'unauthenticated' });
@@ -790,6 +842,15 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
 
   it('leaves the session working where it was issued, whatever was tried elsewhere', async () => {
     const me = await app.inject({ url: '/v1/me', headers: { host: A, cookie: fromA } });
+    expect(me.statusCode).toBe(200);
+    expect(me.json()).toMatchObject({ environment: 'Production' });
+  });
+
+  it('leaves the token working where it was issued, whatever was tried elsewhere', async () => {
+    const me = await app.inject({
+      url: '/v1/me',
+      headers: { host: A, authorization: `Bearer ${tokenFromA}` },
+    });
     expect(me.statusCode).toBe(200);
     expect(me.json()).toMatchObject({ environment: 'Production' });
   });

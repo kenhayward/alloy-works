@@ -411,6 +411,7 @@ version and each structural act records the next (see
 | `migrations/tenant/0035_previews`                      | A request's kind, `publish` or `preview`, and a done preview's PDF and expiry on its request; the default layout's 0.7 at layout schema 6, with the words a preview says, inserted only where the layout is still 0027's unchanged 0.6 (see [publishing](#publishing))                                                                                                                                                                                                                                                                                                                                                                    |
 | `migrations/tenant/0036_preview_sweep`                 | The runtime role may delete a request, and a trigger lets it delete only a preview an hour after it finished, its versions and images going with it (see [publishing](#publishing))                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `migrations/tenant/0037_iteration_retention`           | `editing_policy`, the tenant's window for keeping iterations; `iteration.expires_at` dropped; the runtime role may delete an iteration, and a trigger lets it delete only one past its window after the next cut (see [the editor and its session](#the-editor-and-its-session))                                                                                                                                                                                                                                                                                                                                                          |
+| `migrations/tenant/0038_api_tokens`                    | `api_token`, a personal token kept as its hash, its scopes a subset of the closed permission set without `read`, and an expiry at most 365 days after it was made; the runtime role inserts the named columns, updates `last_used_at` alone and deletes (see [Personal tokens](#personal-tokens))                                                                                                                                                                                                                                                                                                                                         |
 | `src/version-digest.ts`                                | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `src/spaces.ts`                                        | `createSpace`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `src/versions.ts`                                      | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `versionContents` - each version's content and number, for the texts route - `listVersions` - an artifact's versions newest first, by keyset over `(revision_no, version_no)` with no snapshot, since the chain is append-only (W9.4) - `substanceOf`, and `recordVersion`, each taking a component, a document, a definition or a layout; `createArtifact` refuses a layout, a theme and a catalogue, which only their migrations make, and `recordVersion` a theme and a catalogue, whose versions `themes.ts` reads whole before it writes them through `recordReadVersion` |
@@ -461,7 +462,7 @@ they first sign in. Nothing manages a role, a group or a principal's kind.
 | `domain: access/permissions.ts`                  | The ten permissions, closed; what an external principal is capped at; a principal's kinds                                                                                                                                                         |
 | `domain: access/role.ts`                         | `checkRole`, `allowable` - only a role holding `read` may be allowed - and the nine roles a tenant starts with - Editing for denials, and Publisher, alone holding `publish`, added by 0017                                                       |
 | `domain: access/level.ts`                        | The tenant, a space or an artifact, and how a route's `target` spells one                                                                                                                                                                         |
-| `domain: access/decide.ts`                       | `decide(permission, facts)`: the answer, the deciding level, the grants that decided and every level looked at                                                                                                                                    |
+| `domain: access/decide.ts`                       | `decide(permission, facts)`: the answer, the deciding level, the grants that decided and every level looked at; a request's token scopes in the facts refuse an allowed permission outside them as `scoped`, reading never                        |
 | `domain: access/readable.ts`                     | `readableSet`: the tenant flag, spaces, exclusions and inclusions a listing's query holds, computed by `decide`                                                                                                                                   |
 | `db: migrations/tenant/0009_access`              | `principal.kind`, `access_policy`, `role`, `access_group`, `group_member`, the insert-only `access_grant`, and starting rows                                                                                                                      |
 | `db: migrations/tenant/0010_access_epoch`        | `access_epoch`, and the triggers that lock it on every write to a fact a decision reads                                                                                                                                                           |
@@ -474,7 +475,9 @@ they first sign in. Nothing manages a role, a group or a principal's kind.
 | `db: src/grants.ts` (removing)                   | `removeGrant` under the lock-out guard, `administeringGrants` - what the guard counts - and `grantLevel`                                                                                                                                          |
 | `db: src/access-listings.ts`                     | `listGrants` at one level, `readGrant`, `listRoles` and `listPrincipals`, each paged by id                                                                                                                                                        |
 | `db: src/first-administrator.ts`                 | `inviteFirstAdministrator`, run as a database administrator: an invitation whose principal holds Administrator at the tenant                                                                                                                      |
-| `api-contract: contract.ts`                      | `RouteAccess`: every route declares nothing, a session, or a permission and where its target comes from                                                                                                                                           |
+| `api-contract: contract.ts`                      | `RouteAccess`: every route declares nothing, a session, or a permission and where its target comes from; and `credential: 'session'` where it takes a session alone, never a token                                                                |
+| `db: src/api-tokens.ts`                          | `issueApiToken`, `findApiToken` - by hash, unexpired, recording a use at most once a minute - `listApiTokens`, a person's own paged by id, and `revokeApiToken`, deleting one of a person's own                                                   |
+| `service: src/tokens.ts`                         | The token routes, the secret made and shown once, and `bearerSecret`, what an `Authorization` header carries                                                                                                                                      |
 | `service: src/managing-access.ts`                | The grants, roles and people routes; each refusal a 409 with an underscore code                                                                                                                                                                   |
 | `service: src/invitations.ts`                    | The invitations routes: listing, inviting or renewing, and withdrawing with the principal's grants                                                                                                                                                |
 | `web: src/access/`                               | The access page: grants at a component's three levels, giving and removing, an explanation per person, and, to an administrator of the environment, inviting an address and withdrawing a waiting invitation                                      |
@@ -506,6 +509,11 @@ asked "at the target's level or above", a target the caller may administer from 
 refused as unreadable on that account, `GET /v1/access/explain` included, because the walk that answers
 it is not the ordinary nearest-level one that decided whether the target is readable in the first place.
 
+**A token is a mask, never a grant.** A request made with a personal token is decided as its creator's,
+and then refused, as `scoped`, any permission its scopes leave out; reading is never masked. The scopes
+travel in the facts, so every decision taken for the request reads them (see
+[Personal tokens](#personal-tokens)).
+
 **An invitation is a principal before it is a person.** Inviting an address makes a principal with no issuer
 and no subject, which grants name like any other, so every rule is applied where a grant is made. The first
 sign-in through a permitted route whose provider verifies the address gives it an identity. Making or
@@ -525,6 +533,59 @@ and whether anybody administers the tenant.
 
 `pnpm dev:setup` invites the stand-in's Ada, at `ada@example.com`, to administer both development
 environments before either permits a sign-in, so she administers each from her first sign-in there.
+
+### Personal tokens
+
+A person issues themselves a token for a script (W12.1, [ADR-0028](decisions/0028-personal-api-tokens-in-t1.md),
+service-foundations.md's TK-A to TK-F). It acts as them, can do no more than they may, can be limited to
+less, and expires. There is no page for it yet: the account page's tokens are W12.2's.
+
+**The request path.** For every route that checks anything, the hook reads `Authorization` before the
+cookie. Only the `Bearer` scheme, in any case, is a credential of ours: a header naming any other -
+`Basic` from a reverse proxy in front, `Negotiate` - is passed over, and the cookie decides. A `Bearer`
+header must be `Bearer awt_` and 43 base64url characters, or the request is `401 unauthenticated`,
+whatever cookie it also carries. The secret is hashed with SHA-256 and looked up in `api_token` inside
+`withTenant`, joined to its principal and unexpired; not found, revoked or expired is `401
+unauthenticated`, and a token issued by another environment is simply not there. Found, it records the
+use when the last is more than a minute old, and sets `request.principal` and `request.credential = {
+kind: 'token', scopes }`. Without the header, the session cookie is read as before, and
+`request.credential` is `{ kind: 'session' }`.
+
+**Session-only routes.** A route declaring `credential: 'session'` refuses a found token `403
+token_not_allowed`: signing out, the event stream, the three token routes, and `POST /v1/samples`, the
+development sample, which writes a row and queues a job. The token is looked up first, so one revoked or
+from another environment is still `401` there. A stolen token cannot mint a successor, and no stream is
+held open on a token after it is revoked. The published document says the same: those operations take
+the `session` scheme, and every other authenticated one `session` or `token`, an HTTP bearer.
+
+**The mask, in every decision.** `authorise` adds the request's scopes to the facts it loads, so the
+route's decision and every decision its handler takes from `Authorised.facts` are masked: `mayEdit` on a
+component, `mayEdit` and `mayPublish` on a document and in the outline's answers, `mayDesign` on a
+template, `GET /v1/access`, and `administer` "at its level or above". `authoriseAt` takes a `Caller`,
+the principal and the scopes, for a level a handler finds for itself (an upload's space, a preview's
+document); `putAssetUploadBytes` decides `create` on the upload's space through it, so a token without
+`create` cannot fill an upload its creator's session began. The texts route masks each component's
+`mayEdit` with the document's scopes, since `loadFactsFor` reads no request; `listSpacesFor` takes the
+scopes for `mayCreate`, a parameter every caller must pass, `undefined` for a session. What is not
+masked, by TK-B: the read gate in `authorise`, `POST /v1/documents/{id}/previews`, which is decided on
+`read` (PV-B), so a token with no scopes may ask for a preview, the readable sets behind search and
+listings, a template or component read on a document's behalf, and `GET /v1/access/explain`, which
+explains another principal's grants rather than this request's. A scope never lifts a refusal: `denied`,
+`not_granted` and `capped` keep their reasons, and `scoped` masks only an allow.
+
+**The routes**, each the caller's own and each taking a session alone:
+
+| Route                    | What                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/tokens`         | The caller's tokens, paged by id: name, scopes, created, expires and last used; never a secret or a hash                                                                                                                                                                                                                                                                          |
+| `POST /v1/tokens`        | `{ name, scopes, expiresAt }`: a name of 1 to 80 characters, trimmed; scopes from the closed set without `read`, each once, else `400`; an expiry required, and `400 token_expiry_invalid` unless it is after the transaction's clock and at most 365 days past it. Answers the token and `secret`, `awt_` and 32 random bytes as base64url, once, with `Cache-Control: no-store` |
+| `DELETE /v1/tokens/{id}` | Revokes one of the caller's own by deleting its row: `204`, and the next request with it is `401`. Anybody else's is `404`                                                                                                                                                                                                                                                        |
+
+**What is kept.** Only the hash, in the tenant's schema. The secret is in the one answer that issues it and
+nowhere else: the request log never writes a header, and a test holds the log lines of a token issued,
+used, refused and revoked to having no `awt_` in them. `POST /v1/tokens` takes no idempotency key,
+because a kept answer would keep the secret for a day; a retry issues a second token, which its owner can
+see and revoke. A principal removed takes their tokens with them.
 
 ## The editor and its session
 
@@ -1243,7 +1304,8 @@ idempotency_key_reused`; otherwise the handler runs and `rememberAnswer` keeps i
 transaction commits, so a refusal, which rolls back, keeps nothing. A record is kept a day. The
 development sample request takes the key through the same helper, `once`; putting an upload's bytes
 answers the same image sent again with the upload as it stands, its object being named by the image's
-hash; signing out needs no key.
+hash; signing out needs no key; and issuing a personal token takes none, since its answer carries the
+secret and a record would keep it.
 
 | Where                         | What                                                         |
 | ----------------------------- | ------------------------------------------------------------ |
@@ -1494,7 +1556,8 @@ which assumes the tenant's role for one transaction
 answer and every error follows the contract in `packages/api-contract`, from which the committed
 `openapi.json` is generated and checked. People sign in through their organisation's identity
 provider - in development and tests, the stand-in - and hold a session in their environment's own
-schema, which `GET /v1/me` and signing out use. An environment may also take Google accounts:
+schema, which `GET /v1/me` and signing out use; a script presents a personal token as a bearer instead,
+which acts as the person who issued it, masked to its scopes ([Personal tokens](#personal-tokens)). An environment may also take Google accounts:
 Google returns to the one sign-in address, `signin.<domain>`, which checks the account against the
 environment's invitations and named Workspace domains and hands the sign-in back to the environment
 with a one-time code. Work a request should not wait for goes on a queue in the platform schema - a

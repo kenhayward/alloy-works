@@ -13,6 +13,7 @@ import {
   type AccessFacts,
   type Decision,
   type Level,
+  type Permission,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { AppError } from './errors.js';
@@ -28,6 +29,27 @@ export interface Authorised {
 }
 
 export type PermissionCheck = Extract<RouteAccess, { check: 'permission' }>;
+
+/**
+ * Who a request acts as, and the scopes of the token it was made with, or undefined for a session
+ * (service-foundations.md, TK-A): the scopes join the facts of every decision taken for the request, so
+ * a route's, a handler's and a `may...` flag in an answer are all masked alike.
+ */
+export interface Caller {
+  readonly principalId: string;
+  readonly scopes: readonly Permission[] | undefined;
+}
+
+/** The caller of an authenticated request, as the request path found them. */
+export function callerOf(request: FastifyRequest): Caller {
+  if (!request.principal) throw new Error('An authenticated handler ran without a principal');
+  return { principalId: request.principal.principalId, scopes: scopesOf(request) };
+}
+
+/** The scopes of the token a request was made with; undefined for a session, which is not masked. */
+export function scopesOf(request: FastifyRequest): readonly Permission[] | undefined {
+  return request.credential?.kind === 'token' ? request.credential.scopes : undefined;
+}
 
 /** access.md, "Refusing": the same words whether the target is missing or merely unreadable. */
 export const notFound = () => new AppError(404, 'not_found', 'There is nothing at this address.');
@@ -119,12 +141,13 @@ export function administerOrAbove(facts: AccessFacts): Decision {
  */
 export async function authoriseAt(
   trx: TenantTransaction,
-  principalId: string,
+  caller: Caller,
   permission: Exclude<PermissionCheck['permission'], 'administer'>,
   target: Level,
 ): Promise<Decision> {
   await decideOnly(trx);
-  const facts = await loadFacts(trx, principalId, target);
+  const loaded = await loadFacts(trx, caller.principalId, target);
+  const facts = loaded && { ...loaded, scopes: caller.scopes };
   if (!facts || (target.kind !== 'tenant' && !decide('read', facts).allowed)) throw notFound();
   const decision = decide(permission, facts);
   if (!decision.allowed) throw forbidden(permission);
@@ -155,8 +178,11 @@ export async function authorise(
 ): Promise<Authorised> {
   const target = await targetOf(trx, check.target, request);
   if (!target) throw notFound();
-  const facts = await loadFacts(trx, principalId, target);
-  if (!facts) throw notFound();
+  const loaded = await loadFacts(trx, principalId, target);
+  if (!loaded) throw notFound();
+  // The request's token, if it was made with one, masks this decision and every one its handler
+  // takes from these facts (TK-A).
+  const facts: AccessFacts = { ...loaded, scopes: scopesOf(request) };
   // A grant is an administrator's to see (access.md, "Refusing"): one the caller may not manage is
   // answered as absent, even where they may read the level it was made at, so an id cannot be probed.
   const refused = (unreadable: boolean) =>

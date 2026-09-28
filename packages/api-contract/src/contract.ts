@@ -35,7 +35,11 @@ export type RouteTarget =
 
 /**
  * What a route checks before its handler runs (access.md, "Refusing"): nothing; a session; or a
- * session and a permission on a target, decided in the transaction the handler then runs in.
+ * session and a permission on a target, decided in the transaction the handler then runs in. Where a
+ * session is asked for, a personal token presented as a bearer stands in for one, unless the route
+ * declares `credential: 'session'`: it takes a session alone, and refuses a token `403
+ * token_not_allowed` (service-foundations.md, TK-D) - signing out, the event stream and managing tokens,
+ * so a stolen token can neither mint a successor nor hold a connection open past its revocation.
  *
  * `changesAccess` declares that the handler changes a fact a decision reads - a grant, a membership, a
  * role's permissions, a principal's kind. Such a route takes the access epoch FOR UPDATE before it
@@ -45,12 +49,13 @@ export type RouteTarget =
  */
 export type RouteAccess =
   | { readonly check: 'none' }
-  | { readonly check: 'session' }
+  | { readonly check: 'session'; readonly credential?: 'session' }
   | {
       readonly check: 'permission';
       readonly permission: Permission;
       readonly target: RouteTarget;
       readonly changesAccess?: true;
+      readonly credential?: 'session';
     };
 
 /**
