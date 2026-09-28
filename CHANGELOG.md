@@ -3,6 +3,13 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.110.1 - 2026-09-28 (PR #303)
+
+### Fixed
+
+- A test of undo across a reload no longer fails on a slower build machine before the editor has had
+  time to open (issue #302). Nothing changes in the application.
+
 ## 0.110.0 - 2026-09-28 (PR #300)
 
 ### Added
