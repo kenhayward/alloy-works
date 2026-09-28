@@ -70,7 +70,7 @@ noticed and explained rather than discovered at a refusal.
 | **CNT-074** | Which component the cursor is in is the one open in its card, the others shown as read text. Whether the reader may edit each now is said before it opens: the texts route answers each readable occurrence's `mayEdit` and lock, decided and read as the component's own route decides and reads them, and a card says "You may read this component but not edit it." or who holds it and when they are expected back, in the reader's own time (`heldSentence`); the open editor's notice says the same                      |
 | **CNT-075** | A component's text carries one class, `TEXT_CLASS`, wherever it is shown - the editing surface and a document's read text alike - and the editor's stylesheet sets all of that class's typography once - spaces kept as typed, no ligatures, the size, leading and every block's spacing - while its rules for the surface alone set only the caret, the selection and a placeholder. The read text is `renderContent`, the same schema's own rendering, so opening a component moves nothing                                  |
 | **CNT-175** | The surface's structure is the elements that say so: a list is `ul` or `ol` of `li`; a definition list is `dl > div > dt + dd`, each definition its own node rendered `dd` ([ADR-0026](../decisions/0026-a-definition-is-its-own-editor-node.md)); a table is a `table` of `th` and `td` in a `figure` captioned by its `figcaption`; and a footnote is a marker named _Footnote_ whose text opens in an editor named _Footnote text_. A document's read text renders the same schema, so it carries the same lists and tables |
-| **CNT-174** | The session never promotes an iteration on its own; iterations are rows the storage design keeps immutable and timestamped, and read by no one but the editor whose session wrote them, through recovery (VER-001 to VER-003). CNT-089, which it supersedes, also asked for retention, which is VER-003's                                                                                                                                                                                                                      |
+| **CNT-174** | The session never promotes an iteration on its own; iterations are rows the storage design keeps immutable and timestamped, and read by their writer alone, only while holding the lock, through recovery (RC-A; VER-001 to VER-003). CNT-089, which it superseded, repeated those rows                                                                                                                                                                                                                                        |
 | **CNT-090** | A **Recovery** panel lists the component's retained iterations to its lock holder, newest first, and restores one - content and values together - after saving the current state as an iteration                                                                                                                                                                                                                                                                                                                               |
 | **CNT-071** | Every write in the session - iteration, version, release - carries the lock, and nothing here assumes the author is the only one who could write                                                                                                                                                                                                                                                                                                                                                                               |
 | **COL-005** | The lock is claimed by the first change an author makes, to content or metadata, not by a separate act; changes wait for the claim rather than being refused                                                                                                                                                                                                                                                                                                                                                                   |
@@ -732,7 +732,7 @@ sits unreachable until Recovery ships. See [Changed while planning the build](#c
 
 ### Recovery
 
-Iterations are visible to the lock holder only (VER-002), so **Recovery begins by claiming the lock
+Iterations are visible to their own writer while that writer holds the lock (VER-002, CNT-174; RC-A, below), so **Recovery begins by claiming the lock
 again** - which succeeds only if nobody else holds it. Without the lock, the author still has whatever
 unsent changes the window holds, and is told who holds the component.
 
@@ -742,6 +742,64 @@ on the next page or refresh. **Restoring applies a whole snapshot - content and 
 the current state is saved as an iteration of its own, so a restore is itself recoverable. A restored
 snapshot is migrated to the current schema and validated first, and one that will not read is refused by
 name rather than half loaded (CNT-012, CNT-013).
+
+### Recovery, as W11 builds it
+
+[The T1 audit](<../reviews/T1 - Audit against the code.md>) found the iteration store built and nothing
+reading it: after a closed tab or a reload the editor opens the latest **version**, and the first save is
+refused as stale with no way back to what was saved. W11 builds this section and the two above it, in
+three slices ([W11](../plans/2026-09-28-w11-recovery.md)).
+
+**Who reads an iteration.** VER-002 gives iterations to the editor holding the lock; CNT-174 to the editor
+whose session wrote them. Both hold: an iteration is read by its own writer, and only while that writer
+holds the component's lock. Another author who takes the lock later never reads it, and the writer
+reads it from any of their sessions, which is what lets a second window recover the first's work.
+
+**Finding saved work after a closed tab** (CNT-067). Session storage goes with the tab, so a closed tab or
+a crash leaves only what the service accepted. The component's `GET` tells its caller - and nobody else -
+the time of their newest iteration opened from the latest version: work saved and never made a version.
+Where there is some, the editor says so above the text and offers **Recover**, which claims the lock
+and opens the Recovery panel. No content leaves the store until the lock is held.
+
+**Reading and restoring** (CNT-090). `GET /v1/components/{id}/iterations` lists the caller's own
+retained iterations, newest first, over a cursor, each with its time, its session and the version it was
+opened from, and no content. `GET /v1/components/{id}/iterations/{iteration}` answers one, content and
+values. Both need the lock held by the caller. Restoring first flushes the current state as an iteration,
+so a restore is recoverable the same way, then opens the snapshot, migrated to the current schema and
+validated, as the session's text. The history and the stored steps are cleared, as a cut clears them,
+because an undo could not restore the values (review point 2.2). The restored text is the next iteration
+sent.
+
+**Undo across a reload** (CNT-069). Session storage holds, per component, the record described above. The
+component's `GET` answers its caller's own session the latest sequence it accepted. On reload:
+
+- **The lock held by this session, or lapsed and free, and the version unchanged:** the session claims
+  again under its own id, as a lapsed lock already does. The steps are replayed group by group into a
+  fresh history, and anything past the service's sequence is sent as the next iteration.
+- **The lock held by somebody else:** Reading. The held changes are offered as text to copy, as a
+  refused claim offers them.
+- **A version cut since:** the steps are discarded (CNT-169), and the iterations stay in Recovery.
+
+The title's one-line editor's history is limited to ProseMirror's default of 100 events today; W11.3 gives it no limit, as the component's has.
+
+**Retention** (VER-003, VER-004) is [storage-and-versioning.md](storage-and-versioning.md)'s: an iteration
+is kept until the next version after the one it was opened from is cut, and for the tenant's window
+after that cut. The Recovery panel lists only what the sweep would keep.
+
+#### Decisions for Ken
+
+Each is taken as recommended here, on Ken's instruction of 2026-09-28 to continue, and is his to review.
+
+| #    | Decision                                                                                                                                                                                                                                                                                                        | Instead of                                                                                                             |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| RC-A | **An iteration is read by its writer, while they hold the lock**: both VER-002 and CNT-174 at once. The writer is the principal, from any of their sessions, which is how a second window recovers the first's work; CNT-174's "the editor whose session wrote it" is read as that editor, not that one session | The lock holder alone, which would show one author's unsaved work to the next author to claim the component            |
+| RC-B | **Retention is anchored at the next cut, computed at sweep time**, and the insert-time `expires_at` is dropped                                                                                                                                                                                                  | Setting `expires_at` at the cut, which would update rows VER-001 keeps immutable                                       |
+| RC-C | **The window is one tenant setting**, `iteration_retention_days`, default 30, from 1 to 365, read and changed through the API by a tenant administrator; no admin page in T1                                                                                                                                    | A page of tenant settings, which T1 has for nothing else yet                                                           |
+| RC-D | **The sweep is the worker's**, over a delete the runtime role may make only where a trigger finds the row past its window, as the preview sweep is                                                                                                                                                              | A role of its own for one delete                                                                                       |
+| RC-E | **The listing carries no content; one iteration is read on its own**                                                                                                                                                                                                                                            | Content in every row of a page, which is most of a component per row                                                   |
+| RC-F | **The component's `GET` tells its caller when their newest uncut iteration was saved**, and nothing of it, so a closed tab can offer **Recover** without reading before the lock                                                                                                                                | Nothing until the author happens to open Recovery, which leaves the closed-tab case as the audit found it              |
+| RC-G | **A restore clears the history and the stored steps**, after the current state is saved as an iteration                                                                                                                                                                                                         | An undoable restore, withdrawn by review point 2.2 because the history cannot carry values                             |
+| RC-H | **A reload claims again under its own session where nobody else holds the lock**, then replays                                                                                                                                                                                                                  | Replaying only while the lock is still held, which would lose undo to any pause longer than the lock's fifteen minutes |
 
 ## Cutting a version
 
@@ -891,18 +949,19 @@ service: API-008's mechanism is service-foundations.md's and is unbuilt, so a cu
 after their answer was lost are each dealt with by themselves - see "Cutting a version" and "Creating a
 component" above.
 
-| Route                                                | Permission   | Carries                                               | Does                                                                                                                                                                                               |
-| ---------------------------------------------------- | ------------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /v1/components`                                 | Signed in    | `cursor`, `limit`, `spaces`                           | The components the caller may read, filtered by the readable set inside the query: title, space, number, type, language and last change, with a total and a count per space                        |
-| `GET /v1/spaces`                                     | Signed in    | -                                                     | The spaces the caller may read, each saying whether they may create a component in it                                                                                                              |
-| `GET /v1/spaces/{space}/component-types`             | Create       | -                                                     | The component types a component created in this space may take, with the environment's default marked                                                                                              |
-| `POST /v1/spaces/{space}/components`                 | Create       | Title, base language, base direction, component type  | Creates a component and its version `0.1`, and answers it. `200`, not `201`                                                                                                                        |
-| `GET /v1/components/{id}`                            | Read         | -                                                     | The latest version and its values, the effective fields and the definition versions they came from, and the lock state: holder, expected release, and whether it is this principal's other session |
-| `POST /v1/components/{id}/lock`                      | Edit         | The editing session                                   | Claims the lock, or moves it to a new session of the same principal                                                                                                                                |
-| `DELETE /v1/components/{id}/lock`                    | Edit, holder | Session and opened-from version in the query          | Done editing: cuts a version if anything changed, then releases; says whether a version was cut                                                                                                    |
-| `PUT /v1/components/{id}/iterations/{session}/{seq}` | Edit, holder | Opened-from version                                   | Saves an iteration, under the sequence rules above                                                                                                                                                 |
-| `GET /v1/components/{id}/iterations`                 | Edit, holder | `cursor`, `limit`                                     | Retained iterations, newest first                                                                                                                                                                  |
-| `POST /v1/components/{id}/versions`                  | Edit, holder | Opened-from version, optional note, `Idempotency-Key` | Cuts a version from the latest iteration                                                                                                                                                           |
+| Route                                                | Permission               | Carries                                               | Does                                                                                                                                                                                               |
+| ---------------------------------------------------- | ------------------------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/components`                                 | Signed in                | `cursor`, `limit`, `spaces`                           | The components the caller may read, filtered by the readable set inside the query: title, space, number, type, language and last change, with a total and a count per space                        |
+| `GET /v1/spaces`                                     | Signed in                | -                                                     | The spaces the caller may read, each saying whether they may create a component in it                                                                                                              |
+| `GET /v1/spaces/{space}/component-types`             | Create                   | -                                                     | The component types a component created in this space may take, with the environment's default marked                                                                                              |
+| `POST /v1/spaces/{space}/components`                 | Create                   | Title, base language, base direction, component type  | Creates a component and its version `0.1`, and answers it. `200`, not `201`                                                                                                                        |
+| `GET /v1/components/{id}`                            | Read                     | -                                                     | The latest version and its values, the effective fields and the definition versions they came from, and the lock state: holder, expected release, and whether it is this principal's other session |
+| `POST /v1/components/{id}/lock`                      | Edit                     | The editing session                                   | Claims the lock, or moves it to a new session of the same principal                                                                                                                                |
+| `DELETE /v1/components/{id}/lock`                    | Edit, holder             | Session and opened-from version in the query          | Done editing: cuts a version if anything changed, then releases; says whether a version was cut                                                                                                    |
+| `PUT /v1/components/{id}/iterations/{session}/{seq}` | Edit, holder             | Opened-from version                                   | Saves an iteration, under the sequence rules above                                                                                                                                                 |
+| `GET /v1/components/{id}/iterations`                 | Edit, holder, its writer | `cursor`, `limit`                                     | Retained iterations, newest first                                                                                                                                                                  |
+| `GET /v1/components/{id}/iterations/{iteration}`     | Edit, holder, its writer | -                                                     | One of the caller's own retained iterations, content and values (RC-E)                                                                                                                             |
+| `POST /v1/components/{id}/versions`                  | Edit, holder             | Opened-from version, optional note, `Idempotency-Key` | Cuts a version from the latest iteration                                                                                                                                                           |
 
 **Three different refusals, kept apart.** An unauthenticated request is refused as unauthenticated and a
 request without the permission as forbidden, by IAM's contract (API-053); an authorised request against a
