@@ -75,6 +75,40 @@ last of the editor's T1 features, a spelling checker in the desktop app and a sy
    configuration.
 4. Tests: PUB-103, PUB-102.
 
+**W14.2, as built.** `assemble`'s `project` refuses every node nested deeper than `HEADINGS`' six,
+`pdfOnly(failure('compose', 'heading_too_deep', node.id, null, null))`, a component's reference as well
+as a section, since the template makes each node a heading at its depth, whatever its kind; each node
+is named, not only the first, because moving the seventh up leaves its children too deep. Kept in the
+published document, as every PDF-only refusal is, so a Word-only request publishes it at Word's
+Heading 7 to Heading 9, which the writer already had. `heading_too_deep` is appended to
+`publishFailureCodes` and worded on the page: "This heading is nested more than six levels deep,
+which a PDF cannot tag as a heading. Move it up a level, or publish this document to Word alone."
+Neither numbering nor the contents changed: a deeper node is numbered as before, and the contents
+reach the layout's depth. A preview is a PDF and is refused the same way. The regression corpus's
+nine-level case became two: six levels, through the template, which veraPDF passes with `H1` to `H6`
+(PUB-103, alongside W14.1's check on every publication); and nine, refused for the PDF by name at the
+seventh, eighth and ninth, and published to Word, where the Open XML SDK finds nothing wrong and each
+heading is in the style named "heading N" at outline level N - 1. That case compiles the document
+assembled for Word through the template once more and pins its last roles, `H6` then three `P`: the
+reason for the refusal, kept as a tripwire for lifting it (ADR-0031). The Word writer's report test
+asked for the PDF too over a fixture seven levels deep, and now leaves that section out.
+**The budget** (PUB-102, W-D) is `apps/worker/src/publishing-budget.test.ts`: 30 chapters, each placing
+a component of 100 blocks in a cycle of twenty - a figure, a table of a header row and four rows, a
+numbered displayed equation, a paragraph with a footnote, and sixteen of prose - seeded through the
+store, one image shared by the figures. Read back off the PDF: 311 pages, 150 each of `Figure`,
+`Table`, `Formula` and `Note`, asserted, and the pages held to 270 to 330. It is published eleven
+times from `requestPublication` to `processNext`'s recorded publication, with the publish job the only
+handler, so no other job runs in the span; the first is reported and not held, and the p95 and the
+maximum of the other ten bind where `CI` is not `true` and are recorded only on CI, as
+`bindingBudget` does in the service. The configuration (platform and release, CPU and count,
+parallelism, memory, Node, Typst, PostgreSQL's version, load) and the document's pages and parts are
+written into the test's `meta`, carried into `.trace-results/worker.json`. There was no `check_pdf`
+to keep out of the span, since W14.1 had not landed. Measured on the reference machine - an Intel
+Core Ultra 7 270K Plus, 24 logical CPUs, 64 GB, Windows 11, Node 24.16.0, Typst 0.15.1, PostgreSQL
+17.11 in Docker - at a p95 of 1.43 to 1.61 seconds alone over four runs, about 1.3 of each in the job
+and 0.1 in the request, and 1.82 beside the rest of the worker suite. The test takes about twenty
+seconds, so it runs in the ordinary suite rather than behind an opt-in.
+
 ## W14.3: The regression corpus, and the order
 
 1. The spike's nine cases ported; a case for each publishing defect filed; the keep rules' cases moved

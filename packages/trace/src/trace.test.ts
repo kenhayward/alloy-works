@@ -73,6 +73,7 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1471);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 496, from 494 (2026-09-28): W14.2 - publishing.md claims PUB-103, six heading levels, and PUB-102, the 300-page budget.
     // 494, from 493 (2026-09-28): document-view.md claims IAM-080, IAM-023's T1 half; publishing.md's PUB-003 claim moved to PUB-098.
     // 493, from 492 (2026-09-27): W10.0 - publishing.md claims CNT-150, the preview beside the text.
     // 492, from 483 (2026-09-27): W9.0 - document-view.md claims CNT-072, CNT-073, CNT-154, CNT-105,
@@ -203,7 +204,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(494);
+    ).toBe(496);
   });
 });
 
@@ -553,6 +554,10 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 508, from 505 (2026-09-28): W14.2 - PUB-103 in packages/domain's assemble.test.ts, where a node
+  // deeper than six levels is refused for the PDF by name, and in apps/worker's regression.test.ts,
+  // where six levels pass veraPDF tagged H1 to H6 and nine are refused for the PDF and published to
+  // Word; and PUB-102 in apps/worker's publishing-budget.test.ts, the 300-page reference document.
   // 505, unchanged (2026-09-28): W14.7's final review - CNT-178 superseded CNT-148, and the two
   // tests that cited CNT-148 cite CNT-178 instead.
   // 505, from 502 (2026-09-28): W14.7 - CNT-148 in apps/desktop's shell.test.ts, where each
@@ -649,7 +654,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(505);
+    expect(model.citations).toHaveLength(508);
   });
 
   it('cites no identifier the corpus does not hold', () => {

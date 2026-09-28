@@ -15743,6 +15743,14 @@
           "howItIsMet": "veraPDF checks every PDF in the worker against its PDF/UA-1 profile; its report is stored as an object and referenced from the publication's output row"
         },
         {
+          "id": "PUB-103",
+          "howItIsMet": "Every PDF is tagged to PDF/UA-1 and checked by veraPDF against its profile (PUB-091). Every node is a heading at its depth, a section's title or a component's, and the pinned Typst tags one below the sixth level as a paragraph, which veraPDF passes (measured, the regression corpus): so `assemble` refuses each node nested deeper than six levels where a PDF is asked for, `heading_too_deep`, naming it, and Word, which numbers and tags nine, publishes it (ADR-0031, W-E). The corpus's six-level case passes veraPDF with `H1` to `H6` tagged"
+        },
+        {
+          "id": "PUB-102",
+          "howItIsMet": "The reference document is declared in `apps/worker/src/publishing-budget.test.ts`: 30 chapters, each placing a component of 100 blocks - 150 each of figures, tables, numbered equations and footnotes, and 2,400 paragraphs of prose - set to 311 pages. It is published eleven times from `requestPublication` to the publication `processNext` records, the first reported and the other ten held to a p95 of ten seconds and a maximum of thirty on a named machine and recorded only on CI's runner (W-D), with the configuration and the document's pages and parts written beside the result in `.trace-results/worker.json`. The conformance report joins the publication after it is recorded, as a job of its own (ADR-0030), outside the measured span"
+        },
+        {
           "id": "PUB-037",
           "howItIsMet": "The layout's `contents.depth` reaches Typst's `outline`, which selects the headings the template sets with `number`'s numbers, so the depth is the layout's and only the page is the engine's (decision C of the second slice); `contents(conditioned, numbering, depth)` is what a worker test measures the compiled entries against"
         },
@@ -18017,6 +18025,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-102",
+      "file": "apps/worker/src/publishing-budget.test.ts",
+      "line": 143,
+      "kind": "title"
+    },
+    {
       "id": "CNT-018",
       "file": "apps/worker/src/quotations.test.ts",
       "line": 157,
@@ -18032,6 +18046,12 @@
       "id": "STR-027",
       "file": "apps/worker/src/references.test.ts",
       "line": 341,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-103",
+      "file": "apps/worker/src/regression.test.ts",
+      "line": 120,
       "kind": "title"
     },
     {
@@ -19285,7 +19305,7 @@
     {
       "id": "PUB-005",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6293,
+      "line": 6342,
       "kind": "title"
     },
     {
@@ -19310,6 +19330,12 @@
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
       "line": 778,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-103",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 5650,
       "kind": "title"
     },
     {
@@ -19771,19 +19797,19 @@
     {
       "id": "PUB-025",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2763,
+      "line": 2767,
       "kind": "title"
     },
     {
       "id": "PUB-026",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3180,
+      "line": 3184,
       "kind": "title"
     },
     {
       "id": "PUB-031",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2445,
+      "line": 2449,
       "kind": "title"
     },
     {
@@ -19795,7 +19821,7 @@
     {
       "id": "PUB-067",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3698,
+      "line": 3702,
       "kind": "title"
     },
     {
