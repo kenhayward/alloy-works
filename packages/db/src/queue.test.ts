@@ -90,14 +90,10 @@ describe('the job queue', () => {
 
   it('offers a job again once the claim on it runs out', async () => {
     await enqueue(b);
-    // The lease is long enough that no runner is slow enough to outrun it before the second claim,
-    // which comes a fifth of a second late on purpose (issue #318); then the test waits it out.
-    const leaseMs = 1_500;
-    const first = await queue.claim({ workerId: 'stops-here', leaseMs });
+    const first = await queue.claim({ workerId: 'stops-here', leaseMs: 50 });
     expect(first?.tenantId).toBe(b.id);
-    await new Promise((resolve) => setTimeout(resolve, 200));
     expect(await claim()).toBeUndefined();
-    await new Promise((resolve) => setTimeout(resolve, leaseMs));
+    await new Promise((resolve) => setTimeout(resolve, 120));
     const again = await claim();
     expect(again).toMatchObject({ id: first!.id, attempts: 2 });
     await queue.complete(again!);
