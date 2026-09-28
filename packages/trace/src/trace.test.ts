@@ -560,6 +560,8 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 539, from 537 (2026-09-28): IAM-075's final review (#321) - IAM-075 in packages/db's queue.test.ts
+  // (three tests) and publishing.test.ts, where a key in another tenant's store is refused.
   // 537, from 529 (2026-09-28): W14.6 - IAM-075 in eight files: packages/db's tenant-database.test.ts
   // (three tests), seal.test.ts and idempotency.test.ts; packages/objects' store.test.ts (three) and
   // seal.test.ts; and apps/service's sign-in.test.ts (two), oidc.test.ts and tenants.test.ts.
@@ -683,7 +685,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(537);
+    expect(model.citations).toHaveLength(539);
   });
 
   it('cites no identifier the corpus does not hold', () => {

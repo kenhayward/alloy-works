@@ -151,7 +151,7 @@ describe('the tenant database', () => {
     }
   });
 
-  it("IAM-075 keeps publications - their requests, records, inputs, outputs and checks - in each tenant's own schema and in no shared one, and another tenant's runtime role cannot read them even by naming them", async () => {
+  it("IAM-075 keeps publications - their requests, records, inputs, outputs and checks - in each tenant's own schema and in no shared one, and another tenant's runtime role cannot read or delete them even by naming them", async () => {
     const tables = [
       'publication_request',
       'publication_request_asset',
@@ -174,10 +174,16 @@ describe('the tenant database', () => {
         ),
         table,
       ).rejects.toThrow(/permission denied/);
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`delete from ${sql.id(development.schema, table)}`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
     }
   });
 
-  it("IAM-075 keeps each environment's secrets - its sealed object store credential and sign-in client secret, and what its sessions, tokens and sign-ins hold - in its own schema and in no shared one, and another tenant's runtime role cannot read them even by naming them", async () => {
+  it("IAM-075 keeps each environment's secrets - its sealed object store credential and sign-in client secret, and what its sessions, tokens and sign-ins hold - in its own schema and in no shared one, and another tenant's runtime role cannot read or delete them even by naming them", async () => {
     const tables = [
       'object_store_credential',
       'identity_provider',
@@ -194,6 +200,12 @@ describe('the tenant database', () => {
       await expect(
         service.withTenant(production, (trx) =>
           sql`select * from ${sql.id(development.schema, table)}`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`delete from ${sql.id(development.schema, table)}`.execute(trx),
         ),
         table,
       ).rejects.toThrow(/permission denied/);
