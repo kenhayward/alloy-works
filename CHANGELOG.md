@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.113.2 - 2026-09-28 (PR #308)
+
+### Changed
+
+- **The last of publishing is planned.** The next releases check every PDF for accessibility and show
+  the result on its page, refuse a heading nested too deep for a PDF, let a figure or table go
+  unnumbered, let a style put a caption above or below, have Word say everything it could not carry,
+  and bring a spelling checker to the desktop app and a palette of symbols to the editor. Nothing
+  changes for you in this release.
+
 ## 0.113.1 - 2026-09-28 (PR #307)
 
 ### Changed
