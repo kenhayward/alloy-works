@@ -14926,7 +14926,7 @@
         },
         {
           "id": "CNT-067",
-          "howItIsMet": "The renderer reports a change saved only when its iteration is acknowledged, so reopening after any interruption offers that iteration or a later one"
+          "howItIsMet": "The renderer reports a change saved only when its iteration is acknowledged, and reopening after a closed tab, a crash or a lost connection says when the author last saved work no version holds and offers **Recover**, which lists it and every other retained iteration of theirs to restore"
         },
         {
           "id": "CNT-068",
@@ -14962,7 +14962,7 @@
         },
         {
           "id": "CNT-090",
-          "howItIsMet": "A **Recovery** panel lists the component's retained iterations to its lock holder, newest first, and restores one - content and values together - after saving the current state as an iteration"
+          "howItIsMet": "A **Recovery** panel, opened by **Saved text** while editing or by **Recover**, lists the lock holder's own retained iterations of the component, newest first, and restores one - content and values together - after saving as an iteration anything on screen not yet saved"
         },
         {
           "id": "CNT-071",
@@ -17436,13 +17436,13 @@
     {
       "id": "CNT-067",
       "file": "apps/web/src/editor/Recovery.test.tsx",
-      "line": 234,
+      "line": 238,
       "kind": "title"
     },
     {
       "id": "CNT-090",
       "file": "apps/web/src/editor/Recovery.test.tsx",
-      "line": 267,
+      "line": 271,
       "kind": "title"
     },
     {
