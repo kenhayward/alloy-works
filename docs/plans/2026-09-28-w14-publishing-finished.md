@@ -128,6 +128,25 @@ stores' new tests cite nothing but SCH-008, since citing an unclaimed requiremen
 check`; each is ready to cite IAM-075 when the claim is made. **IAM-080** is cited by the W9 test
 that offers Authoring only where the permissions give it.
 
+**From the final review:** the claim said the report named every structure Word does not carry, and
+two were missing. Template 13 tags the document's title, the contents' title and each list's title
+as `H1`s, which Word sets as body text in their roles' styles (`w:outlineLvl` 9) so that its `TOC`
+field does not list them: now `titles_not_headings`, once for every document, naming which of the
+three stand in it, rather than headings, which would put them in Word's contents. And a list of
+figures holding a floated figure is written without `\h`, where every entry of the PDF's is a link:
+now `list_not_linked`, by its sequence, which only a figure's can be. `quoted_phrase_not_structure`
+and `inline_code_not_structure` accepted a null block no writer produces, since a heading carries no
+mark (`wordTitle`): both now take a block, as the other placed kinds do, and the writer's branch for
+a heading is gone. An image's description in another language is now written on the run holding its
+drawing, `w:lang`, as template 13 sets the image in `text(lang)`, and the Open XML SDK accepts it;
+but whether a screen reader reads `descr` in it is not measured, so `description_language_lost`
+stays, worded as written but unchecked. The tenant-scope tests of the search projection and the
+publications read their tables unqualified, which the `search_path` would answer from `public` too,
+and their refusal half is refused at the schema before any table is looked up, so pointing them at
+a table that does not exist stayed green; each now lists, as the migrator, every schema holding each
+table from the catalogue - exactly the two tenants' - and keeps the refusal as its own assertion.
+Pointed at a table that does not exist, and at `platform.tenant`, each went red.
+
 ## W14.7: The spelling checker and the symbol palette
 
 1. `setSpellCheckLanguages` on the platform bridge; the shell's pure mapping, pinned by a test; the

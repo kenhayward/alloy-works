@@ -864,6 +864,10 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
       { kind: 'header_column_lost', ...readings },
       { kind: 'header_repeated', ...readings },
       { kind: 'continuation_label_omitted', ...readings },
+      // The final review of W14.6: the list of figures, one of them floated, unlinked; and the titles
+      // the PDF tags as headings, which Word sets as body text, once.
+      { kind: 'list_not_linked', sequence: 'figure' },
+      { kind: 'titles_not_headings', titles: ['document', 'contents', 'lists'] },
       { kind: 'pages_cite_the_pdf' },
     ]);
     // The worker's own serif, embedded: a TrueType file under its obfuscation, and nothing of STIX
@@ -1729,7 +1733,15 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
         'equation_numbered_as_table',
         'equation_alternative_lost',
         'maths_coverage_unchecked',
+        // The final review of W14.6: the titles the PDF tags as headings, which Word sets as body
+        // text, once; and the list of figures, one of them floated, which Word cannot link.
+        'titles_not_headings',
+        'list_not_linked',
       ]),
     );
+    // A description in another language than the document's is written on its drawing's run, which
+    // the Open XML SDK accepts above; whether a screen reader reads it so is not measured, so the
+    // report names it all the same.
+    expect(document).toMatch(/<w:r><w:rPr><w:lang w:val="[^"]+"\/><\/w:rPr><w:drawing>/);
   }, 120_000);
 });

@@ -281,7 +281,7 @@ describe('a publication at its own address', () => {
     ]);
   });
 
-  it("PUB-100 says what Word cannot carry of the PDF's structure: each numbered equation set as a table by its label; the quotations, preformatted text, definition lists, quoted phrases, inline code and descriptions in another language each once, counting their places; and the maths once, its descriptions and its typeface's characters (W14.6)", async () => {
+  it("PUB-100 says what Word cannot carry of the PDF's structure: each numbered equation set as a table by its label; the quotations, preformatted text, definition lists, quoted phrases, inline code and descriptions in another language each once, counting their places; the maths once, its descriptions and its typeface's characters; the titles it sets as body text; and a list of figures it cannot link (W14.6)", async () => {
     const at = (block: string | null, node = 'readingsaaaaaaaaaaaaaaaaaa') => ({ node, block });
     open(
       json(200, {
@@ -301,14 +301,19 @@ describe('a publication at its own address', () => {
             { kind: 'definition_list_not_structure', ...at('d1') },
             { kind: 'definition_list_not_structure', ...at('d2') },
             { kind: 'description_language_lost', ...at('f1') },
-            { kind: 'quoted_phrase_not_structure', ...at(null, 'rateaaaaaaaaaaaaaaaaaaaaaa') },
             { kind: 'equation_numbered_as_table', ...at('e1'), label: 'Equation 1.1' },
             { kind: 'equation_numbered_as_table', ...at('e2'), label: 'Equation 1.2' },
             { kind: 'equation_alternative_lost' },
             { kind: 'maths_coverage_unchecked', wordFamily: 'Cambria Math' },
-            // One that names no place, or no label, is left out rather than said wrongly.
+            { kind: 'list_not_linked', sequence: 'figure' },
+            { kind: 'titles_not_headings', titles: ['document', 'contents', 'lists'] },
+            // One that names no place, or no label, is left out rather than said wrongly: a quoted
+            // phrase's place is a block's, since a heading carries no mark.
             { kind: 'quotation_not_structure', block: 'q9' },
+            { kind: 'quoted_phrase_not_structure', ...at(null, 'rateaaaaaaaaaaaaaaaaaaaaaa') },
             { kind: 'equation_numbered_as_table', ...at('e9') },
+            { kind: 'titles_not_headings', titles: ['contents'] },
+            { kind: 'list_not_linked', sequence: 'table' },
             { kind: 'pages_cite_the_pdf' },
           ]),
         ],
@@ -318,15 +323,17 @@ describe('a publication at its own address', () => {
     const report = within(aside).getByRole('list', { name: 'About the Word document' });
     expect([...report.querySelectorAll('li')].map((each) => each.textContent)).toEqual([
       'Word has no mark for a quotation, so it sets a quotation as paragraphs in the quotation style, which a screen reader reads as ordinary text. This applies to 2 quotations.',
-      'Word has no mark for a quotation, so it sets a quoted phrase in its character style alone, which a screen reader reads as ordinary text. This applies to quoted phrases in 3 places.',
+      'Word has no mark for a quotation, so it sets a quoted phrase in its character style alone, which a screen reader reads as ordinary text. This applies to quoted phrases in 2 places.',
       'Word has no mark for code, so it sets inline code in its character style alone, which a screen reader reads as ordinary text. This applies to inline code in one place.',
       'Word has no mark for code, so it sets preformatted text as paragraphs in its style, which a screen reader reads as ordinary text. This applies to one block of preformatted text.',
       'Word has no list of terms, so it sets a definition list as its terms and definitions in paragraphs, which a screen reader does not read as a list. This applies to 2 definition lists.',
-      "Word cannot record the language an image's description is written in, so a screen reader may read a description in another language as if it were in the document's. This applies to descriptions in one place.",
+      "Word records no language for an image's description that a screen reader is known to use: the language is written beside the image, but whether a screen reader reads the description in it has not been checked, so it may read a description in another language as if it were in the document's. This applies to descriptions in one place.",
       'Equation 1.1 is set in Word as a table of one row, the equation in one cell and its number in the other, so a screen reader announces a table; numbered equations that follow one another are one table.',
       'Equation 1.2 is set in Word as a table of one row, the equation in one cell and its number in the other, so a screen reader announces a table; numbered equations that follow one another are one table.',
       'Word reads each equation aloud by its own reading of the maths, not by the description written for it, which the PDF gives a screen reader.',
       'Word sets equations in Cambria Math, whose characters are not checked here: a character it lacks is drawn from another typeface, so it can look different from the PDF.',
+      'The list of figures in Word does not link to the figures, since one of them floats, which Word would then list with no page; in the PDF each entry is a link.',
+      "Word sets the document's title, the title of the contents and the titles of the lists after it as ordinary paragraphs rather than headings, so that its own contents does not list them; a screen reader does not announce them as headings, as it does in the PDF.",
       "Word lays out its own pages, so its page numbers can differ from the PDF's. A page number cited from this publication is the PDF's.",
     ]);
   });

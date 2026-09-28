@@ -22,8 +22,8 @@ type TableKind = (typeof TABLE_KINDS)[number];
 /**
  * The kinds a report names by their place alone (W14.6, PUB-100): a structure the PDF tags that Word
  * sets as paragraphs or runs in their styles. The page says each kind once, counting its places, since
- * a sentence said again for each place would tell an author nothing more; a quoted phrase's and inline
- * code's place may be a heading's, which names no block.
+ * a sentence said again for each place would tell an author nothing more. Every place is a block's: a
+ * heading carries no mark (the final review of W14.6).
  */
 const PLACED_KINDS = [
   'quotation_not_structure',
@@ -34,13 +34,13 @@ const PLACED_KINDS = [
   'description_language_lost',
 ] as const;
 type PlacedKind = (typeof PLACED_KINDS)[number];
-/** The placed kinds whose place is always a block's. */
-const BLOCK_PLACED: readonly PlacedKind[] = [
-  'quotation_not_structure',
-  'preformatted_not_structure',
-  'definition_list_not_structure',
-  'description_language_lost',
-];
+
+/**
+ * The titles template 13 tags as headings that Word sets as body text (the final review of W14.6), in
+ * the order they stand, the document's always first.
+ */
+const UNHEADED_TITLES = ['document', 'contents', 'lists'] as const;
+type UnheadedTitle = (typeof UNHEADED_TITLES)[number];
 
 /** One entry of an output's report, as the contract gives it: checked, never trusted. */
 export type ReportEntry =
@@ -59,7 +59,7 @@ export type ReportEntry =
       readonly block: string | null;
       readonly label: string | null;
     }
-  | { readonly kind: PlacedKind; readonly node: string; readonly block: string | null }
+  | { readonly kind: PlacedKind; readonly node: string; readonly block: string }
   | {
       readonly kind: 'equation_numbered_as_table';
       readonly node: string;
@@ -67,7 +67,9 @@ export type ReportEntry =
       readonly label: string;
     }
   | { readonly kind: 'equation_alternative_lost' }
-  | { readonly kind: 'maths_coverage_unchecked'; readonly wordFamily: string };
+  | { readonly kind: 'maths_coverage_unchecked'; readonly wordFamily: string }
+  | { readonly kind: 'titles_not_headings'; readonly titles: readonly UnheadedTitle[] }
+  | { readonly kind: 'list_not_linked'; readonly sequence: 'figure' };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -110,13 +112,9 @@ export function reportIn(value: unknown): ReportEntry[] {
     ) {
       return [{ kind: entry.kind, node: entry.node, block: entry.block, label: entry.label }];
     }
-    // W14.6's: each by its place, a quoted phrase's and inline code's perhaps a heading's.
+    // W14.6's: each by its place, which is always a block's.
     const placed = PLACED_KINDS.find((each) => each === entry.kind);
-    if (
-      placed !== undefined &&
-      typeof entry.node === 'string' &&
-      (typeof entry.block === 'string' || (entry.block === null && !BLOCK_PLACED.includes(placed)))
-    ) {
+    if (placed !== undefined && typeof entry.node === 'string' && typeof entry.block === 'string') {
       return [{ kind: placed, node: entry.node, block: entry.block }];
     }
     if (
@@ -131,8 +129,31 @@ export function reportIn(value: unknown): ReportEntry[] {
     if (entry.kind === 'maths_coverage_unchecked' && typeof entry.wordFamily === 'string') {
       return [{ kind: entry.kind, wordFamily: entry.wordFamily }];
     }
+    if (entry.kind === 'titles_not_headings') {
+      const titles = unheaded(entry.titles);
+      return titles === null ? [] : [{ kind: entry.kind, titles }];
+    }
+    if (entry.kind === 'list_not_linked' && entry.sequence === 'figure') {
+      return [{ kind: entry.kind, sequence: entry.sequence }];
+    }
     return [];
   });
+}
+
+/** The titles an entry names, where they are the document's first and each other once, in order. */
+function unheaded(value: unknown): UnheadedTitle[] | null {
+  if (!Array.isArray(value) || value[0] !== 'document') return null;
+  const titles: UnheadedTitle[] = [];
+  for (const each of value) {
+    const title = UNHEADED_TITLES.find((known) => known === each);
+    const last = titles[titles.length - 1];
+    if (title === undefined) return null;
+    if (last !== undefined && UNHEADED_TITLES.indexOf(title) <= UNHEADED_TITLES.indexOf(last)) {
+      return null;
+    }
+    titles.push(title);
+  }
+  return titles;
 }
 
 /**
@@ -175,8 +196,9 @@ function placedWords(kind: PlacedKind, count: number): string {
       return `Word has no mark for code, so it sets preformatted text as paragraphs in its style, which a screen reader reads as ordinary text. This applies to ${counting(count, 'block', 'blocks')} of preformatted text.`;
     case 'definition_list_not_structure':
       return `Word has no list of terms, so it sets a definition list as its terms and definitions in paragraphs, which a screen reader does not read as a list. This applies to ${counting(count, 'definition list', 'definition lists')}.`;
+    // Written on the image's run, but not measured in a screen reader (the final review of W14.6).
     case 'description_language_lost':
-      return `Word cannot record the language an image's description is written in, so a screen reader may read a description in another language as if it were in the document's. This applies to descriptions in ${counting(count, 'place', 'places')}.`;
+      return `Word records no language for an image's description that a screen reader is known to use: the language is written beside the image, but whether a screen reader reads the description in it has not been checked, so it may read a description in another language as if it were in the document's. This applies to descriptions in ${counting(count, 'place', 'places')}.`;
   }
 }
 
@@ -210,6 +232,10 @@ export function reportWords(entry: ReportEntry): string {
       return 'Word reads each equation aloud by its own reading of the maths, not by the description written for it, which the PDF gives a screen reader.';
     case 'maths_coverage_unchecked':
       return `Word sets equations in ${entry.wordFamily}, whose characters are not checked here: a character it lacks is drawn from another typeface, so it can look different from the PDF.`;
+    case 'titles_not_headings':
+      return `Word sets ${listing(entry.titles.map((title) => TITLE_WORDS[title]))} as ordinary paragraphs rather than headings, so that its own contents does not list them; a screen reader does not announce them as headings, as it does in the PDF.`;
+    case 'list_not_linked':
+      return 'The list of figures in Word does not link to the figures, since one of them floats, which Word would then list with no page; in the PDF each entry is a link.';
     default:
       return placedWords(entry.kind, 1);
   }
@@ -224,6 +250,17 @@ const flattenedName = (entry: { readonly block: string | null; readonly label: s
       ? 'A caption with no number'
       : `${entry.label}'s caption`;
 
+/** Each title Word sets as body text, as an author knows it. */
+const TITLE_WORDS: Record<UnheadedTitle, string> = {
+  document: "the document's title",
+  contents: 'the title of the contents',
+  lists: 'the titles of the lists after it',
+};
+
+/** `a`, `a and b`, or `a, b and c`. */
+const listing = (items: readonly string[]) =>
+  items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)!}`;
+
 const tableName = (entry: { readonly label: string | null }) =>
   entry.label ?? 'A table with no number';
 
@@ -235,9 +272,12 @@ export function reportKey(entry: ReportEntry): string {
     case 'no_page_cited_output':
     case 'pages_cite_the_pdf':
     case 'equation_alternative_lost':
+    case 'titles_not_headings':
       return entry.kind;
     case 'maths_coverage_unchecked':
       return `${entry.kind} ${entry.wordFamily}`;
+    case 'list_not_linked':
+      return `${entry.kind} ${entry.sequence}`;
     default:
       return `${entry.kind} ${entry.node} ${entry.block ?? ''}`;
   }

@@ -36,8 +36,11 @@ const family = typefaceSchema.shape.family;
  * tags `Quote` and `Code` and Word sets as runs in their character styles; a numbered equation, which
  * Word sets as a table of one row; and, once for a document setting an equation, the alternative
  * the PDF's formula carries, which Word's own maths reading replaces, and the characters of the Word
- * face the maths is set in, which nothing here can check. Later slices add their kinds as new members
- * here, never by changing one already stored.
+ * face the maths is set in, which nothing here can check. From W14.6's final review: once for every
+ * document, the titles the PDF tags as headings - the document's, the contents' and each list's - which
+ * Word sets as body text, kept out of its contents; and each list after the contents Word cannot link
+ * to its captions, which only a list of figures, one of them floated, is. Later slices add their kinds
+ * as new members here, never by changing one already stored.
  */
 export const OUTPUT_REPORT_KINDS = [
   'face_substituted',
@@ -56,7 +59,16 @@ export const OUTPUT_REPORT_KINDS = [
   'equation_numbered_as_table',
   'equation_alternative_lost',
   'maths_coverage_unchecked',
+  'titles_not_headings',
+  'list_not_linked',
 ] as const;
+
+/**
+ * The titles template 13 tags as headings that Word sets as body text (the final review of W14.6), in
+ * the order they stand: the document's, always; the contents', where the layout sets one; and the
+ * lists', where any list stands after the contents.
+ */
+export const UNHEADED_TITLES = ['document', 'contents', 'lists'] as const;
 
 /**
  * A table a report names: its place - the outline node it is published under and its identifier in
@@ -82,7 +94,8 @@ const titled = {
 
 /**
  * A block a report names by its place alone (W14.6): a quotation, preformatted text, a definition list,
- * or the figure or the block of runs an image stands in.
+ * the figure or the block of runs an image stands in, or the block of runs holding a quoted phrase or
+ * inline code - never a heading's, which carries no mark (`assemble`'s `wordTitle`).
  */
 const block = {
   node: nodeIdentifierSchema,
@@ -103,17 +116,8 @@ export const outputReportEntrySchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('quotation_not_structure'), ...block }),
   z.strictObject({ kind: z.literal('preformatted_not_structure'), ...block }),
   z.strictObject({ kind: z.literal('definition_list_not_structure'), ...block }),
-  // Runs a heading holds name no block, as `titled`'s do.
-  z.strictObject({
-    kind: z.literal('quoted_phrase_not_structure'),
-    node: titled.node,
-    block: titled.block,
-  }),
-  z.strictObject({
-    kind: z.literal('inline_code_not_structure'),
-    node: titled.node,
-    block: titled.block,
-  }),
+  z.strictObject({ kind: z.literal('quoted_phrase_not_structure'), ...block }),
+  z.strictObject({ kind: z.literal('inline_code_not_structure'), ...block }),
   z.strictObject({
     kind: z.literal('equation_numbered_as_table'),
     ...block,
@@ -121,6 +125,22 @@ export const outputReportEntrySchema = z.discriminatedUnion('kind', [
   }),
   z.strictObject({ kind: z.literal('equation_alternative_lost') }),
   z.strictObject({ kind: z.literal('maths_coverage_unchecked'), wordFamily: family }),
+  z.strictObject({
+    kind: z.literal('titles_not_headings'),
+    titles: z
+      .array(z.enum(UNHEADED_TITLES))
+      .refine(
+        (titles) =>
+          titles[0] === 'document' &&
+          titles.every(
+            (title, at) =>
+              at === 0 || UNHEADED_TITLES.indexOf(title) > UNHEADED_TITLES.indexOf(titles[at - 1]!),
+          ),
+        "The document's title, then each other once, in the order they stand",
+      ),
+  }),
+  // Only a figure floats (Word 2, ruling R8), so only a list of figures is written unlinked.
+  z.strictObject({ kind: z.literal('list_not_linked'), sequence: z.literal('figure') }),
 ]);
 
 /**

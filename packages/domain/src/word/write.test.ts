@@ -1279,11 +1279,17 @@ describe('writeDocx: the report (ruling R13)', () => {
   it('says every Word output cites the PDF for its pages, and a Word-only one that it carries no page-cited output', () => {
     // Words alone, which Word carries whole: nothing else is said of them.
     const words = [paragraph('w1', text('Ada wrote this first.'))];
+    // But once, the titles the PDF tags as headings, which Word keeps out of its contents.
+    const titles = { kind: 'titles_not_headings', titles: ['document', 'contents'] };
     expect(writtenOf(words).report).toEqual([
+      titles,
       { kind: 'no_page_cited_output' },
       { kind: 'pages_cite_the_pdf' },
     ]);
-    expect(writtenOf(words, {}, ['pdf', 'docx']).report).toEqual([{ kind: 'pages_cite_the_pdf' }]);
+    expect(writtenOf(words, {}, ['pdf', 'docx']).report).toEqual([
+      titles,
+      { kind: 'pages_cite_the_pdf' },
+    ]);
   });
 
   it('reports no substitution for a face the text is not set in: the maths face, where no equation is set', () => {
@@ -2114,20 +2120,24 @@ describe('writeDocx: tables (Word 2, ruling R7)', () => {
 
   it('R7 reports each table Word could not set as its style asks: a header column lost, a header its style does not repeat repeated, a continuation label left out, each by its place and label', () => {
     const place = { node: id('blocks'), block: 't1', label: 'Table 1.1' };
+    const titles = { kind: 'titles_not_headings', titles: ['document', 'contents'] };
     expect(tabled.report).toEqual([
       { kind: 'header_column_lost', ...place },
       { kind: 'header_repeated', ...place },
       { kind: 'continuation_label_omitted', ...place },
+      titles,
       { kind: 'no_page_cited_output' },
       { kind: 'pages_cite_the_pdf' },
     ]);
     // Under the default's style, repeated and unlabelled, only the header column; with none, nothing.
     expect(tabledOf([readings({ style: 'table' })]).report).toEqual([
       { kind: 'header_column_lost', ...place },
+      titles,
       { kind: 'no_page_cited_output' },
       { kind: 'pages_cite_the_pdf' },
     ]);
     expect(tabledOf([readings({ style: 'table', headerColumns: 0 })]).report).toEqual([
+      titles,
       { kind: 'no_page_cited_output' },
       { kind: 'pages_cite_the_pdf' },
     ]);
@@ -4123,8 +4133,9 @@ describe('writeDocx: equations (Word 4, rulings R4 and R5)', () => {
       { kind: 'equation_alternative_lost' },
       { kind: 'maths_coverage_unchecked', wordFamily: 'Cambria Math' },
     ];
-    expect(equations.report.slice(-4)).toEqual([
+    expect(equations.report.slice(-5)).toEqual([
       ...maths,
+      { kind: 'titles_not_headings', titles: ['document', 'contents', 'lists'] },
       { kind: 'no_page_cited_output' },
       { kind: 'pages_cite_the_pdf' },
     ]);
@@ -4316,5 +4327,76 @@ describe("writeDocx: the report names what Word cannot carry of the PDF's struct
       lost('blocks', 'c1'),
       lost('german', 'g1'),
     ]);
+    // Its language is written on the run holding its drawing, as template 13 sets the image in its
+    // description's language; a description in the document's, or none, states none. Whether a screen
+    // reader reads `descr` in it is not measured, so the report still names each (the final review).
+    const drawn = all(described.docx.xml('word/document.xml'), 'w:r').filter(
+      (run) => first(run, 'w:drawing') !== undefined,
+    );
+    const languageOf = (run: Element) => first(run, 'w:lang')?.attrs['w:val'] ?? null;
+    expect(
+      drawn.map((run) => [first(run, 'wp:docPr')!.attrs['descr'] ?? null, languageOf(run)]),
+    ).toEqual([
+      ['Un carré vert', 'fr-FR'],
+      [expect.any(String), null],
+      [null, null],
+      ['Un carré vert', 'fr-FR'],
+      ['Un carré vert', 'fr-FR'],
+      [expect.any(String), null],
+      ['Un carré vert', 'fr-FR'],
+      ['Zwei rote Quadrate', 'de-DE'],
+      [expect.any(String), null],
+    ]);
+  });
+
+  it("PUB-100 names once the titles template 13 tags as headings that Word sets as body text, kept out of Word's contents - the document's always, the contents' and the lists' where they stand (the final review)", () => {
+    const titles = (docx: Written) =>
+      docx.report.filter((each) => each.kind === 'titles_not_headings');
+    const unheaded = (...named: string[]) => [{ kind: 'titles_not_headings', titles: named }];
+    // The default layout: the contents, and a list after it where a caption stands in one.
+    expect(titles(writtenOf([said('w1')]))).toEqual(unheaded('document', 'contents'));
+    const figured = writtenOf([figure('f1', RED, 'Shapes at rest')], { assets: IMAGES });
+    expect(titles(figured)).toEqual(unheaded('document', 'contents', 'lists'));
+    // Each in its role's style, body text to Word, which is what keeps it out of the contents.
+    const { at } = bodyOf(figured.docx);
+    for (const title of ['The dosing report', 'Contents', 'Figures']) {
+      expect(isHeading(at(title)), title).toBe(false);
+    }
+    // No contents; no list; neither.
+    const without = (contents: boolean, lists: boolean, content: unknown[]) =>
+      writtenOf(content, {
+        assets: IMAGES,
+        layout: layoutWith((layout) => {
+          if (!contents) layout.matter.contents = null;
+          if (!lists) layout.matter.lists = [];
+        }),
+      });
+    expect(titles(without(false, true, [figure('f1', RED, 'Shapes')]))).toEqual(
+      unheaded('document', 'lists'),
+    );
+    expect(titles(without(true, false, [figure('f1', RED, 'Shapes')]))).toEqual(
+      unheaded('document', 'contents'),
+    );
+    expect(titles(without(false, false, [said('w1')]))).toEqual(unheaded('document'));
+  });
+
+  it('PUB-100 names a list after the contents Word cannot link to its captions, which the PDF always links: a list of figures, one of them floated, by its sequence; and no other (the final review)', () => {
+    const unlinked = (docx: Written) =>
+      docx.report.filter((each) => each.kind === 'list_not_linked');
+    const floated = writtenOf(
+      [
+        figure('f1', RED, 'Shapes at rest'),
+        readings({ style: 'table' }),
+        figure('f3', BLUE, 'Blue on top', { imageStyle: 'floated' }),
+        figure('f4', BLUE, 'Blue again', { imageStyle: 'floated' }),
+      ],
+      { assets: IMAGES, theme: floatedTheme },
+    );
+    expect(unlinked(floated)).toEqual([{ kind: 'list_not_linked', sequence: 'figure' }]);
+    const standing = writtenOf(
+      [figure('f1', RED, 'Shapes at rest'), readings({ style: 'table' })],
+      { assets: IMAGES, theme: floatedTheme },
+    );
+    expect(unlinked(standing)).toEqual([]);
   });
 });

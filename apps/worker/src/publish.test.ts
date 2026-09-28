@@ -1043,7 +1043,12 @@ describe('publishing a document, from the request to the stored PDF', () => {
       standard: null,
       producer: 'word',
       producer_version: 'word/4',
-      report: [{ kind: 'no_page_cited_output' }, { kind: 'pages_cite_the_pdf' }],
+      report: [
+        // The titles the PDF tags as headings, which Word sets as body text (W14.6's final review).
+        { kind: 'titles_not_headings', titles: ['document', 'contents'] },
+        { kind: 'no_page_cited_output' },
+        { kind: 'pages_cite_the_pdf' },
+      ],
     });
     // Kept once, as a Word document.
     expect([...kept]).toEqual([[docx!.object_key, OUTPUT_CONTENT_TYPES.docx]]);
@@ -1074,13 +1079,17 @@ describe('publishing a document, from the request to the stored PDF', () => {
       producer_version: '13',
       report: [],
     });
-    // Beside a PDF, the Word document's pages are cited in the PDF, and it says so; nothing else.
+    // Beside a PDF, the Word document's pages are cited in the PDF, and it says so; and its titles
+    // are body text in Word, which it says once.
     expect(docx).toMatchObject({
       format: 'docx',
       standard: null,
       producer: 'word',
       producer_version: 'word/4',
-      report: [{ kind: 'pages_cite_the_pdf' }],
+      report: [
+        { kind: 'titles_not_headings', titles: ['document', 'contents'] },
+        { kind: 'pages_cite_the_pdf' },
+      ],
     });
     expect(kept.get(pdf!.object_key)).toBe(OUTPUT_CONTENT_TYPES.pdf);
     expect(kept.get(docx!.object_key)).toBe(OUTPUT_CONTENT_TYPES.docx);
@@ -1231,6 +1240,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       // W14.6: the maths once, its alternative and Cambria Math's characters.
       { kind: 'equation_alternative_lost' },
       { kind: 'maths_coverage_unchecked', wordFamily: 'Cambria Math' },
+      { kind: 'titles_not_headings', titles: ['document', 'contents'] },
       { kind: 'pages_cite_the_pdf' },
     ]);
   }, 180_000);

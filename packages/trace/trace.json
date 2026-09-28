@@ -16949,7 +16949,7 @@
         },
         {
           "id": "PUB-100",
-          "howItIsMet": "Headings at their outline levels, bulleted and numbered lists as Word's lists, header rows marked `w:tblHeader`, descriptions in `descr` or flagged decorative, every run's language, links and footnotes are Word's own; and the report names, by its place, each structure the PDF tags that Word has no place for ([Accessibility](#accessibility-pub-100))"
+          "howItIsMet": "Headings at their outline levels, bulleted and numbered lists as Word's lists, header rows marked `w:tblHeader`, descriptions in `descr` or flagged decorative, every run's language, links and footnotes are Word's own; and the report names, by its place, each structure the PDF tags that Word has no place for, and once the titles it sets as body text and a list it cannot link ([Accessibility](#accessibility-pub-100))"
         }
       ]
     }
@@ -17978,13 +17978,13 @@
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1238,
+      "line": 1248,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1154,
+      "line": 1163,
       "kind": "title"
     },
     {
@@ -18128,31 +18128,31 @@
     {
       "id": "CNT-045",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1507,
+      "line": 1511,
       "kind": "title"
     },
     {
       "id": "PUB-066",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1051,
+      "line": 1055,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1157,
+      "line": 1161,
       "kind": "title"
     },
     {
       "id": "TAB-039",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1090,
+      "line": 1094,
       "kind": "title"
     },
     {
       "id": "TAB-049",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1090,
+      "line": 1094,
       "kind": "title"
     },
     {
@@ -18530,7 +18530,7 @@
     {
       "id": "SCH-008",
       "file": "packages/db/src/tenant-database.test.ts",
-      "line": 112,
+      "line": 132,
       "kind": "title"
     },
     {
@@ -19772,19 +19772,19 @@
     {
       "id": "PUB-025",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2770,
+      "line": 2780,
       "kind": "title"
     },
     {
       "id": "PUB-026",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3187,
+      "line": 3197,
       "kind": "title"
     },
     {
       "id": "PUB-031",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2452,
+      "line": 2462,
       "kind": "title"
     },
     {
@@ -19796,7 +19796,7 @@
     {
       "id": "PUB-067",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3705,
+      "line": 3715,
       "kind": "title"
     },
     {
@@ -19808,7 +19808,7 @@
     {
       "id": "PUB-100",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 4095,
+      "line": 4105,
       "kind": "title"
     },
     {

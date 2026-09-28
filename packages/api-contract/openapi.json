@@ -22401,15 +22401,8 @@
                                           "pattern": "^[a-z2-7]{26}$"
                                         },
                                         "block": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string",
-                                              "minLength": 1
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
+                                          "type": "string",
+                                          "minLength": 1
                                         }
                                       },
                                       "required": [
@@ -22430,15 +22423,8 @@
                                           "pattern": "^[a-z2-7]{26}$"
                                         },
                                         "block": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string",
-                                              "minLength": 1
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
+                                          "type": "string",
+                                          "minLength": 1
                                         }
                                       },
                                       "required": [
@@ -22502,10 +22488,51 @@
                                         "kind",
                                         "wordFamily"
                                       ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "titles_not_headings"
+                                        },
+                                        "titles": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "enum": [
+                                              "document",
+                                              "contents",
+                                              "lists"
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "titles"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "list_not_linked"
+                                        },
+                                        "sequence": {
+                                          "type": "string",
+                                          "const": "figure"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "sequence"
+                                      ]
                                     }
                                   ]
                                 },
-                                "description": "What Word could not carry: a face it set in another; a table's header column, repeated header or continuation label; a heading or caption whose equation Word's rebuilt entries flatten; each structure the PDF tags that Word has no place for, by its place; the maths' alternatives and the Word face's characters, once; that page numbers cite the PDF; that it carries no page-cited output"
+                                "description": "What Word could not carry: a face it set in another; a table's header column, repeated header or continuation label; a heading or caption whose equation Word's rebuilt entries flatten; each structure the PDF tags that Word has no place for, by its place; the maths' alternatives and the Word face's characters, once; the titles the PDF tags as headings that Word sets as body text, once; a list after the contents Word cannot link; that page numbers cite the PDF; that it carries no page-cited output"
                               },
                               "download": {
                                 "type": "string",

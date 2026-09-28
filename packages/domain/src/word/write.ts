@@ -928,6 +928,17 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     theme.maths.wordFamily !== theme.maths.family
       ? [{ kind: 'maths_coverage_unchecked' as const, wordFamily: theme.maths.wordFamily }]
       : []),
+    // W14.6's final review: the titles template 13 tags as headings - the document's, always; the
+    // contents', where the layout sets one; the lists', where one stands - which Word sets as body text
+    // in their roles' styles (`w:outlineLvl` 9), since as headings its `TOC` field would list them.
+    {
+      kind: 'titles_not_headings' as const,
+      titles: [
+        'document' as const,
+        ...(contents === null ? [] : ['contents' as const]),
+        ...(generated.length === 0 ? [] : ['lists' as const]),
+      ],
+    },
     // PUB-074: a Word-only publication carries nothing a page number could cite.
     ...(input.formats.includes('pdf') ? [] : [{ kind: 'no_page_cited_output' as const }]),
     // PUB-065: Word paginates for itself, so a page number cites the PDF, never this.
@@ -1902,24 +1913,20 @@ class Writer {
    * paragraph with two quoted phrases is one place. A quotation, preformatted text and a definition
    * list are Word's paragraphs in their styles, where the PDF tags a `BlockQuote`, `Code` and a list;
    * a quoted phrase and inline code are runs in their character styles, where it tags a `Quote` and
-   * `Code`; and an image's description holds no language in Word, where the PDF's `Figure` carries
-   * its own. A quoted phrase's or inline code's place is a heading's where it names no block.
+   * `Code`; and an image's description holds no language Word is known to read it in, where the
+   * PDF's `Figure` carries its own. Every place is a block's: a heading carries no mark.
    */
-  private say(kind: Placed, block: string | null) {
-    const key = `${kind} ${this.at} ${block ?? ''}`;
+  private say(kind: Placed, block: string) {
+    const key = `${kind} ${this.at} ${block}`;
     if (this.said.has(key)) return;
     this.said.add(key);
-    if (kind === 'quoted_phrase_not_structure' || kind === 'inline_code_not_structure') {
-      this.reported.push({ kind, node: this.at, block });
-      return;
-    }
-    if (block === null) throw new Error(`A ${kind} names no block`);
     this.reported.push({ kind, node: this.at, block });
   }
 
   /**
    * Whether a description is in a language other than the document's (W14.6): Word's description
-   * holds none, and its drawing's run states none, so a reader takes the document's.
+   * holds none of its own. Its drawing's run states it (`drawingRun`), but whether a screen reader
+   * reads the description in it is not measured, so the report names it all the same.
    */
   private describedElsewhere(alternative: PublishedFigure['alternative']): boolean {
     return alternative !== null && wordLanguage(alternative.language) !== this.document.tag;
@@ -1981,7 +1988,7 @@ class Writer {
     if (figure.placement === 'float') {
       // The box is numbered before the image it holds, as the document holds them.
       const number = (this.drawings += 1);
-      const drawn = `<w:r>${this.drawing(figure.path, size, figure.alternative)}</w:r>`;
+      const drawn = this.drawingRun(figure.path, size, figure.alternative);
       const image = this.paragraph(role, drawn, {
         ...common,
         // The band's image at its head; its caption its style's space before below it, and nothing
@@ -2004,7 +2011,7 @@ class Writer {
       );
       return { body: [anchor], top: role, bottom: role, container: true };
     }
-    const drawn = `<w:r>${this.drawing(figure.path, size, figure.alternative)}</w:r>`;
+    const drawn = this.drawingRun(figure.path, size, figure.alternative);
     const image = this.paragraph(role, drawn, {
       ...common,
       keepNext: true,
@@ -2222,6 +2229,12 @@ class Writer {
         .filter((field) => field.entries.length > 0);
       const written =
         fields.length === 0 ? [{ name: names[names.length - 1]!, entries: [] }] : fields;
+      // Where a field cannot be linked, the report says so of its list, once (W14.6's final review):
+      // the PDF's entries always link to what they list. Only a figure floats.
+      if (written.some(({ entries }) => entries.some((each) => each.floated))) {
+        if (list.sequence !== 'figure') throw new Error(`A floated ${list.sequence}`);
+        this.reported.push({ kind: 'list_not_linked', sequence: list.sequence });
+      }
       written.forEach(({ name, entries }, at) => {
         const followed = at < written.length - 1;
         // Linked to each caption (`\h`), but where one of them stands in a floated figure's text box:
@@ -2372,7 +2385,7 @@ class Writer {
         if (this.describedElsewhere(run.image.alternative)) {
           this.say('description_language_lost', site.block);
         }
-        xml += `<w:r>${this.drawing(run.image.path, size, run.image.alternative)}</w:r>`;
+        xml += this.drawingRun(run.image.path, size, run.image.alternative);
         continue;
       }
       if ('footnote' in run) {
@@ -2416,10 +2429,13 @@ class Writer {
         linking = href;
       }
       const kinds = run.marks.map((mark) => mark.kind);
-      // A quoted phrase and inline code are their character styles alone in Word (W14.6).
-      const block = site === null || site.kind === 'title' ? null : site.block;
-      if (kinds.includes('quotedPhrase')) this.say('quoted_phrase_not_structure', block);
-      if (kinds.includes('inlineCode')) this.say('inline_code_not_structure', block);
+      // A quoted phrase and inline code are their character styles alone in Word (W14.6), in a block's
+      // runs: a heading's carry no mark (`assemble`'s `wordTitle`).
+      if (kinds.includes('quotedPhrase') || kinds.includes('inlineCode')) {
+        if (site === null || site.kind === 'title') throw new Error('A mark in a heading');
+        if (kinds.includes('quotedPhrase')) this.say('quoted_phrase_not_structure', site.block);
+        if (kinds.includes('inlineCode')) this.say('inline_code_not_structure', site.block);
+      }
       const between =
         passage.rtl &&
         /^\s+$/u.test(run.text) &&
@@ -2589,6 +2605,24 @@ class Writer {
     const size = this.numbers.images.get(key);
     if (size === undefined) throw new Error(`No size for the image ${key} against the Word page`);
     return size;
+  }
+
+  /**
+   * **A drawing in a run of its own**, the run in its description's language where that is not the
+   * document's, as template 13 sets the image in `text(lang)` (the final review of W14.6): `descr`
+   * holds no language, and the run is the nearest thing to it Word has. Written, not measured - which
+   * language a screen reader reads `descr` in is Word's and the reader's - so `describedElsewhere`
+   * still reports it.
+   */
+  private drawingRun(
+    path: string,
+    size: WordImage,
+    alternative: PublishedFigure['alternative'],
+  ): string {
+    const language = this.describedElsewhere(alternative)
+      ? `<w:rPr><w:lang w:val="${wordLanguage(alternative!.language)}"/></w:rPr>`
+      : '';
+    return `<w:r>${language}${this.drawing(path, size, alternative)}</w:r>`;
   }
 
   /**
