@@ -193,6 +193,26 @@ describe('a preview on the document page (W10.3)', () => {
     expect(pane().querySelector('iframe')).toBeNull();
   });
 
+  it('names a heading nested too deep for a PDF without offering Word, since a preview is always a PDF (W14.2)', async () => {
+    const failures = [
+      { stage: 'compose', code: 'heading_too_deep', node: CALIBRATION, block: null, detail: null },
+    ];
+    const fake = service({
+      [`POST /v1/documents/${DOCUMENT}/previews`]: [queued()],
+      [`GET /v1/publication-requests/${REQUEST}`]: [{ ...queued(), state: 'failed', failures }],
+    });
+    open(fake.fetch);
+    await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    const why = await within(await screen.findByRole('region', { name: 'Preview' })).findByRole(
+      'list',
+      { name: 'Why the preview could not be made' },
+    );
+    expect(why).toHaveTextContent(
+      '1.1 Calibration: This heading is nested more than six levels deep, which a PDF cannot tag as a heading. Move it up a level.',
+    );
+    expect(why).not.toHaveTextContent('Word');
+  });
+
   it('says a failure of the engine or the store is nothing in the document', async () => {
     const failures = [
       { stage: 'engine', code: 'engine_failed', node: null, block: null, detail: null },
