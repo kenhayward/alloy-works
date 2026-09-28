@@ -38,6 +38,7 @@ import {
   somewhereToPutMark,
   toEditor,
   type ComponentHeader as Header,
+  type EditorState,
   type EditorView,
   type EquationAt,
   type ReferenceContext,
@@ -69,6 +70,14 @@ import { SaveIndicator } from './SaveIndicator.js';
 import { uploadImage } from './upload.js';
 import { heldSentence } from './held.js';
 import { editingSessionFor, sessionService } from './service.js';
+import {
+  continuing,
+  createRecorder,
+  freshSession,
+  readStoredSession,
+  replayStored,
+  type Recorder,
+} from './stored-session.js';
 import {
   browserClock,
   createSession,
@@ -340,6 +349,8 @@ export function ComponentEditor({
   // would put it back over whatever the page said since - a paste, a refused header field.
   const sessionNotice = useRef<string | null>(null);
   const controls = useRef<Session | null>(null);
+  // What this window keeps of the session for a reload (W11.3), told of every value changed.
+  const recorder = useRef<Recorder | null>(null);
   // The metadata panel's region, beside the surface wherever the component has fields; its values as
   // the author holds them, which the session reads whole at every save (definitions.md); and who a
   // `user` field may name.
@@ -590,8 +601,15 @@ export function ComponentEditor({
 
   useEffect(() => {
     let current = true;
+    // The session this window kept for a reload, if any, is asked where its sequence stands (W11.3).
+    const stored = readStoredSession(componentId);
     void client
-      .GET('/v1/components/{id}', { params: { path: { id: componentId } } })
+      .GET('/v1/components/{id}', {
+        params: {
+          path: { id: componentId },
+          ...(stored === null ? {} : { query: { session: stored.session } }),
+        },
+      })
       .then(({ data, response }) => {
         if (!current) return;
         if (!data) {
@@ -671,6 +689,30 @@ export function ComponentEditor({
     // The values' own base, as `base` is the text's: what a refused claim puts the fields back to.
     let baseValues: Record<string, unknown> = { ...component.values };
     let phase: SessionView['phase'] = 'reading';
+    // What this window kept of its session before a reload (component-editor.md, "Undo across a
+    // reload"): replayed only where it was recorded against the version that opens - a change recorded
+    // against an older one is never replayed (CNT-169) - and only where every change replays exactly
+    // onto a document the model holds. Anything else is forgotten, and the page opens as one opened
+    // afresh does.
+    const stored = readStoredSession(component.id);
+    let replayed: {
+      readonly state: EditorState;
+      readonly sequence: number;
+      readonly unsent: boolean;
+    } | null = null;
+    if (stored !== null && stored.version === component.version.id && stored.revision > 0) {
+      try {
+        const state = replayStored(stored, (doc) => fresh(doc));
+        // Storable as it stands, or the first save would refuse it.
+        fromEditor(state.doc);
+        replayed = { state, ...continuing(stored, component.sequence ?? null) };
+      } catch {
+        replayed = null;
+      }
+    }
+    // True from a replay until its claim is answered: a refusal puts the surface back to the version
+    // even where everything replayed was saved, since what is shown then is the latest version.
+    let ahead = false;
     keptIsCurrent.current = false;
     /**
      * Captures the surface into `kept`, once for whatever it currently holds (fix round 2, minor).
@@ -689,17 +731,45 @@ export function ComponentEditor({
     // GET just answered, says this caller already holds it under that very id - a reload while
     // holding keeps its lock, while reopening after Done editing (nothing holds it any longer) starts
     // a fresh session at sequence 0, never a false "newer text" notice from reusing a stale one.
+    // A replay goes on under the session it was recorded in, whoever holds the lock now: the claim
+    // says whether it may (RC-H).
     const initialSession =
       sessionIdRef.current ??
       editingSessionFor(
         component.id,
-        (stored) => component.lock?.yours === true && component.lock.session === stored,
+        (id) =>
+          (component.lock?.yours === true && component.lock.session === id) ||
+          (replayed !== null && stored?.session === id),
       );
+    const resumed = replayed !== null && stored?.session === initialSession ? replayed : null;
+    const keeping = createRecorder(
+      component.id,
+      resumed !== null && stored !== null
+        ? stored
+        : freshSession({
+            session: initialSession,
+            version: component.version.id,
+            doc: opened.doc,
+            values: component.values,
+            sequence: 0,
+          }),
+    );
+    recorder.current = keeping;
+    if (resumed !== null && stored !== null) {
+      heldValues.current = { ...stored.values };
+      setValues(heldValues.current);
+      setValuesDrawn((drawn) => drawn + 1);
+    }
     // A new session has published nothing yet, and no paste is waiting on its claim.
     sessionNotice.current = null;
     pasteSaid.current = null;
     const editing = createSession({
-      service: sessionService(client, component.id, initialSession, principalId),
+      // A session claimed afresh is followed by what the window keeps, from which nothing is sent.
+      service: sessionService(client, component.id, initialSession, principalId, undefined, (id) =>
+        keeping.rebind(id),
+      ),
+      ...(resumed === null ? {} : { sequence: resumed.sequence }),
+      onSent: (sequence) => keeping.sent(sequence),
       clock: clockRef.current,
       timing: timingRef.current,
       version: { id: component.version.id, number: component.version.number },
@@ -718,6 +788,11 @@ export function ComponentEditor({
           setNotice(said && next.phase === 'editing' ? `${next.notice} ${said}` : next.notice);
         }
         if (next.phase !== 'reading') staleLockKnown.current = true;
+        if (next.phase === 'editing') ahead = false;
+        // Released by Done editing, whether or not a version was cut: a reload claims nothing back.
+        if (previous === 'releasing' && next.phase === 'reading') {
+          keeping.reset(next.version.id, view.state.doc, heldValues.current);
+        }
         if (next.phase === 'editing' || next.phase === 'recovery') setOwnSession(true);
         // Lost, or stopped while editing goes on - signed out, or content the service refused (final
         // review, finding 2): either way what is on screen is not saved and nothing is retrying it.
@@ -740,8 +815,20 @@ export function ComponentEditor({
       onRefused: (_holder, hadPending) => {
         // Nothing was pending: there is nothing new to undo or offer, so nothing here changes (fix
         // round 2, finding 1) - a bare Try again must not add another copy of the unchanged, already
-        // saved version to the kept text.
-        if (!hadPending) return;
+        // saved version to the kept text. Unless the surface holds a replay whose claim this was:
+        // everything in it was saved, and the latest version is what goes back on screen, with
+        // Recover to reach what was saved.
+        if (!hadPending && !ahead) return;
+        ahead = false;
+        if (!hadPending) {
+          view.updateState(fresh(base));
+          heldValues.current = baseValues;
+          setValues(baseValues);
+          setValuesDrawn((drawn) => drawn + 1);
+          setHeader(headerOf(view.state.doc));
+          keeping.reset(editing.view().version.id, base, baseValues);
+          return;
+        }
         // The held changes are not applied: the surface goes back to the version, and what was typed
         // is offered as text, the one thing that can be kept without writing to the component.
         // `captureKept` appends rather than replaces (fix round 1, finding 2) and is a no-op when the
@@ -754,6 +841,8 @@ export function ComponentEditor({
         heldValues.current = baseValues;
         setValues(baseValues);
         setValuesDrawn((drawn) => drawn + 1);
+        // Nothing kept for a reload survives it: the held changes are offered as text, not replayed.
+        keeping.reset(editing.view().version.id, base, baseValues);
         // `updateState` does not go through `dispatch` above, so nothing else refreshes `header`
         // (review round 1, item 1): left alone, it would keep showing whatever was typed right up to
         // the refusal, and the next keystroke into that stale field would resend it - resurrecting
@@ -777,6 +866,8 @@ export function ComponentEditor({
           return `${sentenceCase(label)} holds content this editor cannot change yet (${reopened.unsupported.join(', ')}), so it was not restored.`;
         }
         view.updateState(fresh(reopened.doc));
+        // And what the window keeps for a reload starts again from it, as the history does (RC-G).
+        keeping.reset(editing.view().version.id, reopened.doc, restoredValues);
         heldValues.current = { ...restoredValues };
         setValues(heldValues.current);
         setValuesDrawn((drawn) => drawn + 1);
@@ -784,7 +875,7 @@ export function ComponentEditor({
         keptIsCurrent.current = false;
         return null;
       },
-      onVersion: () => {
+      onVersion: (cut) => {
         // Undo must not reach past a version (CNT-103): a fresh state has a fresh history. Cutting a
         // version changes nothing about the document itself, though, so the selection is carried over
         // rather than jumping back to the start (fix round 1, minor).
@@ -792,6 +883,8 @@ export function ComponentEditor({
         base = view.state.doc;
         baseValues = heldValues.current;
         view.updateState(fresh(base, selection));
+        // And nothing kept for a reload reaches past it either: the kept changes go with the history.
+        keeping.reset(cut.id, base, baseValues);
         // As above: cutting changes nothing about the header, but this keeps that an invariant the
         // surface enforces rather than one a future change could silently break.
         setHeader(headerOf(view.state.doc));
@@ -800,14 +893,18 @@ export function ComponentEditor({
     controls.current = editing;
     setSession(editing.view());
     const view = mountEditor(place.current, {
-      state: fresh(),
+      state: resumed?.state ?? fresh(),
       // Named once, from what the component opened with (task 5 brief): it does not follow a title
       // typed afterwards, which is wrong only after a rename, and the accessibility plan owns the
       // surface's naming.
       label: `Content of ${opened.doc.attrs.title as string}`,
       editable: () => component.mayEdit && isEditablePhase(phase),
       dispatch: (transaction, target) => {
-        target.updateState(target.state.apply(transaction));
+        const before = target.state;
+        const { state: after, transactions } = before.applyTransaction(transaction);
+        target.updateState(after);
+        // Kept for a reload with whatever the plugins appended, as the history took it (W11.3).
+        keeping.applied(before, transactions, after);
         // Every transaction, not only one that changed the document: a transaction that only moved
         // the caret is exactly the one the toolbar has to hear about.
         setTransactions((count) => count + 1);
@@ -837,8 +934,17 @@ export function ComponentEditor({
       view.focus();
     }
     onViewRef.current?.(view);
+    // A reload going on: claimed again under its own session, and what the service has not got sent.
+    if (resumed !== null) {
+      ahead = true;
+      editing.resume(resumed.unsent);
+    }
     return () => {
       editing.dispose();
+      // Whatever this page's session does after it is gone - a save queued behind one in flight - is
+      // not kept: a later page's record is not this one's to write over.
+      keeping.close();
+      if (recorder.current === keeping) recorder.current = null;
       controls.current = null;
       setSurface(null);
       view.destroy();
@@ -1413,6 +1519,7 @@ export function ComponentEditor({
                   onChange={(next) => {
                     heldValues.current = next;
                     setValues(next);
+                    recorder.current?.values(next);
                     controls.current?.changed();
                   }}
                 />

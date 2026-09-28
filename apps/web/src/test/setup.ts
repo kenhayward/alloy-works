@@ -5,9 +5,26 @@ import { afterEach, beforeEach } from 'vitest';
 
 import { armConsoleGate, releaseConsoleGate } from './consoleGate.js';
 
-beforeEach(armConsoleGate);
+/**
+ * jsdom keeps one `sessionStorage` for a whole file, and the component editor keeps its session there
+ * for a reload (W11.3): left alone, one test's typing would be replayed into the next test that opens
+ * the same component, as if it were that page reloaded. Every test starts with a window of its own.
+ */
+const clearSessionStorage = () => {
+  try {
+    globalThis.sessionStorage?.clear();
+  } catch {
+    // A test that took storage away puts it back itself.
+  }
+};
+
+beforeEach(() => {
+  clearSessionStorage();
+  armConsoleGate();
+});
 
 afterEach(() => {
   cleanup();
   releaseConsoleGate();
+  clearSessionStorage();
 });

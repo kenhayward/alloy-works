@@ -205,6 +205,27 @@ describe('sessionService', () => {
       expect(savedPath).toBe(`/v1/components/${COMPONENT}/iterations/${sent.session}/1`);
     });
 
+    it('tells the kept session the id it mints, and nothing when claiming under the one it has (W11.3)', async () => {
+      const { client, requests } = harness(() =>
+        json(200, {
+          lock: {
+            holder: { id: ADA, name: 'Ada' },
+            expectedRelease: 't',
+            yours: true,
+            session: SESSION,
+          },
+        }),
+      );
+      const minted: string[] = [];
+      const service = sessionService(client, COMPONENT, SESSION, ADA, memoryStorage(), (id) =>
+        minted.push(id),
+      );
+      await service.claim(false, false);
+      expect(minted).toEqual([]);
+      await service.claim(true, true);
+      expect(minted).toEqual([(requests[1]!.body as { session: string }).session]);
+    });
+
     describe('minting fresh with no storage given (falls back to sessionStorage itself)', () => {
       const original = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
 

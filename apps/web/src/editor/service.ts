@@ -111,6 +111,8 @@ function readRefusalOf(response: Response | undefined, error: unknown) {
  *
  * `principal` is the signed-in principal's id, so a lock held from another window of the same author
  * is told apart from somebody else's.
+ *
+ * `onFresh` is told each id it mints, so the session a window keeps for a reload follows it (W11.3).
  */
 export function sessionService(
   client: Client,
@@ -118,6 +120,7 @@ export function sessionService(
   initialSession: string,
   principal: string,
   storage?: Pick<Storage, 'getItem' | 'setItem'>,
+  onFresh?: (session: string) => void,
 ): SessionService {
   const path = { id: componentId };
   let current = initialSession;
@@ -132,6 +135,7 @@ export function sessionService(
         } catch {
           // Unavailable storage does not stop the session; it just is not remembered across a reload.
         }
+        onFresh?.(current);
       }
       try {
         const { data, error, response } = await client.POST('/v1/components/{id}/lock', {

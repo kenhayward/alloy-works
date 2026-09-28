@@ -227,6 +227,14 @@ export interface SessionOptions {
     values: Readonly<Record<string, unknown>>,
     label: string,
   ) => string | null;
+  /**
+   * The sequence a reload goes on from (component-editor.md, "Undo across a reload"): the larger of
+   * the last one this window sent and the latest the service accepted from the session, so the next
+   * save is judged above both. Absent, a page starts at 0, as one opened afresh does.
+   */
+  readonly sequence?: number;
+  /** Told each sequence as it is taken for a save of what is on screen now, for the kept session. */
+  readonly onSent?: (sequence: number) => void;
 }
 
 export interface Session {
@@ -238,6 +246,13 @@ export interface Session {
   doneEditing(): Promise<void>;
   /** Claim again after a refusal; `move` continues here when the holder is this author elsewhere. */
   claimAgain(move: boolean): void;
+  /**
+   * A reload going on with the changes its window kept, replayed onto the surface (W11.3): from
+   * reading, claims again under the same session, neither fresh nor moving, as a lapsed lock is
+   * claimed; `unsent` holds them as a change, sent as the next iteration once the claim is granted. A
+   * refusal goes back to reading and offers them, as any refused claim does.
+   */
+  resume(unsent: boolean): void;
   /**
    * Recover (component-editor.md, "Recovery, as W11 builds it"): from reading, or from a `lost` that
    * is `recoverable`, claims afresh - moving the lock from the author's own other window - and opens
@@ -283,7 +298,7 @@ export function createSession(options: SessionOptions): Session {
   let holder: Holder | null = null;
   let notice: string | null = null;
 
-  let sequence = 0;
+  let sequence = options.sequence ?? 0;
   let dirty = false;
   let inFlight: Promise<boolean> | null = null;
   let idle: unknown = null;
@@ -471,6 +486,7 @@ export function createSession(options: SessionOptions): Session {
     }
     sequence += 1;
     const sent = sequence;
+    options.onSent?.(sent);
     dirty = false;
     save = hasFailed ? 'failing' : 'saving';
     publish();
@@ -805,6 +821,12 @@ export function createSession(options: SessionOptions): Session {
       if (phase === 'reading') void claim(move, false);
       else if (phase === 'lost' && lostFromStale) void claim(move, true);
     },
+    resume(unsent) {
+      if (phase !== 'reading' || disposed) return;
+      dirty = unsent;
+      save = unsent ? 'saving' : 'saved';
+      void claim(false, false);
+    },
     recover() {
       // Always a fresh session, and always moving: the id this page holds may be a reload's, which
       // the service has already accepted saves from past this page's own count, and the author asked
@@ -916,10 +938,12 @@ export function createSession(options: SessionOptions): Session {
             // typing silently instead of racing anything.
             void alreadyInFlight.then(() => {
               sequence += 1;
+              options.onSent?.(sequence);
               void service.save(sequence, openedFrom, body, undefined, held).catch(() => {});
             });
           } else {
             sequence += 1;
+            options.onSent?.(sequence);
             void service.save(sequence, openedFrom, body, undefined, held).catch(() => {});
           }
         }
