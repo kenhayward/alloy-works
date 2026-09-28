@@ -522,17 +522,20 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Getting saved changes back.** A closed tab, a crash or a lost connection loses nothing the page said
   was saved. Open the component again and, where changes you saved there were never made into a
   version, it says so above the text - `Changes you saved at 14:02 were never made a version.` - and
-  offers **Recover**. Recover starts editing, taking the component over from another window of yours if
-  one has it, and lists what you saved, newest first: when each was saved, to the second, whether this
-  window or another saved it, and the version it was written against, with **Show older** for more.
-  **Restore** puts one back in place of what is on screen, its text and its fields' values together.
-  What was on screen is saved first, so it can be restored in turn, and undo starts again from the
-  restored text. Saved text the editor cannot read is refused, naming it by its time, and nothing of it
-  is opened. The same list is offered beside **Continue** when newer text was saved from another window
-  or from before a reload. You only ever see your own saved changes, and only while you are editing the
-  component: if somebody else is, Recover says who. **Close**, or `Escape`, goes back to editing what is
-  on screen. Not yet: the window that loses the component to another of your windows is not offered
-  the list, and nothing offers saves made before the latest version was cut.
+  offers **Recover**, even where somebody else has made a version since without your changes. Where
+  another window of yours is editing the component, it says `You are editing this component in another
+window.` and offers **Recover here** instead. Either starts editing, taking the component over from
+  your other window if one has it, and lists what you saved, newest first: when each was saved, to the
+  second, whether this window or another saved it, and the version it was written against, with **Show
+  older** for more. While editing, **Saved text** beside **Save version** opens the same list, saving
+  what you have just typed first. **Restore** puts one back in place of what is on screen, its text and
+  its fields' values together. Anything on screen not yet saved is saved first, so it can be restored in
+  turn, and undo starts again from the restored text. Saved text the editor cannot read is refused,
+  naming it by its time, and nothing of it is opened. The same list is offered beside **Continue** when
+  newer text was saved from another window or from before a reload. You only ever see your own saved
+  changes, and only while you are editing the component: if somebody else is, the page says who.
+  **Close**, or `Escape`, goes back to editing what is on screen. Not yet: the window that loses the
+  component to another of your windows is not offered the list until the component is opened again.
 
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath
@@ -874,8 +877,8 @@ Named explicitly so nobody has to read the source to find out:
   images in a line of text, footnotes, cross-references and equations, and a published Word document
   of all of that. The one sample document is a
   fixed template with no content of yours in it.
-- No way to make, change or choose between component types: every environment has one, named Topic, and
-  nothing yet lets an administrator add another or change which is the default.
+- No page for component types: a Definitions manager makes and changes them through the API alone,
+  and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
 - No document view that sets a document as it will publish: its page shows the outline you build
   beside the text in reading order, each component opening in place to be edited. No reading view. No reuse or transclusion. No way to

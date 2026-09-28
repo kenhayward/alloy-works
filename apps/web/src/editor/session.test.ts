@@ -509,7 +509,7 @@ describe('the editing session', () => {
     expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
   });
 
-  it('a lost session from a lock gone offers no recovery of its own (Recovery is a later plan)', async () => {
+  it('a session lost to a lock gone claims nothing again from this window, neither to continue nor to recover', async () => {
     const { clock, service, session, type } = harness();
     type('Unbox');
     await clock.advance(0);
@@ -518,8 +518,10 @@ describe('the editing session', () => {
     await clock.advance(2_000);
     expect(session.view().phase).toBe('lost');
     session.claimAgain(true);
+    session.recover();
     await clock.advance(0);
     expect(session.view().phase).toBe('lost');
+    expect(service.calls.filter((call) => call.startsWith('claim'))).toEqual(['claim']);
   });
 
   it('stays failing through repeated retries during an outage, not flickering back to saving', async () => {
@@ -1626,6 +1628,106 @@ describe('Recovery (component-editor.md, "Recovery, as W11 builds it")', () => {
     });
     await clock.advance(2_000);
     expect(service.saved.map((each) => each.text)).toEqual(['Unbox the printer and keep the box.']);
+  });
+
+  it('opens Recovery from editing without claiming again, once what is on screen is saved', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox the printer and keep the box.');
+    await clock.advance(0);
+    expect(session.view().phase).toBe('editing');
+    let answer: (result: SaveResult | undefined) => void = () => {};
+    service.saveAnswer = () =>
+      new Promise((resolve) => {
+        answer = resolve;
+      });
+
+    session.recover();
+    await clock.advance(0);
+    // Saved first: until the save is acknowledged, the author is still editing.
+    expect(service.calls).toEqual(['claim', 'save 1']);
+    expect(session.view().phase).toBe('editing');
+    answer(undefined);
+    await clock.advance(0);
+    expect(session.view()).toMatchObject({
+      phase: 'recovery',
+      save: 'saved',
+      dirty: false,
+      notice: 'Your saved text is listed. Restore some of it, or close the list to go on editing.',
+    });
+    // The lock was already this session's: nothing claimed it again, fresh or otherwise.
+    expect(service.calls).toEqual(['claim', 'save 1']);
+    expect(service.sessionId).toBe('session-0');
+    await session.iterations();
+    expect(service.calls).toEqual(['claim', 'save 1', 'list']);
+  });
+
+  it('opens no Recovery over a refusal that stopped the saving, and keeps its reason said', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.saveAnswer = async () => ({ ok: false, code: 'signed_out' });
+    type('Unbox the printer');
+    session.recover();
+    await clock.advance(0);
+    expect(session.view()).toMatchObject({
+      phase: 'editing',
+      save: 'stopped',
+      notice: 'You are signed out. Sign in again; your unsaved text is kept below.',
+    });
+    expect(service.calls).not.toContain('list');
+  });
+
+  it('claims again once under the same session when the listing finds the lock lapsed, and lists', async () => {
+    const { clock, service, session } = harness();
+    session.recover();
+    await clock.advance(0);
+    const held = service.sessionId;
+    let lapsed = true;
+    service.iterationsAnswer = async () => {
+      if (!lapsed) return { ok: true, items: [], next: null };
+      lapsed = false;
+      return { ok: false, code: 'lock_required' };
+    };
+    expect(await session.iterations()).toEqual({ ok: true, items: [], next: null });
+    expect(service.calls).toEqual(['claim, moving', 'list', 'claim', 'list']);
+    expect(service.sessionId).toBe(held);
+    expect(session.view().phase).toBe('recovery');
+  });
+
+  it('claims again once under the same session when a restore finds the lock lapsed, and restores', async () => {
+    const { clock, service, session } = harness();
+    session.recover();
+    await clock.advance(0);
+    const held = service.sessionId;
+    const whole = service.iterationAnswer;
+    let lapsed = true;
+    service.iterationAnswer = async (id) => {
+      if (!lapsed) return whole(id);
+      lapsed = false;
+      return { ok: false, code: 'lock_required' };
+    };
+    expect(await session.restore('it-1', 'the text saved at 14:02:07')).toBeNull();
+    expect(service.calls).toEqual(['claim, moving', 'read it-1', 'claim', 'read it-1', 'save 1']);
+    expect(service.sessionId).toBe(held);
+    expect(service.saved.map((each) => each.text)).toEqual(['Saved as it-1.']);
+    expect(session.view().phase).toBe('editing');
+  });
+
+  it('goes to lost when a restore finds the lock lapsed and somebody else has claimed it since', async () => {
+    const { clock, service, session } = harness();
+    session.recover();
+    await clock.advance(0);
+    service.iterationAnswer = async () => ({ ok: false, code: 'lock_required' });
+    service.claimAnswer = async () => ({
+      ok: false,
+      code: 'lock_held',
+      holder: { name: 'Grace', expectedRelease: '2026-09-16T09:15:00.000Z', yours: false },
+    });
+    expect(await session.restore('it-1', 'the text saved at 14:02:07')).toBe(
+      'This session no longer holds the component.',
+    );
+    expect(service.calls).toEqual(['claim, moving', 'read it-1', 'claim']);
+    expect(session.view().phase).toBe('lost');
   });
 
   it('names who holds the component when a Recover is refused, and stays reading', async () => {

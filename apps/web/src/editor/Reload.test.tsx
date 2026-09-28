@@ -420,7 +420,7 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     expect(sessionStorage.getItem(STEPS)).toBeNull();
   });
 
-  it('reads the latest version where somebody else holds it after a reload, and offers Recover where everything kept was saved', async () => {
+  it('reads the latest version where somebody else holds it after a reload, with nothing to copy where everything kept was saved', async () => {
     const stack = service();
     const view = await openPage(stack, quick);
     type(view, ' Mind the cable.', 19);
@@ -434,9 +434,11 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
       ),
     );
     await waitFor(() => expect(textOf(again)).toBe('Unbox the printer.'));
-    // Nothing unsaved to copy: what was replayed is in the service, and Recover reaches it.
+    // Nothing unsaved to copy: what was replayed is in the service. Nothing is offered while Grace
+    // holds it (W11.2's re-review); Try again is there for when she is done.
     expect(screen.queryByLabelText('Text that was not saved')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Recover' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Recover/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     expect(sessionStorage.getItem(STEPS)).toBeNull();
   });
 

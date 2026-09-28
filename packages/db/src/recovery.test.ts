@@ -355,4 +355,53 @@ describe('reading iterations back for Recovery', () => {
     await ada.save('Unbox the printer and keep the box.');
     expect(await uncut('ada')).toBeNull();
   });
+
+  it('still says so once somebody else has cut a version without that work, for as long as it is kept', async () => {
+    const made = await component();
+    const uncut = () =>
+      service.withTenant(tenant, (trx) =>
+        newestUncutIteration(trx, { artifactId: made.id, principalId: people.ada }),
+      );
+    const ada = await made.session('ada');
+    const mine = await ada.save('Unbox the printer and keep the box.');
+    const at = await service.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('iteration')
+        .select('created_at')
+        .where('id', '=', mine)
+        .executeTakeFirstOrThrow(),
+    );
+    // Ada's lock lapses, and Grace makes a version of her own text, which is not Ada's.
+    await made.lapse();
+    const grace = await made.session('grace');
+    await grace.save('Switch it on.');
+    const theirs = await grace.cut();
+    expect(await uncut()).toEqual(at.created_at);
+
+    // Past the window after that cut, it is swept, and nothing is offered.
+    await queryAs(
+      db.adminUrl,
+      `update "${tenant.schema}".artifact_version
+          set created_at = now() - make_interval(days => $2) where id = $1`,
+      [theirs, ITERATION_RETENTION_DAYS],
+    );
+    expect(await uncut()).toBeNull();
+  });
+
+  it("offers none of the author's own work once a version holds it, even where that version is not the latest", async () => {
+    const made = await component();
+    const uncut = () =>
+      service.withTenant(tenant, (trx) =>
+        newestUncutIteration(trx, { artifactId: made.id, principalId: people.ada }),
+      );
+    const ada = await made.session('ada');
+    await ada.save('Unbox the printer.');
+    await ada.save('Unbox the printer and keep the box.');
+    await ada.cut();
+    await made.lapse();
+    const grace = await made.session('grace');
+    await grace.save('Switch it on.');
+    await grace.cut();
+    expect(await uncut()).toBeNull();
+  });
 });

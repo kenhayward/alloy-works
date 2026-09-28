@@ -36,7 +36,7 @@ const failure = (code: Extract<IterationPage, { ok: false }>['code']): string =>
  * The Recovery panel (component-editor.md, "Recovery, as W11 builds it"; CNT-090): the author's own
  * saved iterations of this component, newest first, each with when it was saved, from which window,
  * and the version it was written against, a page at a time behind **Show older**. **Restore** puts one
- * back in place of what is on screen, which is saved first.
+ * back in place of what is on screen, anything of which not yet saved is saved first.
  *
  * The focus comes here as it opens, so the list is where the author is; `Escape` or **Close** leave it.
  * Nothing here is a live region: what happens is said through the editor's one status region, and a
@@ -128,8 +128,8 @@ export function RecoveryPanel({ load, restore, onClose, ref }: RecoveryPanelProp
         Saved text
       </h3>
       <p className={styles['about']}>
-        Restore puts saved text in place of what is on screen. What is on screen is saved first, so
-        it can be restored too.
+        Restore puts saved text in place of what is on screen. Anything on screen not yet saved is
+        saved first, so it can be restored too.
       </p>
       {listing.state === 'loading' && <p className={styles['about']}>Listing...</p>}
       {listing.state === 'failed' && (

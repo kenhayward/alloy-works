@@ -544,9 +544,9 @@ the **Reference** dialog, showing what it will print) and equations (equations 1
 and an `equationBlock`, placed and changed from the **Equation** dialog and drawn as MathML). A
 section's title is a second, smaller view (equations 3): `mountTitleEditor` over `titleSchema`, one
 line of text and inline equations, mounted by the outline panel. A component holding anything else
-opens for reading only; its fields are filled in beside it in the metadata panel (W5.3, below); an
-author's own iterations are read back and restored by Recovery (W11.2, below), and a reload replays the
-session's changes, undo and all (W11.3, below). A paste reaches
+opens for reading only. A component's values are edited in the **Fields** panel beside the surface
+(W5.3, below), and an author's own iterations are read back and restored by Recovery (W11.2, below), and a reload replays the session's changes, undo and all
+(W11.3, below). A paste reaches
 the surface only through the admission pipeline (editor 7), and what it changed is listed in a
 **Paste report** region in the `F6` ring.
 
@@ -790,17 +790,22 @@ offers what the next sweep may take; the listing carries no content, and one ite
 its own. Their routes need `edit` and the lock held by the session a `session` query names - `holding`,
 the check every write makes - and answer any other iteration as absent, so an author who takes the lock
 after another never reads the other's work. The component's `GET` answers its caller `unsaved`, the time
-of their newest iteration opened from the latest version, and null where that iteration holds what the
-latest version holds; only the time leaves the store before the lock is held. In the renderer, a component
-opened with `unsaved` and no session of its own running says so above its text and offers **Recover**,
-and a session lost to a stale save offers it beside **Continue**. `recover()` claims under a fresh session,
-with `move`, into the session's `recovery` phase, which the surface takes no change in; the Recovery
-panel lists the iterations, and `restore` saves what is on screen and waits for the acknowledgement,
-reads the iteration, opens it through `readContent` and `toEditor` into a fresh editor state, so the
-history is cleared as a cut clears it, puts its values in the fields, and sends it as the next iteration.
-One that will not read is refused by its time and nothing of it opens. Nothing yet enters Recovery in a
-window that lost the lock to a move or to another author, and nothing offers saves opened from a version
-older than the latest ([component-editor.md, "Two windows, one author"](design/component-editor.md#two-windows-one-author)).
+of their newest retained iteration, and null where a version - the one it was opened from or any cut
+after it - holds exactly what it holds, by its digest; only the time leaves the store before the lock is
+held. In the renderer, a component opened with `unsaved` and no session of its own running says so above
+its text and offers **Recover** where nobody holds the lock, says the author is editing in another window
+and offers **Recover here** where their own other window holds it, and offers nothing where somebody else
+does; a session lost to a stale save offers **Recover** beside **Continue**. `recover()` claims under a
+fresh session, with `move`, into the session's `recovery` phase, which the surface takes no change in;
+from `editing` it claims nothing, flushes, and enters the phase, which is **Saved text** in the strip.
+The Recovery panel lists the iterations, each marked this window's where its session is any this window
+has used, which the adapter keeps in session storage beside the current one; and `restore` saves anything
+unsaved and waits for the acknowledgement, reads the iteration, opens it through `readContent` and
+`toEditor` into a fresh editor state, so the history is cleared as a cut clears it, puts its values in
+the fields, and sends it as the next iteration. A listing or a read that finds the lock lapsed claims it
+again once under the same session, as a save does. One that will not read is refused by its time and
+nothing of it opens. Nothing yet enters Recovery in a window that lost the lock to a move
+([component-editor.md, "Two windows, one author"](design/component-editor.md#two-windows-one-author)).
 
 **Undo survives a reload** (W11.3; CNT-069, CNT-067, CNT-169; RC-H). The surface's `dispatch` applies each
 transaction with `applyTransaction`, and `recordChange` in `packages/editor/src/replay.ts` records it

@@ -14,7 +14,7 @@ import {
 } from './listing.js';
 import { iterationRetained } from './retention.js';
 import type { TenantTransaction } from './tables.js';
-import { latestVersion } from './versions.js';
+import { readVersion } from './versions.js';
 
 /**
  * Reading iterations back (component-editor.md, "Recovery, as W11 builds it"): each is its writer's
@@ -147,32 +147,41 @@ export async function readIteration(
 }
 
 /**
- * When the caller last saved work on a component that was never made a version (RC-F): their newest
- * iteration opened from its latest version, or null. Only the time: nothing of the work leaves the
- * store until the lock is held. An iteration opened from the latest version has no later cut, so the
- * sweep keeps it and there is no window to ask about.
+ * When the caller last saved work on a component that was never made a version (RC-F): the time of
+ * their newest retained iteration of it, or null. Only the time: nothing of the work leaves the store
+ * until the lock is held.
  *
- * Null too where that newest iteration holds exactly what the latest version holds, content and
- * values, by the iteration's own digest: text changed and changed back, then Done editing with
- * nothing to cut, left nothing a version lacks, and offering to recover it would be noise.
+ * Null where a version holds exactly what that newest iteration holds, content and values, by the
+ * iteration's own digest - the version it was opened from, or any cut after it. So the author's own
+ * cut offers nothing, however many versions came after it, and neither does text changed and changed
+ * back, then Done editing with nothing to cut. A version somebody else cut after it, without this
+ * work, does not hold it (final review of W11.2): the work is offered for as long as the sweep keeps
+ * it, as the listing's own filter says.
  */
 export async function newestUncutIteration(
   trx: TenantTransaction,
   owner: IterationOwner,
 ): Promise<Date | null> {
   if (!UUID.test(owner.artifactId)) return null;
-  const latest = await latestVersion(trx, owner.artifactId);
-  if (!latest) return null;
-  const row = await trx
-    .selectFrom('iteration')
-    .select(['created_at', 'digest'])
-    .where('artifact_id', '=', owner.artifactId)
-    .where('principal_id', '=', owner.principalId)
-    .where('opened_from', '=', latest.id)
-    .orderBy('created_at', 'desc')
+  const newest = await ownRetained(trx, owner)
+    .select(['i.created_at', 'i.digest', 'v.revision_no', 'v.version_no'])
+    .orderBy('i.created_at', 'desc')
+    .orderBy('i.id', 'desc')
     .limit(1)
     .executeTakeFirst();
-  if (!row) return null;
-  const latestHolds = iterationDigest(parseContentDocument(latest.content), latest.values);
-  return row.digest === latestHolds ? null : row.created_at;
+  if (!newest) return null;
+  const since = await trx
+    .selectFrom('artifact_version')
+    .select('id')
+    .where('artifact_id', '=', owner.artifactId)
+    .where(sql<boolean>`(revision_no, version_no) >= (${newest.revision_no}, ${newest.version_no})`)
+    .execute();
+  for (const { id } of since) {
+    const version = await readVersion(trx, id);
+    if (version?.kind !== 'component') continue;
+    if (iterationDigest(parseContentDocument(version.content), version.values) === newest.digest) {
+      return null;
+    }
+  }
+  return newest.created_at;
 }

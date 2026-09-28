@@ -32,15 +32,23 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   saved changes there that were never made into a version, it says when, above the text, and offers
   **Recover**. Recover starts editing - taking the component over from another window of yours if one
   has it - and lists what you saved, newest first: when each was saved, whether this window or another
-  saved it, and the version it was written against, with **Show older** for more.
+  saved it, and the version it was written against, with **Show older** for more. A list left open
+  past the time the component is held for you takes it back, rather than stopping.
 - **Restore saved text and values together.** **Restore** puts the text you choose, and the values of
-  the component's fields saved with it, in place of what is on screen. What was on screen is saved
-  first, so you can restore it in turn, and undo starts again from the restored text. Saved text the
+  the component's fields saved with it, in place of what is on screen. Anything on screen not yet
+  saved is saved first, so you can restore it in turn, and undo starts again from the restored text. Saved text the
   editor cannot read is refused, naming it by when it was saved, and nothing of it is opened.
 - **Recover when newer text was saved elsewhere.** When the editor stops because newer text was saved
   from another window or from before a reload, it now offers **Recover** beside **Continue**.
+- **See your saved text while editing.** **Saved text**, beside **Save version**, lists what you saved
+  of the component, saving what you have just typed first, so you can go back to any of it - including
+  the text on screen just before a restore.
+- **Changes somebody else's version left out are offered too.** Recover is offered where you saved
+  changes and somebody else has since made a version without them, for as long as they are kept.
+- **Opened while another window of yours is editing,** the component now says so and offers
+  **Recover here**, rather than saying your changes were never made a version.
 - You only ever see your own saved changes, and only while you are editing the component: if somebody
-  else is editing it, Recover tells you who and when they are expected back. Undo still does not
+  else is editing it, the page tells you who and when they are expected back. Undo still does not
   survive a reload; that comes next.
 
 ## 0.107.0 - 2026-09-28 (PR #296)

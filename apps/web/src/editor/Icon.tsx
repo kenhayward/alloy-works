@@ -50,6 +50,8 @@ const PATHS: Record<string, readonly string[]> = {
   ],
   'Save version': ['M3 2.6h7.2L13.4 5.8V13.4H3z', 'M5.6 2.6v3.6h4.8'],
   'Done editing': ['M3.2 8.4 6.3 11.5 12.8 5'],
+  // A clock turned back: the author's own saved text, to restore (W11.2).
+  'Saved text': ['M3.1 6.2A5.2 5.2 0 1 1 2.8 8.8', 'M2.4 3.6v2.8h2.8', 'M8 5.2V8l2 1.4'],
   Close: ['M4.2 4.2 11.8 11.8M11.8 4.2 4.2 11.8'],
   // The outline pane and the status bar (interface slice 15).
   Back: ['M13 8H3.4M7 3.8 3 8l4 4.2'],

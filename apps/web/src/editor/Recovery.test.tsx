@@ -4,6 +4,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { shimRangeMeasurement } from '../test/range.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { heldSentence } from './held.js';
 import { iterationLabel, savedTime, unsavedSentence } from './recovery.js';
@@ -221,6 +222,9 @@ const restoreOf = (at: number) =>
   screen.getByRole('button', { name: `Restore ${iterationLabel(SAVED[at]!.createdAt)}` });
 const unsaved = { savedAt: SAVED[0]!.createdAt };
 
+// The focus moves onto the surface, which scrolls its selection into view.
+shimRangeMeasurement();
+
 beforeEach(() => {
   sessionStorage.clear();
 });
@@ -266,12 +270,20 @@ describe('Recovery in the component editor', () => {
 
   it('CNT-090 lists the retained iterations newest first, and restores content and values only after saving what was on screen', async () => {
     let refusedOnce = false;
+    // The session the page first saved under, before Recover claimed afresh: still this window's.
+    let firstSession = '';
+    // The first save after the refusal is answered only when the test says so.
+    let answerHeld: () => void = () => {};
+    let holding = true;
     const { asked, surface } = open(
       recovering(opened(), {
         // The first save finds newer text saved from another window: the session is lost.
         'PUT /v1/components/{id}/iterations/{session}/{sequence}': ({ path }) => {
+          const accepted = () =>
+            json(200, { sequence: Number(path.split('/').at(-1)), lock: lock(OTHER_WINDOW) });
           if (!refusedOnce) {
             refusedOnce = true;
+            firstSession = path.split('/')[5]!;
             return json(409, {
               code: 'iteration_stale',
               message: 'stale',
@@ -279,8 +291,23 @@ describe('Recovery in the component editor', () => {
               latest: 7,
             });
           }
-          return json(200, { sequence: Number(path.split('/').at(-1)), lock: lock(OTHER_WINDOW) });
+          if (!holding) return accepted();
+          holding = false;
+          return new Promise<Response>((resolve) => {
+            answerHeld = () => resolve(accepted());
+          });
         },
+        'GET /v1/components/{id}/iterations': ({ query }) =>
+          json(200, {
+            items: SAVED.slice(0, 2).map((each, at) => ({
+              id: each.id,
+              session: at === 0 ? firstSession : OTHER_WINDOW,
+              sequence: 1,
+              createdAt: each.createdAt,
+              openedFrom: each.openedFrom,
+            })),
+            next: query.cursor === undefined ? '2' : null,
+          }),
       }),
     );
     const view = await surface();
@@ -300,7 +327,18 @@ describe('Recovery in the component editor', () => {
     expect(rows[1]).toHaveTextContent('Another window');
     expect(rows[0]).toHaveTextContent('Version 0.1');
 
+    // Restore is asked for while what was on screen is still being saved: nothing is read until the
+    // service has acknowledged it.
+    await waitFor(() =>
+      expect(asked.slice(before).some((each) => each.route.startsWith('PUT'))).toBe(true),
+    );
     await userEvent.click(restoreOf(1));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(
+      asked.some((each) => each.route === 'GET /v1/components/{id}/iterations/{iteration}'),
+    ).toBe(false);
+    expect(box()).toHaveTextContent('Unbox the printer. Keep the box.');
+    answerHeld();
     await waitFor(() => expect(box()).toHaveTextContent('Unbox the printer and keep'));
     expect(box()).not.toHaveTextContent('box.');
     expect(code()).toHaveValue('B');
@@ -415,8 +453,145 @@ describe('Recovery in the component editor', () => {
     expect(asked.some((each) => each.route.startsWith('GET /v1/components/{id}/iterations'))).toBe(
       false,
     );
-    // Still offered, for when Grace is done.
+    // Nothing more is offered while Grace holds it; Try again is there for when she is done.
+    expect(screen.queryByRole('button', { name: /^Recover/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+  });
+
+  it('CNT-090 lists what was saved while editing, from Saved text, with what was just typed saved first and no second claim', async () => {
+    // Saves are answered only when the test lets them be, so the listing can be seen to wait.
+    const pending: (() => void)[] = [];
+    const { asked, surface } = open(
+      recovering(opened(), {
+        'PUT /v1/components/{id}/iterations/{session}/{sequence}': ({ path }) =>
+          new Promise((resolve) =>
+            pending.push(() =>
+              resolve(
+                json(200, { sequence: Number(path.split('/').at(-1)), lock: lock(OTHER_WINDOW) }),
+              ),
+            ),
+          ),
+      }),
+    );
+    const view = await surface();
+    const savedText = () => screen.getByRole('button', { name: 'Saved text' });
+    // Offered while editing, as Save version is: reading, the lock is not this page's to list under.
+    expect(savedText()).toBeDisabled();
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() => expect(savedText()).toBeEnabled());
+
+    await userEvent.click(savedText());
+    await waitFor(() => expect(pending.length).toBeGreaterThan(0));
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    // Nothing is listed while what was typed is still being saved.
+    expect(asked.some((each) => each.route === 'GET /v1/components/{id}/iterations')).toBe(false);
+    for (const answer of pending.splice(0)) answer();
+    const shown = await panel();
+    await within(shown).findAllByRole('listitem');
+    const routes = asked.map((each) => each.route);
+    const saved = routes.indexOf('PUT /v1/components/{id}/iterations/{session}/{sequence}');
+    expect(saved).toBeGreaterThanOrEqual(0);
+    expect(asked[saved]!.body).toMatchObject({
+      content: content('Unbox the printer. Keep the box.'),
+    });
+    expect(routes.indexOf('GET /v1/components/{id}/iterations')).toBeGreaterThan(saved);
+    expect(routes.filter((route) => route === 'POST /v1/components/{id}/lock')).toHaveLength(1);
+
+    // Closed, the author goes on editing, and the focus goes back to what opened it.
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Saved text' })).toBeNull());
+    expect(savedText()).toHaveFocus();
+    expect(box()).toHaveAttribute('contenteditable', 'true');
+  });
+
+  it('is one of the regions F6 moves between while it is shown', async () => {
+    const { surface } = open(recovering(opened({ unsaved })));
+    await surface();
+    await userEvent.click(screen.getByRole('button', { name: 'Recover' }));
+    const shown = await panel();
+    await within(shown).findAllByRole('listitem');
+    await waitFor(() => expect(shown).toHaveFocus());
+    await userEvent.keyboard('{F6}');
+    expect(box()).toHaveFocus();
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(restoreOf(0)).toHaveFocus();
+  });
+
+  it('says the author is editing in another window where their own other window holds it, and moves the edit here to recover', async () => {
+    const { asked, surface } = open(recovering(opened({ unsaved, lock: lock(OTHER_WINDOW) })));
+    await surface();
+    const said = screen.getByText('You are editing this component in another window.');
+    // Their saves are that window's work in progress, not work that was never made a version.
+    expect(screen.queryByText(unsavedSentence(unsaved.savedAt))).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Recover' })).toBeNull();
+
+    await userEvent.click(
+      within(said.parentElement!).getByRole('button', { name: 'Recover here' }),
+    );
+    await panel();
+    const claim = asked.find((each) => each.route === 'POST /v1/components/{id}/lock')!;
+    expect(claim.body).toMatchObject({ move: true });
+  });
+
+  it('offers no Recover while somebody else holds the component, and says who does', async () => {
+    const grace = {
+      holder: { id: GRACE, name: 'Grace' },
+      expectedRelease: '2026-09-28T14:20:00.000Z',
+      yours: false,
+      session: OTHER_WINDOW,
+    };
+    open(recovering(opened({ unsaved, lock: grace })));
+    await screen.findByLabelText('Title');
+    expect(
+      screen.getByText(heldSentence({ name: 'Grace', expectedRelease: grace.expectedRelease })),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(unsavedSentence(unsaved.savedAt))).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Recover/ })).toBeNull();
+  });
+
+  it('offers no Recover once a claim is refused because somebody else holds the component', async () => {
+    const { surface } = open(
+      recovering(opened({ unsaved }), {
+        'POST /v1/components/{id}/lock': () =>
+          json(409, {
+            code: 'lock_held',
+            message: 'held',
+            traceId: 't',
+            holder: { id: GRACE, name: 'Grace' },
+            expectedRelease: '2026-09-28T14:20:00.000Z',
+          }),
+      }),
+    );
+    const view = await surface();
+    // Offered while nobody holds it; Ada types, and her claim finds Grace there.
     expect(screen.getByRole('button', { name: 'Recover' })).toBeInTheDocument();
+    view.dispatch(view.state.tr.insertText('!', 19));
+    await screen.findByRole('button', { name: 'Try again' });
+    expect(screen.queryByRole('button', { name: /^Recover/ })).toBeNull();
+    expect(screen.queryByText(unsavedSentence(unsaved.savedAt))).toBeNull();
+  });
+
+  it("offers Recover here, and no never-made-a-version sentence, once a claim finds the author's own other window", async () => {
+    const { surface } = open(
+      recovering(opened({ unsaved }), {
+        'POST /v1/components/{id}/lock': ({ body }) =>
+          (body as { move?: boolean }).move
+            ? json(200, { lock: lock((body as { session: string }).session) })
+            : json(409, {
+                code: 'lock_held',
+                message: 'held',
+                traceId: 't',
+                holder: { id: ADA, name: 'Ada' },
+                expectedRelease: '2026-09-28T14:20:00.000Z',
+              }),
+      }),
+    );
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText('!', 19));
+    await screen.findByRole('button', { name: 'Continue here' });
+    expect(screen.queryByText(unsavedSentence(unsaved.savedAt))).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Recover' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Recover here' })).toBeInTheDocument();
   });
 
   it('offers nothing where nothing was saved, and a reader is never offered Recover', async () => {
