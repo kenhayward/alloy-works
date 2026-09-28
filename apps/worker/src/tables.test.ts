@@ -198,4 +198,88 @@ describe('a table in the PDF (tables 2)', () => {
     expect(without.elements.TOC).toBeUndefined();
     expect(without.pages).toBe(1);
   }, 120_000);
+
+  it('sets a document holding no table marked unnumbered as template 13 set it, so what was published publishes the same', async () => {
+    // Template 13 reads `publishing/13`, which has no `listed`: the same document, as it was made.
+    const assembled = assemble(inputOf([readings]));
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const asThirteen = JSON.parse(JSON.stringify(assembled.document), (key, value: unknown) =>
+      key === 'listed' ? undefined : value,
+    ) as { schema: string };
+    asThirteen.schema = 'publishing/13';
+    const [before, after] = await Promise.all([
+      typst.compile(PUBLICATION_TEMPLATE[13].file, JSON.stringify(asThirteen), at).then(readPdf),
+      typst
+        .compile(
+          PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+          JSON.stringify(assembled.document),
+          at,
+        )
+        .then(readPdf),
+    ]);
+    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(14);
+    expect(after.pages).toBe(before.pages);
+    expect(after.taggedText).toEqual(before.taggedText);
+    expect(after.artifactText).toEqual(before.artifactText);
+    expect(after.elements).toEqual(before.elements);
+    expect(after.roles).toEqual(before.roles);
+  }, 120_000);
+
+  it('STR-071 sets a table marked unnumbered under its caption alone, still tagged its caption, a reference to it printing that caption, numbers the next as the first and lists only that, and passes veraPDF', async () => {
+    const small = (name: string, caption: string, over: object = {}) => ({
+      type: 'table',
+      id: name,
+      style: 'table',
+      caption: [text(caption)],
+      headerRows: 1,
+      headerColumns: 0,
+      rows: [
+        { cells: [cell(`${name} site`), cell(`${name} value`)] },
+        { cells: [cell(`${name} York`), cell(`${name} 1`)] },
+      ],
+      ...over,
+    });
+    const referring = {
+      type: 'paragraph',
+      id: 'p1',
+      style: 'body',
+      content: [
+        text('As set out in '),
+        {
+          type: 'crossReference',
+          id: 'x1',
+          target: { kind: 'block', block: 't1' },
+          display: 'title',
+        },
+        text('.'),
+      ],
+    };
+    const pdf = await compile([
+      small('t1', 'Layout only', { numbered: false }),
+      small('t2', 'Prices'),
+      referring,
+    ]);
+    const marked = await readPdf(pdf);
+    // A reference to it prints its caption, a link to where it stands.
+    const all = spoken(marked.taggedText.flat());
+    expect(all).toContain('As set out in Layout only');
+    expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+
+    // The caption with no label before it, and the next table's the number it would have had.
+    const page = pageOf(marked, 't1 site');
+    const said = spoken(marked.taggedText[page]!);
+    expect(said).toContain('Layout only t1 site t1 value');
+    expect(said).not.toMatch(/Table \S+ Layout only/);
+    expect(said).toContain('Table 1.1 Prices t2 site t2 value');
+    // Each still a table with its caption its first child: unnumbered is not uncaptioned.
+    expect(marked.elements).toMatchObject({ Table: 2, Caption: 2 });
+    const tables = marked.roles.flatMap((role, at) => (role === 'Table' ? [at] : []));
+    for (const at of tables) expect(marked.roles[at + 1]).toBe('Caption');
+
+    // The list of tables lists the numbered one alone.
+    const list = marked.taggedText.findIndex((runs) => runs[0] === 'Tables');
+    const label = marked.pageLabels?.[pageOf(marked, 't2 site')];
+    expect(spoken(marked.taggedText[list]!)).toBe(`Tables Table 1.1 Prices ${label}`);
+    expect(marked.elements).toMatchObject({ TOC: 1, TOCI: 1 });
+  }, 120_000);
 });

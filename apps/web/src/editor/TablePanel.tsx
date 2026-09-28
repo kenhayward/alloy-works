@@ -1,5 +1,6 @@
 import {
   setTableHeaders,
+  setTableNumbered,
   tableCommand,
   type EditorView,
   type TableAction,
@@ -37,7 +38,9 @@ export interface TablePanelProps {
 
 /**
  * What a table carries beside its cells, and what can be done to its grid (tables 1, ruling R4):
- * how many rows and columns are headers, and rows and columns added, deleted, merged and split.
+ * how many rows and columns are headers, whether it is numbered - unchecked, it takes no number and
+ * uses up none, and its caption stays (STR-071, TAB-034) - and rows and columns added, deleted,
+ * merged and split.
  *
  * **Rendered only while the cursor is in a table**, as the list panel is only in a list. The counts
  * are the table's own and are shown as it holds them, clamped to the table by the command, so a box
@@ -80,6 +83,17 @@ export function TablePanel({ view, table, enabled, ref }: TablePanelProps) {
           disabled={!enabled}
           onChange={(event) => setCount('columns', event.target.value)}
         />
+      </label>
+      <label className={styles['count']}>
+        <input
+          type="checkbox"
+          checked={table.numbered}
+          disabled={!enabled}
+          onChange={(event) => {
+            if (enabled) setTableNumbered(event.target.checked)(view.state, view.dispatch);
+          }}
+        />
+        Numbered
       </label>
       {ACTIONS.map(({ action, label }) => {
         const unavailable = !enabled || !tableCommand(action)(view.state);

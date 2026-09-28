@@ -3,7 +3,7 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.118.1 - 2026-09-28 (PR #TBD)
+## 0.120.1 - 2026-09-28 (PR #TBD)
 
 ### Changed
 
@@ -12,6 +12,46 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   them, each environment's secrets and the service's caches are each checked by a test that another
   environment cannot reach them. Nothing about how the product works has changed; this is the
   evidence that it keeps each environment apart.
+
+## 0.120.0 - 2026-09-28 (PR #317)
+
+### Added
+
+- **A table or a figure can be left unnumbered.** Untick **Numbered** in the Table panel or the
+  Figure panel for a table used only for layout, or a captioned image that should not count as a
+  figure. It keeps its caption, which it still needs to be published, and prints under that caption
+  alone, in the PDF and in Word; the next table or figure takes the number it would have had, and it
+  is left out of the lists of tables and of figures. The Reference dialog still offers it, by its
+  caption, for its title, its page or above or below. A reference that asks for its number shows as
+  unavailable in the editor, telling you to choose another form, and is refused by name when you
+  publish, since it has none. So does a reference asking for the number of an equation left
+  unnumbered, and one asking for something its target never has, such as a footnote's title, says
+  so. Publications already made are unchanged (issue #129).
+
+## 0.119.0 - 2026-09-28 (PR #320)
+
+### Added
+
+- **Every change to publishing is checked against the documents that tested the publishing engine
+  first.** The nine documents the engine was chosen with - tagged headings, lists, tables and figures,
+  twenty footnotes, a table crossing three pages, a three-hundred-page document edited near its
+  fortieth page, equations everywhere an equation can stand, page numbers and running heads in every
+  matter, typefaces, a long document's contents and lists, and the same bytes made twice - are now
+  published through the product's own pipeline on every change, and each must come out as the product sets
+  it today. Nothing changes in what you publish.
+- **Each publishing problem ever reported has a check of its own**, named by its issue: those fixed
+  must stay fixed, and those still open - such as a table's caption left at the foot of a page, a tab
+  lost from a PDF, or a section marked to start a new page that does not - are recorded as they stand,
+  so any change to them is noticed.
+
+### Changed
+
+- **The order in which a publication is put together is tested stage by stage**: each step is shown to
+  change the result if it came before the one ahead of it, or, where two steps cannot be swapped,
+  shown refused by the types or by the later step reading what the earlier made.
+- **Keeping a heading with its paragraph, keeping a paragraph together and avoiding lone lines at a
+  page's edge** are checked both in the PDF and in the rules a Word document is given, from the same
+  style.
 
 ## 0.118.0 - 2026-09-28 (PR #315)
 

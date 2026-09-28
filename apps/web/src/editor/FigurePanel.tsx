@@ -4,6 +4,7 @@ import {
   deleteFigure,
   deleteImage,
   setFigureAlternative,
+  setFigureNumbered,
   setImageAlternative,
   type EditorView,
 } from '@alloy-works/editor';
@@ -25,6 +26,8 @@ export interface FigurePanelProps {
     readonly asset: string;
     readonly imageStyle: string;
     readonly alternative: Alternative;
+    /** A figure's, as `figureAt` reads it; an inline image takes no number, and has none. */
+    readonly numbered?: boolean;
   };
   /** A figure's panel or an inline image's: its name, and the commands that change it. */
   readonly kind?: 'figure' | 'image';
@@ -47,8 +50,10 @@ type Described =
  * How a figure's alternative text is given, and what can be done to its image (figures 2, ruling
  * R5): the image's own description, which the panel reads and shows; the figure's own, in the
  * component's language; or decorative. Its own text that says nothing is not stored - the state stays
- * as it was until something is typed. **Rendered only while the cursor is in a figure**, as the table
- * panel is only in a table.
+ * as it was until something is typed. A figure's panel says too whether it is numbered: unchecked,
+ * it takes no number and uses up none (STR-071); an inline image's has no such box, since an image in
+ * a line is never numbered. **Rendered only while the cursor is in a figure**, as the table panel is
+ * only in a table.
  */
 export function FigurePanel({
   view,
@@ -136,6 +141,19 @@ export function FigurePanel({
         target={kind === 'image' ? 'inlineImage' : 'figure'}
         enabled={enabled}
       />
+      {kind === 'figure' && (
+        <label>
+          <input
+            type="checkbox"
+            checked={figure.numbered !== false}
+            disabled={!enabled}
+            onChange={(event) => {
+              if (enabled) setFigureNumbered(event.target.checked)(view.state, view.dispatch);
+            }}
+          />
+          Numbered
+        </label>
+      )}
       <fieldset disabled={!enabled}>
         <legend>Alternative text</legend>
         <label>

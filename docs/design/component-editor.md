@@ -317,8 +317,10 @@ panel reached from the table's toolbar and by keyboard. **What the tables slice 
 - **A table panel** - a region in the `F6` ring while the cursor is in a table, as the list panel is -
   holds the number of header rows and header columns, adding a row or a column on either side of the
   cursor, deleting one, merging the selected cells and splitting a merged one, and deleting the table.
-  It also adds and removes the table's note (footnotes 1, FN-C); key columns wait for a table whose
-  rows are generated, which is all they are for (FN-A).
+  It also adds and removes the table's note (footnotes 1, FN-C), and its **Numbered** box, checked
+  unless the author has marked the table unnumbered, sets `numbered` (issue #129, STR-071; W14.4) as
+  one undoable step, `setTableNumbered`; the caption stays, and stays required (TAB-034). Key columns
+  wait for a table whose rows are generated, which is all they are for (FN-A).
 - **The header counts are the model's truth.** `prosemirror-tables` marks each cell as a header or a
   data cell, where the model stores two counts, so a plugin keeps every cell's kind agreeing with the
   counts after every transaction, as the identity plugin keeps identifiers.
@@ -580,13 +582,41 @@ table panel, sets the alternative text's state:
 | **Describe it here**            | `own`, in the component's language | A text field; empty is not saved, and the previous state stays until something is typed                                     |
 | **Decorative**                  | `decorative`                       | Nothing is read to a screen reader; the caption still is                                                                    |
 
-and offers **Replace image**, which uploads another file into the same figure, keeping its caption,
-identity and number, and **Delete figure**. Changing the image's own default description - a new
+and offers a **Numbered** box, checked unless the author has marked the figure unnumbered, which sets
+`numbered` as one undoable step (`setFigureNumbered`; issue #129, STR-071, W14.4) - an image in a line
+is never numbered, and its panel has no such box - **Replace image**, which uploads another file into
+the same figure, keeping its caption, identity, number and whether it is numbered, and **Delete
+figure**. Changing the image's own default description - a new
 asset version - is not in the panel: it changes every figure that inherits it, which is an asset
 library's act, and T2's.
 
 **Identity is the figure's block `id`**, as for every caption-bearing block (CNT-081), so replacing the
 image keeps the figure's number and every cross-reference to it.
+
+**A figure or a table marked unnumbered can still be pointed at** (STR-071, W14.4): unlike an
+unnumbered equation it has a caption, which names it. The **Reference** dialog offers it by its kind
+and caption, _Table: Readings_, and in the title, page and above or below forms alone, since
+`targetForms` drops the number forms of a target marked `unnumbered`. **The live document decides**:
+the page's numbering is refetched only for a new version of the document, so where it still numbers
+a figure or a table the author has just marked unnumbered, the dialog (`referenceOptions`) and the
+surface (`referencesShown`) take the live figure or table over it. On the surface a reference to one
+prints what its form asks - its caption, the page of it, above or below - in a document or on its
+own. **One stored in a number form, before the figure or table was marked, shows as unavailable**
+(W14's W-N): _Table not numbered - choose another form_, drawn apart as a broken reference is, rather
+than its caption in the number's place, which would read wrongly in a sentence written around a
+number and hide the change; opening the dialog on it keeps its target and chooses its first form,
+title, and the publish refuses it by name, as it refuses a number of an unnumbered equation.
+**W-N covers a block equation left unnumbered too**: the live equation decides, over a page that may
+still number it, and a number form of one shows _Equation not numbered - choose another form_; the
+dialog opened on it names it _Equation_ and offers a page and a place alone, since the dialog never
+offers an unnumbered equation otherwise. What each form will show is printed from the equation, placed against the
+reference, as the surface draws it after the change. **Any reference asking a target for a form it has not got
+is shown so, in words by the cause**, whether it is in this component, another's or a section:
+_Footnote has no title - choose another form_, _Section title holds an equation - choose another
+form_ and so on, since
+the publish refuses each (`targetForms`); and a page that still calls a figure or a table unnumbered
+after it was numbered again is not trusted either, so the reference shows it as not numbered yet,
+_Table: Readings_, and the dialog offers every form.
 
 **Copying a figure within the product keeps it**, asset version and all, through the product's own
 clipboard type; a paste into a component in another space is allowed where the author may read the

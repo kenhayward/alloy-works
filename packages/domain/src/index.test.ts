@@ -196,6 +196,8 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_11',
         // Frozen by themes 2, which made `publishing/13`: the schema template 12 reads.
         'PUBLISHING_SCHEMA_12',
+        // Frozen by W14.4, which made `publishing/14`: the schema template 13 reads.
+        'PUBLISHING_SCHEMA_13',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',

@@ -119,8 +119,8 @@ const labelled = (rule: NumberingRule, written: string) =>
  *    is at or below its depth (STR-015). A reference is a heading in the outline and takes one too.
  * 2. **Its title's footnotes**, for a section - a title is inline content, and may hold one.
  * 3. **Its occurrence's contributions**, for a reference: each caption-bearing block and footnote in
- *    document order takes the next number in its sequence (STR-070) - and an unnumbered equation takes
- *    none (CNT-047). An occurrence not known here makes every other counter in its matter unknown until
+ *    document order takes the next number in its sequence (STR-071) - and an unnumbered equation
+ *    (CNT-047), figure or table (STR-071) takes none. An occurrence not known here makes every other counter in its matter unknown until
  *    it next restarts, **whether or not it holds anything**, so which counters go unknown says nothing
  *    about what the occurrence contains.
  * 4. **Its children.** An unnumbered node is transparent: what it holds carries on the counters of the
@@ -148,8 +148,9 @@ export function number(conditioned: Conditioned, scheme: NumberingScheme): Numbe
   const take = (node: string, contribution: Contribution, matter: OutlineMatter) => {
     const rule = scheme.sequences[contribution.sequence]?.[matter];
     const sectionRule = scheme.sequences['section']?.[matter];
-    // A sequence the scheme does not declare numbers nothing, and an unnumbered equation takes no
-    // number (CNT-047): neither is an entry, and neither moves a counter.
+    // A sequence the scheme does not declare numbers nothing, and an unnumbered equation (CNT-047),
+    // figure or table (STR-071) takes no number: none is an entry - so none is listed - and none
+    // moves a counter.
     if (rule === undefined || sectionRule === undefined || !contribution.numbered) return;
     const state = states[matter];
     const counter = counterOf(state, contribution.sequence);

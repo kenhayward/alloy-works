@@ -49,6 +49,7 @@ import {
   PUBLISHING_SCHEMA_10,
   PUBLISHING_SCHEMA_11,
   PUBLISHING_SCHEMA_12,
+  PUBLISHING_SCHEMA_13,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -1145,8 +1146,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/13, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/13');
+  it('assembles under a layout as publishing/14, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/14');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1732,8 +1733,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/13, and publishing/4 to publishing/12 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/13');
+  it('makes publishing/14, and publishing/4 to publishing/13 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/14');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1743,6 +1744,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_10).toBe('publishing/10');
     expect(PUBLISHING_SCHEMA_11).toBe('publishing/11');
     expect(PUBLISHING_SCHEMA_12).toBe('publishing/12');
+    expect(PUBLISHING_SCHEMA_13).toBe('publishing/13');
   });
 });
 
@@ -1834,6 +1836,8 @@ describe('a table, published (tables 2)', () => {
             ],
           },
         ],
+        // Numbered, so the list of tables lists it (W14.4).
+        listed: true,
         note: null,
       },
     ]);
@@ -1901,6 +1905,93 @@ describe('a table, published (tables 2)', () => {
     const underFirst = assemble({ ...oneComponent(stored()), layout: first.layout });
     if (!underFirst.ok) throw new Error(JSON.stringify(underFirst.failures));
     expect(underFirst.document.front.lists).toEqual([]);
+  });
+
+  describe('marked unnumbered (issue #129)', () => {
+    const second = (over: object = {}) =>
+      stored({
+        id: 't2',
+        caption: [text('Prices')],
+        rows: [{ cells: [cell('p1', 'Site'), cell('p2', 'Price', { colspan: 2 })] }],
+        ...over,
+      });
+    const tables = (assembled: Assembled<PublishedDocument>) =>
+      blocksOf(assembled).flatMap((block) => (block.type === 'table' ? [block] : []));
+
+    it('STR-071 publishes a table marked unnumbered with its caption and no number, the next taking the number it would have had, and lists it nowhere', () => {
+      const assembled = assemble(oneComponent(stored({ numbered: false }), second()));
+      if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+      expect(tables(assembled)).toMatchObject([
+        {
+          id: 't1',
+          label: null,
+          caption: [
+            { text: 'Readings ', marks: [] },
+            { text: 'at noon', marks: [{ kind: 'emphasis' }] },
+          ],
+          listed: false,
+        },
+        { id: 't2', label: 'Table 1.1', caption: [{ text: 'Prices', marks: [] }], listed: true },
+      ]);
+      // The list of tables is made for the numbered one, and the template lists only what is listed.
+      expect(assembled.document.front.lists).toEqual([{ sequence: 'table', title: 'Tables' }]);
+      // A document whose only table is unnumbered has no list of tables at all.
+      const alone = assemble(oneComponent(stored({ numbered: false })));
+      if (!alone.ok) throw new Error(JSON.stringify(alone.failures));
+      expect(alone.document.front.lists).toEqual([]);
+    });
+
+    it('TAB-034 requires a caption of every table, and numbers a captioned one by the outline unless it is marked unnumbered', () => {
+      // Unnumbered is not unnamed: a caption is still what names a table to a reader (TAB-039).
+      expect(failuresOf(assemble(oneComponent(stored({ numbered: false, caption: [] }))))).toEqual([
+        failed('table_without_caption', null),
+      ]);
+      expect(failuresOf(assemble(oneComponent(stored({ caption: [] }))))).toEqual([
+        failed('table_without_caption', null),
+      ]);
+      // Numbered by the outline: the chapter the occurrence stands in, then its place in it.
+      const numbered = assemble(oneComponent(stored(), second()));
+      if (!numbered.ok) throw new Error(JSON.stringify(numbered.failures));
+      expect(tables(numbered).map((each) => each.label)).toEqual(['Table 1.1', 'Table 1.2']);
+      const marked = assemble(oneComponent(stored(), second({ numbered: false })));
+      if (!marked.ok) throw new Error(JSON.stringify(marked.failures));
+      expect(tables(marked).map((each) => each.label)).toEqual(['Table 1.1', null]);
+    });
+
+    it('STR-071 prints the caption of a table marked unnumbered for a reference to its title, and fails a number of it by name', () => {
+      const xref = (name: string, display: string) => ({
+        type: 'crossReference',
+        id: name,
+        target: { kind: 'block', block: 't1' },
+        display,
+      });
+      const assembled = assemble(
+        oneComponent(
+          stored({ numbered: false }),
+          paragraph('b1', text('See '), xref('x1', 'title'), xref('x2', 'page')),
+        ),
+      );
+      if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+      const references = blocksOf(assembled).flatMap((each) =>
+        each.type === 'paragraph'
+          ? each.runs.flatMap((run) => ('reference' in run ? [run.reference] : []))
+          : [],
+      );
+      expect(references).toMatchObject([
+        { text: 'Readings at noon', page: false },
+        { text: null, page: true },
+      ]);
+      const refused = assemble(
+        oneComponent(
+          stored({ numbered: false }),
+          paragraph('b1', xref('x1', 'number'), xref('x2', 'numberAndTitle')),
+        ),
+      );
+      expect(failuresOf(refused)).toEqual([
+        { ...failed('cross_reference_form_unavailable', 'number'), block: 'x1' },
+        { ...failed('cross_reference_form_unavailable', 'numberAndTitle'), block: 'x2' },
+      ]);
+    });
   });
 
   it("checks a list's title against the faces, as the layout's own words", () => {
@@ -1983,6 +2074,7 @@ describe('a figure, published (figures 3)', () => {
       // The default `figure` style's (themes 2): a block, centred.
       placement: 'block',
       alignment: 'center',
+      listed: true,
     });
   });
 
@@ -2150,6 +2242,37 @@ describe('a figure, published (figures 3)', () => {
     const tableAlone = assemble(oneComponent(table));
     if (!tableAlone.ok) throw new Error(JSON.stringify(tableAlone.failures));
     expect(tableAlone.document.front.lists).toEqual([{ sequence: 'table', title: 'Tables' }]);
+  });
+
+  it('STR-071 publishes a figure marked unnumbered with its caption and no number, the next taking the number it would have had, and lists it nowhere', () => {
+    const assembled = assemble(
+      withAssets(
+        { [RED]: asset() },
+        stored({ numbered: false }),
+        stored({ id: 'f2', caption: [text('Circles')] }),
+      ),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    expect(blocksOf(assembled)).toMatchObject([
+      { type: 'figure', id: 'f1', label: null, listed: false },
+      {
+        type: 'figure',
+        id: 'f2',
+        label: 'Figure 1.1',
+        caption: [{ text: 'Circles', marks: [] }],
+        listed: true,
+      },
+    ]);
+    expect(assembled.document.front.lists).toEqual([{ sequence: 'figure', title: 'Figures' }]);
+    const alone = assemble(withAssets({ [RED]: asset() }, stored({ numbered: false })));
+    if (!alone.ok) throw new Error(JSON.stringify(alone.failures));
+    expect(alone.document.front.lists).toEqual([]);
+    // Unnumbered is not uncaptioned: CNT-017's caption is still required.
+    expect(
+      failuresOf(
+        assemble(withAssets({ [RED]: asset() }, stored({ numbered: false, caption: [] }))),
+      ),
+    ).toEqual([failed('figure_without_caption', null)]);
   });
 });
 
@@ -4376,11 +4499,11 @@ describe('the theme a publication is set from (themes 1)', () => {
     return styles;
   };
 
-  it('makes publishing/13, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
+  it('makes publishing/14, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/13');
+    expect(assembled.document.schema).toBe('publishing/14');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
     expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
     expect(Object.keys(assembled.document.theme.images)).toEqual([

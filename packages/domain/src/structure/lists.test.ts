@@ -217,4 +217,33 @@ describe('a list of figures, of tables or of equations', () => {
       [id('again'), null, ''],
     ]);
   });
+
+  it('STR-071 leaves a figure or a table marked unnumbered out of the list of its kind', () => {
+    const tableBlock = (block: string, caption: string, over: object = {}) => ({
+      type: 'table',
+      id: block,
+      caption: [{ type: 'text', value: caption, marks: [] }],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [{ content: [{ type: 'paragraph', id: `${block}c`, content: [] }] }] }],
+      ...over,
+    });
+    const survey = holding(
+      tableBlock('t1', 'Parts'),
+      tableBlock('t2', 'Layout only', { numbered: false }),
+      { ...figure('f1', 'Decoration'), numbered: false },
+      tableBlock('t3', 'Prices'),
+      figure('f2', 'The tray'),
+    );
+    const { conditioned, numbering } = pipeline([section('one', [reference('survey')])], {
+      survey,
+    });
+    expect(listOf(conditioned, numbering, 'table')).toEqual([
+      { node: id('survey'), block: 't1', number: '1.1', label: 'Table 1.1', caption: 'Parts' },
+      { node: id('survey'), block: 't3', number: '1.2', label: 'Table 1.2', caption: 'Prices' },
+    ]);
+    expect(listOf(conditioned, numbering, 'figure')).toEqual([
+      { node: id('survey'), block: 'f2', number: '1.1', label: 'Figure 1.1', caption: 'The tray' },
+    ]);
+  });
 });

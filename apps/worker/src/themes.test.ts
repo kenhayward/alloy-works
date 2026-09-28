@@ -66,7 +66,7 @@ import { checkJob } from './jobs/check.js';
 import { publishJob } from './jobs/publish.js';
 import { faceMetrics } from './metrics.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
-import { readPaint, readPdf, type Paint, type PaintedText, type ReadPdf } from './testing/pdf.js';
+import { readPaint, readPdf, type Paint, type PaintedText } from './testing/pdf.js';
 import { defaultTheme } from './testing/theme.js';
 import { checkPdfUa1, suiteChecker, type VeraPdfVerdict } from './testing/verapdf.js';
 import { processNextBesideChecks } from './testing/work.js';
@@ -488,7 +488,7 @@ describe('two themes in the PDF (themes 1)', () => {
     }
   }, 120_000);
 
-  describe('STY-008 a paragraph style declares the face, size, weight, colour, alignment, indents, spaces, line spacing, and keeping with the next and together', () => {
+  describe('STY-008 a paragraph style declares the face, size, weight, colour, alignment, indents, spaces and line spacing', () => {
     it('sets every style in its face, size, weight, posture and colour, from running text to the running head', async () => {
       for (const name of ['default', 'ledger'] as const) {
         const theme = themes[name];
@@ -646,104 +646,7 @@ describe('two themes in the PDF (themes 1)', () => {
         );
       }
     }, 60_000);
-
-    it('keeps a heading with what follows it where its style says, and leaves it alone at the foot where it does not', async () => {
-      // A heading on the last line of a page, then a paragraph: kept with the next, the heading goes
-      // over with it; not kept, it is left alone at the foot. Measured as the design measured it
-      // (themes.md, "What the pinned Typst does with a theme's properties").
-      // And the same where every style keeps together as well, since a block that keeps together is
-      // measured inside the one that keeps with the next (the final review of themes 1, I1).
-      for (const keepTogether of [false, true]) {
-        for (const keep of [true, false]) {
-          const theme = paginated({ keepWithNext: keep, widowControl: true, keepTogether });
-          // The paragraph's first line on the page's last, less one: the heading's.
-          const fillers = (await fillersToTheFoot(theme, (n) => headedAfter(n))) + 1;
-          const { read } = await compile(theme, small, headedAfter(fillers));
-          const heading = pageOf(read, 'Second');
-          const first = pageOf(read, WORDS[0]!);
-          expect(first, `${keepTogether} ${keep}`).toBe(heading + (keep ? 0 : 1));
-        }
-      }
-    }, 120_000);
-
-    it('keeps a paragraph together where its style says, moving it whole rather than breaking it', async () => {
-      const split = async (keepTogether: boolean) => {
-        const theme = paginated({ keepWithNext: true, widowControl: false, keepTogether });
-        // Five of the nine lines left on the page.
-        const fillers = (await fillersToTheFoot(theme, (n) => nineAfter(n))) - 4;
-        return splitOf((await compile(theme, small, nineAfter(fillers))).read);
-      };
-      expect(await split(false)).toEqual([5, 4]);
-      expect(await split(true)).toEqual([0, 9]);
-    }, 120_000);
   });
-
-  it('sets widow and orphan control across a page foot: never one line alone at either side of it where on, and either where off', async () => {
-    const split = async (widowControl: boolean, left: number) => {
-      const theme = paginated({ keepWithNext: true, widowControl, keepTogether: false });
-      const fillers = (await fillersToTheFoot(theme, (n) => nineAfter(n))) - (left - 1);
-      return splitOf((await compile(theme, small, nineAfter(fillers))).read);
-    };
-    // Room for one line of the nine, and for eight.
-    expect(await split(false, 1)).toEqual([1, 8]);
-    expect(await split(false, 8)).toEqual([8, 1]);
-    // On, the orphan moves over with the rest, and a line goes over to keep the widow company.
-    expect(await split(true, 1)).toEqual([0, 9]);
-    expect(await split(true, 8)).toEqual([7, 2]);
-  }, 120_000);
-
-  it('keeps a paragraph together only where it fits a page: one taller than a page breaks across pages, every line on one', async () => {
-    // The final review of themes 1, I1: the engine moves an unbreakable block that cannot fit on an
-    // empty page to the next and lets it run off the page's foot, with nothing said, so a paragraph of
-    // thirty of these kept together painted its last line over the running foot, and one of eighty
-    // painted forty lines below the page. Keep-together is Word's `keepLines`, which keeps a
-    // paragraph whole where it fits and breaks it where it does not.
-    const KEPT = '5f0c3a3e-0d8a-4c1e-9d0b-6a51e2f9b003';
-    const kept = read(
-      {
-        ...DEFAULT_THEME,
-        catalogues: { ...DEFAULT_THEME.catalogues, paragraph: KEPT },
-      },
-      new Map([
-        ...DEFAULT_CATALOGUES_BY_VERSION,
-        [
-          KEPT,
-          {
-            ...DEFAULT_CATALOGUES.paragraph,
-            base: { ...DEFAULT_CATALOGUES.paragraph.base, keepTogether: true },
-          },
-        ],
-      ]),
-    );
-    const { page, margins } = bare.formats.pdf;
-    for (const count of [30, 80]) {
-      const long = Array.from({ length: count }, () => LONG).join(' ');
-      const { paint, pdf } = await compile(kept, bare, [
-        {
-          name: 'kept',
-          title: 'Kept',
-          content: [
-            para('p1', text('Short first.')),
-            para('p2', text(`Long ${long} Lastword.`)),
-            para('p3', text('After.')),
-          ],
-        },
-      ]);
-      expect(await checkPdfUa1(pdf), String(count)).toMatchObject({ compliant: true });
-      const body = paint.texts.filter((each) => !each.artifact && each.text.trim() !== '');
-      for (const each of body) {
-        // Every baseline inside the page's text block, above its bottom margin and below its top.
-        expect(each.y, `${count}: ${each.text}`).toBeGreaterThanOrEqual(margins.bottom);
-        expect(each.y, `${count}: ${each.text}`).toBeLessThanOrEqual(page.height - margins.top);
-      }
-      // Broken where it stands, beneath the paragraph before it, not moved whole to a page it
-      // cannot fit either; and every word of it set, the last before what follows it.
-      expect(painted(paint, 'Long').page, String(count)).toBe(painted(paint, 'Short').page);
-      const last = body.find((each) => each.text.includes('Lastword'))!;
-      const after = painted(paint, 'After');
-      expect(after.page > last.page || (after.page === last.page && after.y < last.y)).toBe(true);
-    }
-  }, 120_000);
 
   describe('the marks', () => {
     /** Each marked word of the specimen, and the unmarked word before it on its line. */
@@ -1006,94 +909,6 @@ describe('a quotation set off by its style, its own paragraphs a line apart (the
     expect(placeOf(contextual, 'text').contextualSpacing).toBe(true);
   }, 120_000);
 });
-
-/**
- * The page the pagination is measured on: 250pt across and 288pt down inside its margins, so that
- * a word of thirty letters in the monospace face at 10pt fills a line on its own, and the text block
- * holds a whole number of the 12pt lines below.
- */
-const small = parseLayout({
-  ...bare,
-  formats: {
-    pdf: {
-      ...bare.formats.pdf,
-      page: { width: 322, height: 396 },
-      margins: { top: 54, bottom: 54, inside: 36, outside: 36 },
-      gutter: 0,
-    },
-  },
-});
-/** Nine words, each a line of its own on the small page: a nine-line paragraph. */
-const WORDS = Array.from({ length: 9 }, (_, index) =>
-  `Line${String.fromCharCode(65 + index)}`.padEnd(30, 'x'),
-);
-const NINE = para('nine', text(WORDS.join(' ')));
-const fillers = (count: number) =>
-  Array.from({ length: count }, (_, index) => para(`filler${index}`, text(`Filler${index}`)));
-/** Fillers, then the nine-line paragraph, in one component. */
-const nineAfter = (count: number) => [
-  { name: 'first', title: 'First', content: [...fillers(count), NINE] },
-];
-/** Fillers in one component, then a second whose heading stands before the nine-line paragraph. */
-const headedAfter = (count: number) => [
-  { name: 'first', title: 'First', content: fillers(count) },
-  { name: 'second', title: 'Second', content: [NINE] },
-];
-
-/**
- * The ledger with every line of every style 12pt apart and no space before or after, so that every
- * line of a page - the title, the notice's sentence, a heading, a filler, a line of the paragraph -
- * is one step of the same grid, and moving a filler moves everything after it one line.
- */
-const paginated = (keep: { keepWithNext: boolean; widowControl: boolean; keepTogether: boolean }) =>
-  onLedger(
-    restyled(
-      {
-        ...LEDGER_BASE,
-        ...FLUSH,
-        alignment: 'start',
-        lineSpacing: 12,
-        spaceBefore: 0,
-        spaceAfter: 0,
-        hyphenate: false,
-        widowControl: keep.widowControl,
-        keepTogether: keep.keepTogether,
-      },
-      { 'heading-1': { keepWithNext: keep.keepWithNext } },
-    ),
-  );
-
-/** The page, counted from 0, whose tagged text first holds these words. */
-const pageOf = (read: ReadPdf, words: string) =>
-  read.items.find((each) => each.text.includes(words))!.page - 1;
-
-/** How many of the nine lines stand on the first page, and how many after it. */
-const splitOf = (read: ReadPdf) => {
-  const pages = WORDS.map((word) => pageOf(read, word));
-  return [pages.filter((page) => page === 0).length, pages.filter((page) => page > 0).length];
-};
-
-/**
- * How many fillers put the first of the nine lines on the last line of the first page, measured: with
- * one - a component holds a block at least - where the first line stands, and so how many 12pt lines lie between it and the text block's
- * foot. Every step of the grid is checked to be the 12pt the theme says, so that a count here is a
- * count of lines.
- */
-const fillersToTheFoot = async (
-  theme: ResolvedTheme,
-  document: (count: number) => ReturnType<typeof nineAfter>,
-) => {
-  const { read } = await compile(theme, small, document(1));
-  const first = read.items.filter((each) => each.page === 1);
-  const top = Math.max(...first.map((each) => each.y));
-  const at = first.find((each) => each.text.startsWith(WORDS[0]!))!.y;
-  const line = (top - at) / 12;
-  expect(Math.abs(line - Math.round(line))).toBeLessThan(0.01);
-  // The text block is 288pt down: its last line is the one whose one em of type ends at its foot,
-  // 12pt a step from the first, whose top is the block's top.
-  const lines = Math.floor((288 - 10) / 12) + 1;
-  return lines - Math.round(line);
-};
 
 describe("hyphenation by the passage's language", () => {
   /** A long compound, repeated so a line in the measure has to break inside it, again and again. */

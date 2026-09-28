@@ -7,7 +7,8 @@
 > [ADR-0030](../decisions/0030-the-conformance-report-joins-a-publication-after-it-is-recorded.md),
 > [ADR-0031](../decisions/0031-t1-publishes-headings-to-six-levels.md) and STY-079. Its decisions, W-A to
 > W-L below, were taken as recommended on his instruction of 2026-09-28 to work through W14, and are his
-> to review. W-M was the lead's, from W14.7's final review.
+> to review. W-M was the lead's, from W14.7's final review, and W-N W14.4's final review's, taken as
+> recommended and his to review.
 
 **Goal:** every PDF publication is checked and says so; a heading too deep for PDF/UA-1 is refused by
 name; the regression corpus holds the engine's cases and every defect's; a figure or table may be
@@ -21,27 +22,28 @@ last of the editor's T1 features, a spelling checker in the desktop app and a sy
 | W14.2 | Six heading levels, refused by name for PDF; the 300-page budget measured                                                             | Minor   |
 | W14.3 | The regression corpus: the engine spike's cases and every publishing defect's, the keep rules among them; the resolution order's test | Minor   |
 | W14.4 | A figure or table explicitly unnumbered (issue #129): the stored member, the editor, numbering, the PDF and Word                      | Minor   |
-| W14.5 | A style says where its caption sits (STY-079, STR-025): the catalogue, the default theme, template 14, Word and the editor            | Minor   |
+| W14.5 | A style says where its caption sits (STY-079, STR-025): the catalogue, the default theme, template 15, Word and the editor            | Minor   |
 | W14.6 | Word names what it cannot carry (PUB-100); IAM-075 and IAM-080 claimed and cited                                                      | Minor   |
 | W14.7 | The desktop's spelling checker through the platform bridge (CNT-178), and the symbol palette (CNT-057)                                | Minor   |
 
 ## Decisions
 
-| #   | Decision                                                                                                                                                                                                                                                                                                     | Instead of                                                                                                  |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| W-A | **veraPDF is copied into the worker image from its pinned image** (`/opt/verapdf` and its JRE, by digest), and each worker keeps one in server mode, warm, as the test suite does                                                                                                                            | A sidecar service, a second container to run and reach; or a download at build time from a URL nothing pins |
-| W-B | **The check is a job of its own, `check_pdf`, enqueued in the transaction that records the publication**, so a worker that dies after recording leaves the check queued, never lost                                                                                                                          | A step after recording in the same job, which a crash between the two would skip for ever                   |
-| W-C | **The report is a row of its own, `publication_check`**, insert-only, one per PDF output: the checker and its version, the profile, compliant or not, and the failed rules. A publication's page says checked and passed, checked and failed, or not yet checked                                             | Updating `publication_output`, which the runtime role may never update                                      |
-| W-D | **The 300-page budget is measured in the worker's suite on a declared reference document and recorded beside the result**, binding locally and record-only on CI's runner, as STR-063's navigation budget is                                                                                                 | A budget binding on CI, whose shared runners are not the declared reference configuration                   |
-| W-E | **A heading deeper than six levels is refused for PDF alone**, `heading_too_deep`, naming the section; Word publishes it                                                                                                                                                                                     | Refusing every format, which Word does not need                                                             |
-| W-F | **The regression corpus is one suite**, `regression.test.ts`: a case for each of the engine spike's nine, ported from `spikes/publishing-engine`, and a case for each publishing defect filed, named by its issue; the keep rules' cases join it                                                             | Leaving the spike's cases in Python, which CI never runs                                                    |
-| W-G | **The resolution order's test swaps adjacent stages where the code lets a test swap them**, and where the types forbid a swap, the test says so and shows the compile-time refusal instead                                                                                                                   | Claiming the order is tested where only the types keep it                                                   |
-| W-H | **A figure or table carries `numbered`, true by default and stored only when false**, as an equation's does; an unnumbered one takes no number and is left out of the lists of figures and tables                                                                                                            | A separate block type for an unnumbered figure, which every place that handles a figure would have to learn |
-| W-I | **Caption placement is `caption: 'above' \| 'below'` on a table style and an image style**, in catalogue schema 3; the default theme keeps today's (a table's above, a figure's below), so nothing already published changes                                                                                 | A document-level setting, which STR-025 rules out: placement is the style's                                 |
-| W-J | **Word's report names every structure Word does not carry**, one kind each: a description's language, a quotation, preformatted text and a quoted phrase as structure, a numbered equation set as a table, and a character the maths face lacks                                                              | Claiming PUB-100 on the five kinds reported today                                                           |
-| W-K | **The desktop's spelling checker is set through one bridge call, `setSpellCheckLanguages(languages)`**, which the shell answers with a pure function in `shell.ts` mapping a component's languages to the dictionaries Electron has; suggestions come from the window's own context menu                     | Enabling every dictionary at once, which marks correct words in the wrong language                          |
-| W-L | **The symbol palette is a dialog of three groups** - mathematical, Greek, and scientific and technical - a keyboard-navigable grid that inserts a character at the cursor and gives the focus back                                                                                                           | A character map of all of Unicode, which is the operating system's                                          |
-| W-M | **The palette dims what the typeface at the cursor lacks, pointing to an equation**: the family set there - the paragraph's style, or code's in preformatted text and inline code - is asked by the publish's glyph check, and a character it lacks stays in the grid, disabled, named as not in that family | Offering only covered characters, which hides the maths an author came for                                  |
+| #   | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Instead of                                                                                                                                                                          |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-A | **veraPDF is copied into the worker image from its pinned image** (`/opt/verapdf` and its JRE, by digest), and each worker keeps one in server mode, warm, as the test suite does                                                                                                                                                                                                                                                                                                 | A sidecar service, a second container to run and reach; or a download at build time from a URL nothing pins                                                                         |
+| W-B | **The check is a job of its own, `check_pdf`, enqueued in the transaction that records the publication**, so a worker that dies after recording leaves the check queued, never lost                                                                                                                                                                                                                                                                                               | A step after recording in the same job, which a crash between the two would skip for ever                                                                                           |
+| W-C | **The report is a row of its own, `publication_check`**, insert-only, one per PDF output: the checker and its version, the profile, compliant or not, and the failed rules. A publication's page says checked and passed, checked and failed, or not yet checked                                                                                                                                                                                                                  | Updating `publication_output`, which the runtime role may never update                                                                                                              |
+| W-D | **The 300-page budget is measured in the worker's suite on a declared reference document and recorded beside the result**, binding locally and record-only on CI's runner, as STR-063's navigation budget is                                                                                                                                                                                                                                                                      | A budget binding on CI, whose shared runners are not the declared reference configuration                                                                                           |
+| W-E | **A heading deeper than six levels is refused for PDF alone**, `heading_too_deep`, naming the section; Word publishes it                                                                                                                                                                                                                                                                                                                                                          | Refusing every format, which Word does not need                                                                                                                                     |
+| W-F | **The regression corpus is one suite**, `regression.test.ts`: a case for each of the engine spike's nine, ported from `spikes/publishing-engine`, and a case for each publishing defect filed, named by its issue; the keep rules' cases join it                                                                                                                                                                                                                                  | Leaving the spike's cases in Python, which CI never runs                                                                                                                            |
+| W-G | **The resolution order's test swaps adjacent stages where the code lets a test swap them**, and where the types forbid a swap, the test says so and shows the compile-time refusal instead                                                                                                                                                                                                                                                                                        | Claiming the order is tested where only the types keep it                                                                                                                           |
+| W-H | **A figure or table carries `numbered`, true by default and stored only when false**, as an equation's does; an unnumbered one takes no number and is left out of the lists of figures and tables                                                                                                                                                                                                                                                                                 | A separate block type for an unnumbered figure, which every place that handles a figure would have to learn                                                                         |
+| W-I | **Caption placement is `caption: 'above' \| 'below'` on a table style and an image style**, in catalogue schema 3; the default theme keeps today's (a table's above, a figure's below), so nothing already published changes                                                                                                                                                                                                                                                      | A document-level setting, which STR-025 rules out: placement is the style's                                                                                                         |
+| W-J | **Word's report names every structure Word does not carry**, one kind each: a description's language, a quotation, preformatted text and a quoted phrase as structure, a numbered equation set as a table, and a character the maths face lacks                                                                                                                                                                                                                                   | Claiming PUB-100 on the five kinds reported today                                                                                                                                   |
+| W-K | **The desktop's spelling checker is set through one bridge call, `setSpellCheckLanguages(languages)`**, which the shell answers with a pure function in `shell.ts` mapping a component's languages to the dictionaries Electron has; suggestions come from the window's own context menu                                                                                                                                                                                          | Enabling every dictionary at once, which marks correct words in the wrong language                                                                                                  |
+| W-L | **The symbol palette is a dialog of three groups** - mathematical, Greek, and scientific and technical - a keyboard-navigable grid that inserts a character at the cursor and gives the focus back                                                                                                                                                                                                                                                                                | A character map of all of Unicode, which is the operating system's                                                                                                                  |
+| W-M | **The palette dims what the typeface at the cursor lacks, pointing to an equation**: the family set there - the paragraph's style, or code's in preformatted text and inline code - is asked by the publish's glyph check, and a character it lacks stays in the grid, disabled, named as not in that family                                                                                                                                                                      | Offering only covered characters, which hides the maths an author came for                                                                                                          |
+| W-N | **A number-form reference to a figure, a table or a block equation marked unnumbered is refused by the publish, and the editor shows it as unavailable** - drawn apart as a broken reference is, saying the target is not numbered and to choose another form; any other form a target has not got, such as a footnote's title, is shown so too, in words by the cause. Equations joined at the re-review of W14.4. Taken as recommended at W14.4's final review; Ken's to review | Printing the caption for a number form, which reads wrongly in a sentence written around a number ("see Table 1.2" becoming "see Layout only") and hides the change from the author |
 
 ## Global constraints
 
@@ -213,6 +215,37 @@ record shown on the page, never refused.
 3. docs/testing.md's account of the corpus brought up to date.
 4. Tests: PUB-087, PUB-092, PUB-098.
 
+**W14.3, as built.** `regression.test.ts` keeps its first four cases where they were, for W14.2's
+change to the nine-level one, and gains four describe blocks, their documents built by
+`apps/worker/src/testing/corpus.ts` (the spike's seeded prose on mulberry32, and the model's shapes).
+**The spike's nine**, cited PUB-087, each judged as its checks judged it: case 3's caption check fails
+on the very document, which is issue #235, so case 3 keeps its header and cell-note checks and #235's
+case reads the same PDF; case 4 keeps no timing, which is PUB-102's, but compiles inside the worker's
+thirty-second limit and moves no body page before its edit (the change is taken up within a page or
+two, so later pages are not asserted to move); case 7 measured that a family the worker does not hold,
+reaching Typst, is set in the serif's regular without a word, which is why the job asks
+`typefacesNotHeld` first; case 8 runs at the spike's full size in seconds; case 9 on one machine only.
+**The defects fixed**, cited PUB-087 and named by issue: #145, #253, and #158, whose refusal is fixed
+and which stays open for a theme's markers (moved from `template.test.ts`); and Word's #7 in a
+describe of its own citing nothing, since PUB-087 is the PDF's, held against `writeDocx`, the product's
+Word writer, since the defect's `exportDocx` publishes nothing. **The defects still open** - #162,
+#163, #164, #165, #232, #233, #234, #235 - each pinned as it stands and citing nothing; #163's label
+measured as a `P` under template 13, not the `Span` the issue saw. Not in publishing output, so not
+here: #88, #122 to #125, #146 (`sample.test.ts`), #148's other half, #156, #159. **The keep rules**,
+moved from `themes.test.ts` with their helpers, each also reading the rule from the same style as
+Word's (`projectStylesXml`), three of them citing STY-008, whose describe in `themes.test.ts` no longer
+names keeping. **PUB-092's claim is dropped** (the final review, its option a): the cases show the
+PDF's pagination and Word's keep properties, not Word's pages, and themes.md names that gap beside its
+table, as word-output.md already said. **The order** is `packages/domain/src/publishing/order.test.ts`,
+citing PUB-098 on each of its seven adjacent pairs: four swapped by composing the stage functions the
+other way round, with what `assemble` publishes held to the order's answer; three `@ts-expect-error`
+refusals (an unresolved occurrence handed to a condition, `number` given a `Resolved`, a refused
+assembly's `document`); and the check for something to publish shown reading the generated matter,
+which `assemble` makes after the walk that checks and projects each block. The corpus adds the PDF's
+half of references before generation: a list of tables prints a caption's reference as its number.
+publishing.md's PUB-098 row and "The order" say so. Each case was watched fail under a break of the
+code beneath it, and each `@ts-expect-error` under a type widened to allow its swap.
+
 ## W14.4: Unnumbered figures and tables (issue #129)
 
 1. The requirement row from issue #129, landed by this pull request, which closes it.
@@ -220,10 +253,53 @@ record shown on the page, never refused.
    the lists, the PDF and Word.
 3. Tests: TAB-034, and the new row.
 
+**W14.4, as built.** Issue #129 is **STR-071**, in STR rather than TAB because it is a rule of the
+sequences, beside the row it supersedes: STR-070 numbered every figure and table, so the choice to
+leave one unnumbered changes what the product must do and is a new row, which also keeps STR-070's
+appendix case (the issue's comment) and says an unnumbered one is in no list and is named by its
+caption wherever a reference names it, and no reference to it may ask for its number. TAB-034's pointer moves from STR-023 to STR-071, a clarity edit. The stored member
+is W-H's: `numbered: z.literal(false).optional()` on `tableNodeSchema` and `figureNodeSchema`, so a
+numbered one has one spelling, the member absent, and `numbered: true` is refused; optional and so
+additive, it leaves every stored table and figure valid and its canonical form, and so its digest,
+unchanged, with `CURRENT_SCHEMA_VERSION` 1 and no migration - no content schema version was needed. The
+editor's `tableFigure` and `figure` carry `numbered`, true by default, `fromEditor` writing the member
+only when false; `setTableNumbered` and `setFigureNumbered` are one undoable step each, behind a
+**Numbered** box in the Table panel and the Figure panel, never an inline image's. The product's own
+clipboard keeps it through admission, which spreads a block; the readers write none; the service
+refuses `numbered: true` as `content_invalid`. `contributionsOf` takes `numbered` from the block, so
+`number` gives an unnumbered one no entry: no label, no counter value, no place in `listOf`.
+`documentTargets` and `ownTargets` offer one by its caption, marked `unnumbered`, and `targetForms`
+drops its number forms; resolution binds it to its caption with no label, so a title form prints the
+caption and a number form fails `cross_reference_form_unavailable`, as an unnumbered equation's does.
+**A new template was needed**, against the hope of avoiding one: template 13 already sets a caption
+with no label, but its lists are Typst's `outline` over every figure of a kind, which would have
+listed an unnumbered table with no number. So `publishing/14` gives a `PublishedTable` and a
+`PublishedFigure` `listed`, false where the block has no numbering entry, and **template 14** is
+template 13 with `outlined: b.listed` on both; `PUBLISHING_SCHEMA_13` freezes `publishing/13`,
+`PIPELINE_VERSION` is `'14'`, and a document with none unnumbered is set by template 14 exactly as by
+template 13, measured. W14.5's caption placement therefore takes template 15 and `publishing/15`,
+not 14. The Word writer needed no change: with no entry, `captionRuns` writes no `SEQ` field, so Word
+neither counts nor lists it. Tests: STR-071 in the domain's numbering, lists, references, `assemble`
+and Word writer, the editor, the web panels and dialog, and the worker's PDF (text, tags, list and
+veraPDF) for a table and a figure and its Word document through the Open XML SDK; TAB-034 in
+`assemble`; STR-070's five numbering tests retitled STR-071. Not run: Word itself and the end-to-end
+suite.
+
+**From W14.4's final review:** the page's numbering, refetched only for a new version of the document,
+could still number a table the author had just marked unnumbered, so the Reference dialog offered it
+with a number and the surface printed one; `referenceOptions` and `referencesShown` now take the live
+figure or table over the page. A reference stored in a number form to one marked unnumbered shows as
+unavailable, _Table not numbered - choose another form_, drawn apart as a broken one is (W-N), and the
+dialog opened on it re-picks a form. The publication page's words for a number or a number and title
+that cannot be printed now name a figure or a table left unnumbered and an unnumbered equation.
+STR-071 was reworded before it merged: an unnumbered one is named by its caption wherever a reference
+names it, and no reference to it may ask for its number, since a page and a place form print neither
+a caption nor a number.
+
 ## W14.5: Caption placement
 
 1. Catalogue schema 3 with `caption` on table and image styles; the default theme's next version.
-2. Template 14 and `publishing/14`; the Word writer; the editor's projection.
+2. Template 15 and `publishing/15` (W14.4 took 14); the Word writer; the editor's projection.
 3. Tests: STY-079, STR-025.
 
 ## W14.6: Word's report whole, and two claims

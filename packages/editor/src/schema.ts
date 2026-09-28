@@ -355,6 +355,9 @@ export const editorSchema = new Schema({
         headerRows: { default: 0 },
         headerColumns: { default: 0 },
         keyColumns: { default: null },
+        // STR-071: false where the author marked the table unnumbered, which the stored model spells
+        // `numbered: false` and a numbered one by the member's absence (W14's W-H).
+        numbered: { default: true },
       },
       parseDOM: [{ tag: 'figure[data-table]' }],
       toDOM: (node) => [
@@ -413,6 +416,8 @@ export const editorSchema = new Schema({
         asset: {},
         imageStyle: { default: 'figure' },
         alternative: { default: { kind: 'decorative' } },
+        // STR-071: false where the author marked the figure unnumbered, as a table's is.
+        numbered: { default: true },
       },
       toDOM: (node) => {
         const alt = altOf(node.attrs.alternative as { kind: string; text?: string });

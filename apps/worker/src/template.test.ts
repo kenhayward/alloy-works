@@ -20,6 +20,7 @@ import {
   PUBLISHING_SCHEMA_10,
   PUBLISHING_SCHEMA_11,
   PUBLISHING_SCHEMA_12,
+  PUBLISHING_SCHEMA_13,
   readTheme,
   SECOND_DEFAULT_CATALOGUES_BY_VERSION,
   THIRD_DEFAULT_THEME,
@@ -153,7 +154,10 @@ describe('the publication template', () => {
     // it moved (6a6aa252...) for the final whole-branch review, a row kept whole only where it fits a
     // page (I1), again (06d7f004...) for contextual spacing only within one container (I5), and again
     // (849b8037...) for a continuation label's row keeping its room on the table's first page.
-    // Templates 1 to 12 are published versions and their rows never move again.
+    // Template 14 reads `publishing/14`: template 13 with a table or a figure `listed` false - one the
+    // author marked unnumbered - left out of the outline its list is made from (W14.4, STR-071). It is
+    // re-pinned freely until the pull request that makes it merges. Templates 1 to 13 are published
+    // versions and their rows never move again.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',
       2: '01bb7d4058901cdf904e05696bb1ccdf4a202a7802d3f7e420f8230d67290e54',
@@ -168,6 +172,7 @@ describe('the publication template', () => {
       11: '00f58bb2f2dc897356b24fdb09e0fa190a292c9b737d5444e7a8b48070a22a77',
       12: '13ce79ef435d13b85f7ec29dfe2c7a3fe53f4536384da555f93ea5a26f4b5e9e',
       13: '147989166ee59018cb518a406e60346356b6eafea9c201a3b6831e0082083d6f',
+      14: '4be71ee97e98b1292f8ea9cc11d06573100a60e06f7c7b773362383de3c23d78',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
@@ -194,6 +199,7 @@ describe('the publication template', () => {
       'publishing/11': 11,
       'publishing/12': 12,
       'publishing/13': 13,
+      'publishing/14': 14,
     });
   });
 
@@ -201,7 +207,7 @@ describe('the publication template', () => {
     // Decision D, as a guard a reader can see: Typst's `quote` takes an attribution and prints an em
     // dash before it. Templates 5 to 7 set the attribution themselves, so the parameter's name never
     // appears in any of them.
-    for (const version of [5, 6, 7, 8, 9, 10, 11, 12, 13] as const) {
+    for (const version of [5, 6, 7, 8, 9, 10, 11, 12, 13, 14] as const) {
       const source = await readFile(PUBLICATION_TEMPLATE[version].file, 'utf8');
       expect(source, `template ${version}`).not.toContain('attribution:');
     }
@@ -215,8 +221,9 @@ describe('the publication template', () => {
     // an entry in `ALLOWED` allows it and says why. Every entry must still be needed, so the list
     // cannot outlive what it excuses. What the engine still decides because the template never sets
     // it - an underline's offset, a list's indent - no pattern can see: each template's header names
-    // each. Template 13 is held to the same list, which it needs every entry of (themes 2, ruling R6).
-    for (const version of [12, 13] as const) {
+    // each. Templates 13 and 14 are held to the same list, which each needs every entry of (themes 2,
+    // ruling R6).
+    for (const version of [12, 13, 14] as const) {
       const source = await readFile(PUBLICATION_TEMPLATE[version].file, 'utf8');
       expect(typographicLiterals(source), `template ${version}`).toEqual([]);
       const code = withoutComments(source);
@@ -279,7 +286,8 @@ describe('the publication template', () => {
       10: PUBLISHING_SCHEMA_10,
       11: PUBLISHING_SCHEMA_11,
       12: PUBLISHING_SCHEMA_12,
-      13: PUBLISHING_SCHEMA,
+      13: PUBLISHING_SCHEMA_13,
+      14: PUBLISHING_SCHEMA,
     };
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
       const source = await readFile(template.file, 'utf8');
@@ -371,8 +379,10 @@ describe('the pipeline version', () => {
   // default theme's line spacings and spaces were measured from template 11 (themes 1, task 4), again
   // (45748643...) when the default theme gave a table's cells a style of their own, and again
   // (f38feb9a...) when the theme's projection came to state the size a script is set at (the final
-  // whole-branch review, I3). '12' is a published pipeline since themes 1 merged, and its row never
-  // moves again; '13' is themes 2's, re-pinned freely until the pull request that makes it merges.
+  // whole-branch review, I3). '12' is a published pipeline since themes 1 merged, and '13' since
+  // themes 2 did, and their rows never move again; '14' is W14.4's - '13' with a table and a figure
+  // saying whether the list of their kind lists them - re-pinned freely until the pull request that
+  // makes it merges.
   const madeByPipeline: Record<string, string> = {
     '1': '3b844cb4ceedbe2b52040c79014ea18959295a1602754eb9861631891beb6fa1',
     '2': '699d5c34b7e4049fc32f5846a5525f5d3a35785c2858a78755161c58427ad1d5',
@@ -387,9 +397,10 @@ describe('the pipeline version', () => {
     '11': 'f011fd46928c1b68de5c47de2ea4db75a2b52391b94026c8faddddc01f5191bf',
     '12': 'c12118a97e6ec79f90ef4cf64107d7ecf3f84112e8014cab92ce2e067ae1c629',
     '13': '87888c8930915481bea27617df0268ab1c045b097024e92fbc3f4565bdabbf7f',
+    '14': '10d85c91e42a2b59079d2e18f8b0f28663ce273af750cf2cd61dd7dfc315d37c',
   };
   // The theme is an input as the layout is, recorded on a publication beside the pipeline, so the
-  // input is fixed at one: the default theme's 0.3, which '13' was pinned under. The default moving
+  // input is fixed at one: the default theme's 0.3, which '13' and '14' were pinned under. The default moving
   // on (0.4, W8.5) changes what a publication holds, not what the pipeline makes of an input.
   const pinnedTheme = (() => {
     const read = readTheme(THIRD_DEFAULT_THEME, SECOND_DEFAULT_CATALOGUES_BY_VERSION);
@@ -406,7 +417,7 @@ describe('the pipeline version', () => {
     // the one field PUB-063 exists for, so a key that moves while its value stays behind records
     // every publication the new pipeline makes as having been made by the old one - in the PDF's
     // own provenance, with the typecheck clean. Literals, never the constants.
-    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/13': '13' });
+    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/14': '14' });
   });
 
   it('is the version its number says: what assemble makes of a fixed input, the draft notice included', async () => {
@@ -430,7 +441,7 @@ describe('the pipeline version', () => {
     });
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     expect(assembled.document.schema).toBe(PUBLISHING_SCHEMA);
-    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('13');
+    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('14');
     expect(digest(assembled)).toBe(madeByPipeline[PIPELINE_VERSION[assembled.document.schema]]);
     expect(assembled.document.words).toMatchObject({
       notice: DRAFT_NOTICE.page,
@@ -476,11 +487,12 @@ const body = (id: string, value: string) => ({
 });
 
 describe('the published list shapes that are easy to read past', () => {
-  // Lists are read in full against the PDF in `lists.test.ts`. These three are here, beside the
+  // Lists are read in full against the PDF in `lists.test.ts`. These two are here, beside the
   // template that must read them, because each is a real published spelling a reader skims over: a
-  // start of 0, which is falsy in every language this pipeline is written in; an item that came out
-  // of `assemble` with nothing in it at all, which must still make a valid `LI` under PDF/UA-1; and
-  // a second level of bullets, which the template sets a marker for and Typst does not.
+  // start of 0, which is falsy in every language this pipeline is written in; and an item that came
+  // out of `assemble` with nothing in it at all, which must still make a valid `LI` under PDF/UA-1. A
+  // second level of bullets, which the template sets a marker for and Typst does not, was a third,
+  // and is issue #158's case in the regression corpus (`regression.test.ts`).
   const typst = createTypst({ binary: typstBinaryPath(), fonts });
   const at = new Date('2026-09-20T00:00:00Z');
 
@@ -563,48 +575,4 @@ describe('the published list shapes that are easy to read past', () => {
       'L LI Lbl Span LBody P LI Lbl LBody L LI Lbl LBody P LI Lbl LBody',
     );
   }, 120_000);
-
-  it('sets a second level of bullets in a glyph the pinned faces have, rather than refusing', async () => {
-    // The whole reason `#set list(marker: ...)` is in the template. Typst's own second-level marker
-    // is U+2023 TRIANGULAR BULLET, which Liberation Serif does not have, and the worker compiles
-    // with `--ignore-embedded-fonts`, so the engine cannot fall back to a face of its own: a
-    // two-level bulleted list exits 1, which the worker reports as `TypstRefused` and nothing else -
-    // no cause and no diagnostic, by design, since a diagnostic quotes content. Measured by hand
-    // against the pinned engine: without the marker set this very fixture is
-    // `PDF/UA-1 error: the text "..." could not be displayed with font "Liberation Serif"`.
-    // Delete that line from the template and this is the test that says so.
-    const document = await holding([
-      {
-        type: 'list',
-        id: 'U1',
-        kind: 'unordered',
-        items: [
-          {
-            content: [
-              body('u1', 'Wipe the tray'),
-              {
-                type: 'list',
-                id: 'U2',
-                kind: 'unordered',
-                items: [{ content: [body('u2', 'Twice')] }],
-              },
-            ],
-          },
-        ],
-      },
-    ]);
-    const read = await readPdf(
-      await typst.compile(
-        PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
-        JSON.stringify(document),
-        at,
-      ),
-    );
-    const said = read.taggedText.flat().join(' ').replace(/\s+/g, ' ');
-    // Disc at the top level and circle below it, as the template's comment names them. Written as
-    // escapes rather than the characters themselves, so no source file in this repository carries a
-    // glyph a diff or a terminal can hide.
-    expect(said).toContain('\u{2022} Wipe the tray');
-    expect(said).toContain('\u{25E6} Twice');
-  });
 });

@@ -4,10 +4,11 @@ import type { InlineNode } from '../content/model/inline.js';
 
 /**
  * What one caption-bearing block (CNT-081) or one footnote contributes to the sequences: its
- * identifier, the sequence it takes from, and whether it takes a number at all - only a block equation
- * can say no (CNT-047). A small projection of content: no position, and no text but a figure's or a
- * table's caption, which a generated list shows beside its number. The numbering table copies none of
- * it, so the table still carries nothing a component holds but the identifiers it already exposes.
+ * identifier, the sequence it takes from, and whether it takes a number at all - a block equation can
+ * say no (CNT-047), and a figure or a table the author marked unnumbered does (STR-071). A small
+ * projection of content: no position, and no text but a figure's or a table's caption, which a
+ * generated list shows beside its number. The numbering table copies none of it, so the table still
+ * carries nothing a component holds but the identifiers it already exposes.
  */
 export interface Contribution {
   readonly block: string;
@@ -52,7 +53,12 @@ function blockContributions(block: BlockNode): Contribution[] {
       // The table takes its number before anything inside it, and its note - rendered below the body -
       // after its cells.
       return [
-        { block: block.id, sequence: 'table', numbered: true, caption: captionText(block.caption) },
+        {
+          block: block.id,
+          sequence: 'table',
+          numbered: block.numbered !== false,
+          caption: captionText(block.caption),
+        },
         // A footnote in the caption stands above the body, so it takes its number before the cells'.
         ...inlineContributions(block.caption),
         ...block.rows.flatMap((row) =>
@@ -65,7 +71,7 @@ function blockContributions(block: BlockNode): Contribution[] {
         {
           block: block.id,
           sequence: 'figure',
-          numbered: true,
+          numbered: block.numbered !== false,
           caption: captionText(block.caption),
         },
         ...inlineContributions(block.caption),
@@ -89,8 +95,8 @@ function blockContributions(block: BlockNode): Contribution[] {
 }
 
 /**
- * What a component's content contributes to the sequences, in document order (STR-070): every figure
- * and table, every block equation with whether it is numbered, and every footnote, wherever each is
+ * What a component's content contributes to the sequences, in document order (STR-071): every figure,
+ * table and block equation with whether it is numbered, and every footnote, wherever each is
  * nested - a list item, a blockquote, a table cell. Pure, and linear in the content. It reads content
  * that has already been through `parseContentDocument`, so it recurses no deeper than that parse did.
  */

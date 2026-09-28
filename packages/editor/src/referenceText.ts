@@ -1,6 +1,8 @@
 import {
+  formsFor,
   kindWord,
   printed,
+  targetForms,
   type CrossReferenceDisplay,
   type CrossReferenceTarget,
   type ReferenceKind,
@@ -37,6 +39,17 @@ export interface ReferenceShown {
   readonly text: string;
   /** Whether its target has gone: drawn apart, and the text says so to a screen reader too. */
   readonly broken: boolean;
+  /**
+   * Where it asks its target for a form the target has not got (W-N), what the target is called - its
+   * kind, and a figure's or a table's caption - so the Reference dialog, opened on it, names the target
+   * rather than the words the surface shows in its place. Absent everywhere else.
+   */
+  readonly named?: string;
+  /**
+   * Where `named` is, the target the reference is shown from, placed against it (`relative`), so the
+   * dialog opened on it offers that target's forms and says what each will print.
+   */
+  readonly printing?: ReferenceTarget;
 }
 
 /** The class a broken reference carries, on the surface and read-only, so it is drawn apart. */
@@ -53,6 +66,32 @@ export const BROKEN_REFERENCE = 'Broken reference';
 /** A broken reference to a section, and one to another component: what each pointed at, named. */
 export const BROKEN_SECTION_REFERENCE = 'Broken reference to a section';
 export const BROKEN_COMPONENT_REFERENCE = 'Broken reference to another component';
+
+/**
+ * What a reference shows where it asks its target for a form the target has not got, which the publish
+ * would refuse (`cross_reference_form_unavailable`), in words by the cause (W14's W-N): a number of a
+ * figure, a table or a block equation the author has marked unnumbered; a number of what never has
+ * one; or a title of what has none, a footnote or an equation. Drawn apart, as a broken one is, since
+ * the author has to choose another form - never the caption printed in the number's place, which
+ * would read wrongly in a sentence written around a number and hide the change from the author.
+ */
+export function unavailableReference(
+  target: ReferenceTarget,
+  display: CrossReferenceDisplay,
+): string {
+  const word = kindWord(target.kind);
+  const wantsNumber = display === 'number' || display === 'numberAndTitle';
+  const wantsTitle = display === 'title' || display === 'numberAndTitle';
+  if (wantsNumber && target.unnumbered) return `${word} not numbered - choose another form`;
+  if (wantsTitle && target.titleHoldsEquation) {
+    return `${word} title holds an equation - choose another form`;
+  }
+  if (wantsNumber && !formsFor(target.kind).includes('number')) {
+    return `${word} has no number - choose another form`;
+  }
+  if (wantsTitle) return `${word} has no title - choose another form`;
+  return `${word} cannot be shown this way - choose another form`;
+}
 
 /**
  * What a reference to another component says where there is no document to find that component in.
@@ -119,15 +158,41 @@ export function referencesShown(
       const own = held.get(target.block);
       if (own === undefined) {
         shown.push({ pos, text: BROKEN_REFERENCE, broken: true });
-      } else if (found !== undefined) {
-        const relative = own.pos < pos + offset ? 'above' : 'below';
-        shown.push({ pos, text: printed(found, display, relative, context?.words), broken: false });
+        return false;
+      }
+      const relative = own.pos < pos + offset ? 'above' : 'below';
+      // The live document decides whether a figure, a table or a block equation is numbered (STR-071,
+      // CNT-047): the page's numbering is refetched only for a new version of the document, so it may
+      // still number one the author has just marked unnumbered, or still call one unnumbered that has
+      // just been numbered again, whose number it does not know yet.
+      const printing =
+        unnumberedTarget(own.node, target) ?? (found?.unnumbered === true ? undefined : found);
+      if (printing !== undefined && !targetForms(printing).includes(display)) {
+        shown.push({
+          pos,
+          text: unavailableReference(printing, display),
+          broken: true,
+          named: named(own.node),
+          printing: { ...printing, relative },
+        });
+      } else if (printing !== undefined) {
+        shown.push({
+          pos,
+          text: printed(printing, display, relative, context?.words),
+          broken: false,
+        });
       } else {
         shown.push({ pos, text: named(own.node), broken: false });
       }
     } else if (context === null) {
       const text = target.kind === 'node' ? kindWord('section') : IN_ANOTHER_COMPONENT;
       shown.push({ pos, text, broken: false });
+    } else if (found !== undefined && !targetForms(found).includes(display)) {
+      // A section, or another component's block, asked for a form it has not got - a number of a
+      // figure or a table marked unnumbered, a title of a section whose title holds an equation - which
+      // the publish refuses, as for a block of this component (W-N). Offered by the page, so the
+      // dialog names it by its own option.
+      shown.push({ pos, text: unavailableReference(found, display), broken: true });
     } else if (found !== undefined) {
       shown.push({
         pos,
@@ -159,6 +224,28 @@ function identified(component: Node): Map<string, Held> {
     return true;
   });
   return held;
+}
+
+/**
+ * A figure, a table or a block equation the live document marks unnumbered, as a target: its kind and
+ * a figure's or a table's caption, no label, and `unnumbered`, so `targetForms` offers no number form
+ * of it. Undefined for anything else, a numbered one among them.
+ */
+function unnumberedTarget(node: Node, target: CrossReferenceTarget): ReferenceTarget | undefined {
+  const unnumbered =
+    node.type.name === 'equationBlock'
+      ? node.attrs.numbered !== true
+      : CAPTIONS[node.type.name] !== undefined && node.attrs.numbered === false;
+  if (!unnumbered) return undefined;
+  const caption = captionOf(node);
+  return {
+    target,
+    kind: kindOf(node),
+    label: null,
+    title: caption === '' ? null : caption,
+    relative: null,
+    unnumbered: true,
+  };
 }
 
 /** The kind of block a `block` target names, told from the live document. */
@@ -218,7 +305,8 @@ function captionOf(node: Node): string {
  * author left unnumbered (equations 2, ruling R7): it has no number, so a page and a position are all
  * that would be left to offer, which `documentTargets` already withholds once the document has one to
  * compare against - offering it here and refusing it there would be an offer this component cannot
- * keep.
+ * keep. A figure or a table the author marked unnumbered is offered, by its caption, and says it is
+ * unnumbered, so the dialog offers no number form of it (STR-071).
  */
 export function ownTargets(doc: Node, at?: number): readonly ReferenceTarget[] {
   const targets: ReferenceTarget[] = [];
@@ -234,6 +322,11 @@ export function ownTargets(doc: Node, at?: number): readonly ReferenceTarget[] {
       label: null,
       title: caption === '' ? null : caption,
       relative: at === undefined ? null : pos < at ? 'above' : 'below',
+      // A figure or a table the author marked unnumbered (STR-071): offered by its caption, which is
+      // what a reference to it prints, and never in a number form.
+      ...(node.attrs.numbered === false && kind !== 'equation'
+        ? { unnumbered: true as const }
+        : {}),
     });
     return true;
   });

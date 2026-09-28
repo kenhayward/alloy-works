@@ -33,12 +33,12 @@ import { createTypst, typstBinaryPath } from './typst.js';
 
 /**
  * Themes 2's worker test (ruling R7): a table and an image set from their styles, through the real
- * path - `assemble`, then template 13 - checked by veraPDF and read back from the PDF. Two table
- * styles differing in every property, over a table crossing pages: fills, rules and weights from the
- * content stream, padding from where text starts, the header repeated or not, a tall row kept whole or
- * split, and the continuation label on each continued page and not the first. Then every placement and
- * alignment an image style can give, and a fixed width and a fixed height each held to its maximum,
- * the proportion kept.
+ * path - `assemble`, then the current template (13 when written, 14 since W14.4) - checked by veraPDF
+ * and read back from the PDF. Two table styles differing in every property, over a table crossing
+ * pages: fills, rules and weights from the content stream, padding from where text starts, the header
+ * repeated or not, a tall row kept whole or split, and the continuation label on each continued page
+ * and not the first. Then every placement and alignment an image style can give, and a fixed width
+ * and a fixed height each held to its maximum, the proportion kept.
  */
 
 const fonts = await loadPinnedFonts();
