@@ -1,7 +1,15 @@
 import styles from './States.module.css';
 
 /** Which of the product's sentences this is: each has its own look, and they are not interchangeable. */
-export type NoticeTone = 'failed' | 'signedOut' | 'readOnly' | 'refused' | 'withdrawn' | 'editing';
+export type NoticeTone =
+  | 'failed'
+  | 'signedOut'
+  | 'readOnly'
+  | 'refused'
+  | 'withdrawn'
+  | 'editing'
+  /** Saved and never made a version: offered back as Recover (component-editor.md, RC-F). */
+  | 'unsaved';
 
 /**
  * Something could not be done, or is not the reader's to change: the sentence, with an edge and a

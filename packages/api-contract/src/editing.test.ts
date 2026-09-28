@@ -72,6 +72,21 @@ describe('the editing routes in the published document', () => {
     }
   });
 
+  it('checks edit on the component to read iterations back, and declares the lock refusals and a 404 for either', () => {
+    for (const name of ['listIterations', 'getIteration'] as const) {
+      expect(routes[name].method, name).toBe('GET');
+      expect(routes[name].access, name).toEqual({
+        check: 'permission',
+        permission: 'edit',
+        target: { artifact: 'id' },
+      });
+      expect(routes[name].responses[409], name).toBeDefined();
+      expect(routes[name].responses[404], name).toBeDefined();
+    }
+    expect(operation('/v1/components/{id}/iterations', 'get')).toBeDefined();
+    expect(operation('/v1/components/{id}/iterations/{iteration}', 'get')).toBeDefined();
+  });
+
   it('publishes a refusal with its members, so a client can name the holder without parsing prose', () => {
     const refusal = (
       operation('/v1/components/{id}/iterations/{session}/{sequence}', 'put').responses['409'] as {

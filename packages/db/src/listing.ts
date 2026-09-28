@@ -41,6 +41,9 @@ export const listingSorts = {
   componentTypes: { name: { types: ['text'], order: 'asc' } },
   definitions: { name: { types: ['text'], order: 'asc' } },
   people: { joined: { types: ['timestamptz'], order: 'asc' } },
+  // An author's own iterations of one component, the newest first (component-editor.md, "Recovery,
+  // as W11 builds it"): what the Recovery panel lists.
+  iterations: { saved: { types: ['timestamptz'], order: 'desc' } },
 } as const satisfies Record<
   string,
   Record<string, { types: readonly KeyType[]; order: SortOrder }>

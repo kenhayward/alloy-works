@@ -86,9 +86,10 @@ a web application and a desktop application**.
 > check against the PDF of the same document - everything a document holds, but a numbering Word
 > cannot compute and a reference Word's field would print otherwise than the PDF, which are refused
 > for Word by name - and nothing else authors or
-> publishes content: no image or equation pasted from outside the product, no metadata panel,
-> no making a component type, no defined term written or resolved, no
-> document view, no list of equations in the default layout, no
+> publishes content: no image or equation pasted from outside the product, no metadata but the
+> fields a component's type or a document's template gives it, filled in beside the text,
+> component types made only through the API, no defined term written or resolved, no list of
+> equations in the default layout, no
 > choosing or editing a layout or a theme. A preview is asked for from the document page's
 > **Preview**, beside **Publish** and offered to anybody who may read the document, through
 > `POST /v1/documents/{id}/previews`, on `read`, made by the worker's `preview` job as a publish of

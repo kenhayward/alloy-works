@@ -62,7 +62,7 @@ noticed and explained rather than discovered at a refusal.
 | ID          | How it is met                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **CNT-066** | After a pause in changes the renderer sends the whole content and values as an iteration; there is no save action for drafts                                                                                                                                                                                                                                                                                                                                                                                                   |
-| **CNT-067** | The renderer reports a change saved only when its iteration is acknowledged, so reopening after any interruption offers that iteration or a later one                                                                                                                                                                                                                                                                                                                                                                          |
+| **CNT-067** | The renderer reports a change saved only when its iteration is acknowledged, and reopening after a closed tab, a crash or a lost connection says when the author last saved work no version holds and offers **Recover**, which lists it and every other retained iteration of theirs to restore                                                                                                                                                                                                                               |
 | **CNT-068** | A save indicator with three states - saved, saving, not saved and retrying - with the time of the last acknowledged save; the change to not saved is announced                                                                                                                                                                                                                                                                                                                                                                 |
 | **CNT-069** | One `prosemirror-history` per component; the session's steps are kept in `sessionStorage` and replayed into a fresh history on reload, back to the version the session opened from                                                                                                                                                                                                                                                                                                                                             |
 | **CNT-169** | Cutting a version clears the history and the stored steps, and a reload that finds steps recorded against an older version discards them, so undo never reaches past the version the session opened from or one cut during it                                                                                                                                                                                                                                                                                                  |
@@ -71,7 +71,7 @@ noticed and explained rather than discovered at a refusal.
 | **CNT-075** | A component's text carries one class, `TEXT_CLASS`, wherever it is shown - the editing surface and a document's read text alike - and the editor's stylesheet sets all of that class's typography once - spaces kept as typed, no ligatures, the size, leading and every block's spacing - while its rules for the surface alone set only the caret, the selection and a placeholder. The read text is `renderContent`, the same schema's own rendering, so opening a component moves nothing                                  |
 | **CNT-175** | The surface's structure is the elements that say so: a list is `ul` or `ol` of `li`; a definition list is `dl > div > dt + dd`, each definition its own node rendered `dd` ([ADR-0026](../decisions/0026-a-definition-is-its-own-editor-node.md)); a table is a `table` of `th` and `td` in a `figure` captioned by its `figcaption`; and a footnote is a marker named _Footnote_ whose text opens in an editor named _Footnote text_. A document's read text renders the same schema, so it carries the same lists and tables |
 | **CNT-174** | The session never promotes an iteration on its own; iterations are rows the storage design keeps immutable and timestamped, and read by their writer alone, only while holding the lock, through recovery (RC-A; VER-001 to VER-003). CNT-089, which it superseded, repeated those rows                                                                                                                                                                                                                                        |
-| **CNT-090** | A **Recovery** panel lists the component's retained iterations to its lock holder, newest first, and restores one - content and values together - after saving the current state as an iteration                                                                                                                                                                                                                                                                                                                               |
+| **CNT-090** | A **Recovery** panel, opened by **Saved text** while editing or by **Recover**, lists the lock holder's own retained iterations of the component, newest first, and restores one - content and values together - after saving as an iteration anything on screen not yet saved                                                                                                                                                                                                                                                 |
 | **CNT-071** | Every write in the session - iteration, version, release - carries the lock, and nothing here assumes the author is the only one who could write                                                                                                                                                                                                                                                                                                                                                                               |
 | **COL-005** | The lock is claimed by the first change an author makes, to content or metadata, not by a separate act; changes wait for the claim rather than being refused                                                                                                                                                                                                                                                                                                                                                                   |
 | **COL-006** | The lock gates writes to the component and nothing else: reading it, and later commenting and suggesting, never ask for it                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -92,6 +92,16 @@ noticed and explained rather than discovered at a refusal.
 | **CNT-147** | A run carrying a language mark whose language differs from the component's base language is rendered with `spellcheck="false"`, so a passage in another language is never flagged                                                                                                                                                                                                                                                                                                                                              |
 | **CNT-148** | The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker                                                                                                                                                                                                                                                                                                                                                 |
 | **CNT-152** | A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; **OK anyway** then applies it                                                                                                                                                                                                                                                                                                                                   |
+
+**What CNT-067 and CNT-090 are answered with, and what they are not** (W11.2 and its final review).
+An iteration is kept until the next version after the one it was opened from is cut, and for the
+tenant's window after that (VER-003), so "recoverable" holds for as long as that window: past it, the
+work is swept and nothing offers it. The window that loses the lock to a move from another of the
+author's windows offers no Recovery of its own: it stops, keeping what it had not sent as text to copy,
+and the work is offered again when the component is opened afresh ([Two windows, one
+author](#two-windows-one-author)). A restore with nothing unsaved on screen sends nothing: what is on
+screen is then the newest iteration listed, or the version itself. Undo across a reload is CNT-069's,
+and W11.3's.
 
 **CNT-046 is answered with publishing.md, not alone.** This design makes an equation in each of the
 five contexts - four on a component's surface through the **Equation** dialog, and a section's heading
@@ -723,12 +733,21 @@ unsent changes still held locally. From there it can move the lock back and save
 Iterations either session saved stay visible to that author, because the holder is the principal
 (VER-002).
 
-**Built, this is not yet true without Recovery.** This slice has no lock event and no Recovery to move the
-lock back from: a window that loses the lock this way simply finds itself refused on its next save, with
-no route back to what it already saved. What it already saved is not lost - the iteration is kept, for
-thirty days, and never swept while it is the artifact's latest (VER-003) - but nothing here shows either
-window that the other's saves exist, so a version can be cut from one window while the other's later work
-sits unreachable until Recovery ships. See [Changed while planning the build](#changed-while-planning-the-build).
+**Built, with Recovery (W11.2), this is true from a window opened afresh, not yet in the window that
+loses the lock.** There is still no lock event: a window that loses the lock this way finds itself refused
+on its next save and goes to `lost`, keeping what it had not sent as text to copy, with no Recovery of its
+own. What either window saved is not lost - it is kept until the next version after the one it was opened
+from is cut, and for the tenant's window after that (VER-003) - and it is its author's to read from any
+window of theirs that holds the lock (RC-A). So opening the component again, by a reload of either window
+or in a new one, offers it. Where nobody holds the lock, the editor says when the author last saved work
+that no version holds - even where somebody else has cut a version since - and offers **Recover**; where
+the author's other window holds it, the editor says they are editing in another window and offers
+**Recover here**. Either moves the lock to this window and lists both windows' saves, each marked as this
+window's - saved under any session this window has used, before a reload or before a fresh claim - or
+another's, to restore. Recovery is also offered where a save was refused as stale, beside **Continue**,
+and from **Saved text** while editing. The one gap left is the window that lost the lock to a move, which
+offers nothing until the component is opened again. See
+[Changed while planning the build](#changed-while-planning-the-build).
 
 ### Recovery
 
@@ -757,16 +776,23 @@ reads it from any of their sessions, which is what lets a second window recover 
 
 **Finding saved work after a closed tab** (CNT-067). Session storage goes with the tab, so a closed tab or
 a crash leaves only what the service accepted. The component's `GET` tells its caller - and nobody else -
-the time of their newest iteration opened from the latest version: work saved and never made a version.
-Where there is some, the editor says so above the text and offers **Recover**, which claims the lock
-and opens the Recovery panel. No content leaves the store until the lock is held.
+the time of their newest retained iteration, unless a version holds exactly what it holds - the one it
+was opened from or any cut after it: work saved and never made a version, including work somebody else's
+later cut left out. Where there is some and nobody holds the lock, the editor says so above the text and
+offers **Recover**, which claims the lock and opens the Recovery panel; where the author's own other
+window holds it, it says so and offers **Recover here**, which does the same; where somebody else holds
+it, it says who, and offers nothing until they are done. No content leaves the store until the lock is
+held.
 
 **Reading and restoring** (CNT-090). `GET /v1/components/{id}/iterations` lists the caller's own
 retained iterations, newest first, over a cursor, each with its time, its session and the version it was
 opened from, and no content. `GET /v1/components/{id}/iterations/{iteration}` answers one, content and
-values. Both need the lock held by the caller. Restoring first flushes the current state as an iteration,
-so a restore is recoverable the same way, then opens the snapshot, migrated to the current schema and
-validated, as the session's text. The history and the stored steps are cleared, as a cut clears them,
+values. Both need the lock held by the caller, named by the session a `session` query carries. While
+editing, **Saved text** beside **Save version** opens the panel with no claim, since the lock is already
+held, once anything on screen not yet saved is saved. A lock found lapsed while the panel stands open is
+claimed again once under the same session, as a save's is. Restoring first flushes anything unsaved as
+an iteration, so a restore is recoverable the same way, then opens the snapshot, migrated to the
+current schema and validated, as the session's text. The history and the stored steps are cleared, as a cut clears them,
 because an undo could not restore the values (review point 2.2). The restored text is the next iteration
 sent.
 
@@ -912,8 +938,9 @@ undo, a refusal putting the surface back, or a version cut, and never this field
 - **Regions.** The view has six: component header, **formatting** toolbar, **list** panel,
   **preformatted text** panel, surface,
   metadata panel. `F6` and `Shift-F6` cycle them; inside a nested editor they leave it for the region
-  that holds it. The view holds a second toolbar, Save version and Done editing, and that one is
-  deliberately not a region: it is two buttons, reached by a Tab from the header as any two buttons
+  that holds it. The **Recovery** panel joins the ring while it is shown, before the surface (W11.2).
+  The view holds a second toolbar, Saved text, Save version and Done editing, and that one is
+  deliberately not a region: it is three buttons, reached by a Tab from the header as any buttons
   are, and making it another stop would lengthen the ring without shortening any journey through it.
   `F6` pressed from it enters the ring at the first region, and `Shift-F6` at the last.
 - **A region that is not there is not in the ring.** The list panel is the first of these to come and
@@ -959,8 +986,8 @@ component" above.
 | `POST /v1/components/{id}/lock`                      | Edit                     | The editing session                                   | Claims the lock, or moves it to a new session of the same principal                                                                                                                                |
 | `DELETE /v1/components/{id}/lock`                    | Edit, holder             | Session and opened-from version in the query          | Done editing: cuts a version if anything changed, then releases; says whether a version was cut                                                                                                    |
 | `PUT /v1/components/{id}/iterations/{session}/{seq}` | Edit, holder             | Opened-from version                                   | Saves an iteration, under the sequence rules above                                                                                                                                                 |
-| `GET /v1/components/{id}/iterations`                 | Edit, holder, its writer | `cursor`, `limit`                                     | Retained iterations, newest first                                                                                                                                                                  |
-| `GET /v1/components/{id}/iterations/{iteration}`     | Edit, holder, its writer | -                                                     | One of the caller's own retained iterations, content and values (RC-E)                                                                                                                             |
+| `GET /v1/components/{id}/iterations`                 | Edit, holder, its writer | `session`, `cursor`, `limit` in the query             | Retained iterations, newest first                                                                                                                                                                  |
+| `GET /v1/components/{id}/iterations/{iteration}`     | Edit, holder, its writer | `session` in the query                                | One of the caller's own retained iterations, content and values (RC-E)                                                                                                                             |
 | `POST /v1/components/{id}/versions`                  | Edit, holder             | Opened-from version, optional note, `Idempotency-Key` | Cuts a version from the latest iteration                                                                                                                                                           |
 
 **Three different refusals, kept apart.** An unauthenticated request is refused as unauthenticated and a

@@ -14926,7 +14926,7 @@
         },
         {
           "id": "CNT-067",
-          "howItIsMet": "The renderer reports a change saved only when its iteration is acknowledged, so reopening after any interruption offers that iteration or a later one"
+          "howItIsMet": "The renderer reports a change saved only when its iteration is acknowledged, and reopening after a closed tab, a crash or a lost connection says when the author last saved work no version holds and offers **Recover**, which lists it and every other retained iteration of theirs to restore"
         },
         {
           "id": "CNT-068",
@@ -14962,7 +14962,7 @@
         },
         {
           "id": "CNT-090",
-          "howItIsMet": "A **Recovery** panel lists the component's retained iterations to its lock holder, newest first, and restores one - content and values together - after saving the current state as an iteration"
+          "howItIsMet": "A **Recovery** panel, opened by **Saved text** while editing or by **Recover**, lists the lock holder's own retained iterations of the component, newest first, and restores one - content and values together - after saving as an iteration anything on screen not yet saved"
         },
         {
           "id": "CNT-071",
@@ -16920,7 +16920,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 550,
+      "line": 554,
       "kind": "title"
     },
     {
@@ -17005,6 +17005,12 @@
       "id": "CNT-173",
       "file": "apps/service/src/editing-routes.test.ts",
       "line": 285,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-174",
+      "file": "apps/service/src/editing-routes.test.ts",
+      "line": 634,
       "kind": "title"
     },
     {
@@ -17428,6 +17434,18 @@
       "kind": "title"
     },
     {
+      "id": "CNT-067",
+      "file": "apps/web/src/editor/Recovery.test.tsx",
+      "line": 238,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-090",
+      "file": "apps/web/src/editor/Recovery.test.tsx",
+      "line": 271,
+      "kind": "title"
+    },
+    {
       "id": "CNT-068",
       "file": "apps/web/src/editor/SaveIndicator.test.tsx",
       "line": 9,
@@ -17448,13 +17466,13 @@
     {
       "id": "CNT-066",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 228,
+      "line": 277,
       "kind": "title"
     },
     {
       "id": "CNT-070",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 284,
+      "line": 333,
       "kind": "title"
     },
     {
@@ -18169,6 +18187,18 @@
       "id": "VER-008",
       "file": "packages/db/src/record-version.test.ts",
       "line": 119,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-090",
+      "file": "packages/db/src/recovery.test.ts",
+      "line": 211,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-174",
+      "file": "packages/db/src/recovery.test.ts",
+      "line": 177,
       "kind": "title"
     },
     {

@@ -247,9 +247,36 @@ describe('the listings through the service', () => {
     const components = (await get('/v1/components?limit=100')).json<Page>();
     const component = components.items[0]?.id;
     expect(component, 'a component to list the versions of').toBeDefined();
+    // Two iterations of Grace's, saved from a session that holds the component, so the Recovery
+    // listing has pages to turn: it answers only the caller's own, and only under the lock.
+    const session = '22222222-2222-4222-8222-222222222222';
+    const opened = (await get(`/v1/components/${component}`)).json<{
+      version: { id: string };
+      content: Record<string, unknown>;
+    }>();
+    const claimed = await app.inject({
+      method: 'POST',
+      url: `/v1/components/${component}/lock`,
+      headers: { host: HOST, cookie },
+      payload: { session },
+    });
+    expect(claimed.statusCode).toBe(200);
+    for (const sequence of [1, 2]) {
+      const saved = await app.inject({
+        method: 'PUT',
+        url: `/v1/components/${component}/iterations/${session}/${sequence}`,
+        headers: { host: HOST, cookie },
+        payload: {
+          openedFrom: opened.version.id,
+          content: { ...opened.content, title: `Draft ${sequence}` },
+        },
+      });
+      expect(saved.statusCode, saved.body).toBe(200);
+    }
     const addressed: Record<string, string> = {
       listComponents: '/v1/components',
       listComponentVersions: `/v1/components/${component}/versions`,
+      listIterations: `/v1/components/${component}/iterations?session=${session}`,
       listSpaces: '/v1/spaces',
       listComponentTypes: `/v1/spaces/${general}/component-types`,
       listDocuments: '/v1/documents',

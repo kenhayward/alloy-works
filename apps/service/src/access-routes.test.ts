@@ -704,6 +704,14 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { session: MISSING, openedFrom: MISSING },
     }),
+    listIterations: () => ({
+      url: `/v1/components/${dosing}/iterations?session=${MISSING}`,
+      status: 404,
+    }),
+    getIteration: () => ({
+      url: `/v1/components/${dosing}/iterations/${MISSING}?session=${MISSING}`,
+      status: 404,
+    }),
     saveIteration: () => ({
       url: `/v1/components/${dosing}/iterations/${MISSING}/1`,
       status: 404,

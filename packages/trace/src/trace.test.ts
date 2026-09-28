@@ -550,6 +550,9 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 485, from 480 (2026-09-28): W11.2 - CNT-174 and CNT-090 in packages/db's recovery.test.ts,
+  // CNT-174 in apps/service's editing-routes.test.ts, and CNT-067 and CNT-090 in apps/web's
+  // editor/Recovery.test.tsx.
   // 480, from 476 (2026-09-28): W11.1 - VER-003 in packages/db's retention.test.ts and apps/worker's
   // iteration-sweep.test.ts, and VER-004 in packages/db's retention.test.ts and apps/service's
   // settings-routes.test.ts.
@@ -617,7 +620,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(480);
+    expect(model.citations).toHaveLength(485);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -680,6 +683,7 @@ describe('scanning the repository for test files', () => {
     // 28, from 27: listing/views.test.tsx, which cites SCH-064.
     // 29, from 28: theme/presentation.test.tsx, which cites STY-039.
     // 30, from 29: publishing/Preview.test.tsx, which cites nothing.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(30);
+    // 31, from 30 (2026-09-28): editor/Recovery.test.tsx, which cites CNT-067 and CNT-090.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(31);
   });
 });
