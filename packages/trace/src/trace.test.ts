@@ -74,7 +74,8 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1472);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
-    // 497, from 496 (2026-09-28): W14.4 after W14.2 - publishing.md claims TAB-034; structure.md's STR-070 claim moved to STR-071.
+    // 498, from 497 (2026-09-28): W14.4 after W14.6 - publishing.md claims TAB-034; structure.md's STR-070 claim moved to STR-071.
+    // 497, from 496 (2026-09-28): W14.6 - word-output.md claims PUB-100.
     // 496, from 494 (2026-09-28): W14.2 - publishing.md claims PUB-103, six heading levels, and PUB-102, the 300-page budget.
     // 494, from 493 (2026-09-28): document-view.md claims IAM-080, IAM-023's T1 half; publishing.md's PUB-003 claim moved to PUB-098.
     // 493, from 492 (2026-09-27): W10.0 - publishing.md claims CNT-150, the preview beside the text.
@@ -206,7 +207,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(497);
+    ).toBe(498);
   });
 });
 
@@ -556,11 +557,14 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
-  // 520, from 510 (2026-09-28): W14.4, merged over W14.1 and W14.2 - STR-071 in packages/domain's
+  // 525, from 515 (2026-09-28): W14.4, merged over W14.1, W14.2 and W14.6 - STR-071 in packages/domain's
   // structure/lists.test.ts, structure/references.test.ts, publishing/assemble.test.ts and word/write.test.ts, in
   // packages/editor's referenceText.test.ts, in apps/web's editor/ComponentEditor.test.tsx and in
   // apps/worker's tables.test.ts, figures.test.ts and word.test.ts; TAB-034 in assemble.test.ts.
   // numbering.test.ts's five STR-070 tests cite STR-071 instead, which supersedes it.
+  // 515, from 510 (2026-09-28): W14.6 - PUB-100 in three files, domain's word/write.test.ts, the
+  // worker's word.test.ts and apps/web's PublicationPage.test.tsx; IAM-080 in apps/web's
+  // DocumentPage.test.tsx, retitled; and SCH-008 in packages/db's tenant-database.test.ts.
   // 510, from 509 (2026-09-28): W14.2 after W14.1 - PUB-103 in apps/worker's check.test.ts too,
   // where a publication is recorded with its check queued and its PDF checked against PDF/UA-1.
   // 509, from 506 (2026-09-28): W14.2 - PUB-103 in packages/domain's assemble.test.ts, where a node
@@ -668,7 +672,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(520);
+    expect(model.citations).toHaveLength(525);
   });
 
   it('cites no identifier the corpus does not hold', () => {

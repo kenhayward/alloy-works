@@ -916,8 +916,29 @@ export function writeDocx(input: WordWriting): WrittenDocx {
 
   const report = parseOutputReport([
     ...fonts.substituted.map((face) => ({ kind: 'face_substituted' as const, ...face })),
-    // Word 2, ruling R7: each table Word could not set as its style asks, in the order they stand.
+    // Word 2, ruling R7: each table Word could not set as its style asks, in the order they stand;
+    // and W14.6's (W-J, PUB-100), each structure the PDF tags that Word has no place for, by its place.
     ...writer.reported,
+    // W14.6: a document setting an equation, once - the alternative the PDF's formula carries, which
+    // Word's own maths reading replaces; and where Word sets the maths in a face of its own, that
+    // face's characters, which the worker does not hold and so nothing checks.
+    ...(writer.setsMaths ? [{ kind: 'equation_alternative_lost' as const }] : []),
+    ...(writer.setsMaths &&
+    theme.maths.wordFamily !== undefined &&
+    theme.maths.wordFamily !== theme.maths.family
+      ? [{ kind: 'maths_coverage_unchecked' as const, wordFamily: theme.maths.wordFamily }]
+      : []),
+    // W14.6's final review: the titles template 13 tags as headings - the document's, always; the
+    // contents', where the layout sets one; the lists', where one stands - which Word sets as body text
+    // in their roles' styles (`w:outlineLvl` 9), since as headings its `TOC` field would list them.
+    {
+      kind: 'titles_not_headings' as const,
+      titles: [
+        'document' as const,
+        ...(contents === null ? [] : ['contents' as const]),
+        ...(generated.length === 0 ? [] : ['lists' as const]),
+      ],
+    },
     // PUB-074: a Word-only publication carries nothing a page number could cite.
     ...(input.formats.includes('pdf') ? [] : [{ kind: 'no_page_cited_output' as const }]),
     // PUB-065: Word paginates for itself, so a page number cites the PDF, never this.
@@ -925,6 +946,17 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   ]);
   return { bytes: zipSync(files, { mtime: ZIP_TIME }), report };
 }
+
+/** The kinds of report entry named by their place alone (W14.6). */
+type Placed = Extract<
+  OutputReportEntry['kind'],
+  | 'description_language_lost'
+  | 'quotation_not_structure'
+  | 'preformatted_not_structure'
+  | 'definition_list_not_structure'
+  | 'quoted_phrase_not_structure'
+  | 'inline_code_not_structure'
+>;
 
 /**
  * The text of the document as Word paragraphs and runs, and what writing it met: the faces its text is
@@ -971,10 +1003,15 @@ class Writer {
     floated: boolean;
   }[] = [];
   /**
-   * What the report says of each table (Word 2, ruling R7) and of each heading and caption holding an
-   * equation Word's rebuilt entries flatten (`flattened`), in the order the text meets them.
+   * What the report says of each table (Word 2, ruling R7), of each heading and caption holding an
+   * equation Word's rebuilt entries flatten (`flattened`), and of each structure the PDF tags that
+   * Word has no place for (`say`, W14.6), in the order the text meets them.
    */
   readonly reported: OutputReportEntry[] = [];
+  /** Each place `say` has named, by its kind, so that each is said once. */
+  private readonly said = new Set<string>();
+  /** Whether the text sets an equation anywhere: the report then says the maths once (W14.6). */
+  setsMaths = false;
   /** Each face file's advances, read once, by its hash. */
   private readonly advances = new Map<string, FaceAdvances>();
   /** The node whose blocks are being written: a caption's number and a report's place are by it. */
@@ -1279,6 +1316,13 @@ class Writer {
     display: string,
     place: Place,
   ): WrittenBlock {
+    // A table of one row to Word and to a screen reader, where the PDF's is a formula (W14.6).
+    this.reported.push({
+      kind: 'equation_numbered_as_table',
+      node: this.at,
+      block: block.id,
+      label,
+    });
     const { size } = this.properties(style);
     const room = twips(this.advancesOf(this.style(style)).width(label) * size + size);
     const across = twips(textBlockWidth(this.numbers.format) - place.start - place.end);
@@ -1359,6 +1403,8 @@ class Writer {
     let numbered: WordList | null = null;
     let within: Place;
     if (list.kind === 'definition') {
+      // Word has no list of terms: the PDF's list is paragraphs here (W14.6).
+      this.say('definition_list_not_structure', list.id);
       within = inner(place.start + DEFINITION_HANG * points, false);
     } else {
       const width = markerWidth(list, place.bullets, this.advancesOf(item), points);
@@ -1440,6 +1486,7 @@ class Writer {
    * attribution a paragraph after them in the attribution role's style, stood in as they are.
    */
   private quotation(quotation: PublishedQuotation, place: Place, passage: Passage): WrittenBlock {
+    this.say('quotation_not_structure', quotation.id);
     const quoted = this.theme.places.quotation;
     const { startIndent, endIndent } = this.properties(quoted);
     const within: Place = {
@@ -1476,6 +1523,7 @@ class Writer {
    * paragraph, on the role's panel.
    */
   private preformatted(block: PublishedPreformatted, place: Place, passage: Passage): WrittenBlock {
+    this.say('preformatted_not_structure', block.id);
     const role = this.theme.roles.preformatted;
     // One panel, however many lines: `panelsApart` keeps it apart from a panel beside it.
     const panel = {};
@@ -1860,6 +1908,31 @@ class Writer {
   }
 
   /**
+   * **What the report says of a structure the PDF tags that Word has no place for** (W14.6, W-J,
+   * PUB-100): each by its place in the node being written, once however often the place holds it - a
+   * paragraph with two quoted phrases is one place. A quotation, preformatted text and a definition
+   * list are Word's paragraphs in their styles, where the PDF tags a `BlockQuote`, `Code` and a list;
+   * a quoted phrase and inline code are runs in their character styles, where it tags a `Quote` and
+   * `Code`; and an image's description holds no language Word is known to read it in, where the
+   * PDF's `Figure` carries its own. Every place is a block's: a heading carries no mark.
+   */
+  private say(kind: Placed, block: string) {
+    const key = `${kind} ${this.at} ${block}`;
+    if (this.said.has(key)) return;
+    this.said.add(key);
+    this.reported.push({ kind, node: this.at, block });
+  }
+
+  /**
+   * Whether a description is in a language other than the document's (W14.6): Word's description
+   * holds none of its own. Its drawing's run states it (`drawingRun`), but whether a screen reader
+   * reads the description in it is not measured, so the report names it all the same.
+   */
+  private describedElsewhere(alternative: PublishedFigure['alternative']): boolean {
+    return alternative !== null && wordLanguage(alternative.language) !== this.document.tag;
+  }
+
+  /**
    * **What the report says of a heading or a caption Word rebuilds** (the final review of Word 4, I2):
    * `equation_flattened` where it holds an equation that is not a row of plain runs (`inOneRow`), since
    * Word's rebuilt contents entry, list entry or running head holds its characters in a row - a
@@ -1907,12 +1980,15 @@ class Writer {
   private figure(figure: PublishedFigure, place: Place, passage: Passage): WrittenBlock {
     const role = this.theme.roles.caption;
     const size = this.imageSize(figureImageKey(this.at, figure.id));
+    if (this.describedElsewhere(figure.alternative)) {
+      this.say('description_language_lost', figure.id);
+    }
     const properties = this.properties(role);
     const common = { bidi: passage.rtl, justify: justification(figure.alignment) };
     if (figure.placement === 'float') {
       // The box is numbered before the image it holds, as the document holds them.
       const number = (this.drawings += 1);
-      const drawn = `<w:r>${this.drawing(figure.path, size, figure.alternative)}</w:r>`;
+      const drawn = this.drawingRun(figure.path, size, figure.alternative);
       const image = this.paragraph(role, drawn, {
         ...common,
         // The band's image at its head; its caption its style's space before below it, and nothing
@@ -1935,7 +2011,7 @@ class Writer {
       );
       return { body: [anchor], top: role, bottom: role, container: true };
     }
-    const drawn = `<w:r>${this.drawing(figure.path, size, figure.alternative)}</w:r>`;
+    const drawn = this.drawingRun(figure.path, size, figure.alternative);
     const image = this.paragraph(role, drawn, {
       ...common,
       keepNext: true,
@@ -2153,6 +2229,12 @@ class Writer {
         .filter((field) => field.entries.length > 0);
       const written =
         fields.length === 0 ? [{ name: names[names.length - 1]!, entries: [] }] : fields;
+      // Where a field cannot be linked, the report says so of its list, once (W14.6's final review):
+      // the PDF's entries always link to what they list. Only a figure floats.
+      if (written.some(({ entries }) => entries.some((each) => each.floated))) {
+        if (list.sequence !== 'figure') throw new Error(`A floated ${list.sequence}`);
+        this.reported.push({ kind: 'list_not_linked', sequence: list.sequence });
+      }
       written.forEach(({ name, entries }, at) => {
         const followed = at < written.length - 1;
         // Linked to each caption (`\h`), but where one of them stands in a floated figure's text box:
@@ -2268,6 +2350,7 @@ class Writer {
    */
   private maths(equation: PublishedEquation, styleId: string, display: boolean): string {
     this.use(this.theme.maths, false, false);
+    this.setsMaths = true;
     const { size, bold } = this.properties(styleId);
     return omml(equation.tree, {
       display,
@@ -2299,7 +2382,10 @@ class Writer {
         if (linking !== null) xml += '</w:hyperlink>';
         linking = null;
         const size = this.imageSize(inlineImageKey(this.at, site, index));
-        xml += `<w:r>${this.drawing(run.image.path, size, run.image.alternative)}</w:r>`;
+        if (this.describedElsewhere(run.image.alternative)) {
+          this.say('description_language_lost', site.block);
+        }
+        xml += this.drawingRun(run.image.path, size, run.image.alternative);
         continue;
       }
       if ('footnote' in run) {
@@ -2343,6 +2429,13 @@ class Writer {
         linking = href;
       }
       const kinds = run.marks.map((mark) => mark.kind);
+      // A quoted phrase and inline code are their character styles alone in Word (W14.6), in a block's
+      // runs: a heading's carry no mark (`assemble`'s `wordTitle`).
+      if (kinds.includes('quotedPhrase') || kinds.includes('inlineCode')) {
+        if (site === null || site.kind === 'title') throw new Error('A mark in a heading');
+        if (kinds.includes('quotedPhrase')) this.say('quoted_phrase_not_structure', site.block);
+        if (kinds.includes('inlineCode')) this.say('inline_code_not_structure', site.block);
+      }
       const between =
         passage.rtl &&
         /^\s+$/u.test(run.text) &&
@@ -2512,6 +2605,24 @@ class Writer {
     const size = this.numbers.images.get(key);
     if (size === undefined) throw new Error(`No size for the image ${key} against the Word page`);
     return size;
+  }
+
+  /**
+   * **A drawing in a run of its own**, the run in its description's language where that is not the
+   * document's, as template 13 sets the image in `text(lang)` (the final review of W14.6): `descr`
+   * holds no language, and the run is the nearest thing to it Word has. Written, not measured - which
+   * language a screen reader reads `descr` in is Word's and the reader's - so `describedElsewhere`
+   * still reports it.
+   */
+  private drawingRun(
+    path: string,
+    size: WordImage,
+    alternative: PublishedFigure['alternative'],
+  ): string {
+    const language = this.describedElsewhere(alternative)
+      ? `<w:rPr><w:lang w:val="${wordLanguage(alternative!.language)}"/></w:rPr>`
+      : '';
+    return `<w:r>${language}${this.drawing(path, size, alternative)}</w:r>`;
   }
 
   /**

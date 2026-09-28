@@ -109,6 +109,70 @@ describe('the tenant database', () => {
     ).rejects.toThrow(/permission denied/);
   });
 
+  /**
+   * Every schema a table stands in, as the migrator sees the cluster, by name: the shared `public`
+   * and `platform` among them where it is there. By the catalogue, not by reading the table, which a
+   * runtime role's `search_path` answers from wherever the name first resolves, `public` included;
+   * and not by `to_regclass`, which needs a schema's usage, which the migrator has in no tenant's.
+   */
+  const schemasHolding = async (table: string): Promise<string[]> => {
+    const found = await queryAs(
+      db.migratorUrl,
+      `select n.nspname as schema from pg_catalog.pg_class c
+         join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+        where c.relname = $1 and c.relkind in ('r', 'p')
+        order by n.nspname`,
+      [table],
+    );
+    return found.rows.map((row: { schema: string }) => row.schema);
+  };
+  /** The two tenants' schemas, in the catalogue's order. */
+  const tenantSchemas = () => [production.schema, development.schema].sort();
+
+  it("SCH-008 keeps the search projection in each tenant's own schema and in no shared one, and another tenant's runtime role cannot read or write it even by naming it", async () => {
+    for (const table of ['search_entry', 'search_text']) {
+      // In each tenant's own schema, and in none it shares.
+      expect(await schemasHolding(table), table).toEqual(tenantSchemas());
+    }
+    for (const table of ['search_entry', 'search_text']) {
+      // The other tenant's refuses it outright, at its schema.
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`select * from ${sql.id(development.schema, table)}`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`delete from ${sql.id(development.schema, table)}`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
+    }
+  });
+
+  it("keeps publications - their requests, records, inputs and outputs - in each tenant's own schema and in no shared one, and another tenant's runtime role cannot read them even by naming them", async () => {
+    const tables = [
+      'publication_request',
+      'publication',
+      'publication_input',
+      'publication_output',
+      'publication_asset',
+    ];
+    for (const table of tables) {
+      // In each tenant's own schema, and in none it shares.
+      expect(await schemasHolding(table), table).toEqual(tenantSchemas());
+    }
+    for (const table of tables) {
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`select * from ${sql.id(development.schema, table)}`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
+    }
+  });
+
   it('cannot rewrite its own migration history', async () => {
     await expect(
       service.withTenant(production, (trx) => sql`delete from schema_migration`.execute(trx)),
