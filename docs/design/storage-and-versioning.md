@@ -9,13 +9,14 @@ per-tenant without saying so again.
 
 > **Part of this is built.** The version chain ([the version chain plan](../plans/2026-09-15-storage-01-the-version-chain.md)),
 > and now the `iteration` store and promotion from it ([the editor plan](../plans/2026-09-16-editor-01-open-edit-and-save.md)):
-> iterations are insert-only, referenced by nothing, keyed by artifact, principal and session together so
-> a client-chosen session id reused by a second principal is never judged against the first's, and carry
-> `expires_at` from a retention of thirty days set at insert - a version is cut from the latest one. What
-> is still design here: the retention window as a tenant setting (VER-004) and the sweep, which the T1
-> audit found anchored wrongly - a window set at insert gives an iteration older than it no window after
-> the cut - and which W11 anchors at the cut instead (VER-003); iterations visible only to their writer
-> while holding the lock, through a reading route (VER-002), revisions,
+> iterations are never updated, referenced by nothing, keyed by artifact, principal and session together so
+> a client-chosen session id reused by a second principal is never judged against the first's - a version
+> is cut from the latest one. And retention ([W11.1](../plans/2026-09-28-w11-recovery.md)): the window a
+> tenant setting, `editing_policy.iteration_retention_days`, 30 days by default, read and set through the
+> API (VER-004), and the worker's sweep anchored at the next cut, under a trigger refusing any earlier
+> delete (VER-003) - `expires_at`, set at insert, which the T1 audit found gave an iteration older than
+> the window no window after the cut, is dropped. What is still design here: iterations visible only to
+> their writer while holding the lock, through a reading route (VER-002), revisions,
 > baselines, restore, legal hold and derived data. [The first structure plan](../plans/2026-09-18-structure-01-the-document-and-its-outline.md)
 > added a document to the chain as a second content kind, whose content is its outline - no new table,
 > and one mechanism still (VER-011).
