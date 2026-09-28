@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.121.2 - 2026-09-28 (PR #TBD)
+
+### Changed
+
+- **The plan for testing the app in a real browser is written.** Every change will be checked in a
+  real browser against the whole system: the editor and the document view against the WCAG 2.2 AA
+  accessibility criteria a machine can check, the outline edited by mouse, by keyboard alone and
+  through the API, the pages timed on a document of several hundred components, and the text the
+  editor sets measured against the PDF. It also sets out the accessibility audit and the PDF review a
+  person makes before each release, and proposes giving the two speed requirements, which named no
+  number, numbers of their own.
+
 ## 0.121.1 - 2026-09-28 (PR #323)
 
 ### Changed

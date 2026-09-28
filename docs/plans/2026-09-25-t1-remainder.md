@@ -128,5 +128,5 @@ This table is updated as each workstream lands.
 | W10 | Preview                            | Built (PRs #291 to #294; [plan](2026-09-27-w10-preview.md)); K2 decided by ADR-0027                                                         |
 | W11 | Recovery                           | Built (PRs #295 to #298; [plan](2026-09-28-w11-recovery.md))                                                                                |
 | W12 | Identity                           | Built (PRs #299 to #305; [plan](2026-09-28-w12-identity.md)); K3 decided by ADR-0028                                                        |
-| W13 | A browser suite                    | Not started                                                                                                                                 |
+| W13 | A browser suite                    | Planned ([plan](2026-09-28-w13-browser-suite.md))                                                                                           |
 | W14 | Publishing, finished               | Built (PRs #311, #313, #315 to #317, #320 to #322; [plan](2026-09-28-w14-publishing-finished.md)); PUB-092 unclaimed, Word pages unmeasured |
