@@ -268,6 +268,7 @@ function nodeOf(block: BlockNode): Node {
           headerRows: block.headerRows,
           headerColumns: block.headerColumns,
           keyColumns: block.keyColumns ?? null,
+          numbered: block.numbered !== false,
         },
         [
           editorSchema.node('tableCaption', null, block.caption.flatMap(toRun)),
@@ -297,6 +298,7 @@ function nodeOf(block: BlockNode): Node {
           asset: block.asset,
           imageStyle: block.imageStyle,
           alternative: block.alternative,
+          numbered: block.numbered !== false,
         },
         [editorSchema.node('figureCaption', null, block.caption.flatMap(toRun))],
       );
@@ -618,6 +620,8 @@ function storedBlock(node: Node, at: string): unknown {
         headerColumns: node.attrs.headerColumns as number,
         ...(node.attrs.keyColumns === null ? {} : { keyColumns: node.attrs.keyColumns }),
         ...(note.length === 0 ? {} : { note }),
+        // Stored only when false (STR-071, W-H): a numbered table has one spelling, the member absent.
+        ...(node.attrs.numbered === false ? { numbered: false } : {}),
         rows,
       };
     }
@@ -630,6 +634,7 @@ function storedBlock(node: Node, at: string): unknown {
         imageStyle: node.attrs.imageStyle as string,
         caption: runsOf(node.child(0), id),
         alternative: node.attrs.alternative as object,
+        ...(node.attrs.numbered === false ? { numbered: false } : {}),
       };
     }
     case 'equationBlock': {

@@ -68,10 +68,10 @@ import { createTypst, typstBinaryPath } from './typst.js';
  * unit test reading the parts back cannot be.
  *
  * Since Word 2 (ruling R9) it also measures Word against the PDF: the fixture holding every construct
- * Word 2 writes is compiled to a PDF through template 13 as the job compiles one, with the same image
- * bytes, and both PDFs are read - lines by baseline, images and fills by the operators - so that a
- * list's markers, a step between two lines, a panel, a cell's fill, an image's size and a float's
- * place are held to the PDF's, not to numbers written down here.
+ * Word 2 writes is compiled to a PDF through the current template as the job compiles one, with the
+ * same image bytes, and both PDFs are read - lines by baseline, images and fills by the operators - so
+ * that a list's markers, a step between two lines, a panel, a cell's fill, an image's size and a
+ * float's place are held to the PDF's, not to numbers written down here.
  *
  * It runs only on Windows with Word, and only when asked: `ALLOY_WORD_CHECK=1 pnpm --filter
  * @alloy-works/worker test -- src/word-check.test.ts`. CI runs Linux and has no Word, so there it is
@@ -1218,13 +1218,13 @@ interface Fixture {
   /** The theme, where not the default's. */
   readonly theme?: ResolvedTheme;
   /**
-   * Word 2's (ruling R9): its PDF compiled beside it through template 13, as the job compiles one, so
-   * that what Word sets is measured against what the PDF sets.
+   * Word 2's (ruling R9): its PDF compiled beside it through the current template, as the job
+   * compiles one, so that what Word sets is measured against what the PDF sets.
    */
   readonly compared?: boolean;
   /**
-   * Word 4's (ruling R6): its PDF compiled beside it through template 13 too, for where each numbered
-   * equation's number stands and for a person to look at the equations in both, without the
+   * Word 4's (ruling R6): its PDF compiled beside it through the current template too, for where each
+   * numbered equation's number stands and for a person to look at the equations in both, without the
    * constructs' measurements a compared fixture is held to.
    */
   readonly beside?: boolean;

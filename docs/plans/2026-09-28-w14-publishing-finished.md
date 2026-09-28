@@ -21,7 +21,7 @@ last of the editor's T1 features, a spelling checker in the desktop app and a sy
 | W14.2 | Six heading levels, refused by name for PDF; the 300-page budget measured                                                             | Minor   |
 | W14.3 | The regression corpus: the engine spike's cases and every publishing defect's, the keep rules among them; the resolution order's test | Minor   |
 | W14.4 | A figure or table explicitly unnumbered (issue #129): the stored member, the editor, numbering, the PDF and Word                      | Minor   |
-| W14.5 | A style says where its caption sits (STY-079, STR-025): the catalogue, the default theme, template 14, Word and the editor            | Minor   |
+| W14.5 | A style says where its caption sits (STY-079, STR-025): the catalogue, the default theme, template 15, Word and the editor            | Minor   |
 | W14.6 | Word names what it cannot carry (PUB-100); IAM-075 and IAM-080 claimed and cited                                                      | Minor   |
 | W14.7 | The desktop's spelling checker through the platform bridge (CNT-178), and the symbol palette (CNT-057)                                | Minor   |
 
@@ -90,10 +90,42 @@ last of the editor's T1 features, a spelling checker in the desktop app and a sy
    the lists, the PDF and Word.
 3. Tests: TAB-034, and the new row.
 
+**W14.4, as built.** Issue #129 is **STR-071**, in STR rather than TAB because it is a rule of the
+sequences, beside the row it supersedes: STR-070 numbered every figure and table, so the choice to
+leave one unnumbered changes what the product must do and is a new row, which also keeps STR-070's
+appendix case (the issue's comment) and says an unnumbered one is in no list and a reference to it
+prints its caption. TAB-034's pointer moves from STR-023 to STR-071, a clarity edit. The stored member
+is W-H's: `numbered: z.literal(false).optional()` on `tableNodeSchema` and `figureNodeSchema`, so a
+numbered one has one spelling, the member absent, and `numbered: true` is refused; optional and so
+additive, it leaves every stored table and figure valid and its canonical form, and so its digest,
+unchanged, with `CURRENT_SCHEMA_VERSION` 1 and no migration - no content schema version was needed. The
+editor's `tableFigure` and `figure` carry `numbered`, true by default, `fromEditor` writing the member
+only when false; `setTableNumbered` and `setFigureNumbered` are one undoable step each, behind a
+**Numbered** box in the Table panel and the Figure panel, never an inline image's. The product's own
+clipboard keeps it through admission, which spreads a block; the readers write none; the service
+refuses `numbered: true` as `content_invalid`. `contributionsOf` takes `numbered` from the block, so
+`number` gives an unnumbered one no entry: no label, no counter value, no place in `listOf`.
+`documentTargets` and `ownTargets` offer one by its caption, marked `unnumbered`, and `targetForms`
+drops its number forms; resolution binds it to its caption with no label, so a title form prints the
+caption and a number form fails `cross_reference_form_unavailable`, as an unnumbered equation's does.
+**A new template was needed**, against the hope of avoiding one: template 13 already sets a caption
+with no label, but its lists are Typst's `outline` over every figure of a kind, which would have
+listed an unnumbered table with no number. So `publishing/14` gives a `PublishedTable` and a
+`PublishedFigure` `listed`, false where the block has no numbering entry, and **template 14** is
+template 13 with `outlined: b.listed` on both; `PUBLISHING_SCHEMA_13` freezes `publishing/13`,
+`PIPELINE_VERSION` is `'14'`, and a document with none unnumbered is set by template 14 exactly as by
+template 13, measured. W14.5's caption placement therefore takes template 15 and `publishing/15`,
+not 14. The Word writer needed no change: with no entry, `captionRuns` writes no `SEQ` field, so Word
+neither counts nor lists it. Tests: STR-071 in the domain's numbering, lists, references, `assemble`
+and Word writer, the editor, the web panels and dialog, and the worker's PDF (text, tags, list and
+veraPDF) for a table and a figure and its Word document through the Open XML SDK; TAB-034 in
+`assemble`; STR-070's five numbering tests retitled STR-071. Not run: Word itself and the end-to-end
+suite.
+
 ## W14.5: Caption placement
 
 1. Catalogue schema 3 with `caption` on table and image styles; the default theme's next version.
-2. Template 14 and `publishing/14`; the Word writer; the editor's projection.
+2. Template 15 and `publishing/15` (W14.4 took 14); the Word writer; the editor's projection.
 3. Tests: STY-079, STR-025.
 
 ## W14.6: Word's report whole, and two claims

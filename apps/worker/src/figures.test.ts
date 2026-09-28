@@ -240,6 +240,38 @@ describe('a figure in the PDF (figures 3)', () => {
       expect(item.y, item.text).toBeGreaterThanOrEqual(72 - 0.5);
     }
   });
+
+  it('STR-071 sets a figure marked unnumbered under its caption alone, numbers the next as the first and lists only that, and passes veraPDF', async () => {
+    const red = await imageOf(RED, { width: 800, height: 600 }, 'png', null);
+    const assets = new Map([[red.version, red.asset]]);
+    const assembled = assemble(
+      inputOf(assets, [
+        { ...figure('f1', RED, { kind: 'own', text: 'A red rule' }, 'A divider'), numbered: false },
+        figure('f2', RED, { kind: 'own', text: 'Two red squares' }, 'Our shapes'),
+      ]),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const marked = await typst.compile(
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+      JSON.stringify(assembled.document),
+      at,
+      await rootImages(assets, async () => red.bytes),
+    );
+    const read = await readPdf(marked);
+    expect(await checkPdfUa1(marked)).toMatchObject({ compliant: true, failedRules: 0 });
+    // Each still a Figure with its caption; the unnumbered one's with no label before it.
+    expect(read.elements).toMatchObject({ Figure: 2, Caption: 2 });
+    const pages = read.taggedText.map((page) => page.join(' ').replace(/\s+/g, ' '));
+    const list = pages.findIndex((page) => page.includes('Figures'));
+    const body = pages.filter((_, at) => at !== list).join(' ');
+    expect(body).toContain('A divider');
+    expect(body).not.toMatch(/Figure \S+ A divider/);
+    expect(body).toContain('Figure 1.1 Our shapes');
+    // The list lists the numbered one alone.
+    expect(read.elements).toMatchObject({ TOC: 1, TOCI: 1 });
+    expect(pages[list]).toContain('Figure 1.1 Our shapes');
+    expect(pages[list]).not.toContain('A divider');
+  }, 120_000);
 });
 
 describe('an image in a line of text in the PDF (figures 5)', () => {

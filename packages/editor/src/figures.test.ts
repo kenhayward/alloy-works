@@ -1,4 +1,5 @@
 import type { BlockNode, ContentDocument } from '@alloy-works/domain';
+import { undo } from 'prosemirror-history';
 import type { Node } from 'prosemirror-model';
 import { TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
@@ -10,6 +11,7 @@ import {
   insertFigure,
   replaceFigureImage,
   setFigureAlternative,
+  setFigureNumbered,
 } from './figures.js';
 import { fromEditor, toEditor } from './mapping.js';
 import { editorSchema } from './schema.js';
@@ -247,6 +249,51 @@ describe('a figure in the editor (figures 2)', () => {
         two.tr.setSelection(TextSelection.create(two.doc, inside(two.doc, 'caption'))),
       );
       expect(stored(run(inSecond, deleteFigure).next)).toEqual([paragraph('p1', 'x')]);
+    });
+  });
+
+  describe('numbered, or marked unnumbered (issue #129)', () => {
+    const decorative = figure('f1', { kind: 'decorative' });
+    const inCaption = (document: ContentDocument) => {
+      const state = stateOf(document);
+      return state.apply(
+        state.tr.setSelection(TextSelection.create(state.doc, inside(state.doc, 'caption'))),
+      );
+    };
+
+    it('opens a figure marked unnumbered and stores it back exactly, and a numbered one with no member', () => {
+      const unnumbered = { ...decorative, numbered: false } as BlockNode;
+      expect(stored(stateOf(documentOf(unnumbered)))).toEqual([unnumbered]);
+      expect(stored(stateOf(documentOf(decorative)))).toEqual([decorative]);
+      expect(stored(stateOf(documentOf(decorative)))[0]).not.toHaveProperty('numbered');
+    });
+
+    it('says whether the figure the cursor stands in is numbered, as the Figure panel reads it', () => {
+      expect(figureAt(inCaption(documentOf(decorative)))).toMatchObject({ numbered: true });
+      expect(
+        figureAt(inCaption(documentOf({ ...decorative, numbered: false } as BlockNode))),
+      ).toMatchObject({ numbered: false });
+    });
+
+    it('marks it unnumbered and numbered again, one undoable step each, keeping its caption and image', () => {
+      const state = inCaption(documentOf(decorative));
+      const off = run(state, setFigureNumbered(false));
+      expect(off.handled).toBe(true);
+      expect(stored(off.next)).toEqual([{ ...decorative, numbered: false }]);
+      expect(run(off.next, setFigureNumbered(false)).handled).toBe(false);
+      expect(stored(run(off.next, setFigureNumbered(true)).next)).toEqual([decorative]);
+      let back = off.next;
+      undo(off.next, (tr) => (back = off.next.apply(tr)));
+      expect(stored(back)).toEqual([decorative]);
+      expect(
+        run(stateOf(documentOf(paragraph('p1', 'x')), 1), setFigureNumbered(false)).handled,
+      ).toBe(false);
+    });
+
+    it('keeps a figure marked unnumbered so when its image is replaced', () => {
+      const state = inCaption(documentOf({ ...decorative, numbered: false } as BlockNode));
+      const { next } = run(state, replaceFigureImage(BLUE, { kind: 'decorative' }));
+      expect(stored(next)).toEqual([{ ...decorative, asset: BLUE, numbered: false }]);
     });
   });
 });

@@ -482,6 +482,62 @@ describe('writing in an editing session through the service', () => {
       expect(response.body).not.toContain('p1');
     });
 
+    it('keeps a table marked unnumbered through a save, a cut and an open, and refuses one spelled numbered: true (issue #129)', async () => {
+      const made = await component();
+      const session = randomUUID();
+      await call('ada', 'POST', `/v1/components/${made.id}/lock`, { session });
+      const holding = (numbered: unknown) => ({
+        ...paragraphs('Unbox the printer.'),
+        content: [
+          {
+            type: 'table',
+            id: 't1',
+            style: 'table',
+            caption: [{ type: 'text', value: 'Layout only', marks: [] }],
+            headerRows: 0,
+            headerColumns: 0,
+            numbered,
+            rows: [
+              {
+                cells: [
+                  {
+                    content: [{ type: 'paragraph', id: 'c1', style: 'body', content: [] }],
+                    colspan: 1,
+                    rowspan: 1,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+      // One spelling of numbered, the member absent: `true` is a second the store refuses.
+      const refused = await call(
+        'ada',
+        'PUT',
+        `/v1/components/${made.id}/iterations/${session}/1`,
+        {
+          openedFrom: made.openedFrom,
+          content: holding(true),
+        },
+      );
+      expect(refused.statusCode).toBe(400);
+      expect(refused.json()).toMatchObject({ code: 'content_invalid' });
+
+      const saved = await call('ada', 'PUT', `/v1/components/${made.id}/iterations/${session}/2`, {
+        openedFrom: made.openedFrom,
+        content: holding(false),
+      });
+      expect(saved.statusCode).toBe(200);
+      const cut = await call('ada', 'POST', `/v1/components/${made.id}/versions`, {
+        session,
+        openedFrom: made.openedFrom,
+      });
+      expect(cut.json()).toMatchObject({ outcome: 'cut' });
+      const opened = await call('grace', 'GET', `/v1/components/${made.id}`);
+      expect(opened.json()).toMatchObject({ content: holding(false) });
+    });
+
     it('refuses a blank title, and text the store cannot hold, as invalid content rather than as a failure', async () => {
       // Issues #116 and #127: creating a component refuses a title of spaces, and a section title
       // refuses a NUL or half a surrogate pair, but saving an iteration took both - the first stored

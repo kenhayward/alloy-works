@@ -121,6 +121,9 @@ export {
   // Frozen by themes 2, which made `publishing/13`: the schema template 12 reads, and the schema of
   // every publication made before a table and an image were set from their styles.
   PUBLISHING_SCHEMA_12,
+  // Frozen by W14.4, which made `publishing/14`: the schema template 13 reads, and the schema of every
+  // publication made before a table or a figure could be left out of the list of its kind.
+  PUBLISHING_SCHEMA_13,
 } from './published.js';
 export type {
   PublishedBlock,

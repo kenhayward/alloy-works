@@ -43,7 +43,7 @@ import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, loadPinnedFonts, PINNED_FONT_FILES, type PinnedFonts } from './fonts.js';
 import { publishJob } from './jobs/publish.js';
-import { PUBLICATION_TEMPLATE } from './template.js';
+import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { checkOoxml } from './testing/ooxml.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
 import { askedOf, fieldOf } from './testing/word.js';
@@ -576,14 +576,14 @@ describe('publishing a document, from the request to the stored PDF', () => {
   it("PUB-063 records the engine, the engine's version and the template's version that made it", async () => {
     const { request } = await published();
     const row = await publicationOf(request);
-    // Made under a layout and a theme, so by template 13 and pipeline 13, under the layout its request
+    // Made under a layout and a theme, so by template 14 and pipeline 14, under the layout its request
     // recorded.
     expect(row).toMatchObject({
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 13,
-      pipeline_version: '13',
+      template_version: 14,
+      pipeline_version: '14',
       layout_version_id: (await requestRow(request)).layout_version_id,
     });
     expect(row!.layout_version_id).not.toBeNull();
@@ -1038,7 +1038,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine_version: null,
       template: null,
       template_version: null,
-      pipeline_version: '13',
+      pipeline_version: '14',
       format: 'docx',
       standard: null,
       producer: 'word',
@@ -1066,12 +1066,12 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 13,
-      pipeline_version: '13',
+      template_version: 14,
+      pipeline_version: '14',
       format: 'pdf',
       standard: 'ua-1',
       producer: 'typst',
-      producer_version: '13',
+      producer_version: '14',
       report: [],
     });
     // Beside a PDF, the Word document's pages are cited in the PDF, and it says so; nothing else.
@@ -1102,7 +1102,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     const data = JSON.stringify(alone.document);
     expect(pdf!.data_sha256).toBe(createHash('sha256').update(data).digest('hex'));
     const compiled = await typst.compile(
-      PUBLICATION_TEMPLATE[13].file,
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[alone.document.schema]].file,
       data,
       inputs!.request.requestedAt,
     );
@@ -1145,7 +1145,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
         format: 'pdf',
         standard: 'ua-1',
         producer: 'typst',
-        producer_version: '13',
+        producer_version: '14',
         report: [],
       }),
     ]);

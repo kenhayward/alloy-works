@@ -3527,6 +3527,49 @@ describe('the table panel (tables 1)', () => {
     await userEvent.keyboard('{Shift>}{F6}{/Shift}');
     expect(within(panel).getByLabelText('Header rows')).toHaveFocus();
   });
+
+  it('STR-071 marks the table unnumbered from its Numbered box, and numbered again, its caption kept', async () => {
+    const { surface } = openWith(aTable);
+    const view = await surface();
+    caretIn(view, 'd1');
+    const panel = await screen.findByRole('group', { name: 'Table' });
+    const box = within(panel).getByRole('checkbox', { name: 'Numbered' });
+    expect(box).toBeChecked();
+    expect(tableOf(view)).not.toHaveProperty('numbered');
+
+    await userEvent.click(box);
+    await waitFor(() => expect(tableOf(view)).toMatchObject({ numbered: false }));
+    expect(within(panel).getByRole('checkbox', { name: 'Numbered' })).not.toBeChecked();
+    expect(tableOf(view)).toMatchObject({
+      caption: [{ type: 'text', value: 'Readings', marks: [] }],
+    });
+
+    await userEvent.click(within(panel).getByRole('checkbox', { name: 'Numbered' }));
+    await waitFor(() => expect(tableOf(view)).not.toHaveProperty('numbered'));
+  });
+
+  it('shows a table stored unnumbered as unnumbered, and follows an undo', async () => {
+    const { surface } = openWith(
+      blocksOf(para('b1', 'Before.'), {
+        ...(aTable.content as { type: string }[]).find((block) => block.type === 'table'),
+        numbered: false,
+      }),
+    );
+    const view = await surface();
+    caretIn(view, 'd1');
+    const panel = await screen.findByRole('group', { name: 'Table' });
+    expect(within(panel).getByRole('checkbox', { name: 'Numbered' })).not.toBeChecked();
+    await userEvent.click(within(panel).getByRole('checkbox', { name: 'Numbered' }));
+    await waitFor(() =>
+      expect(within(panel).getByRole('checkbox', { name: 'Numbered' })).toBeChecked(),
+    );
+    act(() => {
+      fireEvent.keyDown(view.dom, { key: 'z', ctrlKey: true });
+    });
+    await waitFor(() =>
+      expect(within(panel).getByRole('checkbox', { name: 'Numbered' })).not.toBeChecked(),
+    );
+  });
 });
 
 describe('a figure in the editor (figures 2)', () => {
@@ -3905,6 +3948,39 @@ describe('a figure in the editor (figures 2)', () => {
     expect(within(panel).getByLabelText('Its own description')).toHaveValue('Red');
   });
 
+  it('STR-071 marks the figure unnumbered from its Numbered box, and numbered again, its caption kept', async () => {
+    const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const panel = await screen.findByRole('group', { name: 'Figure' });
+    const box = within(panel).getByRole('checkbox', { name: 'Numbered' });
+    expect(box).toBeChecked();
+    expect(figureOf(view)).not.toHaveProperty('numbered');
+
+    await userEvent.click(box);
+    await waitFor(() => expect(figureOf(view)).toMatchObject({ numbered: false }));
+    expect(within(panel).getByRole('checkbox', { name: 'Numbered' })).not.toBeChecked();
+    expect(figureOf(view)).toMatchObject({
+      id: 'f1',
+      caption: [{ type: 'text', value: 'Shapes', marks: [] }],
+    });
+
+    // An undo takes it back to numbered, the box following.
+    act(() => {
+      fireEvent.keyDown(view.dom, { key: 'z', ctrlKey: true });
+    });
+    await waitFor(() =>
+      expect(within(panel).getByRole('checkbox', { name: 'Numbered' })).toBeChecked(),
+    );
+    expect(figureOf(view)).not.toHaveProperty('numbered');
+
+    // And the box marks it unnumbered and numbered again.
+    await userEvent.click(within(panel).getByRole('checkbox', { name: 'Numbered' }));
+    await waitFor(() => expect(figureOf(view)).toMatchObject({ numbered: false }));
+    await userEvent.click(within(panel).getByRole('checkbox', { name: 'Numbered' }));
+    await waitFor(() => expect(figureOf(view)).not.toHaveProperty('numbered'));
+  });
+
   it('offers Figure only where a figure can be placed', async () => {
     const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
     const view = await surface();
@@ -4037,6 +4113,8 @@ describe('a figure in the editor (figures 2)', () => {
       const view = await surface();
       selectTheImage(view);
       const panel = await screen.findByRole('group', { name: 'Image' });
+      // An image in a line takes no number, so its panel has no Numbered box (STR-071's is a figure's).
+      expect(within(panel).queryByRole('checkbox', { name: 'Numbered' })).toBeNull();
       // Said of the image, not a figure (final review).
       expect(
         await within(panel).findByText(
@@ -4600,6 +4678,31 @@ describe('cross-references in the editor (cross-references 1)', () => {
     expect(within(dialog).getByRole('radio', { name: 'Footnote 3' })).toBeChecked();
     expect(choices(dialog, 'Show as')).toEqual(['Number', 'Page', 'Above or below']);
     expect(within(dialog).getByText(/It will show/)).toHaveTextContent('It will show: 3');
+  });
+
+  it('STR-071 offers a table marked unnumbered by its caption, with no number form, showing its caption', async () => {
+    // What `documentTargets` offers of it, where the component is edited in a document.
+    const { surface } = openWith(blocksOf({ ...readings, numbered: false }, para('b2', 'Then.')), {
+      referenceContext: {
+        targets: [
+          {
+            target: { kind: 'block', block: 't1' },
+            kind: 'table',
+            label: null,
+            title: 'Readings',
+            relative: null,
+            unnumbered: true,
+          },
+        ],
+      },
+    });
+    const view = await surface();
+    caretIn(view, 'b2');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Table: Readings' }));
+    expect(choices(dialog, 'Show as')).toEqual(['Title', 'Page', 'Above or below']);
+    expect(within(dialog).getByText(/It will show/)).toHaveTextContent('It will show: Readings');
   });
 
   it('opens on a reference selected whole, and changes its form keeping its identifier', async () => {

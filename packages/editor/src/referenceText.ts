@@ -218,7 +218,8 @@ function captionOf(node: Node): string {
  * author left unnumbered (equations 2, ruling R7): it has no number, so a page and a position are all
  * that would be left to offer, which `documentTargets` already withholds once the document has one to
  * compare against - offering it here and refusing it there would be an offer this component cannot
- * keep.
+ * keep. A figure or a table the author marked unnumbered is offered, by its caption, and says it is
+ * unnumbered, so the dialog offers no number form of it (STR-071).
  */
 export function ownTargets(doc: Node, at?: number): readonly ReferenceTarget[] {
   const targets: ReferenceTarget[] = [];
@@ -234,6 +235,11 @@ export function ownTargets(doc: Node, at?: number): readonly ReferenceTarget[] {
       label: null,
       title: caption === '' ? null : caption,
       relative: at === undefined ? null : pos < at ? 'above' : 'below',
+      // A figure or a table the author marked unnumbered (STR-071): offered by its caption, which is
+      // what a reference to it prints, and never in a number form.
+      ...(node.attrs.numbered === false && kind !== 'equation'
+        ? { unnumbered: true as const }
+        : {}),
     });
     return true;
   });

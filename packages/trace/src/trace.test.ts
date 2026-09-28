@@ -67,12 +67,14 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
+    // 1472, from 1471 (2026-09-28): W14.4 - STR-071 supersedes STR-070, a figure or a table explicitly unnumbered (issue #129).
     // 1471, from 1470 (2026-09-28): W14.7's final review - CNT-178 supersedes CNT-148, because macOS chooses its spelling checker's languages itself.
     // 1470, from 1458 (2026-09-28): the T1 audit's last decisions and rewordings: CNT-176 and CNT-177, PUB-098 to PUB-104, IAM-080 and IAM-081 supersede the rows they split, and STY-079 is new (issue #306).
     // 1458, from 1449 (2026-09-26): the rewordings Ken agreed after the T1 audit (K7, and W1's three): CNT-171 to CNT-175, STR-070, MET-042, STY-078 and API-061 supersede the rows they reword.
-    expect(model.requirements).toHaveLength(1471);
+    expect(model.requirements).toHaveLength(1472);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 495, from 494 (2026-09-28): W14.4 - publishing.md claims TAB-034; structure.md's STR-070 claim moved to STR-071.
     // 494, from 493 (2026-09-28): document-view.md claims IAM-080, IAM-023's T1 half; publishing.md's PUB-003 claim moved to PUB-098.
     // 493, from 492 (2026-09-27): W10.0 - publishing.md claims CNT-150, the preview beside the text.
     // 492, from 483 (2026-09-27): W9.0 - document-view.md claims CNT-072, CNT-073, CNT-154, CNT-105,
@@ -203,7 +205,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(494);
+    ).toBe(495);
   });
 });
 
@@ -553,6 +555,11 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 515, from 505 (2026-09-28): W14.4 - STR-071 in packages/domain's structure/lists.test.ts,
+  // structure/references.test.ts, publishing/assemble.test.ts and word/write.test.ts, in
+  // packages/editor's referenceText.test.ts, in apps/web's editor/ComponentEditor.test.tsx and in
+  // apps/worker's tables.test.ts, figures.test.ts and word.test.ts; TAB-034 in assemble.test.ts.
+  // numbering.test.ts's five STR-070 tests cite STR-071 instead, which supersedes it.
   // 505, unchanged (2026-09-28): W14.7's final review - CNT-178 superseded CNT-148, and the two
   // tests that cited CNT-148 cite CNT-178 instead.
   // 505, from 502 (2026-09-28): W14.7 - CNT-148 in apps/desktop's shell.test.ts, where each
@@ -649,7 +656,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(505);
+    expect(model.citations).toHaveLength(515);
   });
 
   it('cites no identifier the corpus does not hold', () => {

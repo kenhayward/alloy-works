@@ -1852,3 +1852,76 @@ describe('a table, as tables 1 settled it before the first was stored', () => {
     );
   });
 });
+
+describe('a figure or a table explicitly unnumbered (issue #129, W-H)', () => {
+  const run = (value: string) => ({ type: 'text', value, marks: [] });
+  const table = (over: Record<string, unknown> = {}) => ({
+    type: 'table',
+    id: 'T1',
+    caption: [run('Readings')],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [{ cells: [{ content: [paragraph('T1p1', 'alpha')] }] }],
+    ...over,
+  });
+  const figure = (over: Record<string, unknown> = {}) => ({
+    type: 'figure',
+    id: 'F1',
+    asset: ASSET_VERSION,
+    imageStyle: 'figure',
+    caption: [run('Site plan')],
+    alternative: { kind: 'decorative' },
+    ...over,
+  });
+
+  /**
+   * A table and a figure stored before the member existed, canonicalised, written out rather than
+   * computed, as the definition list's term's is: the version digest (ADR-0024) is taken over this
+   * string, and a widening that moved it would record a new version of every component holding one.
+   */
+  const CANONICAL_BEFORE_THE_WIDENING =
+    '{"content":[{"caption":[{"marks":[],"type":"text","value":"Readings"}],"headerColumns":0,' +
+    '"headerRows":0,"id":"T1","rows":[{"cells":[{"colspan":1,"content":[{"content":[{"marks":[],' +
+    '"type":"text","value":"alpha"}],"id":"T1p1","style":"body","type":"paragraph"}],"rowspan":1}]}],' +
+    '"style":"table","type":"table"},{"alternative":{"kind":"decorative"},' +
+    '"asset":"00000000-0000-4000-8000-00000000a551","caption":[{"marks":[],"type":"text",' +
+    '"value":"Site plan"}],"id":"F1","imageStyle":"figure","type":"figure"}],"direction":"ltr",' +
+    '"language":"en-GB","schemaVersion":1,"title":"A component"}';
+
+  it('holds a table and a figure the author marked unnumbered', () => {
+    const document = parseContentDocument(
+      doc([table({ numbered: false }), figure({ numbered: false })]),
+    );
+    expect(document.content).toMatchObject([{ numbered: false }, { numbered: false }]);
+  });
+
+  it('refuses numbered stored as true, so a numbered one has one spelling: the member absent', () => {
+    expect(() => parseContentDocument(doc([table({ numbered: true })]))).toThrow();
+    expect(() => parseContentDocument(doc([figure({ numbered: true })]))).toThrow();
+    expect(() => parseContentDocument(doc([table({ numbered: 'no' })]))).toThrow();
+    expect(() => parseContentDocument(doc([figure({ numbered: null })]))).toThrow();
+  });
+
+  it('keeps a table and a figure stored before the member existed valid, and their canonical form unchanged', () => {
+    const stored = parseContentDocument(doc([table(), figure()]));
+    expect(stored.content.every((block) => !('numbered' in block))).toBe(true);
+    expect(canonicalise(stored)).toBe(CANONICAL_BEFORE_THE_WIDENING);
+  });
+
+  it('adds no schema version and no migration, because an optional member is additive', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(1);
+    expect(contentMigrationChain.migrations).toEqual({});
+    // Read as a stored version is read, through the chain, an old one reads exactly as written.
+    const read = readContent(doc([table(), figure()]), { artifact: 'a', version: 'v' });
+    if (!read.ok) throw new Error(read.failure);
+    expect(canonicalise(read.document)).toBe(CANONICAL_BEFORE_THE_WIDENING);
+  });
+
+  it('keeps the member through the parse of what the parse returned', () => {
+    const once = parseContentDocument(
+      doc([figure({ numbered: false }), table({ numbered: false })]),
+    );
+    expect(parseContentDocument(once)).toEqual(once);
+    expect(canonicalise(once)).toContain('"numbered":false');
+  });
+});

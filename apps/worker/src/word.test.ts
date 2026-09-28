@@ -889,6 +889,54 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     );
   });
 
+  it('STR-071 writes a table marked unnumbered under its caption alone, with no SEQ field for Word to count or list, which the Open XML SDK finds nothing wrong with', async () => {
+    const marked = parseContentDocument({
+      ...(JSON.parse(JSON.stringify(READINGS)) as object),
+      content: (READINGS.content as readonly object[]).map((block, at) =>
+        at === 0 ? { ...block, numbered: false } : block,
+      ),
+    });
+    const unnumbered: AssembleInput & { readonly layout: Layout } = {
+      ...input,
+      occurrences: new Map([...input.occurrences, [id('readings'), marked]]),
+    };
+    const written = (from: AssembleInput & { readonly layout: Layout }) => {
+      const assembled = assemble(from);
+      if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+      return writeDocx({
+        document: assembled.document,
+        numbering: assembled.numbering,
+        word: assembled.word!,
+        formats: from.formats,
+        faces,
+        images: IMAGES,
+      });
+    };
+    const before = written(input);
+    const after = written(unnumbered);
+    expect(await checkOoxml(after.bytes)).toEqual([]);
+    const fields = (bytes: Uint8Array) =>
+      strFromU8(unzipSync(bytes)['word/document.xml']!).match(/ SEQ Table /g)?.length ?? 0;
+    // One SEQ Table field fewer: the unnumbered table's caption has none, so Word counts it not.
+    expect(fields(after.bytes)).toBe(fields(before.bytes) - 1);
+    // What the report names it by is its caption alone: it has no label.
+    expect(after.report).toContainEqual({
+      kind: 'header_column_lost',
+      node: id('readings'),
+      block: 't1',
+      label: null,
+    });
+    const document = strFromU8(unzipSync(after.bytes)['word/document.xml']!);
+    // The list of tables, prefilled until Word rebuilds it: the next table, Keys, is Table 2.1 now,
+    // and the unnumbered one is no entry.
+    const list = document.slice(document.indexOf('TOC \\h \\z \\c &quot;Table&quot;'));
+    const entries = list.slice(0, list.indexOf('w:fldCharType="end"'));
+    const words = [...entries.matchAll(/<w:t xml:space="preserve">([^<]*)<\/w:t>/g)]
+      .map((match) => match[1])
+      .join('');
+    expect(words).toBe('Table 2.1 Keys');
+  });
+
   it("writes each footnote as Word's own - in text, in a cell and, for Word alone, in a table's header row, which the PDF refuses - which the Open XML SDK finds nothing wrong with (Word 3)", async () => {
     // The readings table with a footnote in its second header row, whose engine sets it on every page.
     const headed = parseContentDocument(

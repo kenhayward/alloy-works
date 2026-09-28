@@ -20,6 +20,7 @@ export {
 export { editorSchema } from './schema.js';
 export {
   setTableHeaders,
+  setTableNumbered,
   tableAt,
   tableCommand,
   type TableAction,
@@ -33,6 +34,7 @@ export {
   insertFigure,
   replaceFigureImage,
   setFigureAlternative,
+  setFigureNumbered,
   type FigureAt,
 } from './figures.js';
 export { MISSING_IMAGE } from './figureView.js';

@@ -399,4 +399,29 @@ describe('what a component offers a reference of its own (cross-references 1, ru
       target({ kind: 'block', block: 't1' }, 'table', null, 'Readings'),
     ]);
   });
+
+  it('STR-071 offers a figure or a table marked unnumbered by its caption, saying it has no number', () => {
+    // Unlike an unnumbered equation it has a caption, which is what a reference to it prints; and
+    // unlike one not numbered yet, it never will be, so no number form is offered of it.
+    const doc = docOf(
+      { ...table('t1', 'Layout only'), numbered: false } as BlockNode,
+      { ...figure('g1', 'Decoration'), numbered: false } as BlockNode,
+      table('t2', 'Readings'),
+    );
+    expect(ownTargets(doc)).toEqual([
+      { ...target({ kind: 'block', block: 't1' }, 'table', null, 'Layout only'), unnumbered: true },
+      { ...target({ kind: 'block', block: 'g1' }, 'figure', null, 'Decoration'), unnumbered: true },
+      target({ kind: 'block', block: 't2' }, 'table', null, 'Readings'),
+    ]);
+  });
+
+  it('shows a reference to a table marked unnumbered as its caption, in a title form or a number form it was stored in', () => {
+    for (const display of ['title', 'number', 'numberAndTitle'] as const) {
+      const doc = docOf(
+        { ...table('t1', 'Layout only'), numbered: false } as BlockNode,
+        para('b1', ref({ kind: 'block', block: 't1' }, display)),
+      );
+      expect(onlyText(doc, { targets: ownTargets(doc) }), display).toBe('Layout only');
+    }
+  });
 });

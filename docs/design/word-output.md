@@ -1333,6 +1333,16 @@ each requirement is cited by are in the parts above, one a slice:
 [Word 3](../plans/2026-09-26-word-03-footnotes-and-cross-references.md) and
 [Word 4](../plans/2026-09-26-word-04-equations.md).
 
+**A figure or a table its author marked unnumbered** (issue #129, STR-071, W14.4) has no numbering
+entry, so `captionRuns` writes its caption with **no `SEQ` field** and its words alone, as it writes a
+caption the scheme withholds a number from. Word counts `SEQ` fields, so it never counts one, the next
+of its kind takes the number the PDF gives it, and `numbering_not_in_word`, which follows the numbering
+table's entries, meets none; and Word's lists are `TOC \c` fields over those `SEQ` names, so it is in
+no list either, as the PDF's template 14 leaves it out of its own. A reference to one is a field at its
+bookmark, prefilled with its caption, a title form's words; a number form of one fails the publish for
+both outputs, `cross_reference_form_unavailable`. The Word writer needed no change: `write.test.ts`
+and the worker's `word.test.ts`, which the Open XML SDK checks, show it.
+
 ## Open questions
 
 | ID  | Question                                                                                                                                                                             |

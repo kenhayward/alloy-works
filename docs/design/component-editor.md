@@ -317,8 +317,10 @@ panel reached from the table's toolbar and by keyboard. **What the tables slice 
 - **A table panel** - a region in the `F6` ring while the cursor is in a table, as the list panel is -
   holds the number of header rows and header columns, adding a row or a column on either side of the
   cursor, deleting one, merging the selected cells and splitting a merged one, and deleting the table.
-  It also adds and removes the table's note (footnotes 1, FN-C); key columns wait for a table whose
-  rows are generated, which is all they are for (FN-A).
+  It also adds and removes the table's note (footnotes 1, FN-C), and its **Numbered** box, checked
+  unless the author has marked the table unnumbered, sets `numbered` (issue #129, STR-071; W14.4) as
+  one undoable step, `setTableNumbered`; the caption stays, and stays required (TAB-034). Key columns
+  wait for a table whose rows are generated, which is all they are for (FN-A).
 - **The header counts are the model's truth.** `prosemirror-tables` marks each cell as a header or a
   data cell, where the model stores two counts, so a plugin keeps every cell's kind agreeing with the
   counts after every transaction, as the identity plugin keeps identifiers.
@@ -580,13 +582,24 @@ table panel, sets the alternative text's state:
 | **Describe it here**            | `own`, in the component's language | A text field; empty is not saved, and the previous state stays until something is typed                                     |
 | **Decorative**                  | `decorative`                       | Nothing is read to a screen reader; the caption still is                                                                    |
 
-and offers **Replace image**, which uploads another file into the same figure, keeping its caption,
-identity and number, and **Delete figure**. Changing the image's own default description - a new
+and offers a **Numbered** box, checked unless the author has marked the figure unnumbered, which sets
+`numbered` as one undoable step (`setFigureNumbered`; issue #129, STR-071, W14.4) - an image in a line
+is never numbered, and its panel has no such box - **Replace image**, which uploads another file into
+the same figure, keeping its caption, identity, number and whether it is numbered, and **Delete
+figure**. Changing the image's own default description - a new
 asset version - is not in the panel: it changes every figure that inherits it, which is an asset
 library's act, and T2's.
 
 **Identity is the figure's block `id`**, as for every caption-bearing block (CNT-081), so replacing the
 image keeps the figure's number and every cross-reference to it.
+
+**A figure or a table marked unnumbered can still be pointed at** (STR-071, W14.4): unlike an
+unnumbered equation it has a caption, which is what a reference to it prints. The **Reference**
+dialog offers it by its kind and caption, _Table: Readings_, and in the title, page and above or
+below forms alone, since `targetForms` drops the number forms of a target marked `unnumbered`. On the
+surface a reference to one shows its caption where the component is edited in a document, and its
+kind and caption, _Table: Readings_, on its own, as any target with no number does; one stored in a
+number form, before the figure or table was marked, shows the same and fails the publish by name.
 
 **Copying a figure within the product keeps it**, asset version and all, through the product's own
 clipboard type; a paste into a component in another space is allowed where the author may read the
