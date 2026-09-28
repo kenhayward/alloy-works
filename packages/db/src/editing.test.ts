@@ -13,7 +13,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import {
   claimLock,
-  ITERATION_RETENTION_DAYS,
   iterationDigest,
   LOCK_PERIOD_MINUTES,
   readLock,
@@ -298,7 +297,7 @@ describe('editing a component: its lock and its iterations', () => {
       return { ...component, session, save };
     };
 
-    it('VER-001 keeps an iteration as its editor wrote it, timestamped, and the runtime role cannot change or remove it', async () => {
+    it('VER-001 keeps an iteration as its editor wrote it, timestamped, and the runtime role cannot change it, nor remove it before its window', async () => {
       const component = await held();
       expect(await component.save(1, 'Unbox the printer.')).toMatchObject({
         answer: 'accepted',
@@ -321,18 +320,21 @@ describe('editing a component: its lock and its iterations', () => {
         metadata_values: { [audience]: 'Engineers' },
       });
       expect(row.created_at).toBeInstanceOf(Date);
-      const retention = ITERATION_RETENTION_DAYS * 24 * 60 * 60_000;
-      expect(row.expires_at.getTime() - row.created_at.getTime()).toBe(retention);
 
       for (const statement of [
         sql`update iteration set sequence = 2 where id = ${row.id}`,
-        sql`delete from iteration where id = ${row.id}`,
         sql`truncate iteration`,
       ]) {
         await expect(
           service.withTenant(production, (trx) => statement.execute(trx)),
         ).rejects.toThrow(/permission denied/);
       }
+      // Only the sweep removes one, once the next cut is past its window (VER-003, retention.test.ts).
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`delete from iteration where id = ${row.id}`.execute(trx),
+        ),
+      ).rejects.toThrow(/kept until the next version is cut, and for the window after it/);
     });
 
     it('stores an iteration with its runs merged, so a split and a whole spelling are one iteration', async () => {

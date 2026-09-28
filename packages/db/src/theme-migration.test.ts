@@ -304,6 +304,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0034_default_theme_choices',
       '0035_previews',
       '0036_preview_sweep',
+      '0037_iteration_retention',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -975,6 +976,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0034_default_theme_choices',
       '0035_previews',
       '0036_preview_sweep',
+      '0037_iteration_retention',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -1018,6 +1020,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0034_default_theme_choices',
       '0035_previews',
       '0036_preview_sweep',
+      '0037_iteration_retention',
     ]);
 
     const chain = await themeChain(tenant);
@@ -1140,6 +1143,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
       '0034_default_theme_choices',
       '0035_previews',
       '0036_preview_sweep',
+      '0037_iteration_retention',
     ]);
 
     // The theme is at 0.4, under its fixed identifier, unauthored, on top of 0.3; each revised
@@ -1219,6 +1223,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
         '0034_default_theme_choices',
         '0035_previews',
         '0036_preview_sweep',
+        '0037_iteration_retention',
       ]);
 
       // The catalogue is left at the environment's own version, with nothing of the product's on top.
@@ -1262,6 +1267,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
       '0034_default_theme_choices',
       '0035_previews',
       '0036_preview_sweep',
+      '0037_iteration_retention',
     ]);
 
     // The theme is left at the environment's own 0.4, with nothing of the product's on top, and still

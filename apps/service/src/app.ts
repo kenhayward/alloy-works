@@ -41,6 +41,7 @@ import { templateHandlers } from './templates.js';
 import { definitionHandlers } from './definitions.js';
 import { presentationHandlers } from './presentation.js';
 import { searchHandlers } from './search.js';
+import { settingsHandlers } from './settings.js';
 import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
 import { admitGoogleAccount } from './google.js';
@@ -308,6 +309,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...editingHandlers(),
     ...managingAccessHandlers(),
     ...invitationHandlers(),
+    ...settingsHandlers(db, tenantOf),
 
     getHealth: async () => ({ status: 'ok' }),
 

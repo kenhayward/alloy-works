@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.107.0 - 2026-09-28 (PR #296)
+
+### Added
+
+- **Choose how long saved changes are kept.** The changes the editor saves for you as you type, and
+  that you never make into a version, are now kept until the next version of the component is made,
+  and for 30 days after that. An administrator of the environment can set another number of days,
+  from 1 to 365, through the API, and anybody signed in can read it there. Changes that no version
+  has been made after are never removed, however old. They still cannot be got back from the page:
+  that comes next.
+
 ## 0.106.1 - 2026-09-28 (PR #295)
 
 ### Changed

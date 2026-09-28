@@ -739,6 +739,11 @@ describe('routes that check a permission', () => {
       payload: { email: 'ivy@example.com' },
     }),
     withdrawInvitation: () => ({ url: `/v1/invitations/${MISSING}`, status: 403 }),
+    setEditingSettings: () => ({
+      url: '/v1/settings/editing',
+      status: 403,
+      payload: { iterationRetentionDays: 7 },
+    }),
     createAssetUpload: () => ({
       url: `/v1/spaces/${clinical}/asset-uploads`,
       status: 404,

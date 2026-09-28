@@ -189,6 +189,7 @@ const VALID_INPUT: Readonly<
   releaseLock: { query: `session=${SESSION}&openedFrom=${SESSION}` },
   cutVersion: { payload: { session: SESSION, openedFrom: SESSION } },
   invite: { payload: { email: 'ivy@example.com' } },
+  setEditingSettings: { payload: { iterationRetentionDays: 7 } },
   makeGrant: {
     payload: { role: SESSION, subject: { principal: SESSION }, level: 'tenant', effect: 'allow' },
   },

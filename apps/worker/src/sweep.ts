@@ -1,4 +1,4 @@
-import { sweepPreviews, type TenantDatabase } from '@alloy-works/db';
+import { sweepIterations, sweepPreviews, type TenantDatabase } from '@alloy-works/db';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import type { WorkerLog } from './worker.js';
 
@@ -27,6 +27,24 @@ export async function sweepExpiredSignIns(
         .executeTakeFirst();
       return Number(attempts.numDeletedRows + handoffs.numDeletedRows + sessions.numDeletedRows);
     });
+  }
+  return removed;
+}
+
+/**
+ * The iteration sweep (storage-and-versioning.md, VER-003 and VER-004), in every tenant: each iteration
+ * whose component has had the next version cut after the one it was opened from, the tenant's window
+ * ago or more, is deleted by `sweepIterations`, under the trigger that refuses any other. A tenant
+ * whose sweep fails is logged and passed over, and the rest are swept. Answers how many were removed.
+ */
+export async function sweepExpiredIterations(db: TenantDatabase, log: WorkerLog): Promise<number> {
+  let removed = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      removed += await db.withTenant(tenant, (trx) => sweepIterations(trx));
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the iteration sweep failed in a tenant');
+    }
   }
   return removed;
 }

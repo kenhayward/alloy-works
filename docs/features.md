@@ -198,7 +198,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   attribution or a table's note - opens for reading only. There is no control for
   a defined term or a citation, an image cannot be pasted and an equation only from another
   component, changes saved but never made into a version are
-  kept and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
+  kept for a while - see below - and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
   A list stops nesting at thirty levels: every control that would build a level becomes unavailable
   there, and `Tab` moves the focus on. `Backspace` at the start of a definition's term, or `Delete`
   at the end of the definition before it, joins the two definitions into one, the term's words running
@@ -506,6 +506,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Retrying safely through the API.** A request that makes or changes something can carry an
   `Idempotency-Key`; sent again with the same key - after an answer that was lost - it is answered as it
   was the first time, and nothing is made twice. The same key for a different request is refused.
+
+- **How long saved changes are kept, through the API.** Changes saved as you edit and never made into
+  a version are kept until the next version of their component is made, and for the environment's
+  window after that - 30 days unless an administrator of the environment sets another number of days,
+  from 1 to 365, with `PUT /v1/settings/editing`. Anybody signed in can read the window with
+  `GET /v1/settings/editing`. Changes nothing has been made a version after are never removed, however
+  old. Past the window they are removed, and a longer window does not bring back what has gone. No
+  page shows or sets the window, and saved changes cannot yet be got back from the page.
 
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath

@@ -52,6 +52,7 @@ export {
   RoleList,
   RoleListQuery,
 } from './managing-access.js';
+export { EditingSettings } from './settings.js';
 export {
   InvitationBody,
   InvitationList,
