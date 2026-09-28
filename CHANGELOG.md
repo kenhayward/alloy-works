@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.114.0 - 2026-09-28 (PR #309)
+
+### Added
+
+- **Every PDF you publish is checked for accessibility.** Moments after a publication is made, veraPDF
+  checks its PDF against PDF/UA-1, the standard for accessible PDF, and the publication's page says
+  what it found: that it passed, or how many rules it failed, with each rule listed in veraPDF's own
+  words. Until the check has run, the page says the PDF is not yet checked. Publishing is not slowed
+  down by the check, and a check that cannot run is tried again.
+
 ## 0.113.2 - 2026-09-28 (PR #308)
 
 ### Changed

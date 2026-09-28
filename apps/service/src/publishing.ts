@@ -396,6 +396,15 @@ export function publishingHandlers(
                   // bytes open in the browser's own viewer, which is how the publication page shows
                   // them.
                   view: await store.signedLink(output.key, DOWNLOAD_SECONDS),
+                  // What veraPDF found, once the check that follows the recording has run (W14.1).
+                  check: output.check && {
+                    checker: output.check.checker,
+                    checkerVersion: output.check.checkerVersion,
+                    profile: output.check.profile,
+                    compliant: output.check.compliant,
+                    failedRules: output.check.failedRules.map((rule) => ({ ...rule })),
+                    checkedAt: output.check.checkedAt.toISOString(),
+                  },
                 }
               : {
                   ...common,

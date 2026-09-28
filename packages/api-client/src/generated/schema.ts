@@ -9290,6 +9290,29 @@ export interface operations {
                             download: string;
                             /** @description A link to the same bytes, valid for five minutes, that a browser shows rather than saves */
                             view: string;
+                            /** @description What veraPDF found of the PDF against PDF/UA-1; none until it has been checked, which follows the recording */
+                            check: {
+                                /** @constant */
+                                checker: "verapdf";
+                                /** @description veraPDF's own version, as its report names it */
+                                checkerVersion: string;
+                                /**
+                                 * @description The profile it checked against: PDF/UA-1
+                                 * @constant
+                                 */
+                                profile: "ua1";
+                                compliant: boolean;
+                                /** @description Each rule the PDF failed; none where it passed */
+                                failedRules: {
+                                    /** @description The clause of ISO 14289-1 the rule belongs to */
+                                    clause: string;
+                                    /** @description The rule's test within its clause */
+                                    test: number;
+                                    /** @description What the rule asks for, in veraPDF's words */
+                                    description?: string;
+                                }[];
+                                checkedAt: string;
+                            } | null;
                         } | {
                             /** @constant */
                             format: "docx";

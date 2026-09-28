@@ -309,5 +309,87 @@ describe('a publication at its own address', () => {
     expect(within(aside).getByRole('list', { name: 'About the Word document' })).toHaveTextContent(
       'This publication has no PDF, so nothing in it can be cited by page number.',
     );
+    // veraPDF checks a PDF, and a Word document is never said to be checked or not.
+    expect(aside).not.toHaveTextContent(/checked/i);
+  });
+
+  /** A PDF output, checked by veraPDF as given, or not yet. */
+  const checkedPdf = (check: unknown) => ({
+    format: 'pdf',
+    bytes: 30_000,
+    sha256: 'a'.repeat(64),
+    standard: 'ua-1',
+    producer: 'typst',
+    producerVersion: '13',
+    report: [],
+    download: LINK,
+    view: LINK,
+    check,
+  });
+  const check = (compliant: boolean, failedRules: unknown[]) => ({
+    checker: 'verapdf',
+    checkerVersion: '1.30.2',
+    profile: 'ua1',
+    compliant,
+    failedRules,
+    checkedAt: '2026-09-19T09:01:00.000Z',
+  });
+
+  it('says a PDF not yet checked for accessibility is not yet checked', async () => {
+    open(json(200, { ...record, outputs: [checkedPdf(null)] }));
+    const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+
+    expect(within(aside).getByText('Not yet checked for accessibility.')).toBeInTheDocument();
+    expect(within(aside).queryByRole('list', { name: /failed/ })).toBeNull();
+  });
+
+  it("says a PDF veraPDF passed was checked for PDF/UA-1 and passed, naming veraPDF's version", async () => {
+    open(json(200, { ...record, outputs: [checkedPdf(check(true, []))] }));
+    const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+
+    expect(
+      within(aside).getByText('Checked for PDF/UA-1 by veraPDF 1.30.2: passed.'),
+    ).toBeInTheDocument();
+    expect(aside).not.toHaveTextContent('Not yet checked');
+  });
+
+  it("says how many rules a PDF failed and names each, in veraPDF's words where it has them", async () => {
+    open(
+      json(200, {
+        ...record,
+        outputs: [
+          checkedPdf(
+            check(false, [
+              { clause: '5', test: 1, description: 'The PDF/UA identification is missing' },
+              { clause: '7.1', test: 10 },
+            ]),
+          ),
+        ],
+      }),
+    );
+    const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+
+    expect(
+      within(aside).getByText('Checked for PDF/UA-1 by veraPDF 1.30.2: 2 rules failed.'),
+    ).toBeInTheDocument();
+    const rules = within(aside).getByRole('list', { name: 'Rules the PDF failed' });
+    expect(
+      within(rules)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Clause 5, test 1: The PDF/UA identification is missing', 'Clause 7.1, test 10']);
+  });
+
+  it('says one rule failed, not one rules', async () => {
+    open(
+      json(200, {
+        ...record,
+        outputs: [checkedPdf(check(false, [{ clause: '7.1', test: 9 }]))],
+      }),
+    );
+
+    expect(
+      await screen.findByText('Checked for PDF/UA-1 by veraPDF 1.30.2: 1 rule failed.'),
+    ).toBeInTheDocument();
   });
 });

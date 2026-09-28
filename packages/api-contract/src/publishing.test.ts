@@ -36,6 +36,7 @@ const pdf = {
   report: [],
   download: 'https://store/p.pdf',
   view: 'https://store/p',
+  check: null,
 };
 const docx = {
   format: 'docx',
@@ -112,6 +113,32 @@ describe('the publishing contract (Word 1)', () => {
     expect(
       PublicationView.safeParse(viewWith([pdf, { ...docx, report: [{ kind: 'lost' }] }])).success,
     ).toBe(false);
+  });
+
+  it("shows the PDF's check by veraPDF once it has run, none before, and nothing else", () => {
+    const check = {
+      checker: 'verapdf',
+      checkerVersion: '1.30.2',
+      profile: 'ua1',
+      compliant: false,
+      failedRules: [
+        { clause: '5', test: 1, description: 'Identify it' },
+        { clause: '7.1', test: 10 },
+      ],
+      checkedAt: '2026-09-28T10:00:00.000Z',
+    };
+    expect(PublicationView.parse(viewWith([{ ...pdf, check }])).outputs[0]).toMatchObject({
+      check,
+    });
+    expect(PublicationView.parse(viewWith([pdf])).outputs[0]).toMatchObject({ check: null });
+    // Only veraPDF against PDF/UA-1, each rule by its clause and test.
+    for (const wrong of [
+      { ...check, checker: 'pdfbox' },
+      { ...check, profile: 'ua2' },
+      { ...check, failedRules: [{ clause: '5' }] },
+    ]) {
+      expect(PublicationView.safeParse(viewWith([{ ...pdf, check: wrong }])).success).toBe(false);
+    }
   });
 
   it('shows a Word-only publication with no PDF engine or template', () => {

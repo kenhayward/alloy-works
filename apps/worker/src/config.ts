@@ -2,6 +2,7 @@ import { hostname } from 'node:os';
 import type { StoreSettings } from '@alloy-works/objects';
 import { z } from 'zod';
 import { typstBinaryPath } from './typst.js';
+import { VERAPDF_COMMAND } from './verapdf.js';
 
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
 export type LogLevel = (typeof LOG_LEVELS)[number];
@@ -12,6 +13,8 @@ export interface WorkerConfig {
   /** The key that opens each tenant's sealed store secret. 32 bytes. */
   readonly objectStoreKey: Buffer;
   readonly typstBinary: string;
+  /** veraPDF's launcher, which the worker keeps warm to check each publication's PDF (W14.1). */
+  readonly verapdfCommand: string;
   readonly workerId: string;
   readonly pollIntervalMs: number;
   readonly leaseMs: number;
@@ -36,6 +39,7 @@ const Environment = z.object({
       error: 'must be 32 bytes of base64',
     }),
   TYPST_BINARY: z.string().min(1).optional(),
+  VERAPDF_COMMAND: z.string().min(1).optional(),
   WORKER_ID: z.string().min(1).optional(),
   POLL_INTERVAL_MS: z.coerce.number().int().min(100).default(5000),
   LEASE_MS: z.coerce.number().int().min(1000).default(120_000),
@@ -62,6 +66,7 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
     },
     objectStoreKey: Buffer.from(data.SECRET_OBJECT_STORE_KEY, 'base64'),
     typstBinary: data.TYPST_BINARY ?? typstBinaryPath(),
+    verapdfCommand: data.VERAPDF_COMMAND ?? VERAPDF_COMMAND,
     workerId: data.WORKER_ID ?? `${hostname()}-${process.pid}`,
     pollIntervalMs: data.POLL_INTERVAL_MS,
     leaseMs: data.LEASE_MS,
@@ -78,6 +83,7 @@ export function describeWorkerConfig(config: WorkerConfig): Record<string, strin
     databaseUrl: database.toString(),
     objectStore: `${config.objectStore.endpoint}/${config.objectStore.bucket}`,
     typstBinary: config.typstBinary,
+    verapdfCommand: config.verapdfCommand,
     workerId: config.workerId,
     pollIntervalMs: config.pollIntervalMs,
     leaseMs: config.leaseMs,

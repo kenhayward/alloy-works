@@ -6,6 +6,14 @@
 #
 # Debian rather than Alpine: glibc is the surface native modules are built against, and image size is
 # not what matters for a system that ships as a compose file.
+
+# veraPDF, the checker every publication's PDF is checked by (W14.1, decision W-A), pinned by digest:
+# the image the worker's suite checks with (apps/worker/src/testing/verapdf-server.ts), which
+# apps/worker/src/image.test.ts holds this equal to. The worker stage copies veraPDF and its Java
+# runtime out of it. It is published for x86-64 alone, and so is what is copied.
+ARG VERAPDF_IMAGE=verapdf/cli@sha256:d5ee329657cf9bc4b2400392dd54c7d0a0ce9980ff6fa2da5590eebeec007cdb
+FROM ${VERAPDF_IMAGE} AS verapdf
+
 FROM node:24-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH ELECTRON_SKIP_BINARY_DOWNLOAD=1
 RUN corepack enable
@@ -89,6 +97,14 @@ RUN apt-get update \
  && rm -rf /tmp/typst.tar.xz "/tmp/typst-${arch}-unknown-linux-musl" \
  && apt-get purge -y curl xz-utils && apt-get autoremove -y \
  && typst --version
+# veraPDF and the Java runtime its image ships, which the worker keeps warm as a child of its own
+# (src/verapdf.ts). That image is Alpine, so its runtime is built against musl: musl's loader comes
+# with it, beside glibc, and is all the runtime needs - its other libraries are its own.
+COPY --from=verapdf /opt/verapdf /opt/verapdf
+COPY --from=verapdf /opt/java/openjdk /opt/java/openjdk
+COPY --from=verapdf /lib/ld-musl-x86_64.so.1 /lib/libc.musl-x86_64.so.1 /lib/
+ENV JAVA_HOME=/opt/java/openjdk
+RUN /opt/verapdf/verapdf --version
 WORKDIR /app
 COPY --from=build --chown=node:node /prod/worker ./
 USER node

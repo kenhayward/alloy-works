@@ -476,6 +476,12 @@ publication, and the image is fetched once per machine:
 pnpm --filter @alloy-works/worker fetch-verapdf   # verapdf/cli, pulled by digest, needs Docker running
 ```
 
+The worker checks every publication's PDF with veraPDF after recording it, running
+`/opt/verapdf/verapdf`, where the worker image holds it with its Java runtime. Run from source, a worker
+has no veraPDF there unless one is installed and `VERAPDF_COMMAND` in `deploy/worker.env` names its
+launcher: without one, each check is tried three times and given up, and the publication's page says
+it is not yet checked. The worker in the compose stack checks every publication.
+
 The worker runs every publish, too: with it stopped, a document asked to publish stays queued (see the
 publishing steps under [The service](#the-service)). With the service signed in to (above), ask for a
 sample and follow it. The worker picks the job up within a second or two, and the answer then carries

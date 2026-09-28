@@ -22068,6 +22068,73 @@
                               "view": {
                                 "type": "string",
                                 "description": "A link to the same bytes, valid for five minutes, that a browser shows rather than saves"
+                              },
+                              "check": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "checker": {
+                                        "type": "string",
+                                        "const": "verapdf"
+                                      },
+                                      "checkerVersion": {
+                                        "type": "string",
+                                        "description": "veraPDF's own version, as its report names it"
+                                      },
+                                      "profile": {
+                                        "type": "string",
+                                        "const": "ua1",
+                                        "description": "The profile it checked against: PDF/UA-1"
+                                      },
+                                      "compliant": {
+                                        "type": "boolean"
+                                      },
+                                      "failedRules": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "clause": {
+                                              "type": "string",
+                                              "description": "The clause of ISO 14289-1 the rule belongs to"
+                                            },
+                                            "test": {
+                                              "type": "integer",
+                                              "minimum": -9007199254740991,
+                                              "maximum": 9007199254740991,
+                                              "description": "The rule's test within its clause"
+                                            },
+                                            "description": {
+                                              "description": "What the rule asks for, in veraPDF's words",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "clause",
+                                            "test"
+                                          ]
+                                        },
+                                        "description": "Each rule the PDF failed; none where it passed"
+                                      },
+                                      "checkedAt": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "checker",
+                                      "checkerVersion",
+                                      "profile",
+                                      "compliant",
+                                      "failedRules",
+                                      "checkedAt"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "What veraPDF found of the PDF against PDF/UA-1; none until it has been checked, which follows the recording"
                               }
                             },
                             "required": [
@@ -22079,7 +22146,8 @@
                               "producerVersion",
                               "report",
                               "download",
-                              "view"
+                              "view",
+                              "check"
                             ]
                           },
                           {

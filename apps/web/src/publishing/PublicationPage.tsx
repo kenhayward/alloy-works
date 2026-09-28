@@ -22,6 +22,22 @@ interface Output {
   readonly producerVersion: string | null;
   /** What Word could not carry; always empty for the PDF. */
   readonly report: readonly ReportEntry[];
+  /** What veraPDF found of the PDF, once checked; none before, and never any for Word. */
+  readonly check: Check | null;
+}
+
+/** One rule the PDF failed, as veraPDF numbers it, with its words where it has them. */
+interface FailedRule {
+  readonly clause: string;
+  readonly test: number;
+  readonly description: string | null;
+}
+
+/** veraPDF's verdict on the PDF against PDF/UA-1, which joins a publication after it is recorded. */
+interface Check {
+  readonly checkerVersion: string;
+  readonly compliant: boolean;
+  readonly failedRules: readonly FailedRule[];
 }
 
 interface Shown {
@@ -39,6 +55,35 @@ interface Shown {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+/** A PDF's check, member by member; anything else, an older service's answer among it, is none. */
+function checkIn(value: unknown): Check | null {
+  if (!isRecord(value) || typeof value.checkerVersion !== 'string') return null;
+  if (typeof value.compliant !== 'boolean' || !Array.isArray(value.failedRules)) return null;
+  return {
+    checkerVersion: value.checkerVersion,
+    compliant: value.compliant,
+    failedRules: value.failedRules.flatMap((rule): FailedRule[] =>
+      isRecord(rule) && typeof rule.clause === 'string' && typeof rule.test === 'number'
+        ? [
+            {
+              clause: rule.clause,
+              test: rule.test,
+              description: typeof rule.description === 'string' ? rule.description : null,
+            },
+          ]
+        : [],
+    ),
+  };
+}
+
+/** What the check found, in one sentence: passed, or how many rules failed. */
+function checkWords(check: Check): string {
+  const found = check.compliant
+    ? 'passed'
+    : `${check.failedRules.length} ${check.failedRules.length === 1 ? 'rule' : 'rules'} failed`;
+  return `Checked for PDF/UA-1 by veraPDF ${check.checkerVersion}: ${found}.`;
 }
 
 /** A `PublicationView`, checked member by member: the client's bodies are `any`. */
@@ -68,6 +113,7 @@ function shownIn(data: unknown): Shown | undefined {
             bytes: typeof each.bytes === 'number' ? each.bytes : null,
             producerVersion: typeof each.producerVersion === 'string' ? each.producerVersion : null,
             report: each.format === 'docx' ? reportIn(each.report) : [],
+            check: each.format === 'pdf' ? checkIn(each.check) : null,
           },
         ]
       : [],
@@ -173,6 +219,20 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           <p>
             Made with Typst {shown.engine} and publication template {shown.template}.
           </p>
+        )}
+        {/* Checked by veraPDF after it was recorded (W14.1, ADR-0030): until then, it says so. */}
+        {pdf !== undefined && (
+          <p>{pdf.check === null ? 'Not yet checked for accessibility.' : checkWords(pdf.check)}</p>
+        )}
+        {pdf?.check != null && pdf.check.failedRules.length > 0 && (
+          <ul aria-label="Rules the PDF failed">
+            {pdf.check.failedRules.map((rule) => (
+              <li key={`${rule.clause}-${rule.test}`}>
+                Clause {rule.clause}, test {rule.test}
+                {rule.description !== null && `: ${rule.description}`}
+              </li>
+            ))}
+          </ul>
         )}
         {/* The writer's version as the template's is named, a number: the store's `word/1` names the
             producer too, which the sentence already does (the final review of Word 1, M7). */}

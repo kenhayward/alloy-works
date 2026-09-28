@@ -10,6 +10,7 @@ import {
   migrate,
   recordPreview,
   recordPublication,
+  recordPublicationCheck,
   removeGrant,
   seedDevelopmentContent,
   type Tenant,
@@ -795,6 +796,8 @@ describe('publishing a document through the service', () => {
         report: [],
         download: expect.any(String),
         view: expect.any(String),
+        // Not yet checked by veraPDF: the check joins a publication after it is recorded (ADR-0030).
+        check: null,
       },
       {
         format: 'docx',
@@ -814,6 +817,39 @@ describe('publishing a document through the service', () => {
     expect(word.headers.get('content-disposition')).toBe(`attachment; filename="${id}.docx"`);
     expect(word.headers.get('content-type')).toBe(OUTPUT_CONTENT_TYPES.docx);
     expect(await word.text()).toBe('PK a stand-in');
+  });
+
+  it('opens a publication with what veraPDF found of its PDF once it is checked, and none before', async () => {
+    const id = await published(await requested('grace', await documentReferencing([])));
+    const pdfOf = async () =>
+      (await call('alice', 'GET', `/v1/publications/${id}`)).json<{
+        outputs: { format: string; check: unknown }[];
+      }>().outputs[0]!;
+    expect(await pdfOf()).toMatchObject({ format: 'pdf', check: null });
+
+    await tenantDb.withTenant(tenant, (trx) =>
+      recordPublicationCheck(trx, {
+        publicationId: id,
+        checkerVersion: '1.30.2',
+        compliant: false,
+        failedRules: [
+          { clause: '5', test: 1, description: 'The PDF/UA identification is missing' },
+          { clause: '7.1', test: 10 },
+        ],
+      }),
+    );
+
+    expect((await pdfOf()).check).toEqual({
+      checker: 'verapdf',
+      checkerVersion: '1.30.2',
+      profile: 'ua1',
+      compliant: false,
+      failedRules: [
+        { clause: '5', test: 1, description: 'The PDF/UA identification is missing' },
+        { clause: '7.1', test: 10 },
+      ],
+      checkedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+    });
   });
 
   it('opens a Word-only publication with no PDF engine or template', async () => {

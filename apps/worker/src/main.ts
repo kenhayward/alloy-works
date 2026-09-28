@@ -6,11 +6,13 @@ import pg from 'pg';
 import pino from 'pino';
 import { describeWorkerConfig, loadWorkerConfig } from './config.js';
 import { loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
+import { checkJob } from './jobs/check.js';
 import { ingestJob } from './jobs/ingest.js';
 import { publishJob } from './jobs/publish.js';
 import { sampleJob } from './jobs/sample.js';
 import { sweepExpiredIterations, sweepExpiredPreviews, sweepExpiredSignIns } from './sweep.js';
 import { createTypst } from './typst.js';
+import { startLocalVeraPdf } from './verapdf.js';
 import { processNext, type JobHandler } from './worker.js';
 
 const config = loadWorkerConfig(process.env);
@@ -23,11 +25,14 @@ const stores = createObjectStores(config.objectStore, config.objectStoreKey);
 const typst = createTypst({ binary: config.typstBinary, fonts });
 // A preview is the publish handler's too, which reads which it is from the request (W10.1).
 const publish = publishJob({ db, stores, typst, fonts });
+// One veraPDF for this worker, started on the first check and kept warm (W14.1, W-A).
+const checker = startLocalVeraPdf({ command: config.verapdfCommand });
 const handlers: Record<string, JobHandler> = {
   sample_pdf: sampleJob({ db, stores, typst }),
   publish,
   preview: publish,
   ingest: ingestJob({ db, stores }),
+  check_pdf: checkJob({ db, stores, checker }),
 };
 
 // A connection of its own, held open: NOTIFY wakes the worker between polls.
@@ -58,6 +63,7 @@ const stop = async (signal: string) => {
   clearInterval(sweep);
   log.info({ signal }, 'stopping');
   await listener.end();
+  await checker.close();
   await queue.close();
   await db.close();
 };

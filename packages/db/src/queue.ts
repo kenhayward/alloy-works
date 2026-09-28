@@ -5,9 +5,10 @@ import type { PlatformTables, TenantTransaction } from './tables.js';
 /**
  * The kinds of work there are. A worker refuses a kind it does not know. A `preview` is a publish
  * request of kind preview, run by the publish handler, and a kind of its own so a deployment can give
- * previews workers of their own (publishing.md, "Preview").
+ * previews workers of their own (publishing.md, "Preview"). A `check_pdf` is veraPDF over a recorded
+ * publication's PDF, its subject the publication, queued as the publication is recorded (W14.1, W-B).
  */
-export type JobKind = 'sample_pdf' | 'publish' | 'preview' | 'ingest';
+export type JobKind = 'sample_pdf' | 'publish' | 'preview' | 'ingest' | 'check_pdf';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {

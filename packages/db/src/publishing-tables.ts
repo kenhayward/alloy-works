@@ -125,3 +125,19 @@ export interface PublicationOutputTable {
   /** An `OutputReport`, JSONB in as the text of a JSON document: a PDF's is empty. */
   report: ColumnType<unknown, string, never>;
 }
+
+/**
+ * What veraPDF found of a publication's PDF, checked after the publication was recorded (0040; W-C):
+ * insert-only, one per PDF output, and timed by the database.
+ */
+export interface PublicationCheckTable {
+  publication_id: ColumnType<string, string, never>;
+  format: ColumnType<'pdf', 'pdf', never>;
+  checker: ColumnType<'verapdf', 'verapdf', never>;
+  checker_version: ColumnType<string, string, never>;
+  profile: ColumnType<'ua1', 'ua1', never>;
+  compliant: ColumnType<boolean, boolean, never>;
+  /** Each failed rule, `{ clause, test, description? }`, JSONB in as the text of a JSON document. */
+  failed_rules: ColumnType<unknown, string, never>;
+  checked_at: ColumnType<Date, never, never>;
+}

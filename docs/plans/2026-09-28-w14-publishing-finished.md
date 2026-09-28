@@ -65,6 +65,31 @@ last of the editor's T1 features, a spelling checker in the desktop app and a sy
 5. Tests: PUB-091 (a publication's PDF checked and its report kept; a failing PDF's rules named); the
    check re-queued when a worker dies after recording.
 
+**W14.1, as built.** Migration 0040 adds `publication_check`, keyed to the PDF output it checked (so it
+names only a PDF the publication has, and goes with it) as well as to the publication, insert-only for
+the runtime role by its found columns alone, `checked_at` the database's, `failed_rules` held to its
+shape and to 200 entries, and a compliant check holding none. `recordPublication` queues `check_pdf`,
+subject the publication, inside its savepoint, for a publication with a PDF; `publicationToCheck`,
+`recordPublicationCheck` (answering `recorded` or `already`) and `readPublication`'s `check` on each
+output read and write it. The worker's `src/verapdf.ts` now holds the server-mode protocol,
+`startServerMode`, over a `ServerModeHost` - how the process starts, how a PDF reaches it and a report
+comes back, and what it leaves - with `verdictOf`, which reads veraPDF's version from its own report
+and each failed rule with its words; the suite's warm veraPDF (`testing/verapdf-server.ts`) is a Docker
+host over it, and the worker's, `startLocalVeraPdf`, a child process whose reports are held to a
+`java.io.tmpdir` of its own, started again after it dies. The seam the job sees is `Checker`, a
+`check(pdf)` answering a verdict; `check.test.ts` gives the job the suite's (`suiteChecker`), and
+`verapdf.test.ts` drives the local one against a stand-in veraPDF run by Node, since no Java runtime is
+on a developer's machine or CI's. Two things were found by inspecting the pinned image rather than
+assumed: it is Alpine, so its Java runtime is built against musl, and the worker stage copies musl's
+loader beside it, which is all it needs; and it is published for x86-64 alone, so the worker image's
+veraPDF is too. The image's `VERAPDF_IMAGE` build argument is the one place its digest is written in
+`deploy/`, and `image.test.ts` holds it equal to the suite's. The worker image grew by about 73 MB, and
+in it a cold check took under a second and a warm one about twenty milliseconds. The suites that
+publish and then take the next job (`publish.test.ts`, `themes.test.ts`) run each check they meet and
+pass over it (`testing/work.ts`), since every publication now queues one ahead of the next job. After
+the last attempt a check that never ran leaves its publication saying it is not yet checked; nothing
+retries it later, which is worth a decision if it is ever seen.
+
 ## W14.2: Six levels, and the budget
 
 1. `assemble` refuses a heading deeper than six for PDF, `heading_too_deep`, naming the section.

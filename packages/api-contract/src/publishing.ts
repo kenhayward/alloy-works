@@ -161,6 +161,24 @@ const download = z
   .string()
   .describe('A link to the bytes, valid for five minutes, named by the publication id and format');
 
+/** What veraPDF found of a publication's PDF, checked after the publication was recorded (W14.1). */
+const PdfCheckView = z.object({
+  checker: z.literal('verapdf'),
+  checkerVersion: z.string().describe("veraPDF's own version, as its report names it"),
+  profile: z.literal('ua1').describe('The profile it checked against: PDF/UA-1'),
+  compliant: z.boolean(),
+  failedRules: z
+    .array(
+      z.object({
+        clause: z.string().describe('The clause of ISO 14289-1 the rule belongs to'),
+        test: z.number().int().describe("The rule's test within its clause"),
+        description: z.string().optional().describe("What the rule asks for, in veraPDF's words"),
+      }),
+    )
+    .describe('Each rule the PDF failed; none where it passed'),
+  checkedAt: z.string(),
+});
+
 /** A PDF: PDF/UA-1, made by Typst under the publication's template, with nothing to report. */
 const PdfOutputView = z.object({
   format: z.literal('pdf'),
@@ -176,6 +194,9 @@ const PdfOutputView = z.object({
     .describe(
       'A link to the same bytes, valid for five minutes, that a browser shows rather than saves',
     ),
+  check: PdfCheckView.nullable().describe(
+    'What veraPDF found of the PDF against PDF/UA-1; none until it has been checked, which follows the recording',
+  ),
 });
 
 /** A Word document: no PDF standard, made by the Word writer, and what it could not carry. */

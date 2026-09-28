@@ -15731,7 +15731,7 @@
         },
         {
           "id": "PUB-091",
-          "howItIsMet": "veraPDF checks every PDF in the worker against its PDF/UA-1 profile; its report is stored as an object and referenced from the publication's output row"
+          "howItIsMet": "veraPDF checks every PDF in the worker against its PDF/UA-1 profile, after the publication is recorded (ADR-0030), by a `check_pdf` job queued in the transaction that records it; its report - veraPDF's version, the profile, compliant or not, and each rule failed with veraPDF's words for it - is kept beside the publication in `publication_check`, one row per PDF output, insert-only, and shown on its page (W14.1)"
         },
         {
           "id": "PUB-037",
@@ -17266,43 +17266,43 @@
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 420,
+      "line": 421,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 355,
+      "line": 356,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 448,
+      "line": 449,
       "kind": "rule"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 656,
+      "line": 657,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 598,
+      "line": 599,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 537,
+      "line": 538,
       "kind": "rule"
     },
     {
       "id": "PUB-095",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 465,
+      "line": 466,
       "kind": "rule"
     },
     {
@@ -17804,6 +17804,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-091",
+      "file": "apps/worker/src/check.test.ts",
+      "line": 301,
+      "kind": "title"
+    },
+    {
       "id": "CNT-080",
       "file": "apps/worker/src/equations.test.ts",
       "line": 426,
@@ -17920,73 +17926,73 @@
     {
       "id": "PUB-005",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 416,
+      "line": 422,
       "kind": "title"
     },
     {
       "id": "PUB-006",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 458,
+      "line": 464,
       "kind": "title"
     },
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 351,
+      "line": 357,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 737,
+      "line": 743,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 555,
+      "line": 561,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 571,
+      "line": 577,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 576,
+      "line": 582,
       "kind": "title"
     },
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1235,
+      "line": 1241,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1154,
+      "line": 1160,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 755,
+      "line": 761,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 365,
+      "line": 371,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 682,
+      "line": 688,
       "kind": "title"
     },
     {
@@ -18064,43 +18070,43 @@
     {
       "id": "PUB-019",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1539,
+      "line": 1545,
       "kind": "title"
     },
     {
       "id": "PUB-069",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1130,
+      "line": 1132,
       "kind": "title"
     },
     {
       "id": "STY-008",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 489,
+      "line": 491,
       "kind": "title"
     },
     {
       "id": "STY-009",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 776,
+      "line": 778,
       "kind": "title"
     },
     {
       "id": "STY-010",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 869,
+      "line": 871,
       "kind": "title"
     },
     {
       "id": "STY-042",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1539,
+      "line": 1545,
       "kind": "title"
     },
     {
       "id": "STY-074",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1215,
+      "line": 1217,
       "kind": "title"
     },
     {
@@ -18364,25 +18370,25 @@
     {
       "id": "PUB-014",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 330,
+      "line": 331,
       "kind": "title"
     },
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 948,
+      "line": 949,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 422,
+      "line": 423,
       "kind": "title"
     },
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 813,
+      "line": 814,
       "kind": "title"
     },
     {
