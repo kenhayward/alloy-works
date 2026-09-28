@@ -116,8 +116,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   Undo reaches back within what you have done since the last version, and a reload keeps it: reload
   the page while you are editing and what you typed is there as you left it, undo and redo reach as far
   as they did, and anything not yet saved is saved. If somebody else has started editing it meanwhile,
-  what you typed is kept below for you to copy instead; if a version has been made since, it is not
-  brought back, and **Recover** has what was saved of it. Pasting is refused rather than
+  anything not yet saved is kept below for you to copy instead; if a version has been made since, it is
+  not brought back, and **Recover** has what was saved of it. A copy of the tab, or a reload after
+  newer text was saved from another tab, never saves over that newer text: what you had is kept below
+  for you to copy, with **Continue** and **Recover** where the reload found newer text. Signing out
+  forgets it all, so nobody signing in on the same tab after you is given it. Pasting is refused rather than
   put in unexamined. A pause longer than fifteen minutes lets somebody else start editing, but if
   nobody has, your next change carries on where you left off. If you are signed out, the page says so
   and keeps what was not saved, and your next change after signing in again saves it; if you may no

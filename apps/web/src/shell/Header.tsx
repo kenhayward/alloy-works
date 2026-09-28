@@ -2,6 +2,7 @@ import { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Administration } from '../admin/Administration.js';
+import { forgetEditing } from '../editor/editing-storage.js';
 import { THEMES } from '../theme/themes.js';
 import styles from './Header.module.css';
 import type { ModuleName } from './moduleOf.js';
@@ -123,6 +124,9 @@ export function Header({
   }, [client]);
 
   const signOut = async () => {
+    // What the editor keeps in this window for a reload is the author's alone: nobody who signs in
+    // on the same tab after them is given it (final review of W11.3, D2).
+    forgetEditing();
     await client.POST('/v1/sign-out');
     onSignedOut();
   };

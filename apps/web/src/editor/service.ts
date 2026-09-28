@@ -59,6 +59,20 @@ function holdSession(componentId: string, id: string, storage?: SessionStorage):
 }
 
 /**
+ * The session id this window keeps for a component, or null where it keeps none that is one: what the
+ * component's `GET` names, so the service answers where that session's sequence stands whichever way
+ * the page then goes on (final review of W11.3, D3).
+ */
+export function storedSessionId(componentId: string, storage?: Pick<Storage, 'getItem'>) {
+  try {
+    const kept = (storage ?? globalThis.sessionStorage).getItem(storageKeyFor(componentId));
+    return kept !== null && LOWERCASE_UUID.test(kept) ? kept : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * The editing session's identity for one component in this window: kept in session storage, so a
  * reload of the same tab is the same session, while another window is another session
  * (component-editor.md, "Two windows, one author"; decision 14). Storage that is unavailable, or holds

@@ -84,6 +84,26 @@ describe('the header band', () => {
     expect(posted).toEqual(['/v1/sign-out']);
   });
 
+  it('forgets everything kept in this window for editing as it signs out, so nobody signing in after is given it', async () => {
+    const component = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
+    sessionStorage.setItem(`alloy-works:editing-steps:${component}`, '{"kept":true}');
+    sessionStorage.setItem(
+      `alloy-works:editing-session:${component}`,
+      '1b2c3d4e-5f60-4718-8a9b-0c1d2e3f4a5b',
+    );
+    sessionStorage.setItem('alloy-works:pane-width', '320');
+    const signedOutNow = vi.fn();
+    render(<Header module="Components" fetch={serviceThat(signedIn)} onSignedOut={signedOutNow} />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+
+    await waitFor(() => expect(signedOutNow).toHaveBeenCalled());
+    expect(sessionStorage.getItem(`alloy-works:editing-steps:${component}`)).toBeNull();
+    expect(sessionStorage.getItem(`alloy-works:editing-session:${component}`)).toBeNull();
+    expect(sessionStorage.getItem('alloy-works:pane-width')).toBe('320');
+  });
+
   it('returns to Home from the mark, which opens no menu', () => {
     render(<Header module="Components" fetch={serviceThat(signedIn)} />);
 

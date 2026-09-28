@@ -1,12 +1,20 @@
 import { splitBlock } from 'prosemirror-commands';
 import { redo, redoDepth, undo, undoDepth } from 'prosemirror-history';
-import type { Node } from 'prosemirror-model';
+import { Schema, type Node } from 'prosemirror-model';
 import { Selection, type EditorState, type Transaction } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
 
 import { setTitle } from './header.js';
 import { toEditor } from './mapping.js';
-import { recordChange, replayChanges, type RecordedChange } from './replay.js';
+import {
+  mergeChange,
+  recordChange,
+  replayChanges,
+  replayPlain,
+  schemaIdentity,
+  type RecordedChange,
+} from './replay.js';
+import { editorSchema } from './schema.js';
 import { createEditorState } from './state.js';
 
 const counter = (prefix = 'n') => {
@@ -219,5 +227,114 @@ describe('replaying a session after a reload (component-editor.md, "Undo across 
     const [first, second] = live.records;
     expect(second?.history).toBe('join');
     expect(() => replayed(opened, [first!, { ...second!, history: 'undo' }])).toThrow();
+  });
+});
+
+/** Folds each change into the one before it wherever `mergeChange` takes it, as the recorder does. */
+function merged(records: readonly RecordedChange[]): RecordedChange[] {
+  const out: RecordedChange[] = [];
+  for (const each of records) {
+    const last = out.at(-1);
+    const joined = last === undefined ? null : mergeChange(last, each);
+    if (joined === null) out.push(each);
+    else out[out.length - 1] = JSON.parse(JSON.stringify(joined)) as RecordedChange;
+  }
+  return out;
+}
+
+describe('keeping a run of typing small (final review of W11.3, D4)', () => {
+  it('merges a run of typing into one change, which replays into the same document and history', () => {
+    const opened = docOf([['b1', 'Unbox the printer.']]);
+    const live = surface(opened);
+    live.type(' M', 19, 1_000);
+    live.type('i', 21, 1_050);
+    live.type('nd', 22, 1_100);
+    live.type(' Then.', 24, 9_000);
+    live.type(' Go', 30, 9_050);
+    const run = merged(live.records);
+    expect(run.map((change) => change.history)).toEqual(['new', 'new']);
+
+    const again = replayed(opened, run);
+    expect(again.doc.eq(live.state.doc)).toBe(true);
+    expect(undoDepth(again)).toBe(2);
+    expect(undoAll(again)).toEqual(undoAll(live.state));
+  });
+
+  it('replays an undo and a redo of a merged run exactly as the history made them', () => {
+    const opened = docOf([['b1', 'Unbox the printer.']]);
+    const live = surface(opened);
+    live.type(' Mind', 19, 1_000);
+    live.type(' the', 24, 1_050);
+    live.type(' cable.', 28, 1_100);
+    live.run(undo);
+    live.run(redo);
+    live.run(undo);
+    const run = merged(live.records);
+    expect(run.map((change) => change.history)).toEqual(['new', 'undo', 'redo', 'undo']);
+
+    const again = replayed(opened, run);
+    expect(again.doc.eq(live.state.doc)).toBe(true);
+    let redone = again;
+    redo(again, (tr) => (redone = again.apply(tr)));
+    expect(texts(redone.doc)).toEqual(['Unbox the printer. Mind the cable.']);
+  });
+
+  it('merges nothing but a join of one step onto one step', () => {
+    const opened = docOf([['b1', 'Unbox the printer.']]);
+    const live = surface(opened);
+    live.type(' Mind', 19, 1_000);
+    // A new event, a second later.
+    live.type(' the', 24, 2_500);
+    // A block split, whose identifier the plugins append.
+    live.caret(live.state.doc.content.size - 1);
+    live.run(splitBlock);
+    live.type('Go', live.state.doc.content.size - 1, 2_600);
+    const [first, second, split, typed] = live.records;
+    expect(mergeChange(first!, second!)).toBeNull();
+    expect(split!.transactions.length).toBeGreaterThan(1);
+    expect(mergeChange(split!, typed!)).toBeNull();
+    expect(mergeChange(second!, split!)).toBeNull();
+  });
+});
+
+describe('what a record says, where it will not replay (final review of W11.3, D5)', () => {
+  it('applies every change it keeps, undo and redo among them, with no history', () => {
+    const opened = docOf([['b1', 'Unbox the printer.']]);
+    const live = surface(opened);
+    live.type(' Mind the cable.', 19, 1_000);
+    live.type(' Keep the box.', 35, 3_000);
+    live.run(undo);
+    // Its grouping broken, so the history will not replay it; the steps still do.
+    const broken = live.records.map((change) => ({ ...change, history: 'none' as const }));
+    expect(() => replayed(opened, broken)).toThrow();
+    expect(replayPlain(opened, broken).eq(live.state.doc)).toBe(true);
+  });
+
+  it('refuses steps that do not apply to the document it is given', () => {
+    const live = surface(docOf([['b1', 'Unbox the printer.']]));
+    live.type(' Mind the cable.', 19, 1_000);
+    expect(() => replayPlain(docOf([['b1', 'Unbox']]), live.records)).toThrow();
+  });
+});
+
+describe("the model's identity, which a kept record is stamped with (final review of W11.3, D5)", () => {
+  const spec = (attrs: Record<string, { default: unknown }>) =>
+    new Schema({
+      nodes: {
+        doc: { content: 'paragraph+' },
+        paragraph: { content: 'text*', attrs },
+        text: {},
+      },
+      marks: { strong: {} },
+    });
+
+  it('is the same for the same model, and differs where a node, a mark or an attribute does', () => {
+    expect(schemaIdentity(editorSchema)).toBe(schemaIdentity(editorSchema));
+    const plain = schemaIdentity(spec({ id: { default: null } }));
+    expect(schemaIdentity(spec({ id: { default: null } }))).toBe(plain);
+    expect(schemaIdentity(spec({ id: { default: null }, style: { default: null } }))).not.toBe(
+      plain,
+    );
+    expect(schemaIdentity(editorSchema)).not.toBe(plain);
   });
 });

@@ -6,12 +6,16 @@ import {
 } from '@alloy-works/editor';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import type { Clock } from './session.js';
 import {
   continuing,
   createRecorder,
   freshSession,
+  readKept,
   readStoredSession,
   replayStored,
+  sentFor,
+  textOfKept,
   type StoredSession,
 } from './stored-session.js';
 
@@ -19,6 +23,62 @@ const COMPONENT = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
 const SESSION = '1b2c3d4e-5f60-4718-8a9b-0c1d2e3f4a5b';
 const OTHER = '5c4b3a29-1807-4f6e-9d5c-4b3a29180706';
 const KEY = `alloy-works:editing-steps:${COMPONENT}`;
+const ADA = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
+const GRACE = 'f1e2d3c4-b5a6-4978-8899-aabbccddeeff';
+const ANOTHER = '9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a';
+
+type Store = Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'>;
+
+/** Storage held in a map, as a hand-written fake: `limit` is how many characters it takes in all. */
+function storageOf(
+  limit = Infinity,
+  held = new Map<string, string>(),
+): Store & { held: Map<string, string> } {
+  const size = () => [...held].reduce((sum, [key, value]) => sum + key.length + value.length, 0);
+  return {
+    held,
+    getItem: (key) => held.get(key) ?? null,
+    setItem: (key, value) => {
+      const without = size() - (held.has(key) ? key.length + held.get(key)!.length : 0);
+      if (without + key.length + value.length > limit) {
+        throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+      }
+      held.set(key, value);
+    },
+    removeItem: (key) => void held.delete(key),
+    key: (index) => [...held.keys()][index] ?? null,
+    get length() {
+      return held.size;
+    },
+  };
+}
+
+/** Time a test moves by hand. */
+function clockOf() {
+  let now = 0;
+  const due: { at: number; run: () => void; handle: number }[] = [];
+  let handles = 0;
+  const clock: Clock = {
+    now: () => now,
+    setTimeout: (run, ms) => {
+      handles += 1;
+      due.push({ at: now + ms, run, handle: handles });
+      return handles;
+    },
+    clearTimeout: (handle) => {
+      const at = due.findIndex((each) => each.handle === handle);
+      if (at !== -1) due.splice(at, 1);
+    },
+  };
+  const advance = (ms: number) => {
+    now += ms;
+    for (const each of due.filter((one) => one.at <= now)) {
+      due.splice(due.indexOf(each), 1);
+      each.run();
+    }
+  };
+  return { clock, advance };
+}
 
 const counter = () => {
   let next = 0;
@@ -46,14 +106,27 @@ function opened(text = 'Unbox the printer.') {
 
 const fresh = (doc: EditorState['doc']) => createEditorState({ doc, newIdentifier: counter() });
 
-/** A surface with a recorder on it, as the component editor runs one. */
-function recording(storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> = sessionStorage) {
+/**
+ * A surface with a recorder on it, as the component editor runs one; writing at once unless a clock
+ * and a delay are given.
+ */
+function recording(
+  storage: Store = sessionStorage,
+  timing: { clock?: Clock; delayMs?: number } = { delayMs: 0 },
+) {
   const doc = opened();
   let state = fresh(doc);
   const recorder = createRecorder(
     COMPONENT,
-    freshSession({ session: SESSION, version: 'v1', doc, values: { code: 'A1' }, sequence: 0 }),
-    storage,
+    freshSession({
+      principal: ADA,
+      session: SESSION,
+      version: 'v1',
+      doc,
+      values: { code: 'A1' },
+      sequence: 0,
+    }),
+    { storage, ...timing },
   );
   const apply = (tr: Transaction) => {
     const before = state;
@@ -92,15 +165,18 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
 
     const kept = readStoredSession(COMPONENT)!;
     expect(kept).toMatchObject({
+      principal: ADA,
       session: SESSION,
       version: 'v1',
       doc: live.doc.toJSON(),
       values: { code: 'B2' },
       sent: { sequence: 4 },
     });
-    expect(kept.changes.map((change) => change.history)).toEqual(['new', 'join', 'new']);
+    // The second change joined the first, and was typed straight after it: kept as one (D4).
+    expect(kept.changes.map((change) => change.history)).toEqual(['new', 'new']);
+    expect(kept.revision).toBe(4);
     // Something changed after the last sequence was sent: the values, and the last change.
-    expect(continuing(kept, 4)).toEqual({ sequence: 4, unsent: true });
+    expect(continuing(kept, 4)).toEqual({ sequence: 4, unsent: true, ahead: false });
   });
 
   it('replays what it keeps into the document and the history the session had', () => {
@@ -118,12 +194,43 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
     live.recorder.sent(3);
     const kept = readStoredSession(COMPONENT)!;
     // The service has what was sent, and nothing has changed since.
-    expect(continuing(kept, 3)).toEqual({ sequence: 3, unsent: false });
+    expect(continuing(kept, 3)).toEqual({ sequence: 3, unsent: false, ahead: false });
     // What was sent never arrived.
-    expect(continuing(kept, 2)).toEqual({ sequence: 3, unsent: true });
-    expect(continuing(kept, null)).toEqual({ sequence: 3, unsent: true });
-    // The service holds a later save this window never sent, under the same session: continue past it.
-    expect(continuing(kept, 7)).toEqual({ sequence: 7, unsent: true });
+    expect(continuing(kept, 2)).toEqual({ sequence: 3, unsent: true, ahead: false });
+    expect(continuing(kept, null)).toEqual({ sequence: 3, unsent: true, ahead: false });
+  });
+
+  it('says where the service holds a later save under the session than this window ever sent', () => {
+    const live = recording();
+    live.type(' Mind', 19, 1_000);
+    live.recorder.sent(3);
+    const kept = readStoredSession(COMPONENT)!;
+    // Another page holding the same session - a duplicated tab - saved past it: nothing goes on.
+    expect(continuing(kept, 7)).toMatchObject({ ahead: true });
+    // Unless it was this window's own last save, sent as its page went, after the record was closed.
+    live.recorder.close();
+    live.recorder.sent(7);
+    expect(readStoredSession(COMPONENT)!.sent.sequence).toBe(3);
+    expect(continuing(kept, 7, sentFor(COMPONENT, SESSION))).toEqual({
+      sequence: 7,
+      unsent: false,
+      ahead: false,
+    });
+    expect(continuing(kept, 8, sentFor(COMPONENT, SESSION))).toMatchObject({ ahead: true });
+  });
+
+  it('keeps the last sequence sent under a session only ever rising, whatever sends it', () => {
+    const live = recording();
+    live.type(' Mind', 19, 1_000);
+    live.recorder.sent(4);
+    expect(sentFor(COMPONENT, SESSION)).toEqual({ sequence: 4, revision: 1 });
+    sessionStorage.setItem(
+      `alloy-works:editing-sent:${COMPONENT}:${SESSION}`,
+      '{"sequence":9,"revision":1}',
+    );
+    live.recorder.sent(5);
+    expect(sentFor(COMPONENT, SESSION)).toEqual({ sequence: 9, revision: 1 });
+    expect(sentFor(COMPONENT, OTHER)).toBeNull();
   });
 
   it('starts again from a new document and version, keeping nothing of what came before, when reset', () => {
@@ -146,7 +253,11 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
     live.recorder.sent(5);
     live.recorder.rebind(OTHER);
     expect(readStoredSession(COMPONENT)).toMatchObject({ session: OTHER, sent: { sequence: 0 } });
-    expect(continuing(readStoredSession(COMPONENT)!, null)).toEqual({ sequence: 0, unsent: true });
+    expect(continuing(readStoredSession(COMPONENT)!, null)).toEqual({
+      sequence: 0,
+      unsent: true,
+      ahead: false,
+    });
   });
 
   it('writes nothing it is told once closed, so a page that has gone never writes over the next', () => {
@@ -163,20 +274,15 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
   });
 
   it('never throws: storage that is full or refused keeps nothing, and what it held is removed', () => {
-    const held = new Map<string, string>([[KEY, 'something older']]);
-    let full = false;
-    const storage = {
-      getItem: (key: string) => held.get(key) ?? null,
-      setItem: (key: string, value: string) => {
-        if (full) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
-        held.set(key, value);
-      },
-      removeItem: (key: string) => void held.delete(key),
-    };
+    const storage = storageOf(Infinity, new Map([[KEY, 'something older']]));
+    const { held } = storage;
     const live = recording(storage);
     live.type(' Mind', 19, 1_000);
     expect(held.has(KEY)).toBe(true);
-    full = true;
+    // Full, with nothing of any other component's to make room.
+    storage.setItem = () => {
+      throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+    };
     expect(() => live.type(' the cable.', 24, 9_000)).not.toThrow();
     // A record that stopped short of what is on screen would replay older text: none is kept.
     expect(held.has(KEY)).toBe(false);
@@ -191,6 +297,12 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
         throw new DOMException('Denied', 'SecurityError');
       },
       removeItem: () => {
+        throw new DOMException('Denied', 'SecurityError');
+      },
+      key: () => {
+        throw new DOMException('Denied', 'SecurityError');
+      },
+      get length(): number {
         throw new DOMException('Denied', 'SecurityError');
       },
     };
@@ -222,6 +334,11 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
       JSON.stringify({ ...good, revision: -1 }),
       JSON.stringify({ ...good, sent: { sequence: 1.5, revision: 0 } }),
     ];
+    broken.push(
+      JSON.stringify({ ...good, principal: undefined }),
+      JSON.stringify({ ...good, format: 0 }),
+      JSON.stringify({ ...good, schema: 'another model' }),
+    );
     for (const each of broken) {
       sessionStorage.setItem(KEY, each as string);
       expect(readStoredSession(COMPONENT)).toBeNull();
@@ -243,5 +360,89 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
     expect(() => replayStored(notADocument, fresh)).toThrow();
     const elsewhere: StoredSession = { ...kept, doc: opened('Unbox').toJSON() };
     expect(() => replayStored(elsewhere, fresh)).toThrow();
+  });
+
+  it('gives what it keeps only to whom it was kept for, forgetting it for anybody else', () => {
+    const live = recording();
+    live.type(' Mind', 19, 1_000);
+    expect(readKept(COMPONENT, ADA)).toMatchObject({
+      readable: true,
+      session: { session: SESSION },
+    });
+    expect(readKept(COMPONENT, GRACE)).toBeNull();
+    expect(sessionStorage.getItem(KEY)).toBeNull();
+    expect(readKept(COMPONENT, ADA)).toBeNull();
+  });
+
+  it('gives what an older build kept as text to copy, never to replay, and forgets it', () => {
+    const live = recording();
+    live.type(' Mind', 19, 1_000);
+    const good = JSON.parse(sessionStorage.getItem(KEY)!) as Record<string, unknown>;
+    sessionStorage.setItem(KEY, JSON.stringify({ ...good, format: 0 }));
+    expect(readKept(COMPONENT, ADA)).toEqual({ readable: false, text: 'Unbox the printer. Mind' });
+    expect(sessionStorage.getItem(KEY)).toBeNull();
+    // Nothing for somebody else, and nothing where not even the steps apply.
+    sessionStorage.setItem(KEY, JSON.stringify({ ...good, schema: 'another model' }));
+    expect(readKept(COMPONENT, GRACE)).toBeNull();
+    sessionStorage.setItem(
+      KEY,
+      JSON.stringify({ ...good, format: 0, doc: opened('Unbox').toJSON() }),
+    );
+    expect(readKept(COMPONENT, ADA)).toEqual({ readable: false, text: null });
+    expect(textOfKept({ ...good, doc: null })).toBeNull();
+  });
+
+  it('writes a moment after a change, once for every change in that moment, and at once for a send, a flush or a close', () => {
+    const { clock, advance } = clockOf();
+    const live = recording(sessionStorage, { clock, delayMs: 300 });
+    live.type(' Mind', 19, 1_000);
+    expect(sessionStorage.getItem(KEY)).toBeNull();
+    advance(200);
+    live.type(' the', 24, 1_100);
+    expect(sessionStorage.getItem(KEY)).toBeNull();
+    advance(100);
+    expect(readStoredSession(COMPONENT)!.revision).toBe(2);
+
+    live.type(' cable.', 28, 1_150);
+    live.recorder.flush();
+    expect(readStoredSession(COMPONENT)!.revision).toBe(3);
+    live.recorder.values({ code: 'B2' });
+    live.recorder.sent(1);
+    expect(readStoredSession(COMPONENT)).toMatchObject({ revision: 4, values: { code: 'B2' } });
+    live.type(' Then.', 35, 9_000);
+    live.recorder.close();
+    expect(readStoredSession(COMPONENT)!.revision).toBe(5);
+    advance(1_000);
+    expect(readStoredSession(COMPONENT)!.revision).toBe(5);
+  });
+
+  it("makes room by forgetting another component's kept session before it stops keeping", () => {
+    const other = `alloy-works:editing-steps:${ANOTHER}`;
+    // Room for another component's session and this one's first change, but not its third.
+    const storage = storageOf(
+      2_000,
+      new Map([
+        [other, 'x'.repeat(1_000)],
+        ['alloy-works:theme', 'dark'],
+      ]),
+    );
+    const live = recording(storage);
+    live.type(' Mind the cable.', 19, 1_000);
+    live.type(' Keep the box.', 35, 9_000);
+    live.type(' Then wait.', 49, 20_000);
+    expect(storage.held.has(other)).toBe(false);
+    expect(storage.held.get('alloy-works:theme')).toBe('dark');
+    expect(readStoredSession(COMPONENT, storage)!.changes).toHaveLength(3);
+  });
+
+  it('keeps a run of typing as one change, which replays into the same document', () => {
+    const live = recording();
+    live.type(' M', 19, 1_000);
+    live.type('i', 21, 1_050);
+    live.type('nd', 22, 1_100);
+    const kept = readStoredSession(COMPONENT)!;
+    expect(kept.changes).toHaveLength(1);
+    expect(kept.revision).toBe(3);
+    expect(replayStored(kept, fresh).doc.eq(live.state.doc)).toBe(true);
   });
 });

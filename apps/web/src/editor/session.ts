@@ -254,6 +254,13 @@ export interface Session {
    */
   resume(unsent: boolean): void;
   /**
+   * A reload whose session the service has saved past, from a page this window never was - a
+   * duplicated tab holding the same session (final review of W11.3, D1): from reading, goes to `lost`
+   * as a stale save does, recoverable by Continue or Recover, sending nothing and claiming nothing, what
+   * is on screen held as not saved.
+   */
+  behind(): void;
+  /**
    * Recover (component-editor.md, "Recovery, as W11 builds it"): from reading, or from a `lost` that
    * is `recoverable`, claims afresh - moving the lock from the author's own other window - and opens
    * Recovery. From editing, where the lock is already this session's, it claims nothing: anything on
@@ -279,6 +286,11 @@ export interface Session {
 }
 
 const HELD = 'lock_held';
+
+/** A save refused as stale or conflicting, or a reload found behind the service: the same notice. */
+const NEWER_TEXT =
+  'Newer text was saved from another window, or from before this page was reloaded. ' +
+  'It is kept. Continuing starts a new session from what is on screen.';
 
 /** Recovery, announced as it opens (component-editor.md, "Accessibility"). */
 const RECOVERY_OPENED =
@@ -568,11 +580,7 @@ export function createSession(options: SessionOptions): Session {
       // overwritten, so it stops rather than guess: the author is offered a fresh session, starting
       // from what is on screen now (component-editor.md, "Undo across a reload").
       dirty = true;
-      lose(
-        'Newer text was saved from another window, or from before this page was reloaded. ' +
-          'It is kept. Continuing starts a new session from what is on screen.',
-        true,
-      );
+      lose(NEWER_TEXT, true);
       return false;
     }
     // Held, not lost: the next attempt sends everything again under a higher sequence.
@@ -849,6 +857,11 @@ export function createSession(options: SessionOptions): Session {
       dirty = unsent;
       save = unsent ? 'saving' : 'saved';
       void claim(false, false);
+    },
+    behind() {
+      if (phase !== 'reading' || disposed) return;
+      dirty = true;
+      lose(NEWER_TEXT, true);
     },
     recover() {
       if (phase === 'editing') {

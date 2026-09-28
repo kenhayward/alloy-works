@@ -6,9 +6,11 @@ import {
   undo,
   undoDepth,
 } from 'prosemirror-history';
-import type { Node } from 'prosemirror-model';
+import type { Node, Schema } from 'prosemirror-model';
 import { EditorState, Selection, type Transaction } from 'prosemirror-state';
 import { Step } from 'prosemirror-transform';
+
+import { editorSchema } from './schema.js';
 
 /**
  * How the history took a change (component-editor.md, "Undo across a reload"): as a new undo event,
@@ -161,3 +163,103 @@ export function replayChanges(into: EditorState, records: readonly RecordedChang
   state = state.apply(closeHistory(state.tr));
   return state.reconfigure({ plugins: into.plugins });
 }
+
+/**
+ * `previous` and `next` as one change, where `next` is a join of one held step onto a change of one
+ * held step and the two steps merge - a run of typing - or null where they are anything else (final
+ * review of W11.3, D4). Kept as one, a run costs one step in session storage rather than one a
+ * keystroke; the history holds it as one step already, so an undo of it makes the step it made
+ * before. `next` must follow `previous` from the selection it left: the replay sets no selection
+ * between them.
+ */
+export function mergeChange(previous: RecordedChange, next: RecordedChange): RecordedChange | null {
+  if (next.history !== 'join' || (previous.history !== 'new' && previous.history !== 'join')) {
+    return null;
+  }
+  const [before] = previous.transactions;
+  const [after] = next.transactions;
+  if (
+    before === undefined ||
+    after === undefined ||
+    previous.transactions.length !== 1 ||
+    next.transactions.length !== 1 ||
+    !before.held ||
+    !after.held ||
+    before.steps.length !== 1 ||
+    after.steps.length !== 1 ||
+    // Set by the first and not the second, the selection would be put back where the second moved it.
+    (before.selection !== undefined && after.selection === undefined)
+  ) {
+    return null;
+  }
+  let step: Step | null;
+  try {
+    step = Step.fromJSON(editorSchema, before.steps[0]).merge(
+      Step.fromJSON(editorSchema, after.steps[0]),
+    );
+  } catch {
+    return null;
+  }
+  if (step === null) return null;
+  return {
+    history: previous.history,
+    selection: previous.selection,
+    transactions: [
+      {
+        steps: [step.toJSON() as unknown],
+        held: true,
+        ...(after.selection === undefined ? {} : { selection: after.selection }),
+      },
+    ],
+  };
+}
+
+/**
+ * `doc` with every step `records` keeps applied in order, with no history, undo and redo among them as
+ * the steps they made: what the author had on screen, where the record will not replay as a history
+ * (final review of W11.3, D5). Throws where a step does not apply.
+ */
+export function replayPlain(doc: Node, records: readonly RecordedChange[]): Node {
+  let now = doc;
+  for (const record of records) {
+    for (const each of record.transactions) {
+      for (const json of each.steps) {
+        const applied = Step.fromJSON(now.type.schema, json).apply(now);
+        if (applied.doc === null) throw new Error(applied.failed ?? 'A step does not apply');
+        now = applied.doc;
+      }
+    }
+  }
+  return now;
+}
+
+/**
+ * A short name for a model: its nodes, each with its content, group, marks and attributes, and its
+ * marks, each with its attributes, hashed (FNV-1a, 32 bits). A record of steps kept in session storage
+ * is stamped with the editor's, so one kept by an older build, whose steps may name nodes or
+ * attributes this one does not hold, is told apart before it is replayed (final review of W11.3, D5).
+ */
+export function schemaIdentity(schema: Schema): string {
+  const described = JSON.stringify({
+    nodes: Object.values(schema.nodes).map((type) => [
+      type.name,
+      type.spec.content ?? '',
+      type.spec.group ?? '',
+      type.spec.marks ?? null,
+      Object.keys(type.spec.attrs ?? {}),
+    ]),
+    marks: Object.values(schema.marks).map((type) => [
+      type.name,
+      Object.keys(type.spec.attrs ?? {}),
+    ]),
+  });
+  let hash = 0x811c9dc5;
+  for (let at = 0; at < described.length; at += 1) {
+    hash ^= described.charCodeAt(at);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
+}
+
+/** The editor's own model's, which a record kept for a reload carries. */
+export const editorSchemaIdentity = schemaIdentity(editorSchema);

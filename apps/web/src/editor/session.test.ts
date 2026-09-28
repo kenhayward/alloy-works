@@ -1180,6 +1180,24 @@ describe('the editing session', () => {
     expect(session.view()).toMatchObject({ phase: 'reading', save: 'stopped', holder: grace });
   });
 
+  it('a reload the service has saved past under its session sends nothing and claims nothing, as a stale save stops (final review of W11.3, D1)', async () => {
+    const { clock, service, session } = harness(undefined, { sequence: 2 });
+    session.behind();
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual([]);
+    expect(session.view()).toMatchObject({
+      phase: 'lost',
+      save: 'stopped',
+      dirty: true,
+      recoverable: true,
+    });
+    expect(session.view().notice).toMatch(/^Newer text was saved from another window/);
+    // Continue starts a new session from what is on screen.
+    session.claimAgain(true);
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual(['claim, moving', 'save 1']);
+  });
+
   it('tells the kept session every sequence it takes, the one a closing page sends among them', async () => {
     const { clock, session, sent, type } = harness();
     type('Unbox');

@@ -16,10 +16,18 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   pause long enough for the component to have been let go - as long as nobody else has started
   editing it.
 - If somebody else has started editing the component meanwhile, the page opens for reading and keeps
-  what you typed below it for you to copy, as it does whenever you cannot start editing. If a version
-  has been made since, what you typed is not brought back, and undo does not reach past that version;
-  **Recover** still has anything that was saved. **Done editing** and **Save version** leave nothing
-  behind for a reload to bring back.
+  anything not yet saved below it for you to copy, as it does whenever you cannot start editing. If a
+  version has been made since, what you typed is not brought back, and undo does not reach past that
+  version; **Recover** still has anything that was saved. **Done editing** and **Save version** leave
+  nothing behind for a reload to bring back, and a reload straight after them carries on saving as
+  normal.
+- **A copy of a tab never saves over the tab it was copied from.** It starts editing afresh and keeps
+  what the other tab had below for you to copy. A reload that finds newer text saved from another tab
+  sends nothing over it, and offers **Continue** and **Recover** as a refused save does.
+- **Signing out forgets what a reload would bring back**, so nobody who signs in on the same tab after
+  you is given it.
+- If what a reload finds cannot be brought back as it was, it is kept below for you to copy rather than
+  lost without a word.
 - **Undo in a section's title reaches back as far as you have typed**, not only the last hundred
   changes.
 

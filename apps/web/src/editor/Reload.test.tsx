@@ -19,6 +19,8 @@ const ADA = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
 const GRACE = 'f1e2d3c4-b5a6-4978-8899-aabbccddeeff';
 const STEPS = `alloy-works:editing-steps:${COMPONENT}`;
 const SESSION_KEY = `alloy-works:editing-session:${COMPONENT}`;
+/** Where a page marks session storage as its own while it is open (final review of W11.3, D1). */
+const PAGE_MARK = 'alloy-works:editing-page';
 
 const paragraph = (id: string, text: string, ...more: unknown[]) => ({
   type: 'paragraph',
@@ -102,8 +104,20 @@ function service() {
     page: 0,
     version: version('v1', '0.1'),
     content: document(paragraph('b1', 'Unbox the printer.')) as unknown,
-    /** Who holds the lock, as far as the service is concerned: nobody, or Grace. */
+    /** Whether Grace holds the lock, over anything of Ada's. */
     grace: false,
+    /** The session of Ada's holding the lock, or null where none does. */
+    lock: null as string | null,
+    /** Whether Ada may still edit it. */
+    mayEdit: true,
+    /** While true, a save waits for `release` before it is answered. */
+    holding: false,
+  };
+  const waiting: (() => void)[] = [];
+  /** Answers every save held so far, in the order they arrived. */
+  const release = () => {
+    state.holding = false;
+    for (const each of waiting.splice(0)) each();
   };
   const answer = async (request: Request): Promise<Response> => {
     const url = new URL(request.url);
@@ -119,6 +133,7 @@ function service() {
         component({
           version: state.version,
           content: state.content,
+          mayEdit: state.mayEdit,
           lock: state.grace
             ? {
                 holder: { id: GRACE, name: 'Grace' },
@@ -126,7 +141,9 @@ function service() {
                 yours: false,
                 session: null,
               }
-            : null,
+            : state.lock === null
+              ? null
+              : lockOf(state.lock),
           sequence: session === null ? null : (accepted.get(session) ?? null),
           // What was saved from the version that opens and never made a version (RC-F).
           unsaved: saves.some((each) => each.body.openedFrom === state.version.id)
@@ -136,20 +153,24 @@ function service() {
       );
     }
     if (request.method === 'POST' && path === '/lock') {
-      claims.push(body as { session: string; move?: boolean });
-      if (state.grace) {
+      const claim = body as { session: string; move?: boolean };
+      claims.push(claim);
+      // Held by Grace, or by another of Ada's sessions that this claim does not move it from.
+      if (state.grace || (state.lock !== null && state.lock !== claim.session && !claim.move)) {
         return json(409, {
           code: 'lock_held',
           message: 'held',
           traceId: 't',
-          holder: { id: GRACE, name: 'Grace' },
+          holder: state.grace ? { id: GRACE, name: 'Grace' } : { id: ADA, name: 'Ada' },
           expectedRelease: GRACE_RELEASE,
         });
       }
-      return json(200, { lock: lockOf((body as { session: string }).session) });
+      state.lock = claim.session;
+      return json(200, { lock: lockOf(claim.session) });
     }
     const saving = /^\/iterations\/([0-9a-f-]{36})\/(\d+)$/.exec(path);
     if (request.method === 'PUT' && saving) {
+      if (state.holding) await new Promise<void>((resolve) => waiting.push(resolve));
       const session = saving[1]!;
       const sequence = Number(saving[2]);
       const latest = accepted.get(session) ?? 0;
@@ -168,6 +189,7 @@ function service() {
     }
     // Done editing with nothing to cut: the text is the version's again.
     if (request.method === 'DELETE' && path === '/lock') {
+      state.lock = null;
       return json(200, { outcome: 'unchanged', version: state.version });
     }
     // Recovery's two reads, newest first, each save named by where it stands and saved a minute apart.
@@ -214,19 +236,21 @@ function service() {
       fetch: fetching as unknown as typeof fetch,
     });
   };
-  return { client, state, saves, claims, accepted };
+  /** How many saves are waiting to be answered. */
+  const held = () => waiting.length;
+  return { client, state, saves, claims, accepted, release, held };
 }
 
 type Service = ReturnType<typeof service>;
 
 /** Opens the component in a page of its own, as a tab does, over the one service and this window's storage. */
-async function openPage(stack: Service, timing: Timing = designTiming) {
+async function openPage(stack: Service, timing: Timing = designTiming, principal = ADA) {
   let view: EditorView | undefined;
   render(
     <ComponentEditor
       componentId={COMPONENT}
       client={stack.client()}
-      principalId={ADA}
+      principalId={principal}
       timing={timing}
       onView={(mounted) => (view = mounted)}
     />,
@@ -237,12 +261,37 @@ async function openPage(stack: Service, timing: Timing = designTiming) {
   return view!;
 }
 
-/** Reloads the page: it goes, with nothing it sends arriving, and comes back over the same storage. */
-async function reload(stack: Service, timing: Timing = designTiming) {
+/**
+ * Reloads the page: it is hidden and goes, with nothing it sends arriving, and comes back over the
+ * same storage - `meanwhile` run on it between, as whatever else a reload finds changed.
+ */
+async function reload(
+  stack: Service,
+  timing: Timing = designTiming,
+  { principal = ADA, meanwhile }: { principal?: string; meanwhile?: () => void } = {},
+) {
   stack.state.page += 1;
+  window.dispatchEvent(new Event('pagehide'));
   cleanup();
-  return openPage(stack, timing);
+  meanwhile?.();
+  return openPage(stack, timing, principal);
 }
+
+/** Every entry of this window's session storage, as a duplicated tab copies them. */
+const storageNow = () =>
+  Object.fromEntries(
+    Array.from({ length: sessionStorage.length }, (_, at) => sessionStorage.key(at)!).map((key) => [
+      key,
+      sessionStorage.getItem(key)!,
+    ]),
+  );
+
+/** The kept record, changed by `change`, as another build or a broken record would leave it. */
+const rewriteKept = (change: (kept: Record<string, unknown>) => Record<string, unknown>) =>
+  sessionStorage.setItem(
+    STEPS,
+    JSON.stringify(change(JSON.parse(sessionStorage.getItem(STEPS)!) as Record<string, unknown>)),
+  );
 
 /** Saves after a hundredth of a second without a change, so a test can wait for them. */
 const quick = { ...designTiming, idleMs: 10, continuousMs: 50 };
@@ -253,6 +302,12 @@ const type = (view: EditorView, text: string, pos: number) =>
   act(() => {
     clock += 1_000;
     view.dispatch(view.state.tr.insertText(text, pos).setTime(clock));
+  });
+/** Deletes from `from` to `to`, a tenth of a second after the last change: joined to it, as typing is. */
+const deleteSoon = (view: EditorView, from: number, to: number) =>
+  act(() => {
+    clock += 100;
+    view.dispatch(view.state.tr.delete(from, to).setTime(clock));
   });
 const dispatch = (view: EditorView, tr: Transaction) => act(() => view.dispatch(tr));
 
@@ -280,11 +335,16 @@ afterEach(() => {
 });
 
 describe('undo across a reload (component-editor.md, "Undo across a reload")', () => {
-  it('CNT-069 keeps undo and redo across a reload, one undo to each event, back to the text the session opened from', async () => {
+  it('CNT-069 keeps undo and redo across a reload, one undo to each event however it was grouped, back to the text the session opened from, for the component being edited alone', async () => {
     const stack = service();
+    // What this window keeps for another component, which nothing here touches.
+    const elsewhere = 'alloy-works:editing-steps:5c4b3a29-1807-4f6e-9d5c-4b3a29180706';
+    sessionStorage.setItem(elsewhere, 'kept for another component');
     const view = await openPage(stack);
-    type(view, ' Mind', 19);
+    // Two changes a tenth of a second apart, side by side: one undo event, as the history joined them.
+    type(view, ' Minds', 19);
     await editing();
+    deleteSoon(view, 24, 25);
     type(view, ' the cable.', 24);
     type(view, ' Keep the box.', 35);
     press(view, 'z');
@@ -301,10 +361,12 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
     press(again, 'z');
     expect(textOf(again)).toBe('Unbox the printer. Mind');
+    // The joined pair, taken by one undo.
     press(again, 'z');
     expect(textOf(again)).toBe('Unbox the printer.');
     press(again, 'z');
     expect(textOf(again)).toBe('Unbox the printer.');
+    expect(sessionStorage.getItem(elsewhere)).toBe('kept for another component');
   });
 
   it('CNT-067 loses nothing past the last save acknowledged: what was not sent reaches the service after a reload, above its sequence, under the same session', async () => {
@@ -397,6 +459,32 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
     press(again, 'z');
     expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
+  });
+
+  it('goes on under its own session after a reload straight after Save version, above the sequence the service has', async () => {
+    const stack = service();
+    const view = await openPage(stack, quick);
+    type(view, ' Mind the cable.', 19);
+    await waitFor(() => expect(stack.saves).toHaveLength(1));
+    const held = stack.saves[0]!.session;
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
+    });
+    await screen.findByText('Version 0.2 saved.');
+    // Nothing is kept for a reload past the cut, but the lock is still this session's.
+    expect(sessionStorage.getItem(STEPS)).toBeNull();
+    expect(stack.state.lock).toBe(held);
+
+    const again = await reload(stack, quick);
+    type(again, ' Keep the box.', 35);
+    await waitFor(() => expect(stack.saves).toHaveLength(2));
+    expect(stack.saves[1]).toMatchObject({
+      session: held,
+      sequence: 2,
+      body: { openedFrom: 'v2' },
+    });
+    await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
+    expect(screen.queryByText(/^Newer text was saved/)).toBeNull();
   });
 
   it('reads the component where somebody else holds it after a reload, offering the kept changes as text to copy', async () => {
@@ -518,6 +606,213 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     expect(stack.claims).toHaveLength(claimed);
     expect(screen.getByRole('button', { name: 'Save version' })).toBeDisabled();
     expect(sessionStorage.getItem(STEPS)).toBeNull();
+  });
+
+  it('opens as a stale save does, sending nothing and claiming nothing, where the service holds a later save under the session than this window sent', async () => {
+    const stack = service();
+    const view = await openPage(stack, quick);
+    type(view, ' Mind', 19);
+    await waitFor(() => expect(stack.saves).toHaveLength(1));
+    const held = stack.saves[0]!.session;
+    type(view, ' the cable.', 24);
+    // Another page holding the same session - a duplicated tab - has saved past this one.
+    const again = await reload(stack, quick, { meanwhile: () => stack.accepted.set(held, 5) });
+    const claimed = stack.claims.length;
+    const saved = stack.saves.length;
+
+    await screen.findByText(/^Newer text was saved from another window/);
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Recover' })).toBeInTheDocument();
+    expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
+    expect(screen.getByLabelText('Text that was not saved')).toHaveValue(
+      'Unbox the printer. Mind the cable.',
+    );
+    expect(stack.claims).toHaveLength(claimed);
+    expect(stack.saves).toHaveLength(saved);
+
+    // Continuing starts a new session from what is on screen, over nothing the service holds.
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    });
+    await waitFor(() => expect(stack.saves).toHaveLength(saved + 1));
+    expect(stack.saves.at(-1)).toMatchObject({
+      sequence: 1,
+      body: { content: document(paragraph('b1', 'Unbox the printer. Mind the cable.')) },
+    });
+    expect(stack.saves.at(-1)!.session).not.toBe(held);
+  });
+
+  it("takes its own page's last save, sent as it went, for its own after a reload, not for somebody else's", async () => {
+    const stack = service();
+    const view = await openPage(stack, quick);
+    stack.state.holding = true;
+    type(view, ' Mind', 19);
+    await waitFor(() => expect(stack.held()).toBe(1));
+    // More typed while that save is on the wire, and the page goes: its last save waits behind it.
+    type(view, ' the cable.', 24);
+    cleanup();
+    stack.release();
+    await waitFor(() => expect(stack.saves).toHaveLength(2));
+
+    const again = await reload(stack, quick);
+    await editing();
+    expect(screen.queryByText(/^Newer text was saved/)).toBeNull();
+    expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
+    // The service has everything: nothing is sent again.
+    await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
+    expect(stack.saves).toHaveLength(2);
+  });
+
+  it('replays nothing under the session in a duplicated tab, offering what was kept as text to copy', async () => {
+    const stack = service();
+    const view = await openPage(stack);
+    type(view, ' Mind the cable.', 19);
+    await editing();
+    const held = stack.state.lock!;
+    await waitFor(() => expect(sessionStorage.getItem(STEPS)).not.toBeNull());
+    // The tab is duplicated: the new one copies this one's session storage, this page's mark on it
+    // among the rest, while this page stays open.
+    const copied = { ...storageNow(), [PAGE_MARK]: 'the page it was copied from' };
+    const claimed = stack.claims.length;
+    stack.state.page += 1;
+    cleanup();
+    sessionStorage.clear();
+    for (const [key, value] of Object.entries(copied)) sessionStorage.setItem(key, value);
+
+    const duplicate = await openPage(stack);
+    await waitFor(() =>
+      expect(screen.getByLabelText('Text that was not saved')).toHaveValue(
+        'Unbox the printer. Mind the cable.',
+      ),
+    );
+    expect(textOf(duplicate)).toBe('Unbox the printer.');
+    expect(editorStatus()).toHaveTextContent(
+      'What you typed before this page opened could not be brought back, so it is below for you to copy.',
+    );
+    expect(stack.claims).toHaveLength(claimed);
+    expect(stack.saves).toHaveLength(0);
+    expect(sessionStorage.getItem(SESSION_KEY)).not.toBe(held);
+    expect(sessionStorage.getItem(STEPS)).toBeNull();
+  });
+
+  it('replays nothing for somebody else signed in on the same tab, and forgets what was kept', async () => {
+    const stack = service();
+    const view = await openPage(stack);
+    type(view, ' Mind the cable.', 19);
+    await editing();
+    const claimed = stack.claims.length;
+
+    const again = await reload(stack, designTiming, {
+      principal: GRACE,
+      // Ada's lock lapsed meanwhile, so nobody holds the component.
+      meanwhile: () => (stack.state.lock = null),
+    });
+    expect(textOf(again)).toBe('Unbox the printer.');
+    expect(screen.queryByLabelText('Text that was not saved')).toBeNull();
+    expect(stack.claims).toHaveLength(claimed);
+    expect(sessionStorage.getItem(STEPS)).toBeNull();
+  });
+
+  it('keeps what was typed at once when the page is hidden or goes, not only a moment after', async () => {
+    const stack = service();
+    const view = await openPage(stack);
+    type(view, ' Mind', 19);
+    expect(sessionStorage.getItem(STEPS)).toBeNull();
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    expect(JSON.parse(sessionStorage.getItem(STEPS)!)).toMatchObject({ revision: 1 });
+
+    type(view, ' the cable.', 24);
+    // `document` here is the fixture's: the page's is the window's.
+    const page = window.document;
+    const visibility = vi.spyOn(page, 'visibilityState', 'get').mockReturnValue('hidden');
+    act(() => {
+      page.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(JSON.parse(sessionStorage.getItem(STEPS)!)).toMatchObject({ revision: 2 });
+    visibility.mockRestore();
+  });
+
+  it('offers what an older build kept as text to copy, and opens as a page opened afresh does', async () => {
+    const stack = service();
+    const view = await openPage(stack);
+    type(view, ' Mind the cable.', 19);
+    await editing();
+
+    const again = await reload(stack, designTiming, {
+      meanwhile: () => rewriteKept((kept) => ({ ...kept, format: 1 })),
+    });
+    await waitFor(() =>
+      expect(screen.getByLabelText('Text that was not saved')).toHaveValue(
+        'Unbox the printer. Mind the cable.',
+      ),
+    );
+    expect(textOf(again)).toBe('Unbox the printer.');
+    expect(sessionStorage.getItem(STEPS)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Save version' })).toBeDisabled();
+  });
+
+  it('offers what was kept as text to copy where it will not replay, and opens as a page opened afresh does', async () => {
+    const stack = service();
+    const view = await openPage(stack);
+    type(view, ' Mind the cable.', 19);
+    await editing();
+
+    const again = await reload(stack, designTiming, {
+      // A record whose grouping the history does not reproduce.
+      meanwhile: () =>
+        rewriteKept((kept) => ({
+          ...kept,
+          changes: (kept.changes as Record<string, unknown>[]).map((change) => ({
+            ...change,
+            history: 'none',
+          })),
+        })),
+    });
+    await waitFor(() =>
+      expect(screen.getByLabelText('Text that was not saved')).toHaveValue(
+        'Unbox the printer. Mind the cable.',
+      ),
+    );
+    expect(textOf(again)).toBe('Unbox the printer.');
+    expect(screen.getByRole('button', { name: 'Save version' })).toBeDisabled();
+  });
+
+  it('says so where what was kept cannot be read at all, rather than dropping it unsaid', async () => {
+    const stack = service();
+    const view = await openPage(stack);
+    type(view, ' Mind the cable.', 19);
+    await editing();
+
+    await reload(stack, designTiming, {
+      meanwhile: () =>
+        rewriteKept((kept) => ({ ...kept, format: 1, changes: [{ history: 'new' }] })),
+    });
+    await screen.findByText('What you typed before this page opened could not be brought back.');
+    expect(screen.queryByLabelText('Text that was not saved')).toBeNull();
+  });
+
+  it('replays nothing where the author may no longer edit the component, offering it as text to copy', async () => {
+    const stack = service();
+    const view = await openPage(stack);
+    type(view, ' Mind the cable.', 19);
+    await editing();
+    const claimed = stack.claims.length;
+
+    const again = await reload(stack, designTiming, {
+      meanwhile: () => {
+        stack.state.mayEdit = false;
+        stack.state.lock = null;
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByLabelText('Text that was not saved')).toHaveValue(
+        'Unbox the printer. Mind the cable.',
+      ),
+    );
+    expect(textOf(again)).toBe('Unbox the printer.');
+    expect(stack.claims).toHaveLength(claimed);
   });
 
   it('discards what does not parse, and opens as a page opened afresh does', async () => {
