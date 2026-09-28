@@ -1,6 +1,7 @@
 import { asAdministrator } from './admin.js';
 import { invitedAddress } from './invitations.js';
 import type { Tenant } from './provision.js';
+import { sealSecret } from './seal.js';
 
 export type SignInRoute = 'organisation' | 'google';
 
@@ -17,9 +18,11 @@ export const signedInAddressQuery = (prefix: string) => `
 
 /**
  * Points a tenant at its organisation's identity provider and permits the route, run as an
- * administrator. The secret itself stays in the service's secret store, under `secretName`.
- * `groupsClaim` names the ID token claim carrying the provider's group values (IAM-009, GP-A):
- * `groups` for a new configuration, and left as it was when a configuration is replaced without one.
+ * administrator. The client secret is sealed with `key` to this tenant and to sign-in before it is
+ * written, so the row holds this environment's secret and no other's, and opens for nobody but this
+ * tenant; a name left from before 0040 is cleared. `groupsClaim` names the ID token claim carrying the
+ * provider's group values (IAM-009, GP-A): `groups` for a new configuration, and left as it was when a
+ * configuration is replaced without one.
  */
 export async function configureOrganisationSignIn(
   adminUrl: string,
@@ -27,19 +30,22 @@ export async function configureOrganisationSignIn(
   provider: {
     readonly issuer: string;
     readonly clientId: string;
-    readonly secretName: string;
+    readonly clientSecret: string;
     readonly groupsClaim?: string;
   },
+  key: Buffer,
 ): Promise<void> {
+  if (provider.clientSecret.length === 0) throw new Error('A client secret is required');
+  const sealed = sealSecret(key, 'sign-in', tenant.id, provider.clientSecret);
   await asAdministrator(adminUrl, tenant, async (client, schema) => {
     await client.query(
-      `insert into ${schema}.identity_provider (issuer, client_id, secret_name, groups_claim)
+      `insert into ${schema}.identity_provider (issuer, client_id, sealed_secret, groups_claim)
        values ($1, $2, $3, coalesce($4, 'groups'))
        on conflict (singleton) do update
          set issuer = excluded.issuer, client_id = excluded.client_id,
-           secret_name = excluded.secret_name,
+           sealed_secret = excluded.sealed_secret, secret_name = null,
            groups_claim = coalesce($4, ${schema}.identity_provider.groups_claim)`,
-      [provider.issuer, provider.clientId, provider.secretName, provider.groupsClaim ?? null],
+      [provider.issuer, provider.clientId, sealed, provider.groupsClaim ?? null],
     );
     await client.query(
       `insert into ${schema}.sign_in_route (route) values ('organisation') on conflict do nothing`,

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
@@ -8,12 +9,17 @@ import {
   inviteToTenant,
   permitGoogleSignIn,
 } from './sign-in.js';
+import { openSecret, SealedSecretRefused } from './seal.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+
+const KEY = randomBytes(32);
+const SECRET = 'acme-client-secret';
 
 describe('sign-in settings', () => {
   let db: TestDatabase;
   let tenant: Tenant;
+  let other: Tenant;
   let service: TenantDatabase;
 
   beforeAll(async () => {
@@ -24,6 +30,11 @@ describe('sign-in settings', () => {
       organisation: { id: 'acme', name: 'Acme' },
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
+    });
+    other = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Development' },
+      hostnames: ['dev.acme.alloy.test'],
     });
     service = createTenantDatabase(db.serviceUrl);
   });
@@ -40,32 +51,92 @@ describe('sign-in settings', () => {
     expect(routes).toEqual([]);
   });
 
-  it('records the provider by the name of its secret, never the secret, and permits the route', async () => {
-    await configureOrganisationSignIn(db.adminUrl, tenant, {
-      issuer: 'https://idp.example',
-      clientId: 'alloy',
-      secretName: 'acme_idp',
-    });
+  const sealedOf = async (of: Tenant) => {
+    const row = await service.withTenant(of, (trx) =>
+      trx
+        .selectFrom('identity_provider')
+        .select(['sealed_secret', 'secret_name'])
+        .executeTakeFirstOrThrow(),
+    );
+    return row;
+  };
+
+  it('records the provider with its client secret sealed to this environment, never the secret, and permits the route', async () => {
+    await configureOrganisationSignIn(
+      db.adminUrl,
+      tenant,
+      { issuer: 'https://idp.example', clientId: 'alloy', clientSecret: SECRET },
+      KEY,
+    );
     const provider = await service.withTenant(tenant, (trx) =>
       trx.selectFrom('identity_provider').selectAll().executeTakeFirstOrThrow(),
     );
     expect(provider).toMatchObject({
       issuer: 'https://idp.example',
       client_id: 'alloy',
-      secret_name: 'acme_idp',
+      secret_name: null,
     });
+    expect(provider.sealed_secret).not.toContain(SECRET);
+    expect(openSecret(KEY, 'sign-in', tenant.id, provider.sealed_secret!)).toBe(SECRET);
     const routes = await service.withTenant(tenant, (trx) =>
       trx.selectFrom('sign_in_route').select('route').execute(),
     );
     expect(routes).toEqual([{ route: 'organisation' }]);
   });
 
+  it("holds each environment's own secret, which opens for that environment alone and never as another kind of secret", async () => {
+    await configureOrganisationSignIn(
+      db.adminUrl,
+      other,
+      { issuer: 'https://idp.example', clientId: 'alloy', clientSecret: 'development-secret' },
+      KEY,
+    );
+    const mine = (await sealedOf(tenant)).sealed_secret!;
+    const theirs = (await sealedOf(other)).sealed_secret!;
+    expect(openSecret(KEY, 'sign-in', tenant.id, mine)).toBe(SECRET);
+    expect(openSecret(KEY, 'sign-in', other.id, theirs)).toBe('development-secret');
+    expect(() => openSecret(KEY, 'sign-in', tenant.id, theirs)).toThrow(SealedSecretRefused);
+    expect(() => openSecret(KEY, 'sign-in', other.id, mine)).toThrow(SealedSecretRefused);
+    expect(() => openSecret(KEY, 'object-store', tenant.id, mine)).toThrow(SealedSecretRefused);
+  });
+
+  it('keeps a secret sealed and nothing else: never a plain one, never a name beside it, and never neither', async () => {
+    const sealed = (await sealedOf(tenant)).sealed_secret!;
+    const table = `${tenant.schema}.identity_provider`;
+    await expect(
+      queryAs(db.adminUrl, `update ${table} set sealed_secret = $1`, [SECRET]),
+    ).rejects.toThrow(/identity_provider_sealed_secret/);
+    await expect(
+      queryAs(db.adminUrl, `update ${table} set secret_name = 'stand_in'`),
+    ).rejects.toThrow(/identity_provider_one_secret/);
+    await expect(queryAs(db.adminUrl, `update ${table} set sealed_secret = null`)).rejects.toThrow(
+      /identity_provider_one_secret/,
+    );
+    expect((await sealedOf(tenant)).sealed_secret).toBe(sealed);
+  });
+
+  it('refuses a configuration with no client secret', async () => {
+    await expect(
+      configureOrganisationSignIn(
+        db.adminUrl,
+        tenant,
+        { issuer: 'https://idp.example', clientId: 'alloy', clientSecret: '' },
+        KEY,
+      ),
+    ).rejects.toThrow(/client secret is required/);
+  });
+
   it('replaces the provider when configured again', async () => {
-    await configureOrganisationSignIn(db.adminUrl, tenant, {
-      issuer: 'https://login.example',
-      clientId: 'alloy-2',
-      secretName: 'acme_idp',
-    });
+    await configureOrganisationSignIn(
+      db.adminUrl,
+      tenant,
+      {
+        issuer: 'https://login.example',
+        clientId: 'alloy-2',
+        clientSecret: SECRET,
+      },
+      KEY,
+    );
     const providers = await service.withTenant(tenant, (trx) =>
       trx.selectFrom('identity_provider').select(['issuer', 'client_id']).execute(),
     );
@@ -82,47 +153,72 @@ describe('sign-in settings', () => {
           .then((row) => row.groups_claim),
       );
     expect(await claim()).toBe('groups');
-    await configureOrganisationSignIn(db.adminUrl, tenant, {
-      issuer: 'https://login.example',
-      clientId: 'alloy-2',
-      secretName: 'acme_idp',
-      groupsClaim: 'https://acme.example/claims/roles',
-    });
+    await configureOrganisationSignIn(
+      db.adminUrl,
+      tenant,
+      {
+        issuer: 'https://login.example',
+        clientId: 'alloy-2',
+        clientSecret: SECRET,
+        groupsClaim: 'https://acme.example/claims/roles',
+      },
+      KEY,
+    );
     expect(await claim()).toBe('https://acme.example/claims/roles');
-    await configureOrganisationSignIn(db.adminUrl, tenant, {
-      issuer: 'https://login.example',
-      clientId: 'alloy-2',
-      secretName: 'acme_idp',
-    });
+    await configureOrganisationSignIn(
+      db.adminUrl,
+      tenant,
+      {
+        issuer: 'https://login.example',
+        clientId: 'alloy-2',
+        clientSecret: SECRET,
+      },
+      KEY,
+    );
     expect(await claim()).toBe('https://acme.example/claims/roles');
-    await configureOrganisationSignIn(db.adminUrl, tenant, {
-      issuer: 'https://login.example',
-      clientId: 'alloy-2',
-      secretName: 'acme_idp',
-      groupsClaim: 'groups',
-    });
+    await configureOrganisationSignIn(
+      db.adminUrl,
+      tenant,
+      {
+        issuer: 'https://login.example',
+        clientId: 'alloy-2',
+        clientSecret: SECRET,
+        groupsClaim: 'groups',
+      },
+      KEY,
+    );
     expect(await claim()).toBe('groups');
   });
 
   it('takes a claim name of 1 to 64 characters that looks like one, and nothing else', async () => {
     for (const refused of ['', ' groups', 'two words', 'a'.repeat(65), 'groups\n', '1groups']) {
       await expect(
-        configureOrganisationSignIn(db.adminUrl, tenant, {
-          issuer: 'https://login.example',
-          clientId: 'alloy-2',
-          secretName: 'acme_idp',
-          groupsClaim: refused,
-        }),
+        configureOrganisationSignIn(
+          db.adminUrl,
+          tenant,
+          {
+            issuer: 'https://login.example',
+            clientId: 'alloy-2',
+            clientSecret: SECRET,
+            groupsClaim: refused,
+          },
+          KEY,
+        ),
         JSON.stringify(refused),
       ).rejects.toThrow(/identity_provider_groups_claim/);
     }
     for (const taken of ['groups', 'wids', 'cognito:groups', 'a'.repeat(64)]) {
-      await configureOrganisationSignIn(db.adminUrl, tenant, {
-        issuer: 'https://login.example',
-        clientId: 'alloy-2',
-        secretName: 'acme_idp',
-        groupsClaim: taken,
-      });
+      await configureOrganisationSignIn(
+        db.adminUrl,
+        tenant,
+        {
+          issuer: 'https://login.example',
+          clientId: 'alloy-2',
+          clientSecret: SECRET,
+          groupsClaim: taken,
+        },
+        KEY,
+      );
     }
   });
 

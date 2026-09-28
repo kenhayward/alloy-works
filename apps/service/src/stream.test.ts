@@ -1,6 +1,5 @@
 import {
   bootstrapCluster,
-  configureOrganisationSignIn,
   createTenant,
   createTenantDatabase,
   listenToTenants,
@@ -18,7 +17,7 @@ import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
 import { STREAM_RETRY_MS } from './stream.js';
-import { signIn } from './test/sign-in.js';
+import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 // Hostnames that resolve to this machine: the stream is read over a real socket, and the hostname
 // is what names the environment.
@@ -135,10 +134,9 @@ describe('what an environment is doing, as it happens', () => {
       hostnames: [B],
     });
     for (const tenant of [production, development]) {
-      await configureOrganisationSignIn(db.adminUrl, tenant, {
+      await configureStandIn(db.adminUrl, tenant, {
         issuer: idp.issuer,
         clientId: 'alloy',
-        secretName: 'stand_in',
       });
     }
     tenantDb = createTenantDatabase(db.serviceUrl);
@@ -147,7 +145,8 @@ describe('what an environment is doing, as it happens', () => {
       db: tenantDb,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
       events,
     });
     cookie = await signIn(app, A, 'ada', idp.issuer);
@@ -173,7 +172,8 @@ describe('what an environment is doing, as it happens', () => {
       db: held,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
       events,
     });
     slowAddress = await slow.listen({ port: 0, host: '127.0.0.1' });
@@ -370,7 +370,8 @@ describe('what an environment is doing, as it happens', () => {
       db: reading,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
       events: gated,
     });
     const gatedAddress = await gatedApp.listen({ port: 0, host: '127.0.0.1' });
@@ -425,7 +426,8 @@ describe('what an environment is doing, as it happens', () => {
       db: tenantDb,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
       events: unheard,
     });
     const unheardAddress = await unheardApp.listen({ port: 0, host: '127.0.0.1' });
@@ -494,7 +496,8 @@ describe('what an environment is doing, as it happens', () => {
       db: counting,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
       events: gated,
     });
     const gatedAddress = await gatedApp.listen({ port: 0, host: '127.0.0.1' });

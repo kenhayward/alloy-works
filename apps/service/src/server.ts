@@ -11,14 +11,16 @@ const config = loadConfig(process.env);
 const db = createTenantDatabase(config.databaseUrl);
 const events = listenToTenants(config.databaseUrl);
 const secrets = environmentSecrets(process.env);
-const objects = config.objectStore
-  ? createObjectStores(config.objectStore, sealingKey(secrets.get('object_store_key') ?? ''))
-  : undefined;
+// Seals each environment's object store credential and its sign-in client secret: without it the
+// service does not start, since no environment could sign anybody in through its own provider.
+const key = sealingKey(secrets.get('object_store_key') ?? '');
+const objects = config.objectStore ? createObjectStores(config.objectStore, key) : undefined;
 const app = buildApp({
   db,
   logLevel: config.logLevel,
   oidc: createOidcClient({ allowInsecureIssuers: config.allowInsecureIssuers }),
   secrets,
+  sealingKey: key,
   events,
   ...(config.google ? { google: config.google } : {}),
   ...(objects ? { objects } : {}),

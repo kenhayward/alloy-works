@@ -87,7 +87,13 @@ export interface IdentityProviderTable {
   singleton: Generated<boolean>;
   issuer: string;
   client_id: string;
-  secret_name: string;
+  /**
+   * The secret's name in the service's store, from a configuration written before 0040; null for one
+   * written since. Kept to be read, never to sign in with: such an environment is configured again.
+   */
+  secret_name: string | null;
+  /** The client secret, sealed to this tenant and to sign-in (0040); null only beside a name. */
+  sealed_secret: string | null;
   /** The ID token claim carrying the provider's group values (0039): `groups` unless configured. */
   groups_claim: Generated<string>;
 }

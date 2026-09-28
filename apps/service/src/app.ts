@@ -19,6 +19,8 @@ import {
   findApiToken,
   groupNames,
   loadFacts,
+  openSecret,
+  SealedSecretRefused,
   syncProviderGroups,
   type SignInRoute,
   type Tenant,
@@ -110,6 +112,12 @@ export interface AppOptions extends HttpOptions {
   readonly db: TenantDatabase;
   readonly oidc: OidcClient;
   readonly secrets: SecretStore;
+  /**
+   * The key each environment's sealed sign-in client secret opens with, the one its object store
+   * credential is sealed with. Without it, no organisation's secret opens and nobody signs in by that
+   * route.
+   */
+  readonly sealingKey?: Buffer;
   /** The product's one Google client and the sign-in address it returns to; without, no Google route. */
   readonly google?: GoogleSettings;
   /** Where this environment's documents are kept; without it, samples are refused. */
@@ -245,19 +253,47 @@ export function buildApp(options: AppOptions): FastifyInstance {
     return row !== undefined;
   }
 
-  async function organisationProvider(tenant: Tenant): Promise<ProviderSettings | undefined> {
+  /**
+   * The organisation's provider, with the client secret this environment holds, sealed in its own
+   * schema and opened for this tenant alone: nothing names a secret another environment could hold.
+   * An environment configured before secrets were sealed names its secret instead, and one whose
+   * sealed secret does not open for it holds somebody else's; neither signs anybody in, and the log
+   * says which, never with the secret.
+   */
+  async function organisationProvider(
+    request: FastifyRequest,
+    tenant: Tenant,
+  ): Promise<ProviderSettings | undefined> {
     if (!(await permits(tenant, 'organisation'))) return undefined;
     const row = await db.withTenant(tenant, (trx) =>
       trx.selectFrom('identity_provider').selectAll().executeTakeFirst(),
     );
-    return (
-      row && {
-        issuer: row.issuer,
-        clientId: row.client_id,
-        clientSecret: secret(row.secret_name),
-        groupsClaim: row.groups_claim,
-      }
-    );
+    if (!row) return undefined;
+    if (row.sealed_secret === null) {
+      request.log.warn(
+        "the organisation's sign-in names its client secret, as it did before secrets were sealed, and must be configured again",
+      );
+      return undefined;
+    }
+    if (!options.sealingKey) {
+      throw new Error('The service has no key to open a sign-in secret with');
+    }
+    let clientSecret: string;
+    try {
+      clientSecret = openSecret(options.sealingKey, 'sign-in', tenant.id, row.sealed_secret);
+    } catch (error) {
+      if (!(error instanceof SealedSecretRefused)) throw error;
+      request.log.warn(
+        "the organisation's sealed client secret does not open for this environment",
+      );
+      return undefined;
+    }
+    return {
+      issuer: row.issuer,
+      clientId: row.client_id,
+      clientSecret,
+      groupsClaim: row.groups_claim,
+    };
   }
 
   function googleProvider(google: GoogleSettings): ProviderSettings {
@@ -377,7 +413,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
     startOrganisationSignIn: async (request, reply) => {
       const tenant = tenantOf(request);
-      const provider = await organisationProvider(tenant);
+      const provider = await organisationProvider(request, tenant);
       if (!provider) throw routeClosed();
       const start = await oidc.start(
         provider,
@@ -401,7 +437,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       }
       const state = query.state;
       const attempt = await takeAttempt(tenant, 'organisation', hashToken(state));
-      const provider = await organisationProvider(tenant);
+      const provider = await organisationProvider(request, tenant);
       if (!attempt || !provider) throw signInFailed();
       const identity = await finishAt(request, provider, {
         state,

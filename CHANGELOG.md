@@ -3,6 +3,19 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.114.1 - 2026-09-28 (PR #313)
+
+### Fixed
+
+- **Each environment signs in with its own client secret.** Two environments set up with the same
+  client of the same sign-in provider, but different secrets, could end up signing in with whichever
+  secret was used first, and an environment's settings could point at a secret meant for another. An
+  environment's client secret is now kept by that environment alone, sealed in its own storage, and
+  used for nobody else's sign-in; the Google route keeps its one secret for the whole product, as
+  before. An environment set up before this change stops offering sign-in through its own provider
+  until its sign-in is configured again, and the service's log says so; in development,
+  `pnpm dev:setup` does this for you (issue #312).
+
 ## 0.114.0 - 2026-09-28 (PR #311)
 
 ### Added

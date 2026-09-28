@@ -126,6 +126,13 @@ export {
 } from './queue.js';
 export { recordStoreCredential, type SealedStoreCredential } from './object-store.js';
 export {
+  openSecret,
+  sealingKey,
+  sealSecret,
+  SealedSecretRefused,
+  type SealPurpose,
+} from './seal.js';
+export {
   listenToTenants,
   notifyTenant,
   tenantChannel,

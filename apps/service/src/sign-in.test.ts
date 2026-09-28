@@ -1,7 +1,6 @@
 import { Writable } from 'node:stream';
 import {
   bootstrapCluster,
-  configureOrganisationSignIn,
   createTenant,
   createTenantDatabase,
   migrate,
@@ -15,7 +14,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
+import { configureStandIn, STAND_IN_SECRET, TEST_SEALING_KEY } from './test/sign-in.js';
 import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
+
+const OTHER_SECRET = 'another-environments-secret';
 
 const callback = (host: string) => `http://${host}/v1/sign-in/organisation/callback`;
 
@@ -25,6 +27,8 @@ describe('signing in with the organisation provider', () => {
   let tenantDb: TenantDatabase;
   let app: FastifyInstance;
   let production: Tenant;
+  let copied: Tenant;
+  let before: Tenant;
   const lines: string[] = [];
 
   beforeAll(async () => {
@@ -36,7 +40,12 @@ describe('signing in with the organisation provider', () => {
         {
           clientId: 'alloy',
           clientSecret: 'stand-in-secret',
-          redirectUris: [callback('acme.alloy.test')],
+          redirectUris: [
+            callback('acme.alloy.test'),
+            callback('other.acme.alloy.test'),
+            callback('copied.acme.alloy.test'),
+            callback('before.acme.alloy.test'),
+          ],
         },
       ],
     });
@@ -50,11 +59,30 @@ describe('signing in with the organisation provider', () => {
       tenant: { id: db.newTenantId(), name: 'Closed' },
       hostnames: ['closed.acme.alloy.test'],
     });
-    await configureOrganisationSignIn(db.adminUrl, production, {
+    await configureStandIn(db.adminUrl, production, { issuer: idp.issuer, clientId: 'alloy' });
+    // The same client of the same provider, with a secret of its own that the provider refuses.
+    const other = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Other' },
+      hostnames: ['other.acme.alloy.test'],
+    });
+    await configureStandIn(db.adminUrl, other, {
       issuer: idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
+      clientSecret: OTHER_SECRET,
     });
+    copied = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Copied' },
+      hostnames: ['copied.acme.alloy.test'],
+    });
+    await configureStandIn(db.adminUrl, copied, { issuer: idp.issuer, clientId: 'alloy' });
+    before = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Before' },
+      hostnames: ['before.acme.alloy.test'],
+    });
+    await configureStandIn(db.adminUrl, before, { issuer: idp.issuer, clientId: 'alloy' });
     tenantDb = createTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
@@ -66,7 +94,10 @@ describe('signing in with the organisation provider', () => {
         },
       }),
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      // The stand-in's secret under the name environments used to give it, so an environment still
+      // naming it could be signed in with it, if the service ever read a secret by name.
+      secrets: environmentSecrets({ SECRET_STAND_IN: STAND_IN_SECRET }),
+      sealingKey: TEST_SEALING_KEY,
     });
   });
 
@@ -151,6 +182,76 @@ describe('signing in with the organisation provider', () => {
     });
     expect(response.statusCode).toBe(404);
     expect(response.json()).toMatchObject({ code: 'sign_in_route_closed', rule: 'IAM-043' });
+  });
+
+  /** Signs Ada in at `host`, and answers the callback's response. */
+  async function signInAt(host: string) {
+    const started = await app.inject({ url: '/v1/sign-in/organisation', headers: { host } });
+    const signIn = started.cookies.find((candidate) => candidate.name === '__Host-aw_signin')!;
+    const back = await completeAtStandIn(started.headers.location!, 'ada', idp.issuer);
+    return app.inject({
+      url: `${back.pathname}${back.search}`,
+      headers: { host, cookie: `${signIn.name}=${signIn.value}` },
+    });
+  }
+
+  it("exchanges with each environment's own secret, though two environments configure the same client of the same provider", async () => {
+    expect((await signInAt('acme.alloy.test')).statusCode).toBe(302);
+    const refused = await signInAt('other.acme.alloy.test');
+    expect(refused.statusCode).toBe(401);
+    expect(refused.json()).toMatchObject({ code: 'sign_in_failed' });
+    expect((await signInAt('acme.alloy.test')).statusCode).toBe(302);
+  });
+
+  const logged = (message: string) =>
+    lines.filter((line) => line.includes(message)).map((line) => JSON.parse(line) as object);
+
+  it("never signs anybody in with another environment's secret: one copied into its row does not open there", async () => {
+    expect((await signInAt('copied.acme.alloy.test')).statusCode).toBe(302);
+    const { rows } = await queryAs(
+      db.adminUrl,
+      `select sealed_secret from ${production.schema}.identity_provider`,
+    );
+    await queryAs(db.adminUrl, `update ${copied.schema}.identity_provider set sealed_secret = $1`, [
+      rows[0].sealed_secret,
+    ]);
+    const refused = await app.inject({
+      url: '/v1/sign-in/organisation',
+      headers: { host: 'copied.acme.alloy.test' },
+    });
+    expect(refused.statusCode).toBe(404);
+    expect(refused.json()).toMatchObject({ code: 'sign_in_route_closed' });
+    expect(logged('does not open for this environment')).toEqual([
+      expect.objectContaining({ tenant: copied.id, level: 40 }),
+    ]);
+  });
+
+  it('signs nobody in through an environment configured before secrets were sealed, until it is configured again', async () => {
+    await queryAs(
+      db.adminUrl,
+      `update ${before.schema}.identity_provider set secret_name = 'stand_in', sealed_secret = null`,
+    );
+    const refused = await app.inject({
+      url: '/v1/sign-in/organisation',
+      headers: { host: 'before.acme.alloy.test' },
+    });
+    expect(refused.statusCode).toBe(404);
+    expect(refused.json()).toMatchObject({ code: 'sign_in_route_closed' });
+    expect(logged('must be configured again')).toEqual([
+      expect.objectContaining({ tenant: before.id, level: 40 }),
+    ]);
+    await configureStandIn(db.adminUrl, before, { issuer: idp.issuer, clientId: 'alloy' });
+    expect((await signInAt('before.acme.alloy.test')).statusCode).toBe(302);
+  });
+
+  it('never writes a client secret to its log or to a refusal', async () => {
+    const refused = await signInAt('other.acme.alloy.test');
+    expect(refused.statusCode).toBe(401);
+    expect(refused.body).not.toContain(OTHER_SECRET);
+    const log = lines.join('');
+    expect(log).toContain('sign-in refused');
+    expect(log).not.toContain(OTHER_SECRET);
+    expect(log).not.toContain(STAND_IN_SECRET);
   });
 
   it('never writes an authorisation code or a token to its log', () => {

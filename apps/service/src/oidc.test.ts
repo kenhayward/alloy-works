@@ -180,6 +180,22 @@ describe('the OpenID Connect client', () => {
     }
   });
 
+  it("exchanges with the secret it is given, never one an earlier sign-in to the same provider's client used", async () => {
+    const first = await oidc.start(provider, REDIRECT);
+    await oidc.finish(provider, await completeAtStandIn(first.url, 'ada', idp.issuer), first);
+    const another = { ...provider, clientSecret: 'another-environments-secret' };
+    const start = await oidc.start(another, REDIRECT);
+    const back = await completeAtStandIn(start.url, 'ada', idp.issuer);
+    await expect(oidc.finish(another, back, start)).rejects.toThrow(SignInFailed);
+    const again = await oidc.start(provider, REDIRECT);
+    const identity = await oidc.finish(
+      provider,
+      await completeAtStandIn(again.url, 'grace', idp.issuer),
+      again,
+    );
+    expect(identity.subject).toBe('grace');
+  });
+
   it('says which Workspace domain manages an account, as Google does', async () => {
     const start = await oidc.start(provider, REDIRECT);
     const back = await completeAtStandIn(start.url, 'alice', idp.issuer);

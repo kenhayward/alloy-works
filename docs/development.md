@@ -76,6 +76,14 @@ and `http://dev.acme.localhost:8088/v1/me` says who you are. On another port, te
 where the service is, since it only returns people to addresses it knows:
 `STAND_IN_REDIRECT_URIS=http://dev.acme.localhost:8181/v1/sign-in/organisation/callback`.
 
+Each environment holds the stand-in's client secret itself: `pnpm dev:setup` seals it into the
+environment's own schema with `SECRET_OBJECT_STORE_KEY`, and the service opens it with the same key, so
+the service will not start without that variable, which `service.env.example` sets. No
+`SECRET_STAND_IN` is read any more. **A database `pnpm dev:setup` prepared before 0.114.1** named the
+secret instead, and signing in through the stand-in there answers that the route is closed, with a line
+in the service's log saying the sign-in must be configured again: run `pnpm dev:setup` again, which
+seals it.
+
 `pnpm dev:setup` invites Ada, at `ada@example.com`, to administer each environment, so the first time she
 signs in she is Administrator there; nobody else holds a role until something grants one.
 `http://dev.acme.localhost:8088/v1/access/explain?principal=<her id from /v1/me>&target=tenant` shows it.

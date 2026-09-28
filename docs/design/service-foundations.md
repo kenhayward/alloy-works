@@ -104,6 +104,30 @@ authorisation code flows with PKCE, requesting `openid`, `email` and `profile` a
    tenant's policy allows it; group claims map to roles (IAM-009).
 4. A session row is written in the tenant's schema and its token set in the tenant's cookie.
 
+**Each environment holds its own client secret** (issue #312). `configureOrganisationSignIn` takes the
+secret itself, run as an administrator, seals it with the service's sealing key - the one each
+environment's object store credential is sealed with - bound to the tenant and to sign-in, and writes it
+into the environment's `identity_provider` row. The service opens it at each sign-in for that tenant
+alone. A sealed secret copied into another environment's row does not open there, an object store
+credential copied into this one does not open as a client secret, and nothing names a secret another
+environment could hold. The provider's discovered metadata is kept by issuer and holds no secret: every
+start and every exchange makes a configuration of its own from the environment's client id and secret,
+so two environments configuring the same client of the same provider with different secrets each
+exchange with their own, and a secret configured afresh is the one the next exchange uses.
+
+**An environment configured before secrets were sealed** named its secret in the service's secret store
+instead. Its row keeps the name, to be read, but the service never reads a secret by name again: the
+environment signs nobody in through its provider - the route answers as closed, and the log says the
+sign-in must be configured again, never with a secret - until an operator configures it again with the
+secret, which seals it and clears the name (`pnpm dev:setup` does this for the development
+environments). Moving a named secret into the row automatically, at start-up or at a first sign-in,
+was rejected: it would seal whatever the row named, another environment's secret included, and make
+permanent the sharing this removes. Nor does a name remain a fallback beside a sealed secret: a row
+holds one or the other.
+
+The Google route is different by design: one client registered once for the whole product (IAM-041),
+so its secret is the product's own, read from the service's secret store as `google`.
+
 ### Google accounts
 
 This is the route that lets a customer start before any federation exists (IAM-041, ADR-0009): a
@@ -474,9 +498,13 @@ the new ones start. The runner runs as its own step before a deployment, never a
 
 - **Configuration** is environment variables read once, at start-up, by one typed module that
   refuses to start on anything missing or malformed.
-- **Secrets** - identity provider client secrets above all - are read through an interface whose
-  development implementation is an environment file; the production store is decided with hosting.
-  A secret's value never reaches a log, a trace or an error, and a test proves it for each (ADM-008).
+- **Secrets** of the product's own - the Google client's secret, the key a Google sign-in's state is
+  signed with, and the sealing key - are read through an interface whose development implementation
+  is an environment file; the production store is decided with hosting. An environment's own secrets,
+  its object store credential and its sign-in client secret, are sealed with that key into its own
+  schema, bound to the tenant and to what each is for, and never held by the store under a name
+  ([The organisation's own provider](#the-organisations-own-provider)). A secret's value never reaches
+  a log, a trace or an error, and a test proves it for each (ADM-008).
 - **Logs and traces** are structured, through OpenTelemetry, and carry the tenant id and trace id,
   never content (ADM-022).
 
