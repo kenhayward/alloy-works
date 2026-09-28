@@ -66,7 +66,7 @@ export const tokenNotAllowed = () =>
   new AppError(
     403,
     'token_not_allowed',
-    'This takes a signed-in session. An API token cannot sign out, open the event stream or manage tokens.',
+    'This takes a signed-in session: an API token cannot do it.',
   );
 
 function tokenView(stored: StoredApiToken): TokenView {
