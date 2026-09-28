@@ -230,11 +230,15 @@ face, size and place, and every face the file embeds.
 
 It holds, in its own describe blocks:
 
-- **The first cases**: nine heading levels; a PDF not made to PDF/UA-1, which proves the checker can
-  say no (the spike's control); sixteen character probes, each refused by `assemble` exactly where
-  the pinned Typst would refuse it (the byte-order mark aside, which Typst refuses between some
-  letters and not others, and `assemble` refuses everywhere); and the characters code drops a letter
-  before.
+- **The first cases**: six heading levels, each tagged a heading, `H1` to `H6`; nine heading levels,
+  which a PDF refuses from the seventh by name and Word publishes as its nine heading styles (W14.2,
+  ADR-0031); a PDF not made to PDF/UA-1, which proves the checker can say no (the spike's control);
+  sixteen character probes, each refused by `assemble` exactly where the pinned Typst would refuse it
+  (the byte-order mark aside, which Typst refuses between some letters and not others, and
+  `assemble` refuses everywhere); and the letter the engine drops before an invisible character in
+  code.
+- **The resolution order in the PDF** (PUB-098): a list of tables printing a caption's reference as
+  the number it resolved to, the PDF's half of `order.test.ts`'s references-before-generation pair.
 - **The spike's nine**, ported from `spikes/publishing-engine` and judged as its checks judged them:
   1, headings, a list, a header row, a described figure and a passage in French, tagged and passing
   veraPDF; 2, twenty footnotes each at the foot of its mark's page, one longer than a page split; 3, a
@@ -298,7 +302,7 @@ types: what the stand-in answers is decided by the PDF's bytes. That it runs the
 by building the worker image, whose build runs `verapdf --version`, and by CI's entry-point step.
 Every publication now queues its check ahead of whatever is asked next, so a suite that publishes and
 then waits on another job takes it with `processNextBesideChecks` (`testing/work.ts`), which runs each
-check it meets and passes over it. In the corpus veraPDF checks against PDF/UA-1 the nine heading
+check it meets and passes over it. In the corpus veraPDF checks against PDF/UA-1 the six heading
 levels, the spike's cases 1, 2, 3 and 5, and the keep-together case, which it must pass, and the PDF
 not made to PDF/UA-1, which it must fail. The sixteen character probes are not checked against
 PDF/UA-1 at all - each is compared only to what the pinned Typst itself would refuse, character by
@@ -314,14 +318,65 @@ page that no longer passes PDF/UA-1 is the layout's fault, not the engine's.
 
 What a case demonstrates is what a person cannot verify by reading a PDF: the machine rules veraPDF
 checks - tagging, a document title, alternative text present - are part of what a screen reader is told
-when it reads the structure tree. Passing them is necessary but not sufficient: the nine-level case
+when it reads the structure tree. Passing them is necessary but not sufficient: a nine-level document
 passes every one, and its headings at levels seven to nine still reach a screen reader as paragraphs,
-because the pinned Typst tags them `H7` to `H9` and role-maps each to `P`. The document's title is set
+because the pinned Typst tags them `H7` to `H9` and role-maps each to `P`. So since W14.2 `assemble`
+refuses such a document for the PDF, and the nine-level case compiles the document it publishes for
+Word to keep that measurement as a tripwire: the day the engine tags them as headings, it goes red,
+and the refusal can lift (ADR-0031). The document's title is set
 as a level-one heading for the same reason: Typst's own title is role-mapped to `P`, and the case pins
 the whole role tree, so an engine that changed either would be caught. Reading order, and the other Matterhorn checkpoints only a
 person can judge - whether a heading sounds like a heading, whether a table's structure matches what it
 shows - are read from the same cases by hand when the engine or the template changes; they are not run
 by any suite.
+
+## The publishing budget
+
+`apps/worker/src/publishing-budget.test.ts` measures PUB-102: a declared 300-page reference document
+published to PDF, from the request to the recorded publication, at or under ten seconds at p95 and no
+sample above thirty. The document is 30 chapters, each placing a component of 100 blocks - 150
+figures, 150 tables, 150 numbered equations, 150 footnotes and 2,400 paragraphs of prose in all - seeded
+through the store; its pages and parts are read back off the PDF, not assumed, and it came to 311 pages
+when it was declared. It is published eleven times through the worker suite's own harness,
+`requestPublication` and then `processNext` running the publish job to the recorded publication; the
+first warms the worker and is reported and held to the maximum of thirty seconds alone, and the other
+ten are the samples. With ten samples the nearest-rank p95 is the slowest of them, so every sample is
+held to ten seconds. The measured span leaves out the HTTP route that asks for the publish and the
+time a request waits in the queue for a worker.
+
+Each publication queues its `check_pdf` as it is recorded (W14.1), which the next `processNext` would
+take ahead of the next publish, so each is settled outside the measured span before the next is asked
+for. The warm-up's and the last sample's are checked by the run's veraPDF (`suiteChecker`), and the
+time from the publication recorded - its request's `finished_at` - to its `publication_check` row's
+`checked_at` is PUB-102's other bound, held to five minutes where the budget binds: the warm-up's
+includes veraPDF's first start, and the last sample's is warm. Both must pass PDF/UA-1. The other nine
+checks are passed over unchecked, since a check of 311 pages takes several seconds and each would tell
+no more than the last. W14.2 measured 23.6 seconds for the first and 6.2 warm.
+
+It is part of the ordinary worker suite, since it takes about fifty seconds, and needs nothing the
+suite does not. **It binds where `CI` is not `true`, and records only on CI's runner**, as STR-063's
+navigation budget does (`apps/service/src/test/budget.ts`): a shared runner's speed is not the declared
+reference configuration, and a green CI run does not show the budget met. Either way the
+configuration it ran on - CPU, operating system, memory, Node, Typst and PostgreSQL - the document's
+pages and parts, the p50, p95, maximum and each sample's request and job times, and the two reports'
+times after recording are written into the test's `meta`, which the JSON reporter carries into
+`.trace-results/worker.json`, and printed at the end of the run. To measure it alone:
+
+```bash
+pnpm turbo run build --filter="@alloy-works/worker^..."   # the packages the worker imports
+pnpm --filter @alloy-works/worker exec vitest run src/publishing-budget.test.ts
+```
+
+Run alone, on nothing else, when the number is to be quoted: the suite's other files run beside it and
+slow it.
+
+### The reference configuration
+
+PUB-102's budget is stated against a declared reference configuration. **The reference configuration
+is: Intel Core Ultra 7 270K Plus, 24 logical CPUs, 64 GB, Windows 11, Node 24.16.0, Typst 0.15.1,
+PostgreSQL 17 in Docker.** A run on another machine binds as this one does, but its numbers are that
+machine's; a number quoted for the budget is quoted from this configuration. W14.2 measured a p95 of
+1.4 to 1.6 seconds on it alone, over four runs, and 1.8 seconds beside the rest of the suite.
 
 ## The Open XML validator
 

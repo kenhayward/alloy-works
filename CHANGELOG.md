@@ -3,7 +3,7 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.116.0 - 2026-09-28 (PR #TBD)
+## 0.121.0 - 2026-09-28 (PR #TBD)
 
 ### Added
 
@@ -26,6 +26,25 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **Keeping a heading with its paragraph, keeping a paragraph together and avoiding lone lines at a
   page's edge** are checked both in the PDF and in the rules a Word document is given, from the same
   style.
+
+## 0.117.0 - 2026-09-28 (PR #316)
+
+### Added
+
+- **Publishing a long document is measured, and quick.** A 300-page document of prose, figures,
+  tables, equations and footnotes publishes to PDF in about a second and a half on a developer's
+  machine, from asking for it to the publication being recorded. The worker's tests measure it and
+  hold it to ten seconds on a developer's machine, and record the machine it was measured on beside
+  the result. Its accessibility check reaches the publication's page within seconds after that, and
+  is held to five minutes.
+
+### Changed
+
+- **A heading nested more than six levels deep is refused for a PDF, by name.** An accessible PDF can
+  tag six levels of heading, so a section or a component seven or more levels down used to be read
+  aloud as an ordinary paragraph. Publishing a PDF now stops and names each one at its place in the
+  outline, saying to move it up a level, or, where the layout makes Word, to publish to Word alone. A
+  Word document still publishes every level an outline can have, down to Heading 9.
 
 ## 0.115.1 - 2026-09-28 (PR #314)
 

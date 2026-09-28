@@ -73,6 +73,9 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1471);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 495, from 496 (2026-09-28): W14.3's final review - themes.md drops PUB-092 and names the gap: its
+    // tests show the PDF's pagination and Word's keep properties, and nothing measures Word's pages.
+    // 496, from 494 (2026-09-28): W14.2 - publishing.md claims PUB-103, six heading levels, and PUB-102, the 300-page budget.
     // 494, from 493 (2026-09-28): document-view.md claims IAM-080, IAM-023's T1 half; publishing.md's PUB-003 claim moved to PUB-098.
     // 493, from 492 (2026-09-27): W10.0 - publishing.md claims CNT-150, the preview beside the text.
     // 492, from 483 (2026-09-27): W9.0 - document-view.md claims CNT-072, CNT-073, CNT-154, CNT-105,
@@ -203,7 +206,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(494);
+    ).toBe(495);
   });
 });
 
@@ -553,10 +556,17 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
-  // 510, from 506 (2026-09-28): W14.3 - PUB-087 in apps/worker's regression.test.ts, on the spike's
-  // nine cases and the fixed defects' cases, and PUB-092 there on the keep rules' four, three of them
-  // STY-008 too, moved from themes.test.ts, whose STY-008 describe keeps its citation; and PUB-098 in
-  // packages/domain's publishing/order.test.ts, on each adjacent pair of the order's stages.
+  // 514, from 510 (2026-09-28): W14.3 - PUB-087 in apps/worker's regression.test.ts, on the spike's
+  // nine cases and the fixed PDF defects' cases; STY-008 there on three of the keep rules' four, moved
+  // from themes.test.ts, whose STY-008 describe keeps its citation (PUB-092 left uncited, its Word
+  // pages unmeasured); and PUB-098 in packages/domain's publishing/order.test.ts, on each adjacent
+  // pair of the order's stages, and in regression.test.ts, on a list printing a caption's reference.
+  // 510, from 509 (2026-09-28): W14.2 after W14.1 - PUB-103 in apps/worker's check.test.ts too,
+  // where a publication is recorded with its check queued and its PDF checked against PDF/UA-1.
+  // 509, from 506 (2026-09-28): W14.2 - PUB-103 in packages/domain's assemble.test.ts, where a node
+  // deeper than six levels is refused for the PDF by name, and in apps/worker's regression.test.ts,
+  // where six levels pass veraPDF tagged H1 to H6 and nine are refused for the PDF and published to
+  // Word; and PUB-102 in apps/worker's publishing-budget.test.ts, the 300-page reference document.
   // 506, from 505 (2026-09-28): W14.1 - PUB-091 in apps/worker's check.test.ts, seven tests in one
   // file: a publication's PDF checked and its verdict kept, veraPDF's whole report retained, a failing
   // PDF's rules named, a check left queued by a worker that died after recording taken by the next, a
@@ -658,7 +668,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(510);
+    expect(model.citations).toHaveLength(514);
   });
 
   it('cites no identifier the corpus does not hold', () => {

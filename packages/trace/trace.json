@@ -15648,7 +15648,7 @@
       "owns": [
         {
           "id": "PUB-098",
-          "howItIsMet": "The order is stated under [The order](#the-order): resolve occurrences, conditions over content, contributions, number, references, generated matter, checks, projection. `order.test.ts` tests each adjacent pair: swapped where the code lets a test swap them, the output differing; refused at compile time where the types forbid it; and, inside `assemble`'s one walk, the later stage shown reading the earlier's answer"
+          "howItIsMet": "The order is stated under [The order](#the-order): resolve occurrences, conditions over content, contributions, number, references, generated matter, checks, projection. `order.test.ts` tests each adjacent pair: swapped where the code lets a test swap them, the output differing; refused at compile time where the types forbid it; and, where `assemble` runs the last stages in its own order - one walk that checks and projects each block, then the generated matter and the check for something to publish, which reads it - that check shown reading generation's answer, and a projection returned only where every check passed"
         },
         {
           "id": "PUB-005",
@@ -15741,6 +15741,14 @@
         {
           "id": "PUB-091",
           "howItIsMet": "veraPDF checks every PDF in the worker against its PDF/UA-1 profile, after the publication is recorded (ADR-0030), by a `check_pdf` job queued in the transaction that records it, and queued again by the worker's sweep where it gave up; its report is retained whole - veraPDF's JSON, as it wrote it, in the tenant's store by its hash, as the PDF is - and summarised beside the publication in `publication_check`, one row per PDF output, insert-only: veraPDF's version, the profile, compliant or not, each rule failed with veraPDF's words for it, and the report's key, digest and size. Its page shows the summary and offers the report to download (W14.1)"
+        },
+        {
+          "id": "PUB-103",
+          "howItIsMet": "Each clause, and how it is met. **Tagged**: every PDF is compiled by the pinned Typst to PDF/UA-1, `--pdf-standard ua-1` under `--features a11y-extras`, which tags it. **Checked on every publication**: `recordPublication` queues a `check_pdf` in the transaction that records a publication with a PDF, and the job checks the PDF against veraPDF's PDF/UA-1 profile and keeps its whole report beside the publication (PUB-091; queued again by the sweep where it gave up). **Passes**: held by the template and the regression corpus, not by a refusal - the corpus compiles the template's output through veraPDF on every change to the template or the engine, the six-level case passing with `H1` to `H6` tagged, and the budget's 311-page reference document passes every time it is checked. What the corpus shows the engine cannot tag, `assemble` refuses before anything is made: every node is a heading at its depth, a section's title or a component's, and the pinned Typst tags one below the sixth level as a paragraph, which veraPDF passes (measured, the regression corpus), so `assemble` refuses each node nested deeper than six levels where a PDF is asked for under a layout, `heading_too_deep`, naming it, and Word, which numbers and tags nine, publishes it (ADR-0031, W-E). A request made before layouts keeps saying what it always said, as its other refusals do, and is not refused so. The page's words offer Word alone only to a publish under a layout with a Word page: a preview is always a PDF, and a layout with no Word page makes none. **A publication that fails is shown, never hidden**: the check follows the record (ADR-0030), so a PDF veraPDF fails is not refused; it stays recorded, and its page says it failed and names each rule, as it says one that could not be checked. A failure found after recording is a defect in the template or the engine, which a case in the corpus then holds"
+        },
+        {
+          "id": "PUB-102",
+          "howItIsMet": "The reference document is declared in `apps/worker/src/publishing-budget.test.ts`: 30 chapters, each placing a component of 100 blocks - 150 each of figures, tables, numbered equations and footnotes, and 2,400 paragraphs of prose - set to 311 pages. It is published eleven times from `requestPublication` to the publication `processNext` records, the first reported and held to the maximum and the other ten held to a p95 of ten seconds and a maximum of thirty on a developer's machine, stated against [the reference configuration](../testing.md#the-reference-configuration) that `docs/testing.md` declares, and recorded only on CI's runner (W-D), with the configuration and the document's pages and parts written beside the result in `.trace-results/worker.json`. As with STR-063, a run on CI's runner is held to neither bound, so a green CI run does not show the budget met. The measured span runs from `requestPublication` to the recorded publication, in process: it leaves out the HTTP route that asks for the publish and the time a request waits in the queue for a worker. The conformance report joins the publication after it is recorded, as a job of its own (ADR-0030), outside that span, **within five minutes**: the same test takes each check at once, as a free worker does, and measures from the request's `finished_at` to the `publication_check` row's `checked_at`, by the database's clock, bound to five minutes where the budget binds - 23.6 seconds for veraPDF's first check, its JVM starting, and 6.2 warm, on the reference configuration, measured with the test suite's veraPDF rather than the worker's own. A check whose first attempt fails still joins within five minutes under the worker's defaults, which `config.test.ts` holds: an attempt ends within its lease, 120 seconds, whether it throws - veraPDF's start and check a third of the lease each - or its worker dies and the lease runs out; the queue retries after 2 seconds and an idle worker asks within a poll, 5 seconds; so a second attempt ends by 120 + 2 + 5 + 120 = 247 seconds. The bound is not held past that - see beside the table"
         },
         {
           "id": "PUB-037",
@@ -16906,10 +16914,6 @@
         {
           "id": "TAB-032",
           "howItIsMet": "The same, from the table's side"
-        },
-        {
-          "id": "PUB-092",
-          "howItIsMet": "Widow and orphan control, keep-with-next and keep-together are paragraph style properties, each passed to Typst as its own rule - the two costs, `sticky`, `breakable: false` - as measured, and to Word as `w:widowControl`, `w:keepNext` and `w:keepLines`; the publishing regression corpus gains a case for each"
         }
       ]
     },
@@ -17837,6 +17841,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-103",
+      "file": "apps/worker/src/check.test.ts",
+      "line": 305,
+      "kind": "title"
+    },
+    {
       "id": "CNT-080",
       "file": "apps/worker/src/equations.test.ts",
       "line": 426,
@@ -18023,6 +18033,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-102",
+      "file": "apps/worker/src/publishing-budget.test.ts",
+      "line": 156,
+      "kind": "title"
+    },
+    {
       "id": "CNT-018",
       "file": "apps/worker/src/quotations.test.ts",
       "line": 157,
@@ -18043,19 +18059,25 @@
     {
       "id": "PUB-087",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 384,
+      "line": 462,
       "kind": "title"
     },
     {
-      "id": "PUB-092",
+      "id": "PUB-098",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 1155,
+      "line": 980,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-103",
+      "file": "apps/worker/src/regression.test.ts",
+      "line": 157,
       "kind": "title"
     },
     {
       "id": "STY-008",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 1161,
+      "line": 1285,
       "kind": "title"
     },
     {
@@ -18157,7 +18179,7 @@
     {
       "id": "PUB-029",
       "file": "apps/worker/src/word-check.test.ts",
-      "line": 2301,
+      "line": 2303,
       "kind": "title"
     },
     {
@@ -19267,31 +19289,31 @@
     {
       "id": "AST-014",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2063,
+      "line": 2082,
       "kind": "title"
     },
     {
       "id": "CNT-037",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2634,
+      "line": 2653,
       "kind": "title"
     },
     {
       "id": "CNT-042",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2592,
+      "line": 2611,
       "kind": "title"
     },
     {
       "id": "CNT-049",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3811,
+      "line": 3830,
       "kind": "title"
     },
     {
       "id": "CNT-081",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3627,
+      "line": 3646,
       "kind": "title"
     },
     {
@@ -19309,13 +19331,13 @@
     {
       "id": "PUB-005",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6293,
+      "line": 6361,
       "kind": "title"
     },
     {
       "id": "PUB-033",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2063,
+      "line": 2082,
       "kind": "title"
     },
     {
@@ -19337,6 +19359,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-103",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 5669,
+      "kind": "title"
+    },
+    {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
       "line": 867,
@@ -19351,55 +19379,55 @@
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3603,
+      "line": 3622,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3327,
+      "line": 3346,
       "kind": "title"
     },
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3710,
+      "line": 3729,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3221,
+      "line": 3240,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3250,
+      "line": 3269,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3273,
+      "line": 3292,
       "kind": "title"
     },
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4900,
+      "line": 4919,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4900,
+      "line": 4919,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4924,
+      "line": 4943,
       "kind": "title"
     },
     {
@@ -19417,7 +19445,7 @@
     {
       "id": "PUB-098",
       "file": "packages/domain/src/publishing/order.test.ts",
-      "line": 156,
+      "line": 164,
       "kind": "title"
     },
     {
@@ -19801,19 +19829,19 @@
     {
       "id": "PUB-025",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2763,
+      "line": 2767,
       "kind": "title"
     },
     {
       "id": "PUB-026",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3180,
+      "line": 3184,
       "kind": "title"
     },
     {
       "id": "PUB-031",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2445,
+      "line": 2449,
       "kind": "title"
     },
     {
@@ -19825,7 +19853,7 @@
     {
       "id": "PUB-067",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3698,
+      "line": 3702,
       "kind": "title"
     },
     {
