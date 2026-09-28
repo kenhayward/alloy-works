@@ -195,7 +195,7 @@ describe('signing in with the organisation provider', () => {
     });
   }
 
-  it("exchanges with each environment's own secret, though two environments configure the same client of the same provider", async () => {
+  it("IAM-075 exchanges with each environment's own secret, though two environments configure the same client of the same provider", async () => {
     expect((await signInAt('acme.alloy.test')).statusCode).toBe(302);
     const refused = await signInAt('other.acme.alloy.test');
     expect(refused.statusCode).toBe(401);
@@ -206,7 +206,7 @@ describe('signing in with the organisation provider', () => {
   const logged = (message: string) =>
     lines.filter((line) => line.includes(message)).map((line) => JSON.parse(line) as object);
 
-  it("never signs anybody in with another environment's secret: one copied into its row does not open there", async () => {
+  it("IAM-075 never signs anybody in with another environment's secret: one copied into its row does not open there", async () => {
     expect((await signInAt('copied.acme.alloy.test')).statusCode).toBe(302);
     const { rows } = await queryAs(
       db.adminUrl,

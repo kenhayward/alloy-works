@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.118.1 - 2026-09-28 (PR #TBD)
+
+### Changed
+
+- **Every place Alloy Works keeps an environment's data is now shown to keep it to that
+  environment.** The search index, the files in the object store, publications and the checks run on
+  them, each environment's secrets and the service's caches are each checked by a test that another
+  environment cannot reach them. Nothing about how the product works has changed; this is the
+  evidence that it keeps each environment apart.
+
 ## 0.118.0 - 2026-09-28 (PR #315)
 
 ### Added

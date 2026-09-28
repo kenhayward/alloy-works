@@ -278,6 +278,19 @@ a table that does not exist stayed green; each now lists, as the migrator, every
 table from the catalogue - exactly the two tenants' - and keeps the refusal as its own assertion.
 Pointed at a table that does not exist, and at `platform.tenant`, each went red.
 
+**IAM-075, claimed after #314 and #315 merged.** With each environment's sign-in client secret sealed
+into its own `identity_provider` row and the provider's metadata kept without a secret (#314), the
+gap was closed, and service-foundations.md claims IAM-075 store by store. Thirteen tests cite it: the
+existing tests of the search projection, the object store's credential, prefix and clients, both
+seal schemes, the hostname cache, idempotent answers and the sign-in exchanges; the publications
+schema test widened to the request's assets and occurrences and the checks; and one new test holding
+each environment's secrets - the sealed object store credential and sign-in secret, sessions, tokens
+and sign-ins in flight - in its own schema. Both schema tests went red with a temporary migration
+granting another tenant's role the schema and `publication_check` and `identity_provider`. The
+provider's metadata and published keys are kept by issuer, shared by every environment using that
+provider, and are read as scoped because they hold nothing of any tenant's; the Google client's
+secret is the product's (IAM-041).
+
 ## W14.7: The spelling checker and the symbol palette
 
 1. `setSpellCheckLanguages` on the platform bridge; the shell's pure mapping, pinned by a test; the

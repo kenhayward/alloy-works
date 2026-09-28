@@ -180,7 +180,7 @@ describe('the OpenID Connect client', () => {
     }
   });
 
-  it("exchanges with the secret it is given, never one an earlier sign-in to the same provider's client used", async () => {
+  it("IAM-075 exchanges with the secret it is given, never one an earlier sign-in to the same provider's client used", async () => {
     const first = await oidc.start(provider, REDIRECT);
     await oidc.finish(provider, await completeAtStandIn(first.url, 'ada', idp.issuer), first);
     const another = { ...provider, clientSecret: 'another-environments-secret' };
