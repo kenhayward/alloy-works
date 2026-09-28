@@ -241,15 +241,20 @@ export interface Session {
   /**
    * Recover (component-editor.md, "Recovery, as W11 builds it"): from reading, or from a `lost` that
    * is `recoverable`, claims afresh - moving the lock from the author's own other window - and opens
-   * Recovery.
+   * Recovery. From editing, where the lock is already this session's, it claims nothing: anything on
+   * screen not yet saved is saved first, so it is listed too, and then Recovery opens.
    */
   recover(): void;
   /** Closes Recovery and goes on editing what is on screen. */
   closeRecovery(): void;
-  /** The author's own saved iterations, a page at a time, while this session holds the lock. */
+  /**
+   * The author's own saved iterations, a page at a time, while this session holds the lock. A lock
+   * found lapsed is claimed again once under this session, as a save's is, and the page asked again.
+   */
   iterations(cursor?: string): Promise<IterationPage>;
   /**
-   * Restores one: what is on screen is saved first, and acknowledged; then the iteration is read,
+   * Restores one: anything on screen not yet saved is saved first, and acknowledged; then the
+   * iteration is read (a lock found lapsed claimed again once, as a save's is),
    * opened by `open`, and sent as the next save. Answers null once restored, or why nothing was, which
    * is also the session's notice. `label` names it, as "the text saved at 14:02:07".
    */
@@ -347,6 +352,9 @@ export function createSession(options: SessionOptions): Session {
     dirty
       ? 'This session no longer holds the component. Your unsaved text is kept below to copy.'
       : 'This session no longer holds the component.';
+
+  /** True while Recovery, asked for from editing, waits for what is on screen to be saved. */
+  let enteringRecovery = false;
 
   /** The notice a refusal set while editing goes on, so a later successful save can clear it. */
   let refusalNotice: string | null = null;
@@ -681,6 +689,21 @@ export function createSession(options: SessionOptions): Session {
     options.onRefused(holder, hadPending);
   };
 
+  /**
+   * Recovery found the lock lapsed - a pause longer than the lock period while the list stood open -
+   * so it is claimed again once under this same session, as a save's is (final review, the critical
+   * finding): not fresh, so the sequence continues. Refused, the session stops as a refused save's
+   * re-claim stops it. Answers whether the lock is this session's again.
+   */
+  const reclaimInRecovery = async (): Promise<boolean> => {
+    const reclaimed = await claimWithin(false, false);
+    if (disposed) return false;
+    if (reclaimed.ok) return true;
+    if (isRefusal(reclaimed.code)) refuse(reclaimed.code);
+    else lose(lockGoneMessage());
+    return false;
+  };
+
   const finish = async (
     during: 'cutting' | 'releasing',
     request: (openedFrom: string) => Promise<CutResult>,
@@ -806,6 +829,22 @@ export function createSession(options: SessionOptions): Session {
       else if (phase === 'lost' && lostFromStale) void claim(move, true);
     },
     recover() {
+      if (phase === 'editing') {
+        // The lock is this session's already, so nothing is claimed. Anything on screen not yet
+        // saved is saved first, so it is listed with the rest and can be restored too; Recovery opens
+        // once that is answered, and only if nothing - a cut, a lost lock, a refusal - moved the
+        // session on meanwhile. A save that failed is retried as ever, and a restore asks for it again.
+        if (enteringRecovery) return;
+        enteringRecovery = true;
+        void flush(true).then(() => {
+          enteringRecovery = false;
+          if (disposed || (phase as Phase) !== 'editing') return;
+          phase = 'recovery';
+          notice = RECOVERY_OPENED;
+          publish();
+        });
+        return;
+      }
       // Always a fresh session, and always moving: the id this page holds may be a reload's, which
       // the service has already accepted saves from past this page's own count, and the author asked
       // to recover here, which is to take the lock from any window of theirs. `move` moves nothing of
@@ -820,7 +859,12 @@ export function createSession(options: SessionOptions): Session {
       publish();
       if (dirty) schedule();
     },
-    iterations: (cursor) => service.iterations(cursor),
+    async iterations(cursor) {
+      const page = await service.iterations(cursor);
+      if (page.ok || page.code !== 'lock_required' || phase !== 'recovery') return page;
+      if (!(await reclaimInRecovery())) return page;
+      return service.iterations(cursor);
+    },
     async restore(id, label) {
       if (phase !== 'recovery' || options.open === undefined) return null;
       const refuseRestore = (message: string) => {
@@ -828,16 +872,24 @@ export function createSession(options: SessionOptions): Session {
         publish();
         return message;
       };
-      // First what is on screen, acknowledged, so a restore can itself be undone by restoring what
-      // it replaced (component-editor.md, "Recovery").
+      // First anything on screen not yet saved, acknowledged, so a restore can itself be undone by
+      // restoring what it replaced (component-editor.md, "Recovery"). Nothing unsaved sends nothing:
+      // what is on screen is then the newest save listed, or the version itself.
       const flushed = await flush(true);
       if (disposed) return null;
       // Lost, or a refusal that stopped saving, on the way: its own notice says why.
       if ((phase as Phase) !== 'recovery') return notice;
       if (!flushed) return refuseRestore('Not saved, so nothing was restored.');
-      const read = await service.iteration(id);
+      let read = await service.iteration(id);
       if (disposed) return null;
       if ((phase as Phase) !== 'recovery') return notice;
+      if (!read.ok && read.code === 'lock_required') {
+        if (!(await reclaimInRecovery())) return disposed ? null : notice;
+        if ((phase as Phase) !== 'recovery') return notice;
+        read = await service.iteration(id);
+        if (disposed) return null;
+        if ((phase as Phase) !== 'recovery') return notice;
+      }
       if (!read.ok) {
         if (read.code === HELD || read.code === 'lock_required') {
           lose(lockGoneMessage());

@@ -563,6 +563,35 @@ describe('sessionService', () => {
       ]);
     });
 
+    it('says this window for every session this tab has held, before a reload and before a fresh claim, and for no other', async () => {
+      const storage = memoryStorage();
+      // A page that held the lock under one id, reloaded after the lock went: a new id is minted.
+      const beforeReload = editingSessionFor(COMPONENT, () => false, storage);
+      const afterReload = editingSessionFor(COMPONENT, () => false, storage);
+      expect(afterReload).not.toBe(beforeReload);
+      const { client } = harness((request) =>
+        request.method === 'POST'
+          ? json(200, {
+              lock: { holder: { id: ADA, name: 'Ada' }, expectedRelease: 't', yours: true },
+            })
+          : json(200, {
+              items: [beforeReload, afterReload, OTHER].map((session, at) => ({
+                id: `i${at}`,
+                session,
+                sequence: 1,
+                createdAt: '2026-09-28T14:02:07.000Z',
+                openedFrom: { id: 'v1', number: '0.1' },
+              })),
+              next: null,
+            }),
+      );
+      const service = sessionService(client, COMPONENT, afterReload, ADA, storage);
+      // Recover claims afresh: the id the page held until now is still this window's.
+      await service.claim(true, true);
+      const page = await service.iterations();
+      expect(page.ok && page.items.map((each) => each.thisWindow)).toEqual([true, true, false]);
+    });
+
     it('reads one under the session it holds, content and values', async () => {
       const { client, requests } = harness(() =>
         json(200, { ...listed.items[0], content: doc('Unbox'), values: { code: 'A1' } }),

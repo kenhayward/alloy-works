@@ -1120,7 +1120,10 @@ export function ComponentEditor({
   // also the way out of the card, so it is offered while reading as well, and closes once released.
   const doneDisabled = onDone ? !(phase === 'editing' || phase === 'reading') : phase !== 'editing';
   // What the component's GET said this author saved and never made a version (RC-F), offered while
-  // this page has no session of its own running.
+  // this page has no session of its own running: as unsaved work where nobody holds the lock, and as
+  // the author's own other window's work where that window holds it (final review of W11.2, D2).
+  // Where somebody else holds it, the notice above says who, and nothing is offered until they are
+  // done.
   const unsaved =
     loaded.state === 'open' && shown.mayEdit && !ownSession && phase === 'reading'
       ? (shown.unsaved ?? null)
@@ -1200,6 +1203,20 @@ export function ComponentEditor({
             <>
               <span className={styles['divider']} aria-hidden="true" />
               <div className={styles['actions']} role="toolbar" aria-label="Component">
+                {/* The author's own saved text, listed while editing: the lock is already this
+                    session's, so nothing is claimed (final review of W11.2, D1). */}
+                {mayCut && (
+                  <button
+                    className={styles['act']}
+                    type="button"
+                    title="Saved text"
+                    disabled={phase !== 'editing'}
+                    onClick={recover}
+                  >
+                    <Icon name="Saved text" />
+                    Saved text
+                  </button>
+                )}
                 {mayCut && (
                   <button
                     className={`primary ${styles['act']}`}
@@ -1293,11 +1310,21 @@ export function ComponentEditor({
               </button>
             )}
             {/* Above the text, before anybody types (RC-F): claimed, the saved text is listed. */}
-            {unsaved !== null && (
+            {unsaved !== null && lock === null && (
               <Notice tone="unsaved">
                 <p>{unsavedSentence(unsaved.savedAt)}</p>
                 <button type="button" onClick={recover}>
                   Recover
+                </button>
+              </Notice>
+            )}
+            {/* The author's other window is editing: what it saved is its work in progress, and
+                recovering it here moves the edit to this window, as Continue here does. */}
+            {unsaved !== null && lock?.yours === true && (
+              <Notice tone="editing">
+                <p>You are editing this component in another window.</p>
+                <button type="button" onClick={recover}>
+                  Recover here
                 </button>
               </Notice>
             )}

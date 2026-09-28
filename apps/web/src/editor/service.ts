@@ -18,6 +18,46 @@ const LOWERCASE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 /** Where a component's editing session id is kept, one slot per component per window. */
 const storageKeyFor = (componentId: string) => `alloy-works:editing-session:${componentId}`;
 
+/** Where every session id this window has used for a component is kept, newest last. */
+const heldKeyFor = (componentId: string) => `alloy-works:editing-sessions:${componentId}`;
+
+/** As many as a window is likely to use for one component; the oldest are forgotten past it. */
+const HELD_KEPT = 50;
+
+type SessionStorage = Pick<Storage, 'getItem' | 'setItem'>;
+
+/**
+ * The session ids this window has used for a component (final review of W11.2, D4): the Recovery
+ * panel marks an iteration as this window's by its session, and a window uses several - the one
+ * before a reload, and a fresh one for each Recover or each stale save. Unavailable or unreadable
+ * storage is none.
+ */
+function sessionsHeld(componentId: string, storage?: SessionStorage): string[] {
+  try {
+    const kept: unknown = JSON.parse(
+      (storage ?? globalThis.sessionStorage).getItem(heldKeyFor(componentId)) ?? '[]',
+    );
+    return Array.isArray(kept)
+      ? kept.filter((each): each is string => typeof each === 'string' && LOWERCASE_UUID.test(each))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Adds one to them, answering them all. */
+function holdSession(componentId: string, id: string, storage?: SessionStorage): string[] {
+  const held = [...sessionsHeld(componentId, storage).filter((each) => each !== id), id].slice(
+    -HELD_KEPT,
+  );
+  try {
+    (storage ?? globalThis.sessionStorage).setItem(heldKeyFor(componentId), JSON.stringify(held));
+  } catch {
+    // Unavailable storage: the window's own ids are remembered for this page alone.
+  }
+  return held;
+}
+
 /**
  * The editing session's identity for one component in this window: kept in session storage, so a
  * reload of the same tab is the same session, while another window is another session
@@ -41,7 +81,10 @@ export function editingSessionFor(
     // a default parameter, which runs before any try in this function's own body could catch it (fix
     // round 1, finding 6).
     const kept = (storage ?? globalThis.sessionStorage).getItem(key);
-    if (kept && LOWERCASE_UUID.test(kept) && isHeldByMe(kept)) return kept;
+    if (kept && LOWERCASE_UUID.test(kept) && isHeldByMe(kept)) {
+      holdSession(componentId, kept, storage);
+      return kept;
+    }
   } catch {
     // Unavailable storage is not an error: the session is simply this page's alone.
   }
@@ -51,6 +94,7 @@ export function editingSessionFor(
   } catch {
     // As above.
   }
+  holdSession(componentId, made, storage);
   return made;
 }
 
@@ -121,6 +165,10 @@ export function sessionService(
 ): SessionService {
   const path = { id: componentId };
   let current = initialSession;
+  // Every session this window has used for the component, so a listed iteration is this window's
+  // whether it was saved under the id held now, the one before a fresh claim, or one from before a
+  // reload.
+  const held = new Set(holdSession(componentId, initialSession, storage));
 
   return {
     async claim(move, fresh, signal): Promise<ClaimResult> {
@@ -132,6 +180,7 @@ export function sessionService(
         } catch {
           // Unavailable storage does not stop the session; it just is not remembered across a reload.
         }
+        for (const each of holdSession(componentId, current, storage)) held.add(each);
       }
       try {
         const { data, error, response } = await client.POST('/v1/components/{id}/lock', {
@@ -219,6 +268,7 @@ export function sessionService(
     },
 
     // Under the session this adapter holds now: the service answers only the one holding the lock.
+    // Each row is this window's where it was saved under any session this window has used.
     async iterations(cursor): Promise<IterationPage> {
       try {
         const { data, error, response } = await client.GET('/v1/components/{id}/iterations', {
@@ -233,7 +283,7 @@ export function sessionService(
           items: data.items.map((each) => ({
             id: each.id,
             savedAt: each.createdAt,
-            thisWindow: each.session === current,
+            thisWindow: held.has(each.session),
             openedFrom: { id: each.openedFrom.id, number: each.openedFrom.number },
           })),
           next: data.next,
