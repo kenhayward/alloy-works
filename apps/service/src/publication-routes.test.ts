@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import {
   bootstrapCluster,
-  configureOrganisationSignIn,
   createComponent,
   createSpace,
   createTenant,
@@ -34,7 +33,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
-import { signIn } from './test/sign-in.js';
+import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 const HOST = 'acme.alloy.test';
 type Json = Record<string, unknown>;
@@ -61,7 +60,8 @@ describe('publishing a document through the service', () => {
       db: database,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
       ...(withObjects ? { objects: stores } : {}),
     });
 
@@ -261,10 +261,9 @@ describe('publishing a document through the service', () => {
     });
     await objects.setUp(db.adminUrl, tenant);
     stores = createObjectStores(objects.settings, objects.sealingKey);
-    await configureOrganisationSignIn(db.adminUrl, tenant, {
+    await configureStandIn(db.adminUrl, tenant, {
       issuer: idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
     });
     tenantDb = createTenantDatabase(db.serviceUrl);
     await tenantDb.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: idp.issuer }));

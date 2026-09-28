@@ -180,6 +180,47 @@ describe('the OpenID Connect client', () => {
     }
   });
 
+  it("exchanges with the secret it is given, never one an earlier sign-in to the same provider's client used", async () => {
+    const first = await oidc.start(provider, REDIRECT);
+    await oidc.finish(provider, await completeAtStandIn(first.url, 'ada', idp.issuer), first);
+    const another = { ...provider, clientSecret: 'another-environments-secret' };
+    const start = await oidc.start(another, REDIRECT);
+    const back = await completeAtStandIn(start.url, 'ada', idp.issuer);
+    await expect(oidc.finish(another, back, start)).rejects.toThrow(SignInFailed);
+    const again = await oidc.start(provider, REDIRECT);
+    const identity = await oidc.finish(
+      provider,
+      await completeAtStandIn(again.url, 'grace', idp.issuer),
+      again,
+    );
+    expect(identity.subject).toBe('grace');
+  });
+
+  it("fetches a provider's published keys once for every sign-in through it, not once for each", async () => {
+    const jwksUri = (
+      (await (await fetch(`${idp.issuer}/.well-known/openid-configuration`)).json()) as {
+        jwks_uri: string;
+      }
+    ).jwks_uri;
+    const fresh = createOidcClient({ allowInsecureIssuers: true });
+    const real = globalThis.fetch;
+    let fetched = 0;
+    globalThis.fetch = (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (url === jwksUri) fetched += 1;
+      return real(input, init);
+    };
+    try {
+      for (const user of ['ada', 'grace', 'ada']) {
+        const start = await fresh.start(provider, REDIRECT);
+        await fresh.finish(provider, await completeAtStandIn(start.url, user, idp.issuer), start);
+      }
+    } finally {
+      globalThis.fetch = real;
+    }
+    expect(fetched).toBe(1);
+  });
+
   it('says which Workspace domain manages an account, as Google does', async () => {
     const start = await oidc.start(provider, REDIRECT);
     const back = await completeAtStandIn(start.url, 'alice', idp.issuer);

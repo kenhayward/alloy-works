@@ -3,7 +3,6 @@ import { allRoutes, routes } from '@alloy-works/api-contract';
 import {
   addToGroup,
   bootstrapCluster,
-  configureOrganisationSignIn,
   createGroup,
   createSpace,
   createTenant,
@@ -30,7 +29,7 @@ import { buildApp } from './app.js';
 import { managingAccessHandlers } from './managing-access.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
-import { signIn } from './test/sign-in.js';
+import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 const HOST = 'acme.alloy.test';
 const MISSING = '00000000-0000-4000-8000-000000000000';
@@ -81,17 +80,17 @@ function freshEnvironment(): Environment {
       tenant: { id: env.db.newTenantId(), name: 'Production' },
       hostnames: [HOST],
     });
-    await configureOrganisationSignIn(env.db.adminUrl, env.tenant, {
+    await configureStandIn(env.db.adminUrl, env.tenant, {
       issuer: env.idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
     });
     env.tenantDb = createTenantDatabase(env.db.serviceUrl);
     env.app = buildApp({
       db: env.tenantDb,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
     });
     for (const user of ['ada', 'grace', 'alice']) {
       env.cookies[user] = await signIn(env.app, HOST, user, env.idp.issuer);

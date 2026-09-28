@@ -112,7 +112,6 @@ services:
       OBJECT_STORE_ENDPOINT: http://store.localhost:${STORE_PORT:-8333}
       OBJECT_STORE_BUCKET: alloy-dev
       SECRET_OBJECT_STORE_KEY: ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=
-      SECRET_STAND_IN: stand-in-dev-secret
       SECRET_GOOGLE: stand-in-google-secret
       SECRET_SIGN_IN_STATE: development-only-state-key-not-a-secret
       GOOGLE_ISSUER: http://idp.localhost:${IDP_PORT:-9090}
