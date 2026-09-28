@@ -21,6 +21,7 @@ import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
+import { keepingEach } from './testing/keep.js';
 import { checkOoxml } from './testing/ooxml.js';
 import { readPdf, type Bookmark } from './testing/pdf.js';
 import { defaultTheme } from './testing/theme.js';
@@ -65,7 +66,13 @@ import { typefacesNotHeld } from './fonts.js';
 import { temmlOutput } from '../../../packages/domain/src/content/admission/temml.fixture.js';
 
 const fonts = await loadPinnedFonts();
-const typst = createTypst({ binary: typstBinaryPath(), fonts });
+// Every PDF the corpus compiles is kept in ALLOY_CORPUS_PDFS where it is set, named by its case, for the
+// Matterhorn review a person makes on them (PUB-104, docs/guides/auditing-a-release.md).
+const typst = keepingEach(
+  createTypst({ binary: typstBinaryPath(), fonts }),
+  process.env['ALLOY_CORPUS_PDFS'],
+  () => expect.getState().currentTestName ?? 'outside a case',
+);
 /** The worker's own face files, by the hash the theme names each by: what the job hands the writer. */
 const faces = await pinnedFacesByHash(FONT_DIRECTORY);
 const at = new Date('2026-09-19T00:00:00Z');

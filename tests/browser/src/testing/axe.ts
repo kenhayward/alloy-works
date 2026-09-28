@@ -20,9 +20,15 @@ export interface Found {
 /**
  * The violations that need a design, each filed as an issue and held here until it is fixed (B-I).
  * Compared exactly: a violation not listed fails, and a listed one axe no longer finds fails too, until
- * it is taken off. Empty: CNT-078 cannot be attested while it holds anything.
+ * it is taken off. Empty: CNT-078 cannot be attested while it holds anything. W13.2's first run found
+ * five violations and fixed each, so nothing was held here. A target axe names by a CSS module's class
+ * carries the stylesheet's hash and line in the name, so an entry is copied from the failure again
+ * whenever its stylesheet changes.
  */
-export const ALLOWED: readonly (Found & { readonly issue: number })[] = [];
+export const ALLOWED: readonly Allowed[] = [];
+
+/** A violation held on the allow-list: where axe finds it, and the issue that says what it does to a person. */
+export type Allowed = Found & { readonly issue: number };
 
 declare module 'vitest' {
   interface TaskMeta {
@@ -40,13 +46,17 @@ const AXE_SOURCE = readFileSync(
 /**
  * axe over the page, or the part of it `within` selects, in one named state: the violations compared
  * with the allow-list, and what axe marks `incomplete` - needing a person - written into the test's
- * `meta` for the audit (CNT-177), never failed on.
+ * `meta` for the audit (CNT-177), never failed on. `allowed` is the list's own tests' to give; every
+ * other caller compares with `ALLOWED`.
  */
 export async function checkAxe(
   page: Page,
   state: string,
   meta: TaskMeta,
-  { within }: { readonly within?: string } = {},
+  {
+    within,
+    allowed: list = ALLOWED,
+  }: { readonly within?: string; readonly allowed?: readonly Allowed[] } = {},
 ): Promise<void> {
   let builder = new AxeBuilder({ page, axeSource: AXE_SOURCE }).withTags([...WCAG_22_AA]);
   if (within !== undefined) builder = builder.include(within);
@@ -61,14 +71,27 @@ export async function checkAxe(
 
   const key = (found: Found) => `${found.rule} at ${found.target}`;
   const violations = each(results.violations).map(key).sort();
-  const allowed = ALLOWED.filter((entry) => entry.state === state)
+  const allowed = list
+    .filter((entry) => entry.state === state)
     .map(key)
     .sort();
   if (JSON.stringify(violations) !== JSON.stringify(allowed)) {
     const unexpected = violations.filter((found) => !allowed.includes(found));
     const gone = allowed.filter((entry) => !violations.includes(entry));
+    // What axe said of each element, so a failure names the colours or the size it measured and the
+    // element's own markup, rather than only a selector a person has to go and find.
     const detail = results.violations
-      .map((result) => `${result.id}: ${result.help} (${result.nodes.length})`)
+      .map(
+        (result) =>
+          `${result.id}: ${result.help} (${result.nodes.length})\n` +
+          result.nodes
+            .map(
+              (node) =>
+                `  at ${node.target.join(' ')}: ${node.html}\n` +
+                `    ${(node.failureSummary ?? '').replace(/\s*\n\s*/g, ' ')}`,
+            )
+            .join('\n'),
+      )
       .join('\n');
     throw new Error(
       `axe, in ${state}:\n` +

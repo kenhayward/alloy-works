@@ -211,6 +211,34 @@ Only these could change the plan; everything else is built as written.
 6. Tests: CNT-176, on the test that runs axe over every state; the allow-list's exactness citing
    nothing.
 
+**W13.2, as built** (PR #TBD). What it found, and what departs from the above:
+
+- **What axe found**, on the first run over 82 states: five violations, all small, all fixed in the
+  slice with the axe test as the failing test, so **the allow-list is empty** and nothing was filed.
+  `--muted` (#6b7280) measured 4.44:1 on `--accent-weak` and 4.41 on `--chip-bg` - the current
+  component in the space pane, the selected text a Link or Language dialog quotes, the saving chip -
+  so the token is darkened to #646b78, 4.9 on both, rather than each place patched; the environment's
+  name on Home measured 2.2 on the panel's translucent white over the dark backdrop, and takes the
+  text's colour; the account chip under the pointer took base.css's pale hover behind its white text,
+  1.08; and the Reference dialog's radio buttons stood 23 pixels apart where 2.5.8 asks 24. What axe
+  left undecided - 98 elements' contrast over something it cannot measure, and two links in text - is
+  in each test's `meta`, and `undecided` prints it for the audit.
+- **The fixture is a component made through the API as the editor makes one**: created, its lock
+  claimed, an iteration saved and Done editing cutting the version (`testing/component.ts`), its
+  figure and inline image uploaded and proved by the worker first, and its content every block and
+  mark (`testing/every-block.ts`), the equations' MathML taken once from the pinned Temml. A fresh one
+  per test, as W13.1's documents are.
+- **Five tests, not one**: the screen signed out and the screens around the editor, cited by nothing,
+  since they are not the editor; the editor; a save that failed; and the document view. The screen
+  signed out and the failed save stand alone because the browser reports a refused request in the
+  page's console - the renderer's `/v1/me` answered 401, each save 503 - which only those two tests
+  allow.
+- **The Matterhorn review needed the corpus's PDFs**, which the suite kept nowhere a person could open
+  them: `ALLOY_CORPUS_PDFS` now keeps each, named by its case (`apps/worker/src/testing/keep.ts`), and
+  the guide runs the corpus so.
+- **`docs/audits/` has a README** saying what the folder holds and that a record is never edited, as
+  `docs/reviews/`'s does; the records themselves arrive with the first audited release.
+
 ## W13.3: The budgets
 
 1. Question 2 first, on the reference machine: the view opened and jumped in, measured as step 4 will.

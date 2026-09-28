@@ -34,13 +34,19 @@ export function allowPageNoise(): void {
  * uncaught exception in the page fails the test, naming what was said and where, unless the test
  * called `allowPageNoise()`. A run of the page's own console into the run's output is where nobody
  * reads it.
+ *
+ * `signedIn: false` starts the context with nothing in it instead, for the screens a person meets
+ * before signing in.
  */
-export async function withPage<T>(test: (page: Page) => Promise<T>): Promise<T> {
+export async function withPage<T>(
+  test: (page: Page) => Promise<T>,
+  { signedIn = true }: { readonly signedIn?: boolean } = {},
+): Promise<T> {
   browser ??= launchPinned();
   const context = await (
     await browser
   ).newContext({
-    storageState: inject('storageState'),
+    ...(signedIn ? { storageState: inject('storageState') } : {}),
     viewport: { width: 1280, height: 800 },
     locale: 'en-GB',
   });

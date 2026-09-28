@@ -7,7 +7,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --config vitest.pin.config.ts",
     "test:browser": "vitest run",
-    "fetch-chromium": "tsx scripts/fetch-chromium.ts"
+    "fetch-chromium": "tsx scripts/fetch-chromium.ts",
+    "undecided": "tsx scripts/undecided.ts"
   },
   "devDependencies": {
     "@alloy-works/api-client": "workspace:^",

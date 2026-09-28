@@ -310,6 +310,10 @@ body**: `Fixes #<n>`. Do this without asking. Notes:
   guide may restate what a reference document says once; what it must not do is become the place a
   fact lives, because then two documents disagree and the guide is the one nobody updates. Every
   factual claim in a guide is checked against the code or the tool before it is written.
+- **`docs/audits/<version>/`** holds the records a person makes before a release by
+  [the audit guide](docs/guides/auditing-a-release.md) - the WCAG 2.2 AA audit and the Matterhorn
+  review - which the release's baseline cites by `attestation`. Like a review, a record is never
+  edited afterwards.
 - **`docs/decisions/`** gets a new record when a choice constrains later work **and** its reasoning
   would otherwise have to be reconstructed from the diff. Both halves matter: a choice nobody will
   question needs no record, and a record that states only the conclusion is an opinion with a date
@@ -360,6 +364,7 @@ pnpm --filter @alloy-works/stand-in-idp start     # the stand-in sign-in provide
 pnpm --filter @alloy-works/worker dev             # the worker, claiming jobs (see docs/development.md)
 pnpm --filter @alloy-works/worker fetch-typst     # the pinned Typst, once per machine
 pnpm --filter @alloy-works/browser fetch-chromium # the pinned Chromium, once per machine, for the browser suite
+pnpm --filter @alloy-works/browser undecided      # what axe could not decide in the last browser run, for the audit
 pnpm --filter @alloy-works/api-contract generate  # rewrite openapi.json after changing a route
 pnpm --filter @alloy-works/api-client generate    # rewrite the client's types after that
 pnpm --filter @alloy-works/trace generate         # rewrite trace.json after changing a requirement or a design

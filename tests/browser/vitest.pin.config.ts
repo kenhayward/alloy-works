@@ -1,14 +1,15 @@
 import { defineConfig } from 'vitest/config';
 
 /**
- * The pinned Chromium's own tests, which need no stack: run by this workspace's `test` script, and so
- * by `pnpm test` on every machine, so a Playwright upgrade without a new pin fails there and not only
- * in CI's whole-system job. The browser suite proper is `vitest.config.ts`, run by `test:browser`.
+ * The tests that need no stack: the pinned Chromium's own, and the reading of axe's undecided results
+ * for the audit. Run by this workspace's `test` script, and so by `pnpm test` on every machine, so a
+ * Playwright upgrade without a new pin fails there and not only in CI's whole-system job. The browser
+ * suite proper is `vitest.config.ts`, run by `test:browser`.
  */
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/chromium-release.test.ts'],
+    include: ['src/chromium-release.test.ts', 'src/undecided.test.ts'],
     // Pinned rather than left implicit: the default reporter varies by platform, and a run
     // that swallows console output on Windows makes a noisy suite look pristine locally.
     reporters: ['default', 'json'],

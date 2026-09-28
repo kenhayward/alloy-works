@@ -4,8 +4,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
-    // The pin's tests need no stack, and run in `pnpm test` from vitest.pin.config.ts instead.
-    exclude: [...configDefaults.exclude, 'src/chromium-release.test.ts'],
+    // The tests that need no stack run in `pnpm test` from vitest.pin.config.ts instead.
+    exclude: [...configDefaults.exclude, 'src/chromium-release.test.ts', 'src/undecided.test.ts'],
     // Signed in once for the run, in the browser through the stand-in's own page, and in Node for the
     // fixtures the tests make through the API (the W13 plan's B-B and B-C).
     globalSetup: ['src/testing/setup.ts'],

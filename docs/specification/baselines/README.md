@@ -106,6 +106,11 @@ case, and both are deliberately more work than writing nothing: `inherited` stil
 covering identifier, and `attestation` still names a real person and a real date, because the honest
 escape hatch for "no test reaches this" must never be as cheap as the thing it is an alternative to.
 
+Two attestations are due in every release that claims them: the WCAG 2.2 AA audit of the editor
+(CNT-177, with CNT-078 `inherited` from it) and the Matterhorn review of the publishing regression
+corpus (PUB-104). [The audit guide](../../guides/auditing-a-release.md) is the procedure for each,
+where its record is committed, and the rows that cite it.
+
 ## Out of baseline is not the same as excluded
 
 **A requirement absent from all three tables is simply out of baseline, and needs no entry

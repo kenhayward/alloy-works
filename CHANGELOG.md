@@ -3,6 +3,30 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.123.0 - 2026-09-28 (PR #TBD)
+
+### Added
+
+- **Every screen of the editor and the document page is now checked for accessibility on every
+  change.** The automated checks of WCAG 2.2 AA run in a real browser over each kind of block and
+  formatting, each dialog and panel, a save that failed, Reading and Authoring, the outline, versions,
+  the preview and publishing, and Home, the lists, Search, API tokens and Administration. A problem
+  they find stops the change until it is fixed.
+- **A guide to the checks a person makes before a release**: the editor audited against WCAG 2.2 AA
+  with a keyboard and a screen reader, and published PDFs reviewed against the Matterhorn Protocol,
+  with where each record is kept and how a release says it was done. The product does not claim WCAG
+  2.2 AA until a release has been audited so.
+
+### Fixed
+
+- **Faint grey text is darker where it sat on a tinted background**, such as the saving indicator,
+  the current component in the list beside the editor and the selected text a Link or Language
+  dialog shows, which was a little too faint to read comfortably.
+- **The environment's name on Home is readable**, where it was grey on grey.
+- **Your name in the header stays visible under the mouse pointer**, where it turned white on a pale
+  background.
+- **The choices in the Reference dialog are further apart**, so each is easier to hit.
+
 ## 0.122.0 - 2026-09-28 (PR #326)
 
 ### Added
