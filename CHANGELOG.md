@@ -3,7 +3,7 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.114.0 - 2026-09-28 (PR #309)
+## 0.114.0 - 2026-09-28 (PR #311)
 
 ### Added
 
@@ -20,6 +20,14 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   typing anything. Symbols the typeface where you are typing does not have - such as for all or the
   number sets in the default theme - are dimmed and type nothing, since a publication could not set
   them; set those in an equation.
+
+## 0.113.3 - 2026-09-28 (PR #310)
+
+### Fixed
+
+- **A link in the desktop app opens in your browser, not in the app's window.** Following a link out
+  of a component's text used to take the whole window to that page. It now opens in your system
+  browser, and the app stays where it was (issue #309).
 
 ## 0.113.2 - 2026-09-28 (PR #308)
 
