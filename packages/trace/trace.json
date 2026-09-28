@@ -5332,7 +5332,7 @@
       "id": "IAM-033",
       "area": "IAM",
       "statement": "Service identities must be distinct from user identities, and must not be created by impersonating a person",
-      "tranche": "T1",
+      "tranche": "T5",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 254

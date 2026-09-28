@@ -182,6 +182,66 @@ The `__Host-` prefix means only this exact hostname can set or read it, so `dev.
 plant a cookie on `acme.<domain>`. An API token is sent as a bearer token. Either is checked against
 its row on every request, which is what makes revocation immediate (IAM-035, IAM-039).
 
+### Personal tokens, as W12 builds them
+
+[ADR-0028](../decisions/0028-personal-api-tokens-in-t1.md) settles what a T1 token is. It belongs to a
+person, acts as that person, and can do no more than they may do. Service identities (IAM-033) are T5's.
+W12 builds the rest of this section ([W12](../plans/2026-09-28-w12-identity.md)).
+
+**A token is a mask over its creator's grants** (IAM-034, IAM-062):
+
+- Its scopes are a set of permissions from the closed set, chosen when it is issued.
+- A request made with it is decided as its creator's request, and then refused any permission outside
+  the scopes, with the reason `scoped`.
+- The scopes are part of the facts every decision reads. So a route's decision, a handler's own and a
+  `mayEdit` flag in an answer are all masked alike, and none of them says a token may do what it may not.
+- **Reading is never masked.** A token reads what its creator reads, so the readable sets that search,
+  listings and the outline filter by stay as they are. A token with no scopes is a read-only token.
+
+**Issued once, kept as a hash.**
+
+- `POST /v1/tokens` takes a name, the scopes and an expiry at most 365 days away.
+- It answers the secret once. The secret is `awt_` and 43 characters of base64url, and the prefix is
+  there so a secret scanner can find one committed by mistake.
+- Only its SHA-256 is stored, in `api_token`, in the tenant's schema.
+- Nothing extends a token: a new one is issued.
+
+**Presented as a bearer.**
+
+- A request carrying `Authorization: Bearer awt_...` is decided by that token alone, whatever cookie it
+  also carries.
+- The request path hashes the token and looks it up inside `withTenant` as it does a session. Not found,
+  expired or revoked is a 401.
+- `last_used_at` is written at most once a minute.
+- **A token cannot manage tokens, sign out, or open the event stream.** Those routes declare that they
+  take a session alone. So a stolen token cannot mint another that outlives it, and no connection is
+  held open on a token after it is revoked (IAM-067).
+
+**Revoked by deleting its row** (IAM-035, IAM-055):
+
+- The owner revokes their own with `DELETE /v1/tokens/{id}`.
+- A tenant administrator lists and revokes anybody's, which is how tokens go when a person leaves.
+- The row is read on every request, so a revoked token is refused at the next one, and nothing asks the
+  issuer.
+- A principal removed takes their tokens with them.
+
+**Shown on the account page.** It lists the person's tokens by name, with their scopes, their expiry and
+when each was last used. It issues one, showing the secret once with a way to copy it, and revokes one.
+
+#### Decisions for Ken
+
+Each is taken as recommended here, on Ken's instruction of 2026-09-28 to continue with W12, and is his to
+review.
+
+| #    | Decision                                                                                                                                | Instead of                                                                                                            |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| TK-A | **Scopes are a mask over the creator's grants**, read by every decision as a fact, and a permission outside them is refused as `scoped` | Scopes as grants of their own, which would hold a permission outside a role (IAM-062)                                 |
+| TK-B | **Reading is never masked**: a token reads what its creator reads, and a token with no scopes reads and does nothing else               | A `read` scope, which would have every readable set in search, listings and the outline learn about tokens            |
+| TK-C | **An expiry is required, at most 365 days**, and nothing extends a token                                                                | Tokens without expiry, which IAM-034 forbids; or renewal, which would let one leaked token live on                    |
+| TK-D | **A token cannot manage tokens, sign out, or open the event stream**                                                                    | Every route open to a token, which lets a stolen token mint a successor, and holds a connection open after revocation |
+| TK-E | **A tenant administrator lists and revokes anybody's tokens**                                                                           | Only their owner, which leaves a departed person's tokens working until each expires                                  |
+| TK-F | **The secret carries the prefix `awt_`**, and only its hash is kept                                                                     | An unmarked secret, which secret scanners cannot tell from noise                                                      |
+
 ## The request path
 
 1. **Hostname to tenant**, from `tenant_hostname`, cached briefly. An unknown hostname is a 404 before

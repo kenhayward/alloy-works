@@ -251,7 +251,7 @@ accept "the system computed it".
 
 | ID          | Requirement                                                                                                                            | Tranche    | Status    |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **IAM-033** | Service identities must be distinct from user identities, and must not be created by impersonating a person                            | T1         | Specified |
+| **IAM-033** | Service identities must be distinct from user identities, and must not be created by impersonating a person                            | T5         | Specified |
 | **IAM-034** | A token must carry explicit scopes and an expiry, and must be issuable with less than the full authority of whoever created it         | T1         | Specified |
 | **IAM-035** | A token must be revocable with immediate effect                                                                                        | T1         | Specified |
 | **IAM-036** | An API or MCP caller must act with the permissions of the calling identity, and must have no path to exceeding them (**API**, **GEN**) | Constraint | Specified |
@@ -492,6 +492,22 @@ is an edit.
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | "Everywhere it is active" could be read as ending every session the person holds, which is IAM-040's, in T3; the design and the test read it as ending this session at the service (T1 audit, K7)                                           | **IAM-039 reworded** - the session ended at the service and its token refused wherever presented; no change to what is required   |
 | Section 6 lists five levels and defines no hierarchy between them; read as tenant, space, template, document, component it would ask for inheritance the design rules out (TPL-006, and a component reused across documents) (T1 audit, K7) | **IAM-024 reworded** - tenant to space to artifact, and no artifact inheriting from another; no change to what the design answers |
+
+| Counts       | Before                                    | After                                     |
+| ------------ | ----------------------------------------- | ----------------------------------------- |
+| Requirements | 79, of which 4 superseded and 1 withdrawn | 79, of which 4 superseded and 1 withdrawn |
+
+### Ken's answer to service identities and tokens (K3), 2026-09-28
+
+[The T1 audit](<../../reviews/T1 - Audit against the code.md>) asked whether service identities and API
+tokens belong in T1 (K3). Ken kept personal tokens and moved service identities, recorded by
+[ADR-0028](../../decisions/0028-personal-api-tokens-in-t1.md). A row moving tranche whole keeps its
+identifier.
+
+| What was found                                                                                                                                            | Change                                                      |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Nothing in T1 calls the API but a browser session; the first caller that is not one is the MCP facade (T5), and no design says what a service identity is | **IAM-033 moved to T5**, with the MCP facade                |
+| A person's own script is T1's likeliest integration, and a personal token acting as its creator answers it                                                | IAM-034 and IAM-035 not changed: personal tokens stay in T1 |
 
 | Counts       | Before                                    | After                                     |
 | ------------ | ----------------------------------------- | ----------------------------------------- |
