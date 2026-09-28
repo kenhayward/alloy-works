@@ -94,7 +94,7 @@ noticed and explained rather than discovered at a refusal.
 | **CNT-152** | A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; **OK anyway** then applies it                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **CNT-176** | The browser suite's `accessibility.test.ts` (W13.2) runs axe-core over WCAG 2.2 AA's automatable criteria in every state of the editor and the document view a person reaches - the cursor in each block and mark, each dialog and each panel open, the title strip's fields, a save that failed, Reading and Authoring, the outline, the version chooser, the preview and the publishing panel - in the pinned Chromium against the whole stack, in CI's whole-system job on every push and pull request. A violation fails it unless the suite's allow-list holds it by rule, element and state, with the issue filed for it |
 | **CNT-177** | Before each release a person audits the editor against WCAG 2.2 AA by [the audit guide](../guides/auditing-a-release.md): the criteria no automated check reaches, by keyboard and with a screen reader, in the states the suite checks, with what axe could not decide beside them. The record is committed as `docs/audits/<version>/wcag.md`, and the release's baseline verifies CNT-177 by `attestation`, naming who looked and when                                                                                                                                                                                      |
-| **CNT-078** | By the two above together, and never by a test: a baseline includes CNT-176 and declares CNT-078 `inherited` from CNT-177, so the editor is said to meet WCAG 2.2 AA only in a release whose suite passed and whose audit a person made - and the guide refuses the audit while the suite's allow-list holds anything. No test title cites it                                                                                                                                                                                                                                                                                  |
+| **CNT-078** | By the two above together, and never by a test: a baseline declares CNT-078 `inherited` from `CNT-177, CNT-176`, and the gate meets a requirement inherited from several only when every one of them is included and met, so the editor is said to meet WCAG 2.2 AA only in a release whose suite passed and whose audit a person made. An attestation naming its record under `docs/audits/` is refused where the file is not there, and the guide refuses the audit while the suite's allow-list holds anything. No test title cites it                                                                                      |
 
 **What CNT-067 and CNT-090 are answered with, and what they are not** (W11.2 and its final review).
 An iteration is kept until the next version after the one it was opened from is cut, and for the
@@ -1176,10 +1176,11 @@ the same, so the component's lock state stays current without anybody polling.
   runs axe-core over every state of this surface and the document view in CI
   ([testing.md](../testing.md#the-browser-suite)), and a person audits it against WCAG 2.2 AA before
   each release by [the audit guide](../guides/auditing-a-release.md) (CNT-177). **No release claims
-  CNT-078 without both in its evidence**: its baseline declares CNT-078 `inherited` from CNT-177, with
-  CNT-176 included beside it. The first run found five violations, each fixed in W13.2 - muted text
-  on tinted grounds, the environment's name on Home, the account chip under the pointer, and the
-  Reference dialog's radio buttons too close together - so the allow-list is empty.
+  CNT-078 without both in its evidence**: its baseline declares CNT-078 `inherited` from CNT-177 and
+  CNT-176, which `pnpm trace gate` meets only when both are included and met. W13.2 found six
+  violations, each fixed - muted text on tinted grounds, the environment's name on Home, the account
+  chip under the pointer, the Reference dialog's radio buttons too close together, and the
+  publication page's warning orange - so the allow-list is empty.
 
 ## What was ruled out
 

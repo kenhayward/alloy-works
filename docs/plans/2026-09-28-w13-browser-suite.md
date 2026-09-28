@@ -238,6 +238,26 @@ Only these could change the plan; everything else is built as written.
   the guide runs the corpus so.
 - **`docs/audits/` has a README** saying what the folder holds and that a record is never edited, as
   `docs/reviews/`'s does; the records themselves arrive with the first audited release.
+- **The final review found states checked vacuously**, and CI's sixth violation was one of them. The
+  first version waited for the network and the faces after each move, which return at once after a
+  move inside the app, so axe checked the screen before: the documents, publications and templates
+  lists (the components list was checked four times), Search's results, API tokens, Administration's
+  sections, the Recovery panel, the cursor in a quotation with the Table panel still up, and the
+  publication page; and "a figure chosen" never opened its panel, because a click on a figure's
+  picture selects nothing (issue #335) - the panel opens from its caption. Each state is now waited
+  for by its own content, and `checkAxe` takes what the state is known by (`shows`) and what it
+  leaves behind (`hides`) and refuses to run without them, before axe and after; run on the old
+  waits, it failed in the first state each of three tests moved to by a click. `outline.test.ts` names
+  each state by the tree it draws, and showed no race.
+- **`allowPageNoise` takes the patterns a test provokes**, and still fails on anything else the page
+  says; the two tests that use it name a 401 from `/v1/me` and a 503 from a save.
+- **CNT-078 is inherited from two**: `pnpm trace gate` now meets a requirement whose `inherited` row
+  names several identifiers only when every one is included and met, so a baseline declares
+  `CNT-078 | inherited | CNT-177, CNT-176` and cannot meet it from the audit alone; and it refuses an
+  attestation naming a record under `docs/audits/` that is not there.
+- **PUB-104 is not claimed.** Its statement asks for the review whenever the engine, the template or
+  the pipeline changes; the guide makes it before each release, so a change merged between releases
+  waits for it. publishing.md names the gap; superseding PUB-104 with a per-release row is Ken's.
 
 ## W13.3: The budgets
 

@@ -11,19 +11,21 @@ afterAll(async () => {
   if (launched !== null) await (await launched).close();
 });
 
-/** Whether this test has opted out of the page's console gate. Re-armed before every test. */
-let allowed = false;
+/** What this test expects its page to say, each line matching one. Re-armed before every test. */
+let allowed: readonly RegExp[] = [];
 
 beforeEach(() => {
-  allowed = false;
+  allowed = [];
 });
 
 /**
- * Opts this one test out of the page's console gate, because it provokes the noise on purpose. The
- * gate re-arms for the next test, as the jsdom suite's `allowConsoleNoise` does.
+ * Lets this one test's page say what the test provokes on purpose - each console line or uncaught
+ * exception that matches one of `expected` - and nothing else: any other error, warning or exception
+ * still fails the test. The gate re-arms for the next test, as the jsdom suite's `allowConsoleNoise`
+ * does.
  */
-export function allowPageNoise(): void {
-  allowed = true;
+export function allowPageNoise(...expected: [RegExp, ...RegExp[]]): void {
+  allowed = expected;
 }
 
 /**
@@ -32,7 +34,7 @@ export function allowPageNoise(): void {
  *
  * **The page's console is gated** (the W13 plan's B-H): a `console.error`, a `console.warn` or an
  * uncaught exception in the page fails the test, naming what was said and where, unless the test
- * called `allowPageNoise()`. A run of the page's own console into the run's output is where nobody
+ * called `allowPageNoise()` with a pattern it matches. A run of the page's own console into the run's output is where nobody
  * reads it.
  *
  * `signedIn: false` starts the context with nothing in it instead, for the screens a person meets
@@ -73,10 +75,11 @@ export async function withPage<T>(
   } finally {
     await context.close();
   }
-  if (noise.length > 0 && !allowed) {
+  const unexpected = noise.filter((said) => !allowed.some((pattern) => pattern.test(said)));
+  if (unexpected.length > 0) {
     throw new Error(
-      `The page was not quiet during this test:\n${noise.join('\n')}\n` +
-        'Fix the cause, or call allowPageNoise() if this test provokes it on purpose.',
+      `The page was not quiet during this test:\n${unexpected.join('\n')}\n` +
+        'Fix the cause, or call allowPageNoise() with what this test provokes on purpose.',
     );
   }
   return result;

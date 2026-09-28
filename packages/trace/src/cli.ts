@@ -531,7 +531,9 @@ function main(argv: string[]): number {
           return 1;
         }
 
-        const result = gate(baseline, model, results.outcomes);
+        const result = gate(baseline, model, results.outcomes, (record) =>
+          existsSync(join(REPO_ROOT, record)),
+        );
         const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
         console.log(formatGate(result, includedIds));
         return result.met === result.total && result.declarationProblems.length === 0 ? 0 : 1;
@@ -575,7 +577,9 @@ function main(argv: string[]): number {
           return 1;
         }
 
-        const result = gate(baseline, model, results.outcomes);
+        const result = gate(baseline, model, results.outcomes, (record) =>
+          existsSync(join(REPO_ROOT, record)),
+        );
         if (result.met !== result.total || result.declarationProblems.length > 0) {
           const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
           console.log(

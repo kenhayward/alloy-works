@@ -7,6 +7,7 @@ import {
   Verification,
   attestationIsSubstantial,
   validate,
+  inheritedFrom,
 } from '../model.js';
 import { boldIdentifier, tableCells } from './table.js';
 
@@ -23,10 +24,13 @@ function checkVerificationRow(row: Verification, id: string, where: string): voi
         `expensive to make. "${row.by}" is not enough.`,
     );
   }
-  if (row.kind === 'inherited' && !REQUIREMENT_ID.test(row.by)) {
+  if (
+    row.kind === 'inherited' &&
+    !inheritedFrom(row.by).every((each) => REQUIREMENT_ID.test(each))
+  ) {
     throw new Error(
       `${where}: ${id} inherits from "${row.by}", which must be a bare requirement identifier ` +
-        'such as IAM-004, checked at parse time rather than discovered later.',
+        'such as IAM-004, or several separated by commas, checked at parse time rather than discovered later.',
     );
   }
 }

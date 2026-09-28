@@ -74,6 +74,7 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1472);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 503, from 504 (2026-09-28): W13.2's final review - publishing.md drops PUB-104, which asks for the review on each change and the guide makes it before each release; the gap is named beside its table.
     // 504, from 500 (2026-09-28): W13.2 - component-editor.md claims CNT-176, CNT-177 and CNT-078, and publishing.md PUB-104, each verified by the browser suite or a person's attestation.
     // 500, from 498 (2026-09-28): W14.5 - themes.md claims STY-079 and STR-025, which structure.md left unclaimed.
     // 498, from 497 (2026-09-28): W14.6 - service-foundations.md claims IAM-075, store by store, once #314 sealed each environment's sign-in secret.
@@ -212,7 +213,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(504);
+    ).toBe(503);
   });
 });
 

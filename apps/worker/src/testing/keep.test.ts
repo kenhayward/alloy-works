@@ -36,10 +36,26 @@ describe("keeping the corpus's PDFs for a person to read", () => {
     expect((await readdir(kept)).sort()).toEqual([
       'case-1-headings-a-list-and-a-figure-1.pdf',
       'case-1-headings-a-list-and-a-figure-2.pdf',
-      'the-keep-rules-keep-with-next-1.pdf',
+      'keep-with-next-1.pdf',
     ]);
     expect(await readFile(join(kept, 'case-1-headings-a-list-and-a-figure-2.pdf'), 'utf8')).toBe(
       'second',
     );
+  });
+
+  it("names each by its test's own title, not its describe's, so two tests under one long describe are told apart", async () => {
+    directory = await mkdtemp(join(tmpdir(), 'alloy-keep-'));
+    const describe =
+      'the keep rules: declared by a paragraph style, passed to each engine as its own rule, and holding in the PDF wherever the page allows';
+    let name = `${describe} > STY-008 keeps a heading with what follows it`;
+    const typst = keepingEach(echo, directory, () => name);
+    await typst.compile('t', 'first', new Date());
+    name = `${describe} > STY-008 keeps a paragraph together`;
+    await typst.compile('t', 'second', new Date());
+
+    expect((await readdir(directory)).sort()).toEqual([
+      'sty-008-keeps-a-heading-with-what-follows-it-1.pdf',
+      'sty-008-keeps-a-paragraph-together-1.pdf',
+    ]);
   });
 });

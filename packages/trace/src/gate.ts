@@ -2,6 +2,8 @@ import { problems as corpusProblems, type Problem } from './check.js';
 import {
   ATTESTATION_MIN_LENGTH,
   attestationIsSubstantial,
+  inheritedFrom,
+  recordsNamed,
   type Baseline,
   type TraceModel,
   type VERIFICATION_KINDS,
@@ -23,7 +25,8 @@ export type DeclarationProblemKind =
   | 'both-included-and-excluded'
   | 'verification-outside-baseline'
   | 'duplicate-verification'
-  | 'blank-attestation';
+  | 'blank-attestation'
+  | 'missing-record';
 
 export interface DeclarationProblem {
   readonly kind: DeclarationProblemKind;
@@ -51,6 +54,12 @@ export function gate(
   baseline: Baseline,
   model: TraceModel,
   outcomes: Map<string, TestOutcome>,
+  /**
+   * Whether a file is there, by its path from the repository's root, for the records an attestation
+   * names under `docs/audits/`: asked, not read, so the gate stays a pure function of what it is
+   * handed. Left out, no record is looked for.
+   */
+  recordExists?: (path: string) => boolean,
 ): GateResult {
   const requirementById = new Map(
     model.requirements.map((requirement) => [requirement.id, requirement]),
@@ -113,6 +122,22 @@ export function gate(
       });
     }
   }
+  // Rule 6: an attestation that names its record in docs/audits/ names a file that is there. The
+  // record is the evidence the person's name stands for; a row pointing at nothing attests nothing.
+  if (recordExists !== undefined) {
+    for (const row of baseline.verification) {
+      if (row.kind !== 'attestation' || !includedIds.has(row.id)) continue;
+      for (const record of recordsNamed(row.by)) {
+        if (recordExists(record)) continue;
+        declarationProblems.push({
+          kind: 'missing-record',
+          id: row.id,
+          detail: `${row.id} is attested by ${record} in baseline ${baseline.name}, which is not there`,
+        });
+      }
+    }
+  }
+
   const verificationById = new Map<string, Verification>();
   for (const [id, rows] of rowsById) {
     if (rows.length === 1) verificationById.set(id, rows[0]!);
@@ -195,7 +220,7 @@ export function gate(
       if (met.has(id) || !eligible(id)) continue;
       const declared = verificationById.get(id);
       if (declared?.kind !== 'inherited') continue;
-      if (includedIds.has(declared.by) && met.has(declared.by)) {
+      if (inheritedFrom(declared.by).every((from) => includedIds.has(from) && met.has(from))) {
         met.add(id);
         changed = true;
       }
@@ -233,14 +258,18 @@ export function gate(
       continue;
     }
     if (kind === 'inherited') {
-      const target = verificationById.get(id)?.by;
+      const by = verificationById.get(id)?.by;
+      // The first it rests on that is not in the baseline, or else the first that is not met.
+      const from = by === undefined ? [] : inheritedFrom(by);
+      const outside = from.find((each) => !includedIds.has(each));
+      const target = outside ?? from.find((each) => !met.has(each));
       unmet.push({
         id,
         kind,
         why:
           target === undefined
             ? `${id} declares no inherited-from identifier`
-            : !includedIds.has(target)
+            : outside !== undefined
               ? `${id} inherits from ${target}, which is not in the baseline`
               : `${id} inherits from ${target}, which is not met`,
       });

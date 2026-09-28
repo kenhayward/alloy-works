@@ -129,6 +129,12 @@ that exercise everything the product publishes, grown by a case for each publish
 Take the checkpoints and their failure conditions from the protocol itself, and say in the record
 which version of it you used; this guide does not restate them, and names none by number.
 
+PUB-104 asks for this review whenever the engine, the template or the publishing pipeline changes.
+This guide makes it before each release, so a change merged between two releases is reviewed with
+the next release, not when it lands; publishing.md names that gap, and PUB-104 is not claimed by any
+design until it is settled. A release that changed any of the three should say in the record which
+changes it reviewed.
+
 **Get the PDFs.** The corpus keeps every PDF it compiles where `ALLOY_CORPUS_PDFS` names a directory,
 each named by the case that made it:
 
@@ -248,7 +254,9 @@ afterwards**: like a review, it is evidence of what a person saw on that day
 <The summary line `undecided` printed, and what you concluded of each rule.>
 ```
 
-Those are WCAG 2.2's fifty-five success criteria at levels A and AA; 4.1.1 Parsing was removed in 2.2.
+Those are WCAG 2.2's fifty-five success criteria at levels A and AA, as the W3C Recommendation lists
+them at <https://www.w3.org/TR/WCAG22/>; 4.1.1 Parsing was removed in 2.2. Read each criterion's
+wording and its Understanding document there, not from this table.
 Each verdict is **Pass**, **Fail** with its issue's number, or **Not applicable** with why.
 
 `matterhorn.md` is the same shape: a banner naming the date, you, the commit, the reader and the
@@ -270,13 +278,14 @@ say how the three that no test cites are verified:
 | ----------- | ----------- | ------------------------------------------------------------- |
 | **CNT-177** | attestation | <your name>, YYYY-MM-DD, docs/audits/<version>/wcag.md        |
 | **PUB-104** | attestation | <their name>, YYYY-MM-DD, docs/audits/<version>/matterhorn.md |
-| **CNT-078** | inherited   | CNT-177                                                       |
+| **CNT-078** | inherited   | CNT-177, CNT-176                                              |
 ```
 
 `pnpm trace gate` refuses an attestation whose `By` is shorter than thirty characters or holds no date
-as `YYYY-MM-DD`, and meets an `inherited` row only where the requirement it names is included and met
-itself. CNT-176 needs no row: the browser suite's test naming it passing is its evidence. So CNT-078
-is met only in a release whose suite passed and whose audit a person made.
+as `YYYY-MM-DD`, or names a record under `docs/audits/` that is not there; and meets an `inherited`
+row only where every requirement it names is included and met itself. CNT-176 needs no row of its
+own: the browser suite's test naming it passing is its evidence. So CNT-078 is met only in a release
+whose suite passed and whose audit a person made.
 
 **Where the audit found a failure**, the record says so and the release does not attest: CNT-177 and
 CNT-078 go in the baseline's `## Excluded` table, each with a reason naming the issues, rather than in

@@ -6,7 +6,7 @@ import type { Typst } from '../typst.js';
  * The corpus's Typst, keeping every PDF it compiles in `directory` for a person to open in a reader:
  * the Matterhorn review PUB-104 asks for is made on the corpus's PDFs (docs/guides/auditing-a-release.md),
  * and the suite otherwise keeps none. Each file is named by the case that compiled it, `name()` asked at
- * the compile, and numbered in the order that case compiled them. With no directory, Typst as it was.
+ * the compile - its own title, not its describe's - and numbered in the order that case compiled them. With no directory, Typst as it was.
  */
 export function keepingEach(
   typst: Typst,
@@ -19,7 +19,9 @@ export function keepingEach(
     version: () => typst.version(),
     async compile(template, data, createdAt, images) {
       const pdf = await typst.compile(template, data, createdAt, images);
-      const slug = name()
+      // The test's own title, after the last ` > `: a describe's title is shared by every test in it,
+      // and a long one would fill the name and leave its tests told apart by a number alone.
+      const slug = (name().split(' > ').pop() ?? '')
         .replace(/[^A-Za-z0-9]+/g, '-')
         .replace(/^-|-$/g, '')
         .slice(0, 120)

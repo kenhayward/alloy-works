@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { AxeBuilder } from '@axe-core/playwright';
-import type { Page } from 'playwright-core';
+import type { Locator, Page } from 'playwright-core';
 import type { TaskMeta } from 'vitest';
 
 /**
@@ -20,8 +20,8 @@ export interface Found {
 /**
  * The violations that need a design, each filed as an issue and held here until it is fixed (B-I).
  * Compared exactly: a violation not listed fails, and a listed one axe no longer finds fails too, until
- * it is taken off. Empty: CNT-078 cannot be attested while it holds anything. W13.2's first run found
- * five violations and fixed each, so nothing was held here. A target axe names by a CSS module's class
+ * it is taken off. Empty: CNT-078 cannot be attested while it holds anything. W13.2 found six
+ * violations and fixed each, so nothing was held here. A target axe names by a CSS module's class
  * carries the stylesheet's hash and line in the name, so an entry is copied from the failure again
  * whenever its stylesheet changes.
  */
@@ -44,10 +44,52 @@ const AXE_SOURCE = readFileSync(
 );
 
 /**
+ * What says a state has arrived: an element on the page, or a condition only the page can answer - the
+ * selection standing inside a quotation, say - with words for the failure.
+ */
+export type Sign = Locator | { readonly said: string; readonly holds: () => Promise<boolean> };
+
+/** What a state is known by: every sign in `shows` there, and every element in `hides` gone. */
+export interface Arrival {
+  readonly shows: Sign | readonly Sign[];
+  readonly hides?: readonly Locator[];
+}
+
+/**
+ * Whether the page is in the state it is about to be checked in, asked without waiting: the waiting is
+ * the test's, for that state's own content. An in-app move changes the page after it has answered, so a
+ * wait for the network or the faces returns at once and axe checks the screen before - which passes, and
+ * says nothing. This makes such a step fail, naming what was missing.
+ */
+async function arrived(state: string, { shows, hides = [] }: Arrival): Promise<void> {
+  const signs: readonly Sign[] = Array.isArray(shows) ? shows : [shows as Sign];
+  for (const sign of signs) {
+    const there = 'holds' in sign ? await sign.holds() : await sign.isVisible();
+    if (!there) {
+      throw new Error(
+        `axe, in ${state}: the state has not arrived - ${'holds' in sign ? sign.said : `${String(sign)} is not on the page`} - ` +
+          'so axe would check another screen. Wait for the state before checking it.',
+      );
+    }
+  }
+  for (const gone of hides) {
+    if (await gone.isVisible()) {
+      throw new Error(
+        `axe, in ${state}: the state has not arrived - ${String(gone)} is still on the page - ` +
+          'so axe would check another screen. Wait for the state before checking it.',
+      );
+    }
+  }
+}
+
+/**
  * axe over the page, or the part of it `within` selects, in one named state: the violations compared
  * with the allow-list, and what axe marks `incomplete` - needing a person - written into the test's
  * `meta` for the audit (CNT-177), never failed on. `allowed` is the list's own tests' to give; every
  * other caller compares with `ALLOWED`.
+ *
+ * **The state must be there when axe runs, and still there when it finishes**: `shows` is what it is
+ * known by and `hides` what it has left behind, each asked before and after, never waited for.
  */
 export async function checkAxe(
   page: Page,
@@ -56,11 +98,14 @@ export async function checkAxe(
   {
     within,
     allowed: list = ALLOWED,
-  }: { readonly within?: string; readonly allowed?: readonly Allowed[] } = {},
+    ...arrival
+  }: Arrival & { readonly within?: string; readonly allowed?: readonly Allowed[] },
 ): Promise<void> {
+  await arrived(state, arrival);
   let builder = new AxeBuilder({ page, axeSource: AXE_SOURCE }).withTags([...WCAG_22_AA]);
   if (within !== undefined) builder = builder.include(within);
   const results = await builder.analyze();
+  await arrived(state, arrival);
   const each = (found: typeof results.violations): Found[] =>
     found.flatMap((result) =>
       result.nodes.map((node) => ({ state, rule: result.id, target: node.target.join(' ') })),

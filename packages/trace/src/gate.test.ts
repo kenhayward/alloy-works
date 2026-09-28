@@ -149,6 +149,94 @@ describe('deciding a baseline', () => {
     ]);
   });
 
+  // CNT-078 rests on CNT-177, a person's audit, and CNT-176, the automated suite, together: a baseline
+  // that could meet it from the audit alone would claim conformance with no suite having passed.
+  it('meets a requirement inherited from several only when every one is included and met', () => {
+    const three = model({
+      requirements: [requirement('ZZZ-001'), requirement('ZZZ-002'), requirement('ZZZ-003')],
+      designs: [{ document: 'one.md', owns: [{ id: 'ZZZ-001', howItIsMet: 'a' }] }],
+      citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
+    });
+    const passed = outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]);
+    const attested = {
+      id: 'ZZZ-002',
+      kind: 'attestation',
+      by: 'Ada Lovelace, checked 2026-09-13',
+    } as const;
+    const inheriting = { id: 'ZZZ-003', kind: 'inherited', by: 'ZZZ-002, ZZZ-001' } as const;
+    const all = [
+      { id: 'ZZZ-001', why: 'invented for the fixture' },
+      { id: 'ZZZ-002', why: 'invented for the fixture' },
+      { id: 'ZZZ-003', why: 'invented for the fixture' },
+    ];
+
+    const met = gate(
+      baseline({ included: all, verification: [attested, inheriting] }),
+      three,
+      passed,
+    );
+    expect(met.unmet).toEqual([]);
+    expect(met.met).toBe(3);
+
+    const withoutTheSuite = gate(
+      baseline({
+        included: all.filter((each) => each.id !== 'ZZZ-001'),
+        verification: [attested, inheriting],
+      }),
+      three,
+      passed,
+    );
+    expect(withoutTheSuite.unmet).toEqual([
+      {
+        id: 'ZZZ-003',
+        kind: 'inherited',
+        why: 'ZZZ-003 inherits from ZZZ-001, which is not in the baseline',
+      },
+    ]);
+
+    const suiteFailed = gate(
+      baseline({ included: all, verification: [attested, inheriting] }),
+      three,
+      outcomes([{ id: 'ZZZ-001', outcome: 'failed', tests: ['a (ZZZ-001)'] }]),
+    );
+    expect(suiteFailed.unmet).toContainEqual({
+      id: 'ZZZ-003',
+      kind: 'inherited',
+      why: 'ZZZ-003 inherits from ZZZ-001, which is not met',
+    });
+  });
+
+  it('refuses an attestation naming a record in docs/audits that is not there, where the gate is told what is', () => {
+    const declared = baseline({
+      verification: [
+        {
+          id: 'ZZZ-001',
+          kind: 'attestation',
+          by: 'Ada Lovelace, 2026-09-13, docs/audits/0.0.0/wcag.md',
+        },
+      ],
+    });
+
+    const missing = gate(declared, model({}), outcomes([]), () => false);
+    expect(missing.declarationProblems).toEqual([
+      {
+        kind: 'missing-record',
+        id: 'ZZZ-001',
+        detail:
+          'ZZZ-001 is attested by docs/audits/0.0.0/wcag.md in baseline 0.0.0-invented, which is not there',
+      },
+    ]);
+
+    const asked: string[] = [];
+    const present = gate(declared, model({}), outcomes([]), (path) => {
+      asked.push(path);
+      return true;
+    });
+    expect(present.declarationProblems).toEqual([]);
+    expect(present.met).toBe(1);
+    expect(asked).toEqual(['docs/audits/0.0.0/wcag.md']);
+  });
+
   // The `by` text itself lives in the baseline's own verification row, which the caller already
   // holds - the gate's job is only to accept it as met, which is what "recorded" means here: the
   // requirement clears with no test and no design at all, on the strength of the attestation alone.

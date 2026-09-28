@@ -188,6 +188,37 @@ describe('parsing a baseline document', () => {
     expect(parsed.verification).toEqual([{ id: 'ZZZ-001', kind: 'inherited', by: 'ZZZ-002' }]);
   });
 
+  it('accepts an inherited row resting on several identifiers, and refuses one naming anything else among them', () => {
+    const parsed = parseBaseline(
+      document,
+      doc(
+        ...included,
+        '## Verification',
+        '',
+        '| ID          | Kind      | By               |',
+        '| ----------- | --------- | ---------------- |',
+        '| **ZZZ-001** | inherited | ZZZ-002, ZZZ-003 |',
+      ),
+    );
+    expect(parsed.verification).toEqual([
+      { id: 'ZZZ-001', kind: 'inherited', by: 'ZZZ-002, ZZZ-003' },
+    ]);
+
+    expect(() =>
+      parseBaseline(
+        document,
+        doc(
+          ...included,
+          '## Verification',
+          '',
+          '| ID          | Kind      | By                    |',
+          '| ----------- | --------- | --------------------- |',
+          '| **ZZZ-001** | inherited | ZZZ-002, and ZZZ-003  |',
+        ),
+      ),
+    ).toThrow(/ZZZ-001.*identifier/is);
+  });
+
   it('treats the three sections as independent, so a baseline may exclude nothing', () => {
     const parsed = parseBaseline(document, doc(...included));
 

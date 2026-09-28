@@ -171,6 +171,8 @@ refusal `gone` is about).
 `#d97706` `--warn` · `rgba(15,23,42,0.45)` `--overlay` · `0 12px 40px rgba(0,0,0,0.08)`
 `--shadow-modal` · `--z-modal` 2000.
 
+_Since W13.2, `--muted` is #646b78, darker than the #6b7280 drawn here: the drawn value measured under WCAG's 4.5:1 on `--accent-weak` and `--chip-bg`. [`tokens.css`](../../../../apps/web/src/theme/tokens.css) is the source; the drawings keep what was drawn. Warning words likewise take `--warn-text`, #b45309, where #d97706 measured 3.2:1 on white; `--warn` stays for borders and dots._
+
 Type: 16px `--size-modal-title` (heading) · 14px `--size-body` · 13px `--size-body-small` (labels,
 buttons, complaint, the selection line) · 12px `--size-label` (hints). Space: 4, 6, 8, 10, 12, 14,
 16, 18, 20, 40. Shape: `--radius-6` (fields, buttons), `--radius-8` (the icon tile),

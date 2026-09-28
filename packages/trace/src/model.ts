@@ -136,6 +136,23 @@ export const ATTESTATION_MIN_LENGTH = 30;
  * already been checked. One predicate, one bar, so the two can never quietly disagree about what
  * counts as substantial.
  */
+/**
+ * The identifiers an `inherited` row rests on: one, or several separated by commas, every one of which
+ * must be included and met. Several is how a requirement verified only by two others together says so -
+ * CNT-078, by CNT-177's audit and CNT-176's suite - so a baseline cannot meet it from either alone.
+ */
+export function inheritedFrom(by: string): string[] {
+  return by.split(',').map((each) => each.trim());
+}
+
+/**
+ * The records under `docs/audits/` an attestation names, which the gate asks are there when it is told
+ * how to look.
+ */
+export function recordsNamed(by: string): string[] {
+  return [...by.matchAll(/docs\/audits\/[^\s,;)]+/g)].map((match) => match[0]);
+}
+
 export function attestationIsSubstantial(by: string): boolean {
   return by.length >= ATTESTATION_MIN_LENGTH && ATTESTATION_DATE.test(by);
 }

@@ -593,7 +593,8 @@ its own - a small document is a handful of requests - titled with what it is for
 
 **The page's console is gated** as the jsdom suite's is: a `console.error`, a `console.warn` or an
 uncaught exception in the page fails the test that caused it, naming what was said and where. A test
-that provokes one on purpose calls `allowPageNoise()`, and the gate re-arms for the next test. There
+that provokes one on purpose calls `allowPageNoise()` with a pattern for each thing it provokes, and
+anything else the page says still fails it; the gate re-arms for the next test. There
 are no retries: a flaky test is fixed, or quarantined in its own pull request with an issue. The gate
 found one on its first run - a section's title field had no `white-space` rule, so ProseMirror warned
 and collapsed the spaces an author typed - which jsdom, computing no style, never could.
@@ -642,11 +643,22 @@ makes - its figure and inline image uploaded and proved by the worker first - wi
 each dialog and panel open, the paste report, the title strip's fields, and a save the service is made
 to refuse; and a document placing it, in Reading and Authoring, boundaries shown, a node chosen and
 one reached by a link, the version chooser, a section's title and its Equation dialog, the removal
-question, the component opened in place, the preview pane, and a publish and its publication. Its
-first run found five violations, each fixed in W13.2: muted text on tinted grounds (the token darkened),
-the environment's name on Home's translucent panel, the account chip's white text under the pointer
-on base.css's pale hover, and the Reference dialog's radio buttons 23 pixels apart where WCAG 2.5.8
-asks 24. `outline.test.ts` edits a document's outline the three ways STR-006 names,
+question, the component opened in place, the preview pane, and a publish and its publication. It
+found six violations, each fixed in W13.2: muted text on tinted grounds (the token darkened), the
+environment's name on Home's translucent panel, the account chip's white text under the pointer on
+base.css's pale hover, the Reference dialog's radio buttons 23 pixels apart where WCAG 2.5.8 asks 24,
+and the publication page's warning in an orange too faint for text.
+
+**Each state is waited for by its own content, and `checkAxe` refuses to run without it.** A move
+inside the app - a link followed, a panel opened - changes the page after the network has gone quiet,
+so a wait for the network or the faces returns at once and axe checks the screen before, which passes
+having checked nothing. The first version of the test waited so, and its review found a dozen states
+checked that way: the lists after the first, Search, API tokens, Administration's sections, the
+Recovery panel, a quotation with the Table panel still up, the publication page. So every `checkAxe`
+names what its state is known by - `shows`, an element or a condition such as the cursor standing in
+a quotation, and `hides`, what the state before left - and asks for each before axe runs and again
+after, without waiting: a step that has not arrived fails there, naming what is missing.
+`outline.test.ts` names each state by the tree it draws. `outline.test.ts` edits a document's outline the three ways STR-006 names,
 each act read back from the service: by keyboard alone - insert, move, promote and demote, retitle in
 **Title**, **Starts on**, and remove after its question - with no pointer press sent, the focus kept
 where the act was made, each act's announcement read from the live region, and every `Alt` and arrow

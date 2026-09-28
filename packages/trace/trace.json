@@ -15180,7 +15180,7 @@
         },
         {
           "id": "CNT-078",
-          "howItIsMet": "By the two above together, and never by a test: a baseline includes CNT-176 and declares CNT-078 `inherited` from CNT-177, so the editor is said to meet WCAG 2.2 AA only in a release whose suite passed and whose audit a person made - and the guide refuses the audit while the suite's allow-list holds anything. No test title cites it"
+          "howItIsMet": "By the two above together, and never by a test: a baseline declares CNT-078 `inherited` from `CNT-177, CNT-176`, and the gate meets a requirement inherited from several only when every one of them is included and met, so the editor is said to meet WCAG 2.2 AA only in a release whose suite passed and whose audit a person made. An attestation naming its record under `docs/audits/` is refused where the file is not there, and the guide refuses the audit while the suite's allow-list holds anything. No test title cites it"
         }
       ]
     },
@@ -15770,10 +15770,6 @@
         {
           "id": "PUB-102",
           "howItIsMet": "The reference document is declared in `apps/worker/src/publishing-budget.test.ts`: 30 chapters, each placing a component of 100 blocks - 150 each of figures, tables, numbered equations and footnotes, and 2,400 paragraphs of prose - set to 311 pages. It is published eleven times from `requestPublication` to the publication `processNext` records, the first reported and held to the maximum and the other ten held to a p95 of ten seconds and a maximum of thirty on a developer's machine, stated against [the reference configuration](../testing.md#the-reference-configuration) that `docs/testing.md` declares, and recorded only on CI's runner (W-D), with the configuration and the document's pages and parts written beside the result in `.trace-results/worker.json`. As with STR-063, a run on CI's runner is held to neither bound, so a green CI run does not show the budget met. The measured span runs from `requestPublication` to the recorded publication, in process: it leaves out the HTTP route that asks for the publish and the time a request waits in the queue for a worker. The conformance report joins the publication after it is recorded, as a job of its own (ADR-0030), outside that span, **within five minutes**: the same test takes each check at once, as a free worker does, and measures from the request's `finished_at` to the `publication_check` row's `checked_at`, by the database's clock, bound to five minutes where the budget binds - 23.6 seconds for veraPDF's first check, its JVM starting, and 6.2 warm, on the reference configuration, measured with the test suite's veraPDF rather than the worker's own. A check whose first attempt fails still joins within five minutes under the worker's defaults, which `config.test.ts` holds: an attempt ends within its lease, 120 seconds, whether it throws - veraPDF's start and check a third of the lease each - or its worker dies and the lease runs out; the queue retries after 2 seconds and an idle worker asks within a poll, 5 seconds; so a second attempt ends by 120 + 2 + 5 + 120 = 247 seconds. The bound is not held past that - see beside the table"
-        },
-        {
-          "id": "PUB-104",
-          "howItIsMet": "Before each release a person reviews the Matterhorn Protocol checkpoints only a person can judge - the reading order, a heading heard as one at its level, a table's structure against what it shows, a figure's and an equation's words, a passage in another language read in it - on the regression corpus's PDFs, which the corpus keeps for the review where `ALLOY_CORPUS_PDFS` names a directory (`apps/worker/src/testing/keep.ts`), by [the audit guide](../guides/auditing-a-release.md). Before every release, not only one whose engine, template or pipeline changed: a release is when such a change reaches anybody, and deciding that none did is a judgement easier to get wrong than the review is to make. The record is committed as `docs/audits/<version>/matterhorn.md`, and the release's baseline verifies PUB-104 by `attestation`, naming who reviewed and when"
         },
         {
           "id": "PUB-037",
@@ -20276,13 +20272,13 @@
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 151,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "STR-006",
       "file": "tests/browser/src/outline.test.ts",
-      "line": 153,
+      "line": 187,
       "kind": "title"
     },
     {
