@@ -2,10 +2,13 @@
 import { randomBytes } from 'node:crypto';
 import type {
   CreateTokenBody,
+  PrincipalTokenParams,
+  PrincipalTokensParams,
   TokenIssued,
   TokenList,
   TokenListQuery,
   TokenParams,
+  TokenRevoked,
   TokenView,
 } from '@alloy-works/api-contract';
 import {
@@ -17,7 +20,7 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { notFound } from './access.js';
+import { notFound, type Authorised } from './access.js';
 import { afterCursor, cursorAfter, pageLimit } from './components.js';
 import { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
@@ -141,6 +144,45 @@ export function tokenHandlers(
       );
       if (!revoked) throw notFound();
       return reply.status(204).send();
+    },
+  };
+}
+
+/**
+ * Anybody's tokens, for an administrator of the environment (TK-E), each run in the transaction
+ * `administer` at the tenant was decided in. A person the environment does not hold is not found, so
+ * another environment's is never told apart from nobody (IAM-003).
+ */
+export function administeredTokenHandlers() {
+  return {
+    listPrincipalTokens: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<TokenList> => {
+      const { id } = request.params as PrincipalTokensParams;
+      const query = request.query as TokenListQuery;
+      const held = await trx
+        .selectFrom('principal')
+        .select('id')
+        .where('id', '=', id)
+        .executeTakeFirst();
+      if (!held) throw notFound();
+      const after = afterCursor(query.cursor);
+      const page = await listApiTokens(trx, id, {
+        ...(after === undefined ? {} : { after }),
+        limit: pageLimit(query.limit),
+      });
+      return { items: page.items.map(tokenView), next: cursorAfter(page.after) };
+    },
+
+    revokePrincipalToken: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<TokenRevoked> => {
+      const { id, token } = request.params as PrincipalTokenParams;
+      // The token's row is read on every request, so it is refused at the next (IAM-035).
+      if (!(await revokeApiToken(trx, id, token))) throw notFound();
+      return { revoked: token };
     },
   };
 }

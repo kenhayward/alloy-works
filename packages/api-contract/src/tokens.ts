@@ -56,6 +56,21 @@ export type TokenIssued = z.infer<typeof TokenIssued>;
 export const TokenParams = z.object({ id: LowercaseUuid });
 export type TokenParams = z.infer<typeof TokenParams>;
 
+/** A person, named by an administrator whose tokens they list (TK-E). */
+export const PrincipalTokensParams = z.object({ id: LowercaseUuid.describe('The person') });
+export type PrincipalTokensParams = z.infer<typeof PrincipalTokensParams>;
+
+/** One of a person's tokens, named by an administrator revoking it (TK-E). */
+export const PrincipalTokenParams = z.object({
+  id: LowercaseUuid.describe('The person'),
+  token: LowercaseUuid.describe('Their token'),
+});
+export type PrincipalTokenParams = z.infer<typeof PrincipalTokenParams>;
+
+/** A token an administrator revoked: an answer with a body, as removing a grant and withdrawing an invitation have. */
+export const TokenRevoked = z.object({ revoked: z.string().describe('The token revoked') });
+export type TokenRevoked = z.infer<typeof TokenRevoked>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -122,6 +137,70 @@ export const tokenRoutes = {
       401: unauthenticated,
       403: tokenNotAllowed,
       404: { description: "No such token of the caller's in this environment", schema: ErrorBody },
+    },
+  },
+} as const satisfies Record<string, RouteContract>;
+
+const notAdministering = {
+  description:
+    'forbidden: the caller may not administer this environment; or token_not_allowed: an administrator manages tokens with a signed-in session, never a token',
+  schema: ErrorBody,
+} as const;
+
+/**
+ * Anybody's tokens, for an administrator of the environment (service-foundations.md, TK-E): listed and
+ * revoked, which is how a departed person's tokens go without waiting for each to expire. Routes of
+ * their own rather than the owner's widened, so each declares the one decision it takes - `administer`
+ * at the tenant - and the owner's stay a session's and nothing more. Both take a session alone (TK-D):
+ * a token scoped to `administer` still cannot revoke another, nor read who holds which.
+ */
+export const administeredTokenRoutes = {
+  listPrincipalTokens: {
+    operationId: 'listPrincipalTokens',
+    method: 'GET',
+    path: '/v1/principals/{id}/tokens',
+    summary: "A person's tokens, a page at a time, never their secrets: an administrator's",
+    tenantScoped: true,
+    access: {
+      check: 'permission',
+      permission: 'administer',
+      target: { tenant: true },
+      credential: 'session',
+    },
+    params: PrincipalTokensParams,
+    query: TokenListQuery,
+    responses: {
+      200: { description: "A page of the person's tokens", schema: TokenList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: notAdministering,
+      404: { description: 'No such person in this environment', schema: ErrorBody },
+    },
+  },
+  revokePrincipalToken: {
+    operationId: 'revokePrincipalToken',
+    method: 'DELETE',
+    path: '/v1/principals/{id}/tokens/{token}',
+    summary: "Revoke a person's token, as an administrator: the next request with it is refused",
+    tenantScoped: true,
+    access: {
+      check: 'permission',
+      permission: 'administer',
+      target: { tenant: true },
+      credential: 'session',
+    },
+    params: PrincipalTokenParams,
+    responses: {
+      200: { description: 'Revoked', schema: TokenRevoked },
+      401: unauthenticated,
+      403: notAdministering,
+      404: {
+        description: "No such token of that person's in this environment",
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

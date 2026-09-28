@@ -304,6 +304,7 @@ describe('the listings through the service', () => {
       listDefinitions: '/v1/definitions',
       listPeople: '/v1/people',
       listTokens: '/v1/tokens',
+      listPrincipalTokens: `/v1/principals/${(await get('/v1/me')).json<{ id: string }>().id}/tokens`,
     };
     // Every route that answers a list: a new one is listed here, and so paged, or this fails.
     const listings = allRoutes.filter(
