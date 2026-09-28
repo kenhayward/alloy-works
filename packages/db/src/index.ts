@@ -226,7 +226,17 @@ export {
   type EditingPolicyAnswer,
 } from './retention.js';
 export {
+  listIterations,
+  newestUncutIteration,
+  readIteration,
+  type IterationOwner,
+  type IterationSummary,
+  type StoredIteration,
+} from './recovery.js';
+export {
   claimLock,
+  holding,
+  isRefusal as isHolderRefusal,
   ITERATION_RETENTION_DAYS,
   iterationDigest,
   LOCK_PERIOD_MINUTES,
