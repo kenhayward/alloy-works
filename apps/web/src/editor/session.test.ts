@@ -1595,6 +1595,22 @@ describe('Recovery (component-editor.md, "Recovery, as W11 builds it")', () => {
     expect(service.calls).toEqual(['claim', 'save 1', 'list']);
   });
 
+  it('opens no Recovery over a refusal that stopped the saving, and keeps its reason said', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.saveAnswer = async () => ({ ok: false, code: 'signed_out' });
+    type('Unbox the printer');
+    session.recover();
+    await clock.advance(0);
+    expect(session.view()).toMatchObject({
+      phase: 'editing',
+      save: 'stopped',
+      notice: 'You are signed out. Sign in again; your unsaved text is kept below.',
+    });
+    expect(service.calls).not.toContain('list');
+  });
+
   it('claims again once under the same session when the listing finds the lock lapsed, and lists', async () => {
     const { clock, service, session } = harness();
     session.recover();

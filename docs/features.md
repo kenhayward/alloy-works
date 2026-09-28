@@ -874,8 +874,8 @@ Named explicitly so nobody has to read the source to find out:
   images in a line of text, footnotes, cross-references and equations, and a published Word document
   of all of that. The one sample document is a
   fixed template with no content of yours in it.
-- No way to make, change or choose between component types: every environment has one, named Topic, and
-  nothing yet lets an administrator add another or change which is the default.
+- No page for component types: a Definitions manager makes and changes them through the API alone,
+  and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
 - No document view that sets a document as it will publish: its page shows the outline you build
   beside the text in reading order, each component opening in place to be edited. No reading view. No reuse or transclusion. No way to

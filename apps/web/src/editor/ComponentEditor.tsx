@@ -1309,8 +1309,10 @@ export function ComponentEditor({
                 Try again
               </button>
             )}
-            {/* Above the text, before anybody types (RC-F): claimed, the saved text is listed. */}
-            {unsaved !== null && lock === null && (
+            {/* Above the text, before anybody types (RC-F): claimed, the saved text is listed. Only
+                while nobody holds it: a refused claim leaves the lock unread, but the holder it
+                named is still there, whoever it is (W11.2's re-review). */}
+            {unsaved !== null && lock === null && !(held && (held.yours || held.name !== null)) && (
               <Notice tone="unsaved">
                 <p>{unsavedSentence(unsaved.savedAt)}</p>
                 <button type="button" onClick={recover}>
@@ -1327,6 +1329,12 @@ export function ComponentEditor({
                   Recover here
                 </button>
               </Notice>
+            )}
+            {/* The same, found by a refused claim: the session's notice has said so already. */}
+            {unsaved !== null && lock?.yours !== true && held?.yours === true && (
+              <button type="button" onClick={recover}>
+                Recover here
+              </button>
             )}
             {phase === 'lost' && session?.recoverable && (
               <>

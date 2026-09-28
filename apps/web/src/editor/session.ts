@@ -838,7 +838,10 @@ export function createSession(options: SessionOptions): Session {
         enteringRecovery = true;
         void flush(true).then(() => {
           enteringRecovery = false;
-          if (disposed || (phase as Phase) !== 'editing') return;
+          // A refusal stops the saving without moving the phase: its reason stays said, and the
+          // panel does not open over it (W11.2's re-review).
+          if (disposed || (phase as Phase) !== 'editing' || (save as SaveState) === 'stopped')
+            return;
           phase = 'recovery';
           notice = RECOVERY_OPENED;
           publish();

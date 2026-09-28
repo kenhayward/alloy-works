@@ -453,12 +453,26 @@ describe('Recovery in the component editor', () => {
     expect(asked.some((each) => each.route.startsWith('GET /v1/components/{id}/iterations'))).toBe(
       false,
     );
-    // Still offered, for when Grace is done.
-    expect(screen.getByRole('button', { name: 'Recover' })).toBeInTheDocument();
+    // Nothing more is offered while Grace holds it; Try again is there for when she is done.
+    expect(screen.queryByRole('button', { name: /^Recover/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
   it('CNT-090 lists what was saved while editing, from Saved text, with what was just typed saved first and no second claim', async () => {
-    const { asked, surface } = open(recovering(opened()));
+    // Saves are answered only when the test lets them be, so the listing can be seen to wait.
+    const pending: (() => void)[] = [];
+    const { asked, surface } = open(
+      recovering(opened(), {
+        'PUT /v1/components/{id}/iterations/{session}/{sequence}': ({ path }) =>
+          new Promise((resolve) =>
+            pending.push(() =>
+              resolve(
+                json(200, { sequence: Number(path.split('/').at(-1)), lock: lock(OTHER_WINDOW) }),
+              ),
+            ),
+          ),
+      }),
+    );
     const view = await surface();
     const savedText = () => screen.getByRole('button', { name: 'Saved text' });
     // Offered while editing, as Save version is: reading, the lock is not this page's to list under.
@@ -467,6 +481,11 @@ describe('Recovery in the component editor', () => {
     await waitFor(() => expect(savedText()).toBeEnabled());
 
     await userEvent.click(savedText());
+    await waitFor(() => expect(pending.length).toBeGreaterThan(0));
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    // Nothing is listed while what was typed is still being saved.
+    expect(asked.some((each) => each.route === 'GET /v1/components/{id}/iterations')).toBe(false);
+    for (const answer of pending.splice(0)) answer();
     const shown = await panel();
     await within(shown).findAllByRole('listitem');
     const routes = asked.map((each) => each.route);
@@ -528,6 +547,51 @@ describe('Recovery in the component editor', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(unsavedSentence(unsaved.savedAt))).toBeNull();
     expect(screen.queryByRole('button', { name: /^Recover/ })).toBeNull();
+  });
+
+  it('offers no Recover once a claim is refused because somebody else holds the component', async () => {
+    const { surface } = open(
+      recovering(opened({ unsaved }), {
+        'POST /v1/components/{id}/lock': () =>
+          json(409, {
+            code: 'lock_held',
+            message: 'held',
+            traceId: 't',
+            holder: { id: GRACE, name: 'Grace' },
+            expectedRelease: '2026-09-28T14:20:00.000Z',
+          }),
+      }),
+    );
+    const view = await surface();
+    // Offered while nobody holds it; Ada types, and her claim finds Grace there.
+    expect(screen.getByRole('button', { name: 'Recover' })).toBeInTheDocument();
+    view.dispatch(view.state.tr.insertText('!', 19));
+    await screen.findByRole('button', { name: 'Try again' });
+    expect(screen.queryByRole('button', { name: /^Recover/ })).toBeNull();
+    expect(screen.queryByText(unsavedSentence(unsaved.savedAt))).toBeNull();
+  });
+
+  it("offers Recover here, and no never-made-a-version sentence, once a claim finds the author's own other window", async () => {
+    const { surface } = open(
+      recovering(opened({ unsaved }), {
+        'POST /v1/components/{id}/lock': ({ body }) =>
+          (body as { move?: boolean }).move
+            ? json(200, { lock: lock((body as { session: string }).session) })
+            : json(409, {
+                code: 'lock_held',
+                message: 'held',
+                traceId: 't',
+                holder: { id: ADA, name: 'Ada' },
+                expectedRelease: '2026-09-28T14:20:00.000Z',
+              }),
+      }),
+    );
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText('!', 19));
+    await screen.findByRole('button', { name: 'Continue here' });
+    expect(screen.queryByText(unsavedSentence(unsaved.savedAt))).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Recover' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Recover here' })).toBeInTheDocument();
   });
 
   it('offers nothing where nothing was saved, and a reader is never offered Recover', async () => {
