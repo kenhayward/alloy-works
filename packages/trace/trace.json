@@ -14958,7 +14958,7 @@
         },
         {
           "id": "CNT-174",
-          "howItIsMet": "The session never promotes an iteration on its own; iterations are rows the storage design keeps immutable and timestamped, and read by no one but the editor whose session wrote them, through recovery (VER-001 to VER-003). CNT-089, which it supersedes, also asked for retention, which is VER-003's"
+          "howItIsMet": "The session never promotes an iteration on its own; iterations are rows the storage design keeps immutable and timestamped, and read by their writer alone, only while holding the lock, through recovery (RC-A; VER-001 to VER-003). CNT-089, which it superseded, repeated those rows"
         },
         {
           "id": "CNT-090",
@@ -16140,15 +16140,15 @@
         },
         {
           "id": "VER-002",
-          "howItIsMet": "Iterations are readable only by the editor holding the component's lock; the lock holder is the only principal the row's visibility rule admits"
+          "howItIsMet": "Iterations are readable only by the editor holding the component's lock, and of those only the holder's own: a later holder never reads an earlier one's (component-editor.md, RC-A)"
         },
         {
           "id": "VER-003",
-          "howItIsMet": "Promotion deletes nothing: iterations survive their version and expire on `expires_at`, set from the tenant's window at insert"
+          "howItIsMet": "Promotion deletes nothing. An iteration is kept until the next version after the one it was opened from is cut, and for the tenant's window after that cut: the sweep removes it only once that version's cut time and the window have passed, and nothing is decided at insert, when the cut has not happened (the T1 audit's defect; RC-B)"
         },
         {
           "id": "VER-004",
-          "howItIsMet": "The window is a tenant setting with a product default, applied when `expires_at` is computed rather than at sweep time, so changing it cannot revive rows"
+          "howItIsMet": "The window is a tenant setting, `iteration_retention_days`, 30 by default, read when the sweep and the Recovery listing run: a longer window keeps what has not been swept longer, and nothing swept comes back (RC-C)"
         },
         {
           "id": "VER-005",

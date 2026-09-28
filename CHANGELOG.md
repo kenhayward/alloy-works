@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.106.1 - 2026-09-28 (PR #295)
+
+### Changed
+
+- **Getting your work back is planned.** The next releases let you see and restore the changes the
+  editor saved for you but never made a version, find them again after closing a tab, keep undo
+  across a reload, and let an administrator choose how long saved changes are kept after a version is
+  made. Nothing changes for you in this release.
+
 ## 0.106.0 - 2026-09-27 (PR #294)
 
 ### Added
