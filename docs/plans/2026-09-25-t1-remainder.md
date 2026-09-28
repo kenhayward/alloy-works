@@ -57,8 +57,8 @@ K5 PUB-085 against PUB-091, K6 headings deeper than six, K7 eight rewordings, K8
 placement. **K1 is decided: approved on 2026-09-25. K7 is decided: agreed as recommended on
 2026-09-26. K2 is decided: the warm range preview leaves T1, by ADR-0027 on 2026-09-27. K3 is decided: personal
 tokens in T1, service identities in T5, by ADR-0028 on 2026-09-28. K4, K5, K6 and K8 are decided, by
-ADR-0029 to ADR-0031 and STY-079 (issue #306), on 2026-09-28**, with the three W1 found (CNT-061, CNT-062, CNT-166), in PR #244. K2, K3 and K8 are needed before W10, W12 and
-W8.
+ADR-0029 to ADR-0031 and STY-079 (issue #306), on 2026-09-28**, with the three W1 found (CNT-061, CNT-062, CNT-166), in PR #244. K2 and K3 were needed before W10 and W12;
+K8's caption placement is built in W14, W8 having shipped without it.
 
 ## The order, and why
 

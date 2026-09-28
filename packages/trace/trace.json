@@ -15532,6 +15532,10 @@
           "howItIsMet": "The page is in **Reading** or **Authoring**, said by a switch in its header that shows the mode it is in ([Modes](#modes))"
         },
         {
+          "id": "IAM-080",
+          "howItIsMet": "Authoring is offered only where the document's `mayEdit` or an occurrence's allows it, and Reading otherwise, so a mode the permissions do not give is never offered ([Modes](#modes))"
+        },
+        {
           "id": "CNT-105",
           "howItIsMet": "Authoring is offered where the reader may restructure the document or edit any component it places; anyone in Authoring may switch to Reading, and the page keeps that choice"
         },
