@@ -221,6 +221,14 @@ describe('signing in with the organisation provider', () => {
     });
     expect(refused.statusCode).toBe(404);
     expect(refused.json()).toMatchObject({ code: 'sign_in_route_closed' });
+    // Once for the environment, however often anybody asks: an unauthenticated start cannot flood it.
+    for (let again = 0; again < 3; again += 1) {
+      const repeated = await app.inject({
+        url: '/v1/sign-in/organisation',
+        headers: { host: 'copied.acme.alloy.test' },
+      });
+      expect(repeated.statusCode).toBe(404);
+    }
     expect(logged('does not open for this environment')).toEqual([
       expect.objectContaining({ tenant: copied.id, level: 40 }),
     ]);
@@ -237,6 +245,14 @@ describe('signing in with the organisation provider', () => {
     });
     expect(refused.statusCode).toBe(404);
     expect(refused.json()).toMatchObject({ code: 'sign_in_route_closed' });
+    // Once for the environment, however often anybody asks: an unauthenticated start cannot flood it.
+    for (let again = 0; again < 3; again += 1) {
+      const repeated = await app.inject({
+        url: '/v1/sign-in/organisation',
+        headers: { host: 'before.acme.alloy.test' },
+      });
+      expect(repeated.statusCode).toBe(404);
+    }
     expect(logged('must be configured again')).toEqual([
       expect.objectContaining({ tenant: before.id, level: 40 }),
     ]);

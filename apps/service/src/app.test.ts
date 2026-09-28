@@ -15,6 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp, type Handlers } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
+import { TEST_SEALING_KEY } from './test/sign-in.js';
 
 /**
  * Type-only, never called: a permission-checked handler receives no `FastifyReply` at all -
@@ -70,6 +71,7 @@ describe('the service', () => {
       logStream,
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
       onRoute: (route) => registered.push(route),
     });
   });

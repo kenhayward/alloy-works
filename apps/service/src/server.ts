@@ -3,9 +3,9 @@
 import { createTenantDatabase, listenToTenants } from '@alloy-works/db';
 import { buildApp } from './app.js';
 import { describeConfig, loadConfig } from './config.js';
-import { createObjectStores, sealingKey } from '@alloy-works/objects';
+import { createObjectStores } from '@alloy-works/objects';
 import { createOidcClient } from './oidc.js';
-import { environmentSecrets } from './secrets.js';
+import { environmentSecrets, serviceSealingKey } from './secrets.js';
 
 const config = loadConfig(process.env);
 const db = createTenantDatabase(config.databaseUrl);
@@ -13,7 +13,7 @@ const events = listenToTenants(config.databaseUrl);
 const secrets = environmentSecrets(process.env);
 // Seals each environment's object store credential and its sign-in client secret: without it the
 // service does not start, since no environment could sign anybody in through its own provider.
-const key = sealingKey(secrets.get('object_store_key') ?? '');
+const key = serviceSealingKey(secrets);
 const objects = config.objectStore ? createObjectStores(config.objectStore, key) : undefined;
 const app = buildApp({
   db,

@@ -114,10 +114,9 @@ export interface AppOptions extends HttpOptions {
   readonly secrets: SecretStore;
   /**
    * The key each environment's sealed sign-in client secret opens with, the one its object store
-   * credential is sealed with. Without it, no organisation's secret opens and nobody signs in by that
-   * route.
+   * credential is sealed with (`serviceSealingKey`).
    */
-  readonly sealingKey?: Buffer;
+  readonly sealingKey: Buffer;
   /** The product's one Google client and the sign-in address it returns to; without, no Google route. */
   readonly google?: GoogleSettings;
   /** Where this environment's documents are kept; without it, samples are refused. */
@@ -254,6 +253,19 @@ export function buildApp(options: AppOptions): FastifyInstance {
   }
 
   /**
+   * What an environment's configuration is missing is logged once for each environment while the
+   * process runs: anybody may start a sign-in without signing in, so a warning for every request
+   * would let them flood the log.
+   */
+  const warned = new Set<string>();
+  function warnOnce(request: FastifyRequest, tenant: Tenant, message: string): void {
+    const key = `${tenant.id} ${message}`;
+    if (warned.has(key)) return;
+    warned.add(key);
+    request.log.warn(message);
+  }
+
+  /**
    * The organisation's provider, with the client secret this environment holds, sealed in its own
    * schema and opened for this tenant alone: nothing names a secret another environment could hold.
    * An environment configured before secrets were sealed names its secret instead, and one whose
@@ -270,20 +282,21 @@ export function buildApp(options: AppOptions): FastifyInstance {
     );
     if (!row) return undefined;
     if (row.sealed_secret === null) {
-      request.log.warn(
+      warnOnce(
+        request,
+        tenant,
         "the organisation's sign-in names its client secret, as it did before secrets were sealed, and must be configured again",
       );
       return undefined;
-    }
-    if (!options.sealingKey) {
-      throw new Error('The service has no key to open a sign-in secret with');
     }
     let clientSecret: string;
     try {
       clientSecret = openSecret(options.sealingKey, 'sign-in', tenant.id, row.sealed_secret);
     } catch (error) {
       if (!(error instanceof SealedSecretRefused)) throw error;
-      request.log.warn(
+      warnOnce(
+        request,
+        tenant,
         "the organisation's sealed client secret does not open for this environment",
       );
       return undefined;

@@ -85,10 +85,13 @@ export interface OidcClient {
  * (`enableNonRepudiationChecks`), for the organisation's provider and Google alike. openid-client
  * leaves that off by default, trusting the TLS connection to the token endpoint instead; the ID token
  * now carries the groups that confer roles (GP-A), so it is held to its signature as well. The keys
- * are fetched for each exchange, since each has a configuration of its own.
+ * are public, so they are kept by issuer as the metadata is, and handed to each exchange's
+ * configuration: openid-client fetches them again only when they are stale or a token names a key
+ * they do not hold.
  */
 export function createOidcClient(options: { readonly allowInsecureIssuers: boolean }): OidcClient {
   const discovered = new Map<string, Promise<client.ServerMetadata>>();
+  const keys = new Map<string, client.ExportedJWKSCache>();
 
   function metadata(provider: ProviderSettings): Promise<client.ServerMetadata> {
     const issuer = new URL(provider.issuer);
@@ -117,7 +120,15 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
     );
     if (options.allowInsecureIssuers) client.allowInsecureRequests(config);
     client.enableNonRepudiationChecks(config);
+    const known = keys.get(provider.issuer);
+    if (known) client.setJwksCache(config, known);
     return config;
+  }
+
+  /** Keeps whatever keys the exchange fetched for the next one through the same provider. */
+  function keepKeys(provider: ProviderSettings, config: client.Configuration): void {
+    const fetched = client.getJwksCache(config);
+    if (fetched) keys.set(provider.issuer, fetched);
   }
 
   return {
@@ -153,6 +164,8 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
         throw new SignInFailed('The identity provider did not confirm the sign-in.', {
           cause: error,
         });
+      } finally {
+        keepKeys(provider, config);
       }
       const claims = tokens.claims();
       if (!claims) throw new SignInFailed('The identity provider returned no identity.');

@@ -100,12 +100,25 @@ describe('sign-in settings', () => {
     expect(() => openSecret(KEY, 'object-store', tenant.id, mine)).toThrow(SealedSecretRefused);
   });
 
-  it('keeps a secret sealed and nothing else: never a plain one, never a name beside it, and never neither', async () => {
+  it('keeps a secret sealed and nothing else: never a plain one, never one cut short, never a name beside it, and never neither', async () => {
     const sealed = (await sealedOf(tenant)).sealed_secret!;
     const table = `${tenant.schema}.identity_provider`;
     await expect(
       queryAs(db.adminUrl, `update ${table} set sealed_secret = $1`, [SECRET]),
     ).rejects.toThrow(/identity_provider_sealed_secret/);
+    // A tag cut to four bytes, or an IV of eight: shaped like a sealed secret, but not one this wrote.
+    const [version, iv, tag, body] = sealed.split('.');
+    const cut = (part: string, bytes: number) =>
+      Buffer.from(part, 'base64url').subarray(0, bytes).toString('base64url');
+    for (const altered of [
+      [version, iv, cut(tag!, 4), body].join('.'),
+      [version, cut(iv!, 8), tag, body].join('.'),
+    ]) {
+      await expect(
+        queryAs(db.adminUrl, `update ${table} set sealed_secret = $1`, [altered]),
+        altered,
+      ).rejects.toThrow(/identity_provider_sealed_secret/);
+    }
     await expect(
       queryAs(db.adminUrl, `update ${table} set secret_name = 'stand_in'`),
     ).rejects.toThrow(/identity_provider_one_secret/);

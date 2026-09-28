@@ -196,6 +196,31 @@ describe('the OpenID Connect client', () => {
     expect(identity.subject).toBe('grace');
   });
 
+  it("fetches a provider's published keys once for every sign-in through it, not once for each", async () => {
+    const jwksUri = (
+      (await (await fetch(`${idp.issuer}/.well-known/openid-configuration`)).json()) as {
+        jwks_uri: string;
+      }
+    ).jwks_uri;
+    const fresh = createOidcClient({ allowInsecureIssuers: true });
+    const real = globalThis.fetch;
+    let fetched = 0;
+    globalThis.fetch = (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (url === jwksUri) fetched += 1;
+      return real(input, init);
+    };
+    try {
+      for (const user of ['ada', 'grace', 'ada']) {
+        const start = await fresh.start(provider, REDIRECT);
+        await fresh.finish(provider, await completeAtStandIn(start.url, user, idp.issuer), start);
+      }
+    } finally {
+      globalThis.fetch = real;
+    }
+    expect(fetched).toBe(1);
+  });
+
   it('says which Workspace domain manages an account, as Google does', async () => {
     const start = await oidc.start(provider, REDIRECT);
     const back = await completeAtStandIn(start.url, 'alice', idp.issuer);

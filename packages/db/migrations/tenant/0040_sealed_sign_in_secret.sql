@@ -15,6 +15,7 @@ alter table identity_provider
   alter column secret_name drop not null,
   add column sealed_secret text
     constraint identity_provider_sealed_secret
-      check (sealed_secret ~ '^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'),
+      -- v1, a 12-byte IV and a 16-byte tag, each unpadded base64url, and the body: seal.ts's shape.
+      check (sealed_secret ~ '^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]+$'),
   -- Sealed, or named from before this: never both, and never neither.
   add constraint identity_provider_one_secret check (num_nonnulls(sealed_secret, secret_name) = 1);

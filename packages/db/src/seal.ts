@@ -11,7 +11,15 @@ export type SealPurpose = 'object-store' | 'sign-in';
 
 const VERSION = 'v1';
 const IV_BYTES = 12;
+const TAG_BYTES = 16;
 const KEY_BYTES = 32;
+
+/** A key of the wrong length is the configuration at fault, never a secret that does not open. */
+function assertKey(key: Buffer): void {
+  if (key.length !== KEY_BYTES) {
+    throw new Error(`The sealing key must be ${KEY_BYTES} bytes`);
+  }
+}
 
 /** The key from configuration: 32 bytes, base64. */
 export function sealingKey(base64: string): Buffer {
@@ -35,8 +43,9 @@ export function sealSecret(
   tenantId: string,
   secret: string,
 ): string {
+  assertKey(key);
   const iv = randomBytes(IV_BYTES);
-  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  const cipher = createCipheriv('aes-256-gcm', key, iv, { authTagLength: TAG_BYTES });
   cipher.setAAD(bound(purpose, tenantId));
   const body = Buffer.concat([cipher.update(secret, 'utf8'), cipher.final()]);
   return [
@@ -57,10 +66,17 @@ export function openSecret(
   if (version !== VERSION || !iv || !tag || !body || rest.length > 0) {
     throw new SealedSecretRefused('That is not a sealed secret this version wrote.');
   }
+  assertKey(key);
+  const ivBytes = Buffer.from(iv, 'base64url');
+  const tagBytes = Buffer.from(tag, 'base64url');
+  // GCM would otherwise authenticate against a tag as short as four bytes: only the whole tag counts.
+  if (ivBytes.length !== IV_BYTES || tagBytes.length !== TAG_BYTES) {
+    throw new SealedSecretRefused('That is not a sealed secret this version wrote.');
+  }
   try {
-    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'base64url'));
+    const decipher = createDecipheriv('aes-256-gcm', key, ivBytes, { authTagLength: TAG_BYTES });
     decipher.setAAD(bound(purpose, tenantId));
-    decipher.setAuthTag(Buffer.from(tag, 'base64url'));
+    decipher.setAuthTag(tagBytes);
     return Buffer.concat([
       decipher.update(Buffer.from(body, 'base64url')),
       decipher.final(),
