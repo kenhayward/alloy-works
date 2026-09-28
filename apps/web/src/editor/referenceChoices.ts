@@ -78,6 +78,12 @@ export interface Standing {
   readonly display: CrossReferenceDisplay;
   /** What the surface shows it as today - _Broken reference_, _Paragraph_ - or null if unknown. */
   readonly shown: string | null;
+  /**
+   * Where the surface shows it as unavailable - it asks its target for a form the target has not got,
+   * such as a number of a block equation left unnumbered (W-N) - what the target is called. The option
+   * is named by it, and offers only its kind's forms, never the one it asked for.
+   */
+  readonly named?: string;
 }
 
 /**
@@ -149,13 +155,16 @@ export function referenceOptions(
   if (standing !== null && !options.some((each) => each.key === keyOf(standing.target))) {
     const kind: ReferenceKind = standing.target.kind === 'node' ? 'section' : 'block';
     const has = formsFor(kind);
-    const name = standing.shown ?? kindWord(kind);
+    const name = standing.named ?? standing.shown ?? kindWord(kind);
+    const unavailable = standing.named !== undefined;
     options = [
       {
         key: keyOf(standing.target),
         target: standing.target,
         name,
-        forms: EVERY_FORM.filter((form) => has.includes(form) || form === standing.display),
+        forms: EVERY_FORM.filter(
+          (form) => has.includes(form) || (!unavailable && form === standing.display),
+        ),
         shows: () => name,
       },
       ...options,
@@ -202,17 +211,25 @@ export function referenceChoicesIn(surface: EditorView, editing: EditorView): Re
   const current = referenceAt(editing.state);
   const local = current?.pos ?? editing.state.selection.to;
   const own = ownTargets(surface.state.doc, (within?.offset ?? 0) + local);
-  const shown =
+  const drawn =
     current === null
-      ? null
-      : (referencesShown(editing.state.doc, context, within).find(
+      ? undefined
+      : referencesShown(editing.state.doc, context, within).find(
           (each) => each.pos === current.pos,
-        )?.text ?? null);
+        );
+  const shown = drawn?.text ?? null;
   return {
     options: referenceOptions(
       context,
       own,
-      current === null ? null : { target: current.target, display: current.display, shown },
+      current === null
+        ? null
+        : {
+            target: current.target,
+            display: current.display,
+            shown,
+            ...(drawn?.named === undefined ? {} : { named: drawn.named }),
+          },
     ),
     inDocument: context !== null,
     current:

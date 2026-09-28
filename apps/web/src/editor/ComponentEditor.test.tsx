@@ -4771,6 +4771,87 @@ describe('cross-references in the editor (cross-references 1)', () => {
     expect(document.querySelectorAll('.ProseMirror .aw-reference-broken')).toHaveLength(0);
   });
 
+  it('STR-071 trusts the live table over a page that calls it unnumbered after it was numbered again, offering every form', async () => {
+    const { surface } = openWith(referringIn(readings, 'number'), {
+      referenceContext: {
+        targets: [
+          {
+            target: { kind: 'block' as const, block: 't1' },
+            kind: 'table' as const,
+            label: null,
+            title: 'Readings',
+            relative: null,
+            unnumbered: true as const,
+          },
+        ],
+      },
+    });
+    const view = await surface();
+    // A number not known yet, as for a table placed since the page last numbered the document.
+    expect(drawn()).toEqual(['Table: Readings']);
+    caretIn(view, 'b2');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Table: Readings' }));
+    expect(choices(dialog, 'Show as')).toEqual([
+      'Number',
+      'Title',
+      'Number and title',
+      'Page',
+      'Above or below',
+    ]);
+  });
+
+  it('shows a number-form reference to an unnumbered block equation as unavailable, and opened on it offers a page and a place alone (W-N)', async () => {
+    const equation = {
+      type: 'equation',
+      id: 'e1',
+      mathml:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>',
+      numbered: false,
+    };
+    const stored = blocksOf(equation, {
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [
+        { type: 'text', value: 'By ', marks: [] },
+        {
+          type: 'crossReference',
+          id: 'x1',
+          target: { kind: 'block', block: 'e1' },
+          display: 'number',
+        },
+      ],
+    });
+    // A page that numbered it before it was marked unnumbered: the live equation is trusted.
+    const { surface } = openWith(stored, {
+      referenceContext: {
+        targets: [
+          {
+            target: { kind: 'block' as const, block: 'e1' },
+            kind: 'equation' as const,
+            label: '(3)',
+            title: null,
+            relative: null,
+          },
+        ],
+      },
+    });
+    const view = await surface();
+    expect(drawn()).toEqual(['Equation not numbered - choose another form']);
+    expect(document.querySelectorAll('.ProseMirror .aw-reference-broken')).toHaveLength(1);
+    selectFirst(view, 'crossReference');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    expect(within(dialog).getByRole('radio', { name: 'Equation' })).toBeChecked();
+    expect(choices(dialog, 'Show as')).toEqual(['Page', 'Above or below']);
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Above or below' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Change' }));
+    expect(referencesIn(view)).toMatchObject([{ id: 'x1', display: 'relative' }]);
+    expect(drawn()).toEqual(['above']);
+  });
+
   it('opens on a reference selected whole, and changes its form keeping its identifier', async () => {
     const { surface } = openWith(referring, { referenceContext: inADocument });
     const view = await surface();

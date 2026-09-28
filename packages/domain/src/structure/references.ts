@@ -42,9 +42,9 @@ export interface ReferenceTarget {
    */
   readonly titleHoldsEquation?: true;
   /**
-   * Set where the target is a figure or a table the author marked unnumbered (STR-071): it has no
-   * number anywhere, rather than one not known here, so `targetForms` offers no number form of it and
-   * a reference to it prints its caption.
+   * Set where the target is a figure or a table the author marked unnumbered (STR-071), or, in the
+   * editor, a block equation (CNT-047): it has no number anywhere, rather than one not known here, so
+   * `targetForms` offers no number form of it and a reference names it by its caption.
    */
   readonly unnumbered?: true;
 }
