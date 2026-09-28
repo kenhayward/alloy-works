@@ -18,6 +18,16 @@ export const permissions = [
 
 export type Permission = (typeof permissions)[number];
 
+/**
+ * What a personal token may be scoped to (service-foundations.md, TK-A and TK-B): every permission but
+ * `read`. A token's scopes are a mask over its creator's grants, and reading is never masked - a token
+ * reads what its creator reads, so the readable sets that search, listings and the outline filter by
+ * need know nothing of tokens. A token with no scopes reads and does nothing else.
+ */
+export const tokenScopes: readonly Exclude<Permission, 'read'>[] = permissions.filter(
+  (permission): permission is Exclude<Permission, 'read'> => permission !== 'read',
+);
+
 export function isPermission(value: string): value is Permission {
   return (permissions as readonly string[]).includes(value);
 }

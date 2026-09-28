@@ -182,6 +182,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0035_previews',
       '0036_preview_sweep',
       '0037_iteration_retention',
+      '0038_api_tokens',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

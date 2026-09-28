@@ -1,4 +1,4 @@
-import { decide, type AccessFacts } from '@alloy-works/domain';
+import { decide, type AccessFacts, type Permission } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
 import type { TenantTransaction } from './tables.js';
@@ -48,11 +48,16 @@ export interface SpaceForPrincipal {
  * may not address. Which they may read is the readable set, `decide`'s own answer per space, applied
  * inside the query so a page is never short; whether they may create is decided for each space shown.
  * Nothing renames a space, so a walk's order holds without a snapshot.
+ *
+ * `scopes` are the scopes of the token the listing was asked with, undefined for a session: a mask over
+ * `mayCreate`, as over every decision (service-foundations.md, TK-A). Which spaces are listed is not
+ * masked, since reading never is (TK-B).
  */
 export async function listSpacesFor(
   trx: TenantTransaction,
   principalId: string,
   request: ListingRequest<SortOf<'spaces'>> = { limit: 100 },
+  scopes?: readonly Permission[],
 ): Promise<Listed<SpaceForPrincipal>> {
   const limit = checkedLimit(request.limit);
   const { types, order } = listingSorts.spaces.name;
@@ -85,7 +90,7 @@ export async function listSpacesFor(
     shown.push({
       id: row.id,
       name: row.name,
-      mayCreate: facts !== undefined && decide('create', facts).allowed,
+      mayCreate: facts !== undefined && decide('create', { ...facts, scopes }).allowed,
     });
   }
   return { items: shown, next, snapshot };

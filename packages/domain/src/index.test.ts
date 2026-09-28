@@ -108,6 +108,8 @@ describe('the domain package', () => {
         'readableSet',
         'sameLevel',
         'starterRoles',
+        // W12.1: what a personal token may be scoped to, every permission but read (TK-B).
+        'tokenScopes',
         // Scaffolding, and not a decision about the content model. See CLAUDE.md.
         'componentSchema',
         'componentTypes',

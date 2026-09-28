@@ -114,6 +114,18 @@ export interface SessionTable {
   expires_at: Date;
 }
 
+/** A personal token, kept as its hash (0038); its scopes a mask over its principal's grants. */
+export interface ApiTokenTable {
+  id: Generated<string>;
+  principal_id: string;
+  name: string;
+  token_hash: string;
+  scopes: string[];
+  created_at: Generated<Date>;
+  expires_at: Date;
+  last_used_at: ColumnType<Date | null, never, Date>;
+}
+
 export interface InvitationTable {
   id: Generated<string>;
   email: string;
@@ -392,6 +404,7 @@ export interface TenantTables {
   sign_in_route: SignInRouteTable;
   sign_in_attempt: SignInAttemptTable;
   session: SessionTable;
+  api_token: ApiTokenTable;
   invitation: InvitationTable;
   google_domain: GoogleDomainTable;
   sign_in_handoff: SignInHandoffTable;
