@@ -16920,7 +16920,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 583,
+      "line": 609,
       "kind": "title"
     },
     {
@@ -17034,44 +17034,50 @@
     {
       "id": "IAM-041",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 193,
+      "line": 195,
       "kind": "title"
     },
     {
       "id": "IAM-043",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 142,
+      "line": 144,
       "kind": "rule"
     },
     {
       "id": "IAM-043",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 139,
+      "line": 141,
       "kind": "title"
     },
     {
       "id": "IAM-054",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 218,
+      "line": 220,
       "kind": "rule"
     },
     {
       "id": "IAM-054",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 214,
+      "line": 216,
       "kind": "title"
     },
     {
       "id": "IAM-054",
       "file": "apps/service/src/google.test.ts",
-      "line": 26,
+      "line": 27,
       "kind": "title"
     },
     {
       "id": "IAM-071",
       "file": "apps/service/src/grant-routes.test.ts",
-      "line": 290,
+      "line": 294,
       "kind": "rule"
+    },
+    {
+      "id": "IAM-009",
+      "file": "apps/service/src/group-routes.test.ts",
+      "line": 151,
+      "kind": "title"
     },
     {
       "id": "API-003",
@@ -17125,6 +17131,12 @@
       "id": "IAM-073",
       "file": "apps/service/src/numbering-routes.test.ts",
       "line": 242,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-044",
+      "file": "apps/service/src/oidc.test.ts",
+      "line": 53,
       "kind": "title"
     },
     {
@@ -18187,6 +18199,12 @@
       "id": "IAM-071",
       "file": "packages/db/src/grants.test.ts",
       "line": 218,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-009",
+      "file": "packages/db/src/groups.test.ts",
+      "line": 316,
       "kind": "title"
     },
     {

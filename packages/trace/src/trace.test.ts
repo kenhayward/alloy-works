@@ -550,6 +550,9 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 499, from 496 (2026-09-28): W12.3 - IAM-009 in packages/db's groups.test.ts, through
+  // syncProviderGroups, and apps/service's group-routes.test.ts, through a real sign-in; IAM-044 in
+  // oidc.test.ts, where groups arrive in the ID token under the basic scopes.
   // 496, from 489 (2026-09-28): W12.1 - IAM-034 in packages/domain's access/scopes.test.ts,
   // packages/db's api-token.test.ts and apps/service's token-routes.test.ts, in a title and as the
   // rule a refused expiry names; IAM-035 in token-routes.test.ts; IAM-062 in scopes.test.ts and
@@ -629,7 +632,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(496);
+    expect(model.citations).toHaveLength(499);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -412,6 +412,7 @@ version and each structural act records the next (see
 | `migrations/tenant/0036_preview_sweep`                 | The runtime role may delete a request, and a trigger lets it delete only a preview an hour after it finished, its versions and images going with it (see [publishing](#publishing))                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `migrations/tenant/0037_iteration_retention`           | `editing_policy`, the tenant's window for keeping iterations; `iteration.expires_at` dropped; the runtime role may delete an iteration, and a trigger lets it delete only one past its window after the next cut (see [the editor and its session](#the-editor-and-its-session))                                                                                                                                                                                                                                                                                                                                                          |
 | `migrations/tenant/0038_api_tokens`                    | `api_token`, a personal token kept as its hash, its scopes a subset of the closed permission set without `read`, and an expiry at most 365 days after it was made; the runtime role inserts the named columns, updates `last_used_at` alone and deletes (see [Personal tokens](#personal-tokens))                                                                                                                                                                                                                                                                                                                                         |
+| `migrations/tenant/0039_groups`                        | `identity_provider.groups_claim`, the ID token claim carrying the provider's group values, `groups` unless configured; a group's grants deleted with it; a provider value never empty; the runtime role's delete on `group_member` and `access_group` stated (see [Groups](#groups))                                                                                                                                                                                                                                                                                                                                                      |
 | `src/version-digest.ts`                                | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `src/spaces.ts`                                        | `createSpace`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `src/versions.ts`                                      | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `versionContents` - each version's content and number, for the texts route - `listVersions` - an artifact's versions newest first, by keyset over `(revision_no, version_no)` with no snapshot, since the chain is append-only (W9.4) - `substanceOf`, and `recordVersion`, each taking a component, a document, a definition or a layout; `createArtifact` refuses a layout, a theme and a catalogue, which only their migrations make, and `recordVersion` a theme and a catalogue, whose versions `themes.ts` reads whole before it writes them through `recordReadVersion` |
@@ -469,7 +470,7 @@ they first sign in. Nothing manages a role, a group or a principal's kind.
 | `db: migrations/tenant/0011_first_administrator` | `first_administrator`: namings by issuer and subject, kept as the record; nothing names or claims one any more                                                                                                                                    |
 | `db: migrations/tenant/0014_invitations`         | An invitation per row, each with the principal it made; a principal's issuer and subject optional; `principal.email_verified`; the runtime role writing only the invitation columns the service needs, never `named_by`                           |
 | `db: src/invitations.ts`                         | `invite`, `withdrawInvitation`, `listInvitations` and `readInvitation`, and `claimInvitation`, called in a sign-in through either route that found no principal. `inviteToTenant` (`src/sign-in.ts`) is the operator's invitation, with no expiry |
-| `db: src/roles.ts`, `groups.ts`, `grants.ts`     | `createRole`, `findRole`, `createGroup`, `addToGroup` and `grant`, with the external rules where a grant is made                                                                                                                                  |
+| `db: src/roles.ts`, `groups.ts`, `grants.ts`     | `createRole`, `findRole`, `grant`, with the external rules where a grant is made; `createGroup`, `listGroups`, `readGroup`, `setGroupMembers`, `addToGroup`, `deleteGroup` and `syncProviderGroups`                                               |
 | `db: src/access-facts.ts`                        | `loadFacts`, `loadFactsFor` (many artifacts from one read of the principal and the grants) and `loadReadableSet`, each under the epoch's shared lock, and the list of facts the triggers are held to                                              |
 | `db: migrations/tenant/0013_deciding_only`       | `access_changed()` again, refusing a change in a transaction that declared it only decides                                                                                                                                                        |
 | `db: src/grants.ts` (removing)                   | `removeGrant` under the lock-out guard, `administeringGrants` - what the guard counts - and `grantLevel`                                                                                                                                          |
@@ -480,6 +481,7 @@ they first sign in. Nothing manages a role, a group or a principal's kind.
 | `service: src/tokens.ts`                         | The token routes, the secret made and shown once, and `bearerSecret`, what an `Authorization` header carries                                                                                                                                      |
 | `service: src/managing-access.ts`                | The grants, roles and people routes; each refusal a 409 with an underscore code                                                                                                                                                                   |
 | `service: src/invitations.ts`                    | The invitations routes: listing, inviting or renewing, and withdrawing with the principal's grants                                                                                                                                                |
+| `service: src/groups.ts`                         | The groups routes: listing with members, making the environment's own or a provider's, setting an own group's members, deleting with grants                                                                                                       |
 | `web: src/access/`                               | The access page: grants at a component's three levels, giving and removing, an explanation per person, and, to an administrator of the environment, inviting an address and withdrawing a waiting invitation                                      |
 | `service: src/access.ts`                         | `authorise`: 404 for a target missing or unreadable, 403 naming the permission, in the transaction the handler runs in                                                                                                                            |
 
@@ -533,6 +535,49 @@ and whether anybody administers the tenant.
 
 `pnpm dev:setup` invites the stand-in's Ada, at `ada@example.com`, to administer both development
 environments before either permits a sign-in, so she administers each from her first sign-in there.
+
+### Groups
+
+A group holds grants as a person does, and each of its members holds what the group is granted (W12.3,
+access.md's [Groups and Access, as W12 builds them](design/access.md#groups-and-access-as-w12-builds-them),
+GP-A to GP-D). There is no page for groups yet: Administration's Groups section, and a group offered
+beside a person where access is given, are W12.4's.
+
+**Two kinds.** A group is the environment's own, whose members an administrator names, or stands for one
+value of the organisation's provider's groups claim, whose members the sign-ins decide. A provider's
+group cannot be filled by hand (`409 group_from_provider`), and a value is matched exactly.
+
+**The claim.** `identity_provider.groups_claim`, `groups` unless `configureOrganisationSignIn` is given
+another, names the ID token claim carrying the values. `oidc.ts` reads it from the ID token alone, under
+`openid email profile` - no scope is ever asked for groups (IAM-044) - so a provider that puts groups
+there only under a scope of its own must be configured to put them there. A list keeps its strings,
+each once; anything that is not a list is no groups (GP-B). The Google route reads no claim for groups.
+
+**At an organisation sign-in**, `syncProviderGroups` brings the principal's memberships of provider
+groups into line with the values: a value no group stands for is ignored, and no values removes every
+provider membership. Only the memberships that differ are added or removed, and only when there are some
+is the epoch taken, so a sign-in with nothing changed takes no lock that a decision would wait on; each
+membership the claim still carries has `asserted_at` brought up to now, which no trigger watches. It runs
+in the transaction that writes the session, before the session, not the one that finds or claims the
+principal: a claim holds an invitation's row, which a withdrawal takes after the epoch, so the two in one
+transaction could wait on each other. The Google route changes no membership.
+
+**The routes**, each needing `administer` at the tenant:
+
+| Route                         | What                                                                                                                                                                                          |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/groups`              | Every group, paged by id, each with its source, its provider value and its members by name                                                                                                    |
+| `POST /v1/groups`             | `{ name, providerValue? }`: a name of 1 to 80 characters, trimmed, and a value of 1 to 256 kept exactly; `409 group_name_taken` or `group_value_taken`. Changes no access                     |
+| `PUT /v1/groups/{id}/members` | `{ principals }`: an own group's members, exactly those named, only the differences written; `409 group_from_provider`, `group_member_missing`, or an external rule a direct grant is held to |
+| `DELETE /v1/groups/{id}`      | Deletes a group of either kind with its memberships and every grant it holds, by its keys' cascades (0039); `404` for one that is not there                                                   |
+
+The last two declare `changesAccess`. **A grant may name a group**: `POST /v1/grants` takes `subject:
+{ group }` beside `{ principal }`, under the same rules. The lock-out guard still counts direct grants
+alone, so neither removing a member nor deleting a group is ever refused by it.
+
+**The stand-in** asserts `groups` in the ID token under the `openid` scope, as `hd` rides there: Ada is in
+`authors`, Grace in `authors` and `publishers`, Alice and Ivy in none. A user's groups are read at each
+sign-in, so a test holding the user can move them between two.
 
 ### Personal tokens
 
