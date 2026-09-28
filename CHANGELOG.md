@@ -3,6 +3,26 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.106.0 - 2026-09-27 (PR #294)
+
+### Added
+
+- **Preview a document from its page, beside the text.** A document's page now has **Preview** beside
+  **Publish**, in Reading and in Authoring, for anybody who may read the document, including somebody
+  who may not publish it. It makes a PDF of the version on the page, marked "Preview - not approved"
+  on every page, and opens it in a pane beside the text, which narrows to make room: the text, and a
+  component you have open in its editor, stay where they were. The pane says which version it is and
+  when it was made, has **Download the PDF**, and closes with its close button. Pressing **Preview**
+  again replaces the preview with a new one.
+- **A preview that cannot be made says why.** Each reason is listed in the pane at its place in the
+  outline, in the same words a publish uses. A preview is kept for an hour: after that, the pane says
+  it has expired and offers to make a new one.
+
+### Changed
+
+- **A publish refused because the document is no longer open to you says so**, rather than asking you
+  to try again.
+
 ## 0.105.0 - 2026-09-27 (PR #293)
 
 ### Added

@@ -1,0 +1,49 @@
+/*
+ * The preview pane beside the document's text (publishing.md, "Shown beside the text"; PV-G): a panel
+ * as the dock's are, holding the PDF on the desk its pages sit on, as layout D shows a publication. The
+ * document palette is used only for that desk and its page.
+ */
+.pane {
+  min-width: 0;
+  padding: var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  font-size: var(--size-body-small);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.head h3 {
+  flex: 1;
+  margin: 0;
+  font-size: var(--size-body);
+}
+
+.close {
+  display: inline-grid;
+  padding: var(--space-4);
+}
+
+.made {
+  font-variant-numeric: tabular-nums;
+}
+
+.canvas {
+  padding: var(--space-12);
+  border-radius: var(--radius-8);
+  background: var(--doc-canvas);
+}
+
+.viewer {
+  display: block;
+  width: 100%;
+  height: 70vh;
+  border: 0;
+  background: var(--doc-page);
+  box-shadow: var(--shadow-document);
+}

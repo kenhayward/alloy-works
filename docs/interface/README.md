@@ -205,7 +205,9 @@ Drawn on the screens, ahead of the code. Each is cheap to remove and expensive t
 4. **Where this is used**, from the reference index.
 5. **A document view** - the whole of layout C. `features.md` says plainly that there is none today;
    this is the largest single piece of work on these screens.
-6. **Preview** beside `Publish as PDF`, per the warm-preview design in `publishing.md`.
+6. **Preview** beside `Publish as PDF`: built in W10 as the whole document, in a pane beside the
+   text (`publishing.md`, "Preview"), where the drawings put both buttons in a bar above the panes
+   and the build puts them in the panel of publications. The warm preview is T3's.
 7. **Delete**, in the row menu. Nothing deletes anything yet.
 8. **Lifecycle lozenges** (Draft, In review, In approval, Approved, Superseded, Archived) are drawn
    on `States` but reserved for the review and approval tranche. Today the only real publishing

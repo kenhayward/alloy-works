@@ -1911,9 +1911,13 @@ Each slice is a plan, lands into something that runs, and cites only what its te
    against PUB-091 (Ken's deferral). The reading order of floats was verified, and PUB-031 claimed,
    by the T1 test debt (W1.3).
    PUB-090 stays unclaimed, since slice 1 measured headings from level seven read as paragraphs.
-6. **Preview.** The whole-document preview (PUB-005, PUB-006, CNT-150), W10 of the rest of T1, in
-   three slices: made and kept, then asked for and swept, then shown beside the text
-   ([W10](../plans/2026-09-27-w10-preview.md)). The warm range preview (PUB-080) is T3's by ADR-0027.
+6. **Preview - built.** The whole-document preview (PUB-005, PUB-006, CNT-150), W10 of the rest of
+   T1, in three slices: made and kept, then asked for and swept, then shown beside the text
+   ([W10](../plans/2026-09-27-w10-preview.md)). Migration 0035 and layout schema 6 make and keep one,
+   migration 0036 and the worker's sweep clear it away, and the document page's **Preview** shows it
+   in a pane beside the text, an editor open in it kept where it was. A 304-page document was
+   previewed in under two seconds on one machine, measured and not budgeted (PV-H). Cites PUB-005,
+   PUB-006 and CNT-150. The warm range preview (PUB-080) is T3's by ADR-0027.
 7. **Word.** word-output.md's writer in the job, `docx` in the default layout by a layout schema
    version that reads one, in four slices (WO-M). **Word 1 is built**
    ([Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md)): layout schema 5 and the default

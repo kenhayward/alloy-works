@@ -116,6 +116,32 @@
   font-size: var(--size-body-small);
 }
 
+/*
+ * A preview beside the text (publishing.md, "Shown beside the text"; PV-G): a column of its own
+ * between the text and the dock, so the text narrows and stays where it was, and the dock moves over.
+ */
+.layout[data-previewing='true'] {
+  grid-template-columns: var(--outline-width) 6px minmax(0, 1fr) minmax(0, 1fr) var(--dock-panel);
+}
+
+.layout[data-previewing='true'][data-collapsed='true'] {
+  grid-template-columns: var(--pane-collapsed-rail) 0 minmax(0, 1fr) minmax(0, 1fr) var(
+      --dock-panel
+    );
+}
+
+.preview {
+  position: sticky;
+  top: var(--space-12);
+  grid-column: 4;
+  grid-row: 1 / span 3;
+}
+
+.layout[data-previewing='true'] > [data-panel] > [data-part='details'],
+.layout[data-previewing='true'] > .side {
+  grid-column: 5;
+}
+
 @media (max-width: 1100px) {
   .layout,
   .layout[data-collapsed='true'] {
@@ -124,6 +150,21 @@
 
   .layout > [data-panel] > [data-part='details'],
   .side {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  /* Where the dock goes below the text, so does the preview, the whole width, after the dock's details
+   * and before the rest of it. */
+  .layout[data-previewing='true'],
+  .layout[data-previewing='true'][data-collapsed='true'] {
+    grid-template-columns: var(--outline-width) 6px minmax(0, 1fr);
+  }
+
+  .layout[data-previewing='true'] > [data-panel] > [data-part='details'],
+  .layout[data-previewing='true'] > .side,
+  .preview {
+    position: static;
     grid-column: 1 / -1;
     grid-row: auto;
   }

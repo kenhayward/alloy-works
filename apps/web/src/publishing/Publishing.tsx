@@ -1,27 +1,18 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
-import { failureWords, isProductsOwn, type Failure } from './failures.js';
+import { FailureList } from './FailureList.js';
+import { failuresIn, isProductsOwn, type Failure } from './failures.js';
+import { FOLLOW_MS, refusedWords, useFollowing } from './following.js';
 import { formatsWords } from './formats.js';
+import { PreviewButton, PreviewSaid, type Previewing } from './Preview.js';
+import styles from './Publishing.module.css';
 import { Waiting } from '../states/Waiting.js';
 import { everyPage } from '../paging.js';
 
+export { FOLLOW_CAP_MS, FOLLOW_MS, nextFollow } from './following.js';
+
 type Client = ReturnType<typeof createApiClient>;
-
-/** How long after asking for a publish it is first asked about. A publish takes a second or two. */
-export const FOLLOW_MS = 1000;
-
-/** The longest wait between two asks about one publish, however long it has waited. */
-export const FOLLOW_CAP_MS = 30_000;
-
-/**
- * The wait before the next ask, after an answer that it is still queued or an ask that failed: twice
- * the last, up to the cap - so a publish no worker takes is asked about less and less often, and never
- * stops being asked about while the page is open (a stop is the design's open question, not built).
- */
-export function nextFollow(wait: number): number {
-  return Math.min(wait * 2, FOLLOW_CAP_MS);
-}
 
 interface Listed {
   readonly id: string;
@@ -50,24 +41,6 @@ type Publish =
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
-}
-
-/** The client's bodies are `any`: each failure is checked member by member, never trusted. */
-function failuresIn(value: unknown): Failure[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((each) =>
-    isRecord(each) && typeof each.code === 'string'
-      ? [
-          {
-            stage: String(each.stage),
-            code: each.code,
-            node: typeof each.node === 'string' ? each.node : null,
-            block: typeof each.block === 'string' ? each.block : null,
-            detail: typeof each.detail === 'string' ? each.detail : null,
-          },
-        ]
-      : [],
-  );
 }
 
 function listedIn(value: unknown): Listed[] | undefined {
@@ -138,6 +111,7 @@ export function Publishing({
   placeOf,
   followMs = FOLLOW_MS,
   formats = ['pdf'],
+  preview,
 }: {
   readonly client: Client;
   readonly document: string;
@@ -148,6 +122,11 @@ export function Publishing({
   readonly followMs?: number;
   /** The formats the layout a publish would be made under makes: the PDF alone unless it says Word. */
   readonly formats?: readonly string[];
+  /**
+   * A preview of the document, offered beside **Publish** to anybody who may read it, whether or not
+   * they may publish (publishing.md, "Shown beside the text"; PV-B): its pane is the page's to place.
+   */
+  readonly preview?: Previewing;
 }) {
   const offersWord = formats.includes('docx');
   const [chosen, setChosen] = useState<(typeof CHOICES)[number]>(CHOICES[0]);
@@ -155,17 +134,7 @@ export function Publishing({
   const [listed, setListed] = useState<Listed[] | 'failed' | null>(null);
   const [listAttempt, setListAttempt] = useState(0);
   const [publish, setPublish] = useState<Publish>({ state: 'idle' });
-  const following = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const mounted = useRef(true);
-
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-      if (following.current !== null) clearTimeout(following.current);
-      following.current = null;
-    };
-  }, []);
+  const { follow, mounted } = useFollowing(client);
 
   useEffect(() => {
     let current = true;
@@ -188,35 +157,26 @@ export function Publishing({
     };
   }, [client, document, listAttempt]);
 
-  const follow = useCallback(
-    (request: string, wait: number) => {
-      following.current = setTimeout(() => {
-        following.current = null;
-        client
-          .GET('/v1/publication-requests/{id}', { params: { path: { id: request } } })
-          .then(({ data }) => {
-            if (!mounted.current) return;
-            if (!isRecord(data)) {
-              setPublish({
-                state: 'refused',
-                words: 'The publish could not be followed. Look for it below later.',
-              });
-            } else if (data.state === 'done' && typeof data.publication === 'string') {
-              setPublish({ state: 'done', publication: data.publication });
-              setListAttempt((count) => count + 1);
-            } else if (data.state === 'failed') {
-              setPublish({ state: 'failed', failures: failuresIn(data.failures) });
-            } else {
-              follow(request, nextFollow(wait));
-            }
-          })
-          .catch(() => {
-            if (mounted.current) follow(request, nextFollow(wait));
-          });
-      }, wait);
-    },
-    [client],
-  );
+  /** One answer about the request: whether it has settled, and if so, what it came to. */
+  const settle = (data: unknown): boolean => {
+    if (!isRecord(data)) {
+      setPublish({
+        state: 'refused',
+        words: 'The publish could not be followed. Look for it below later.',
+      });
+      return true;
+    }
+    if (data.state === 'done' && typeof data.publication === 'string') {
+      setPublish({ state: 'done', publication: data.publication });
+      setListAttempt((count) => count + 1);
+      return true;
+    }
+    if (data.state === 'failed') {
+      setPublish({ state: 'failed', failures: failuresIn(data.failures) });
+      return true;
+    }
+    return false;
+  };
 
   const start = async () => {
     setPublish({ state: 'working' });
@@ -228,27 +188,13 @@ export function Publishing({
       });
       if (!mounted.current) return;
       if (isRecord(data) && typeof data.id === 'string') {
-        follow(data.id, followMs);
+        follow(data.id, followMs, settle);
         return;
       }
-      // A refusal at the door (400) carries its own words - what format the layout does not make, or
-      // what language it and the document are in - which say more than a fixed sentence could.
-      const atTheDoor =
-        response.status === 400 && isRecord(error) && typeof error.message === 'string'
-          ? error.message
-          : undefined;
-      setPublish({
-        state: 'refused',
-        words:
-          response.status === 409
-            ? 'This document has changed since the page opened. Reload it and publish again.'
-            : response.status === 403
-              ? 'You may read this document but not publish it.'
-              : (atTheDoor ?? 'The publish could not be asked for. Try again.'),
-      });
+      setPublish({ state: 'refused', words: refusedWords('publish', response.status, error) });
     } catch {
       if (mounted.current) {
-        setPublish({ state: 'refused', words: 'The publish could not be asked for. Try again.' });
+        setPublish({ state: 'refused', words: refusedWords('publish', null, undefined) });
       }
     }
   };
@@ -274,18 +220,23 @@ export function Publishing({
           ))}
         </div>
       )}
-      {mayPublish && (
-        <p>
-          <button
-            className="primary"
-            type="button"
-            disabled={publish.state === 'working'}
-            onClick={() => void start()}
-          >
-            Publish as {offersWord ? chosen.words : 'PDF'}
-          </button>
-        </p>
+      {(mayPublish || preview !== undefined) && (
+        // Preview beside Publish, as layout C draws them; Preview alone where Publish is not offered.
+        <div className={styles['actions']}>
+          {preview !== undefined && <PreviewButton preview={preview} />}
+          {mayPublish && (
+            <button
+              className="primary"
+              type="button"
+              disabled={publish.state === 'working'}
+              onClick={() => void start()}
+            >
+              Publish as {offersWord ? chosen.words : 'PDF'}
+            </button>
+          )}
+        </div>
       )}
+      {preview !== undefined && <PreviewSaid preview={preview} />}
       <div aria-live="polite">
         {publish.state === 'working' && <Waiting>Publishing...</Waiting>}
         {publish.state === 'done' && (
@@ -298,14 +249,11 @@ export function Publishing({
           <>
             <p>{failedIntro(publish.failures)}</p>
             {publish.failures.length > 0 && (
-              <ul aria-label="Why it could not be published">
-                {publish.failures.map((failure, index) => (
-                  <li key={`${failure.code}-${failure.node ?? ''}-${failure.block ?? ''}-${index}`}>
-                    {failure.node === null ? '' : `${placeOf(failure.node)}: `}
-                    {failureWords(failure)}
-                  </li>
-                ))}
-              </ul>
+              <FailureList
+                label="Why it could not be published"
+                failures={publish.failures}
+                placeOf={placeOf}
+              />
             )}
           </>
         )}

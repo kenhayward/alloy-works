@@ -18,6 +18,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { everyPage } from '../paging.js';
+import { PreviewPane, usePreview } from '../publishing/Preview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { Icon } from '../editor/Icon.js';
 import { PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
@@ -613,6 +614,16 @@ export function DocumentPage({
   );
 
   const opened = loaded.state === 'open' ? loaded.document : null;
+  // A preview of the version the page holds, asked for beside Publish and shown in a pane beside the
+  // text (publishing.md, "Shown beside the text"; PV-G), which stays where it was, an editor open in
+  // it included (CNT-150).
+  const preview = usePreview({
+    client,
+    document: id,
+    version: opened?.version ?? null,
+    title: opened?.outline.title ?? '',
+    followMs,
+  });
   // Who a `user` field may name, read only where a field of the document or its sections is one.
   const [people, setPeople] = useState<readonly { id: string; name: string }[]>([]);
   const wantsPeople =
@@ -993,6 +1004,8 @@ export function DocumentPage({
         <div
           className={styles['layout']}
           data-collapsed={outlinePane.collapsed}
+          // A preview takes a column of its own beside the text, which narrows to make room for it.
+          data-previewing={preview.pane !== null}
           style={{ '--outline-width': `${outlinePane.width}px` } as React.CSSProperties}
         >
           {outlinePane.collapsed && <OutlineRail pane={outlinePane} chosen={tab} />}
@@ -1097,6 +1110,11 @@ export function DocumentPage({
                   })}
             />
           </div>
+          <PreviewPane
+            preview={preview}
+            className={styles['preview']}
+            placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
+          />
           <div className={styles['side']}>
             {/* What the document's template asks of the document itself, filled in and checked as it
               is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
@@ -1128,6 +1146,7 @@ export function DocumentPage({
               placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
               followMs={followMs}
               formats={document.formats}
+              preview={preview}
             />
           </div>
         </div>

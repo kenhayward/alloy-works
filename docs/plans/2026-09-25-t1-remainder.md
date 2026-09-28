@@ -123,7 +123,7 @@ This table is updated as each workstream lands.
 | W7  | Listings and the API               | Built (PRs #274 to #278; [plan](2026-09-27-w7-listings.md))                                            |
 | W8  | The theme in the editor            | Built (PRs #279 to #285; [plan](2026-09-27-w8-theme-in-the-editor.md)); STR-025 waits on K8            |
 | W9  | The document view                  | Built (PRs #286 to #290; [plan](2026-09-27-w9-document-view.md), [design](../design/document-view.md)) |
-| W10 | Preview                            | Building ([plan](2026-09-27-w10-preview.md)); K2 decided by ADR-0027                                   |
+| W10 | Preview                            | Built (PRs #291 to #294; [plan](2026-09-27-w10-preview.md)); K2 decided by ADR-0027                    |
 | W11 | Recovery                           | Not started                                                                                            |
 | W12 | Identity                           | Not started                                                                                            |
 | W13 | A browser suite                    | Not started                                                                                            |

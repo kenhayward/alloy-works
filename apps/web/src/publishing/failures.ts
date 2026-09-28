@@ -403,3 +403,28 @@ export function isProductsOwn(failures: readonly Failure[]): boolean {
     failures.every((each) => each.stage === 'engine' || each.stage === 'store')
   );
 }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/**
+ * A request's failures as the service answers them, a publish's or a preview's: the client's bodies are
+ * `any`, so each failure is checked member by member, never trusted.
+ */
+export function failuresIn(value: unknown): Failure[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((each) =>
+    isRecord(each) && typeof each.code === 'string'
+      ? [
+          {
+            stage: String(each.stage),
+            code: each.code,
+            node: typeof each.node === 'string' ? each.node : null,
+            block: typeof each.block === 'string' ? each.block : null,
+            detail: typeof each.detail === 'string' ? each.detail : null,
+          },
+        ]
+      : [],
+  );
+}
