@@ -74,6 +74,7 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1472);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 498, from 497 (2026-09-28): W14.6 - service-foundations.md claims IAM-075, store by store, once #314 sealed each environment's sign-in secret.
     // 497, from 496 (2026-09-28): W14.4 after W14.6 - publishing.md claims TAB-034; structure.md's STR-070 claim moved to STR-071.
     // 496, from 497 (2026-09-28): W14.3's final review - themes.md drops PUB-092 and names the gap: its
     // tests show the PDF's pagination and Word's keep properties, and nothing measures Word's pages.
@@ -209,7 +210,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(497);
+    ).toBe(498);
   });
 });
 
@@ -559,6 +560,11 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 539, from 537 (2026-09-28): IAM-075's final review (#321) - IAM-075 in packages/db's queue.test.ts
+  // (three tests) and publishing.test.ts, where a key in another tenant's store is refused.
+  // 537, from 529 (2026-09-28): W14.6 - IAM-075 in eight files: packages/db's tenant-database.test.ts
+  // (three tests), seal.test.ts and idempotency.test.ts; packages/objects' store.test.ts (three) and
+  // seal.test.ts; and apps/service's sign-in.test.ts (two), oidc.test.ts and tenants.test.ts.
   // 529, from 519 (2026-09-28): W14.4, merged over W14.1, W14.2 and W14.6 - STR-071 in packages/domain's
   // structure/lists.test.ts, structure/references.test.ts, publishing/assemble.test.ts and word/write.test.ts, in
   // packages/editor's referenceText.test.ts, in apps/web's editor/ComponentEditor.test.tsx and in
@@ -679,7 +685,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(529);
+    expect(model.citations).toHaveLength(539);
   });
 
   it('cites no identifier the corpus does not hold', () => {

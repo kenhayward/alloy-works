@@ -129,7 +129,7 @@ describe('the tenant database', () => {
   /** The two tenants' schemas, in the catalogue's order. */
   const tenantSchemas = () => [production.schema, development.schema].sort();
 
-  it("SCH-008 keeps the search projection in each tenant's own schema and in no shared one, and another tenant's runtime role cannot read or write it even by naming it", async () => {
+  it("SCH-008 IAM-075 keeps the search projection in each tenant's own schema and in no shared one, and another tenant's runtime role cannot read or write it even by naming it", async () => {
     for (const table of ['search_entry', 'search_text']) {
       // In each tenant's own schema, and in none it shares.
       expect(await schemasHolding(table), table).toEqual(tenantSchemas());
@@ -151,13 +151,17 @@ describe('the tenant database', () => {
     }
   });
 
-  it("keeps publications - their requests, records, inputs and outputs - in each tenant's own schema and in no shared one, and another tenant's runtime role cannot read them even by naming them", async () => {
+  it("IAM-075 keeps publications - their requests, records, inputs, outputs and checks - in each tenant's own schema and in no shared one, and another tenant's runtime role cannot read or delete them even by naming them", async () => {
     const tables = [
       'publication_request',
+      'publication_request_asset',
+      'publication_request_occurrence',
       'publication',
       'publication_input',
       'publication_output',
       'publication_asset',
+      'publication_check',
+      'publication_check_given_up',
     ];
     for (const table of tables) {
       // In each tenant's own schema, and in none it shares.
@@ -167,6 +171,41 @@ describe('the tenant database', () => {
       await expect(
         service.withTenant(production, (trx) =>
           sql`select * from ${sql.id(development.schema, table)}`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`delete from ${sql.id(development.schema, table)}`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
+    }
+  });
+
+  it("IAM-075 keeps each environment's secrets - its sealed object store credential and sign-in client secret, and what its sessions, tokens and sign-ins hold - in its own schema and in no shared one, and another tenant's runtime role cannot read or delete them even by naming them", async () => {
+    const tables = [
+      'object_store_credential',
+      'identity_provider',
+      'session',
+      'api_token',
+      'sign_in_attempt',
+      'sign_in_handoff',
+    ];
+    for (const table of tables) {
+      // In each tenant's own schema, and in none it shares.
+      expect(await schemasHolding(table), table).toEqual(tenantSchemas());
+    }
+    for (const table of tables) {
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`select * from ${sql.id(development.schema, table)}`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`delete from ${sql.id(development.schema, table)}`.execute(trx),
         ),
         table,
       ).rejects.toThrow(/permission denied/);

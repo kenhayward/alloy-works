@@ -18,7 +18,7 @@ describe('a sealed store secret', () => {
     expect(open(Buffer.alloc(32, 7), 'acme', sealed)).toBe('a-store-secret-sealed-before-the-move');
   });
 
-  it('does not open for another tenant, however it got there', () => {
+  it('IAM-075 does not open for another tenant, however it got there', () => {
     const sealed = seal(key, 'acme', SECRET);
     expect(() => open(key, 'acmedev', sealed)).toThrow(SealedSecretRefused);
   });

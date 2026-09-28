@@ -16208,6 +16208,10 @@
           "howItIsMet": "A tenant accepting Google accounts admits only the addresses it invited and the Workspace domains it names; an invitation binds once, by verified email"
         },
         {
+          "id": "IAM-075",
+          "howItIsMet": "Every search index, cache, secret and publication store the service and the worker keep is the tenant's own, each shown by a test ([Tenant scope of every store](#tenant-scope-of-every-store)): the search projection, publications with their outputs and checks, and each environment's secrets - its object store credential and sign-in client secret sealed to it, its sessions' and tokens' hashes - in its schema, which no other tenant's role can read or delete; objects under a credential the store confines to the tenant's prefix; the shared job queue, which a tenant's role may add to only in its own name and never read; and every in-process cache keyed by the tenant, its hostname or its principal, or holding nothing of any tenant's. The platform directory and the logs are outside it"
+        },
+        {
           "id": "IAM-078",
           "howItIsMet": "An organisation groups a customer's tenants - production, a sandbox, a validation copy - and holds no content"
         },
@@ -17294,6 +17298,12 @@
       "kind": "title"
     },
     {
+      "id": "IAM-075",
+      "file": "apps/service/src/oidc.test.ts",
+      "line": 183,
+      "kind": "title"
+    },
+    {
       "id": "STY-035",
       "file": "apps/service/src/presentation-routes.test.ts",
       "line": 109,
@@ -17378,6 +17388,12 @@
       "kind": "rule"
     },
     {
+      "id": "IAM-075",
+      "file": "apps/service/src/sign-in.test.ts",
+      "line": 198,
+      "kind": "title"
+    },
+    {
       "id": "API-047",
       "file": "apps/service/src/stream.test.ts",
       "line": 215,
@@ -17418,6 +17434,12 @@
       "file": "apps/service/src/template-routes.test.ts",
       "line": 485,
       "kind": "rule"
+    },
+    {
+      "id": "IAM-075",
+      "file": "apps/service/src/tenants.test.ts",
+      "line": 37,
+      "kind": "title"
     },
     {
       "id": "IAM-034",
@@ -18470,6 +18492,12 @@
       "kind": "title"
     },
     {
+      "id": "IAM-075",
+      "file": "packages/db/src/idempotency.test.ts",
+      "line": 88,
+      "kind": "title"
+    },
+    {
       "id": "SCH-022",
       "file": "packages/db/src/listing.test.ts",
       "line": 206,
@@ -18494,6 +18522,12 @@
       "kind": "title"
     },
     {
+      "id": "IAM-075",
+      "file": "packages/db/src/publishing.test.ts",
+      "line": 2510,
+      "kind": "title"
+    },
+    {
       "id": "PUB-014",
       "file": "packages/db/src/publishing.test.ts",
       "line": 332,
@@ -18515,6 +18549,12 @@
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
       "line": 815,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-075",
+      "file": "packages/db/src/queue.test.ts",
+      "line": 82,
       "kind": "title"
     },
     {
@@ -18551,6 +18591,12 @@
       "id": "IAM-021",
       "file": "packages/db/src/roles.test.ts",
       "line": 39,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-075",
+      "file": "packages/db/src/seal.test.ts",
+      "line": 22,
       "kind": "title"
     },
     {
@@ -18635,6 +18681,12 @@
       "id": "VER-056",
       "file": "packages/db/src/templates.test.ts",
       "line": 157,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-075",
+      "file": "packages/db/src/tenant-database.test.ts",
+      "line": 132,
       "kind": "title"
     },
     {
@@ -20117,6 +20169,18 @@
       "id": "CNT-016",
       "file": "packages/editor/src/tables.test.ts",
       "line": 110,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-075",
+      "file": "packages/objects/src/seal.test.ts",
+      "line": 21,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-075",
+      "file": "packages/objects/src/store.test.ts",
+      "line": 72,
       "kind": "title"
     },
     {

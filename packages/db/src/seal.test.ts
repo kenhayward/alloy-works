@@ -19,7 +19,7 @@ describe('a sealed secret', () => {
     );
   });
 
-  it('does not open for another tenant, however it got there', () => {
+  it('IAM-075 does not open for another tenant, however it got there', () => {
     const sealed = sealSecret(key, 'sign-in', 'acme', SECRET);
     expect(() => openSecret(key, 'sign-in', 'acmedev', sealed)).toThrow(SealedSecretRefused);
   });

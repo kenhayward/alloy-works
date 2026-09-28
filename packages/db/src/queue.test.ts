@@ -79,7 +79,7 @@ describe('the job queue', () => {
     await queue.complete(job!);
   });
 
-  it('refuses a row that names another tenant', async () => {
+  it('IAM-075 refuses a row that names another tenant', async () => {
     await expect(
       service.withTenant(a, (trx) =>
         sql`insert into platform.job (tenant_id, kind, subject_id)
@@ -135,7 +135,25 @@ describe('the job queue', () => {
     );
   });
 
-  it("answers the subjects of a tenant's jobs of one kind still waiting or running, and none finished, given up, of another kind or another tenant's", async () => {
+  it("IAM-075 is closed to a tenant's runtime role, which adds a job naming itself and never reads, changes or removes one, its own or another tenant's", async () => {
+    await enqueue(a);
+    await enqueue(b);
+    for (const statement of [
+      sql`select tenant_id, kind, subject_id from platform.job`,
+      sql`update platform.job set run_after = now() + interval '1 day'`,
+      sql`delete from platform.job`,
+    ]) {
+      await expect(service.withTenant(a, (trx) => statement.execute(trx))).rejects.toThrow(
+        /permission denied/i,
+      );
+    }
+    // Both still wait for a worker, untouched.
+    const claimed = [await claim(), await claim()];
+    expect(claimed.map((job) => job?.tenantId).sort()).toEqual([a.id, b.id].sort());
+    for (const job of claimed) await queue.complete(job!);
+  });
+
+  it("IAM-075 answers the subjects of a tenant's jobs of one kind still waiting or running, and none finished, given up, of another kind or another tenant's", async () => {
     const subject = (n: number) => `99999999-0000-4000-8000-${String(n).padStart(12, '0')}`;
     const check = (tenant: Tenant, id: string) =>
       service.withTenant(tenant, (trx) => enqueueJob(trx, 'check_pdf', id));
