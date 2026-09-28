@@ -386,6 +386,10 @@ export function failureWords(failure: Failure): string {
       const why = (failure.detail ?? '').split(':')[1] ?? '';
       return `${REFERENCE_NOT_IN_WORD[why] ?? 'A cross-reference here cannot be printed by Word as the PDF prints it.'} Publish this document as a PDF only, or change the cross-reference.`;
     }
+    // W14.2 (W-E, ADR-0031): the place names the heading, a section's or a component's; nothing else in
+    // the document is wrong, and Word, which tags nine levels, can be made of it.
+    case 'heading_too_deep':
+      return 'This heading is nested more than six levels deep, which a PDF cannot tag as a heading. Move it up a level, or publish this document to Word alone.';
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:
