@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.113.1 - 2026-09-28 (PR #307)
+
+### Changed
+
+- **What is left to build in this release is settled.** A published PDF will refuse headings nested more
+  than six deep, since no reader's software can be told what they are; its accessibility report will
+  arrive shortly after the publication rather than delaying it; a table or image style will say
+  whether its caption sits above or below; and the editor will be checked for accessibility in a real
+  browser, with a person's own audit before each release. Nothing changes for you in this release.
+
 ## 0.113.0 - 2026-09-28 (PR #305)
 
 ### Added
