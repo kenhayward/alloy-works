@@ -62,14 +62,16 @@ import {
   typefacesNotHeld,
   type PinnedFonts,
 } from './fonts.js';
+import { checkJob } from './jobs/check.js';
 import { publishJob } from './jobs/publish.js';
 import { faceMetrics } from './metrics.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPaint, readPdf, type Paint, type PaintedText, type ReadPdf } from './testing/pdf.js';
 import { defaultTheme } from './testing/theme.js';
-import { checkPdfUa1, type VeraPdfVerdict } from './testing/verapdf.js';
+import { checkPdfUa1, suiteChecker, type VeraPdfVerdict } from './testing/verapdf.js';
+import { processNextBesideChecks } from './testing/work.js';
 import { createTypst, typstBinaryPath, type Typst } from './typst.js';
-import { processNext, type JobHandler, type WorkerLog } from './worker.js';
+import type { JobHandler, WorkerLog } from './worker.js';
 
 /**
  * Themes 1's worker test (ruling R8): the default theme and a second one differing from it in every
@@ -1369,8 +1371,12 @@ describe('publishing under a theme it must refuse, from the request to the recor
   let ada: string;
   let general: string;
   const log: WorkerLog = { info: () => {}, warn: () => {}, error: () => {} };
+  /** The next job but the checks each publication queues, which are run and passed over (W14.1). */
   const work = () =>
-    processNext({ queue, db: worker, handlers, workerId: 'worker-1', leaseMs: 60_000, log });
+    processNextBesideChecks(
+      { queue, db: worker, handlers, workerId: 'worker-1', leaseMs: 60_000, log },
+      checkJob({ db: worker, stores, checker: suiteChecker }),
+    );
 
   /** A document of one component holding running text, inline code and an equation. */
   const requested = () =>

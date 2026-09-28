@@ -25,7 +25,9 @@ import {
   readPublication,
   readPublicationRequest,
   recordPreview,
+  recordCheckGivenUp,
   recordPublication,
+  recordPublicationCheck,
   requestPublication,
   resolveOccurrences,
   sweepPreviews,
@@ -2270,6 +2272,9 @@ describe('requesting and recording a publication', () => {
         producer: 'typst',
         producerVersion: '2',
         report: [],
+        // Not yet checked: the check joins it afterwards (ADR-0030).
+        check: null,
+        checkGaveUp: false,
       },
       {
         format: 'docx',
@@ -2280,6 +2285,8 @@ describe('requesting and recording a publication', () => {
         producer: 'word',
         producerVersion: 'word/2',
         report: docxOutput().report,
+        check: null,
+        checkGaveUp: false,
       },
     ]);
   });
@@ -2306,6 +2313,350 @@ describe('requesting and recording a publication', () => {
     const read = await service.withTenant(production, (trx) => readPublication(trx, id!));
     expect(read).toMatchObject({ formats: ['docx'], engine: null, template: null });
     expect(read!.outputs.map((each) => each.format)).toEqual(['docx']);
+  });
+
+  /** The accessibility checks queued in the platform, by subject, as the platform holds them. */
+  const checksQueued = async () =>
+    (
+      await queryAs(
+        db.adminUrl,
+        "select subject_id from platform.job where tenant_id = $1 and kind = 'check_pdf'",
+        [production.id],
+      )
+    ).rows.map((row: { subject_id: string }) => row.subject_id);
+
+  /** veraPDF's whole report, as the worker keeps it in the tenant's store by its hash (PUB-091). */
+  const keptReport = (fill = 'a') => ({
+    key: `${production.role}/sha256/${fill.repeat(64)}`,
+    sha256: fill.repeat(64),
+    bytes: 4096,
+  });
+
+  /** A check veraPDF failed, as the worker records it (W-C): two rules, one described. */
+  const failedCheck = (publicationId: string) => ({
+    publicationId,
+    checkerVersion: '1.30.2',
+    compliant: false,
+    failedRules: [
+      { clause: '5', test: 1, description: 'The PDF/UA identification is missing' },
+      { clause: '7.1', test: 10 },
+    ],
+    report: keptReport(),
+  });
+
+  it('queues one check_pdf job for a publication with a PDF, in the transaction that records it, and none for Word alone or a record rolled back', async () => {
+    const pdf = await requestedAs(['pdf']);
+    const both = await requestedAs(['pdf', 'docx']);
+    const word = await requestedAs(['docx']);
+    const rolledBack = await requestedAs(['pdf']);
+    const before = await checksQueued();
+
+    const withPdf = await service.withTenant(production, (trx) =>
+      recordPublication(trx, recording(pdf)),
+    );
+    const withBoth = await service.withTenant(production, (trx) =>
+      recordPublication(trx, { ...recording(both), outputs: [pdfOutput(), docxOutput()] }),
+    );
+    await service.withTenant(production, (trx) =>
+      recordPublication(trx, { ...recording(word), outputs: [docxOutput('e')] }),
+    );
+    // Recorded, and then the transaction does not commit: the check goes with the publication.
+    await expect(
+      service.withTenant(production, async (trx) => {
+        await recordPublication(trx, recording(rolledBack));
+        throw new Error('rolled back');
+      }),
+    ).rejects.toThrow('rolled back');
+
+    const queued = (await checksQueued()).filter((subject) => !before.includes(subject));
+    expect(queued.sort()).toEqual([withPdf!, withBoth!].sort());
+  });
+
+  it('lets the runtime role record a check of a PDF output once, in its closed shape, and never change or delete it', async () => {
+    const pdf = await requestedAs(['pdf']);
+    const word = await requestedAs(['docx']);
+    const { checked, unchecked, wordOnly } = await service.withTenant(production, async (trx) => ({
+      checked: (await recordPublication(trx, recording(pdf)))!,
+      unchecked: (await recordPublication(trx, recording(await requestedAs(['pdf']))))!,
+      wordOnly: (await recordPublication(trx, {
+        ...recording(word),
+        outputs: [docxOutput('e')],
+      }))!,
+    }));
+
+    expect(
+      await service.withTenant(production, (trx) =>
+        recordPublicationCheck(trx, failedCheck(checked)),
+      ),
+    ).toBe('recorded');
+    // A second run of the job finds it checked and records nothing, whatever it found this time.
+    expect(
+      await service.withTenant(production, (trx) =>
+        recordPublicationCheck(trx, { ...failedCheck(checked), compliant: true, failedRules: [] }),
+      ),
+    ).toBe('already');
+    const rows = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication_check')
+        .selectAll()
+        .where('publication_id', '=', checked)
+        .execute(),
+    );
+    expect(rows).toEqual([
+      {
+        publication_id: checked,
+        format: 'pdf',
+        checker: 'verapdf',
+        checker_version: '1.30.2',
+        profile: 'ua1',
+        compliant: false,
+        failed_rules: failedCheck(checked).failedRules,
+        report_key: keptReport().key,
+        report_sha256: keptReport().sha256,
+        report_bytes: 4096,
+        checked_at: expect.any(Date),
+      },
+    ]);
+
+    // Never changed, never deleted, and never timed by its caller.
+    for (const statement of [
+      sql`update publication_check set compliant = true, failed_rules = '[]'
+          where publication_id = ${checked}`,
+      sql`delete from publication_check where publication_id = ${checked}`,
+      sql`insert into publication_check (publication_id, format, checker, checker_version, profile,
+            compliant, failed_rules, checked_at)
+          values (${unchecked}, 'pdf', 'verapdf', '1.30.2', 'ua1', true, '[]', now() - interval '1 day')`,
+    ]) {
+      await expect(service.withTenant(production, (trx) => statement.execute(trx))).rejects.toThrow(
+        /permission denied/,
+      );
+    }
+
+    // Only a PDF the publication has, only as veraPDF under PDF/UA-1, and only its closed shape.
+    const insert = (values: {
+      publication: string;
+      format?: string;
+      checker?: string;
+      version?: string;
+      profile?: string;
+      compliant?: boolean;
+      rules?: unknown;
+      report?: { key: string; sha256: string; bytes: number };
+    }) => {
+      const report = values.report ?? keptReport();
+      return sql`insert into publication_check (publication_id, format, checker, checker_version,
+            profile, compliant, failed_rules, report_key, report_sha256, report_bytes)
+          values (${values.publication}, ${values.format ?? 'pdf'}, ${values.checker ?? 'verapdf'},
+            ${values.version ?? '1.30.2'}, ${values.profile ?? 'ua1'}, ${values.compliant ?? false},
+            ${JSON.stringify(values.rules ?? [{ clause: '5', test: 1 }])},
+            ${report.key}, ${report.sha256}, ${report.bytes})`;
+    };
+    const tooMany = Array.from({ length: 201 }, (_, index) => ({ clause: '7.1', test: index }));
+    for (const [values, refusal] of [
+      [{ publication: wordOnly }, /publication_check_publication_id_format_fkey/],
+      [{ publication: unchecked, format: 'docx' }, /publication_check_format_check/],
+      [{ publication: unchecked, checker: 'pdfbox' }, /publication_check_checker_check/],
+      [{ publication: unchecked, version: 'latest' }, /publication_check_checker_version_check/],
+      [{ publication: unchecked, profile: 'ua2' }, /publication_check_profile_check/],
+      [{ publication: unchecked, compliant: true }, /publication_check_compliant_without_failures/],
+      [{ publication: unchecked, rules: { clause: '5' } }, /publication_check_failed_rules/],
+      [
+        { publication: unchecked, rules: [{ clause: 5, test: 1 }] },
+        /publication_check_failed_rules/,
+      ],
+      [{ publication: unchecked, rules: [{ clause: '5' }] }, /publication_check_failed_rules/],
+      [
+        { publication: unchecked, rules: [{ clause: '5', test: 1, description: 2 }] },
+        /publication_check_failed_rules/,
+      ],
+      [{ publication: unchecked, rules: tooMany }, /publication_check_failed_rules/],
+      // The whole report, kept by its hash in this tenant's own store and nowhere else.
+      [
+        {
+          publication: unchecked,
+          report: { ...keptReport(), key: `t_another/sha256/${'a'.repeat(64)}` },
+        },
+        /a report is kept in its own tenant's store/,
+      ],
+      [
+        { publication: unchecked, report: { ...keptReport(), key: keptReport('b').key } },
+        /"publication_check_report_key"/,
+      ],
+      [
+        {
+          publication: unchecked,
+          report: { key: `${production.role}/sha256/latest`, sha256: 'latest', bytes: 1 },
+        },
+        /publication_check_report_sha256_check/,
+      ],
+      [
+        { publication: unchecked, report: { ...keptReport(), bytes: 0 } },
+        /publication_check_report_bytes_check/,
+      ],
+    ] as const) {
+      await expect(
+        service.withTenant(production, (trx) => insert(values).execute(trx)),
+        JSON.stringify(values),
+      ).rejects.toThrow(refusal);
+    }
+    // And a bounded list of failures as `recordPublicationCheck` takes it: never more than the bound.
+    await expect(
+      service.withTenant(production, (trx) =>
+        recordPublicationCheck(trx, { ...failedCheck(unchecked), failedRules: tooMany }),
+      ),
+    ).rejects.toThrow(/at most 200/);
+  });
+
+  it('keeps a check as long as its publication, which the runtime role cannot delete, and deletes it with it', async () => {
+    const id = await service.withTenant(production, async (trx) => {
+      const made = (await recordPublication(trx, recording(await requestedAs(['pdf']))))!;
+      await recordPublicationCheck(trx, failedCheck(made));
+      return made;
+    });
+    await expect(
+      service.withTenant(production, (trx) =>
+        sql`delete from publication where id = ${id}`.execute(trx),
+      ),
+    ).rejects.toThrow(/permission denied/);
+
+    // Nothing in the product deletes a publication (PUB-047). Its owner can, once the parts that
+    // restrict it are gone, and its check goes with it by the cascade.
+    const schema = production.schema;
+    const { rows: before } = await queryAs(
+      db.adminUrl,
+      `select count(*)::int as n from ${schema}.publication_check where publication_id = $1`,
+      [id],
+    );
+    expect(before).toEqual([{ n: 1 }]);
+    await queryAs(
+      db.adminUrl,
+      `delete from ${schema}.publication_input where publication_id = $1`,
+      [id],
+    );
+    await queryAs(
+      db.adminUrl,
+      `delete from ${schema}.publication_output where publication_id = $1`,
+      [id],
+    );
+    await queryAs(db.adminUrl, `delete from ${schema}.publication where id = $1`, [id]);
+    const { rows: after } = await queryAs(
+      db.adminUrl,
+      `select count(*)::int as n from ${schema}.publication_check where publication_id = $1`,
+      [id],
+    );
+    expect(after).toEqual([{ n: 0 }]);
+  });
+
+  it('reads a PDF output with its check once it is checked, none before, and a Word output with none', async () => {
+    const { id, before } = await service.withTenant(production, async (trx) => {
+      const made = (await recordPublication(trx, {
+        ...recording(await requestedAs(['pdf', 'docx'])),
+        outputs: [pdfOutput(), docxOutput()],
+      }))!;
+      return { id: made, before: await readPublication(trx, made) };
+    });
+    expect(before!.outputs.map((each) => [each.format, each.check])).toEqual([
+      ['pdf', null],
+      ['docx', null],
+    ]);
+
+    await service.withTenant(production, (trx) => recordPublicationCheck(trx, failedCheck(id)));
+    const after = await service.withTenant(production, (trx) => readPublication(trx, id));
+    expect(after!.outputs.map((each) => [each.format, each.check])).toEqual([
+      [
+        'pdf',
+        {
+          checker: 'verapdf',
+          checkerVersion: '1.30.2',
+          profile: 'ua1',
+          compliant: false,
+          failedRules: failedCheck(id).failedRules,
+          report: keptReport(),
+          checkedAt: expect.any(Date),
+        },
+      ],
+      ['docx', null],
+    ]);
+  });
+
+  it("records once that a PDF's check was given up for good, which the runtime role can never change, and reads it with the PDF alone", async () => {
+    const { id, word } = await service.withTenant(production, async (trx) => ({
+      id: (await recordPublication(trx, {
+        ...recording(await requestedAs(['pdf', 'docx'])),
+        outputs: [pdfOutput(), docxOutput()],
+      }))!,
+      word: (await recordPublication(trx, {
+        ...recording(await requestedAs(['docx'])),
+        outputs: [docxOutput('e')],
+      }))!,
+    }));
+    const gaveUp = async () =>
+      (await service.withTenant(production, (trx) => readPublication(trx, id)))!.outputs.map(
+        (each) => [each.format, each.checkGaveUp],
+      );
+    expect(await gaveUp()).toEqual([
+      ['pdf', false],
+      ['docx', false],
+    ]);
+
+    expect(await service.withTenant(production, (trx) => recordCheckGivenUp(trx, id, 3))).toBe(
+      'recorded',
+    );
+    expect(await service.withTenant(production, (trx) => recordCheckGivenUp(trx, id, 4))).toBe(
+      'already',
+    );
+
+    expect(await gaveUp()).toEqual([
+      ['pdf', true],
+      ['docx', false],
+    ]);
+    const rows = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication_check_given_up')
+        .selectAll()
+        .where('publication_id', '=', id)
+        .execute(),
+    );
+    expect(rows).toEqual([
+      { publication_id: id, format: 'pdf', give_ups: 3, given_up_at: expect.any(Date) },
+    ]);
+
+    // Never changed, never deleted, never timed by its caller; only a PDF the publication has, and
+    // only after a check has given up at least once.
+    for (const [statement, refusal] of [
+      [
+        sql`update publication_check_given_up set give_ups = 1 where publication_id = ${id}`,
+        /permission denied/,
+      ],
+      [
+        sql`delete from publication_check_given_up where publication_id = ${id}`,
+        /permission denied/,
+      ],
+      [
+        sql`insert into publication_check_given_up (publication_id, format, give_ups, given_up_at)
+            values (${id}, 'pdf', 3, now())`,
+        /permission denied/,
+      ],
+      [
+        sql`insert into publication_check_given_up (publication_id, format, give_ups)
+            values (${word}, 'pdf', 3)`,
+        /publication_check_given_up_publication_id_format_fkey/,
+      ],
+      [
+        sql`insert into publication_check_given_up (publication_id, format, give_ups)
+            values (${word}, 'docx', 3)`,
+        /publication_check_given_up_format_check/,
+      ],
+      [
+        sql`insert into publication_check_given_up (publication_id, format, give_ups)
+            values (${id}, 'pdf', 0)`,
+        /publication_check_given_up_give_ups_check/,
+      ],
+    ] as const) {
+      await expect(service.withTenant(production, (trx) => statement.execute(trx))).rejects.toThrow(
+        refusal,
+      );
+    }
   });
 
   it('refuses a record whose outputs are not its request formats, or whose report is not one, and keeps nothing', async () => {
@@ -2765,6 +3116,7 @@ describe('requesting and recording a publication', () => {
       const recent = await previewed(trx, await document(), ada);
       const queued = await previewed(trx, await document(), ada);
       const publish = await requested(trx, await document(), ada);
+      const underReport = await previewed(trx, await document(), ada);
 
       await finishedAgo(trx, alone, '2 hours', '4');
       await finishedAgo(trx, failed, '2 hours');
@@ -2781,8 +3133,17 @@ describe('requesting and recording a publication', () => {
       // And an image's version names this one's: however unlikely, bytes are bytes.
       await finishedAgo(trx, underImage, '2 hours', '9');
       await finishedAgo(trx, recent, '50 minutes', '8');
+      // So does the publication's check, by the report veraPDF wrote.
+      await finishedAgo(trx, underReport, '2 hours', '1');
+      await recordPublicationCheck(trx, {
+        publicationId: publication,
+        checkerVersion: '1.30.2',
+        compliant: true,
+        failedRules: [],
+        report: previewPdf('1'),
+      });
       return {
-        swept: [alone, failed, ...twins, older, beside, underImage],
+        swept: [alone, failed, ...twins, older, beside, underImage, underReport],
         kept: [newer, recent, queued, publish],
       };
     });

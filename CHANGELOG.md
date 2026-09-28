@@ -3,7 +3,7 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.117.0 - 2026-09-28 (PR #314)
+## 0.116.0 - 2026-09-28 (PR #TBD)
 
 ### Added
 
@@ -20,6 +20,20 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   aloud as an ordinary paragraph. Publishing a PDF now stops and names each one at its place in the
   outline, saying to move it up a level, or, where the layout makes Word, to publish to Word alone. A
   Word document still publishes every level an outline can have, down to Heading 9.
+
+## 0.115.0 - 2026-09-28 (PR #313)
+
+### Added
+
+- **Every PDF you publish is checked for accessibility.** Moments after a publication is made, veraPDF
+  checks its PDF against PDF/UA-1, the standard for accessible PDF, and the publication's page says
+  what it found: that it passed, or how many rules it failed, with each rule listed in veraPDF's own
+  words. **Download the full report** saves veraPDF's whole report, which is kept with the publication.
+  Until the check has run, the page says the PDF is not yet checked. Publishing is not slowed down by
+  the check, and a check that cannot run is tried again, and again up to about fifteen minutes later
+  if it still could not. A PDF that could not be checked after three such tries says so on its page:
+  **Could not be checked for accessibility.** PDFs published before this release are checked too,
+  soon after it arrives.
 
 ## 0.114.0 - 2026-09-28 (PR #311)
 

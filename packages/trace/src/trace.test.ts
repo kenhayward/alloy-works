@@ -554,10 +554,15 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
-  // 508, from 505 (2026-09-28): W14.2 - PUB-103 in packages/domain's assemble.test.ts, where a node
+  // 509, from 506 (2026-09-28): W14.2 - PUB-103 in packages/domain's assemble.test.ts, where a node
   // deeper than six levels is refused for the PDF by name, and in apps/worker's regression.test.ts,
   // where six levels pass veraPDF tagged H1 to H6 and nine are refused for the PDF and published to
   // Word; and PUB-102 in apps/worker's publishing-budget.test.ts, the 300-page reference document.
+  // 506, from 505 (2026-09-28): W14.1 - PUB-091 in apps/worker's check.test.ts, seven tests in one
+  // file: a publication's PDF checked and its verdict kept, veraPDF's whole report retained, a failing
+  // PDF's rules named, a check left queued by a worker that died after recording taken by the next, a
+  // check that gave up queued again by the sweep, one that gave up three times left, and the
+  // publications recorded before checks were queued checked by the first sweep after.
   // 505, unchanged (2026-09-28): W14.7's final review - CNT-178 superseded CNT-148, and the two
   // tests that cited CNT-148 cite CNT-178 instead.
   // 505, from 502 (2026-09-28): W14.7 - CNT-148 in apps/desktop's shell.test.ts, where each
@@ -654,7 +659,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(508);
+    expect(model.citations).toHaveLength(509);
   });
 
   it('cites no identifier the corpus does not hold', () => {

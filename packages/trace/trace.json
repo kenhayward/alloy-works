@@ -15740,7 +15740,7 @@
         },
         {
           "id": "PUB-091",
-          "howItIsMet": "veraPDF checks every PDF in the worker against its PDF/UA-1 profile; its report is stored as an object and referenced from the publication's output row"
+          "howItIsMet": "veraPDF checks every PDF in the worker against its PDF/UA-1 profile, after the publication is recorded (ADR-0030), by a `check_pdf` job queued in the transaction that records it, and queued again by the worker's sweep where it gave up; its report is retained whole - veraPDF's JSON, as it wrote it, in the tenant's store by its hash, as the PDF is - and summarised beside the publication in `publication_check`, one row per PDF output, insert-only: veraPDF's version, the profile, compliant or not, each rule failed with veraPDF's words for it, and the report's key, digest and size. Its page shows the summary and offers the report to download (W14.1)"
         },
         {
           "id": "PUB-103",
@@ -17289,43 +17289,43 @@
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 420,
+      "line": 423,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 355,
+      "line": 358,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 448,
+      "line": 451,
       "kind": "rule"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 656,
+      "line": 659,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 598,
+      "line": 601,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 537,
+      "line": 540,
       "kind": "rule"
     },
     {
       "id": "PUB-095",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 465,
+      "line": 468,
       "kind": "rule"
     },
     {
@@ -17839,6 +17839,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-091",
+      "file": "apps/worker/src/check.test.ts",
+      "line": 305,
+      "kind": "title"
+    },
+    {
       "id": "CNT-080",
       "file": "apps/worker/src/equations.test.ts",
       "line": 426,
@@ -17955,73 +17961,73 @@
     {
       "id": "PUB-005",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 416,
+      "line": 422,
       "kind": "title"
     },
     {
       "id": "PUB-006",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 458,
+      "line": 464,
       "kind": "title"
     },
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 351,
+      "line": 357,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 737,
+      "line": 743,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 555,
+      "line": 561,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 571,
+      "line": 577,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 576,
+      "line": 582,
       "kind": "title"
     },
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1235,
+      "line": 1241,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1154,
+      "line": 1160,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 755,
+      "line": 761,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 365,
+      "line": 371,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 682,
+      "line": 688,
       "kind": "title"
     },
     {
@@ -18111,43 +18117,43 @@
     {
       "id": "PUB-019",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1539,
+      "line": 1545,
       "kind": "title"
     },
     {
       "id": "PUB-069",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1130,
+      "line": 1132,
       "kind": "title"
     },
     {
       "id": "STY-008",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 489,
+      "line": 491,
       "kind": "title"
     },
     {
       "id": "STY-009",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 776,
+      "line": 778,
       "kind": "title"
     },
     {
       "id": "STY-010",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 869,
+      "line": 871,
       "kind": "title"
     },
     {
       "id": "STY-042",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1539,
+      "line": 1545,
       "kind": "title"
     },
     {
       "id": "STY-074",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1215,
+      "line": 1217,
       "kind": "title"
     },
     {
@@ -18411,25 +18417,25 @@
     {
       "id": "PUB-014",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 330,
+      "line": 332,
       "kind": "title"
     },
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 948,
+      "line": 950,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 422,
+      "line": 424,
       "kind": "title"
     },
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 813,
+      "line": 815,
       "kind": "title"
     },
     {
@@ -20007,13 +20013,13 @@
     {
       "id": "AST-005",
       "file": "tests/e2e/src/stack.test.ts",
-      "line": 458,
+      "line": 483,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "tests/e2e/src/stack.test.ts",
-      "line": 388,
+      "line": 413,
       "kind": "title"
     }
   ]

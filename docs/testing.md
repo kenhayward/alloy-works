@@ -240,11 +240,22 @@ whole run**: veraPDF's undocumented `--servermode` reads a PDF's path per line a
 its report, and `apps/worker/src/testing/verapdf-server.ts` starts it on the first check and serves it
 to every test file over 127.0.0.1 (the global setup, `verapdf-setup.ts`). After it starts, a check
 costs tens of milliseconds. `verapdf.test.ts` pins the flag: an image that dropped it fails there by
-name. It runs in the worker's test suite on every change to the template or the engine; the check on every
-publication is W14.1's, the `check_pdf` job of [#313](https://github.com/kenhayward/alloy-works/pull/313). Of the corpus's cases, veraPDF checks two against PDF/UA-1:
-six heading levels, which it must pass, and the PDF not made to PDF/UA-1, which it must fail. The
-sixteen character probes are not checked against PDF/UA-1 at all - each is compared only to what the
-pinned Typst itself would refuse, character by character.
+name. It runs in the worker's test suite on every change to the template or the engine.
+
+**The worker checks every publication with the same protocol** (W14.1): `startServerMode` in
+`apps/worker/src/verapdf.ts` holds it, and the suite's container and the worker's own child process are
+two hosts over it. The `check_pdf` job sees a `Checker`, and `check.test.ts` hands it `suiteChecker`,
+the run's warm veraPDF, so the job is tested against the pinned veraPDF itself. The worker's own child
+process needs a Java runtime no developer's machine or CI runner has, so `verapdf.test.ts` drives it
+against `testing/fake-verapdf.ts`, a stand-in speaking the protocol, which Node runs by stripping its
+types: what the stand-in answers is decided by the PDF's bytes. That it runs the real veraPDF is shown
+by building the worker image, whose build runs `verapdf --version`, and by CI's entry-point step.
+Every publication now queues its check ahead of whatever is asked next, so a suite that publishes and
+then waits on another job takes it with `processNextBesideChecks` (`testing/work.ts`), which runs each
+check it meets and passes over it. Of the corpus's cases, veraPDF checks two against PDF/UA-1: six
+heading levels, which it must pass, and the PDF not made to PDF/UA-1, which it must fail. The sixteen
+character probes are not checked against PDF/UA-1 at all - each is compared only to what the pinned
+Typst itself would refuse, character by character.
 
 `apps/worker/src/layout.test.ts` is where template 2 is measured against the layout it was given: one
 fixture of several pages compiled under the product's default layout and under a test layout that

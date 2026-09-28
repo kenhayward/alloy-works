@@ -184,6 +184,8 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0037_iteration_retention',
       '0038_api_tokens',
       '0039_groups',
+      '0040_publication_check',
+      '0041_publication_check_given_up',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,
