@@ -1283,7 +1283,11 @@ describe('writeDocx: the report (ruling R13)', () => {
       { kind: 'no_page_cited_output' },
       { kind: 'pages_cite_the_pdf' },
     ]);
-    expect(written({}, ['pdf', 'docx']).report).toEqual([{ kind: 'pages_cite_the_pdf' }]);
+    // Without Method, whose seventh level the PDF refuses (W14.2), so that both can be made.
+    const shallow = { ...OUTLINE, nodes: OUTLINE.nodes.filter((node) => node.id !== id('method')) };
+    expect(written({ outline: shallow }, ['pdf', 'docx']).report).toEqual([
+      { kind: 'pages_cite_the_pdf' },
+    ]);
   });
 
   it('reports no substitution for a face the text is not set in: the maths face, where no equation is set', () => {

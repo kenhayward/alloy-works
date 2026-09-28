@@ -677,7 +677,7 @@ table takes a number unless its author marked it unnumbered** (issue #129, W14.4
 carries `numbered: false`, absent meaning numbered, as W14's decision W-H has it, and an unnumbered one
 contributes `numbered: false`, takes no number, uses up none and is in no generated list. Its caption
 is still required - TAB-034 for a table, CNT-017 for a figure - since unnumbered is not unnamed; a
-reference to it prints its caption. The numbering route answers a caption's number, and the
+reference names it by its caption, and a number form of one fails the publish by name (W14's W-N). The numbering route answers a caption's number, and the
 document page's lists show it.
 
 **Where a caption is rendered, and on which side of its block, is not here.** STR-025 makes placement

@@ -1,6 +1,5 @@
 import {
   bootstrapCluster,
-  configureOrganisationSignIn,
   createTenant,
   createTenantDatabase,
   findRole,
@@ -16,7 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
-import { signIn } from './test/sign-in.js';
+import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 const HOST = 'acme.alloy.test';
 
@@ -108,17 +107,17 @@ describe('groups: made, filled and deleted, and followed from the provider at si
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: [HOST],
     });
-    await configureOrganisationSignIn(db.adminUrl, production, {
+    await configureStandIn(db.adminUrl, production, {
       issuer: idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
     });
     tenantDb = createTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
     });
     // Grace administers the environment, directly: the grant the lock-out guard counts.
     graceCookie = await signIn(app, HOST, 'grace', idp.issuer);

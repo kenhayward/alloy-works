@@ -314,6 +314,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
 
@@ -991,6 +992,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
 
@@ -1040,6 +1042,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
 
@@ -1184,6 +1187,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
     ]);
 
     // The theme is at 0.4, under its fixed identifier, unauthored, on top of 0.3; each revised
@@ -1272,6 +1276,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
         '0039_groups',
         '0040_publication_check',
         '0041_publication_check_given_up',
+        '0042_sealed_sign_in_secret',
       ]);
 
       // The catalogue is left at the environment's own version, with nothing of the product's on top.
@@ -1324,6 +1329,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
     ]);
 
     // The theme is left at the environment's own 0.4, with nothing of the product's on top, and still

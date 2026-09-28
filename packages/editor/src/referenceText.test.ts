@@ -415,13 +415,120 @@ describe('what a component offers a reference of its own (cross-references 1, ru
     ]);
   });
 
-  it('shows a reference to a table marked unnumbered as its caption, in a title form or a number form it was stored in', () => {
-    for (const display of ['title', 'number', 'numberAndTitle'] as const) {
+  it('shows a reference to a table marked unnumbered as its caption in a title form, and a number form it was stored in as unavailable (W-N)', () => {
+    const shownAs = (display: CrossReferenceDisplay, context: ReferenceContext | 'own' | null) => {
       const doc = docOf(
         { ...table('t1', 'Layout only'), numbered: false } as BlockNode,
         para('b1', ref({ kind: 'block', block: 't1' }, display)),
       );
-      expect(onlyText(doc, { targets: ownTargets(doc) }), display).toBe('Layout only');
+      return shown(doc, context === 'own' ? { targets: ownTargets(doc) } : context)[0];
+    };
+    const unavailable = { text: 'Table not numbered - choose another form', broken: true };
+    for (const context of ['own', null] as const) {
+      expect(shownAs('title', context), `${context}`).toEqual({
+        text: 'Layout only',
+        broken: false,
+      });
+      expect(shownAs('page', context), `${context}`).toEqual({
+        text: 'page of Layout only',
+        broken: false,
+      });
+      expect(shownAs('number', context), `${context}`).toEqual(unavailable);
+      expect(shownAs('numberAndTitle', context), `${context}`).toEqual(unavailable);
     }
+  });
+
+  it('trusts the live table over a page that numbered it before it was marked unnumbered', () => {
+    // The page's numbering is refetched only for a new version of the document, so it can still say
+    // _Table 1.2_ of a table the author has just marked unnumbered in this session.
+    const stale = {
+      targets: [target({ kind: 'block', block: 't1' }, 'table', 'Table 1.2', 'Old')],
+    };
+    const doc = (display: CrossReferenceDisplay) =>
+      docOf(
+        { ...table('t1', 'Layout only'), numbered: false } as BlockNode,
+        para('b1', ref({ kind: 'block', block: 't1' }, display)),
+      );
+    expect(shown(doc('number'), stale)).toEqual([
+      { text: 'Table not numbered - choose another form', broken: true },
+    ]);
+    expect(onlyText(doc('title'), stale)).toBe('Layout only');
+    expect(onlyText(doc('relative'), stale)).toBe('above');
+  });
+});
+
+describe('a reference asking for a form its target has not got (W-N)', () => {
+  const note = {
+    type: 'footnote',
+    id: 'n1',
+    anchor: { kind: 'span' },
+    content: [para('np1', text('Twice.'))],
+  } as InlineNode;
+
+  it('trusts the live table over a page that calls it unnumbered after it was numbered again', () => {
+    // The page still says unnumbered; the author has ticked Numbered again since. A number is simply
+    // not known yet, as for a table placed since the page last numbered the document.
+    const stale = {
+      targets: [
+        {
+          ...target({ kind: 'block', block: 't1' }, 'table', null, 'Readings'),
+          unnumbered: true as const,
+        },
+      ],
+    };
+    const doc = docOf(table('t1', 'Readings'), para('b1', ref({ kind: 'block', block: 't1' })));
+    expect(shown(doc, stale)).toEqual([{ text: 'Table: Readings', broken: false }]);
+  });
+
+  it('says a footnote and a numbered equation have no title, rather than that they are not numbered', () => {
+    const context = {
+      targets: [
+        target({ kind: 'block', block: 'n1' }, 'footnote', '1', null),
+        target({ kind: 'block', block: 'e1' }, 'equation', 'Equation 1', null),
+      ],
+    };
+    const doc = docOf(
+      para('b0', text('Visited'), note),
+      equationBlock('e1', true),
+      para(
+        'b1',
+        ref({ kind: 'block', block: 'n1' }, 'title', 'x1'),
+        ref({ kind: 'block', block: 'e1' }, 'numberAndTitle', 'x2'),
+        ref({ kind: 'block', block: 'e1' }, 'number', 'x3'),
+      ),
+    );
+    expect(shown(doc, context)).toEqual([
+      { text: 'Footnote has no title - choose another form', broken: true },
+      { text: 'Equation has no title - choose another form', broken: true },
+      { text: 'Equation 1', broken: false },
+    ]);
+  });
+
+  it('shows a number form of an unnumbered block equation as unavailable, even where a stale page numbered it', () => {
+    const stale = { targets: [target({ kind: 'block', block: 'e1' }, 'equation', '(3)', null)] };
+    const doc = (display: CrossReferenceDisplay) =>
+      docOf(equationBlock('e1', false), para('b1', ref({ kind: 'block', block: 'e1' }, display)));
+    const unavailable = { text: 'Equation not numbered - choose another form', broken: true };
+    for (const context of [null, stale]) {
+      expect(shown(doc('number'), context)[0]).toEqual(unavailable);
+      expect(shown(doc('numberAndTitle'), context)[0]).toEqual(unavailable);
+      expect(shown(doc('relative'), context)[0]).toEqual({ text: 'above', broken: false });
+    }
+    // Its title form is the equation's own lack, not its number's.
+    expect(shown(doc('title'), null)[0]).toEqual({
+      text: 'Equation has no title - choose another form',
+      broken: true,
+    });
+  });
+
+  it('says what an unavailable reference points at, for the dialog to name it by', () => {
+    const at = (display: CrossReferenceDisplay) =>
+      referencesShown(
+        docOf(equationBlock('e1', false), para('b1', ref({ kind: 'block', block: 'e1' }, display))),
+        null,
+      )[0];
+    expect(at('number')).toMatchObject({ named: 'Equation' });
+    // One it can show names nothing apart from what it shows.
+    expect(at('page')).not.toHaveProperty('named');
   });
 });

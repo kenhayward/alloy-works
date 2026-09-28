@@ -249,6 +249,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
 
@@ -597,6 +598,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
 
@@ -713,6 +715,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
@@ -811,6 +814,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
@@ -854,6 +858,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
@@ -973,6 +978,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
@@ -1009,6 +1015,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
     const { declared, fifth } = await service.withTenant(tenant, async (trx) => ({
@@ -1111,6 +1118,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
@@ -1170,6 +1178,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
     const { declared, sixth, inputs } = await service.withTenant(tenant, async (trx) => ({
@@ -1274,6 +1283,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
@@ -1320,6 +1330,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0039_groups',
       '0040_publication_check',
       '0041_publication_check_given_up',
+      '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
     ]);
     const { declared, seventh, inputs, row } = await service.withTenant(tenant, async (trx) => ({

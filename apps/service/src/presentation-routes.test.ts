@@ -1,6 +1,5 @@
 import {
   bootstrapCluster,
-  configureOrganisationSignIn,
   createDocument,
   createSpace,
   createTenant,
@@ -19,7 +18,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
-import { signIn } from './test/sign-in.js';
+import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 const HOST = 'acme.alloy.test';
 
@@ -63,10 +62,9 @@ describe("the theme and layout the editor sets a component's text in", () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: [HOST],
     });
-    await configureOrganisationSignIn(db.adminUrl, tenant, {
+    await configureStandIn(db.adminUrl, tenant, {
       issuer: idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
     });
     tenantDb = createTenantDatabase(db.serviceUrl);
     await tenantDb.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: idp.issuer }));
@@ -74,7 +72,8 @@ describe("the theme and layout the editor sets a component's text in", () => {
       db: tenantDb,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
     });
     cookie = await signIn(app, HOST, 'grace', idp.issuer);
     const grace = (await get('/v1/me')).json<{ id: string }>().id;

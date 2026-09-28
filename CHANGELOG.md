@@ -3,7 +3,7 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.119.0 - 2026-09-28 (PR #TBD)
+## 0.120.0 - 2026-09-28 (PR #TBD)
 
 ### Added
 
@@ -15,12 +15,14 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 ### Changed
 
-- **The default theme moves to version 0.5**, which says outright what it always did: a table's
-  caption above the table and a figure's below the image. Nothing you have published, and nothing you
-  publish next, looks any different. An environment that has changed its own table or image styles
-  keeps them, with their captions where they always were.
+- **The default theme keeps today's placement.** It moves to version 0.5, which says outright what it
+  always did: a table's caption above the table and a figure's below the image. Nothing you have
+  published, and nothing you publish next, looks any different. No screen edits a theme in this
+  release, so a caption on the other side appears only under a theme whose styles are changed
+  outside the app. An environment that has changed its own table or image styles keeps them, with
+  their captions where they always were.
 
-## 0.118.0 - 2026-09-28 (PR #315)
+## 0.119.0 - 2026-09-28 (PR #317)
 
 ### Added
 
@@ -29,8 +31,43 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   figure. It keeps its caption, which it still needs to be published, and prints under that caption
   alone, in the PDF and in Word; the next table or figure takes the number it would have had, and it
   is left out of the lists of tables and of figures. The Reference dialog still offers it, by its
-  caption, and a reference to it prints that caption; one asking for its number is refused by name
-  when you publish, since it has none. Publications already made are unchanged (issue #129).
+  caption, for its title, its page or above or below. A reference that asks for its number shows as
+  unavailable in the editor, telling you to choose another form, and is refused by name when you
+  publish, since it has none. So does a reference asking for the number of an equation left
+  unnumbered, and one asking for something its target never has, such as a footnote's title, says
+  so. Publications already made are unchanged (issue #129).
+
+## 0.117.0 - 2026-09-28 (PR #316)
+
+### Added
+
+- **Publishing a long document is measured, and quick.** A 300-page document of prose, figures,
+  tables, equations and footnotes publishes to PDF in about a second and a half on a developer's
+  machine, from asking for it to the publication being recorded. The worker's tests measure it and
+  hold it to ten seconds on a developer's machine, and record the machine it was measured on beside
+  the result. Its accessibility check reaches the publication's page within seconds after that, and
+  is held to five minutes.
+
+### Changed
+
+- **A heading nested more than six levels deep is refused for a PDF, by name.** An accessible PDF can
+  tag six levels of heading, so a section or a component seven or more levels down used to be read
+  aloud as an ordinary paragraph. Publishing a PDF now stops and names each one at its place in the
+  outline, saying to move it up a level, or, where the layout makes Word, to publish to Word alone. A
+  Word document still publishes every level an outline can have, down to Heading 9.
+
+## 0.115.1 - 2026-09-28 (PR #314)
+
+### Fixed
+
+- **Each environment signs in with its own client secret.** Two environments set up with the same
+  client of the same sign-in provider, but different secrets, could end up signing in with whichever
+  secret was used first, and an environment's settings could point at a secret meant for another. An
+  environment's client secret is now kept by that environment alone, sealed in its own storage, and
+  used for nobody else's sign-in; the Google route keeps its one secret for the whole product, as
+  before. An environment set up before this change stops offering sign-in through its own provider
+  until its sign-in is configured again, and the service's log says so; in development,
+  `pnpm dev:setup` does this for you (issue #312).
 
 ## 0.115.0 - 2026-09-28 (PR #313)
 

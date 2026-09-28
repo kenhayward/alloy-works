@@ -4709,6 +4709,153 @@ describe('cross-references in the editor (cross-references 1)', () => {
     expect(within(dialog).getByText(/It will show/)).toHaveTextContent('It will show: Readings');
   });
 
+  /** A paragraph referring to `t1` in each form given, `x1`, `x2` and on, then the table and `b2`. */
+  const referringIn = (table: object, ...displays: string[]) =>
+    blocksOf(
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [
+          { type: 'text', value: 'See ', marks: [] },
+          ...displays.map((display, at) => ({
+            type: 'crossReference',
+            id: `x${at + 1}`,
+            target: { kind: 'block', block: 't1' },
+            display,
+          })),
+        ],
+      },
+      table,
+      para('b2', 'Then.'),
+    );
+  /** What the page last numbered: `t1` as Table 1.2, from before it was marked unnumbered. */
+  const stale = {
+    targets: [
+      {
+        target: { kind: 'block' as const, block: 't1' },
+        kind: 'table' as const,
+        label: 'Table 1.2',
+        title: 'Readings',
+        relative: null,
+      },
+    ],
+  };
+
+  it('STR-071 trusts the live table over a page that numbered it before it was marked unnumbered, offering no number form of it', async () => {
+    const { surface } = openWith(referringIn({ ...readings, numbered: false }, 'title'), {
+      referenceContext: stale,
+    });
+    const view = await surface();
+    expect(drawn()).toEqual(['Readings']);
+    caretIn(view, 'b2');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Table: Readings' }));
+    expect(choices(dialog, 'Show as')).toEqual(['Title', 'Page', 'Above or below']);
+    expect(within(dialog).getByText(/It will show/)).toHaveTextContent('It will show: Readings');
+  });
+
+  it('shows a number-form reference to a table marked unnumbered as unavailable, drawn apart, and lets the author choose another form (W-N)', async () => {
+    const { surface } = openWith(referringIn({ ...readings, numbered: false }, 'number'), {
+      referenceContext: stale,
+    });
+    const view = await surface();
+    expect(drawn()).toEqual(['Table not numbered - choose another form']);
+    expect(document.querySelectorAll('.ProseMirror .aw-reference-broken')).toHaveLength(1);
+    selectFirst(view, 'crossReference');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    expect(within(dialog).getByRole('radio', { name: 'Table: Readings' })).toBeChecked();
+    expect(choices(dialog, 'Show as')).toEqual(['Title', 'Page', 'Above or below']);
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Title' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Change' }));
+    expect(referencesIn(view)).toMatchObject([{ id: 'x1', display: 'title' }]);
+    expect(drawn()).toEqual(['Readings']);
+    expect(document.querySelectorAll('.ProseMirror .aw-reference-broken')).toHaveLength(0);
+  });
+
+  it('STR-071 trusts the live table over a page that calls it unnumbered after it was numbered again, offering every form', async () => {
+    const { surface } = openWith(referringIn(readings, 'number'), {
+      referenceContext: {
+        targets: [
+          {
+            target: { kind: 'block' as const, block: 't1' },
+            kind: 'table' as const,
+            label: null,
+            title: 'Readings',
+            relative: null,
+            unnumbered: true as const,
+          },
+        ],
+      },
+    });
+    const view = await surface();
+    // A number not known yet, as for a table placed since the page last numbered the document.
+    expect(drawn()).toEqual(['Table: Readings']);
+    caretIn(view, 'b2');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Table: Readings' }));
+    expect(choices(dialog, 'Show as')).toEqual([
+      'Number',
+      'Title',
+      'Number and title',
+      'Page',
+      'Above or below',
+    ]);
+  });
+
+  it('shows a number-form reference to an unnumbered block equation as unavailable, and opened on it offers a page and a place alone (W-N)', async () => {
+    const equation = {
+      type: 'equation',
+      id: 'e1',
+      mathml:
+        '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>',
+      numbered: false,
+    };
+    const stored = blocksOf(equation, {
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [
+        { type: 'text', value: 'By ', marks: [] },
+        {
+          type: 'crossReference',
+          id: 'x1',
+          target: { kind: 'block', block: 'e1' },
+          display: 'number',
+        },
+      ],
+    });
+    // A page that numbered it before it was marked unnumbered: the live equation is trusted.
+    const { surface } = openWith(stored, {
+      referenceContext: {
+        targets: [
+          {
+            target: { kind: 'block' as const, block: 'e1' },
+            kind: 'equation' as const,
+            label: '(3)',
+            title: null,
+            relative: null,
+          },
+        ],
+      },
+    });
+    const view = await surface();
+    expect(drawn()).toEqual(['Equation not numbered - choose another form']);
+    expect(document.querySelectorAll('.ProseMirror .aw-reference-broken')).toHaveLength(1);
+    selectFirst(view, 'crossReference');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    expect(within(dialog).getByRole('radio', { name: 'Equation' })).toBeChecked();
+    expect(choices(dialog, 'Show as')).toEqual(['Page', 'Above or below']);
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Above or below' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Change' }));
+    expect(referencesIn(view)).toMatchObject([{ id: 'x1', display: 'relative' }]);
+    expect(drawn()).toEqual(['above']);
+  });
+
   it('opens on a reference selected whole, and changes its form keeping its identifier', async () => {
     const { surface } = openWith(referring, { referenceContext: inADocument });
     const view = await surface();

@@ -73,35 +73,62 @@ export interface OidcClient {
 }
 
 /**
- * The authorisation code flow with PKCE, over openid-client. Each provider's configuration is
- * discovered once and kept; a failed discovery is forgotten, so it is tried again next time.
+ * The authorisation code flow with PKCE, over openid-client. Each provider's metadata is discovered
+ * once and kept, by issuer; a failed discovery is forgotten, so it is tried again next time.
+ *
+ * What is kept holds no client secret. Every start and every exchange is given a configuration of its
+ * own, made from the metadata and the client id and secret it is handed, so two environments
+ * configuring the same client of the same provider with different secrets each exchange with their
+ * own, and a secret configured afresh is the one the next exchange uses (issue #312).
  *
  * Every ID token's signature is checked against the keys the provider publishes at its `jwks_uri`
  * (`enableNonRepudiationChecks`), for the organisation's provider and Google alike. openid-client
  * leaves that off by default, trusting the TLS connection to the token endpoint instead; the ID token
- * now carries the groups that confer roles (GP-A), so it is held to its signature as well.
+ * now carries the groups that confer roles (GP-A), so it is held to its signature as well. The keys
+ * are public, so they are kept by issuer as the metadata is, and handed to each exchange's
+ * configuration: openid-client fetches them again only when they are stale or a token names a key
+ * they do not hold.
  */
 export function createOidcClient(options: { readonly allowInsecureIssuers: boolean }): OidcClient {
-  const configurations = new Map<string, Promise<client.Configuration>>();
+  const discovered = new Map<string, Promise<client.ServerMetadata>>();
+  const keys = new Map<string, client.ExportedJWKSCache>();
 
-  function configuration(provider: ProviderSettings): Promise<client.Configuration> {
+  function metadata(provider: ProviderSettings): Promise<client.ServerMetadata> {
     const issuer = new URL(provider.issuer);
     if (issuer.protocol !== 'https:' && !options.allowInsecureIssuers) {
       return Promise.reject(new SignInFailed('The identity provider must be reached over HTTPS.'));
     }
-    const key = `${provider.issuer} ${provider.clientId}`;
-    let found = configurations.get(key);
+    let found = discovered.get(provider.issuer);
     if (!found) {
-      found = client.discovery(issuer, provider.clientId, provider.clientSecret, undefined, {
-        execute: [
-          ...(options.allowInsecureIssuers ? [client.allowInsecureRequests] : []),
-          client.enableNonRepudiationChecks,
-        ],
-      });
-      found.catch(() => configurations.delete(key));
-      configurations.set(key, found);
+      // Discovered without a secret: only the provider's metadata is kept.
+      found = client
+        .discovery(issuer, provider.clientId, undefined, undefined, {
+          execute: options.allowInsecureIssuers ? [client.allowInsecureRequests] : [],
+        })
+        .then((config) => config.serverMetadata());
+      found.catch(() => discovered.delete(provider.issuer));
+      discovered.set(provider.issuer, found);
     }
     return found;
+  }
+
+  async function configuration(provider: ProviderSettings): Promise<client.Configuration> {
+    const config = new client.Configuration(
+      await metadata(provider),
+      provider.clientId,
+      provider.clientSecret,
+    );
+    if (options.allowInsecureIssuers) client.allowInsecureRequests(config);
+    client.enableNonRepudiationChecks(config);
+    const known = keys.get(provider.issuer);
+    if (known) client.setJwksCache(config, known);
+    return config;
+  }
+
+  /** Keeps whatever keys the exchange fetched for the next one through the same provider. */
+  function keepKeys(provider: ProviderSettings, config: client.Configuration): void {
+    const fetched = client.getJwksCache(config);
+    if (fetched) keys.set(provider.issuer, fetched);
   }
 
   return {
@@ -137,6 +164,8 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
         throw new SignInFailed('The identity provider did not confirm the sign-in.', {
           cause: error,
         });
+      } finally {
+        keepKeys(provider, config);
       }
       const claims = tokens.claims();
       if (!claims) throw new SignInFailed('The identity provider returned no identity.');

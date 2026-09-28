@@ -178,15 +178,17 @@ const EQUATION_PROBLEMS: Readonly<Record<string, string>> = {
  * since the header repeats it and a repeated label refuses the compile (cross-references 2, task 4).
  * An equation has no title of its own (equations 2, ruling R7 - its number is its label, and what it
  * says is maths, which a reference cannot print as words), and neither does a section or a caption
- * whose title holds one, which `title` and `numberAndTitle` now cover as well.
+ * whose title holds one, which `title` and `numberAndTitle` now cover as well. A figure or a table
+ * the author left unnumbered has no number either (STR-071, W14.4), which `number` and
+ * `numberAndTitle` name, as `number` names an unnumbered equation.
  */
 const FORMS: Readonly<Record<string, string>> = {
   number:
-    'A cross-reference asks for a number, and what it points at has none: a paragraph, a list, or a section with no number of its own.',
+    'A cross-reference asks for a number, and what it points at has none: a paragraph, a list, a section with no number of its own, a figure or a table left unnumbered, or an unnumbered equation.',
   title:
     'A cross-reference asks for a title, and what it points at has none: a paragraph, a list, a footnote, or an equation. A section or a caption holding an equation has none either, since the equation cannot be printed as a title.',
   numberAndTitle:
-    'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, an equation, or a section with no number of its own. A section or a caption holding an equation is missing one too, since the equation cannot be printed as a title.',
+    'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, an equation, a section with no number of its own, or a figure or a table left unnumbered. A section or a caption holding an equation is missing one too, since the equation cannot be printed as a title.',
   page: "A cross-reference asks for a page. A section's title cannot hold one, since the running heads and the contents set the title again in a different place; nor can something standing in a table's header row, which the page repeats.",
   relative:
     "A cross-reference asks for above or below. Either this publication's layout has no words for them, or what it points at stands in a table's header row, which repeats.",
@@ -196,8 +198,11 @@ const FORMS: Readonly<Record<string, string>> = {
  * What a failure says to the author, in words: never a code, never an engine's diagnostic, and never
  * anything of a component they may not read - an unreadable place is named by where it is, which the
  * caller supplies, and this says only that a component is there.
+ *
+ * `wordOffered` is whether Word could be asked for instead: a publish under a layout with a Word page.
+ * A preview is always a PDF, and a layout with no Word page makes none, so neither offers it.
  */
-export function failureWords(failure: Failure): string {
+export function failureWords(failure: Failure, wordOffered = false): string {
   switch (failure.code) {
     case 'occurrence_unreadable':
       return 'A component you may not read is placed here. Only someone who may read every component can publish this document.';
@@ -386,6 +391,11 @@ export function failureWords(failure: Failure): string {
       const why = (failure.detail ?? '').split(':')[1] ?? '';
       return `${REFERENCE_NOT_IN_WORD[why] ?? 'A cross-reference here cannot be printed by Word as the PDF prints it.'} Publish this document as a PDF only, or change the cross-reference.`;
     }
+    // W14.2 (W-E, ADR-0031): the place names the heading, a section's or a component's; nothing else in
+    // the document is wrong, and Word, which tags nine levels, can be made of it - where Word can be
+    // asked for at all, which a preview and a layout with no Word page cannot.
+    case 'heading_too_deep':
+      return `This heading is nested more than six levels deep, which a PDF cannot tag as a heading. Move it up a level${wordOffered ? ', or publish this document to Word alone' : ''}.`;
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

@@ -14,6 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
+import { TEST_SEALING_KEY } from './test/sign-in.js';
 
 const HOST = 'acme.alloy.test';
 
@@ -42,6 +43,7 @@ describe('the renderer, served by the service', () => {
       logLevel: 'silent' as const,
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
     };
     app = buildApp({ ...common, rendererRoot: root });
     plain = buildApp(common);
