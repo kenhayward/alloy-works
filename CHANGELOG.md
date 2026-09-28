@@ -3,6 +3,13 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.110.1 - 2026-09-28 (PR #303)
+
+### Fixed
+
+- The renderer's tests no longer fail on a slower build machine while a file's first page is still
+  loading the editor (issue #302). Nothing changes in the application.
+
 ## 0.110.0 - 2026-09-28 (PR #300)
 
 ### Added

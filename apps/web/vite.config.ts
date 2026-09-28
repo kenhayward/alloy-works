@@ -29,6 +29,9 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/test/setup.ts'],
+    // A file's first test pays for loading the editor and the page it opens, which on CI's runner has
+    // taken past Vitest's five seconds (issue #302): the limit is for a test that hangs, not a slow one.
+    testTimeout: 15_000,
     // Pinned rather than left implicit: the default reporter varies by platform, and a run that
     // swallows console output on Windows makes a noisy suite look pristine locally.
     reporters: ['default', 'json'],
