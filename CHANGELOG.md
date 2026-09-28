@@ -22,6 +22,14 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   than the description written for them, and that the characters of Word's maths typeface, Cambria
   Math, are not checked.
 
+## 0.117.1 - 2026-09-28 (PR #319)
+
+### Fixed
+
+- **The test suite no longer fails at random on a slow machine** when it checks that a job being
+  worked on is not handed to a second worker. The check gave the first worker too short a hold on
+  the job, so a slow run could see the hold run out before it looked (issue #318).
+
 ## 0.117.0 - 2026-09-28 (PR #316)
 
 ### Added
