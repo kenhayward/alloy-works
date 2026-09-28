@@ -118,8 +118,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   here, and a sign-in that says nothing about groups leaves the person in none of the directory's. The
   provider's groups are read from what it already sends at sign-in, under the name `groups` unless the
   environment is set up with another, and no extra permission is ever asked of it; a provider that sends
-  them only when asked must be set to send them anyway. Signing in with Google says nothing about groups
-  and changes none. `GET /v1/groups` lists groups with their members, `POST /v1/groups` makes one, and
+  them only when asked must be set to send them anyway. The first 1,000 values are followed and the rest
+  ignored, and the sign-in's proof of identity is checked against the provider's published keys. Somebody
+  from outside the organisation gains nothing through a directory group that reaches past the
+  environment's limit on external access. Signing in with Google says nothing about groups and changes
+  none. `GET /v1/groups` lists groups with their members, `POST /v1/groups` makes one, and
   `DELETE /v1/groups/{id}` deletes one with everything granted to it. A grant through a group never counts
   as the one keeping the environment administered. There is no page for groups yet.
 

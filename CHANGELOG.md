@@ -24,6 +24,17 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - In development, the stand-in sign-in puts Ada in `authors` and Grace in `authors` and `publishers`, so
   a group standing for either fills when they sign in.
 
+### Changed
+
+- **Outside people stay within your limit on external access, however they got it.** Somebody outside
+  your organisation whom your directory puts in a group gains nothing from that group that reaches past
+  your environment's limit on how long outside access may last, just as a grant made to them directly
+  could not.
+- **Sign-in checks who vouched for somebody.** Because a sign-in can now give somebody roles through
+  their groups, the service checks each sign-in's proof of identity against your provider's published
+  keys, and refuses one that does not match. A directory that says somebody is in more than 1,000 groups
+  has the first 1,000 followed and the rest ignored.
+
 ## 0.110.0 - 2026-09-28 (PR #300)
 
 ### Added

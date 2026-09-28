@@ -14824,7 +14824,7 @@
         },
         {
           "id": "IAM-063",
-          "howItIsMet": "Every decision takes a shared lock on the tenant's `access_epoch` row inside the transaction of the act; every change a decision reads - grants, roles, memberships, spaces, a principal's kind - takes it exclusively, so no change can land between a check and its act"
+          "howItIsMet": "Every decision takes a shared lock on the tenant's `access_epoch` row inside the transaction of the act; every change a decision reads - grants, roles, memberships, spaces, a principal's kind, the tenant's cap on external access - takes it exclusively, so no change can land between a check and its act"
         },
         {
           "id": "IAM-029",
@@ -14848,7 +14848,7 @@
         },
         {
           "id": "IAM-049",
-          "howItIsMet": "A grant carries an optional expiry, and **for an external principal a grant without one confers nothing**. Granting to an external principal takes the tenant's default expiry when none is given and refuses one past the tenant's cap, so external access cannot be left unset whichever way it arrives"
+          "howItIsMet": "A grant carries an optional expiry, and **for an external principal a grant without one confers nothing**. Granting to an external principal takes the tenant's default expiry when none is given and refuses one past the tenant's cap, and a decision reads no allow of theirs expiring past the cap from now, so external access cannot be left unset or reach past the cap whichever way it arrives"
         },
         {
           "id": "IAM-071",
@@ -17136,7 +17136,7 @@
     {
       "id": "IAM-044",
       "file": "apps/service/src/oidc.test.ts",
-      "line": 53,
+      "line": 60,
       "kind": "title"
     },
     {
@@ -18208,6 +18208,12 @@
       "kind": "title"
     },
     {
+      "id": "IAM-049",
+      "file": "packages/db/src/groups.test.ts",
+      "line": 374,
+      "kind": "title"
+    },
+    {
       "id": "SCH-022",
       "file": "packages/db/src/listing.test.ts",
       "line": 206,
@@ -18438,19 +18444,19 @@
     {
       "id": "IAM-025",
       "file": "packages/domain/src/access/decide.test.ts",
-      "line": 89,
+      "line": 90,
       "kind": "title"
     },
     {
       "id": "IAM-026",
       "file": "packages/domain/src/access/decide.test.ts",
-      "line": 103,
+      "line": 104,
       "kind": "title"
     },
     {
       "id": "MET-024",
       "file": "packages/domain/src/access/decide.test.ts",
-      "line": 227,
+      "line": 228,
       "kind": "title"
     },
     {
@@ -18462,13 +18468,13 @@
     {
       "id": "IAM-034",
       "file": "packages/domain/src/access/scopes.test.ts",
-      "line": 75,
+      "line": 76,
       "kind": "title"
     },
     {
       "id": "IAM-062",
       "file": "packages/domain/src/access/scopes.test.ts",
-      "line": 92,
+      "line": 93,
       "kind": "title"
     },
     {
