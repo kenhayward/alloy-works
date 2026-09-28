@@ -11,8 +11,11 @@ import {
 import {
   DEV_SERVER_URL,
   PLATFORM_INFO_CHANNEL,
+  SPELL_CHECK_LANGUAGES_CHANNEL,
   describePlatform,
   resolveRendererTarget,
+  spellCheckerChoice,
+  spellingMenu,
 } from './shell.js';
 
 // Windows reads this to decide which icon a taskbar button, jump list or toast notification
@@ -41,6 +44,32 @@ function createWindow(): void {
   });
 
   window.once('ready-to-show', () => window.show());
+
+  // The spelling checker's suggestions (W-K): the menu is decided in shell.ts, and carried out here.
+  window.webContents.on('context-menu', (_event, params) => {
+    const items = spellingMenu(params);
+    if (items.length === 0) return;
+    Menu.buildFromTemplate(
+      items.map((item) => {
+        switch (item.kind) {
+          case 'separator':
+            return { type: 'separator' };
+          case 'none':
+            return { label: item.label, enabled: false };
+          case 'replace':
+            return {
+              label: item.label,
+              click: () => window.webContents.replaceMisspelling(item.text),
+            };
+          case 'add':
+            return {
+              label: item.label,
+              click: () => window.webContents.session.addWordToSpellCheckerDictionary(item.word),
+            };
+        }
+      }),
+    ).popup({ window });
+  });
   window.on('closed', () => {
     mainWindow = null;
   });
@@ -96,6 +125,22 @@ function createTray(): void {
 }
 
 ipcMain.handle(PLATFORM_INFO_CHANNEL, () => describePlatform(process.versions));
+
+// The spelling checker's languages (CNT-148): what the renderer sent is checked in shell.ts, never
+// trusted, and a refusal is logged without what was sent.
+ipcMain.handle(SPELL_CHECK_LANGUAGES_CHANNEL, (event, requested: unknown) => {
+  const { session } = event.sender;
+  const choice = spellCheckerChoice(
+    requested,
+    session.availableSpellCheckerLanguages,
+    process.platform,
+  );
+  if (choice.kind === 'refused') {
+    console.warn('Refused a request for spelling languages that was not a short list of tags.');
+  } else if (choice.kind === 'set') {
+    session.setSpellCheckerLanguages([...choice.languages]);
+  }
+});
 
 void app.whenReady().then(() => {
   // Unpackaged on macOS the Dock shows Electron's icon, because there is no bundle to read one

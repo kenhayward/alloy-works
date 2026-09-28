@@ -552,6 +552,11 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 505, from 502 (2026-09-28): W14.7 - CNT-148 in apps/desktop's shell.test.ts, where each
+  // component language maps to a dictionary Electron has, and in apps/web's
+  // editor/ComponentEditor.test.tsx, where the surface keeps the browser's checker and the desktop's
+  // bridge is told the base language on opening and as it changes; and CNT-057 in the same file,
+  // where the palette offers its three groups and inserts a symbol at the cursor, focus returning.
   // 502, from 500 (2026-09-28): W12.4 - IAM-029 in apps/web's access/AccessPanel.test.tsx, where an
   // administrator chooses a person and reads every permission with its answer on a document, a
   // template, a space and the environment; and IAM-030 in apps/service's access-routes.test.ts, where
@@ -641,7 +646,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(502);
+    expect(model.citations).toHaveLength(505);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -9,6 +9,12 @@ describe('browserBridge', () => {
       runtime: 'Browser',
     });
   });
+
+  // The browser checks spelling on the surface with its own checker and its own dictionaries, which a
+  // page cannot choose, so there is nothing for it to set.
+  it('sets no spelling languages, and answers', async () => {
+    await expect(browserBridge.setSpellCheckLanguages(['en-GB'])).resolves.toBeUndefined();
+  });
 });
 
 describe('resolveBridge', () => {
@@ -19,6 +25,7 @@ describe('resolveBridge', () => {
   it('uses the bridge the desktop shell injected', async () => {
     const injected: PlatformBridge = {
       getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
+      setSpellCheckLanguages: async () => {},
     };
 
     expect(resolveBridge({ alloyWorks: injected })).toBe(injected);

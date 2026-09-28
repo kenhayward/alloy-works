@@ -14,6 +14,7 @@ import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { heldSentence } from './held.js';
+import type { PlatformBridge } from '../platform/bridge.js';
 import { shimRangeMeasurement } from '../test/range.js';
 import { StatusProvider } from '../shell/Status.js';
 import { ComponentEditor } from './ComponentEditor.js';
@@ -5891,5 +5892,308 @@ describe("choosing a block's style from the theme's catalogues (themes.md, ET-G)
     await waitFor(() =>
       expect(view.dom.querySelector('figure[data-table-style="banded"]')).not.toBeNull(),
     );
+  });
+});
+
+describe("the spelling checker's languages (W14.7)", () => {
+  // Every change saves as the author goes; enough answered that no test runs out of them.
+  const everySave = Object.fromEntries(
+    Array.from({ length: 16 }, (_, at) => [
+      `PUT /v1/components/{id}/iterations/{session}/${at + 1}`,
+      () => json(200, { sequence: at + 1, lock }),
+    ]),
+  );
+  /** A desktop's bridge, which records each list of languages it is asked to set. */
+  const recording = () => {
+    const asked: string[][] = [];
+    const bridge: PlatformBridge = {
+      getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
+      setSpellCheckLanguages: async (languages) => {
+        asked.push([...languages]);
+      },
+    };
+    return { bridge, asked };
+  };
+
+  it("CNT-148 keeps the browser's checker on the surface, and asks the desktop's for the component's base language on opening and as it changes", async () => {
+    const { bridge, asked } = recording();
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        ...everySave,
+      },
+      quick,
+      // In StrictMode, as the application runs it: opened twice over, and asked once.
+      true,
+      { bridge },
+    );
+    await surface();
+    // The browser's own checker marks the surface, in the component's language.
+    const box = screen.getByRole('textbox', { name: 'Content of Install the printer' });
+    expect(box).toHaveAttribute('spellcheck', 'true');
+    expect(box).toHaveAttribute('lang', 'en-GB');
+    // And the desktop's is told which dictionary to check it against.
+    await waitFor(() => expect(asked).toEqual([['en-GB']]));
+
+    fireEvent.change(await languageField(), { target: { value: 'fr-CA' } });
+    await waitFor(() => expect(asked).toEqual([['en-GB'], ['fr-CA']]));
+    expect(box).toHaveAttribute('lang', 'fr-CA');
+  });
+
+  it('asks for no language it cannot hold, while the author is still typing one', async () => {
+    const { bridge, asked } = recording();
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        ...everySave,
+      },
+      quick,
+      false,
+      { bridge },
+    );
+    await surface();
+    await waitFor(() => expect(asked).toEqual([['en-GB']]));
+    // Half a tag is refused by the header and never reaches the component, nor the bridge.
+    fireEvent.change(await languageField(), { target: { value: 'fr-' } });
+    fireEvent.change(await languageField(), { target: { value: 'de-DE' } });
+    await waitFor(() => expect(asked).toEqual([['en-GB'], ['de-DE']]));
+  });
+
+  it("lets go of the component's language as it closes", async () => {
+    const { bridge, asked } = recording();
+    const first = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, false, {
+      bridge,
+    });
+    await first.surface();
+    await waitFor(() => expect(asked).toEqual([['en-GB']]));
+    cleanup();
+    // Nothing is left open, so nothing more is asked: the dictionaries stay as they were.
+    expect(asked).toEqual([['en-GB']]);
+    // And a component opened next is checked in its own language alone.
+    const german = { ...content('Den Drucker auspacken.'), language: 'de-DE' };
+    const next = open(
+      { 'GET /v1/components/{id}': () => json(200, opened({ content: german })) },
+      quick,
+      false,
+      { bridge },
+    );
+    await next.surface();
+    await waitFor(() => expect(asked).toEqual([['en-GB'], ['de-DE']]));
+  });
+});
+
+describe('the symbol palette (W14.7)', () => {
+  // Every change saves as the author goes; enough answered that no test runs out of them.
+  const everySave = Object.fromEntries(
+    Array.from({ length: 16 }, (_, at) => [
+      `PUT /v1/components/{id}/iterations/{session}/${at + 1}`,
+      () => json(200, { sequence: at + 1, lock }),
+    ]),
+  );
+  const openWith = (stored: unknown, overrides: Record<string, unknown> = {}) =>
+    open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: stored, ...overrides })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        ...everySave,
+      },
+      quick,
+      true,
+    );
+  const opens = () => screen.findByRole('dialog', { name: 'Symbols' });
+  const symbol = (dialog: HTMLElement, name: string) =>
+    within(dialog).getByRole('button', { name });
+  const ALPHA = String.fromCodePoint(0x3b1);
+  /** Every paragraph's text, as a save would send it. */
+  const textsOf = (view: EditorView) =>
+    fromEditor(view.state.doc).content.map((block) =>
+      block.type === 'paragraph'
+        ? block.content.map((run) => (run.type === 'text' ? run.value : '')).join('')
+        : '',
+    );
+  /** The caret this many characters into the first paragraph. */
+  const caretAt = (view: EditorView, offset: number) => selectText(view, 1 + offset, 1 + offset);
+
+  it('CNT-057 offers mathematical, Greek, and scientific and technical symbols, inserts one at the cursor, and gives the focus back', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'Angle  is small.')));
+    const view = await surface();
+    caretAt(view, 6);
+    const button = screen.getByRole('button', { name: 'Symbols' });
+    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(button).toHaveAttribute('aria-disabled', 'false');
+    await userEvent.click(button);
+    const dialog = await opens();
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    // The three groups, each a grid named by its heading.
+    expect(within(dialog).getAllByRole('grid')).toHaveLength(3);
+    for (const name of ['Mathematical', 'Greek', 'Scientific and technical']) {
+      expect(within(dialog).getByRole('grid', { name })).toBeInTheDocument();
+    }
+    expect(
+      within(within(dialog).getByRole('grid', { name: 'Mathematical' })).getByRole('button', {
+        name: 'N-ary summation',
+      }),
+    ).toHaveTextContent(String.fromCodePoint(0x2211));
+    expect(
+      within(within(dialog).getByRole('grid', { name: 'Scientific and technical' })).getByRole(
+        'button',
+        { name: 'Degree Celsius' },
+      ),
+    ).toBeInTheDocument();
+    // The first of them holds the focus as it opens.
+    expect(symbol(dialog, 'Plus-minus sign')).toHaveFocus();
+
+    await userEvent.click(symbol(dialog, 'Greek small letter alpha'));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(textsOf(view)).toEqual([`Angle ${ALPHA} is small.`]);
+    // Back on the surface, after the character, where typing it would have left the caret.
+    await waitFor(() => expect(view.hasFocus()).toBe(true));
+    expect(view.state.selection.from).toBe(1 + 7);
+  });
+
+  it('moves through a group by the arrow keys, Home and End, and on to the next group by Tab', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'Angle  is small.')));
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Symbols' });
+    caretAt(view, 6);
+    // From the keyboard alone: Ctrl, Shift and M.
+    fireEvent.keyDown(view.dom, { key: 'M', keyCode: 77, ctrlKey: true, shiftKey: true });
+    const dialog = await opens();
+    expect(symbol(dialog, 'Plus-minus sign')).toHaveFocus();
+    // One tab stop in each group, which the arrows move.
+    const grids = within(dialog).getAllByRole('grid');
+    for (const grid of grids) {
+      expect(
+        within(grid)
+          .getAllByRole('button')
+          .filter((each) => each.tabIndex === 0),
+      ).toHaveLength(1);
+    }
+
+    await userEvent.keyboard('{ArrowRight}');
+    expect(symbol(dialog, 'Minus-or-plus sign')).toHaveFocus();
+    // Down a row of twelve, and up again.
+    await userEvent.keyboard('{ArrowDown}');
+    expect(symbol(dialog, 'Tilde operator')).toHaveFocus();
+    await userEvent.keyboard('{ArrowUp}');
+    expect(symbol(dialog, 'Minus-or-plus sign')).toHaveFocus();
+    // Nothing before the first: the left arrow stays there, as it does at the top.
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}{ArrowUp}');
+    expect(symbol(dialog, 'Plus-minus sign')).toHaveFocus();
+    await userEvent.keyboard('{End}');
+    expect(symbol(dialog, 'Vulgar fraction three quarters')).toHaveFocus();
+    await userEvent.keyboard('{Home}');
+    expect(symbol(dialog, 'Plus-minus sign')).toHaveFocus();
+
+    // Tab reaches the next group, where its own stop is, then Close, then round again.
+    await userEvent.tab();
+    expect(symbol(dialog, 'Greek small letter alpha')).toHaveFocus();
+    await userEvent.keyboard('{End}');
+    expect(symbol(dialog, 'Greek capital letter omega')).toHaveFocus();
+    await userEvent.tab();
+    expect(symbol(dialog, 'Degree sign')).toHaveFocus();
+    await userEvent.tab();
+    expect(within(dialog).getByRole('button', { name: 'Close' })).toHaveFocus();
+    await userEvent.tab();
+    expect(symbol(dialog, 'Plus-minus sign')).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(within(dialog).getByRole('button', { name: 'Close' })).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(symbol(dialog, 'Degree sign')).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(symbol(dialog, 'Greek capital letter omega')).toHaveFocus();
+
+    // And Enter inserts the one that holds the focus.
+    await userEvent.keyboard('{Enter}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(textsOf(view)).toEqual([`Angle ${String.fromCodePoint(0x3a9)} is small.`]);
+    await waitFor(() => expect(view.hasFocus()).toBe(true));
+  });
+
+  it('inserts nothing on Escape or Close, and gives the focus back to the surface', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'Angle  is small.')));
+    const view = await surface();
+    caretAt(view, 6);
+    const button = screen.getByRole('button', { name: 'Symbols' });
+    // Opened from the button by the keyboard, so the focus is on the button as it opens.
+    button.focus();
+    await userEvent.keyboard('{Enter}');
+    let dialog = await opens();
+    // The same drawing as the button that opened it.
+    expect(
+      within(dialog).getByRole('heading', { name: 'Symbols' }).querySelector('[data-icon]'),
+    ).toHaveAttribute('data-icon', 'Symbols');
+    await userEvent.keyboard('{ArrowRight}{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(() => expect(view.hasFocus()).toBe(true));
+    expect(textsOf(view)).toEqual(['Angle  is small.']);
+
+    await userEvent.click(button);
+    dialog = await opens();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(() => expect(view.hasFocus()).toBe(true));
+    expect(textsOf(view)).toEqual(['Angle  is small.']);
+  });
+
+  it('inserts into a footnote while its text is open, and gives the focus back there', async () => {
+    const { surface } = openWith(
+      blocksOf({
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [
+          { type: 'text', value: 'Visited', marks: [] },
+          {
+            type: 'footnote',
+            id: 'f1',
+            anchor: { kind: 'span' },
+            content: [para('fp1', 'Once')],
+          },
+        ],
+      }),
+    );
+    const view = await surface();
+    let at = -1;
+    view.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'footnote') at = pos;
+    });
+    act(() => {
+      view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, at)));
+    });
+    const note = await waitFor(() => {
+      const opened = openFootnote(view);
+      if (opened === null) throw new Error('no footnote open');
+      return opened;
+    });
+    act(() => {
+      note.dispatch(note.state.tr.setSelection(Selection.atStart(note.state.doc)));
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Symbols' }));
+    await userEvent.click(symbol(await opens(), 'Greek small letter alpha'));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const [block] = fromEditor(view.state.doc).content;
+    expect(block).toMatchObject({
+      content: [
+        { value: 'Visited' },
+        { type: 'footnote', content: [{ content: [{ value: `${ALPHA}Once` }] }] },
+      ],
+    });
+    await waitFor(() => expect(note.hasFocus()).toBe(true));
+  });
+
+  it('is unavailable to a reader, as the other insert buttons are, and opens nothing', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'Angle  is small.')), { mayEdit: false });
+    await surface();
+    const button = screen.getByRole('button', { name: 'Symbols' });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('button', { name: 'Equation' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    await userEvent.click(button);
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

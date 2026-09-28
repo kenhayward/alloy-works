@@ -14,6 +14,7 @@ import {
   insertFigure,
   insertImage,
   insertReference,
+  insertSymbol,
   replaceFigureImage,
   replaceImageAsset,
   headerOf,
@@ -66,6 +67,7 @@ import { MarkPrompt, type Refused } from './MarkPrompt.js';
 import { askAndApply, pressCommand, type AskForValue, type MarkCommand } from './press.js';
 import { referenceChoicesIn, type ReferenceChoices } from './referenceChoices.js';
 import { ReferenceDialog } from './ReferenceDialog.js';
+import { SymbolPalette } from './SymbolPalette.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { uploadImage } from './upload.js';
 import { heldSentence } from './held.js';
@@ -99,6 +101,8 @@ import {
   type Timing,
 } from './session.js';
 import { FieldsForm } from '../metadata/FieldsForm.js';
+import { resolveBridge, type PlatformBridge } from '../platform/bridge.js';
+import { spellingFor } from '../platform/spelling.js';
 import { useStatus } from '../shell/Status.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
@@ -159,6 +163,11 @@ export interface ComponentEditorProps {
    * the Reference dialog offers the component's own figures, tables and footnotes alone.
    */
   readonly referenceContext?: ReferenceContext | null;
+  /**
+   * The seam to whatever hosts the page, told the component's base language while it is open, for the
+   * spelling checker (CNT-148); the host's own otherwise. Given in tests.
+   */
+  readonly bridge?: PlatformBridge;
 }
 
 type Loaded =
@@ -291,6 +300,7 @@ export function ComponentEditor({
   openAt,
   linked = null,
   referenceContext = null,
+  bridge = resolveBridge(),
 }: ComponentEditorProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   // Held in a ref, so a parent passing a new inline callback on every render asks nothing again.
@@ -326,6 +336,14 @@ export function ComponentEditor({
     if (notice !== null) status?.say(notice);
   }, [status, notice]);
   const [header, setHeader] = useState<Header | null>(null);
+  // The spelling checker checks against the component's base language while it is open, and again
+  // as it changes (CNT-148). A run in another language is not checked at all (CNT-147), so its
+  // language is not asked for.
+  const baseLanguage = header?.language ?? null;
+  useEffect(() => {
+    if (baseLanguage === null) return undefined;
+    return spellingFor(bridge).hold(baseLanguage);
+  }, [bridge, baseLanguage]);
   // The surface itself, held as state rather than in a ref, because the formatting toolbar renders
   // from it: what a mark button says about the selection is read off `view.state` during a render,
   // and a ref set in an effect schedules none (pre-flight F8).
@@ -383,6 +401,12 @@ export function ComponentEditor({
   } | null>(null);
   // What was focused as it opened, as for the Reference dialog, and apart from it.
   const equationOpener = useRef<HTMLElement | null>(null);
+  // The symbol palette, open over the view it was asked from - the surface, or a footnote's open
+  // editor - or closed (W14.7, W-L).
+  const [symbolizing, setSymbolizing] = useState<EditorView | null>(null);
+  // The view the palette gives the focus back to as it closes: where the cursor was, whether a
+  // symbol went in or not (component-editor.md, "Accessibility"), never the button that opened it.
+  const symbolsBack = useRef<EditorView | null>(null);
   // The paste report's, which comes and goes too: it is there from a paste with something to say
   // until it is closed or the next paste replaces it.
   const pasteRegion = useRef<HTMLElement | null>(null);
@@ -618,6 +642,30 @@ export function ComponentEditor({
     back?.focus();
   }, [equating]);
 
+  /**
+   * Opens the symbol palette over `editing` - the surface, or the footnote open in it; answers true,
+   * since the command has already said a symbol could be typed there (W-L).
+   */
+  const openSymbols = (editing: EditorView): boolean => {
+    setSymbolizing(editing);
+    return true;
+  };
+
+  /** Closes the palette; the focus goes back to where the cursor was once the page is live. */
+  const closeSymbols = () => {
+    symbolsBack.current = symbolizing;
+    setSymbolizing(null);
+  };
+
+  // As for the other dialogs, after the render that takes the palette away and the page's `inert`
+  // with it; to the view, which puts the caret back where its selection is.
+  useEffect(() => {
+    if (symbolizing !== null) return;
+    const back = symbolsBack.current;
+    symbolsBack.current = null;
+    if (back !== null && !back.isDestroyed) back.focus();
+  }, [symbolizing]);
+
   // Held in refs, not the effect's own dependency list (fix round 1, finding 5): a parent that does
   // not memoise its callback, or recreates its timing object, must not tear the session down and
   // rebuild the surface from the original content on every render. Read fresh at the moment the effect
@@ -640,6 +688,8 @@ export function ComponentEditor({
   openReferenceRef.current = openReference;
   const openEquationRef = useRef(openEquation);
   openEquationRef.current = openEquation;
+  const openSymbolsRef = useRef(openSymbols);
+  openSymbolsRef.current = openSymbols;
   // The page's latest context, which every fresh state starts from: a state rebuilt after a version is
   // cut or a claim refused would otherwise start with none, and every reference would lose its label.
   const referenceContextRef = useRef(referenceContext);
@@ -728,6 +778,8 @@ export function ComponentEditor({
           // **Equation** too (equations 1, ruling R8), from its shortcut and from Enter over an
           // equation selected whole, in the footnote's text as in the component's.
           if (name === 'equation') return openEquationRef.current(into);
+          // **Symbols** too (W-L), from its shortcut, in the footnote's text as in the component's.
+          if (name === 'symbol') return openSymbolsRef.current(into);
           const command = EDITOR_COMMANDS.find(
             (each) => each.kind === 'mark' && each.mark === name,
           );
@@ -1426,7 +1478,13 @@ export function ComponentEditor({
         aria-labelledby="component-title"
         className={styles['card']}
         data-in-place={onDone !== undefined}
-        inert={asking !== null || figureDialog !== null || referring !== null || equating !== null}
+        inert={
+          asking !== null ||
+          figureDialog !== null ||
+          referring !== null ||
+          equating !== null ||
+          symbolizing !== null
+        }
         onKeyDown={moveRegion}
       >
         <div className={styles['strip']}>
@@ -1555,7 +1613,8 @@ export function ComponentEditor({
               openDialog={(action, view) =>
                 surface !== null &&
                 ((action === 'reference' && openReference(surface, view)) ||
-                  (action === 'equation' && openEquation(view)))
+                  (action === 'equation' && openEquation(view)) ||
+                  (action === 'symbol' && openSymbols(view)))
               }
             />
             {/* The style of the paragraphs the selection touches, from the theme's catalogue: the
@@ -1882,6 +1941,28 @@ export function ComponentEditor({
               onCancel={() => setEquating(null)}
             />
           </Suspense>,
+          document.body,
+        )}
+      {symbolizing !== null &&
+        // Beside the article, as the prompt is, and for the same reason.
+        createPortal(
+          <SymbolPalette
+            onChoose={(character) => {
+              // As the Equation dialog asks: the phase as it is now, since the lock can be lost while
+              // the palette stands.
+              const now = controls.current?.view().phase;
+              const into = symbolizing;
+              const placed =
+                shown.mayEdit &&
+                now !== undefined &&
+                isEditablePhase(now) &&
+                !into.isDestroyed &&
+                insertSymbol(character)(into.state, into.dispatch.bind(into));
+              if (!placed) setNotice('The symbol could not be inserted where the cursor is.');
+              closeSymbols();
+            }}
+            onCancel={closeSymbols}
+          />,
           document.body,
         )}
       {asking &&

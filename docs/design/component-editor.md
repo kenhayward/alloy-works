@@ -117,8 +117,24 @@ context. The test places one in each and shows each stored; that the publish set
 a run whose language mark differs from the component's base language is rendered with
 `spellcheck="false"`, and a run marked with the base language is not. It never shows a checker obeying
 it, because no delivery's checker is under test here - CNT-148 is the bridge that gives the desktop
-shell one, and it is not built. Whether a checker honours the attribute is the accessibility suite's
+shell one, built in W14.7. Whether a checker honours the attribute is the accessibility suite's
 (CNT-139).
+
+**What CNT-148's tests show, and what they do not** (W14.7, decision W-K). The editor's test shows the
+surface keeping `spellcheck` for the browser's checker and the bridge told the component's base
+language as it opens and as it changes, through a fake bridge; the shell's shows each language mapped to
+a dictionary Electron has. `setSpellCheckLanguages` takes the base languages of every component open,
+held by `spellingFor` in `apps/web/src/platform/spelling.ts`; a run in another language is not
+checked at all (CNT-147), so its language is not asked for. The main process checks the request - at
+most eight tags, each in the stored model's shape, or refused whole - and a tag with no dictionary of
+its own falls back to its language's, then to that language's usual one, `en-US` for English. No test
+drives Electron's checker itself: that the dictionaries set are the ones Chromium marks words with is
+Electron's, and is checked by running the app. **macOS is the exception, and it is said rather than
+hidden**: Electron uses the system's checker there, which chooses its languages itself, and
+`setSpellCheckerLanguages` does nothing, so the shell sets nothing on macOS. A component there is still
+checked - the desktop does not lack a checker - but by the languages macOS chooses, not by its base
+language as the bridge asks. The window's context menu offers the checker's suggestions and **Add to
+dictionary**, decided by `spellingMenu` in `shell.ts`.
 
 **CNT-147 and CNT-148 are new, and the change they come from is part of this design's review.** Native
 spellcheck ignores an element's `lang`, in Chromium and in Firefox, so CNT-099 - check each run against
@@ -1040,8 +1056,11 @@ undo, a refusal putting the surface back, or a version cut, and never this field
   language label, stands after the list panel while the cursor is in such a block, and is absent
   everywhere else. So the ring is built from the regions actually rendered, and the wrap is over those.
 - **Nested and transient editors are inline, not modal.** Opening a footnote moves focus into it;
-  `Escape` closes it and returns focus to the node it was opened from. The symbol palette is a popup
-  grid: `Escape` or inserting a symbol returns focus to where the cursor was. **An equation is opened
+  `Escape` closes it and returns focus to the node it was opened from. The symbol palette is a dialog
+  of three grids, one a group (W14.7, decision W-L): `Escape`, **Close** or inserting a symbol returns
+  focus to where the cursor was - the surface, or the footnote's text it was opened over - never to the
+  button that opened it. Each grid is one tab stop, the arrow keys moving within it and `Home` and
+  `End` to its ends, and `Tab` moving on to the next. **An equation is opened
   in a dialog**, as built by equations 1, as a link or a reference is: the rest of the component is
   inert while it stands, and focus returns to what opened it.
 - **Equations** are reached as any atom is, selected whole by an arrow, and opened with `Enter`; the

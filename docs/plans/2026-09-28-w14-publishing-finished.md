@@ -109,3 +109,28 @@ last of the editor's T1 features, a spelling checker in the desktop app and a sy
    browser's delivery a no-op, since it uses the browser's own checker.
 2. The symbol palette: a toolbar button and a shortcut, the dialog, insertion at the cursor.
 3. Tests: CNT-148, CNT-057.
+
+**W14.7, as built.** `PlatformBridge` gained `setSpellCheckLanguages(languages)`. Every component
+editor holds its base language in `spellingFor(bridge)` (`apps/web/src/platform/spelling.ts`) while it
+is open and as it changes, and the bridge is told the list of every component open whenever it changes,
+but never emptied, since setting no dictionary would switch the desktop's checker off for the page's
+other fields, and never the list it was last told, which StrictMode's second opening would be. Only the
+base language is asked for, not a marked run's: CNT-147 already stops a run in another language being
+checked, so its dictionary would check nothing. The browser's bridge does nothing. The preload sends the
+list on `alloy-works:spell-check-languages`, pinned in `shell.test.ts`, and is typed as the renderer's
+own `PlatformBridge`, so the contract binds the shell. The main process decides with
+`spellCheckerChoice` in `shell.ts`: a request that is not an array of at most eight tags in the stored
+model's shape is refused whole and logged without its content; macOS is left to the system's checker,
+where Electron's `setSpellCheckerLanguages` does nothing; each tag maps by `spellCheckerLanguages` to the
+tag's own dictionary, its language's, that language's usual one (`en-US` for English, `xx-XX`
+otherwise) or any of that language, else is dropped; and a request mapping to none leaves the
+dictionaries as they were. The window's `context-menu` offers up to five suggestions and **Add to
+dictionary**, structured by `spellingMenu` and carried out by `main.ts`. The palette is a registry row,
+**Symbols** on `Mod-Shift-m`, prompting as **Equation** does: `canInsertSymbol` and `insertSymbol` in
+`packages/editor/src/symbols.ts` type one code point at the selection in one transaction, anywhere text
+is typed. `SymbolPalette` draws the three groups of `apps/web/src/editor/symbols.ts` - 66 mathematical,
+53 Greek and 19 scientific and technical characters, each by its code point, NFC-stable, named by its
+Unicode name in plain words taken from the Unicode Character Database - as grids of twelve to a row,
+one tab stop each, and gives the focus back to the view it was opened over, the surface or a footnote's
+text. The icon is an omega, as a letterform. Not run: the packaged app, so no dictionary Electron
+downloads or marks with was watched, and nothing on macOS.
