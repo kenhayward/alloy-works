@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { EOL, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -10,6 +10,7 @@ import {
   readAreaArguments,
   readDraftInput,
   resolveOutputPath,
+  runGate,
   writeListing,
 } from './cli.js';
 import type { TraceModel } from './model.js';
@@ -269,5 +270,92 @@ describe('saying what was written', () => {
     expect(describeWrite({ output: '', requirements: 1, areas: 1 }, '/tmp/x.txt')).toBe(
       'Wrote 1 requirement in 1 area to /tmp/x.txt',
     );
+  });
+});
+
+/**
+ * `pnpm trace gate` as the CLI runs it, over a repository of its own: a baseline whose one requirement
+ * is attested by a record under docs/audits/, and a report of a passing run. The CLI is what looks for
+ * the record on disk, so a gate that stopped looking would pass here with the record missing.
+ */
+describe('the gate, run by the CLI', () => {
+  const traced: TraceModel = {
+    requirements: [
+      {
+        id: 'ZZZ-001',
+        area: 'ZZZ',
+        statement: 'A widget must exist',
+        tranche: 'T1',
+        status: 'Specified',
+        document: 'ZZZ-invented-area.md',
+        line: 1,
+      },
+    ],
+    nonRequirements: [],
+    questions: [],
+    designs: [],
+    citations: [],
+  };
+
+  function repository(): string {
+    const root = mkdtempSync(join(tmpdir(), 'alloy-gate-'));
+    mkdirSync(join(root, 'docs', 'specification', 'baselines'), { recursive: true });
+    writeFileSync(
+      join(root, 'docs', 'specification', 'baselines', '0.0.1.md'),
+      [
+        '# 0.0.1',
+        '',
+        '> **Declared:** 2026-09-28. Invented for the test.',
+        '',
+        '## Included',
+        '',
+        '| ID          | Why it is in force      |',
+        '| ----------- | ----------------------- |',
+        '| **ZZZ-001** | invented for the test   |',
+        '',
+        '## Verification',
+        '',
+        '| ID          | Kind        | By                                             |',
+        '| ----------- | ----------- | ---------------------------------------------- |',
+        '| **ZZZ-001** | attestation | Ada, 2026-09-28, docs/audits/0.0.1/wcag.md     |',
+        '',
+      ].join('\n'),
+    );
+    mkdirSync(join(root, '.trace-results'));
+    writeFileSync(
+      join(root, '.trace-results', 'invented.json'),
+      JSON.stringify({ success: true, startTime: Date.now(), testResults: [] }),
+    );
+    return root;
+  }
+
+  it('fails a baseline whose attestation names a record in docs/audits that is not there', () => {
+    const root = repository();
+    try {
+      expect(runGate(root, traced, undefined)).toBe(1);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('passes it once the record is there', () => {
+    const root = repository();
+    try {
+      mkdirSync(join(root, 'docs', 'audits', '0.0.1'), { recursive: true });
+      writeFileSync(join(root, 'docs', 'audits', '0.0.1', 'wcag.md'), '# A record\n');
+      expect(runGate(root, traced, undefined)).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails it where what is named there is a folder, not a record', () => {
+    const root = repository();
+    try {
+      mkdirSync(join(root, 'docs', 'audits', '0.0.1', 'wcag.md'), { recursive: true });
+      expect(runGate(root, traced, undefined)).toBe(1);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

@@ -230,6 +230,8 @@ Every literal in the prototype and its token. Write the token.
 `#16a34a` `--ok` · `#dcfce7` `--state-published-bg` · `#166534` `--state-published-fg` · `#b91c1c`
 `--danger` · `#fee2e2` `--diff-del-bg` · `#7f1d1d` `--diff-del-fg`.
 
+_Since W13.2, `--muted` is #646b78, darker than the #6b7280 drawn here: the drawn value measured under WCAG's 4.5:1 on `--accent-weak` and `--chip-bg`. [`tokens.css`](../../../../apps/web/src/theme/tokens.css) is the source; the drawings keep what was drawn._
+
 **Type.** `system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif` `--sans` ·
 `ui-monospace, SFMono-Regular, Menlo, monospace` `--mono` · 15px `--size-brand` · 14px
 `--size-body` · 13px `--size-body-small` · 12px `--size-label` · 11px `--size-overline`. Weights

@@ -90,11 +90,11 @@ Not every requirement outside the baseline needs a row here - see below.
 
 How a requirement is shown to be met, for the requirements that need saying beyond "a test passed".
 
-| Kind          | Meaning                                               | What it needs                                |
-| ------------- | ----------------------------------------------------- | -------------------------------------------- |
-| `test`        | The default. A test names the requirement and passes. | Nothing here - it needs no row at all.       |
-| `inherited`   | Satisfied by another requirement's verification.      | The covering identifier, in the `By` column. |
-| `attestation` | A person checked it for this release.                 | Who, and when, in the `By` column.           |
+| Kind          | Meaning                                               | What it needs                                                                                                        |
+| ------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `test`        | The default. A test names the requirement and passes. | Nothing here - it needs no row at all.                                                                               |
+| `inherited`   | Satisfied by other requirements' verification.        | The covering identifier, or several separated by commas, each of which must be included and met, in the `By` column. |
+| `attestation` | A person checked it for this release.                 | Who, and when, in the `By` column, and where it names its record under `docs/audits/`, a record that is there.       |
 
 `test` is the default precisely so that the common case costs nothing: most requirements are
 verified by a test naming them, and a table with 1,306 rows saying so would be the "new column in
@@ -105,6 +105,11 @@ often "all of them" or "a review, not a test". `inherited` and `attestation` exi
 case, and both are deliberately more work than writing nothing: `inherited` still names a real
 covering identifier, and `attestation` still names a real person and a real date, because the honest
 escape hatch for "no test reaches this" must never be as cheap as the thing it is an alternative to.
+
+Two attestations are due in every release that claims them: the WCAG 2.2 AA audit of the editor
+(CNT-177, with CNT-078 `inherited` from it and from CNT-176, the suite) and the Matterhorn review of the publishing regression
+corpus (PUB-104). [The audit guide](../../guides/auditing-a-release.md) is the procedure for each,
+where its record is committed, and the rows that cite it.
 
 ## Out of baseline is not the same as excluded
 

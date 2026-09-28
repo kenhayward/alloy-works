@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { Problem } from './check.js';
 import { gate } from './gate.js';
+
+/** No record under docs/audits/ is there: these baselines name none, or name one to be refused. */
+const noRecords = (): boolean => false;
 import type { Baseline, Requirement, TraceModel } from './model.js';
 import { packDocuments } from './pack.js';
 
@@ -47,7 +50,7 @@ describe('packing the evidence pack', () => {
       designs: [{ document: 'one.md', owns: [{ id: 'ZZZ-001', howItIsMet: 'a' }] }],
       citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
     });
-    const result = gate(b, m, outcomes());
+    const result = gate(b, m, outcomes(), noRecords);
 
     const documents = packDocuments({
       version: '9.9.9',
@@ -75,6 +78,7 @@ describe('packing the evidence pack', () => {
       b,
       m,
       new Map([['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a'] }]]),
+      noRecords,
     );
 
     const [readme] = packDocuments({
@@ -101,6 +105,7 @@ describe('packing the evidence pack', () => {
       b,
       m,
       new Map([['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a'] }]]),
+      noRecords,
     );
 
     const [, matrix] = packDocuments({
@@ -128,6 +133,7 @@ describe('packing the evidence pack', () => {
       b,
       m,
       new Map([['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a'] }]]),
+      noRecords,
     );
 
     const documents = packDocuments({
@@ -151,7 +157,7 @@ describe('packing the evidence pack', () => {
       id: 'ZZZ-003',
       detail: 'allocated more than once, invented for the fixture',
     };
-    const result = { ...gate(b, m, outcomes()), problems: [problem] };
+    const result = { ...gate(b, m, outcomes(), noRecords), problems: [problem] };
 
     const [, , gaps] = packDocuments({
       version: '9.9.9',
@@ -170,7 +176,7 @@ describe('packing the evidence pack', () => {
     const m = model({
       requirements: [requirement('ZZZ-001'), requirement('ZZZ-002', { tranche: 'T2' })],
     });
-    const result = gate(b, m, outcomes());
+    const result = gate(b, m, outcomes(), noRecords);
 
     const [, , gaps] = packDocuments({
       version: '9.9.9',
@@ -187,7 +193,7 @@ describe('packing the evidence pack', () => {
   it("gaps.md names an excluded requirement's id and reason, which is not a statement leak", () => {
     const b = baseline({ excluded: [{ id: 'ZZZ-002', reason: 'invented exclusion reason' }] });
     const m = model({});
-    const result = gate(b, m, outcomes());
+    const result = gate(b, m, outcomes(), noRecords);
 
     const [, , gaps] = packDocuments({
       version: '9.9.9',
@@ -210,7 +216,7 @@ describe('packing the evidence pack', () => {
     const m = model({
       requirements: [requirement('ZZZ-001'), requirement('ZZZ-002')],
     });
-    const result = gate(b, m, outcomes());
+    const result = gate(b, m, outcomes(), noRecords);
 
     const [, , gaps] = packDocuments({
       version: '9.9.9',
@@ -229,7 +235,7 @@ describe('packing the evidence pack', () => {
       verification: [{ id: 'ZZZ-001', kind: 'attestation', by: 'Ada Lovelace, 2026-09-13' }],
     });
     const m = model({});
-    const result = gate(b, m, outcomes());
+    const result = gate(b, m, outcomes(), noRecords);
 
     const [, matrix] = packDocuments({
       version: '9.9.9',
@@ -246,7 +252,7 @@ describe('packing the evidence pack', () => {
   it('marks an unmet requirement in matrix.md with its reason, not a bare pass/fail flag', () => {
     const b = baseline({});
     const m = model({});
-    const result = gate(b, m, outcomes());
+    const result = gate(b, m, outcomes(), noRecords);
 
     const [, matrix] = packDocuments({
       version: '9.9.9',
@@ -284,7 +290,7 @@ describe('packing the evidence pack', () => {
         },
       ],
     ]);
-    const result = gate(b, m, testOutcomes);
+    const result = gate(b, m, testOutcomes, noRecords);
 
     const [, , , results] = packDocuments({
       version: '9.9.9',
@@ -311,6 +317,7 @@ describe('packing the evidence pack', () => {
       b,
       m,
       new Map([['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a'] }]]),
+      noRecords,
     );
 
     const [, matrix] = packDocuments({

@@ -104,7 +104,10 @@
   --surface: #ffffff;
   --surface-2: #fbfcfd;
   --text: #1c2024;
-  --muted: #6b7280;
+  /* Darker than the drawings' #6b7280, which passes WCAG's 4.5:1 on white and on --bg but not on the
+     tinted grounds muted text also stands on - 4.44 on --accent-weak, 4.41 on --chip-bg - as axe
+     found in the browser suite (W13.2). This one is 4.9 on both. */
+  --muted: #646b78;
   --border: #e3e6ea;
   --input-border: #cbd2d9;
 
@@ -122,6 +125,8 @@
   /* State */
   --danger: #b91c1c;
   --warn: #d97706;
+  /* Warning words on the page: --warn is 3.2:1 on white, enough for a border but not for text. */
+  --warn-text: #b45309;
   --ok: #16a34a;
   --chip-bg: #f1f5f9;
   --concept-bg: #ecfeff;

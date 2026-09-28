@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { attestationIsSubstantial } from './model.js';
+import { attestationIsSubstantial, isRecordOf, recordsNamed } from './model.js';
 
 /**
  * Shared between `parse/baseline.ts` (which refuses a malformed document outright) and `gate.ts`
@@ -25,5 +25,28 @@ describe('whether an attestation is substantial enough to accept as evidence', (
     expect(
       attestationIsSubstantial('Ada Lovelace signed off on this one, with no date given at all'),
     ).toBe(false);
+  });
+});
+
+describe('the records an attestation names', () => {
+  it('reads each path under docs/audits by itself, however the row sets it off', () => {
+    expect(recordsNamed('Ada, 2026-09-28, docs/audits/0.1.0/wcag.md')).toEqual([
+      'docs/audits/0.1.0/wcag.md',
+    ]);
+    expect(recordsNamed('Ada, 2026-09-28, `docs/audits/0.1.0/wcag.md`')).toEqual([
+      'docs/audits/0.1.0/wcag.md',
+    ]);
+    expect(recordsNamed('Ada, 2026-09-28, in docs/audits/0.1.0/wcag.md.')).toEqual([
+      'docs/audits/0.1.0/wcag.md',
+    ]);
+  });
+
+  it("takes as this release's record only docs/audits/<its version>/<a name>.md", () => {
+    expect(isRecordOf('docs/audits/0.1.0/wcag.md', '0.1.0')).toBe(true);
+    expect(isRecordOf('docs/audits/0.1.0/', '0.1.0')).toBe(false);
+    expect(isRecordOf('docs/audits/0.1.0', '0.1.0')).toBe(false);
+    expect(isRecordOf('docs/audits/../../package.json', '0.1.0')).toBe(false);
+    expect(isRecordOf('docs/audits/0.1.0/../../../package.json', '0.1.0')).toBe(false);
+    expect(isRecordOf('docs/audits/0.0.9/wcag.md', '0.1.0')).toBe(false);
   });
 });

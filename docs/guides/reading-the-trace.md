@@ -174,10 +174,12 @@ It reads the newest baseline and answers one question: is every requirement this
 actually met? It fails when
 
 - an included requirement is not met by its declared kind - no test names it, or a test naming it
-  failed, or it inherits from something unmet;
+  failed, or it inherits from something unmet (an `inherited` row may name several, and every one
+  must be included and met);
 - an included requirement is no longer in force;
 - the **declaration itself** is malformed - a requirement both included and excluded, a duplicate
-  verification row, an attestation with no substance;
+  verification row, an attestation with no substance, an attestation naming a record under
+  `docs/audits/` that is not there;
 - a corpus problem touches the baseline.
 
 It does **not** fail on the corpus's other problems. A stale design claim on a requirement nobody has
