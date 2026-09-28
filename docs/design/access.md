@@ -403,7 +403,7 @@ carries group values, `groups` by default.
 - At every sign-in through the organisation's provider, the principal's memberships of provider groups
   are brought into line with the claim. Only the memberships that differ change, each taking the access
   epoch.
-- A claim that is absent or not a list of strings counts as no groups. A group only lost by a
+- A claim that is absent or not a list counts as no groups, and a list keeps only its strings. A group only lost by a
   misconfigured provider fails closed.
 - The Google route asserts none, as above.
 - The stand-in provider asserts groups for its invented users, so tests and development can sign in as a
