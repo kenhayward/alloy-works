@@ -1,7 +1,6 @@
 import {
   bootstrapCluster,
   closeSignInRoute,
-  configureOrganisationSignIn,
   createTenant,
   createTenantDatabase,
   inviteFirstAdministrator,
@@ -21,7 +20,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
-import { signIn } from './test/sign-in.js';
+import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 const HOST = 'acme.alloy.test';
 const GOOGLE_HOST = 'acme-google.alloy.test';
@@ -105,10 +104,10 @@ describe('the first administrator, arriving by invitation', () => {
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets({
-        SECRET_STAND_IN: 'stand-in-secret',
         SECRET_GOOGLE: 'google-secret',
         SECRET_SIGN_IN_STATE: 'test-only-state-key-0123456789abcdef',
       }),
+      sealingKey: TEST_SEALING_KEY,
       google: { issuer: idp.issuer, clientId: 'alloy-google', signInHost: GOOGLE_SIGN_IN },
     });
   });
@@ -141,18 +140,16 @@ describe('the first administrator, arriving by invitation', () => {
         }),
       ).resolves.toEqual({ invited: true, renewed: false });
     }
-    await configureOrganisationSignIn(db.adminUrl, organisation, {
+    await configureStandIn(db.adminUrl, organisation, {
       issuer: idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
     });
     await permitGoogleSignIn(db.adminUrl, google);
     // The Google environment has an organisation provider on record too, and its route closed: so the
     // refusal below is the environment not permitting the route, not a provider nobody configured.
-    await configureOrganisationSignIn(db.adminUrl, google, {
+    await configureStandIn(db.adminUrl, google, {
       issuer: idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
     });
     await closeSignInRoute(db.adminUrl, google, 'organisation');
 
@@ -199,10 +196,9 @@ describe('the first administrator, arriving by invitation', () => {
       email: 'ada@example.com',
       namedBy: 'provisioning',
     });
-    await configureOrganisationSignIn(db.adminUrl, closed, {
+    await configureStandIn(db.adminUrl, closed, {
       issuer: idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
     });
     await closeSignInRoute(db.adminUrl, closed, 'organisation');
     const started = await app.inject({
@@ -226,10 +222,9 @@ describe('the first administrator, arriving by invitation', () => {
       email: 'ada@example.com',
       namedBy: 'provisioning',
     });
-    await configureOrganisationSignIn(db.adminUrl, closing, {
+    await configureStandIn(db.adminUrl, closing, {
       issuer: idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
     });
 
     const started = await app.inject({

@@ -22,6 +22,19 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   outline, saying to move it up a level, or, where the layout makes Word, to publish to Word alone. A
   Word document still publishes every level an outline can have, down to Heading 9.
 
+## 0.115.1 - 2026-09-28 (PR #314)
+
+### Fixed
+
+- **Each environment signs in with its own client secret.** Two environments set up with the same
+  client of the same sign-in provider, but different secrets, could end up signing in with whichever
+  secret was used first, and an environment's settings could point at a secret meant for another. An
+  environment's client secret is now kept by that environment alone, sealed in its own storage, and
+  used for nobody else's sign-in; the Google route keeps its one secret for the whole product, as
+  before. An environment set up before this change stops offering sign-in through its own provider
+  until its sign-in is configured again, and the service's log says so; in development,
+  `pnpm dev:setup` does this for you (issue #312).
+
 ## 0.115.0 - 2026-09-28 (PR #313)
 
 ### Added

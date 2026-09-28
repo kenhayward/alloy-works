@@ -23,6 +23,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp, type AppOptions } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
+import { TEST_SEALING_KEY } from './test/sign-in.js';
 import { hashToken } from './sessions.js';
 import { signState, verifyState } from './sign-in-state.js';
 import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
@@ -56,6 +57,7 @@ describe('signing in with a Google account', () => {
       SECRET_GOOGLE: 'google-secret',
       SECRET_SIGN_IN_STATE: STATE_KEY,
     }),
+    sealingKey: TEST_SEALING_KEY,
     ...extra,
   });
 

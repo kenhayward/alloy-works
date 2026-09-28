@@ -4,7 +4,6 @@ import { allRoutes } from '@alloy-works/api-contract';
 import {
   addToGroup,
   bootstrapCluster,
-  configureOrganisationSignIn,
   createArtifact,
   createAssetUpload,
   createDocument,
@@ -43,7 +42,7 @@ import { authorise, type PermissionCheck } from './access.js';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
-import { signIn } from './test/sign-in.js';
+import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 const HOST = 'acme.alloy.test';
 const MISSING = '00000000-0000-4000-8000-000000000000';
@@ -125,17 +124,17 @@ describe('routes that check a permission', () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: [HOST],
     });
-    await configureOrganisationSignIn(db.adminUrl, tenant, {
+    await configureStandIn(db.adminUrl, tenant, {
       issuer: idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
     });
     tenantDb = createTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
     });
     for (const user of ['ada', 'grace', 'alice']) {
       cookies[user] = await signIn(app, HOST, user, idp.issuer);

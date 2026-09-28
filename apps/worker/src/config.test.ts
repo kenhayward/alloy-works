@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { CHECK_WITHIN_MS } from '@alloy-works/db';
+import { CHECK_WITHIN_MS, retryDelayMs } from '@alloy-works/db';
 import { describe, expect, it } from 'vitest';
 import { describeWorkerConfig, loadWorkerConfig, WorkerConfigError } from './config.js';
 
@@ -28,10 +28,10 @@ describe("the worker's configuration", () => {
     const { leaseMs, pollIntervalMs } = loadWorkerConfig(env);
     // A check queued as its publication is recorded wakes a free worker at once. Its first attempt
     // ends within its lease - veraPDF's start and check a third of it each - by throwing, or by its
-    // worker dying and the lease running out; the queue's first backoff is two seconds (`fail`,
-    // 1000 * 2 ** attempts), and an idle worker next asks within a poll. The second attempt ends
+    // worker dying and the lease running out; the queue then waits its first backoff (`fail`, read
+    // from the queue itself), and an idle worker next asks within a poll. The second attempt ends
     // within its lease too.
-    const firstBackoff = 1000 * 2 ** 1;
+    const firstBackoff = retryDelayMs(1);
     expect(leaseMs + firstBackoff + pollIntervalMs + leaseMs).toBeLessThanOrEqual(CHECK_WITHIN_MS);
   });
 
