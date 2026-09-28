@@ -213,6 +213,37 @@ record shown on the page, never refused.
 3. docs/testing.md's account of the corpus brought up to date.
 4. Tests: PUB-087, PUB-092, PUB-098.
 
+**W14.3, as built.** `regression.test.ts` keeps its first four cases where they were, for W14.2's
+change to the nine-level one, and gains four describe blocks, their documents built by
+`apps/worker/src/testing/corpus.ts` (the spike's seeded prose on mulberry32, and the model's shapes).
+**The spike's nine**, cited PUB-087, each judged as its checks judged it: case 3's caption check fails
+on the very document, which is issue #235, so case 3 keeps its header and cell-note checks and #235's
+case reads the same PDF; case 4 keeps no timing, which is PUB-102's, but compiles inside the worker's
+thirty-second limit and moves no body page before its edit (the change is taken up within a page or
+two, so later pages are not asserted to move); case 7 measured that a family the worker does not hold,
+reaching Typst, is set in the serif's regular without a word, which is why the job asks
+`typefacesNotHeld` first; case 8 runs at the spike's full size in seconds; case 9 on one machine only.
+**The defects fixed**, cited PUB-087 and named by issue: #145, #253, and #158, whose refusal is fixed
+and which stays open for a theme's markers (moved from `template.test.ts`); and Word's #7 in a
+describe of its own citing nothing, since PUB-087 is the PDF's, held against `writeDocx`, the product's
+Word writer, since the defect's `exportDocx` publishes nothing. **The defects still open** - #162,
+#163, #164, #165, #232, #233, #234, #235 - each pinned as it stands and citing nothing; #163's label
+measured as a `P` under template 13, not the `Span` the issue saw. Not in publishing output, so not
+here: #88, #122 to #125, #146 (`sample.test.ts`), #148's other half, #156, #159. **The keep rules**,
+moved from `themes.test.ts` with their helpers, each also reading the rule from the same style as
+Word's (`projectStylesXml`), three of them citing STY-008, whose describe in `themes.test.ts` no longer
+names keeping. **PUB-092's claim is dropped** (the final review, its option a): the cases show the
+PDF's pagination and Word's keep properties, not Word's pages, and themes.md names that gap beside its
+table, as word-output.md already said. **The order** is `packages/domain/src/publishing/order.test.ts`,
+citing PUB-098 on each of its seven adjacent pairs: four swapped by composing the stage functions the
+other way round, with what `assemble` publishes held to the order's answer; three `@ts-expect-error`
+refusals (an unresolved occurrence handed to a condition, `number` given a `Resolved`, a refused
+assembly's `document`); and the check for something to publish shown reading the generated matter,
+which `assemble` makes after the walk that checks and projects each block. The corpus adds the PDF's
+half of references before generation: a list of tables prints a caption's reference as its number.
+publishing.md's PUB-098 row and "The order" say so. Each case was watched fail under a break of the
+code beneath it, and each `@ts-expect-error` under a type widened to allow its swap.
+
 ## W14.4: Unnumbered figures and tables (issue #129)
 
 1. The requirement row from issue #129, landed by this pull request, which closes it.

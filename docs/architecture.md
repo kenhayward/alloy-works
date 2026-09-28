@@ -2543,7 +2543,11 @@ faces, images })`, pure and deterministic - a fixed zip time, the parts in a fix
   heading levels, refused for the PDF by name from the seventh and published to Word as its nine
   heading styles, with the engine's `P` for levels seven to nine kept as a tripwire (W14.2); a PDF not
   made to PDF/UA-1, which veraPDF must fail; `assemble`'s verdict on sixteen character probes held to
-  the engine's; and the code face's dropped letter.
+  the engine's; and the code face's dropped letter. Then (W14.3) the publishing engine spike's nine
+  cases ported from `spikes/publishing-engine`, a case for every publishing defect filed, named by
+  its issue (those still open pinned as they stand), and the keep rules' cases, its documents built by
+  `apps/worker/src/testing/corpus.ts` (docs/testing.md). The resolution order's test is
+  `packages/domain/src/publishing/order.test.ts`.
 - **The publishing budget** (PUB-102, W14.2). `apps/worker/src/publishing-budget.test.ts` declares
   a 311-page reference document - 30 chapters, each a component of 100 blocks, 150 each of figures,
   tables, numbered equations and footnotes and 2,400 paragraphs of prose - seeded through the store,
