@@ -107,8 +107,9 @@ export async function measureEditor(
       const behind = (element: Element | null): string => {
         for (let at = element; at; at = at.parentElement) {
           const computed = getComputedStyle(at);
+          // A fill painted as a gradient, unless it paints nothing: an unfilled style's is transparent.
           const gradient = /linear-gradient\((rgba?\([^)]*\))/.exec(computed.backgroundImage);
-          if (gradient) return hex(gradient[1]!);
+          if (gradient && !/rgba\([^)]*,\s*0\)/.test(gradient[1]!)) return hex(gradient[1]!);
           const alpha = /rgba\([^)]*,\s*([\d.]+)\)/.exec(computed.backgroundColor);
           if (!alpha || Number(alpha[1]) > 0) {
             if (computed.backgroundColor !== 'transparent') return hex(computed.backgroundColor);
@@ -166,7 +167,8 @@ export async function measureEditor(
         const labelled = text.querySelector<HTMLElement>(`pre[data-language="${word}"]`);
         if (!labelled) continue;
         const computed = getComputedStyle(labelled, '::before');
-        const gradient = /linear-gradient\((rgba?\([^)]*\))/.exec(computed.backgroundImage);
+        const painted = /linear-gradient\((rgba?\([^)]*\))/.exec(computed.backgroundImage);
+        const gradient = painted && !/rgba\([^)]*,\s*0\)/.test(painted[1]!) ? painted : null;
         const filled = !/rgba\([^)]*,\s*0\)|transparent/.test(computed.backgroundColor);
         const block = labelled.getBoundingClientRect();
         const px = (value: string) => parseFloat(value) || 0;
@@ -558,7 +560,8 @@ export async function editorMathsFace(
   families: Readonly<Record<string, string>>,
 ): Promise<string | undefined> {
   const family = await page.evaluate(() => {
-    const maths = document.querySelector('section.aw-canvas math mi, section.aw-canvas math');
+    // The identifier the equation draws, which is what the face sets: the `mi` of `x`.
+    const maths = document.querySelector('section.aw-canvas math mi');
     return maths
       ? getComputedStyle(maths)
           .fontFamily.split(',')[0]!
@@ -583,4 +586,130 @@ export function pdfMathsFace(paint: Paint, token: Measured, margin: number): str
     )
     .sort((a, b) => a.x - b.x)[0];
   return run && faceOf(run.face).family;
+}
+
+/**
+ * A list item's marker - its bullet or number - as it is drawn: where it ends, across from where the
+ * measure starts, and its face, weight, posture, size and colour, which the list's place's style sets.
+ */
+export interface MeasuredMarker {
+  readonly end: number;
+  readonly size: number;
+  readonly family: string;
+  readonly bold: boolean;
+  readonly italic: boolean;
+  readonly colour: string;
+}
+
+/**
+ * Each list token's marker in the editor, drawn from its item's `::before` in the list's first column:
+ * its words from its computed `content` (a counter resolved as the browser counts the list), its width
+ * the width of those words in its own font, and where it ends from the column's edges and the marker's
+ * own `justify-self` - so a marker set at the column's start where the page ends it there is found.
+ */
+export async function editorMarkers(
+  page: Page,
+  tokens: readonly string[],
+  families: Readonly<Record<string, string>>,
+): Promise<Map<string, MeasuredMarker>> {
+  const found = await page.evaluate(
+    ({ tokens, pxPerPt }) => {
+      const text = document.querySelector<HTMLElement>('section.aw-canvas')!;
+      const origin = text.getBoundingClientRect();
+      const style = getComputedStyle(text);
+      const left = origin.left + parseFloat(style.paddingLeft) + parseFloat(style.borderLeftWidth);
+      const hex = (rgb: string) => {
+        const [r, g, b] = (rgb.match(/[\d.]+/g) ?? []).map(Number);
+        return `#${[r, g, b]
+          .map((each) =>
+            Math.round(each ?? 0)
+              .toString(16)
+              .padStart(2, '0'),
+          )
+          .join('')}`;
+      };
+      const answers: Record<string, unknown> = {};
+      for (const token of tokens) {
+        const block = [...text.querySelectorAll('li > [data-style]')].find(
+          (each) => (each.textContent ?? '').trim().split(/\s+/)[0] === token,
+        ) as HTMLElement | undefined;
+        const item = block?.parentElement;
+        if (!block || !item) continue;
+        const marker = getComputedStyle(item, '::before');
+        const list = getComputedStyle(item.parentElement!);
+        // The words the marker draws: its bullet, or its number, from the counter the list keeps.
+        const probe = document.createElement('span');
+        probe.style.cssText =
+          `position:absolute;visibility:hidden;white-space:pre;font-family:${marker.fontFamily};` +
+          `font-size:${marker.fontSize};font-weight:${marker.fontWeight};font-style:${marker.fontStyle}`;
+        item.append(probe);
+        const index = [...item.parentElement!.children].indexOf(item);
+        const start = Number(item.parentElement!.getAttribute('start') ?? 1);
+        const words = /counter\(/.test(marker.content)
+          ? `${start + index}.`
+          : (JSON.parse(marker.content.replace(/^"(.*)"$/, '"$1"')) as string);
+        probe.textContent = words;
+        const wide = probe.getBoundingClientRect().width;
+        probe.remove();
+        // The second column starts where the item's block's margin box does; the first ends a gap before.
+        const area =
+          block.getBoundingClientRect().left - parseFloat(getComputedStyle(block).marginLeft);
+        const columnEnd = area - parseFloat(list.columnGap);
+        const columnStart = item.getBoundingClientRect().left;
+        const end = marker.justifySelf === 'end' ? columnEnd : columnStart + wide;
+        answers[token] = {
+          end: (end - left) / pxPerPt,
+          size: parseFloat(marker.fontSize) / pxPerPt,
+          family: marker.fontFamily
+            .split(',')[0]!
+            .trim()
+            .replace(/^["']|["']$/g, ''),
+          bold: Number(marker.fontWeight) >= 600,
+          italic: marker.fontStyle === 'italic',
+          colour: hex(marker.color),
+        };
+      }
+      return answers;
+    },
+    { tokens: [...tokens], pxPerPt: PX_PER_PT },
+  );
+  const markers = new Map<string, MeasuredMarker>();
+  for (const token of tokens) {
+    const each = found[token] as MeasuredMarker | undefined;
+    if (each) markers.set(token, { ...each, family: families[each.family] ?? each.family });
+  }
+  return markers;
+}
+
+/** Each list token's marker in the PDF: the run on its line nearest before it, which ends before it. */
+export function pdfMarkers(
+  paint: Paint,
+  tokens: readonly string[],
+  measured: ReadonlyMap<string, Measured>,
+  margin: number,
+): Map<string, MeasuredMarker> {
+  const markers = new Map<string, MeasuredMarker>();
+  for (const token of tokens) {
+    const at = measured.get(token);
+    if (!at) continue;
+    const y = paint.pages[at.page - 1]!.height - at.baseline;
+    const run = paint.texts
+      .filter(
+        (each) =>
+          !each.artifact &&
+          each.page === at.page &&
+          Math.abs(each.y - y) < 0.5 &&
+          each.x + each.width <= at.x + margin + 0.01 &&
+          each.text.trim() !== '',
+      )
+      .sort((a, b) => b.x - a.x)[0];
+    if (!run) continue;
+    markers.set(token, {
+      end: run.x + run.width - margin,
+      size: run.size,
+      ...faceOf(run.face),
+      colour: run.fill,
+    });
+  }
+  return markers;
 }

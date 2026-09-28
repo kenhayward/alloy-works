@@ -1,4 +1,10 @@
-import { EDGES, type Measured, type MeasuredImage, type MeasuredRules } from './measure.js';
+import {
+  EDGES,
+  type Measured,
+  type MeasuredImage,
+  type MeasuredMarker,
+  type MeasuredRules,
+} from './measure.js';
 import type { Token } from './styled.js';
 
 /**
@@ -39,7 +45,7 @@ export interface Difference {
 /** Told each length compared and by how much the two differed, for the record of the largest. */
 export type Largest = (theme: string, property: string, by: number) => void;
 
-/** How a caption's line stands in its measure, which is what places its first word. */
+/** How a line stands in its measure, which is what places its first word where it is not the start. */
 export type Alignment = 'start' | 'end' | 'centre' | 'justify';
 
 const round = (value: number) => Math.round(value * 100) / 100;
@@ -50,13 +56,14 @@ const round = (value: number) => Math.round(value * 100) / 100;
  *
  * - **Every token**: its size, face, weight, posture, colour and underline, and what stands behind it -
  *   but a footnote's, which the document view reads beside its anchor, in its paragraph's fill.
- * - **Where it starts**, across the measure: in running text, a quotation, preformatted text, a mark's
- *   run and a table's cell. Not in a list, whose indent is the engine's and the editor stylesheet's
- *   rather than a style property (themes.md, "Not every value is the theme's"); not in a heading,
- *   which the document view sets after its number its own way (issue #333); not in a footnote, which
- *   the page sets at its foot, nor in the line holding its anchor, which the document view lengthens
- *   with the footnote's words. A caption's line is compared at the edge its alignment sets it by,
- *   since the PDF opens it with its number and the editor does not.
+ * - **Where it starts**, across the measure: in running text, a quotation, preformatted text and its
+ *   label, a mark's run, a table's cell and a list's item. Not in a heading, which the document view
+ *   sets after its number its own way (issue #333); not in a footnote, which the page sets at its foot,
+ *   nor in the line holding its anchor, which the document view lengthens with the footnote's words. A
+ *   caption's line is compared at the edge its alignment sets it by, since the PDF opens it with its
+ *   number and the editor does not. The line holding an equation (`equated`) is compared where its
+ *   paragraph is set from the start, where the equation's width moves nothing before it; where its
+ *   paragraph is centred or set to the end, the line's length is the maths engine's and not compared.
  * - **The step from one baseline to the next**, in the order the page reads them, wherever both stand in
  *   the component's own flow and the PDF sets both on one page: running text, lists, quotations,
  *   preformatted text, a table's caption, cells and note, a figure's caption. A mark's run is its
@@ -99,7 +106,10 @@ export function compare(
     // A footnote is read beside its anchor in the document view, in its paragraph's fill.
     if (token.where !== 'footnote') exactly(token, 'background', e.background, p.background);
 
-    if (
+    const aligned = alignment(token);
+    if (token.where === 'equated' && (aligned === 'start' || aligned === 'justify')) {
+      length(token, 'start', e.x, p.x);
+    } else if (
       token.where === 'flow' ||
       token.where === 'mark' ||
       token.where === 'cell' ||
@@ -108,7 +118,7 @@ export function compare(
     ) {
       length(token, 'start', e.x, p.x);
     } else if (token.where === 'caption') {
-      const align = alignment(token);
+      const align = aligned;
       const edge = (m: Measured) =>
         align === 'centre' ? (m.line[0] + m.line[1]) / 2 : align === 'end' ? m.line[1] : m.line[0];
       length(
@@ -281,4 +291,49 @@ export function compareMathsFace(
           pdf: pdf ?? 'none',
         },
       ];
+}
+
+/**
+ * Each list item's marker: where it ends - a number is right-aligned in the list's column, a bullet
+ * stands at its start - and its size within half a point, and its face, weight, posture and colour,
+ * which the list's place's style sets, exactly.
+ */
+export function compareMarkers(
+  tokens: readonly Token[],
+  editor: ReadonlyMap<string, MeasuredMarker>,
+  pdf: ReadonlyMap<string, MeasuredMarker>,
+  record: (property: string, by: number) => void = () => {},
+): Difference[] {
+  const differences: Difference[] = [];
+  for (const token of tokens.filter((each) => each.where === 'list')) {
+    const [e, p] = [editor.get(token.text), pdf.get(token.text)];
+    const differ = (property: string, a: number | string | boolean, b: number | string | boolean) =>
+      differences.push({
+        token: token.text,
+        what: `${token.what}'s marker`,
+        property,
+        editor: a,
+        pdf: b,
+      });
+    if (!e || !p) {
+      differ('marker found', Boolean(e), Boolean(p));
+      continue;
+    }
+    for (const [property, a, b] of [
+      ['marker end', e.end, p.end],
+      ['marker size', e.size, p.size],
+    ] as const) {
+      record(property, Math.abs(a - b));
+      if (Math.abs(a - b) > TOLERANCE) differ(property, round(a), round(b));
+    }
+    for (const [property, a, b] of [
+      ['marker face', e.family, p.family],
+      ['marker bold', e.bold, p.bold],
+      ['marker italic', e.italic, p.italic],
+      ['marker colour', e.colour, p.colour],
+    ] as const) {
+      if (a !== b) differ(property, a, b);
+    }
+  }
+  return differences;
 }

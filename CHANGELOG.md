@@ -25,6 +25,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   up to 9 points away from where the PDF starts them; a table's outer rule was cut in half at the edge of
   the text; a quotation's attribution, a centred half-width figure, a line of inline code and a
   preformatted block's label each stood somewhere else. Each now matches the page (issue #329).
+- **What the page scrolls to no longer hides under the header band.** Opening a component in a
+  document, or anything else the page scrolls into view, now stops below the dark band at the top.
+- **A list's bullets and numbers are set like its text.** They now take the list's bold or italic where
+  its style has one, as the PDF sets them.
 - **Filled paragraphs are checked for contrast again.** A paragraph with a fill and no space above or
   below it is filled with a plain colour, which the accessibility check reads.
 

@@ -13,6 +13,7 @@ import {
   approved,
   compare,
   compareImages,
+  compareMarkers,
   compareMathsFace,
   compareRules,
   type Alignment,
@@ -29,11 +30,13 @@ import {
 } from './testing/fixtures.js';
 import {
   editorImages,
+  editorMarkers,
   editorMathsFace,
   editorRules,
   measureEditor,
   measurePdf,
   pdfImages,
+  pdfMarkers,
   pdfMathsFace,
   pdfRules,
 } from './testing/measure.js';
@@ -84,14 +87,19 @@ function everyToken(tokens: readonly Token[]): Token[] {
   return [...HEADINGS, COMPONENT_TITLE, ...tokens];
 }
 
-/** A theme's caption role, resolved: what a caption's line is aligned by. */
-function captionAlignment(write: ThemeToWrite | null): Alignment {
+/**
+ * What a token's line is aligned by: a caption's, its role's style; the line holding an equation, the
+ * text's default, which that paragraph is in. A style states its alignment or takes its catalogue's.
+ */
+function alignmentOf(write: ThemeToWrite | null): (token: Token) => Alignment {
   const catalogue = write?.catalogues.paragraph ?? DEFAULT_CATALOGUES.paragraph;
   const theme = write?.theme ?? DEFAULT_THEME;
-  const style = catalogue.styles.find((each) => each.id === theme.roles.caption)!;
-  const stated = style.properties as Partial<ResolvedParagraphProperties>;
-  // The default's caption states its alignment; a written theme's states every property.
-  return (stated.alignment ?? 'start') as Alignment;
+  const of = (id: string) => {
+    const style = catalogue.styles.find((each) => each.id === id)!;
+    const stated = style.properties as Partial<ResolvedParagraphProperties>;
+    return (stated.alignment ?? catalogue.base.alignment) as Alignment;
+  };
+  return (token) => of(token.where === 'caption' ? theme.roles.caption : theme.places.text);
 }
 
 /**
@@ -109,6 +117,7 @@ async function measureView(
   images: Awaited<ReturnType<typeof editorImages>>;
   rules: Awaited<ReturnType<typeof editorRules>>;
   maths: string | undefined;
+  markers: Awaited<ReturnType<typeof editorMarkers>>;
 }> {
   return withPage(async (page) => {
     // Wide enough that the column holds the measure without scrolling it sideways.
@@ -177,6 +186,11 @@ async function measureView(
         shown,
       ),
       maths: await editorMathsFace(page, families),
+      markers: await editorMarkers(
+        page,
+        tokens.filter((each) => each.where === 'list').map((each) => each.text),
+        families,
+      ),
     };
   });
 }
@@ -206,7 +220,8 @@ async function measureTheme(
     all.map((each) => each.text),
     MARGIN,
   );
-  const { shown, images, rules, maths } = await measureView(document, all);
+  const { shown, images, rules, maths, markers } = await measureView(document, all);
+  const listed = all.filter((each) => each.where === 'list').map((each) => each.text);
   const cells = all.filter((each) => each.where === 'cell').map((each) => each.text);
   if (process.env.ALLOY_BROWSER_STYLE_DUMP) {
     writeFileSync(
@@ -222,18 +237,15 @@ async function measureTheme(
       ),
     );
   }
-  const alignment = captionAlignment(write);
+  const alignment = alignmentOf(write);
   return {
     theme: name,
     differences: [
-      ...compare(
-        all,
-        shown,
-        printed,
-        () => alignment,
-        (property, by) => largest(name, property, by),
-      ),
+      ...compare(all, shown, printed, alignment, (property, by) => largest(name, property, by)),
       ...compareImages(IMAGES, images, pdfImages(paint, MARGIN), shown, printed, (property, by) =>
+        largest(name, property, by),
+      ),
+      ...compareMarkers(all, markers, pdfMarkers(paint, listed, printed, MARGIN), (property, by) =>
         largest(name, property, by),
       ),
       ...compareMathsFace(

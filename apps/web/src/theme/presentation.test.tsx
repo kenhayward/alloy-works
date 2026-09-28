@@ -74,15 +74,30 @@ describe("the presentation a page's text is set in", () => {
     // The body is in Liberation Serif, whose cap height is 1341/2048 of its em: 11pt on 14.35pt puts
     // its first baseline 14.35 - (443 + 1341) / 2048 x 11 = 4.768pt below the trimmed line's top.
     expect(faces()).toContain('@supports (text-box: trim-both cap alphabetic) {');
-    // And room either side of the measure for a table's outer rule, which the canvas would clip.
-    expect(faces()).toContain(
-      '.aw-canvas { overflow-x: auto; padding-inline: calc(6pt * var(--aw-zoom)); }',
-    );
     expect(faces()).toContain(
       'padding-block: calc(var(--aw-before) + calc(4.768pt * var(--aw-zoom)))',
     );
     expect(capHeight(DEFAULT_THEME.typefaces[0]!)).toBe(1341 / 2048);
     expect(capHeight({ ...DEFAULT_THEME.typefaces[0]!, files: [] })).toBeUndefined();
+  });
+
+  it("leaves room either side of the measure for a table's outer rule, which the canvas's sideways scrolling would clip", async () => {
+    const { client } = service({ 'GET /v1/presentation': () => json(200, DEFAULT_PRESENTATION) });
+    render(
+      <PresentationProvider client={client}>
+        <Shown />
+      </PresentationProvider>,
+    );
+    await screen.findByText(/^ready/);
+    // Half of the widest rule a table style may draw, 12pt, at the zoom; the measure itself is the
+    // text's content box, so it is unchanged.
+    expect(faces()).toContain(
+      '.aw-canvas { overflow-x: auto; padding-inline: calc(6pt * var(--aw-zoom)); }',
+    );
+    expect(faces()).toContain(
+      '.aw-canvas .aw-text, .aw-canvas.aw-text { box-sizing: content-box; ' +
+        'width: calc(var(--aw-measure) * var(--aw-zoom));',
+    );
   });
 
   it("reads a document's presentation from the document's own route", async () => {

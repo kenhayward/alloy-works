@@ -701,12 +701,15 @@ the seeds.
 - **The generator is narrowed** to what the store takes (contrast, a line at least 1.2 of its size, a
   rule no wider than twice its table's padding) and to what both outputs render: no mark larger than its
   text, no floated figure, and none of what the PDF does not set yet (issue #330).
+- **A list's markers** are measured too: where each bullet or number ends - a number right-aligned in
+  the list's column - and its face, weight, posture, size and colour, the list's place's style.
 - **It cites nothing yet.** Two properties both outputs render still differ (issues #331 and #333), so
   STY-080 is not claimed and a test cannot cite it; themes.md names them.
 - **A filled block with spaces of its own is a gradient**, painted between its spaces, which axe-core
   cannot read as a background: it reports that block's text `incomplete`, for the audit, rather than
-  checking its contrast. A filled block with no spaces - and every fill the default theme has but
-  preformatted text's - is a colour, which axe checks.
+  checking its contrast. A filled block with no spaces is a colour, which axe checks. The default
+  theme's one filled style, preformatted text, has spaces, so its text is among what axe hands to a
+  person.
 
 **What it cannot see.** Headless Chromium has no browser interface, so `Alt+Left` is never Back there
 whatever the page does: the test shows the tree prevented the key's default, which is what keeps it

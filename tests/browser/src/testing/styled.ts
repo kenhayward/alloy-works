@@ -27,7 +27,8 @@ export type Where =
   | 'footnoted'
   /**
    * The paragraph holding an equation, whose line is as long as each renderer's maths engine draws the
-   * equation - its layout is not the theme's - so where an aligned line starts is not compared.
+   * equation - its layout is not the theme's - so where it starts is compared only where the line is
+   * set from its start, which the equation's width moves nothing before.
    */
   | 'equated'
   /** A caption, which the PDF opens with its number and the editor does not. */

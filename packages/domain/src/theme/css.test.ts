@@ -165,11 +165,37 @@ describe('projectCss', () => {
     const boxed = ruleFor(text, '.aw-canvas.aw-canvas [data-style="boxed"]');
     expect(boxed).toContain('--aw-fill: #eeeeee; background: #eeeeee');
     expect(boxed).not.toContain('linear-gradient');
-    // A list gives its first and last items' blocks its own spaces: a filled one paints between them.
-    expect(text).toContain(
-      '.aw-canvas.aw-canvas :is(ul, ol) > li:first-child > [data-style]:first-child, ' +
-        '.aw-canvas.aw-canvas :is(ul, ol) > li:last-child > [data-style]:last-child { ' +
-        'background-image: linear-gradient(var(--aw-fill), var(--aw-fill));',
+  });
+
+  it("paints a list's first and last items' fills between the list's spaces, a spaceless filled style's too, and never an ancestor's fill in an unfilled one", () => {
+    // Boxed has no spaces of its own, so it fills as a colour; as a list's last item it is given the
+    // list's space after, which the PDF leaves unfilled: its colour stands down there, and the fill is
+    // painted between the spaces instead.
+    const inputs = defaultInputs();
+    inputs.catalogues.paragraph.styles.push({
+      id: 'boxed',
+      name: 'Boxed',
+      appliesTo: ['text', 'listItem'],
+      properties: { background: '#eeeeee', padding: 3, spaceBefore: 0, spaceAfter: 0 },
+    });
+    const text = projectCss(resolved(inputs));
+    const ends = '.aw-canvas.aw-canvas :is(ul, ol) > li:first-child > [data-style]:first-child';
+    const rule = rulesFor(
+      text,
+      '.aw-canvas.aw-canvas :is(ul, ol) > li:last-child > [data-style]:last-child',
+    ).find((each) => each.includes('linear-gradient'));
+    expect(rule?.split('; ')).toEqual([
+      'background-color: transparent',
+      'background-image: linear-gradient(var(--aw-fill), var(--aw-fill))',
+      'background-repeat: no-repeat',
+      'background-position: 0 var(--aw-before)',
+      'background-size: 100% calc(100% - var(--aw-before) - var(--aw-after))',
+    ]);
+    // Its selector outweighs any style's, two classes and an attribute, whichever comes first.
+    expect(ends).toContain(':first-child > [data-style]:first-child');
+    // An unfilled style names no fill of its own, so it never paints a fill it inherits.
+    expect(ruleFor(text, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]')).toContain(
+      '--aw-fill: transparent; background: transparent',
     );
   });
 
@@ -305,7 +331,8 @@ describe('projectCss', () => {
     );
     expect(rulesFor(css, '.aw-canvas.aw-canvas li')).toEqual([
       'margin-block: 0',
-      `font-family: "aw-face-serif"; font-size: ${z('11')}; color: #000000; line-height: 0`,
+      `font-family: "aw-face-serif"; font-size: ${z('11')}; font-weight: 400; font-style: normal; ` +
+        'color: #000000; line-height: 0',
     ]);
   });
 

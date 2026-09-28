@@ -235,6 +235,7 @@ function listRules(theme: ResolvedTheme): string[] {
   return [
     `${list}, ${CANVAS} li { margin-block: 0; }`,
     `${CANVAS} li { font-family: "${faceFamily(item.typeface.id)}"; font-size: ${zoomed(p.size)}; ` +
+      `font-weight: ${p.bold ? 700 : 400}; font-style: ${p.italic ? 'italic' : 'normal'}; ` +
       `color: ${p.colour}; line-height: 0; }`,
     `${list} { display: grid; grid-template-columns: max-content minmax(0, 1fr); ` +
       `column-gap: ${zoomed(p.size / 2)}; padding-inline-start: 0; list-style: none; }`,
@@ -257,7 +258,7 @@ function listRules(theme: ResolvedTheme): string[] {
     `${list} > li:not(:last-child) > [data-style]:last-child { --aw-after: ${NONE}; }`,
     // A filled block given the list's spaces paints its fill between them, whatever its own were.
     `${list} > li:first-child > [data-style]:first-child, ${list} > li:last-child > [data-style]:last-child ` +
-      `{ ${BETWEEN_SPACES.join('; ')}; }`,
+      `{ background-color: transparent; ${BETWEEN_SPACES.join('; ')}; }`,
   ];
 }
 
@@ -511,7 +512,7 @@ function paragraphDeclarations(style: ResolvedParagraphStyle): string[] {
     // text to a person (docs/testing.md).
     ...(filled
       ? fill(p.background, p.spaceBefore === 0 && p.spaceAfter === 0)
-      : ['background: transparent']),
+      : ['--aw-fill: transparent', 'background: transparent']),
     `text-align: ${ALIGN[p.alignment]}`,
     `text-indent: ${zoomed(p.firstLineIndent)}`,
     `margin-inline: ${zoomed(p.startIndent)} ${zoomed(p.endIndent)}`,
