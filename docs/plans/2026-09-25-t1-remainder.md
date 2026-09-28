@@ -126,6 +126,6 @@ This table is updated as each workstream lands.
 | W9  | The document view                  | Built (PRs #286 to #290; [plan](2026-09-27-w9-document-view.md), [design](../design/document-view.md)) |
 | W10 | Preview                            | Built (PRs #291 to #294; [plan](2026-09-27-w10-preview.md)); K2 decided by ADR-0027                    |
 | W11 | Recovery                           | Built (PRs #295 to #298; [plan](2026-09-28-w11-recovery.md))                                           |
-| W12 | Identity                           | Building ([plan](2026-09-28-w12-identity.md)); K3 decided by ADR-0028                                  |
+| W12 | Identity                           | Built (PRs #299 to #305; [plan](2026-09-28-w12-identity.md)); K3 decided by ADR-0028                   |
 | W13 | A browser suite                    | Not started                                                                                            |
 | W14 | Publishing, finished               | Not started                                                                                            |

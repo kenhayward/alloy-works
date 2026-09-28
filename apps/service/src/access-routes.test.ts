@@ -2,11 +2,13 @@
 import { randomUUID } from 'node:crypto';
 import { allRoutes } from '@alloy-works/api-contract';
 import {
+  addToGroup,
   bootstrapCluster,
   configureOrganisationSignIn,
   createArtifact,
   createAssetUpload,
   createDocument,
+  createGroup,
   createRole,
   createTemplate,
   createSpace,
@@ -14,6 +16,7 @@ import {
   createTenantDatabase,
   DEFAULT_LAYOUT_ID,
   DEFAULT_THEME_ID,
+  deleteGroup,
   findRole,
   grant,
   migrate,
@@ -388,6 +391,56 @@ describe('routes that check a permission', () => {
       checked: [`artifact:${dosing}`, `space:${clinical}`, 'tenant'],
       grants: [],
     });
+  });
+
+  it('IAM-030 names the group a deciding grant reached the person through by its name, beside the grant and its level', async () => {
+    const made = await tenantDb.withTenant(tenant, (trx) => createGroup(trx, 'Auditors'));
+    if (!('group' in made)) throw new Error(`refused: ${made.refused}`);
+    const auditors = made.group.id;
+    try {
+      await tenantDb.withTenant(tenant, (trx) => addToGroup(trx, auditors, ids.alice!));
+      await give({
+        role: 'Reader',
+        subject: { group: auditors },
+        level: { kind: 'artifact', id: audit },
+        effect: 'allow',
+      });
+      const response = await get(
+        `/v1/access/explain?principal=${ids.alice}&target=artifact:${audit}`,
+        'ada',
+      );
+      expect(response.statusCode).toBe(200);
+      const read = response
+        .json<{ permissions: { permission: string; [member: string]: unknown }[] }>()
+        .permissions.find((answer) => answer.permission === 'read');
+      expect(read).toMatchObject({
+        allowed: true,
+        reason: 'allowed',
+        level: `artifact:${audit}`,
+        grants: [
+          {
+            role: 'Reader',
+            effect: 'allow',
+            subject: { group: auditors },
+            through: auditors,
+            groupName: 'Auditors',
+          },
+        ],
+      });
+
+      // A grant made to the person directly names no group.
+      const direct = await get(
+        `/v1/access/explain?principal=${ids.grace}&target=artifact:${dosing}`,
+        'ada',
+      );
+      const edit = direct
+        .json<{ permissions: { permission: string; grants: unknown[] }[] }>()
+        .permissions.find((answer) => answer.permission === 'edit');
+      expect(edit?.grants).toEqual([expect.objectContaining({ through: null, groupName: null })]);
+    } finally {
+      // With its grant, which goes with it.
+      await tenantDb.withTenant(tenant, (trx) => deleteGroup(trx, auditors));
+    }
   });
 
   it('API-053 refuses without a session as unauthenticated, and a reader lacking the permission as forbidden', async () => {

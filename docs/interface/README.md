@@ -8,8 +8,8 @@ looks like and what a person does to it.
 > **Built as a first draft.** Every screen here has a first build (interface slices 1 to 12, listed
 > in [`../plans/README.md`](../plans/README.md)), except Search, which waits for the search
 > subsystem. Each one leaves out what the service cannot answer yet: facets beyond space and
-> publishing, sorting, metadata, where-used, preview, delete, and Administration's groups,
-> component types and layouts. [`../features.md`](../features.md) is the honest account. The
+> publishing, sorting, metadata, where-used, preview, delete, and Administration's component types
+> and layouts. [`../features.md`](../features.md) is the honest account. The
 > screens beside this are still the target, drawn before the work so that thirteen screens agree
 > with each other rather than converging by accident.
 
@@ -138,6 +138,8 @@ shell loads the renderer over `file://` and a path route breaks there.
 | `#/components/{id}`        | Component editor           | B             |
 | `#/components/{id}/access` | Access to a component      | Page          |
 | `#/documents`              | Documents                  | A             |
+| `#/documents/{id}/access`  | Access to a document       | Page          |
+| `#/templates/{id}/access`  | Access to a template       | Page          |
 | `#/documents/{id}`         | Document: outline and text | C             |
 | `#/documents/{id}/{node}`  | The same, at that part     | C             |
 | `#/publications`           | Publications               | A             |

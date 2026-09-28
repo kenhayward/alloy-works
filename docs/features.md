@@ -91,10 +91,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   denial, on the whole environment, one space, or one item. Every environment starts with nine roles -
   among them Publisher, the only one that may publish - and a space called General. An environment's first administrator is invited, by address, by whoever sets
   it up, and is Administrator from the first sign-in that proves that address; in development, Ada
-  administers both environments from hers. On any component they may administer, **Manage access**
-  lists what is granted on it, on its space and across the whole environment, gives a person a role at
-  any of those as an allow or a denial, removes a grant, and shows what a chosen person may do there and
-  why. Removing the last grant that lets anyone administer the whole environment is refused. An
+  administers both environments from hers. **Access is everywhere**: on any component, document or
+  template they may administer, **Manage access** - on the component's and the document's page, and on
+  each template's row in Templates - lists what is granted on it, on its space and across the whole
+  environment; and Administration opens the same Access at each space they administer, from Spaces,
+  and at the whole environment, from Environment, where they administer it. Each gives a person a role at any of those levels as an allow or a
+  denial, or a group where the administrator administers the whole environment, removes a grant, and
+  shows what a chosen person may do there and why: every permission with its answer, the level that
+  decided it and the grants that did, a group by its name. Removing the last grant that lets anyone
+  administer the whole environment is refused. An
   administrator of the whole environment also invites an address there: the person is offered to give
   access to straight away, and has what they were given from the first time they sign in with that
   address, through either sign-in route, as long as their provider has verified it. An invitation
@@ -104,15 +109,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   inviting their address is refused.
 
   **This is grants to people, not the whole of managing access.** Nothing sends the invitation: the
-  administrator tells the person to sign in. Nothing creates or changes a role, offers a group here,
-  marks somebody who has already signed in as from outside the organisation, extends an expiring grant
-  or gives one an expiry, and only a component has an access page.
+  administrator tells the person to sign in. Nothing creates or changes a role, marks somebody who has
+  already signed in as from outside the organisation, extends an expiring grant or gives one an expiry,
+  and no page shows a template on its own, so its access is reached from its row in Templates.
 
-- **Groups, and your organisation's directory, through the API.** An administrator of the whole
-  environment makes groups and grants a role to one as to a person: everybody in it holds that role there.
-  A group is the environment's own, whose members the administrator names with
-  `PUT /v1/groups/{id}/members`, or stands for one value your organisation's sign-in says a person is in -
-  a directory group - and then its members are whoever signed in last saying so. At every sign-in through
+- **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
+  in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
+  in it holds that role there. Groups lists each group with where its members come from and who they
+  are. A group is the environment's own, whose members the administrator chooses there from the
+  environment's people, or stands for one value your organisation's sign-in says a person is in - a
+  directory group - and then its members are whoever signed in last saying so, shown and not changeable
+  by hand. A group is deleted after asking, with everything granted to it. At every sign-in through
   your organisation's provider, a person joins the groups standing for the values it gives them and leaves
   the ones it no longer does, so access follows your directory. A value no group stands for means nothing
   here, and a sign-in that says nothing about groups leaves the person in none of the directory's. The
@@ -122,9 +129,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   ignored, and the sign-in's proof of identity is checked against the provider's published keys. Somebody
   from outside the organisation gains nothing through a directory group that reaches past the
   environment's limit on external access. Signing in with Google says nothing about groups and changes
-  none. `GET /v1/groups` lists groups with their members, `POST /v1/groups` makes one, and
-  `DELETE /v1/groups/{id}` deletes one with everything granted to it. A grant through a group never counts
-  as the one keeping the environment administered. There is no page for groups yet.
+  none. The API does the same: `GET /v1/groups` lists groups with their members, `POST /v1/groups` makes
+  one, `PUT /v1/groups/{id}/members` sets an own group's members, and `DELETE /v1/groups/{id}` deletes one
+  with everything granted to it. A grant through a group never counts as the one keeping the environment
+  administered.
 
 - **Editing a component.** Signed in, you see the components you may read and open one. If you may
   edit it, your first change starts editing: nobody else can change it while you are, and anyone who
@@ -923,9 +931,8 @@ Named explicitly so nobody has to read the source to find out:
   fixed template with no content of yours in it.
 - No token belongs to anything but a person, so a script that must outlive its author has nothing to
   run as, and nothing extends a token: a new one is issued.
-- No page for groups: an administrator makes, fills and deletes them, and grants to one, through the API
-  alone, and an explanation of what somebody may do says "a group" rather than its name. A directory
-  group's members change only when they sign in, never between.
+- A directory group's members change only when they sign in, never between, and a group is not renamed
+  once made.
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.

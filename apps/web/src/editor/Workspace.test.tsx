@@ -123,13 +123,34 @@ const componentBody = (id: string, title: string, mayEdit = false) => ({
  * people and roles it offers to choose from (empty, which is enough to reach the open state), and an
  * empty grants listing at whatever level is asked.
  */
-function accessService(titles: Record<string, string>) {
+function accessService(
+  titles: Record<string, string>,
+  others: { documents?: Record<string, string>; templates?: Record<string, string> } = {},
+) {
   return vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
     if (url.pathname === '/v1/me') return json(200, me);
     for (const [id, title] of Object.entries(titles)) {
       if (url.pathname === `/v1/components/${id}`) return json(200, componentBody(id, title));
+    }
+    const space = { id: 's1', name: 'General' };
+    const version = {
+      id: 'v1',
+      number: '0.1',
+      author: 'p1',
+      createdAt: '2026-09-17T09:00:00.000Z',
+      note: null,
+    };
+    for (const [id, title] of Object.entries(others.documents ?? {})) {
+      if (url.pathname === `/v1/documents/${id}`) {
+        return json(200, { id, space, version, outline: { title, nodes: [] } });
+      }
+    }
+    for (const [id, name] of Object.entries(others.templates ?? {})) {
+      if (url.pathname === `/v1/templates/${id}`) {
+        return json(200, { id, space, version, definition: { name }, mayDesign: true });
+      }
     }
     if (url.pathname === '/v1/principals' || url.pathname === '/v1/roles') {
       return json(200, { items: [], next: null });
@@ -297,6 +318,38 @@ describe('the workspace', () => {
     expect(
       await screen.findByText('There is nothing here, or nothing you may read.'),
     ).toBeInTheDocument();
+  });
+
+  it('opens the access page of the document the address names, with a way back to the document', async () => {
+    const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
+    window.location.hash = `#/documents/${DOCUMENT}/access`;
+    render(
+      <Workspace fetch={accessService({}, { documents: { [DOCUMENT]: 'The dosing report' } })} />,
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'Access to The dosing report' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Back to the document' })).toHaveAttribute(
+      'href',
+      `#/documents/${DOCUMENT}`,
+    );
+    expect(screen.getByRole('region', { name: 'This document' })).toBeInTheDocument();
+  });
+
+  it('opens the access page of the template the address names, with a way back to the templates', async () => {
+    const TEMPLATE = 'ffffffff-0000-4000-8000-000000000001';
+    window.location.hash = `#/templates/${TEMPLATE}/access`;
+    render(
+      <Workspace fetch={accessService({}, { templates: { [TEMPLATE]: 'Procedure manual' } })} />,
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'Access to Procedure manual' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Back to templates' })).toHaveAttribute(
+      'href',
+      '#/templates',
+    );
+    expect(screen.getByRole('region', { name: 'This template' })).toBeInTheDocument();
   });
 
   it('mounts a fresh access page for each component, never showing what an earlier one left behind', async () => {

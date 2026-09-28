@@ -168,3 +168,52 @@ describe('the listing views', () => {
     }
   });
 });
+
+describe('Templates', () => {
+  it('offers Manage access on each template only to whoever may administer it', async () => {
+    const MAY = 'ffffffff-0000-4000-8000-000000000001';
+    const MAY_NOT = 'ffffffff-0000-4000-8000-000000000002';
+    const row = (id: string, name: string) => ({
+      id,
+      name,
+      space: { id: GENERAL, name: 'General' },
+      version: { id: 'v1', number: '0.1' },
+      changedAt: WHEN,
+    });
+    const targets: (string | null)[] = [];
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/templates') {
+        return json(200, {
+          items: [row(MAY, 'Procedure manual'), row(MAY_NOT, 'Service manual')],
+          next: null,
+          total: 2,
+          facets: { spaces: [facet(GENERAL, 'General', 2)] },
+        });
+      }
+      if (url.pathname === '/v1/access') {
+        const target = url.searchParams.get('target');
+        targets.push(target);
+        return json(200, {
+          target,
+          permissions: [
+            { permission: 'read', allowed: true },
+            { permission: 'administer', allowed: target === `artifact:${MAY}` },
+          ],
+        });
+      }
+      return json(404, {});
+    }) as unknown as typeof fetch;
+    render(
+      <TemplateList client={createApiClient({ baseUrl: 'http://views.test', fetch: fetching })} />,
+    );
+
+    expect(
+      await screen.findByRole('link', { name: 'Manage access to Procedure manual' }),
+    ).toHaveAttribute('href', `#/templates/${MAY}/access`);
+    await waitFor(() => expect(targets.sort()).toEqual([`artifact:${MAY}`, `artifact:${MAY_NOT}`]));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByRole('link', { name: 'Manage access to Service manual' })).toBeNull();
+  });
+});

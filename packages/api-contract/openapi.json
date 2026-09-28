@@ -1866,6 +1866,13 @@
                                     "null"
                                   ]
                                 },
+                                "groupName": {
+                                  "description": "The name of the group the grant was made to, which is the group it came through; null for a grant made to the principal",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
                                 "expiresAt": {
                                   "type": [
                                     "string",
@@ -1879,6 +1886,7 @@
                                 "effect",
                                 "subject",
                                 "through",
+                                "groupName",
                                 "expiresAt"
                               ]
                             },

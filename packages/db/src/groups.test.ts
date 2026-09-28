@@ -7,6 +7,7 @@ import { grant, type NewGrant } from './grants.js';
 import {
   createGroup,
   deleteGroup,
+  groupNames,
   listGroups,
   setGroupMembers,
   syncProviderGroups,
@@ -194,6 +195,28 @@ describe('groups: made, filled, deleted, and followed from the provider (access.
       await expect(
         within((trx) => listGroups(trx, { after: 'not-a-cursor', limit: 10 })),
       ).resolves.toEqual({ items: [], after: null });
+    });
+  });
+
+  describe('naming groups', () => {
+    it("names the groups asked for, nothing for an id it does not hold, and only this environment's", async () => {
+      const named = await made('Named');
+      const also = await made('Also named', 'also-named');
+      await made('Not asked for');
+      const theirs = await service.withTenant(development, (trx) => createGroup(trx, 'Theirs too'));
+      if (!('group' in theirs)) throw new Error('the group was not made');
+      const unknown = '00000000-0000-4000-8000-000000000000';
+
+      const names = await within((trx) =>
+        groupNames(trx, [named, also, named, unknown, theirs.group.id]),
+      );
+      expect(names).toEqual(
+        new Map([
+          [named, 'Named'],
+          [also, 'Also named'],
+        ]),
+      );
+      await expect(within((trx) => groupNames(trx, []))).resolves.toEqual(new Map());
     });
   });
 

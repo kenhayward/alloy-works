@@ -1,5 +1,9 @@
 /* The access page, drawn in docs/interface/screens/Access.html: what is granted and why on the left,
  * giving and inviting on the right. */
+.holder:focus {
+  outline: none;
+}
+
 .page {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
@@ -29,7 +33,7 @@
   background: var(--surface);
 }
 
-.card h3 {
+.cardTitle {
   margin: 0 0 var(--space-10);
   color: var(--muted);
   font-size: var(--size-overline);

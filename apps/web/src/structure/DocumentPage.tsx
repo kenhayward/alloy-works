@@ -17,6 +17,7 @@ import {
 } from '@alloy-works/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { everyPage } from '../paging.js';
 import { PreviewPane, usePreview } from '../publishing/Preview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
@@ -27,7 +28,7 @@ import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { DocumentText, type Editable, type Place } from './DocumentText.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
-import { nodeLink } from './links.js';
+import { documentAccessLink, nodeLink } from './links.js';
 import { OutlineRail, OutlineTabs, tabIds, useOutlineTab } from './OutlineTabs.js';
 import {
   OutlinePanel,
@@ -990,6 +991,12 @@ export function DocumentPage({
         ) : (
           <p className={styles['mode']}>Reading</p>
         )}
+        {/* Access to the document, offered to whoever may administer it (access.md, GP-E). */}
+        <ManageAccessLink
+          client={client}
+          target={`artifact:${document.id}`}
+          href={documentAccessLink(document.id)}
+        />
         <ZoomControl />
         <label>
           <input

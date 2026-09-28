@@ -1,22 +1,32 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { refusal, TokenTable, type ShownToken } from '../account/TokenTable.js';
-import { permissionName } from '../access/describe.js';
+import { AccessPanel } from '../access/AccessPanel.js';
+import { permissionName, type AccessAt } from '../access/describe.js';
+import { administersAt } from '../access/ManageAccessLink.js';
 import { Modal } from '../layouts/Modal.js';
 import { everyPage } from '../paging.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
+import { Groups } from './Groups.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
 /**
- * The sections the service can answer. Groups, component types and layouts are drawn and wait: no
- * route lists groups or layouts, and component types are listed a space at a time.
+ * The sections the service can answer. Component types and layouts are drawn and wait: no route lists
+ * layouts, and component types are listed a space at a time.
  */
-const SECTIONS = ['Environment', 'Spaces', 'People and invitations', 'Roles', 'About'] as const;
+const SECTIONS = [
+  'Environment',
+  'Spaces',
+  'People and invitations',
+  'Roles',
+  'Groups',
+  'About',
+] as const;
 type Section = (typeof SECTIONS)[number];
 
 /** The access page's sentence, for the same refusal. */
@@ -185,10 +195,41 @@ function PersonTokens({
 }
 
 /**
+ * Access at a space or the environment, in place of the section that opened it (access.md, GP-E): the
+ * Access panel at that level, with a way back that takes focus as the button that opened it goes.
+ */
+function AccessHere({
+  client,
+  at,
+  back,
+  onBack,
+}: {
+  client: Client;
+  at: AccessAt;
+  back: string;
+  onBack: () => void;
+}) {
+  const button = useRef<HTMLButtonElement>(null);
+  // The Access button, which had focus, has gone with the section: focus comes here, inside the
+  // dialog, rather than falling to the page, where Escape would not close Administration.
+  useEffect(() => {
+    button.current?.focus();
+  }, []);
+  return (
+    <>
+      <button ref={button} type="button" onClick={onBack}>
+        {back}
+      </button>
+      <AccessPanel at={at} client={client} headingLevel={4} />
+    </>
+  );
+}
+
+/**
  * Administration, from the account chip: a modal over the page that asked for it, never a route
- * (docs/interface/README.md). The environment, its spaces, its people and invitations, its roles and
- * what this is - each read when its section is first shown, each saying for itself where the reader
- * may not see it.
+ * (docs/interface/README.md). The environment, its spaces, its people and invitations, its roles, its
+ * groups and what this is - each read when its section is first shown, each saying for itself where
+ * the reader may not see it - and Access at the environment and at each space.
  */
 export function Administration({
   client,
@@ -202,11 +243,41 @@ export function Administration({
 }) {
   const [shown, setShown] = useState<Section>('Environment');
   const [tokensOf, setTokensOf] = useState<PersonRow | null>(null);
-  /** Whose tokens were last left by Back to people, so focus goes back to their Tokens button. */
+  /** The space, or the environment, whose Access is open in place of its section. */
+  const [accessAt, setAccessAt] = useState<AccessAt | null>(null);
+  /**
+   * Whose tokens, or which space's or the environment's Access, was last left by its way back, so
+   * focus goes back to the button that opened it.
+   */
   const [leftFrom, setLeftFrom] = useState<string | null>(null);
   const backTo = useRef<HTMLButtonElement>(null);
   const sectionHeading = useRef<HTMLHeadingElement>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
+  /**
+   * Whether the reader may administer the environment, and each space listed, by target: Access is
+   * offered only where the service says so, as `ManageAccessLink` offers an artifact's, so nobody is
+   * offered a panel that would only refuse them. Each is asked once, and kept, so coming back from
+   * Access finds its button already there to take focus.
+   */
+  const [administers, setAdministers] = useState<ReadonlyMap<string, boolean>>(new Map());
+  const askedAdminister = useRef(new Set<string>());
+  const live = useRef(true);
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+    };
+  }, []);
+  const askAdminister = useCallback(
+    (target: string) => {
+      if (askedAdminister.current.has(target)) return;
+      askedAdminister.current.add(target);
+      void administersAt(client, target).then((answer) => {
+        if (live.current) setAdministers((was) => new Map(was).set(target, answer));
+      });
+    },
+    [client],
+  );
 
   useEffect(() => {
     let current = true;
@@ -253,12 +324,27 @@ export function Administration({
   );
   const roles = useListing<RoleRow>(loads.roles, shown === 'Roles');
 
-  // Back to people takes itself away: focus goes to the Tokens button it was reached from, or to the
-  // section's heading where that is not shown, and never falls out of the dialog.
   useEffect(() => {
-    if (tokensOf !== null || leftFrom === null) return;
+    if (shown === 'Environment') askAdminister('tenant');
+  }, [shown, askAdminister]);
+  useEffect(() => {
+    if (spaces === null || typeof spaces !== 'object') return;
+    for (const space of spaces.rows) askAdminister(`space:${space.id}`);
+  }, [spaces, askAdminister]);
+
+  // Back to people, spaces or the environment takes itself away: focus goes to the button it was
+  // reached from, or to the section's heading where that is not shown, and never falls out of the
+  // dialog.
+  useEffect(() => {
+    if (tokensOf !== null || accessAt !== null || leftFrom === null) return;
     (backTo.current ?? sectionHeading.current)?.focus();
-  }, [tokensOf, leftFrom]);
+  }, [tokensOf, accessAt, leftFrom]);
+
+  const leaveAccess = () => {
+    if (accessAt === null) return;
+    setLeftFrom(accessAt.kind === 'space' ? accessAt.id : 'tenant');
+    setAccessAt(null);
+  };
 
   return (
     <Modal labelledBy="administration-heading" onClose={onClose}>
@@ -277,6 +363,7 @@ export function Administration({
               onClick={() => {
                 setShown(section);
                 setTokensOf(null);
+                setAccessAt(null);
                 setLeftFrom(null);
               }}
             >
@@ -288,15 +375,38 @@ export function Administration({
           <h3 ref={sectionHeading} tabIndex={-1}>
             {shown}
           </h3>
-          {shown === 'Environment' && (
-            <dl>
-              <dt>Name</dt>
-              <dd>{environment ?? ''}</dd>
-              <dt>Address</dt>
-              <dd>{window.location.host}</dd>
-            </dl>
+          {(shown === 'Environment' || shown === 'Spaces') && accessAt !== null && (
+            <AccessHere
+              key={accessAt.kind === 'space' ? accessAt.id : 'tenant'}
+              client={client}
+              at={accessAt}
+              back={shown === 'Spaces' ? 'Back to spaces' : 'Back to the environment'}
+              onBack={leaveAccess}
+            />
           )}
-          {shown === 'Spaces' && (
+          {shown === 'Environment' && accessAt === null && (
+            <>
+              <dl>
+                <dt>Name</dt>
+                <dd>{environment ?? ''}</dd>
+                <dt>Address</dt>
+                <dd>{window.location.host}</dd>
+              </dl>
+              {administers.get('tenant') === true && (
+                <p>
+                  <button
+                    ref={leftFrom === 'tenant' ? backTo : undefined}
+                    type="button"
+                    aria-label="Access to the whole environment"
+                    onClick={() => setAccessAt({ kind: 'tenant' })}
+                  >
+                    Access
+                  </button>
+                </p>
+              )}
+            </>
+          )}
+          {shown === 'Spaces' && accessAt === null && (
             <Shown read={spaces} failed="The spaces could not be loaded.">
               {(rows) => (
                 <table aria-label="Spaces">
@@ -306,6 +416,20 @@ export function Administration({
                         <td>{space.name}</td>
                         <td className={styles['muted']}>
                           {space.mayCreate ? 'You may create here' : ''}
+                        </td>
+                        <td className={styles['act']}>
+                          {administers.get(`space:${space.id}`) === true && (
+                            <button
+                              ref={space.id === leftFrom ? backTo : undefined}
+                              type="button"
+                              aria-label={`Access to the space ${space.name}`}
+                              onClick={() =>
+                                setAccessAt({ kind: 'space', id: space.id, name: space.name })
+                              }
+                            >
+                              Access
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -388,6 +512,7 @@ export function Administration({
               </Shown>
             </>
           )}
+          {shown === 'Groups' && <Groups client={client} />}
           {shown === 'Roles' && (
             <Shown read={roles} failed="The roles could not be loaded.">
               {(rows) => (

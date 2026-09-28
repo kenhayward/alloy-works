@@ -1661,6 +1661,8 @@ export interface operations {
                                 };
                                 /** @description The group it reached the principal through */
                                 through: string | null;
+                                /** @description The name of the group the grant was made to, which is the group it came through; null for a grant made to the principal */
+                                groupName: string | null;
                                 expiresAt: string | null;
                             }[];
                         }[];

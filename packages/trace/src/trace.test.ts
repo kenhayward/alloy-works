@@ -550,6 +550,11 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 502, from 500 (2026-09-28): W12.4 - IAM-029 in apps/web's access/AccessPanel.test.tsx, where an
+  // administrator chooses a person and reads every permission with its answer on a document, a
+  // template, a space and the environment; and IAM-030 in apps/service's access-routes.test.ts, where
+  // the explanation names the group a deciding grant came through by its name. The panel's IAM-030
+  // test is retitled to say the group is named, and stays one citation.
   // 500, from 499 (2026-09-28): W12.3's final review - IAM-049 in packages/db's groups.test.ts, where
   // the decision holds an external principal a provider group reaches to the tenant's cap.
   // 499, from 496 (2026-09-28): W12.3 - IAM-009 in packages/db's groups.test.ts, through
@@ -634,7 +639,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(500);
+    expect(model.citations).toHaveLength(502);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -110,6 +110,24 @@ export async function readGroup(
   return { ...groupOf(row), members: members.get(row.id) ?? [] };
 }
 
+/**
+ * The names of these groups, by id, read in one statement: what an explanation names a group by
+ * (access.md, "Groups and Access, as W12 builds them"). A group the tenant does not hold is absent.
+ */
+export async function groupNames(
+  trx: TenantTransaction,
+  groupIds: readonly string[],
+): Promise<Map<string, string>> {
+  const ids = [...new Set(groupIds)];
+  if (ids.length === 0) return new Map();
+  const rows = await trx
+    .selectFrom('access_group')
+    .select(['id', 'name'])
+    .where('id', 'in', ids)
+    .execute();
+  return new Map(rows.map((row) => [row.id, row.name]));
+}
+
 async function membersOf(
   trx: TenantTransaction,
   groupIds: readonly string[],

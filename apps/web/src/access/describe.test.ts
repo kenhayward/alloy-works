@@ -5,6 +5,7 @@ import {
   explainAnswer,
   isExplainedPermission,
   isShownGrant,
+  isShownGroup,
   isShownInvitation,
   isShownPerson,
   isShownRole,
@@ -19,10 +20,10 @@ const COMPONENT = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
 const GENERAL = '5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a';
 const GRACE = '1b2c3d4e-5f60-4718-8a9b-0c1d2e3f4a5b';
 
-const places: readonly Place[] = placesFor({
-  id: COMPONENT,
-  space: { id: GENERAL, name: 'General' },
-});
+const places: readonly Place[] = placesFor(
+  { kind: 'component', id: COMPONENT },
+  { id: GENERAL, name: 'General' },
+);
 const people = new Map<string, ShownPerson>([
   [GRACE, { id: GRACE, name: 'Grace', email: 'grace@example.test', kind: 'user', invited: false }],
 ]);
@@ -42,7 +43,15 @@ const validPermission: ExplainedPermission = {
   reason: 'allowed',
   level: `artifact:${COMPONENT}`,
   checked: [`artifact:${COMPONENT}`],
-  grants: [{ role: 'Author', effect: 'allow', subject: { principal: GRACE }, through: null }],
+  grants: [
+    {
+      role: 'Author',
+      effect: 'allow',
+      subject: { principal: GRACE },
+      through: null,
+      groupName: null,
+    },
+  ],
 };
 
 /** Every key but `key`, built from the entries rather than assigned onto a copy. */
@@ -97,6 +106,27 @@ describe('isShownPerson and isShownRole', () => {
   });
 });
 
+describe('isShownGroup', () => {
+  const group = {
+    id: 'e1',
+    name: 'Authors',
+    source: 'tenant',
+    providerValue: null,
+    members: [{ id: GRACE, name: 'Grace', email: null }],
+  };
+
+  it('accepts a group shaped as the service lists one, of either source', () => {
+    expect(isShownGroup(group)).toBe(true);
+    expect(isShownGroup({ ...group, source: 'provider', providerValue: 'authors' })).toBe(true);
+  });
+
+  it('refuses a group of a source the service never documented, or whose members are not people', () => {
+    expect(isShownGroup({ ...group, source: 'directory' })).toBe(false);
+    expect(isShownGroup({ ...group, members: [GRACE] })).toBe(false);
+    expect(isShownGroup(omit(group, 'providerValue'))).toBe(false);
+  });
+});
+
 describe('an invitation', () => {
   const waiting = {
     id: 'i1',
@@ -143,6 +173,43 @@ describe('isExplainedPermission', () => {
       isExplainedPermission(omit(validPermission as unknown as Record<string, unknown>, 'grants')),
     ).toBe(false);
   });
+
+  it('refuses a grant that does not say the name of the group it came through, or says it as other than text', () => {
+    const grant = validPermission.grants[0]!;
+    expect(
+      isExplainedPermission({
+        ...validPermission,
+        grants: [omit(grant as unknown as Record<string, unknown>, 'groupName')],
+      }),
+    ).toBe(false);
+    expect(
+      isExplainedPermission({ ...validPermission, grants: [{ ...grant, groupName: 7 }] }),
+    ).toBe(false);
+  });
+});
+
+describe('placesFor', () => {
+  const space = { id: GENERAL, name: 'General' };
+
+  it('is the artifact, its space and the environment, for a component, a document and a template', () => {
+    for (const kind of ['component', 'document', 'template'] as const) {
+      expect(placesFor({ kind, id: COMPONENT }, space)).toEqual([
+        { target: `artifact:${COMPONENT}`, label: `This ${kind}`, named: `this ${kind}` },
+        { target: `space:${GENERAL}`, label: 'The space General', named: 'the space General' },
+        { target: 'tenant', label: 'The whole environment', named: 'the whole environment' },
+      ]);
+    }
+  });
+
+  it('is the space and the environment for a space, and the environment alone for the environment', () => {
+    expect(placesFor({ kind: 'space', id: GENERAL, name: 'General' })).toEqual([
+      { target: `space:${GENERAL}`, label: 'The space General', named: 'the space General' },
+      { target: 'tenant', label: 'The whole environment', named: 'the whole environment' },
+    ]);
+    expect(placesFor({ kind: 'tenant' })).toEqual([
+      { target: 'tenant', label: 'The whole environment', named: 'the whole environment' },
+    ]);
+  });
 });
 
 describe('refusalMessage', () => {
@@ -159,17 +226,29 @@ describe('refusalMessage', () => {
 });
 
 describe('explainAnswer', () => {
-  it('names a group only when a grant reached the person through one, never when it was made to the group directly', () => {
+  it('names a grant made to a group by the group, and one made to the person by the person', () => {
     const answer: ExplainedPermission = {
       ...validPermission,
       level: `space:${GENERAL}`,
       grants: [
-        { role: 'Author', effect: 'allow', subject: { principal: GRACE }, through: null },
-        { role: 'Author', effect: 'allow', subject: { group: 'e1' }, through: 'e1' },
+        {
+          role: 'Author',
+          effect: 'allow',
+          subject: { principal: GRACE },
+          through: null,
+          groupName: null,
+        },
+        {
+          role: 'Author',
+          effect: 'allow',
+          subject: { group: 'e1' },
+          through: 'e1',
+          groupName: 'Authors',
+        },
       ],
     };
     expect(explainAnswer(answer, places, people)).toBe(
-      'Allowed at the space General, by Author allowed to Grace; Author allowed to a group.',
+      'Allowed at the space General, by Author allowed to Grace; Author allowed to the group Authors.',
     );
   });
 
@@ -177,10 +256,36 @@ describe('explainAnswer', () => {
     const answer: ExplainedPermission = {
       ...validPermission,
       level: `space:${GENERAL}`,
-      grants: [{ role: 'Author', effect: 'allow', subject: { principal: GRACE }, through: 'e1' }],
+      grants: [
+        {
+          role: 'Author',
+          effect: 'allow',
+          subject: { principal: GRACE },
+          through: 'e1',
+          groupName: 'Authors',
+        },
+      ],
     };
     expect(explainAnswer(answer, places, people)).toBe(
-      'Allowed at the space General, by Author allowed to Grace through a group.',
+      'Allowed at the space General, by Author allowed to Grace through the group Authors.',
+    );
+  });
+
+  it('says "a group" only where the service could not name it', () => {
+    const answer: ExplainedPermission = {
+      ...validPermission,
+      grants: [
+        {
+          role: 'Author',
+          effect: 'allow',
+          subject: { group: 'e1' },
+          through: 'e1',
+          groupName: null,
+        },
+      ],
+    };
+    expect(explainAnswer(answer, places, people)).toBe(
+      'Allowed at this component, by Author allowed to a group.',
     );
   });
 
@@ -190,7 +295,15 @@ describe('explainAnswer', () => {
       allowed: false,
       reason: 'scoped',
       level: `space:${GENERAL}`,
-      grants: [{ role: 'Author', effect: 'allow', subject: { principal: GRACE }, through: null }],
+      grants: [
+        {
+          role: 'Author',
+          effect: 'allow',
+          subject: { principal: GRACE },
+          through: null,
+          groupName: null,
+        },
+      ],
     };
     expect(explainAnswer(answer, places, people)).toBe(
       'Not allowed by this token: its scopes leave it out, though Author allowed to Grace at the space General would allow it.',

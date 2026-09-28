@@ -3,6 +3,27 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.113.0 - 2026-09-28 (PR #305)
+
+### Added
+
+- **Access everywhere.** Manage access now opens on a document, from its page, and on a template, from
+  its row in Templates, as it does on a component. In Administration, each space you administer has
+  **Access** in Spaces, and the whole environment has **Access** in Environment for its administrators,
+  so an administrator gives and takes away roles at any level from one place. Nobody is offered Access
+  where they would only be refused.
+- **See what anybody may do, anywhere.** On any of those, choose a person and read every permission with
+  its answer, the level that decided it and the grants that did. A grant that reached them through a
+  group names the group: "Author allowed to the group Authors", no longer "a group".
+- **Give access to a group.** An administrator of the whole environment can choose a group instead of a
+  person when giving access, on any access page. Somebody who administers only a space is offered people,
+  as before.
+- **A page for groups.** Administration's **Groups** lists every group with who is in it, and whether
+  its members are chosen here or by your organisation's sign-in. Make a group, choose the
+  members of one of the environment's own from its people, and delete a group after being asked, with
+  everything granted to it. A group that follows your organisation's sign-in shows its members and cannot
+  be filled by hand.
+
 ## 0.112.0 - 2026-09-28 (PR #304)
 
 ### Added

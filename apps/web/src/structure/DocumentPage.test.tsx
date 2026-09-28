@@ -233,6 +233,8 @@ function service(
     mayRead?: (component: string) => boolean;
     /** The layout every answer carries; the environment's own, at its first version, by default. */
     layout?: unknown;
+    /** Whether the caller may administer the document, as `GET /v1/access` answers it. */
+    administers?: boolean;
     /** What each component's head contributes, by component; nothing where it is not named. */
     holds?: Record<
       string,
@@ -314,6 +316,15 @@ function service(
       );
     }
     if (url === '/v1/components') return json(200, options.components ?? COMPONENTS);
+    if (url === '/v1/access' && options.administers !== undefined) {
+      return json(200, {
+        target: `artifact:${DOCUMENT}`,
+        permissions: [
+          { permission: 'read', allowed: true },
+          { permission: 'administer', allowed: options.administers },
+        ],
+      });
+    }
     if (url === `/v1/documents/${DOCUMENT}/publications`) {
       if (request.method === 'GET') return json(200, { items: [], next: null });
       return json(200, { ...publishRequest, state: 'queued' });
@@ -1062,6 +1073,27 @@ describe('the outline panel', () => {
 
     await waitFor(() => expect(screen.getByText('Version 0.2 in General')).toBeInTheDocument());
     expect(fake.edits()).toHaveLength(1);
+  });
+
+  it('offers Manage access on a document only to someone who may administer it', async () => {
+    const administering = service(outline([section(METHOD, 'Method')]), { administers: true });
+    const { unmount } = open(administering.fetch);
+    expect(await screen.findByRole('link', { name: 'Manage access' })).toHaveAttribute(
+      'href',
+      `#/documents/${DOCUMENT}/access`,
+    );
+    expect(
+      administering.sent.find((each) => each.url === '/v1/access'),
+      'asked about the document',
+    ).toBeDefined();
+    unmount();
+
+    const reading = service(outline([section(METHOD, 'Method')]), { administers: false });
+    open(reading.fetch);
+    await screen.findByRole('treeitem', { name: /Method/ });
+    await waitFor(() => expect(reading.sent.some((each) => each.url === '/v1/access')).toBe(true));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByRole('link', { name: 'Manage access' })).toBeNull();
   });
 
   it('says a document is not there, or not readable, on a 404', async () => {
