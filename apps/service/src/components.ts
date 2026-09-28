@@ -1,6 +1,7 @@
 import type {
   ComponentListQuery,
   ComponentParams,
+  ComponentQuery,
   CreateComponentBody,
   SpaceParams,
   FieldView,
@@ -10,6 +11,7 @@ import type {
 import {
   componentFieldsNow,
   createComponent,
+  latestSequence,
   latestVersion,
   listPeople,
   listComponentTypes,
@@ -237,6 +239,7 @@ export function componentHandlers(
         lock: null,
         // Nothing has been saved of a component made a moment ago.
         unsaved: null,
+        sequence: null,
         ...(await metadataView(trx, version)),
       };
     },
@@ -329,6 +332,13 @@ export function componentHandlers(
       // The caller's own, and only its time (RC-F): what a closed tab left that was never made a
       // version, offered as Recover. What it holds is read only under the lock.
       const unsaved = await newestUncutIteration(trx, { artifactId: id, principalId });
+      // The session a reload names, the caller's own: where its sequence stands, so the reload goes
+      // on past what was saved rather than under it (component-editor.md, "Undo across a reload").
+      const { session } = request.query as ComponentQuery;
+      const sequence =
+        session === undefined
+          ? null
+          : await latestSequence(trx, { artifactId: id, principal: principalId, session });
       return {
         id,
         space,
@@ -338,6 +348,7 @@ export function componentHandlers(
         mayEdit: decide('edit', facts).allowed,
         lock: lock ? lockView(lock, principalId) : null,
         unsaved: unsaved === null ? null : { savedAt: unsaved.toISOString() },
+        sequence,
         ...(await metadataView(trx, version)),
       };
     },

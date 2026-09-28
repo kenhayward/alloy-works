@@ -8,7 +8,7 @@ import {
 } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { claimLock, ITERATION_RETENTION_DAYS, saveIteration } from './editing.js';
+import { claimLock, ITERATION_RETENTION_DAYS, latestSequence, saveIteration } from './editing.js';
 import { migrate } from './migrate.js';
 import { cutVersion } from './promotion.js';
 import { createTenant, type Tenant } from './provision.js';
@@ -295,6 +295,32 @@ describe('reading iterations back for Recovery', () => {
     expect(await read('ada', mine, other.id)).toBeUndefined();
     expect(await read('ada', 'not-an-id')).toBeUndefined();
     expect(await read('ada', randomUUID())).toBeUndefined();
+  });
+
+  it("answers an editing session the latest sequence it saved, and nobody else's (W11.3)", async () => {
+    const made = await component();
+    const ada = await made.session('ada');
+    const latest = (who: 'ada' | 'grace', session: string, artifactId = made.id) =>
+      service.withTenant(tenant, (trx) =>
+        latestSequence(trx, { artifactId, principal: people[who], session }),
+      );
+    expect(await latest('ada', ada.id)).toBeNull();
+
+    await ada.save('Unbox the printer.');
+    await ada.save('Unbox the printer and keep the box.');
+    await ada.save('Unbox the printer and keep the box and the manual.');
+    expect(await latest('ada', ada.id)).toBe(3);
+    // Across a cut and a lapsed lock too: a session's sequence is the session's, as saving reads it.
+    await ada.cut();
+    await made.lapse();
+    expect(await latest('ada', ada.id)).toBe(3);
+
+    // Another of Ada's sessions, the same session id as Grace's, another component, or no id at all.
+    const other = await made.session('ada');
+    expect(await latest('ada', other.id)).toBeNull();
+    expect(await latest('grace', ada.id)).toBeNull();
+    expect(await latest('ada', ada.id, (await component()).id)).toBeNull();
+    expect(await latest('ada', 'not-an-id')).toBeNull();
   });
 
   it('says when the caller last saved work never made a version, and nothing of anybody else', async () => {

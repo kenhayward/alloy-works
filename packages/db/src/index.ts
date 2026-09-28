@@ -239,6 +239,7 @@ export {
   isRefusal as isHolderRefusal,
   ITERATION_RETENTION_DAYS,
   iterationDigest,
+  latestSequence,
   LOCK_PERIOD_MINUTES,
   readLock,
   readLocks,

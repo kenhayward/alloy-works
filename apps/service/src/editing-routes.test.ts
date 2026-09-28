@@ -743,5 +743,35 @@ describe('writing in an editing session through the service', () => {
       });
       expect(await unsaved('ada')).toBeNull();
     });
+
+    it('answers the session a reload names the latest sequence it saved, and nobody else theirs (W11.3)', async () => {
+      const made = await component();
+      const sequence = async (who: string, session?: string) => {
+        const response = await call(
+          who,
+          'GET',
+          `/v1/components/${made.id}${session === undefined ? '' : `?session=${session}`}`,
+        );
+        expect(response.statusCode).toBe(200);
+        return response.json<{ sequence: unknown }>().sequence;
+      };
+      const session = await saving('ada', made, 'One.', 'Two.', 'Three.');
+      expect(await sequence('ada', session)).toBe(3);
+      // Named by nobody, another of Ada's sessions, or Ada's session named by Grace: nothing.
+      expect(await sequence('ada')).toBeNull();
+      expect(await sequence('ada', randomUUID())).toBeNull();
+      expect(await sequence('grace', session)).toBeNull();
+      // Released, and a version cut, it is still the session's: saving would judge the next against it.
+      const released = await call(
+        'ada',
+        'DELETE',
+        `/v1/components/${made.id}/lock?session=${session}&openedFrom=${made.openedFrom}`,
+      );
+      expect(released.statusCode).toBe(200);
+      expect(await sequence('ada', session)).toBe(3);
+      // A session that is not an id is refused before anything is read.
+      const refused = await call('ada', 'GET', `/v1/components/${made.id}?session=not-an-id`);
+      expect(refused.statusCode).toBe(400);
+    });
   });
 });

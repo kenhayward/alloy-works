@@ -258,6 +258,8 @@ describe('finding and opening components through the service', () => {
         lock: null,
         // Nothing saved and never made a version, by anybody.
         unsaved: null,
+        // No session named, so no sequence of one.
+        sequence: null,
         // The starter type, Topic, assigns no schema: no fields, and no values.
         type: { id: STARTER_COMPONENT_TYPE_ID, name: 'Topic' },
         fields: [],

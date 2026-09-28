@@ -207,6 +207,39 @@ export async function claimLock(
   return { answer: 'claimed', lock: (await readLock(trx, input.artifactId))! };
 }
 
+/**
+ * The latest iteration a session has saved of a component, its sequence and digest: what `saveIteration`
+ * judges the next one against. Filtered by principal as well as session, for the same reason cutVersion
+ * is (promotion.ts): a session id is chosen by the client and is not unique per principal, so a session
+ * id reused by a second principal must judge its own sequence alone, never against the first
+ * principal's.
+ */
+function latestAccepted(trx: TenantTransaction, session: EditingSession) {
+  return trx
+    .selectFrom('iteration')
+    .select(['sequence', 'digest'])
+    .where('artifact_id', '=', session.artifactId)
+    .where('principal_id', '=', session.principal)
+    .where('session_id', '=', session.session)
+    .orderBy('sequence', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+}
+
+/**
+ * The latest sequence the service has accepted from one editing session, or null where it has none
+ * (component-editor.md, "Undo across a reload"): read as `saveIteration` reads it, so a reload continues
+ * from exactly the number the next save is judged against. The session's own, whatever version each
+ * iteration was opened from, since a session's sequence runs on across a cut.
+ */
+export async function latestSequence(
+  trx: TenantTransaction,
+  session: EditingSession,
+): Promise<number | null> {
+  if (!UUID.test(session.artifactId) || !UUID.test(session.session)) return null;
+  return (await latestAccepted(trx, session))?.sequence ?? null;
+}
+
 /** SHA-256 over an iteration's canonical content and values, in the version digest's own rules. */
 export function iterationDigest(content: ContentDocument, values: MetadataValues): string {
   return sha256Hex(`{"content":${canonicalise(content)},"values":${canonicaliseValues(values)}}`);
@@ -260,18 +293,7 @@ export async function saveIteration(
     if (failures.length > 0) return { answer: 'values.invalid', failures };
   }
   const digest = iterationDigest(content, values);
-  // Filtered by principal as well as session, for the same reason cutVersion is (promotion.ts): a
-  // session id is chosen by the client and is not unique per principal, so a session id reused by a
-  // second principal must judge its own sequence alone, never against the first principal's.
-  const latest = await trx
-    .selectFrom('iteration')
-    .select(['sequence', 'digest'])
-    .where('artifact_id', '=', input.artifactId)
-    .where('principal_id', '=', input.principal)
-    .where('session_id', '=', input.session)
-    .orderBy('sequence', 'desc')
-    .limit(1)
-    .executeTakeFirst();
+  const latest = await latestAccepted(trx, input);
   if (latest && input.sequence < latest.sequence) {
     return { answer: 'iteration.stale', latest: latest.sequence };
   }
