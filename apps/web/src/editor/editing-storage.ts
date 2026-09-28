@@ -1,23 +1,14 @@
 /**
- * What the component editor keeps in a window's session storage, taken as a whole: a page's mark on
- * it, which tells a duplicated tab from a reload, and forgetting all of it at sign-out (final review
- * of W11.3, D1 and D2). Pure of React, of ProseMirror and of the rest of the editor, so the shell can
- * reach it without either.
+ * What the component editor keeps in a window's session storage, taken as a whole: forgetting all of
+ * it at sign-out, and keeping nothing more for the rest of the page once it is forgotten (final
+ * review of W11.3, D2, and its re-review). Pure of React, of ProseMirror and of the rest of the
+ * editor, so the shell can reach it without either.
  */
 
 type Store = Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'>;
 
 /** Every key the editor keeps starts with this: the session ids, the kept records, the sends. */
 const EDITING_PREFIX = 'alloy-works:editing-';
-
-/** The page that has session storage open now, by an id of its own. */
-const MARK = `${EDITING_PREFIX}page`;
-
-/** A component's session id, and every id the window has used for it: what a duplicate forgets. */
-const SESSION_IDS = [`${EDITING_PREFIX}session:`, `${EDITING_PREFIX}sessions:`];
-
-/** This page's own id: a reload is another page, and so is a duplicated tab. */
-const PAGE = crypto.randomUUID();
 
 const storeOf = (storage?: Store): Store => storage ?? globalThis.sessionStorage;
 
@@ -31,65 +22,40 @@ function keysStarting(store: Store, prefixes: readonly string[]): string[] {
   return found;
 }
 
-let listening = false;
-
-/** Unmarks storage as the page goes, and marks it again if the page comes back from the cache. */
-function listen() {
-  if (listening || typeof window === 'undefined') return;
-  listening = true;
-  window.addEventListener('pagehide', () => {
-    try {
-      if (storeOf().getItem(MARK) === PAGE) storeOf().removeItem(MARK);
-    } catch {
-      // Unreachable storage holds no mark to take off.
-    }
-  });
-  window.addEventListener('pageshow', (event) => {
-    if (!(event as PageTransitionEvent).persisted) return;
-    try {
-      storeOf().setItem(MARK, PAGE);
-    } catch {
-      // As above.
-    }
-  });
-}
+/** Set by a sign-out, and never unset by the page: what the editor keeps is written no more. */
+let forgotten = false;
 
 /**
- * Marks session storage as this page's, answering whether it was another open page's already: a tab
- * duplicated from one editing, whose session storage the browser copied with that page's mark on it,
- * since a page takes its mark off as it goes and a reload finds none.
- *
- * A duplicate forgets every editing session id it copied, so it never saves, claims or replays under a
- * session the tab it was copied from is still using: each component it opens mints a session of its
- * own, and what the other tab kept is offered as text to copy rather than replayed. Asked again by the
- * same page, it finds its own mark and forgets nothing more. Never throws; storage that cannot be
- * reached marks nothing and finds no duplicate.
+ * Whether the editor may keep anything in this window: not once the author has signed out, for the
+ * rest of the page - a save still pending as they did, or the flush as the page goes, would otherwise
+ * write back what the sign-out forgot (re-review of W11.3). Every write the editor makes to session
+ * storage asks this first.
  */
-export function markPage(storage?: Store): boolean {
-  listen();
-  try {
-    const store = storeOf(storage);
-    const mark = store.getItem(MARK);
-    if (mark === PAGE) return false;
-    const duplicate = mark !== null;
-    if (duplicate) for (const key of keysStarting(store, SESSION_IDS)) store.removeItem(key);
-    store.setItem(MARK, PAGE);
-    return duplicate;
-  } catch {
-    return false;
-  }
+export function mayKeepEditing(): boolean {
+  return !forgotten;
 }
 
 /**
  * Forgets everything the editor keeps in this window - every session id, every record kept for a
- * reload, every sequence sent - as the author signs out, so nobody who signs in on the same tab is
- * given any of it. Never throws.
+ * reload, every sequence sent, every text offered - as the author signs out, so nobody who signs in on
+ * the same tab is given any of it, and stops the editor keeping anything more for the rest of the page.
+ * Never throws.
  */
 export function forgetEditing(storage?: Store): void {
+  forgotten = true;
   try {
     const store = storeOf(storage);
     for (const key of keysStarting(store, [EDITING_PREFIX])) store.removeItem(key);
   } catch {
     // Unreachable storage keeps nothing to forget.
   }
+}
+
+/**
+ * Keeps again, as a page that has just loaded does. Nothing in the application calls it - a sign-out
+ * reloads the page - but the renderer's test set-up does, since every test stands for a page of its
+ * own.
+ */
+export function keepEditingAgain(): void {
+  forgotten = false;
 }

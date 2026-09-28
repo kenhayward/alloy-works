@@ -128,6 +128,9 @@ export function Header({
     // on the same tab after them is given it (final review of W11.3, D2).
     forgetEditing();
     await client.POST('/v1/sign-out');
+    // And again, for anything written while the sign-out was on its way - though nothing the editor
+    // keeps is written once the first has run (re-review of W11.3).
+    forgetEditing();
     onSignedOut();
   };
 

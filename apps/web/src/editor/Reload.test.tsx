@@ -19,8 +19,6 @@ const ADA = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
 const GRACE = 'f1e2d3c4-b5a6-4978-8899-aabbccddeeff';
 const STEPS = `alloy-works:editing-steps:${COMPONENT}`;
 const SESSION_KEY = `alloy-works:editing-session:${COMPONENT}`;
-/** Where a page marks session storage as its own while it is open (final review of W11.3, D1). */
-const PAGE_MARK = 'alloy-works:editing-page';
 
 const paragraph = (id: string, text: string, ...more: unknown[]) => ({
   type: 'paragraph',
@@ -276,15 +274,6 @@ async function reload(
   meanwhile?.();
   return openPage(stack, timing, principal);
 }
-
-/** Every entry of this window's session storage, as a duplicated tab copies them. */
-const storageNow = () =>
-  Object.fromEntries(
-    Array.from({ length: sessionStorage.length }, (_, at) => sessionStorage.key(at)!).map((key) => [
-      key,
-      sessionStorage.getItem(key)!,
-    ]),
-  );
 
 /** The kept record, changed by `change`, as another build or a broken record would leave it. */
 const rewriteKept = (change: (kept: Record<string, unknown>) => Record<string, unknown>) =>
@@ -624,7 +613,7 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Recover' })).toBeInTheDocument();
     expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
-    expect(screen.getByLabelText('Text that was not saved')).toHaveValue(
+    expect(screen.getByLabelText('Text from before this page opened')).toHaveValue(
       'Unbox the printer. Mind the cable.',
     );
     expect(stack.claims).toHaveLength(claimed);
@@ -640,6 +629,33 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
       body: { content: document(paragraph('b1', 'Unbox the printer. Mind the cable.')) },
     });
     expect(stack.saves.at(-1)!.session).not.toBe(held);
+    // What was offered is offered still, though the claim that went on from it succeeded.
+    expect(screen.getByLabelText('Text from before this page opened')).toHaveValue(
+      'Unbox the printer. Mind the cable.',
+    );
+  });
+
+  it('goes on above the last sequence this window sent under the session where nothing was kept to replay, whatever the service had yet', async () => {
+    const stack = service();
+    const view = await openPage(stack, quick);
+    type(view, ' Mind', 19);
+    await waitFor(() => expect(stack.saves).toHaveLength(1));
+    const held = stack.saves[0]!.session;
+    // The next save is on the wire as the page goes, and arrives only after the next page has asked.
+    stack.state.holding = true;
+    type(view, ' the cable.', 24);
+    await waitFor(() => expect(stack.held()).toBe(1));
+    // And nothing is kept to replay: storage filled, say, and the record went.
+    const again = await reload(stack, quick, {
+      meanwhile: () => sessionStorage.removeItem(STEPS),
+    });
+    stack.release();
+    await waitFor(() => expect(stack.saves).toHaveLength(2));
+
+    type(again, ' Go.', 19);
+    await waitFor(() => expect(stack.saves).toHaveLength(3));
+    expect(stack.saves[2]).toMatchObject({ session: held, sequence: 3 });
+    expect(screen.queryByText(/^Newer text was saved/)).toBeNull();
   });
 
   it("takes its own page's last save, sent as it went, for its own after a reload, not for somebody else's", async () => {
@@ -663,36 +679,33 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     expect(stack.saves).toHaveLength(2);
   });
 
-  it('replays nothing under the session in a duplicated tab, offering what was kept as text to copy', async () => {
+  it('CNT-069 replays and goes on after a crash, which fires no pagehide, as after any reload', async () => {
     const stack = service();
     const view = await openPage(stack);
-    type(view, ' Mind the cable.', 19);
+    type(view, ' Mind', 19);
     await editing();
+    type(view, ' the cable.', 24);
     const held = stack.state.lock!;
-    await waitFor(() => expect(sessionStorage.getItem(STEPS)).not.toBeNull());
-    // The tab is duplicated: the new one copies this one's session storage, this page's mark on it
-    // among the rest, while this page stays open.
-    const copied = { ...storageNow(), [PAGE_MARK]: 'the page it was copied from' };
-    const claimed = stack.claims.length;
+    // Written a moment after the change, before the tab crashed.
+    await waitFor(() =>
+      expect(JSON.parse(sessionStorage.getItem(STEPS) ?? '{}')).toMatchObject({ revision: 2 }),
+    );
+    // The tab crashes, or is discarded, and is brought back: no pagehide, nothing the page sends
+    // arrives, and whatever it left in session storage stays - a mark it never took off among it,
+    // left under an id no later page has, since each page is a page of its own.
     stack.state.page += 1;
     cleanup();
-    sessionStorage.clear();
-    for (const [key, value] of Object.entries(copied)) sessionStorage.setItem(key, value);
+    sessionStorage.setItem('alloy-works:editing-page', 'the page that crashed');
 
-    const duplicate = await openPage(stack);
-    await waitFor(() =>
-      expect(screen.getByLabelText('Text that was not saved')).toHaveValue(
-        'Unbox the printer. Mind the cable.',
-      ),
-    );
-    expect(textOf(duplicate)).toBe('Unbox the printer.');
-    expect(editorStatus()).toHaveTextContent(
-      'What you typed before this page opened could not be brought back, so it is below for you to copy.',
-    );
-    expect(stack.claims).toHaveLength(claimed);
-    expect(stack.saves).toHaveLength(0);
-    expect(sessionStorage.getItem(SESSION_KEY)).not.toBe(held);
-    expect(sessionStorage.getItem(STEPS)).toBeNull();
+    const again = await openPage(stack);
+    await editing();
+    expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
+    expect(stack.claims.at(-1)).toEqual({ session: held });
+    expect(screen.queryByLabelText(/^Text/)).toBeNull();
+    press(again, 'z');
+    expect(textOf(again)).toBe('Unbox the printer. Mind');
+    press(again, 'z');
+    expect(textOf(again)).toBe('Unbox the printer.');
   });
 
   it('replays nothing for somebody else signed in on the same tab, and forgets what was kept', async () => {
@@ -708,7 +721,7 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
       meanwhile: () => (stack.state.lock = null),
     });
     expect(textOf(again)).toBe('Unbox the printer.');
-    expect(screen.queryByLabelText('Text that was not saved')).toBeNull();
+    expect(screen.queryByLabelText(/^Text /)).toBeNull();
     expect(stack.claims).toHaveLength(claimed);
     expect(sessionStorage.getItem(STEPS)).toBeNull();
   });
@@ -744,13 +757,47 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
       meanwhile: () => rewriteKept((kept) => ({ ...kept, format: 1 })),
     });
     await waitFor(() =>
-      expect(screen.getByLabelText('Text that was not saved')).toHaveValue(
+      expect(screen.getByLabelText('Text from before this page opened')).toHaveValue(
         'Unbox the printer. Mind the cable.',
       ),
     );
     expect(textOf(again)).toBe('Unbox the printer.');
     expect(sessionStorage.getItem(STEPS)).toBeNull();
     expect(screen.getByRole('button', { name: 'Save version' })).toBeDisabled();
+  });
+
+  it('keeps offering the text it offered on opening until the author dismisses it: through typing, a claim, a save and a reload', async () => {
+    const stack = service();
+    const view = await openPage(stack, quick);
+    type(view, ' Mind the cable.', 19);
+    await waitFor(() => expect(stack.saves).toHaveLength(1));
+    const offered = () => screen.queryByLabelText('Text from before this page opened');
+
+    // What an older build kept: offered, not replayed.
+    let again = await reload(stack, quick, {
+      meanwhile: () => rewriteKept((kept) => ({ ...kept, format: 1 })),
+    });
+    await waitFor(() => expect(offered()).toHaveValue('Unbox the printer. Mind the cable.'));
+    // Typed over, claimed and saved: the only copy of what was offered is still there.
+    type(again, ' Go.', 19);
+    await waitFor(() => expect(stack.saves).toHaveLength(2));
+    await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
+    expect(offered()).toHaveValue('Unbox the printer. Mind the cable.');
+
+    // And after another reload, which replays the typing and offers the same text still.
+    again = await reload(stack, quick);
+    await editing();
+    expect(textOf(again)).toBe('Unbox the printer. Go.');
+    expect(offered()).toHaveValue('Unbox the printer. Mind the cable.');
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    });
+    expect(offered()).toBeNull();
+    await reload(stack, quick);
+    await editing();
+    expect(offered()).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull();
   });
 
   it('offers what was kept as text to copy where it will not replay, and opens as a page opened afresh does', async () => {
@@ -771,7 +818,7 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
         })),
     });
     await waitFor(() =>
-      expect(screen.getByLabelText('Text that was not saved')).toHaveValue(
+      expect(screen.getByLabelText('Text from before this page opened')).toHaveValue(
         'Unbox the printer. Mind the cable.',
       ),
     );
@@ -790,7 +837,7 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
         rewriteKept((kept) => ({ ...kept, format: 1, changes: [{ history: 'new' }] })),
     });
     await screen.findByText('What you typed before this page opened could not be brought back.');
-    expect(screen.queryByLabelText('Text that was not saved')).toBeNull();
+    expect(screen.queryByLabelText(/^Text /)).toBeNull();
   });
 
   it('replays nothing where the author may no longer edit the component, offering it as text to copy', async () => {
@@ -807,7 +854,7 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
       },
     });
     await waitFor(() =>
-      expect(screen.getByLabelText('Text that was not saved')).toHaveValue(
+      expect(screen.getByLabelText('Text from before this page opened')).toHaveValue(
         'Unbox the printer. Mind the cable.',
       ),
     );

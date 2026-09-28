@@ -3,6 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
 
+import { keepEditingAgain } from '../editor/editing-storage.js';
 import { armConsoleGate, releaseConsoleGate } from './consoleGate.js';
 
 /**
@@ -20,6 +21,8 @@ const clearSessionStorage = () => {
 
 beforeEach(() => {
   clearSessionStorage();
+  // And as a page that has just loaded, which keeps what it edits whoever signed out in the last test.
+  keepEditingAgain();
   armConsoleGate();
 });
 

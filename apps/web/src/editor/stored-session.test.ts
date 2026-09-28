@@ -1,17 +1,24 @@
 import {
   createEditorState,
+  Selection,
   toEditor,
   type EditorState,
   type Transaction,
 } from '@alloy-works/editor';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { forgetEditing } from './editing-storage.js';
 import type { Clock } from './session.js';
+import { editingSessionFor } from './service.js';
 import {
   continuing,
   createRecorder,
+  forgetOffered,
   freshSession,
+  keepOffered,
+  offeredWith,
   readKept,
+  readOffered,
   readStoredSession,
   replayStored,
   sentFor,
@@ -140,6 +147,7 @@ function recording(
     get state() {
       return state;
     },
+    apply,
     type: (text: string, pos: number, time: number) =>
       apply(state.tr.insertText(text, pos).setTime(time)),
   };
@@ -444,5 +452,50 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
     expect(kept.changes).toHaveLength(1);
     expect(kept.revision).toBe(3);
     expect(replayStored(kept, fresh).doc.eq(live.state.doc)).toBe(true);
+  });
+
+  it('gives the text offered on opening only to whom it was offered, until it is dismissed', () => {
+    keepOffered(COMPONENT, ADA, 'Unbox the printer. Mind the cable.');
+    expect(readOffered(COMPONENT, ADA)).toBe('Unbox the printer. Mind the cable.');
+    expect(readOffered(COMPONENT, GRACE)).toBeNull();
+    // Forgotten for anybody else, as a kept record is.
+    expect(readOffered(COMPONENT, ADA)).toBeNull();
+    keepOffered(COMPONENT, ADA, 'Kept.');
+    forgetOffered(COMPONENT);
+    expect(readOffered(COMPONENT, ADA)).toBeNull();
+    // And offered again beside itself, by a page opened twice over the same record, only once.
+    expect(offeredWith('One.', 'Two.')).toBe('One.\n\nTwo.');
+    expect(offeredWith('One.\n\nTwo.', 'Two.')).toBe('One.\n\nTwo.');
+    expect(offeredWith(null, 'Two.')).toBe('Two.');
+    expect(offeredWith('One.', null)).toBe('One.');
+  });
+
+  it('writes nothing more once the author has signed out: not a write pending then, a send, nor the flush as the page goes', () => {
+    const { clock, advance } = clockOf();
+    const live = recording(sessionStorage, { clock, delayMs: 300 });
+    live.type(' Mind', 19, 1_000);
+    forgetEditing();
+    advance(300);
+    live.recorder.sent(1);
+    live.type(' the', 24, 1_100);
+    live.recorder.flush();
+    live.recorder.close();
+    advance(1_000);
+    // Nor a session id, should a component open before the page goes.
+    expect(editingSessionFor(COMPONENT, () => false)).toMatch(/^[0-9a-f-]{36}$/);
+    expect(Object.keys({ ...sessionStorage })).toEqual([]);
+  });
+
+  it('keeps typing as a change of its own where the caret moved before it, so the replay leaves the caret where it was', () => {
+    const live = recording();
+    live.type(' Mi', 19, 1_000);
+    // The caret moved, with nothing typed, and then typing beside the last: the history joins them.
+    live.apply(live.state.tr.setSelection(Selection.near(live.state.doc.resolve(5))));
+    live.type('nd', 22, 1_050);
+    const kept = readStoredSession(COMPONENT)!;
+    expect(kept.changes.map((change) => change.history)).toEqual(['new', 'join']);
+    const again = replayStored(kept, fresh);
+    expect(again.doc.eq(live.state.doc)).toBe(true);
+    expect(again.selection.eq(live.state.selection)).toBe(true);
   });
 });

@@ -233,29 +233,48 @@ export function replayPlain(doc: Node, records: readonly RecordedChange[]): Node
   return now;
 }
 
+/** What a spec says about the page rather than the model: never part of its identity. */
+const DRAWN = new Set(['parseDOM', 'toDOM', 'leafText']);
+
 /**
- * A short name for a model: its nodes, each with its content, group, marks and attributes, and its
- * marks, each with its attributes, hashed (FNV-1a, 32 bits). A record of steps kept in session storage
- * is stamped with the editor's, so one kept by an older build, whose steps may name nodes or
- * attributes this one does not hold, is told apart before it is replayed (final review of W11.3, D5).
+ * `value` as JSON with every object's keys in order and every function left out, and the keys `DRAWN`
+ * names left out of a spec: the same text for the same model however its specs were written out.
+ */
+function described(value: unknown, spec = false): string | undefined {
+  if (typeof value === 'function' || value === undefined) return undefined;
+  if (Array.isArray(value)) {
+    return `[${value.map((each) => described(each) ?? 'null').join(',')}]`;
+  }
+  if (typeof value === 'object' && value !== null) {
+    const fields: string[] = [];
+    for (const key of Object.keys(value).sort()) {
+      if (spec && DRAWN.has(key)) continue;
+      const text = described((value as Record<string, unknown>)[key]);
+      if (text !== undefined) fields.push(`${JSON.stringify(key)}:${text}`);
+    }
+    return `{${fields.join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * A short name for a model: every node's and every mark's spec, in the model's order, each with every
+ * field that is not a function nor how it is drawn or read from the page - content, group, marks,
+ * what a mark excludes, flags such as `defining`, `atom`, `inline`, `code` and `whitespace`, and every
+ * attribute with its default - in a stable key order, hashed (FNV-1a, 32 bits). A record of steps kept
+ * in session storage is stamped with the editor's, so one kept by another build, whose steps may name
+ * nodes or attributes this one does not hold, or would behave otherwise under it, is told apart before
+ * it is replayed (final review of W11.3, D5; its re-review).
  */
 export function schemaIdentity(schema: Schema): string {
-  const described = JSON.stringify({
-    nodes: Object.values(schema.nodes).map((type) => [
-      type.name,
-      type.spec.content ?? '',
-      type.spec.group ?? '',
-      type.spec.marks ?? null,
-      Object.keys(type.spec.attrs ?? {}),
-    ]),
-    marks: Object.values(schema.marks).map((type) => [
-      type.name,
-      Object.keys(type.spec.attrs ?? {}),
-    ]),
-  });
+  const describe = (types: Readonly<Record<string, { name: string; spec: object }>>) =>
+    `[${Object.values(types)
+      .map((type) => `[${JSON.stringify(type.name)},${described(type.spec, true) ?? 'null'}]`)
+      .join(',')}]`;
+  const text = `{"nodes":${describe(schema.nodes)},"marks":${describe(schema.marks)}}`;
   let hash = 0x811c9dc5;
-  for (let at = 0; at < described.length; at += 1) {
-    hash ^= described.charCodeAt(at);
+  for (let at = 0; at < text.length; at += 1) {
+    hash ^= text.charCodeAt(at);
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }
   return hash.toString(16).padStart(8, '0');

@@ -12,6 +12,7 @@ import {
   type Transaction,
 } from '@alloy-works/editor';
 
+import { mayKeepEditing } from './editing-storage.js';
 import type { Clock } from './session.js';
 
 /**
@@ -219,6 +220,7 @@ export function sentFor(componentId: string, session: string, storage?: Store): 
 
 /** Keeps `sent` as the last sent under the session, where it is later than what is kept. */
 function keepSent(componentId: string, session: string, sent: Sent, storage?: Store) {
+  if (!mayKeepEditing()) return;
   const kept = sentFor(componentId, session, storage);
   if (kept !== null && kept.sequence >= sent.sequence) return;
   try {
@@ -226,6 +228,67 @@ function keepSent(componentId: string, session: string, sent: Sent, storage?: St
   } catch {
     // Unkept, a reload may take this page's own last save for somebody else's and go no further.
   }
+}
+
+/**
+ * Where the text offered on opening is kept, one per component per window, until the author dismisses
+ * it (re-review of W11.3): by then the record it came from is forgotten, so this is its only copy, and
+ * a reload, a claim or a save must not be what loses it.
+ */
+const offeredKeyFor = (componentId: string) => `${EDITING_PREFIX}offered:${componentId}`;
+
+/**
+ * The text this window offered `principal` on opening the component, and has not been dismissed; null
+ * where there is none, or it was offered to somebody else - which is forgotten. Never throws.
+ */
+export function readOffered(componentId: string, principal: string, storage?: Store) {
+  try {
+    const read: unknown = JSON.parse(
+      storeOf(storage).getItem(offeredKeyFor(componentId)) ?? 'null',
+    );
+    if (read === null) return null;
+    if (isObject(read) && read.principal === principal && typeof read.text === 'string') {
+      return read.text;
+    }
+  } catch {
+    // Unreadable: as somebody else's.
+  }
+  forgetOffered(componentId, storage);
+  return null;
+}
+
+/** Keeps `text` as offered to `principal` until it is dismissed. Never throws. */
+export function keepOffered(
+  componentId: string,
+  principal: string,
+  text: string,
+  storage?: Store,
+): void {
+  if (!mayKeepEditing()) return;
+  try {
+    storeOf(storage).setItem(offeredKeyFor(componentId), JSON.stringify({ principal, text }));
+  } catch {
+    // Unkept, it is offered on this page alone.
+  }
+}
+
+/** Forgets the text offered for a component: the author dismissed it. Never throws. */
+export function forgetOffered(componentId: string, storage?: Store): void {
+  try {
+    storeOf(storage).removeItem(offeredKeyFor(componentId));
+  } catch {
+    // Nothing that can be reached is kept.
+  }
+}
+
+/**
+ * What is offered once `more` is offered beside `already`: both, a blank line between them, unless
+ * `already` ends with it - offered again by a page that opened twice over the same record.
+ */
+export function offeredWith(already: string | null, more: string | null): string | null {
+  if (more === null) return already;
+  if (already === null) return more;
+  return already === more || already.endsWith(`\n\n${more}`) ? already : `${already}\n\n${more}`;
 }
 
 /** A session with nothing changed yet, from `doc` at `version`, having sent up to `sequence`. */
@@ -389,7 +452,8 @@ export function createRecorder(
   const write = () => {
     if (waiting !== null) clock.clearTimeout(waiting);
     waiting = null;
-    if (stopped || closed) return;
+    // Nothing more once the author has signed out, for the rest of the page (re-review of W11.3).
+    if (stopped || closed || !mayKeepEditing()) return;
     if (kept.revision === 0) {
       forget();
       return;

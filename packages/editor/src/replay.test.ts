@@ -295,6 +295,24 @@ describe('keeping a run of typing small (final review of W11.3, D4)', () => {
     expect(mergeChange(split!, typed!)).toBeNull();
     expect(mergeChange(second!, split!)).toBeNull();
   });
+
+  it('merges nothing where the first sets a selection and the second does not, which the replay would put back in the wrong place', () => {
+    const opened = docOf([['b1', 'Unbox the printer.']]);
+    const live = surface(opened);
+    // Typed with the caret set after it, then typed beside it with the caret left where it was.
+    const typed = live.state.tr.insertText(' Mi', 19);
+    live.apply(typed.setSelection(Selection.near(typed.doc.resolve(22))).setTime(1_000));
+    live.apply(live.state.tr.insertText('nd', 22).setTime(1_050));
+    const [first, second] = live.records;
+    expect(first!.transactions[0]!.selection).toBeDefined();
+    expect(second).toMatchObject({ history: 'join' });
+    expect(second!.transactions[0]!.selection).toBeUndefined();
+    expect(mergeChange(first!, second!)).toBeNull();
+
+    const again = replayed(opened, merged(live.records));
+    expect(again.doc.eq(live.state.doc)).toBe(true);
+    expect(again.selection.eq(live.state.selection)).toBe(true);
+  });
 });
 
 describe('what a record says, where it will not replay (final review of W11.3, D5)', () => {
@@ -336,5 +354,43 @@ describe("the model's identity, which a kept record is stamped with (final revie
       plain,
     );
     expect(schemaIdentity(editorSchema)).not.toBe(plain);
+  });
+
+  /** A model whose `em` mark and `paragraph` node are described by what `tweak` gives them. */
+  const model = (tweak: { em?: Record<string, unknown>; paragraph?: Record<string, unknown> }) =>
+    new Schema({
+      nodes: {
+        doc: { content: 'paragraph+' },
+        paragraph: {
+          content: 'text*',
+          attrs: { id: { default: null } },
+          toDOM: () => ['p', 0],
+          parseDOM: [{ tag: 'p', getAttrs: () => ({}) }],
+          ...tweak.paragraph,
+        },
+        text: {},
+      },
+      marks: { strong: {}, em: { toDOM: () => ['em', 0], ...tweak.em } },
+    });
+
+  it("is the same wherever it is worked out, and differs with every serialisable part of a node's or a mark's spec", () => {
+    const plain = schemaIdentity(model({}));
+    // Worked out twice, from two models built alike, with functions of their own: the same.
+    expect(schemaIdentity(model({}))).toBe(plain);
+    // What a mark excludes, and the group it is in.
+    expect(schemaIdentity(model({ em: { excludes: '' } }))).not.toBe(plain);
+    expect(schemaIdentity(model({ em: { group: 'phrasing' } }))).not.toBe(plain);
+    // An attribute's default, and the flags that change how a node behaves.
+    expect(schemaIdentity(model({ paragraph: { attrs: { id: { default: 'x' } } } }))).not.toBe(
+      plain,
+    );
+    for (const flag of ['defining', 'atom', 'code', 'isolating'] as const) {
+      expect(schemaIdentity(model({ paragraph: { [flag]: true } }))).not.toBe(plain);
+    }
+    expect(schemaIdentity(model({ paragraph: { whitespace: 'pre' } }))).not.toBe(plain);
+    // What is drawn or read from the page is not the model's: a function changed changes nothing.
+    expect(
+      schemaIdentity(model({ paragraph: { toDOM: () => ['div', 0], parseDOM: [{ tag: 'div' }] } })),
+    ).toBe(plain);
   });
 });

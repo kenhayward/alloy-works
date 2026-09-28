@@ -70,12 +70,15 @@ import { SaveIndicator } from './SaveIndicator.js';
 import { uploadImage } from './upload.js';
 import { heldSentence } from './held.js';
 import { editingSessionFor, sessionService, storedSessionId } from './service.js';
-import { markPage } from './editing-storage.js';
 import {
   continuing,
   createRecorder,
+  forgetOffered,
   freshSession,
+  keepOffered,
+  offeredWith,
   readKept,
+  readOffered,
   replayStored,
   sentFor,
   textOfKept,
@@ -176,9 +179,8 @@ const textOfDoc = (doc: EditorState['doc']) => {
 const textOf = (view: EditorView) => textOfDoc(view.state.doc);
 
 /**
- * Said where what a window kept before this page opened - a reload, or the tab this one was duplicated
- * from - is offered as text to copy rather than brought back, or cannot be read at all, rather than
- * dropping it unsaid (final review of W11.3, D1 and D5).
+ * Said where what a window kept before this page opened is offered as text to copy rather than brought
+ * back, or cannot be read at all, rather than dropping it unsaid (final review of W11.3, D5).
  */
 const KEPT_OFFERED =
   'What you typed before this page opened could not be brought back, so it is below for you to copy.';
@@ -286,6 +288,10 @@ export function ComponentEditor({
   const [attempt, setAttempt] = useState(0);
   const [session, setSession] = useState<SessionView | null>(null);
   const [kept, setKept] = useState<string | null>(null);
+  // What was offered on opening, from before this page opened, as text to copy: held until the author
+  // dismisses it, through claims, saves and reloads, since by then it is kept nowhere else (re-review
+  // of W11.3). `kept`, above, is a refusal's, and a claim that succeeds after it clears it.
+  const [offered, setOffered] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   // Said through the application's status bar, its one live region, where there is one (interface
   // slice 15); a component opened in place in a document shares it with the document's own notices.
@@ -618,9 +624,6 @@ export function ComponentEditor({
 
   useEffect(() => {
     let current = true;
-    // A tab duplicated from one editing forgets the session ids it copied first, so it asks after none
-    // of them (final review of W11.3, D1).
-    markPage();
     // The session this window keeps for the component, if any, is asked where its sequence stands
     // (W11.3): whether it goes on with kept changes or with none, as after a cut or a restore, which
     // keep none (final review of W11.3, D3).
@@ -721,7 +724,7 @@ export function ComponentEditor({
     // and differs from what opens, or said to be lost where it cannot be read at all (D5).
     const kept = readKept(component.id, principalId);
     const stored: StoredSession | null = kept?.readable === true ? kept.session : null;
-    let offered: string | null = kept?.readable === false ? kept.text : null;
+    let offering: string | null = kept?.readable === false ? kept.text : null;
     let unreadable = kept?.readable === false && kept.text === null;
     let replayed: EditorState | null = null;
     if (stored !== null && stored.version === component.version.id && stored.revision > 0) {
@@ -732,8 +735,8 @@ export function ComponentEditor({
         fromEditor(state.doc);
         replayed = state;
       } catch {
-        offered = textOfKept(stored);
-        unreadable = offered === null;
+        offering = textOfKept(stored);
+        unreadable = offering === null;
       }
     }
     // True from a replay until its claim is answered: a refusal puts the surface back to the version
@@ -767,8 +770,8 @@ export function ComponentEditor({
           (component.lock?.yours === true && component.lock.session === id) ||
           (replayed !== null && stored?.session === id),
       );
-    // Replayed under the session it was kept in, or not at all: a duplicated tab, having forgotten the
-    // ids it copied, starts a session of its own, and offers what the other tab kept as text (D1).
+    // Replayed under the session it was kept in, or not at all: a page that starts under another id -
+    // the id it was kept under gone from storage - offers what was kept as text instead.
     const resumed =
       replayed !== null && stored !== null && stored.session === initialSession
         ? {
@@ -780,13 +783,20 @@ export function ComponentEditor({
             ),
           }
         : null;
-    if (replayed !== null && resumed === null) offered = textOfDoc(replayed.doc);
+    if (replayed !== null && resumed === null) offering = textOfDoc(replayed.doc);
+    // A replay the service has saved past is offered too: it goes to `lost` with it on screen, and
+    // whatever goes on from there, what was kept has no other copy (D1; its re-review).
+    const offeredBehind = resumed?.ahead === true ? textOfDoc(resumed.state.doc) : null;
     // Where the session's sequence goes on from: a replay's, or - an id reused with nothing kept, as
-    // after a cut or a restore - the service's answer for it, never 0 under an id it has saves from
-    // (final review of W11.3, D3).
+    // after a cut or a restore - the larger of the service's answer for it and the last this window
+    // sent under it, never 0 under an id it has saves from (final review of W11.3, D3), nor below a
+    // save this window sent that the service had not yet taken when it answered (its re-review).
     const startAt =
       resumed?.sequence ??
-      (initialSession === askedSession.current ? (component.sequence ?? 0) : 0);
+      Math.max(
+        initialSession === askedSession.current ? (component.sequence ?? 0) : 0,
+        sentFor(component.id, initialSession)?.sequence ?? 0,
+      );
     const keeping = createRecorder(
       component.id,
       resumed !== null && stored !== null
@@ -806,11 +816,17 @@ export function ComponentEditor({
       setValues(heldValues.current);
       setValuesDrawn((drawn) => drawn + 1);
     }
-    // Offered as a refused claim offers held changes, where it says anything the version does not.
-    if (offered !== null && offered !== textOfDoc(opened.doc)) {
-      setKept(offered);
-      setNotice(KEPT_OFFERED);
-    } else if (unreadable) setNotice(KEPT_UNREADABLE);
+    // Offered where it says anything the version does not, beside whatever this window offered before
+    // and the author has not dismissed, and kept until they do (re-review of W11.3).
+    const differs = (text: string | null) => (text !== textOfDoc(opened.doc) ? text : null);
+    const already = readOffered(component.id, principalId);
+    const offeredNow = offeredWith(offeredWith(already, differs(offering)), differs(offeredBehind));
+    setOffered(offeredNow);
+    if (offeredNow !== null && offeredNow !== already) {
+      keepOffered(component.id, principalId, offeredNow);
+    }
+    if (differs(offering) !== null) setNotice(KEPT_OFFERED);
+    else if (unreadable) setNotice(KEPT_UNREADABLE);
     // Written at once when the page is hidden or goes, which runs no unmount (D4).
     const keepNow = () => keeping.flush();
     const keepIfHidden = () => {
@@ -995,8 +1011,11 @@ export function ComponentEditor({
     // A reload going on: claimed again under its own session, and what the service has not got sent -
     // unless the service holds a later save under it than this window sent, which nothing here may go
     // on over (D1).
-    if (resumed?.ahead === true) editing.behind();
-    else if (resumed !== null) {
+    if (resumed?.ahead === true) {
+      // Offered already, above: `lost` captures nothing more of it.
+      keptIsCurrent.current = true;
+      editing.behind();
+    } else if (resumed !== null) {
       ahead = true;
       editing.resume(resumed.unsent);
     }
@@ -1086,11 +1105,16 @@ export function ComponentEditor({
   // guarded for as long as anything is dirty or being sent (fix round 1, finding 4): while dirty,
   // while a save is in flight, while a retry is failing with content it has not yet acknowledged, or
   // while there is still text kept from a refusal that was never written anywhere (fix round 2,
-  // minor). The guard comes off the moment none of those is true any longer.
+  // minor), or text offered on opening that the author has not dismissed, which a reload keeps and a
+  // closed tab does not (re-review of W11.3). The guard comes off the moment none of those is true.
   useEffect(() => {
     if (!session) return undefined;
     const unacknowledged =
-      session.dirty || session.save === 'saving' || session.save === 'failing' || kept !== null;
+      session.dirty ||
+      session.save === 'saving' ||
+      session.save === 'failing' ||
+      kept !== null ||
+      offered !== null;
     if (!unacknowledged) return undefined;
     const warnBeforeClose = (event: BeforeUnloadEvent) => {
       event.preventDefault();
@@ -1098,7 +1122,7 @@ export function ComponentEditor({
     };
     window.addEventListener('beforeunload', warnBeforeClose);
     return () => window.removeEventListener('beforeunload', warnBeforeClose);
-  }, [session, kept]);
+  }, [session, kept, offered]);
 
   /**
    * Puts the focus in a region: on the first control a Tab would reach inside it, or on the region
@@ -1622,6 +1646,24 @@ export function ComponentEditor({
                   }}
                 />
               </section>
+            )}
+            {offered !== null && (
+              <div>
+                <label>
+                  Text from before this page opened
+                  <textarea readOnly value={offered} />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOffered(null);
+                    forgetOffered(componentId);
+                    surface?.focus();
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
             )}
             {kept !== null && (
               <label>

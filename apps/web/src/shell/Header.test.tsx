@@ -104,6 +104,27 @@ describe('the header band', () => {
     expect(sessionStorage.getItem('alloy-works:pane-width')).toBe('320');
   });
 
+  it('forgets again, as it signs out, whatever was written for editing while the sign-out was on its way', async () => {
+    const steps = 'alloy-works:editing-steps:6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
+    const asked = serviceThat(signedIn);
+    const signingOut = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      // Written while the sign-out is answered, as a save the editor had pending could write it.
+      if (request.method === 'POST') sessionStorage.setItem(steps, '{"kept":true}');
+      return asked(request);
+    }) as unknown as typeof fetch;
+    const signedOutNow = vi.fn(() => {
+      expect(sessionStorage.getItem(steps)).toBeNull();
+    });
+    render(<Header module="Components" fetch={signingOut} onSignedOut={signedOutNow} />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+
+    await waitFor(() => expect(signedOutNow).toHaveBeenCalled());
+    expect(sessionStorage.getItem(steps)).toBeNull();
+  });
+
   it('returns to Home from the mark, which opens no menu', () => {
     render(<Header module="Components" fetch={serviceThat(signedIn)} />);
 

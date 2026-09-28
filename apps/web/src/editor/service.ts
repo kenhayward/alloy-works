@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import type { ContentDocument } from '@alloy-works/domain';
 
+import { mayKeepEditing } from './editing-storage.js';
 import type {
   ClaimResult,
   CutResult,
@@ -51,7 +52,9 @@ function holdSession(componentId: string, id: string, storage?: SessionStorage):
     -HELD_KEPT,
   );
   try {
-    (storage ?? globalThis.sessionStorage).setItem(heldKeyFor(componentId), JSON.stringify(held));
+    if (mayKeepEditing()) {
+      (storage ?? globalThis.sessionStorage).setItem(heldKeyFor(componentId), JSON.stringify(held));
+    }
   } catch {
     // Unavailable storage: the window's own ids are remembered for this page alone.
   }
@@ -104,7 +107,8 @@ export function editingSessionFor(
   }
   const made = crypto.randomUUID();
   try {
-    (storage ?? globalThis.sessionStorage).setItem(key, made);
+    // Kept for a reload, unless the author has signed out on this page (re-review of W11.3).
+    if (mayKeepEditing()) (storage ?? globalThis.sessionStorage).setItem(key, made);
   } catch {
     // As above.
   }

@@ -735,25 +735,33 @@ whether or not anything was cut, so a reload after it claims nothing back. A rel
 where the selection was, never a footnote or a figure selected whole, whose editor or panel would not be
 drawn.
 
-**From the final review (W11.3).** A duplicated tab copies session storage, and with it the session id
-and the kept steps, while the tab it was copied from goes on editing under that session. So a page marks
-session storage with an id of its own as it loads, and takes the mark off as it goes: a page that finds
-another page's mark is a duplicate, and forgets every session id it copied, so each component it opens
-starts a session of its own and offers what the other tab kept as text to copy, never replaying it under
-the shared id. Where no mark tells - a mark lost, a crash - the sequence does: a reload whose session
-the service has saved past the last this window sent opens as a stale save does, sending nothing. What
-this window sent is kept twice, in the record and under a key per session that only ever rises and is
-written by a save sent after the page has gone too, so a page's own last save is never taken for
-somebody else's. The record carries the principal it was kept for and is given to nobody else, and every
-editing key is forgotten at sign-out. It carries its format and a hash of the model's nodes, marks and
-attributes: a record another build wrote, or one that will not replay, or one the author may no longer
-edit, is offered as its text to copy - its steps applied with no history - where that differs from what
-opens, and said to be lost where not even that can be read; a version cut since still discards it
-(CNT-169). The GET names the kept session id whenever there is one, record or not, so a page that goes on
-under it after a cut or a restore starts above the service's sequence rather than at 0. The record is
-written at most 300 ms after a change, at once for a send, and on `pagehide` or the page hidden, and a
-run of typing is kept as one step; storage that is full forgets other components' records before it
-stops keeping this one.
+**From the final review (W11.3).** Nothing tells a duplicated tab from a reload of the same tab, and
+nothing tries: the one sign there would be, a mark a page takes off session storage as it goes, is never
+taken off by a crash, a discarded tab or a browser restoring its session, none of which fires
+`pagehide`, so the next load of the same tab would be taken for a copy and lose its undo. A duplicated
+tab, which copies session storage and with it the session id and the kept steps, goes on as a second
+window of the same author under the same session ([Two windows, one author](#two-windows-one-author)),
+and the sequence keeps either from writing over the other: a reload whose session the service has saved
+past the last this window sent opens as a stale save does, sending nothing, and of two pages going on
+under one session the service refuses whichever sends a sequence it has already taken, and that one
+goes to `lost` with its text offered to copy. A crash is a reload like any other: the service holds
+nothing past what the page sent, so the next load replays and goes on. What this window sent is kept
+twice, in the record and under a key per session that only ever rises and is written by a save sent
+after the page has gone too, so a page's own last save is never taken for somebody else's. The record
+carries the principal it was kept for and is given to nobody else, and every editing key is forgotten at
+sign-out - which also stops the editor keeping anything for the rest of the page, so a save pending as
+the author signs out, or the flush as the page goes, cannot write it back. It carries its format and a
+hash of every node's and mark's spec, less what is drawn or read from the page: a record another build
+wrote, or one that will not replay, or one the author may no longer edit, is offered as its text to copy,
+its steps applied with no history, where that differs from what opens, and said to be lost where not
+even that can be read; a version cut since still discards it (CNT-169). Text offered on opening, from
+such a record or from a replay the service has saved past, has no other copy by then, so it stays
+offered through claims, saves and reloads until the author dismisses it, and is forgotten at sign-out
+with the rest. The GET names the kept session id whenever there is one, record or not, so a page that
+goes on under it after a cut or a restore starts above both the service's sequence and the last this
+window sent under it, rather than at 0. The record is written at most 300 ms after a change, at once
+for a send, and on `pagehide` or the page hidden, and a run of typing is kept as one step; storage that
+is full forgets other components' records before it stops keeping this one.
 
 **Undo covers content, not metadata.** ProseMirror's history is the document's - which includes the title,
 base language and base direction. A metadata field is an ordinary input with its own undo, and folding
@@ -771,6 +779,11 @@ the lock event (realtime) or, failing that, from its next refused save, and ente
 unsent changes still held locally. From there it can move the lock back and save them, or discard them.
 Iterations either session saved stay visible to that author, because the holder is the principal
 (VER-002).
+
+**A duplicated tab is a second window under the same session** (final review of W11.3): it copies the
+session id with everything else in session storage, and nothing tells it from a reload. Whichever of
+the two sends a sequence the service has already taken from the other is refused, and goes to `lost`
+with what it had not sent offered as text to copy, as a window that lost the lock does below.
 
 **Built, with Recovery (W11.2), this is true from a window opened afresh, not yet in the window that
 loses the lock.** There is still no lock event: a window that loses the lock this way finds itself refused
