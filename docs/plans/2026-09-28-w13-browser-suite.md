@@ -211,7 +211,7 @@ Only these could change the plan; everything else is built as written.
 6. Tests: CNT-176, on the test that runs axe over every state; the allow-list's exactness citing
    nothing.
 
-**W13.2, as built** (PR #TBD). What it found, and what departs from the above:
+**W13.2, as built** (PR #327). What it found, and what departs from the above:
 
 - **What axe found**, on the first run over 82 states: five violations, all small, all fixed in the
   slice with the axe test as the failing test, so **the allow-list is empty** and nothing was filed.
