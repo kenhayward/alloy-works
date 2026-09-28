@@ -9,8 +9,10 @@ import {
   PLATFORM_INFO_CHANNEL,
   describePlatform,
   isRenderer,
+  isTrustedFrame,
   navigationDecision,
   opensExternally,
+  redirectDecision,
   resolveRendererTarget,
 } from './shell.js';
 
@@ -154,6 +156,8 @@ describe('keeping the window on the renderer (issue #309)', () => {
     expect(isRenderer('file:///C:/app/web/dist/other.html', file)).toBe(false);
     expect(isRenderer('file:///C:/Windows/win.ini', file)).toBe(false);
     expect(isRenderer('https://acme.alloy.example/', file)).toBe(false);
+    // The same path on another host is a network share, never the renderer's own file.
+    expect(isRenderer('file://attacker.example/C:/app/web/dist/index.html', file)).toBe(false);
   });
 
   it('refuses anything that is not an address', () => {
@@ -211,5 +215,67 @@ describe('keeping the window on the renderer (issue #309)', () => {
     ]) {
       expect(opensExternally(url), url).toBe(false);
     }
+  });
+
+  it("answers the bridge for the renderer's own frame alone: no window yet, no frame, or any other address is refused", () => {
+    expect(isTrustedFrame('https://acme.alloy.example/#/documents/abc', service)).toBe(true);
+    expect(isTrustedFrame('https://acme.alloy.example/', null)).toBe(false);
+    expect(isTrustedFrame(undefined, service)).toBe(false);
+    expect(isTrustedFrame('https://store.example/bucket/key.pdf', service)).toBe(false);
+    expect(isTrustedFrame('file://attacker.example/C:/app/web/dist/index.html', file)).toBe(false);
+  });
+
+  it('follows a redirect in the window only where a sign-in began it, or a sign-in is already under way, and opens any other outside', () => {
+    const at = 'https://acme.alloy.example/#/';
+    // The service's own sign-in route sends the window to the provider, and it goes.
+    expect(
+      redirectDecision(
+        'https://idp.example/authorize?x=1',
+        'https://acme.alloy.example/v1/sign-in/organisation',
+        at,
+        service,
+      ),
+    ).toEqual({ allow: true });
+    // Back from the provider, while the window is off the renderer.
+    expect(
+      redirectDecision(
+        'https://acme.alloy.example/#/',
+        'https://idp.example/cb',
+        'https://idp.example/login',
+        service,
+      ),
+    ).toEqual({ allow: true });
+    // Any other redirect leaving the renderer - an open redirect, a link through a shortener - opens outside.
+    expect(
+      redirectDecision(
+        'https://evil.example/',
+        'https://acme.alloy.example/v1/go?to=evil',
+        at,
+        service,
+      ),
+    ).toEqual({ allow: false, openExternally: 'https://evil.example/' });
+    expect(redirectDecision('https://evil.example/', 'https://bit.example/x', at, service)).toEqual(
+      {
+        allow: false,
+        openExternally: 'https://evil.example/',
+      },
+    );
+    // A redirect that stays on the renderer goes, and one to a scheme the system would run is refused.
+    expect(
+      redirectDecision(
+        'https://acme.alloy.example/#/x',
+        'https://acme.alloy.example/v1/x',
+        at,
+        service,
+      ),
+    ).toEqual({ allow: true });
+    expect(
+      redirectDecision(
+        'file:///C:/Windows/win.ini',
+        'https://acme.alloy.example/v1/x',
+        at,
+        service,
+      ),
+    ).toEqual({ allow: false });
   });
 });

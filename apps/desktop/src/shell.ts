@@ -80,6 +80,8 @@ export function isRenderer(url: string, target: RendererTarget): boolean {
     }
   }
   if (address.protocol !== 'file:') return false;
+  // `file://host/path` is a network share, whatever its path: the renderer's file has no host.
+  if (address.host !== '') return false;
   const own = new URL(fileAddress(target.value));
   return decodeURI(address.pathname) === decodeURI(own.pathname);
 }
@@ -110,6 +112,39 @@ export function navigationDecision(
 ): NavigationDecision {
   if (isRenderer(url, target)) return { allow: true };
   if (!isRenderer(from, target)) return { allow: true };
+  return opensExternally(url) ? { allow: false, openExternally: url } : { allow: false };
+}
+
+/**
+ * Whether an IPC call's frame is the renderer's own (issue #309): refused before the first window has
+ * worked out where the renderer is, where the frame has gone, and from any other address - a page the
+ * window was taken to, or a frame inside the renderer showing a stored file.
+ */
+export function isTrustedFrame(url: string | undefined, target: RendererTarget | null): boolean {
+  return target !== null && url !== undefined && isRenderer(url, target);
+}
+
+/** Where the service's sign-in routes live: each sends the window on to the identity provider. */
+export const SIGN_IN_PATH = '/v1/sign-in/';
+
+/**
+ * What the window does when a navigation that asked for `requested` is redirected to `url`, the
+ * window still showing `from` (issue #309). A sign-in's redirects go: one the service's own sign-in
+ * route began, which sends the window to the provider, and any while the window is already off the
+ * renderer in a sign-in. Any other redirect is a navigation like another - an open redirect, a link
+ * through a shortener - and leaving the renderer opens it in the system browser.
+ */
+export function redirectDecision(
+  url: string,
+  requested: string,
+  from: string,
+  target: RendererTarget,
+): NavigationDecision {
+  if (isRenderer(url, target)) return { allow: true };
+  if (!isRenderer(from, target)) return { allow: true };
+  if (isRenderer(requested, target) && new URL(requested).pathname.startsWith(SIGN_IN_PATH)) {
+    return { allow: true };
+  }
   return opensExternally(url) ? { allow: false, openExternally: url } : { allow: false };
 }
 

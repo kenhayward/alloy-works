@@ -12,9 +12,10 @@ import {
   DEV_SERVER_URL,
   PLATFORM_INFO_CHANNEL,
   describePlatform,
-  isRenderer,
+  isTrustedFrame,
   navigationDecision,
   opensExternally,
+  redirectDecision,
   resolveRendererTarget,
   type RendererTarget,
 } from './shell.js';
@@ -63,8 +64,20 @@ function createWindow(): void {
 
   // The window stays on the renderer: a link out of it opens in the system browser, and a page never
   // opens a window of its own (issue #309). The decisions are shell.ts's.
+  // The address the window's current navigation asked for, which its redirects are judged by.
+  let requested = '';
   window.webContents.on('will-navigate', (event, url) => {
     const decision = navigationDecision(url, window.webContents.getURL(), target);
+    if (decision.allow) {
+      requested = url;
+      return;
+    }
+    event.preventDefault();
+    if (decision.openExternally) void shell.openExternal(decision.openExternally);
+  });
+  window.webContents.on('will-redirect', (event, url, _inPlace, isMainFrame) => {
+    if (!isMainFrame) return;
+    const decision = redirectDecision(url, requested, window.webContents.getURL(), target);
     if (decision.allow) return;
     event.preventDefault();
     if (decision.openExternally) void shell.openExternal(decision.openExternally);
@@ -119,8 +132,7 @@ function createTray(): void {
 
 /** Whether an IPC call comes from the renderer, and no page the window was taken to (issue #309). */
 function fromRenderer(event: Electron.IpcMainInvokeEvent): boolean {
-  const url = event.senderFrame?.url;
-  return rendererTarget !== null && url !== undefined && isRenderer(url, rendererTarget);
+  return isTrustedFrame(event.senderFrame?.url, rendererTarget);
 }
 
 ipcMain.handle(PLATFORM_INFO_CHANNEL, (event) => {

@@ -1630,8 +1630,9 @@ Rules that hold for every channel added later:
   (`isRenderer` in `shell.ts`). And the window **stays on the renderer**: a link out of it opens in the
   system browser, a page never opens a window of its own, and anything the system would run is
   refused (`navigationDecision`, `opensExternally`). A sign-in that has left for the identity provider
-  goes on, since the provider's pages navigate, and the bridge refuses whatever page it is on (issue
-  #309).
+  goes on, since the provider's pages navigate, and the bridge refuses whatever page it is on. A
+  server's redirect is held to the same rule, save one a sign-in route began (`redirectDecision`), and
+  the bridge's own check is `isTrustedFrame` (issue #309).
 
 ## Data flow today
 
@@ -1769,9 +1770,8 @@ when, the engine and template where there is a PDF, and the Word writer's versio
 Word document, a download for each - **Download the PDF**, **Download the Word document** - the PDF
 shown in the page and a Word document never, the Word report as a sentence per entry under **About
 the Word document**, and **Open the document**. A download is a signed
-link to the store's own address. It expires five minutes after the page opened, and what the desktop
-shell does with a link leaving the renderer's origin has not been checked: it handles neither
-`will-navigate` nor `setWindowOpenHandler`.
+link to the store's own address. It expires five minutes after the page opened; in the desktop app it
+opens in the system browser, since the window stays on the renderer (issue #309).
 
 **The record is held by the database.** The runtime role inserts and reads the record and never changes
 it, and inserts a request by what was asked alone, so every request starts queued, under its own id and
