@@ -72,6 +72,60 @@ describe('sign-in settings', () => {
     expect(providers).toEqual([{ issuer: 'https://login.example', client_id: 'alloy-2' }]);
   });
 
+  it("records the claim a provider's groups arrive in: groups unless said, and kept when configured again without one", async () => {
+    const claim = () =>
+      service.withTenant(tenant, (trx) =>
+        trx
+          .selectFrom('identity_provider')
+          .select('groups_claim')
+          .executeTakeFirstOrThrow()
+          .then((row) => row.groups_claim),
+      );
+    expect(await claim()).toBe('groups');
+    await configureOrganisationSignIn(db.adminUrl, tenant, {
+      issuer: 'https://login.example',
+      clientId: 'alloy-2',
+      secretName: 'acme_idp',
+      groupsClaim: 'https://acme.example/claims/roles',
+    });
+    expect(await claim()).toBe('https://acme.example/claims/roles');
+    await configureOrganisationSignIn(db.adminUrl, tenant, {
+      issuer: 'https://login.example',
+      clientId: 'alloy-2',
+      secretName: 'acme_idp',
+    });
+    expect(await claim()).toBe('https://acme.example/claims/roles');
+    await configureOrganisationSignIn(db.adminUrl, tenant, {
+      issuer: 'https://login.example',
+      clientId: 'alloy-2',
+      secretName: 'acme_idp',
+      groupsClaim: 'groups',
+    });
+    expect(await claim()).toBe('groups');
+  });
+
+  it('takes a claim name of 1 to 64 characters that looks like one, and nothing else', async () => {
+    for (const refused of ['', ' groups', 'two words', 'a'.repeat(65), 'groups\n', '1groups']) {
+      await expect(
+        configureOrganisationSignIn(db.adminUrl, tenant, {
+          issuer: 'https://login.example',
+          clientId: 'alloy-2',
+          secretName: 'acme_idp',
+          groupsClaim: refused,
+        }),
+        JSON.stringify(refused),
+      ).rejects.toThrow(/identity_provider_groups_claim/);
+    }
+    for (const taken of ['groups', 'wids', 'cognito:groups', 'a'.repeat(64)]) {
+      await configureOrganisationSignIn(db.adminUrl, tenant, {
+        issuer: 'https://login.example',
+        clientId: 'alloy-2',
+        secretName: 'acme_idp',
+        groupsClaim: taken,
+      });
+    }
+  });
+
   it('permits Google, recording the Workspace domains named in lower case, once', async () => {
     await permitGoogleSignIn(db.adminUrl, tenant, { domains: ['Example.org'] });
     await permitGoogleSignIn(db.adminUrl, tenant, { domains: ['example.org'] });

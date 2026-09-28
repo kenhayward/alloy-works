@@ -1,27 +1,166 @@
+import { sql } from 'kysely';
 import { lockAccessForChange } from './access-facts.js';
 import { accessPolicy, externalRefusal, type ExternalRefusal } from './grants.js';
+import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
 
+/**
+ * A group (access.md, "Groups"): the environment's own, whose members an administrator names, or one
+ * standing for a value the organisation's provider asserts, whose members the sign-ins decide.
+ */
 export interface Group {
   readonly id: string;
   readonly name: string;
   readonly source: 'tenant' | 'provider';
+  /** The value a provider's claim carries for this group; null for the environment's own. */
+  readonly providerValue: string | null;
 }
 
-export type GroupAnswer = { readonly group: Group } | { readonly refused: 'group.name_taken' };
+/** A group as a listing shows it: with its members by name, so a page of groups needs no second read. */
+export interface ListedGroup extends Group {
+  readonly members: readonly {
+    readonly id: string;
+    readonly name: string | null;
+    readonly email: string | null;
+  }[];
+}
+
+export type GroupAnswer =
+  { readonly group: Group } | { readonly refused: 'group.name_taken' | 'group.value_taken' };
 
 /**
- * Creates a tenant-managed group, whose members an administrator adds. A group standing for a
- * provider's claim is made with the provider configuration, which is not built yet (IAM-009).
+ * Makes a group: the environment's own by name, or, given `providerValue`, one standing for that value
+ * of the provider's claim (GP-C). A name, or a value, another group already has is refused. Changes no
+ * fact a decision reads - a new group holds nothing and has no members - so takes no lock.
  */
-export async function createGroup(trx: TenantTransaction, name: string): Promise<GroupAnswer> {
+export async function createGroup(
+  trx: TenantTransaction,
+  name: string,
+  options: { readonly providerValue?: string } = {},
+): Promise<GroupAnswer> {
+  const providerValue = options.providerValue ?? null;
   const row = await trx
     .insertInto('access_group')
-    .values({ name, source: 'tenant', provider_value: null })
-    .onConflict((conflict) => conflict.column('name').doNothing())
-    .returning(['id', 'name', 'source'])
+    .values({
+      name,
+      source: providerValue === null ? 'tenant' : 'provider',
+      provider_value: providerValue,
+    })
+    .onConflict((conflict) => conflict.doNothing())
+    .returning(['id', 'name', 'source', 'provider_value'])
     .executeTakeFirst();
-  return row ? { group: row } : { refused: 'group.name_taken' };
+  if (row) return { group: groupOf(row) };
+  const named = await trx
+    .selectFrom('access_group')
+    .select('id')
+    .where('name', '=', name)
+    .executeTakeFirst();
+  return { refused: named ? 'group.name_taken' : 'group.value_taken' };
+}
+
+function groupOf(row: {
+  id: string;
+  name: string;
+  source: 'tenant' | 'provider';
+  provider_value: string | null;
+}): Group {
+  return { id: row.id, name: row.name, source: row.source, providerValue: row.provider_value };
+}
+
+/**
+ * The tenant's groups, a page at a time in the order of their ids, each with its members in the order
+ * of their names. Who may see them - `administer` at the tenant - is the caller's to decide first.
+ */
+export async function listGroups(
+  trx: TenantTransaction,
+  request: PageRequest,
+): Promise<Page<ListedGroup>> {
+  const page = checkedPage(request);
+  if (page.after !== undefined && !isPageCursor(page.after)) return { items: [], after: null };
+  const rows = await trx
+    .selectFrom('access_group')
+    .select(['id', 'name', 'source', 'provider_value'])
+    .$if(page.after !== undefined, (query) => query.where('id', '>', page.after!))
+    .orderBy('id')
+    .limit(page.limit + 1)
+    .execute();
+  const { items, after } = paged(rows, page.limit);
+  const members = await membersOf(
+    trx,
+    items.map((each) => each.id),
+  );
+  return {
+    items: items.map((row) => ({ ...groupOf(row), members: members.get(row.id) ?? [] })),
+    after,
+  };
+}
+
+/** One group as a listing shows it, or undefined when the tenant holds no such group. */
+export async function readGroup(
+  trx: TenantTransaction,
+  id: string,
+): Promise<ListedGroup | undefined> {
+  const row = await trx
+    .selectFrom('access_group')
+    .select(['id', 'name', 'source', 'provider_value'])
+    .where('id', '=', id)
+    .executeTakeFirst();
+  if (!row) return undefined;
+  const members = await membersOf(trx, [row.id]);
+  return { ...groupOf(row), members: members.get(row.id) ?? [] };
+}
+
+async function membersOf(
+  trx: TenantTransaction,
+  groupIds: readonly string[],
+): Promise<Map<string, ListedGroup['members'][number][]>> {
+  const found = new Map<string, ListedGroup['members'][number][]>();
+  if (groupIds.length === 0) return found;
+  const rows = await trx
+    .selectFrom('group_member as m')
+    .innerJoin('principal as p', 'p.id', 'm.principal_id')
+    .select(['m.group_id', 'p.id', 'p.display_name', 'p.email'])
+    .where('m.group_id', 'in', [...groupIds])
+    .orderBy('p.display_name')
+    .orderBy('p.email')
+    .orderBy('p.id')
+    .execute();
+  for (const row of rows) {
+    const list = found.get(row.group_id) ?? [];
+    list.push({ id: row.id, name: row.display_name, email: row.email });
+    found.set(row.group_id, list);
+  }
+  return found;
+}
+
+/**
+ * Why an external principal may not join this group, if they may not: any unexpired allow the group
+ * holds that could not have been made to them directly (access.md, "External principals"). A denial
+ * the group holds is never a reason, so a group is never a way round those rules, nor a way to keep
+ * somebody out of one.
+ */
+async function externalJoinRefusal(
+  trx: TenantTransaction,
+  groupId: string,
+): Promise<ExternalRefusal | undefined> {
+  const policy = await accessPolicy(trx);
+  const held = await trx
+    .selectFrom('access_grant as g')
+    .innerJoin('role as r', 'r.id', 'g.role_id')
+    .select(['r.permissions', 'g.level', 'g.effect', 'g.expires_at'])
+    .where('g.group_id', '=', groupId)
+    .where((eb) => eb.or([eb('g.expires_at', 'is', null), eb('g.expires_at', '>', policy.now)]))
+    .execute();
+  for (const grant of held) {
+    const refusal = externalRefusal(
+      { permissions: grant.permissions, level: grant.level },
+      grant.effect,
+      grant.expires_at,
+      policy,
+    );
+    if (refusal) return refusal;
+  }
+  return undefined;
 }
 
 export type MembershipAnswer =
@@ -63,23 +202,8 @@ export async function addToGroup(
     .where('id', '=', principalId)
     .executeTakeFirstOrThrow();
   if (principal.kind === 'external') {
-    const policy = await accessPolicy(trx);
-    const held = await trx
-      .selectFrom('access_grant as g')
-      .innerJoin('role as r', 'r.id', 'g.role_id')
-      .select(['r.permissions', 'g.level', 'g.effect', 'g.expires_at'])
-      .where('g.group_id', '=', groupId)
-      .where((eb) => eb.or([eb('g.expires_at', 'is', null), eb('g.expires_at', '>', policy.now)]))
-      .execute();
-    for (const grant of held) {
-      const refusal = externalRefusal(
-        { permissions: grant.permissions, level: grant.level },
-        grant.effect,
-        grant.expires_at,
-        policy,
-      );
-      if (refusal) return { refused: refusal };
-    }
+    const refusal = await externalJoinRefusal(trx, groupId);
+    if (refusal) return { refused: refusal };
   }
 
   await trx
@@ -88,4 +212,188 @@ export async function addToGroup(
     .onConflict((conflict) => conflict.columns(['group_id', 'principal_id']).doNothing())
     .execute();
   return { added: true };
+}
+
+export type SetMembersAnswer =
+  | { readonly set: true }
+  | {
+      readonly refused:
+        ExternalRefusal | 'group.missing' | 'group.from_provider' | 'group.member_missing';
+    };
+
+/**
+ * Makes an environment's own group's members exactly the principals named, adding and removing only
+ * those that differ, so naming the same members again changes no fact and takes no lock beyond this
+ * one. A provider's group is refused: its members are the sign-ins' to decide (GP-C). A person the
+ * tenant does not hold is refused, and so is an external principal joining where `addToGroup` would
+ * refuse them; either way nothing changes. Removing a member is never refused: the lock-out guard
+ * counts direct grants only (access.md, "Roles"). Who may do this - `administer` at the tenant - is the
+ * caller's to decide first.
+ */
+export async function setGroupMembers(
+  trx: TenantTransaction,
+  groupId: string,
+  principalIds: readonly string[],
+): Promise<SetMembersAnswer> {
+  // Before the first read, as addToGroup: a grant made to this group meanwhile must be seen.
+  await lockAccessForChange(trx);
+
+  const group = await trx
+    .selectFrom('access_group')
+    .select('source')
+    .where('id', '=', groupId)
+    .executeTakeFirst();
+  if (!group) return { refused: 'group.missing' };
+  if (group.source === 'provider') return { refused: 'group.from_provider' };
+
+  const wanted = [...new Set(principalIds)];
+  const people =
+    wanted.length === 0
+      ? []
+      : await trx
+          .selectFrom('principal')
+          .select(['id', 'kind'])
+          .where('id', 'in', wanted)
+          .execute();
+  if (people.length !== wanted.length) return { refused: 'group.member_missing' };
+
+  const current = new Set(
+    (
+      await trx
+        .selectFrom('group_member')
+        .select('principal_id')
+        .where('group_id', '=', groupId)
+        .execute()
+    ).map((row) => row.principal_id),
+  );
+  const joining = people.filter((person) => !current.has(person.id));
+  const leaving = [...current].filter((id) => !wanted.includes(id));
+
+  if (joining.some((person) => person.kind === 'external')) {
+    const refusal = await externalJoinRefusal(trx, groupId);
+    if (refusal) return { refused: refusal };
+  }
+
+  if (leaving.length > 0) {
+    await trx
+      .deleteFrom('group_member')
+      .where('group_id', '=', groupId)
+      .where('principal_id', 'in', leaving)
+      .execute();
+  }
+  if (joining.length > 0) {
+    await trx
+      .insertInto('group_member')
+      .values(
+        joining.map((person) => ({
+          group_id: groupId,
+          principal_id: person.id,
+          asserted_at: null,
+        })),
+      )
+      .execute();
+  }
+  return { set: true };
+}
+
+export type DeletionAnswer = { readonly deleted: string } | { readonly refused: 'group.missing' };
+
+/**
+ * Deletes a group, of either source, with its memberships and every grant it holds, which go by their
+ * keys' cascades (0009, 0039). Takes the epoch first, as every change to access does. Never refused by
+ * the lock-out guard, which counts direct grants only (access.md, "Roles").
+ */
+export async function deleteGroup(
+  trx: TenantTransaction,
+  groupId: string,
+): Promise<DeletionAnswer> {
+  await lockAccessForChange(trx);
+  const row = await trx
+    .deleteFrom('access_group')
+    .where('id', '=', groupId)
+    .returning('id')
+    .executeTakeFirst();
+  return row ? { deleted: row.id } : { refused: 'group.missing' };
+}
+
+/**
+ * Brings a principal's memberships of provider groups into line with the values the organisation's
+ * provider asserted at sign-in (IAM-009, GP-A to GP-D). A value no group stands for is ignored, and a
+ * value is matched exactly; no values - an absent or malformed claim - removes every provider
+ * membership (GP-B). The environment's own groups are never touched.
+ *
+ * Only the memberships that differ are added or removed, because each takes the access epoch
+ * exclusively and replacing them all would take it at every sign-in: the differences are read first,
+ * and only where there are some is the epoch taken - before they are read again and acted on, so a
+ * concurrent change to the same memberships is seen. Every membership the claim still carries has
+ * `asserted_at` brought up to now, which no trigger watches (0010).
+ *
+ * Holds no lock of its own before the epoch, and so belongs in a transaction that has taken none it
+ * could be waiting on - never the claim of an invitation, whose rows a withdrawal takes after the epoch.
+ */
+export async function syncProviderGroups(
+  trx: TenantTransaction,
+  principalId: string,
+  values: readonly string[],
+): Promise<void> {
+  const asserted = [...new Set(values)];
+  const differences = async () => {
+    const standing =
+      asserted.length === 0
+        ? []
+        : await trx
+            .selectFrom('access_group')
+            .select('id')
+            .where('source', '=', 'provider')
+            .where('provider_value', 'in', asserted)
+            .execute();
+    const held = await trx
+      .selectFrom('group_member as m')
+      .innerJoin('access_group as g', 'g.id', 'm.group_id')
+      .select('m.group_id')
+      .where('m.principal_id', '=', principalId)
+      .where('g.source', '=', 'provider')
+      .execute();
+    const wanted = new Set(standing.map((row) => row.id));
+    const holding = new Set(held.map((row) => row.group_id));
+    return {
+      wanted,
+      joining: [...wanted].filter((id) => !holding.has(id)),
+      leaving: [...holding].filter((id) => !wanted.has(id)),
+    };
+  };
+
+  let found = await differences();
+  if (found.joining.length > 0 || found.leaving.length > 0) {
+    await lockAccessForChange(trx);
+    found = await differences();
+    if (found.leaving.length > 0) {
+      await trx
+        .deleteFrom('group_member')
+        .where('principal_id', '=', principalId)
+        .where('group_id', 'in', found.leaving)
+        .execute();
+    }
+    if (found.joining.length > 0) {
+      await trx
+        .insertInto('group_member')
+        .values(
+          found.joining.map((groupId) => ({
+            group_id: groupId,
+            principal_id: principalId,
+            asserted_at: sql<Date>`now()`,
+          })),
+        )
+        .onConflict((conflict) => conflict.columns(['group_id', 'principal_id']).doNothing())
+        .execute();
+    }
+  }
+  if (found.wanted.size > 0) {
+    await trx
+      .updateTable('group_member')
+      .set({ asserted_at: sql<Date>`now()` })
+      .where('principal_id', '=', principalId)
+      .where('group_id', 'in', [...found.wanted])
+      .execute();
+  }
 }

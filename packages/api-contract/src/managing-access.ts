@@ -39,8 +39,8 @@ export type GrantList = z.infer<typeof GrantList>;
 export const GrantBody = z.strictObject({
   role: LowercaseUuid.describe('The role granted'),
   subject: z
-    .strictObject({ principal: LowercaseUuid })
-    .describe('Who it is granted to: a principal. Granting to a group is not offered yet'),
+    .union([z.strictObject({ principal: LowercaseUuid }), z.strictObject({ group: LowercaseUuid })])
+    .describe('Who it is granted to: a principal, or a group and so each of its members'),
   level: Target.describe('Where it is granted'),
   effect: z.enum(['allow', 'deny']).describe('deny refuses everything the role holds, there'),
 });
@@ -172,7 +172,7 @@ export const managingAccessRoutes = {
     operationId: 'makeGrant',
     method: 'POST',
     path: '/v1/grants',
-    summary: 'Grant a role to a person at one level, as an allow or a denial',
+    summary: 'Grant a role to a person or a group at one level, as an allow or a denial',
     tenantScoped: true,
     access: {
       check: 'permission',

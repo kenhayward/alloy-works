@@ -16,6 +16,10 @@ const space: Level = { kind: 'space', id: CLINICAL };
 const artifact: Level = { kind: 'artifact', id: DOSING };
 const NOW = new Date('2026-09-16T12:00:00Z');
 const LATER = new Date('2026-10-16T12:00:00Z');
+/** The tenant's cap on how far an external principal's access may reach, in days (0009's default). */
+const CAP_DAYS = 90;
+const AT_CAP = new Date(NOW.getTime() + CAP_DAYS * 24 * 60 * 60 * 1000);
+const FIVE_YEARS_ON = new Date('2031-09-16T12:00:00Z');
 
 const everything: AccessGrant['role'] = { id: 'role-all', name: 'Everything', permissions };
 
@@ -37,6 +41,7 @@ const external = (grants: readonly AccessGrant[], kind: 'external' | 'user' = 'e
     chain: [artifact, space, tenant],
     grants,
     now: NOW,
+    externalCapDays: CAP_DAYS,
   }) satisfies AccessFacts;
 
 describe('an external principal', () => {
@@ -92,6 +97,7 @@ describe('an external principal', () => {
       chain: [secret, space, tenant],
       grants: [grant(secret, null, 'deny', { group: PARTNERS }), grant(space, LATER, 'allow')],
       now: NOW,
+      externalCapDays: CAP_DAYS,
     };
     expect(decide('read', facts)).toMatchObject({
       allowed: false,
@@ -106,7 +112,37 @@ describe('an external principal', () => {
       artifacts: new Map([[SECRET, CLINICAL]]),
       grants: facts.grants,
       now: NOW,
+      externalCapDays: CAP_DAYS,
     });
     expect(set.excluded).toEqual([SECRET]);
+  });
+
+  it("is granted nothing by an allow reaching past the tenant's cap, as a provider group's grant can, and readableSet agrees", () => {
+    const facts = external([grant(space, FIVE_YEARS_ON, 'allow', { group: PARTNERS })]);
+    expect(decide('read', facts)).toMatchObject({ allowed: false, reason: 'not_granted' });
+    expect(decide('read', external(facts.grants, 'user')).allowed).toBe(true);
+    expect(
+      decide('read', external([grant(space, AT_CAP, 'allow', { group: PARTNERS })])).allowed,
+    ).toBe(true);
+
+    const set = readableSet({
+      principal: facts.principal,
+      groups: facts.groups,
+      spaces: [CLINICAL],
+      artifacts: new Map(),
+      grants: facts.grants,
+      now: NOW,
+      externalCapDays: CAP_DAYS,
+    });
+    expect(set.spaces).toEqual([]);
+  });
+
+  it('is refused by a denial reaching past the cap: the cap ignores allows only', () => {
+    const facts = external([grant(artifact, FIVE_YEARS_ON, 'deny'), grant(space, LATER)]);
+    expect(decide('comment', facts)).toMatchObject({
+      allowed: false,
+      reason: 'denied',
+      level: artifact,
+    });
   });
 });

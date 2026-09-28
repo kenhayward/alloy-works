@@ -159,9 +159,17 @@ export { createRole, findRole, type Role, type RoleAnswer } from './roles.js';
 export {
   addToGroup,
   createGroup,
+  deleteGroup,
+  listGroups,
+  readGroup,
+  setGroupMembers,
+  syncProviderGroups,
+  type DeletionAnswer,
   type Group,
   type GroupAnswer,
+  type ListedGroup,
   type MembershipAnswer,
+  type SetMembersAnswer,
 } from './groups.js';
 export {
   accessPolicy,

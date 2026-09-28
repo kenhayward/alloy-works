@@ -97,6 +97,7 @@ function generated(seed: number): ReadableFacts {
     artifacts: ARTIFACTS,
     grants,
     now: NOW,
+    externalCapDays: 90,
   };
 }
 
@@ -126,6 +127,7 @@ describe('the readable set', () => {
         },
       ],
       now: NOW,
+      externalCapDays: 90,
     });
     expect(set).toEqual({ tenant: true, spaces: ['space-clinical'], excluded: [], included: [] });
   });
@@ -151,6 +153,7 @@ describe('the readable set', () => {
         grant('grant-4', 'allow', { kind: 'artifact', id: 'artifact-field' }),
       ],
       now: NOW,
+      externalCapDays: 90,
     });
     expect(set).toEqual({
       tenant: false,

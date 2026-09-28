@@ -3,6 +3,38 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.112.0 - 2026-09-28 (PR #304)
+
+### Added
+
+- **Groups hold roles.** An administrator of the whole environment can make a group and grant it a role,
+  on the whole environment, a space or one item, as they would a person: everybody in the group holds
+  that role there. Deleting a group takes everything granted to it with it.
+- **Access that follows your directory.** A group can stand for one of your organisation's directory
+  groups. Each time somebody signs in through your organisation's sign-in, they join the groups standing
+  for the directory groups it says they are in, and leave the ones it no longer does - so taking somebody
+  out of a directory group takes away what that group gave them at their next sign-in. A directory group
+  nobody has made a group for means nothing here, and a sign-in that says nothing about groups leaves the
+  person in none. No extra permission is asked of your sign-in provider for this; it must be set to send
+  groups with the rest of who somebody is. Signing in with Google changes no group.
+- **Your own groups, filled by hand.** A group that is the environment's own has the members an
+  administrator names; a directory group's members cannot be named by hand.
+- Groups are managed through the API for now: listing them with their members, making, filling and
+  deleting them, and granting to one. A page for them comes in a later release.
+- In development, the stand-in sign-in puts Ada in `authors` and Grace in `authors` and `publishers`, so
+  a group standing for either fills when they sign in.
+
+### Changed
+
+- **Outside people stay within your limit on external access, however they got it.** Somebody outside
+  your organisation whom your directory puts in a group gains nothing from that group that reaches past
+  your environment's limit on how long outside access may last, just as a grant made to them directly
+  could not.
+- **Sign-in checks who vouched for somebody.** Because a sign-in can now give somebody roles through
+  their groups, the service checks each sign-in's proof of identity against your provider's published
+  keys, and refuses one that does not match. A directory that says somebody is in more than 1,000 groups
+  has the first 1,000 followed and the rest ignored.
+
 ## 0.111.0 - 2026-09-28 (PR #301)
 
 ### Added

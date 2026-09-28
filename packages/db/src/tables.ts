@@ -88,6 +88,8 @@ export interface IdentityProviderTable {
   issuer: string;
   client_id: string;
   secret_name: string;
+  /** The ID token claim carrying the provider's group values (0039): `groups` unless configured. */
+  groups_claim: Generated<string>;
 }
 
 export interface SignInRouteTable {

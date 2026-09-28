@@ -18,6 +18,7 @@ export interface ReadableFacts {
   readonly artifacts: ReadonlyMap<string, string | null>;
   readonly grants: readonly AccessGrant[];
   readonly now: Date;
+  readonly externalCapDays: AccessFacts['externalCapDays'];
 }
 
 /**
@@ -47,6 +48,7 @@ export function readableSet(facts: ReadableFacts): ReadableSet {
       chain,
       grants: facts.grants,
       now: facts.now,
+      externalCapDays: facts.externalCapDays,
     }).allowed;
   const tenant = asked([{ kind: 'tenant' }]);
   const spaces = facts.spaces.filter((id) => asked([{ kind: 'space', id }, { kind: 'tenant' }]));

@@ -253,6 +253,19 @@ describe('the listings through the service', () => {
       });
       expect(issued.statusCode, name).toBe(200);
     }
+    // Two groups, one of each kind, so the groups listing has pages to turn.
+    for (const payload of [
+      { name: 'Reviewers' },
+      { name: 'Directory authors', providerValue: 'authors' },
+    ]) {
+      const made = await app.inject({
+        method: 'POST',
+        url: '/v1/groups',
+        headers: { host: HOST, cookie },
+        payload,
+      });
+      expect(made.statusCode, payload.name).toBe(200);
+    }
     const spaces = (await get('/v1/spaces?limit=100')).json<Page>();
     const general = spaces.items.find((each) => each.name === 'General')!.id;
     const documents = (await get('/v1/documents?limit=100')).json<Page>();
@@ -300,6 +313,7 @@ describe('the listings through the service', () => {
       listRoles: '/v1/roles?level=tenant',
       listPrincipals: '/v1/principals?level=tenant',
       listInvitations: '/v1/invitations',
+      listGroups: '/v1/groups',
       listTemplates: '/v1/templates',
       listDefinitions: '/v1/definitions',
       listPeople: '/v1/people',

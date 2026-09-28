@@ -18,18 +18,28 @@ export const signedInAddressQuery = (prefix: string) => `
 /**
  * Points a tenant at its organisation's identity provider and permits the route, run as an
  * administrator. The secret itself stays in the service's secret store, under `secretName`.
+ * `groupsClaim` names the ID token claim carrying the provider's group values (IAM-009, GP-A):
+ * `groups` for a new configuration, and left as it was when a configuration is replaced without one.
  */
 export async function configureOrganisationSignIn(
   adminUrl: string,
   tenant: Tenant,
-  provider: { readonly issuer: string; readonly clientId: string; readonly secretName: string },
+  provider: {
+    readonly issuer: string;
+    readonly clientId: string;
+    readonly secretName: string;
+    readonly groupsClaim?: string;
+  },
 ): Promise<void> {
   await asAdministrator(adminUrl, tenant, async (client, schema) => {
     await client.query(
-      `insert into ${schema}.identity_provider (issuer, client_id, secret_name) values ($1, $2, $3)
+      `insert into ${schema}.identity_provider (issuer, client_id, secret_name, groups_claim)
+       values ($1, $2, $3, coalesce($4, 'groups'))
        on conflict (singleton) do update
-         set issuer = excluded.issuer, client_id = excluded.client_id, secret_name = excluded.secret_name`,
-      [provider.issuer, provider.clientId, provider.secretName],
+         set issuer = excluded.issuer, client_id = excluded.client_id,
+           secret_name = excluded.secret_name,
+           groups_claim = coalesce($4, ${schema}.identity_provider.groups_claim)`,
+      [provider.issuer, provider.clientId, provider.secretName, provider.groupsClaim ?? null],
     );
     await client.query(
       `insert into ${schema}.sign_in_route (route) values ('organisation') on conflict do nothing`,

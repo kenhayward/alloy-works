@@ -2,11 +2,13 @@ import { Writable } from 'node:stream';
 import {
   bootstrapCluster,
   closeSignInRoute,
+  createGroup,
   createTenant,
   createTenantDatabase,
   inviteToTenant,
   migrate,
   permitGoogleSignIn,
+  syncProviderGroups,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -307,6 +309,40 @@ describe('signing in with a Google account', () => {
     await closeSignInRoute(db.adminUrl, other, 'google');
     expect((await me(OTHER, cookie)).statusCode).toBe(401);
     expect((await start(OTHER)).statusCode).toBe(404);
+  });
+
+  it("leaves a principal's provider groups as they were: Google asserts none, whatever an account's groups", async () => {
+    await signInWithGoogle(DEV, 'ada');
+    const { ada, groups } = await tenantDb.withTenant(dev, async (trx) => {
+      const made: Record<string, string> = {};
+      for (const value of ['authors', 'publishers']) {
+        const answer = await createGroup(trx, `Directory ${value}`, { providerValue: value });
+        if (!('group' in answer)) throw new Error(`refused: ${answer.refused}`);
+        made[value] = answer.group.id;
+      }
+      const principal = await trx
+        .selectFrom('principal')
+        .select('id')
+        .where('subject', '=', 'ada')
+        .executeTakeFirstOrThrow();
+      // As an organisation sign-in asserting `publishers` would have left them.
+      await syncProviderGroups(trx, principal.id, ['publishers']);
+      return { ada: principal.id, groups: made };
+    });
+    const memberships = () =>
+      tenantDb.withTenant(dev, (trx) =>
+        trx
+          .selectFrom('group_member')
+          .select('group_id')
+          .where('principal_id', '=', ada)
+          .execute()
+          .then((rows) => rows.map((row) => row.group_id)),
+      );
+    expect(await memberships()).toEqual([groups.publishers]);
+
+    // The stand-in, playing Google, says Ada is in `authors`; the route reads no claim for groups.
+    await signInWithGoogle(DEV, 'ada');
+    expect(await memberships()).toEqual([groups.publishers]);
   });
 
   it('never writes a code, a state or a session token to its log', () => {
