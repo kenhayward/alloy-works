@@ -20,33 +20,36 @@ in them, so a reader who never refreshes still sees correct numbers everywhere e
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                      |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **PUB-024** | Heading numbering is a `numbering.xml` definition linked from each heading style, in the scheme the layout declares (PUB-011)      |
-| **PUB-025** | Footnotes are `footnotes.xml` entries: `w:footnoteReference` in the text, `w:footnoteRef` inside the note, so Word numbers both    |
-| **PUB-026** | A cross-reference is a `REF`, `NOTEREF` or `PAGEREF` field at a bookmark on its target, prefilled with what the PDF prints         |
-| **PUB-028** | Suggestions become `w:ins` and `w:del` with author and date; comment threads become `comments.xml` anchored by range               |
-| **PUB-029** | The writer's output is opened in Word before any change to it lands, and the conformance harness renders and schema-checks it      |
-| **PUB-065** | No page breaks are imposed to mimic the PDF; the publication record states that page numbers cite the PDF                          |
-| **PUB-066** | Contents, lists and page references are `TOC` and `PAGEREF` fields; `settings.xml` asks Word to update fields on opening           |
-| **PUB-067** | Equations are OMML, built from the same maths tree as the PDF                                                                      |
-| **CNT-045** | One MathML: drawn natively in the editor, and converted once to the maths tree, which the PDF sets and this writer makes OMML from |
-| **CNT-128** | A hyperlink is a PDF link (publishing.md) and a `w:hyperlink` here; every T1 format has links, so no theme rendering stands in     |
+| ID          | How it is met                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PUB-024** | Heading numbering is a `numbering.xml` definition linked from each heading style, in the scheme the layout declares (PUB-011)                                                                                                                                                                                                                                                                                                      |
+| **PUB-025** | Footnotes are `footnotes.xml` entries: `w:footnoteReference` in the text, `w:footnoteRef` inside the note, so Word numbers both                                                                                                                                                                                                                                                                                                    |
+| **PUB-026** | A cross-reference is a `REF`, `NOTEREF` or `PAGEREF` field at a bookmark on its target, prefilled with what the PDF prints                                                                                                                                                                                                                                                                                                         |
+| **PUB-028** | Suggestions become `w:ins` and `w:del` with author and date; comment threads become `comments.xml` anchored by range                                                                                                                                                                                                                                                                                                               |
+| **PUB-029** | The writer's output is opened in Word before any change to it lands, and the conformance harness renders and schema-checks it                                                                                                                                                                                                                                                                                                      |
+| **PUB-065** | No page breaks are imposed to mimic the PDF; the publication record states that page numbers cite the PDF                                                                                                                                                                                                                                                                                                                          |
+| **PUB-066** | Contents, lists and page references are `TOC` and `PAGEREF` fields; `settings.xml` asks Word to update fields on opening                                                                                                                                                                                                                                                                                                           |
+| **PUB-067** | Equations are OMML, built from the same maths tree as the PDF                                                                                                                                                                                                                                                                                                                                                                      |
+| **CNT-045** | One MathML: drawn natively in the editor, and converted once to the maths tree, which the PDF sets and this writer makes OMML from                                                                                                                                                                                                                                                                                                 |
+| **CNT-128** | A hyperlink is a PDF link (publishing.md) and a `w:hyperlink` here; every T1 format has links, so no theme rendering stands in                                                                                                                                                                                                                                                                                                     |
+| **PUB-100** | Headings at their outline levels, bulleted and numbered lists as Word's lists, header rows marked `w:tblHeader`, descriptions in `descr` or flagged decorative, every run's language, links and footnotes are Word's own; and the report names, by its place, each structure the PDF tags that Word has no place for, and once the titles it sets as body text and a list it cannot link ([Accessibility](#accessibility-pub-100)) |
 
 PUB-027 - styles as real Word styles - belongs to [themes.md](themes.md), whose Word projection this
 writer includes as `styles.xml`.
 
-**PUB-023 and PUB-035 are not claimed**, though this design answers much of each; the final review of
-Word 4 found both claimed for more than the design gives. PUB-023's "first-class" is, by PUB-078,
-kept by STY-053's conformance suite, which does not measure Word's style values yet, and a maths
-character is judged against STIX Two Math, not the Cambria Math Word sets it in. PUB-035's "on the
-same terms" asks for structures Word does not carry here: a header column, a description's language,
-a quotation, preformatted text or a quoted phrase as structure, and a numbered equation as anything
-but a table; and no Word publication is checked for accessibility as PUB-091 checks the PDF. Each is
-argued in full in Word 4's part of [What was built](#what-was-built). **Since 2026-09-28 PUB-035 is
-superseded** by PUB-100, the structure Word carries wherever it can hold it and a report of what it
-cannot, and PUB-101, an automatic accessibility check of Word, in T3 (the T1 audit's last rewordings).
-W14 reads this design against PUB-100's every clause before claiming it.
+**PUB-023 is not claimed**, though this design answers much of it; the final review of Word 4 found
+it claimed for more than the design gives. Its "first-class" is, by PUB-078, kept by STY-053's
+conformance suite, which does not measure Word's style values yet; and a maths character is judged
+against STIX Two Math, not the Cambria Math Word sets it in - which the report now says once for a
+document setting an equation (`maths_coverage_unchecked`, W14.6), but which is still no judgement of
+any character. **PUB-035 was not claimed either**, for the structures it asked Word to carry on the
+PDF's terms that Word does not; argued in full in Word 4's part of [What was built](#what-was-built).
+**Since 2026-09-28 PUB-035 is superseded** by PUB-100, the structure Word carries wherever it can
+hold it and a report of what it cannot, and PUB-101, an automatic accessibility check of Word, in T3
+(the T1 audit's last rewordings). **PUB-100 is claimed since W14.6**, read against its every clause
+in [Accessibility](#accessibility-pub-100): each structure it names is carried, and each Word has no
+place for is named in the report, by its place where it has one. PUB-101 is not claimed: nothing checks a Word
+publication for accessibility yet.
 
 ## Parts
 
@@ -120,7 +123,65 @@ below). Word's own equation-array numbering (`#` inside an `m:eqArr`) was tried 
 worked in Word, but nothing can refer to its number, and LibreOffice - which the conformance harness
 renders with - does not support it.
 
-## Accessibility (PUB-035)
+## Accessibility (PUB-100)
+
+PUB-100 asks two things: that Word carry the structure a reader of the PDF is given wherever Word can
+hold it, and that the publication's report name each structure it could not carry. Its clauses, as
+the writer meets them since W14.6:
+
+| Clause                            | In Word                                                                                                                                                                                                    | Shown by                                                                                                                                |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Headings                          | Each in the style Word names for its depth, whose name gives its outline level, to the ninth; the document's, the contents' and the lists' titles, which the PDF tags as headings, body text, and reported | `apps/worker/src/word.test.ts`, "PUB-100 writes what Word carries of the PDF's accessibility"; `word/write.test.ts`, the titles' report |
+| Lists                             | A bulleted or numbered list is Word's own, on a numbering definition of its own; a definition list Word cannot hold, and it is reported                                                                    | the same test, every list's items on Word's own list; `word/write.test.ts`, the report's tests                                          |
+| Tables with their header rows     | Header rows marked `w:tblHeader`, which Word reads as headers and repeats; a caption the table's `w:tblCaption`                                                                                            | the same test, every table's header rows marked and its caption its title                                                               |
+| Figures' alternative text         | `wp:docPr/@descr`, or Word's decorative flag where the PDF makes an artifact; a description in another language than the document's that language on its drawing's run, unmeasured, and reported           | the same test, every image described or flagged decorative; `word/write.test.ts`, each drawing's run in its description's language      |
+| Languages                         | `w:lang` on every run whose language differs from the document's, a note's and a reference's among them                                                                                                    | the same test, every run in its language                                                                                                |
+| Links                             | `w:hyperlink` where the PDF links, and a reference's field linked where the PDF's is; a list of figures holding a floated figure unlinked, where every entry of the PDF's is a link, and reported          | the same test, a link where the PDF's is one; `word/write.test.ts`, the unlinked list's report                                          |
+| Footnotes                         | Word's own, `w:footnoteReference` and `w:footnoteRef`, numbered by Word                                                                                                                                    | the same test, every footnote Word's own                                                                                                |
+| Each structure it could not carry | The report, below, one kind each, by its place                                                                                                                                                             | `word/write.test.ts`'s five PUB-100 tests; the worker's `everything` test, every kind a T1 document makes                               |
+
+**What Word has no place for, and the report names** (W-J), beside what Word 2 and Word 4 already
+named - a header column (`header_column_lost`, TAB-049) and a heading or a listed caption whose
+equation Word's rebuilt entries flatten (`equation_flattened`):
+
+| Kind                            | The PDF gives                                                                     | Word has                                                                                                                                             | Named by                                                                 |
+| ------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `description_language_lost`     | A `Figure` carrying its description's `/Lang`                                     | `descr`, which holds no language; its drawing's run states the description's, but no screen reader is measured to read `descr` in it                 | the figure, or the block whose line holds the image                      |
+| `quotation_not_structure`       | A `BlockQuote`                                                                    | Paragraphs in the quotation style                                                                                                                    | the quotation                                                            |
+| `preformatted_not_structure`    | `Code`                                                                            | Paragraphs in the preformatted role's style                                                                                                          | the block                                                                |
+| `definition_list_not_structure` | A list, `L` and `LI`, a `Lbl` for the term and an `LBody`                         | The terms in bold and the definitions hung beneath them, with no list                                                                                | the list                                                                 |
+| `quoted_phrase_not_structure`   | A `Quote`                                                                         | Runs in the quoted phrase's character style                                                                                                          | the block of runs, once however many it holds; a heading carries no mark |
+| `inline_code_not_structure`     | `Code`                                                                            | Runs in the inline code character style                                                                                                              | the same                                                                 |
+| `equation_numbered_as_table`    | A `Formula` and a `Span` holding its number                                       | A table of one row, the equation and its number (WO-H); two in a row one table                                                                       | the equation, and its label                                              |
+| `equation_alternative_lost`     | Each `Formula`'s `/Alt`, the author's words in their language                     | OMML, which Word's own maths reading reads; the alternative has nowhere to go                                                                        | once, for a document setting an equation                                 |
+| `maths_coverage_unchecked`      | Every maths character judged against the maths face (`math_glyph_missing`)        | The Word face the theme names, Cambria Math, whose coverage nothing here holds                                                                       | once, for a document setting an equation in a face Word does not embed   |
+| `titles_not_headings`           | The document's, the contents' and each list's title as `H1`s, outside the outline | Paragraphs in the `title`, `contents` and `list` roles' styles, at `w:outlineLvl` 9, body text, since as headings Word's `TOC` field would list them | once, for every document, naming which of the three stand in it          |
+| `list_not_linked`               | A list whose every entry links to what it lists                                   | A `TOC` field without `\h`, since Word lists a caption in a text box with no page where it links                                                     | the list, by its sequence: only a figure floats, so only `figure`        |
+
+A place is the node being written and the block the thing stands in, as a publish failure names one,
+and each kind says a place once; the publication's page says each of the six kinds named by a place
+alone once, counting its places, each numbered equation by its label, and the titles and an unlinked
+list once each. **The maths face's
+characters are reported once, not per character**: Cambria Math is not a face the product ships, the
+worker does not hold it, and its coverage is not kept as data, so there is no honest way here to say
+which characters Word draws from another face - the final review of Word 4 measured 1,052 on one
+machine, from a `cmap` not committed. Reading every construct the PDF tags against the writer found
+two more only in W14.6's final review, both now reported: the titles template 13 sets as `H1`s - the
+document's, the contents' and each list's - which Word sets as body text (`titles_not_headings`),
+since as headings its `TOC` field would list them; and a list of figures Word cannot link where one
+of them floats (`list_not_linked`), where every entry of the PDF's is a link. Otherwise: a table's
+caption is its `w:tblCaption` and a figure's is in Word's own Caption style; a table's note and a
+figure's grouping are `Div`s in the PDF, which say nothing to a reader; the contents and the lists
+after it are Word's `TOC` fields, as the PDF's are a `TOC`. **An image's description's language is
+written, not measured**: the run holding its drawing states it, as template 13 sets the image in its
+description's language, and the Open XML SDK accepts it; but which language a screen reader reads
+`descr` in has not been measured in Word, so `description_language_lost` still names each such
+image. A repeated header
+and an omitted continuation label (`header_repeated`, `continuation_label_omitted`) are appearance,
+reported since Word 2. A caption's label is tagged in the layout's language in Word and in the
+caption's in the PDF, which is a different reading of the same words, not a structure lost.
+
+The mechanics, as before:
 
 - Heading styles carry `w:outlineLvl`, so Word's navigation pane and screen readers see structure.
 - Images carry their alternative text in `wp:docPr/@descr`; publishing already refuses an image
@@ -130,11 +191,12 @@ renders with - does not support it.
 - **Word has no header column.** A table whose header columns the PDF tags as row headers loses them
   in Word, so the publication's report names each such table (TAB-049, decision T-G of
   [publishing.md](publishing.md#tables)), and the author is told rather than finding out from a reader.
+  The kinds above are told the same way.
 - Every run carries `w:lang` where its language differs from the document's, and the document's
   language is set in `settings.xml` and the styles (PUB-034) - the thing WeasyPrint failed at in the
   engine spike, which the Word writer must not repeat.
-- Native equations are read by Word's own maths accessibility; they need no image and no alternative
-  text of ours.
+- Native equations are read by Word's own maths accessibility; they need no image, and the
+  alternative text of ours they cannot hold is reported (`equation_alternative_lost`).
 
 ## Verification
 
@@ -751,7 +813,7 @@ to 328:
 | ----------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **TAB-039** | publishing.md | `apps/worker/src/word.test.ts`, one test reading one publication's two outputs together: the PDF, compliant by veraPDF, its `Caption` the `Table`'s first child; the Word document, its caption the paragraph straight above the table in the caption role with `w:keepNext`, its words the table's `w:tblCaption`. "In every output" is both halves                                                                       |
 | **TAB-049** | publishing.md | The same test: in the PDF, `TH` for both header rows and the header column; in Word, both header rows `w:tblHeader` and none other, and the report naming the table whose header column Word cannot mark                                                                                                                                                                                                                   |
-| **PUB-035** | this document | `apps/worker/src/word.test.ts`, one test over the whole Word 2 document reading every item [Accessibility](#accessibility-pub-035) lists: every heading in Word's style for its depth with its outline level; every drawing described by its alternative text or flagged decorative; every table's header rows marked and its caption associated; the header column named in the report; every run of text in its language |
+| **PUB-035** | this document | `apps/worker/src/word.test.ts`, one test over the whole Word 2 document reading every item [Accessibility](#accessibility-pub-100) lists: every heading in Word's style for its depth with its outline level; every drawing described by its alternative text or flagged decorative; every table's header rows marked and its caption associated; the header column named in the report; every run of text in its language |
 
 **PUB-035 is whole only while equations, footnotes and cross-references are refused for Word.** No
 Word document carries one today, so none carries one inaccessibly, and the two things Word cannot
@@ -1187,7 +1249,7 @@ contents. The writer is `word/4`. Building it changed these things here:
   regular. An italic style holding an equation, which the default theme has none of, is not
   measured.
 - **An equation's language and alternative go nowhere in Word**: Word reads its own maths aloud
-  ([Accessibility](#accessibility-pub-035)), and the alternative appears only among a table caption's
+  ([Accessibility](#accessibility-pub-100)), and the alternative appears only among a table caption's
   words in `w:tblCaption`.
 - **The Word check** gained a fixture of equations, compiled through template 13 beside it, and two
   checks: now twelve documents and 25 checks, all green in Word 16 on the final code. It holds the
@@ -1327,7 +1389,13 @@ floated figure's (`relative:footnote`, `relative:float`); and **a caption's word
 where Word reads them otherwise**, inside the caption itself or holding a reference that prints
 anything but a number (`title:caption`, `title:nested` and their `numberAndTitle` forms). Ken kept
 the last two, W3-A and W3-B, on 2026-09-26. One thing Word sets otherwise is neither refused nor
-reported: a maths character Cambria Math lacks, which Word draws from another face. How each slice
+reported: a maths character Cambria Math lacks, which Word draws from another face. **Since W14.6**
+the report also names every structure the PDF tags that Word has no place for - a description's
+language, a quotation, preformatted text, a definition list, a quoted phrase and inline code as
+structure, and each numbered equation set as a table - and, once for a document setting an
+equation, the alternative Word's maths reading replaces and that Cambria Math's characters are not
+checked ([Accessibility](#accessibility-pub-100)); so a maths character Cambria Math lacks is now
+reported as unchecked, though still not by character. How each slice
 built its part, what Word showed and what
 each requirement is cited by are in the parts above, one a slice:
 [Word 1](../plans/2026-09-25-word-01-a-publication-in-word.md),

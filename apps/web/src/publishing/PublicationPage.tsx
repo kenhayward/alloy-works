@@ -2,7 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { DRAFT_NOTICE } from '@alloy-works/domain';
 import { useEffect, useState } from 'react';
 import { Notice } from '../states/Notice.js';
-import { reportIn, reportKey, reportWords, type ReportEntry } from './formats.js';
+import { reportIn, reportLines, type ReportEntry } from './formats.js';
 import styles from './PublicationPage.module.css';
 import { Waiting } from '../states/Waiting.js';
 
@@ -285,8 +285,8 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
         )}
         {word !== undefined && word.report.length > 0 && (
           <ul aria-label="About the Word document">
-            {word.report.map((entry) => (
-              <li key={reportKey(entry)}>{reportWords(entry)}</li>
+            {reportLines(word.report).map((line) => (
+              <li key={line.key}>{line.words}</li>
             ))}
           </ul>
         )}

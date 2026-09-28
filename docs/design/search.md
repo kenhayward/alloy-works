@@ -52,8 +52,10 @@ are never in it.
 
 **IAM-075 is not claimed here.** It asks that search indexes, caches, secrets and publications each be
 tenant-scoped. The search half is answered - the projection lives in the tenant's schema and the
-runtime role reaches no other (SCH-008) - but caches, secrets and publications are other designs', and
-claiming the whole on search's half is the claim this apparatus exists to refuse.
+runtime role reaches no other (SCH-008) - and the whole is read store by store in
+[service-foundations.md](service-foundations.md#tenant-scope-of-every-store), which is where IAM-075
+is claimed when every store is scoped; since W14.6 it names the one that is not, a sign-in client
+secret, and the claim waits there.
 
 **SCH-050 is not claimed here.** It replaces SCH-027 and names the interval that SCH-027 only asked
 for - provisionally p95 within 60 seconds, never above five minutes. Half of it is already met, and

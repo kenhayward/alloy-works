@@ -265,6 +265,50 @@ code beneath it, and each `@ts-expect-error` under a type widened to allow its s
 3. IAM-080 cited by the W9 test that shows it.
 4. Tests: PUB-100, IAM-075, IAM-080.
 
+**W14.6, as built.** Nine report kinds, `outputReportSchema`'s new members, written by `writeDocx`
+and worded on the publication's page: `description_language_lost`, `quotation_not_structure`,
+`preformatted_not_structure`, `definition_list_not_structure`, `quoted_phrase_not_structure` and
+`inline_code_not_structure`, each by its place - the node and the block, a quoted phrase's or inline
+code's the block of runs, a heading's none - and said once for each; `equation_numbered_as_table`,
+by its place and label; and, once for a document setting an equation, `equation_alternative_lost` and
+`maths_coverage_unchecked`, the Word family named. Three are more than W-J named, found by reading
+every construct template 13 tags against the writer: a **definition list**, which the PDF tags as a
+list and Word sets as paragraphs; **inline code**, which the PDF tags `Code`; and an **equation's
+alternative**, which the PDF's `Formula` carries and OMML has no place for. **The maths face's
+characters are reported once per document, not per character**: Cambria Math is not a face the
+product ships and its coverage is not kept as data, so which characters Word draws from another face
+cannot honestly be said here. The page says each kind named by a place alone once, counting its
+places (`reportLines`), rather than a sentence per place. **PUB-100 is claimed** by word-output.md,
+read clause by clause in its Accessibility section, and cited by `word/write.test.ts`'s three report
+tests, the web page's and the worker's two tests over the whole document, which carry every clause
+and name every kind. **IAM-075 is not claimed**: service-foundations.md's "Tenant scope of every
+store" shows the search projection, objects, publications, the object store's credentials, sessions,
+tokens and the caches scoped, but a sign-in client secret is read from the service's one secret store
+by the name a tenant's row gives, and the OpenID Connect configurations are kept by issuer and client
+with the secret they were discovered with, so two tenants naming one client share one secret. The
+stores' new tests cite nothing but SCH-008, since citing an unclaimed requirement fails `trace
+check`; each is ready to cite IAM-075 when the claim is made. **IAM-080** is cited by the W9 test
+that offers Authoring only where the permissions give it.
+
+**From the final review:** the claim said the report named every structure Word does not carry, and
+two were missing. Template 13 tags the document's title, the contents' title and each list's title
+as `H1`s, which Word sets as body text in their roles' styles (`w:outlineLvl` 9) so that its `TOC`
+field does not list them: now `titles_not_headings`, once for every document, naming which of the
+three stand in it, rather than headings, which would put them in Word's contents. And a list of
+figures holding a floated figure is written without `\h`, where every entry of the PDF's is a link:
+now `list_not_linked`, by its sequence, which only a figure's can be. `quoted_phrase_not_structure`
+and `inline_code_not_structure` accepted a null block no writer produces, since a heading carries no
+mark (`wordTitle`): both now take a block, as the other placed kinds do, and the writer's branch for
+a heading is gone. An image's description in another language is now written on the run holding its
+drawing, `w:lang`, as template 13 sets the image in `text(lang)`, and the Open XML SDK accepts it;
+but whether a screen reader reads `descr` in it is not measured, so `description_language_lost`
+stays, worded as written but unchecked. The tenant-scope tests of the search projection and the
+publications read their tables unqualified, which the `search_path` would answer from `public` too,
+and their refusal half is refused at the schema before any table is looked up, so pointing them at
+a table that does not exist stayed green; each now lists, as the migrator, every schema holding each
+table from the catalogue - exactly the two tenants' - and keeps the refusal as its own assertion.
+Pointed at a table that does not exist, and at `platform.tenant`, each went red.
+
 ## W14.7: The spelling checker and the symbol palette
 
 1. `setSpellCheckLanguages` on the platform bridge; the shell's pure mapping, pinned by a test; the

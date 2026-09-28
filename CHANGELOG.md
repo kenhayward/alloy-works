@@ -3,7 +3,7 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.121.0 - 2026-09-28 (PR #320)
+## 0.119.0 - 2026-09-28 (PR #320)
 
 ### Added
 
@@ -27,6 +27,33 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **Keeping a heading with its paragraph, keeping a paragraph together and avoiding lone lines at a
   page's edge** are checked both in the PDF and in the rules a Word document is given, from the same
   style.
+
+## 0.118.0 - 2026-09-28 (PR #315)
+
+### Added
+
+- **A publication's page names what its Word document cannot carry for a screen reader.** The
+  PDF tells a screen reader that a quotation is a quotation, that preformatted text and inline code
+  are code, that a quoted phrase is a quotation and that a definition list is a list. Word has no way
+  to say these, so the page now says which of them the Word document holds, once each, counting the
+  places. It also says that Word sets the document's title, the contents' title and the titles of the
+  lists of figures, tables and equations as ordinary paragraphs, where the PDF announces them as headings; that a list of
+  figures holding a floating figure does not link to the figures in Word; and where an image's
+  description is in another language, since its language is written beside the image in Word but
+  whether a screen reader uses it has not been checked.
+- **Numbered equations and maths in Word are explained on the publication's page.** Each numbered
+  equation is named as set in Word as a table of one row, which a screen reader announces as a
+  table. A Word document with equations says once that Word reads them aloud in its own words rather
+  than the description written for them, and that the characters of Word's maths typeface, Cambria
+  Math, are not checked.
+
+## 0.117.1 - 2026-09-28 (PR #319)
+
+### Fixed
+
+- **The test suite no longer fails at random on a slow machine** when it checks that a job being
+  worked on is not handed to a second worker. The check gave the first worker too short a hold on
+  the job, so a slow run could see the hold run out before it looked (issue #318).
 
 ## 0.117.0 - 2026-09-28 (PR #316)
 
