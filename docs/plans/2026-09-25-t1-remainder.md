@@ -129,4 +129,4 @@ This table is updated as each workstream lands.
 | W11 | Recovery                           | Built (PRs #295 to #298; [plan](2026-09-28-w11-recovery.md))                                             |
 | W12 | Identity                           | Built (PRs #299 to #305; [plan](2026-09-28-w12-identity.md)); K3 decided by ADR-0028                     |
 | W13 | A browser suite                    | Not started                                                                                              |
-| W14 | Publishing, finished               | Not started                                                                                              |
+| W14 | Publishing, finished               | Building ([plan](2026-09-28-w14-publishing-finished.md))                                                 |
