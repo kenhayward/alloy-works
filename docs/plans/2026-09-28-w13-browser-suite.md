@@ -258,7 +258,7 @@ Only these could change the plan; everything else is built as written.
 7. docs/testing.md and themes.md: what is measured, where, and against what.
 8. Tests: STY-080, on the comparison over the five themes.
 
-**W13.4, as built** (PR #TBD). The rows arrived as issue #328. Departures from the above, each in
+**W13.4, as built** (PR #334). The rows arrived as issue #328. Departures from the above, each in
 [themes.md](../design/themes.md#the-theme-in-the-editor-measured):
 
 - **Question 3's answer: yes, and not by `addThemeVersion` alone.** The store takes every theme the
