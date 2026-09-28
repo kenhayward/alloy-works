@@ -470,6 +470,13 @@ describe('access to a component', () => {
         within(section('The space General')).getByText('Nothing is granted here.'),
       ).toBeTruthy(),
     );
+    // The Remove button that had focus has gone with its grant: focus goes to its level's heading
+    // rather than falling to the page.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        within(section('The space General')).getByRole('heading', { name: 'The space General' }),
+      ),
+    );
   });
 
   it('sends one change, not two, when Give is pressed again before the first is answered', async () => {
@@ -558,6 +565,12 @@ describe('access to a component', () => {
         name: /ivy@example\.test/,
       }),
     ).toBeNull();
+    // The Withdraw button that had focus has gone with its invitation: focus goes to the heading.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        within(inviting).getByRole('heading', { name: 'Invite someone' }),
+      ),
+    );
   });
 
   it('drops whoever was chosen to give access to or to explain, once withdrawing the invitation that made them removes them from who can be chosen', async () => {
@@ -701,8 +714,13 @@ describe('access to a component', () => {
 
     failing = false;
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    await within(await screen.findByRole('region', { name: 'Invite someone' })).findByText(
-      'Nobody is waiting to accept an invitation.',
+    const inviting = await screen.findByRole('region', { name: 'Invite someone' });
+    await within(inviting).findByText('Nobody is waiting to accept an invitation.');
+    // The Try again that had focus has gone: focus goes to what took its place.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        within(inviting).getByRole('heading', { name: 'Invite someone' }),
+      ),
     );
   });
 
@@ -1245,9 +1263,9 @@ describe('access to a component', () => {
 
     failing = false;
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(
-      await screen.findByRole('heading', { name: 'Access to Install the printer' }),
-    ).toBeInTheDocument();
+    const heading = await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    // The Try again that had focus has gone with the notice: focus goes to the panel's heading.
+    await waitFor(() => expect(document.activeElement).toBe(heading));
   });
 
   it("offers Try again when a level's listing fails to load, and trying again can succeed", async () => {
@@ -1274,6 +1292,12 @@ describe('access to a component', () => {
       within(section('The space General')).getByRole('button', { name: 'Try again' }),
     );
     await within(section('The space General')).findByText('Nothing is granted here.');
+    // The Try again that had focus has gone: focus goes to its level's heading.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        within(section('The space General')).getByRole('heading', { name: 'The space General' }),
+      ),
+    );
   });
 
   it("shows a level's Try again as reading while its re-read is in flight, disabled rather than pressable again", async () => {
@@ -1447,7 +1471,7 @@ describe('access everywhere', () => {
     ),
   });
 
-  it('IAM-029 lets an administrator choose a person and read every permission, with its answer, on a document, a template, a space and the environment', async () => {
+  it('IAM-029 lets an administrator choose a person and read every permission, with its answer, on a component, a document, a template, a space and the environment', async () => {
     const places: {
       at: AccessAt;
       heading: string;
@@ -1455,6 +1479,13 @@ describe('access everywhere', () => {
       chain: string[];
       nowhere: string;
     }[] = [
+      {
+        at: { kind: 'component', id: COMPONENT },
+        heading: 'Access to Install the printer',
+        caption: 'What Grace may do with this component',
+        chain: [`artifact:${COMPONENT}`, `space:${GENERAL}`, 'tenant'],
+        nowhere: 'this component, the space General, the whole environment',
+      },
       {
         at: { kind: 'document', id: DOCUMENT },
         heading: 'Access to The printer guide',
@@ -1530,6 +1561,41 @@ describe('access everywhere', () => {
       );
       unmount();
     }
+  });
+
+  it('heads itself at the level it is given, its cards one below, and at 2 where it is given none', async () => {
+    const { fetching } = service();
+    const { unmount } = panel(fetching, { kind: 'tenant' });
+    expect(
+      await screen.findByRole('heading', { name: 'Access to the whole environment', level: 2 }),
+    ).toBeInTheDocument();
+    for (const name of ['The whole environment', 'What someone may do here', 'Give access']) {
+      expect(screen.getByRole('heading', { name, level: 3 })).toBeInTheDocument();
+    }
+    expect(
+      await screen.findByRole('heading', { name: 'Invite someone', level: 3 }),
+    ).toBeInTheDocument();
+    unmount();
+
+    render(
+      <AccessPanel
+        at={{ kind: 'tenant' }}
+        headingLevel={4}
+        client={createApiClient({
+          baseUrl: 'http://dev.acme.alloy.test',
+          fetch: service().fetching,
+        })}
+      />,
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'Access to the whole environment', level: 4 }),
+    ).toBeInTheDocument();
+    for (const name of ['The whole environment', 'What someone may do here', 'Give access']) {
+      expect(screen.getByRole('heading', { name, level: 5 })).toBeInTheDocument();
+    }
+    expect(
+      await screen.findByRole('heading', { name: 'Invite someone', level: 5 }),
+    ).toBeInTheDocument();
   });
 
   it('lists and offers only the levels above what it is opened on: a space and the environment, or the environment alone', async () => {

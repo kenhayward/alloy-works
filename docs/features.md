@@ -94,8 +94,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   administers both environments from hers. **Access is everywhere**: on any component, document or
   template they may administer, **Manage access** - on the component's and the document's page, and on
   each template's row in Templates - lists what is granted on it, on its space and across the whole
-  environment; and Administration opens the same Access at each space, from Spaces, and at the whole
-  environment, from Environment. Each gives a person a role at any of those levels as an allow or a
+  environment; and Administration opens the same Access at each space they administer, from Spaces,
+  and at the whole environment, from Environment, where they administer it. Each gives a person a role at any of those levels as an allow or a
   denial, or a group where the administrator administers the whole environment, removes a grant, and
   shows what a chosen person may do there and why: every permission with its answer, the level that
   decided it and the grants that did, a group by its name. Removing the last grant that lets anyone

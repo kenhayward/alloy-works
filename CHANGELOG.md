@@ -8,9 +8,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 ### Added
 
 - **Access everywhere.** Manage access now opens on a document, from its page, and on a template, from
-  its row in Templates, as it does on a component. In Administration, each space has **Access** in
-  Spaces, and the whole environment has **Access** in Environment, so an administrator gives and takes
-  away roles at any level from one place.
+  its row in Templates, as it does on a component. In Administration, each space you administer has
+  **Access** in Spaces, and the whole environment has **Access** in Environment for its administrators,
+  so an administrator gives and takes away roles at any level from one place. Nobody is offered Access
+  where they would only be refused.
 - **See what anybody may do, anywhere.** On any of those, choose a person and read every permission with
   its answer, the level that decided it and the grants that did. A grant that reached them through a
   group names the group: "Author allowed to the group Authors", no longer "a group".

@@ -595,6 +595,11 @@ every route has the cross-tenant test IAM-004 already requires plus one as a pri
 
 A target is spelled `tenant`, `space:<id>` or `artifact:<id>`.
 
+An explanation names the group whose grant decided, by its name, even where that grant sits at a level
+above the explainer's: a space administrator reads the name of a group granted at the environment,
+though they may not list the environment's groups. That is IAM-030's intent - an administrator is told
+which grants decided, and a group's name is part of saying so.
+
 The invitations routes' target is the tenant, so a caller who may not administer it is refused 403, never 404. Withdrawing names an invitation by a lowercase uuid: anything else is 400 `invalid_request`, and one that does not exist, or is another tenant's, is 404. A refusal of what was asked is a 409 - `invitation_signed_in`, `invitation_kind_differs` or `invitation_accepted`.
 
 **Access** is a panel on any artifact, for an administrator: choose a person, and read a row per

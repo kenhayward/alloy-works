@@ -18,8 +18,10 @@ import styles from './Administration.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
 
-/** What the groups listing read: its rows, refused, or failed; null while it is first read. */
-type Read = { readonly rows: readonly ShownGroup[] } | 'refused' | 'failed' | null;
+/**
+ * What the groups listing read: its rows, refused, signed out, or failed; null while it is first read.
+ */
+type Read = { readonly rows: readonly ShownGroup[] } | 'refused' | 'signedOut' | 'failed' | null;
 
 /** Where a group's members come from, as a person reads it. */
 const sourceOf = (group: ShownGroup) =>
@@ -246,7 +248,9 @@ export function Groups({ client }: { client: Client }) {
       if (!mounted.current) return;
       if ('items' in answer) {
         setRead(answer.items.every(isShownGroup) ? { rows: answer.items } : 'failed');
-      } else setRead(answer.status === 403 ? 'refused' : 'failed');
+      } else {
+        setRead(answer.status === 403 ? 'refused' : answer.status === 401 ? 'signedOut' : 'failed');
+      }
     } catch {
       if (mounted.current) setRead('failed');
     }
@@ -286,6 +290,14 @@ export function Groups({ client }: { client: Client }) {
     return (
       <Notice tone="refused">
         <p>You may not manage access here.</p>
+      </Notice>
+    );
+  }
+  if (read === 'signedOut') {
+    // As the access panel says it.
+    return (
+      <Notice tone="signedOut">
+        <p>You are signed out. Sign in again to manage access.</p>
       </Notice>
     );
   }

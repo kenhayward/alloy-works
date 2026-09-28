@@ -8,7 +8,10 @@ import { Administration } from './Administration.js';
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
-const everything: Record<string, () => Response> = {
+/** What the fake answers each path with, given the URL it was asked. */
+type Answers = Record<string, (url: URL) => Response>;
+
+const everything: Answers = {
   '/v1/tenant': () => json(200, { name: 'Development' }),
   '/v1/spaces': () =>
     json(200, {
@@ -51,14 +54,14 @@ const everything: Record<string, () => Response> = {
     }),
 };
 
-function service(answers: Record<string, () => Response>) {
+function service(answers: Answers) {
   const asked: URL[] = [];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
     asked.push(url);
     const answer = answers[url.pathname];
-    return answer ? answer() : json(404, {});
+    return answer ? answer(url) : json(404, {});
   }) as unknown as typeof fetch;
   return { client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }), asked };
 }
@@ -224,11 +227,42 @@ describe('Administration', () => {
   });
 });
 
+/**
+ * `GET /v1/access` as the service answers it: `administer` allowed at the targets named, and refused
+ * everywhere else.
+ */
+const administering =
+  (...targets: string[]) =>
+  (url: URL) => {
+    const target = url.searchParams.get('target') ?? '';
+    return json(200, {
+      target,
+      permissions: [
+        { permission: 'read', allowed: true },
+        { permission: 'administer', allowed: targets.includes(target) },
+      ],
+    });
+  };
+
 describe('Access from Administration', () => {
-  const answering: Record<string, () => Response> = {
+  const answering: Answers = {
     ...everything,
+    '/v1/access': administering('tenant', 'space:s1', 'space:s2'),
     '/v1/grants': () => json(200, { items: [], next: null }),
     '/v1/groups': () => json(200, { items: [], next: null }),
+  };
+
+  /** A grant as `GET /v1/grants` lists one. */
+  const adaAuthor = {
+    id: 'g1',
+    role: { id: 'r1', name: 'Author' },
+    subject: { principal: { id: 'p1', name: 'Ada', email: 'ada@example.test' } },
+    level: 'tenant',
+    effect: 'allow',
+    expiresAt: null,
+    extends: null,
+    grantedBy: { id: 'p1', name: 'Ada' },
+    grantedAt: '2026-09-17T09:00:00.000Z',
   };
 
   it('opens Access at a space from its row in Spaces, and at the environment from Environment, each with a way back', async () => {
@@ -237,7 +271,7 @@ describe('Access from Administration', () => {
     const dialog = screen.getByRole('dialog', { name: 'Administration' });
 
     await userEvent.click(
-      within(dialog).getByRole('button', { name: 'Access to the whole environment' }),
+      await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
     );
     expect(
       await within(dialog).findByRole('heading', { name: 'Access to the whole environment' }),
@@ -251,7 +285,7 @@ describe('Access from Administration', () => {
     await userEvent.click(section('Spaces'));
     const spaces = await screen.findByRole('table', { name: 'Spaces' });
     await userEvent.click(
-      within(spaces).getByRole('button', { name: 'Access to the space General' }),
+      await within(spaces).findByRole('button', { name: 'Access to the space General' }),
     );
     expect(
       await within(dialog).findByRole('heading', { name: 'Access to the space General' }),
@@ -278,7 +312,7 @@ describe('Access from Administration', () => {
     await userEvent.click(section('Spaces'));
     const spaces = await screen.findByRole('table', { name: 'Spaces' });
     await userEvent.click(
-      within(spaces).getByRole('button', { name: 'Access to the space Training' }),
+      await within(spaces).findByRole('button', { name: 'Access to the space Training' }),
     );
     // On the way back, which the Access button gave way to.
     expect(document.activeElement).toBe(
@@ -297,7 +331,7 @@ describe('Access from Administration', () => {
 
     await userEvent.click(section('Environment'));
     await userEvent.click(
-      within(dialog).getByRole('button', { name: 'Access to the whole environment' }),
+      await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
     );
     expect(document.activeElement).toBe(
       within(dialog).getByRole('button', { name: 'Back to the environment' }),
@@ -305,6 +339,129 @@ describe('Access from Administration', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Back to the environment' }));
     expect(document.activeElement).toBe(
       within(dialog).getByRole('button', { name: 'Access to the whole environment' }),
+    );
+    await userEvent.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('heads Access below the section it opens in, and its cards below that', async () => {
+    const { client } = service(answering);
+    render(<Administration client={client} about={null} onClose={vi.fn()} />);
+    const dialog = screen.getByRole('dialog', { name: 'Administration' });
+    expect(within(dialog).getByRole('heading', { name: 'Environment', level: 3 })).toBeTruthy();
+
+    await userEvent.click(
+      await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
+    );
+    expect(
+      await within(dialog).findByRole('heading', {
+        name: 'Access to the whole environment',
+        level: 4,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('heading', { name: 'The whole environment', level: 5 }),
+    ).toBeInTheDocument();
+  });
+
+  it('offers Access only where the reader may administer: not the environment, and only the spaces they administer', async () => {
+    const { client, asked } = service({
+      ...answering,
+      '/v1/access': administering('space:s1'),
+    });
+    render(<Administration client={client} about={null} onClose={vi.fn()} />);
+    const dialog = screen.getByRole('dialog', { name: 'Administration' });
+    await within(dialog).findAllByText('Development');
+
+    await userEvent.click(section('Spaces'));
+    const spaces = await screen.findByRole('table', { name: 'Spaces' });
+    expect(
+      await within(spaces).findByRole('button', { name: 'Access to the space General' }),
+    ).toBeInTheDocument();
+    expect(
+      within(spaces).queryByRole('button', { name: 'Access to the space Training' }),
+    ).toBeNull();
+    await userEvent.click(section('Environment'));
+    expect(
+      within(dialog).queryByRole('button', { name: 'Access to the whole environment' }),
+    ).toBeNull();
+    // Asked once of the environment and once of each space, and not again on coming back.
+    expect(
+      asked
+        .filter((url) => url.pathname === '/v1/access')
+        .map((url) => url.searchParams.get('target'))
+        .sort(),
+    ).toEqual(['space:s1', 'space:s2', 'tenant']);
+  });
+
+  it('keeps focus in Administration once a grant removed takes its Remove button with it', async () => {
+    const grants = [adaAuthor];
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (request.method === 'DELETE' && url.pathname === '/v1/grants/g1') {
+        grants.splice(0, 1);
+        return json(200, { removed: 'g1' });
+      }
+      if (url.pathname === '/v1/grants') {
+        return json(200, {
+          items: grants.filter((each) => each.level === url.searchParams.get('level')),
+          next: null,
+        });
+      }
+      const answer = answering[url.pathname];
+      return answer ? answer(url) : json(404, {});
+    }) as unknown as typeof fetch;
+    const client = createApiClient({ baseUrl: 'http://admin.test', fetch: fetching });
+    const onClose = vi.fn();
+    render(<Administration client={client} about={null} onClose={onClose} />);
+    const dialog = screen.getByRole('dialog', { name: 'Administration' });
+
+    await userEvent.click(
+      await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
+    );
+    await userEvent.click(
+      await within(dialog).findByRole('button', { name: 'Remove: Allowed Author to Ada' }),
+    );
+    const level = within(dialog).getByRole('region', { name: 'The whole environment' });
+    await within(level).findByText('Nothing is granted here.');
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        within(level).getByRole('heading', { name: 'The whole environment' }),
+      ),
+    );
+    // Still inside the dialog, so Tab stays in it and Escape still closes it.
+    await userEvent.tab();
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    await userEvent.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps focus in Administration once a level's Try again gives way to what it read", async () => {
+    let failing = true;
+    const { client } = service({
+      ...answering,
+      '/v1/grants': () =>
+        failing
+          ? json(500, { code: 'internal', message: 'broken', traceId: 't' })
+          : json(200, { items: [], next: null }),
+    });
+    const onClose = vi.fn();
+    render(<Administration client={client} about={null} onClose={onClose} />);
+    const dialog = screen.getByRole('dialog', { name: 'Administration' });
+
+    await userEvent.click(
+      await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
+    );
+    const level = await within(dialog).findByRole('region', { name: 'The whole environment' });
+    await within(level).findByText('What is granted here could not be loaded.');
+    failing = false;
+    await userEvent.click(within(level).getByRole('button', { name: 'Try again' }));
+    await within(level).findByText('Nothing is granted here.');
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        within(level).getByRole('heading', { name: 'The whole environment' }),
+      ),
     );
     await userEvent.keyboard('{Escape}');
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -322,9 +479,10 @@ const personOf = (id: string, name: string) => ({
 
 /**
  * The service as Groups meets it: the groups held, made, filled and deleted by what the page sends,
- * so a list read again after a change shows the change.
+ * so a list read again after a change shows the change. The people are listed in two pages, Alice on
+ * the second; `authors` names who is in Authors to begin with.
  */
-function groupsService() {
+function groupsService(authors: readonly string[] = ['p2']) {
   const people = [personOf('p1', 'Ada'), personOf('p2', 'Grace'), personOf('p3', 'Alice')];
   const member = (id: string) => {
     const person = people.find((each) => each.id === id)!;
@@ -337,7 +495,13 @@ function groupsService() {
     providerValue: string | null;
     members: { id: string; name: string; email: string }[];
   }[] = [
-    { id: 'g1', name: 'Authors', source: 'tenant', providerValue: null, members: [member('p2')] },
+    {
+      id: 'g1',
+      name: 'Authors',
+      source: 'tenant',
+      providerValue: null,
+      members: authors.map(member),
+    },
     {
       id: 'g2',
       name: 'Readers',
@@ -355,7 +519,11 @@ function groupsService() {
     if (request.method !== 'GET') sent.push({ method: request.method, path: url.pathname, body });
     const route = `${request.method} ${url.pathname}`;
     if (route === 'GET /v1/tenant') return json(200, { name: 'Development' });
-    if (route === 'GET /v1/principals') return json(200, { items: people, next: null });
+    if (route === 'GET /v1/principals') {
+      return url.searchParams.get('cursor') === 'second'
+        ? json(200, { items: people.slice(2), next: null })
+        : json(200, { items: people.slice(0, 2), next: 'second' });
+    }
     if (route === 'GET /v1/groups') return json(200, { items: groups, next: null });
     if (route === 'POST /v1/groups') {
       const { name, providerValue } = body as { name: string; providerValue?: string };
@@ -408,6 +576,19 @@ describe('Groups in Administration', () => {
     within(element)
       .getAllByRole('cell')
       .map((cell) => cell.textContent);
+
+  it('says the reader is signed out, not that the groups could not be loaded, when the session is gone', async () => {
+    const { client } = service({
+      ...everything,
+      '/v1/groups': () => json(401, { code: 'unauthenticated', message: 'x', traceId: 't' }),
+    });
+    render(<Administration client={client} about={null} onClose={vi.fn()} />);
+    await userEvent.click(section('Groups'));
+    expect(
+      await screen.findByText('You are signed out. Sign in again to manage access.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('The groups could not be loaded.')).toBeNull();
+  });
 
   it('lists each group with where its members come from and who they are', async () => {
     const { client } = groupsService();
@@ -498,6 +679,23 @@ describe('Groups in Administration', () => {
     // Back where it was opened from, inside Administration.
     expect(document.activeElement).toBe(opener);
     expect(dialog).toContainElement(document.activeElement as HTMLElement);
+  });
+
+  it("keeps a member listed on the people's second page when the members are saved", async () => {
+    const { client, sent } = groupsService(['p2', 'p3']);
+    const { table } = await openGroups(client);
+    await userEvent.click(
+      within(row(table, 'Authors')).getByRole('button', { name: 'Members of Authors' }),
+    );
+    const choosing = await screen.findByRole('dialog', { name: 'Members of Authors' });
+    expect(await within(choosing).findByRole('checkbox', { name: /^Alice/ })).toBeChecked();
+    await userEvent.click(within(choosing).getByRole('checkbox', { name: /^Ada/ }));
+    await userEvent.click(within(choosing).getByRole('button', { name: 'Save members' }));
+
+    expect(await screen.findByText('Authors now has 3 members.')).toBeInTheDocument();
+    expect(sent).toEqual([
+      { method: 'PUT', path: '/v1/groups/g1/members', body: { principals: ['p1', 'p2', 'p3'] } },
+    ]);
   });
 
   it('deletes a group only after asking, saying its grants go with it, and keeps focus in Administration', async () => {

@@ -1,9 +1,10 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { refusal, TokenTable, type ShownToken } from '../account/TokenTable.js';
 import { AccessPanel } from '../access/AccessPanel.js';
 import { permissionName, type AccessAt } from '../access/describe.js';
+import { administersAt } from '../access/ManageAccessLink.js';
 import { Modal } from '../layouts/Modal.js';
 import { everyPage } from '../paging.js';
 import { Empty } from '../states/Empty.js';
@@ -219,7 +220,7 @@ function AccessHere({
       <button ref={button} type="button" onClick={onBack}>
         {back}
       </button>
-      <AccessPanel at={at} client={client} />
+      <AccessPanel at={at} client={client} headingLevel={4} />
     </>
   );
 }
@@ -252,6 +253,31 @@ export function Administration({
   const backTo = useRef<HTMLButtonElement>(null);
   const sectionHeading = useRef<HTMLHeadingElement>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
+  /**
+   * Whether the reader may administer the environment, and each space listed, by target: Access is
+   * offered only where the service says so, as `ManageAccessLink` offers an artifact's, so nobody is
+   * offered a panel that would only refuse them. Each is asked once, and kept, so coming back from
+   * Access finds its button already there to take focus.
+   */
+  const [administers, setAdministers] = useState<ReadonlyMap<string, boolean>>(new Map());
+  const askedAdminister = useRef(new Set<string>());
+  const live = useRef(true);
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+    };
+  }, []);
+  const askAdminister = useCallback(
+    (target: string) => {
+      if (askedAdminister.current.has(target)) return;
+      askedAdminister.current.add(target);
+      void administersAt(client, target).then((answer) => {
+        if (live.current) setAdministers((was) => new Map(was).set(target, answer));
+      });
+    },
+    [client],
+  );
 
   useEffect(() => {
     let current = true;
@@ -297,6 +323,14 @@ export function Administration({
     shown === 'People and invitations',
   );
   const roles = useListing<RoleRow>(loads.roles, shown === 'Roles');
+
+  useEffect(() => {
+    if (shown === 'Environment') askAdminister('tenant');
+  }, [shown, askAdminister]);
+  useEffect(() => {
+    if (spaces === null || typeof spaces !== 'object') return;
+    for (const space of spaces.rows) askAdminister(`space:${space.id}`);
+  }, [spaces, askAdminister]);
 
   // Back to people, spaces or the environment takes itself away: focus goes to the button it was
   // reached from, or to the section's heading where that is not shown, and never falls out of the
@@ -358,16 +392,18 @@ export function Administration({
                 <dt>Address</dt>
                 <dd>{window.location.host}</dd>
               </dl>
-              <p>
-                <button
-                  ref={leftFrom === 'tenant' ? backTo : undefined}
-                  type="button"
-                  aria-label="Access to the whole environment"
-                  onClick={() => setAccessAt({ kind: 'tenant' })}
-                >
-                  Access
-                </button>
-              </p>
+              {administers.get('tenant') === true && (
+                <p>
+                  <button
+                    ref={leftFrom === 'tenant' ? backTo : undefined}
+                    type="button"
+                    aria-label="Access to the whole environment"
+                    onClick={() => setAccessAt({ kind: 'tenant' })}
+                  >
+                    Access
+                  </button>
+                </p>
+              )}
             </>
           )}
           {shown === 'Spaces' && accessAt === null && (
@@ -382,16 +418,18 @@ export function Administration({
                           {space.mayCreate ? 'You may create here' : ''}
                         </td>
                         <td className={styles['act']}>
-                          <button
-                            ref={space.id === leftFrom ? backTo : undefined}
-                            type="button"
-                            aria-label={`Access to the space ${space.name}`}
-                            onClick={() =>
-                              setAccessAt({ kind: 'space', id: space.id, name: space.name })
-                            }
-                          >
-                            Access
-                          </button>
+                          {administers.get(`space:${space.id}`) === true && (
+                            <button
+                              ref={space.id === leftFrom ? backTo : undefined}
+                              type="button"
+                              aria-label={`Access to the space ${space.name}`}
+                              onClick={() =>
+                                setAccessAt({ kind: 'space', id: space.id, name: space.name })
+                              }
+                            >
+                              Access
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
