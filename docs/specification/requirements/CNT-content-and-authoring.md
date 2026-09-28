@@ -440,27 +440,30 @@ would be storage spent on something nobody will read.
 
 ### Spelling
 
-| ID          | Requirement                                                                                                                                                                                                                                                   | Tranche | Status                |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
-| **CNT-098** | The editor must check spelling as the author types                                                                                                                                                                                                            | T1      | Specified             |
-| **CNT-099** | Spelling must be checked against the language of the run being edited (CNT-083), not against one language for the whole editor                                                                                                                                | T1      | Superseded by CNT-147 |
-| **CNT-100** | A tenant must be able to maintain custom dictionaries, so that domain vocabulary is not flagged in every document                                                                                                                                             | T2      | Specified             |
-| **CNT-101** | Spelling must behave identically in both deliveries. The browser supplies it; the desktop shell must wire the platform's checker through the platform bridge rather than silently losing it                                                                   | T1      | Superseded by CNT-148 |
-| **CNT-147** | Spelling must be checked by the checker the delivery provides. A run whose language differs from its component's base language (**CNT-140**) must not be checked, so that a passage in another language is never flagged as misspelt                          | T1      | Specified             |
-| **CNT-148** | Neither delivery may lack a spelling checker. The web delivery uses the browser's; the desktop shell must wire the platform's checker through the platform bridge and enable it for the base languages of the components open, rather than silently losing it | T1      | Specified             |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                                                     | Tranche | Status                |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **CNT-098** | The editor must check spelling as the author types                                                                                                                                                                                                                                                                                                                                                              | T1      | Specified             |
+| **CNT-099** | Spelling must be checked against the language of the run being edited (CNT-083), not against one language for the whole editor                                                                                                                                                                                                                                                                                  | T1      | Superseded by CNT-147 |
+| **CNT-100** | A tenant must be able to maintain custom dictionaries, so that domain vocabulary is not flagged in every document                                                                                                                                                                                                                                                                                               | T2      | Specified             |
+| **CNT-101** | Spelling must behave identically in both deliveries. The browser supplies it; the desktop shell must wire the platform's checker through the platform bridge rather than silently losing it                                                                                                                                                                                                                     | T1      | Superseded by CNT-148 |
+| **CNT-147** | Spelling must be checked by the checker the delivery provides. A run whose language differs from its component's base language (**CNT-140**) must not be checked, so that a passage in another language is never flagged as misspelt                                                                                                                                                                            | T1      | Specified             |
+| **CNT-148** | Neither delivery may lack a spelling checker. The web delivery uses the browser's; the desktop shell must wire the platform's checker through the platform bridge and enable it for the base languages of the components open, rather than silently losing it                                                                                                                                                   | T1      | Superseded by CNT-178 |
+| **CNT-178** | Neither delivery may lack a spelling checker. The web delivery uses the browser's; the desktop shell must wire the platform's checker through the platform bridge and, where the platform lets an application choose the checker's languages, enable it for the base languages of the components open, rather than silently losing it. Where the platform chooses them itself - macOS - the product must say so | T1      | Specified             |
 
-**Spelling is the one thing here the web gives away and the desktop does not** (CNT-101). A
-browser checks spelling in a contenteditable region without being asked; an Electron renderer does
-not unless the shell wires it up. That asymmetry is exactly what the platform bridge exists for, and
-it is the kind of thing that ships as "works in the web build" and is discovered by the first
-desktop user. **CNT-147 and CNT-148 replace CNT-099 and CNT-101, because native spellcheck cannot choose a
+**Spelling is the one thing here the web gives away and the desktop does not** (CNT-101). A browser
+checks spelling in a contenteditable region without being asked; an Electron renderer does not
+unless the shell wires it up. That asymmetry is exactly what the platform bridge exists for, and it
+is the kind of thing that ships as "works in the web build" and is discovered by the first desktop
+user. **CNT-147 and CNT-148 replace CNT-099 and CNT-101, because native spellcheck cannot choose a
 dictionary per run.** Chromium and Firefox both check every run against the languages the browser or
 the environment has enabled, and ignore an element's `lang`, so "check each run against its own
 language" and "the browser supplies it" could not both be met. The decision was to keep the native
 checker. What it can honestly promise is that a passage in another language is not wrongly flagged -
-it is simply not checked - and that the desktop, which can choose its checker's languages, chooses the
-ones the open components are written in. A browser page cannot, so in the web delivery the languages
-checked are the author's browser's.
+it is simply not checked - and that the desktop, which can choose its checker's languages, chooses
+the ones the open components are written in. A browser page cannot, so in the web delivery the
+languages checked are the author's browser's. **CNT-178 replaces CNT-148, because macOS chooses its
+checker's languages itself** and an application there cannot set them: the desktop chooses them
+where the platform lets it, and on macOS says that the system chooses.
 
 ## 12. The document view
 
@@ -897,3 +900,17 @@ is its own row, verified by `attestation` in each release's baseline.
 | Counts       | Before                                      | After                                       |
 | ------------ | ------------------------------------------- | ------------------------------------------- |
 | Requirements | 175, of which 30 superseded and 1 withdrawn | 177, of which 31 superseded and 1 withdrawn |
+
+### From building W14.7, 2026-09-28
+
+The spelling checker's final review found that CNT-148 asked the desktop to enable the base
+languages of the components open on every platform, which macOS does not allow: its checker detects
+the language itself, and Electron's `setSpellCheckerLanguages` does nothing there.
+
+| What was found                                                                                                                                 | Change                                                                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| macOS chooses its checker's languages itself and an application cannot set them, so CNT-148 could not be met there however the shell was wired | **CNT-148 superseded by CNT-178**, which enables the languages where the platform lets an application choose them, and says so where it does not |
+
+| Counts       | Before                                      | After                                       |
+| ------------ | ------------------------------------------- | ------------------------------------------- |
+| Requirements | 177, of which 31 superseded and 1 withdrawn | 178, of which 32 superseded and 1 withdrawn |

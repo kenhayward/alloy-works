@@ -14,4 +14,11 @@ export interface PlatformInfo {
 
 export interface PlatformBridge {
   getPlatformInfo(): Promise<PlatformInfo>;
+  /**
+   * The languages the spelling checker checks against: the base languages of the components open
+   * (CNT-178). The desktop shell sets the dictionaries Electron has for them - except on macOS, whose
+   * system checker chooses its own; the browser checks with its own dictionaries, which a page cannot
+   * choose, so its bridge sets nothing. Tags in the shape the stored model takes them, at most eight.
+   */
+  setSpellCheckLanguages(languages: readonly string[]): Promise<void>;
 }

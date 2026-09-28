@@ -9,6 +9,7 @@ import { canPlaceEquation } from './equations.js';
 import { insertFootnote } from './footnotes.js';
 import { canPlaceReference } from './references.js';
 import { editorSchema } from './schema.js';
+import { canInsertSymbol } from './symbols.js';
 import { insertTable } from './tables.js';
 
 const listNode = editorSchema.nodes.list;
@@ -150,7 +151,8 @@ export type BlockAction =
   | 'table'
   | 'footnote'
   | 'reference'
-  | 'equation';
+  | 'equation'
+  | 'symbol';
 
 /** The innermost list the cursor stands in, with the position it stands at, or null. */
 function innermostList(state: EditorState): { node: Node; pos: number } | null {
@@ -921,6 +923,11 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
     // `insertEquation` or `changeEquation` with the answer.
     case 'equation':
       return canPlaceEquation;
+    // Equation's kind (W-L): which symbol is a value only the author can choose, from the palette the
+    // renderer opens, so as a command it answers where one could be typed and types nothing; the
+    // palette runs `insertSymbol` with the author's choice.
+    case 'symbol':
+      return canInsertSymbol;
   }
 }
 

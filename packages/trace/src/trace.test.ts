@@ -67,9 +67,10 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
+    // 1471, from 1470 (2026-09-28): W14.7's final review - CNT-178 supersedes CNT-148, because macOS chooses its spelling checker's languages itself.
     // 1470, from 1458 (2026-09-28): the T1 audit's last decisions and rewordings: CNT-176 and CNT-177, PUB-098 to PUB-104, IAM-080 and IAM-081 supersede the rows they split, and STY-079 is new (issue #306).
     // 1458, from 1449 (2026-09-26): the rewordings Ken agreed after the T1 audit (K7, and W1's three): CNT-171 to CNT-175, STR-070, MET-042, STY-078 and API-061 supersede the rows they reword.
-    expect(model.requirements).toHaveLength(1470);
+    expect(model.requirements).toHaveLength(1471);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
     // 494, from 493 (2026-09-28): document-view.md claims IAM-080, IAM-023's T1 half; publishing.md's PUB-003 claim moved to PUB-098.
@@ -552,11 +553,18 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
-  // 503, from 502 (2026-09-28): W14.1 - PUB-091 in apps/worker's check.test.ts, seven tests in one
+  // 506, from 505 (2026-09-28): W14.1 - PUB-091 in apps/worker's check.test.ts, seven tests in one
   // file: a publication's PDF checked and its verdict kept, veraPDF's whole report retained, a failing
   // PDF's rules named, a check left queued by a worker that died after recording taken by the next, a
   // check that gave up queued again by the sweep, one that gave up three times left, and the
   // publications recorded before checks were queued checked by the first sweep after.
+  // 505, unchanged (2026-09-28): W14.7's final review - CNT-178 superseded CNT-148, and the two
+  // tests that cited CNT-148 cite CNT-178 instead.
+  // 505, from 502 (2026-09-28): W14.7 - CNT-148 in apps/desktop's shell.test.ts, where each
+  // component language maps to a dictionary Electron has, and in apps/web's
+  // editor/ComponentEditor.test.tsx, where the surface keeps the browser's checker and the desktop's
+  // bridge is told the base language on opening and as it changes; and CNT-057 in the same file,
+  // where the palette offers its three groups and inserts a symbol at the cursor, focus returning.
   // 502, from 500 (2026-09-28): W12.4 - IAM-029 in apps/web's access/AccessPanel.test.tsx, where an
   // administrator chooses a person and reads every permission with its answer on a document, a
   // template, a space and the environment; and IAM-030 in apps/service's access-routes.test.ts, where
@@ -646,7 +654,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(503);
+    expect(model.citations).toHaveLength(506);
   });
 
   it('cites no identifier the corpus does not hold', () => {

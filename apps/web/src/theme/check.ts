@@ -31,6 +31,41 @@ function settingStyle(theme: ResolvedTheme, where: TextWhere): ResolvedParagraph
   return chosen && chosen.appliesTo.includes(place) ? chosen : fallback;
 }
 
+/** The family that sets text standing `where`: inline code's face where the mark is, the style's else. */
+function familyAt(theme: ResolvedTheme, where: TextWhere): string | undefined {
+  const paragraph = settingStyle(theme, where);
+  return where.inlineCode
+    ? (theme.characterStyles.inlineCode.typeface?.family ?? paragraph?.typeface.family)
+    : paragraph?.typeface.family;
+}
+
+/** The typeface that sets text where the cursor is, and whether it lacks a character. */
+export interface Typeface {
+  readonly family: string;
+  /** Whether a character typed there would be refused, as the publish's glyph check refuses it. */
+  lacks(character: string): boolean;
+}
+
+/**
+ * The typeface text typed `where` is set in, asked as the surface's own marks ask it (W14.7, W-M): the
+ * family that sets it there, and the publish's glyph check (STY-049) in the setting it is set in. Null
+ * where that is not known - no family, or one the renderer does not hold - which a caller takes as
+ * "offer everything", since the surface marks whatever its face lacks.
+ */
+export function typefaceAt(
+  theme: ResolvedTheme,
+  unheld: readonly string[],
+  where: TextWhere,
+): Typeface | null {
+  const family = familyAt(theme, where);
+  if (family === undefined || unheld.includes(family)) return null;
+  return {
+    family,
+    lacks: (character) =>
+      characterProblems(character, covers, family, where.code ? 'code' : 'body').length > 0,
+  };
+}
+
 /**
  * The check a surface marks what will not resolve by (themes.md, "What will not resolve", ET-I;
  * STY-070), from the theme the page is set in: the reader's own rules for a style's applicability
@@ -44,10 +79,7 @@ export function styleCheckFor(theme: ResolvedTheme, unheld: readonly string[]): 
     table: (style) => resolves(theme.tableStyles.get(style), 'table'),
     image: (style, target) => resolves(theme.imageStyles.get(style), target),
     uncovered: (text, where) => {
-      const paragraph = settingStyle(theme, where);
-      const family = where.inlineCode
-        ? (theme.characterStyles.inlineCode.typeface?.family ?? paragraph?.typeface.family)
-        : paragraph?.typeface.family;
+      const family = familyAt(theme, where);
       if (family === undefined || unheld.includes(family)) return new Set();
       return new Set(
         characterProblems(text, covers, family, where.code ? 'code' : 'body').map(
