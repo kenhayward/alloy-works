@@ -351,6 +351,8 @@ interface Written {
 function written(
   over: Partial<AssembleInput> & { readonly layout?: Layout } = {},
   formats: readonly [PublishingFormat, ...PublishingFormat[]] = ['docx'],
+  /** The published document as the writer is handed it, changed where a test must. */
+  handed: (document: PublishedDocument) => PublishedDocument = (document) => document,
 ): Written {
   const theme = (over.theme ?? DEFAULT_THEME) as ResolvedTheme;
   const assembled = assemble({
@@ -370,7 +372,7 @@ function written(
   const faces = facesOf(theme);
   const images = imagesOf(over.assets ?? new Map());
   const { bytes, report } = writeDocx({
-    document: assembled.document,
+    document: handed(assembled.document),
     numbering: assembled.numbering,
     word: assembled.word,
     formats,
@@ -520,8 +522,8 @@ describe('writeDocx: the package (Word 1, ruling R6)', () => {
     }
   });
 
-  it('is the Word writer at word/4', () => {
-    expect(WORD_WRITER_VERSION).toBe('word/4');
+  it('is the Word writer at word/5', () => {
+    expect(WORD_WRITER_VERSION).toBe('word/5');
   });
 });
 
@@ -1322,6 +1324,7 @@ const writtenOf = (
   content: unknown[],
   over: Parameters<typeof written>[0] = {},
   formats?: Parameters<typeof written>[1],
+  handed?: Parameters<typeof written>[2],
 ): Written =>
   written(
     {
@@ -1336,6 +1339,7 @@ const writtenOf = (
       occurrences: new Map([[id('blocks'), component('Blocks', content)]]),
     },
     formats,
+    handed,
   );
 
 const list = (name: string, kind: string, items: unknown[], over: object = {}) => ({
@@ -2732,6 +2736,98 @@ describe('writeDocx: a caption where its style places it (W14.5)', () => {
     expect(textOf(spacer)).toBe('');
     expect(spacing(spacer)).toMatchObject({ 'w:line': '2', 'w:lineRule': 'exact' });
     expect(tables[1]! - tables[0]!).toBe(2);
+  });
+
+  it("stands the same paragraph between two numbered equations' rows, and between a table ending in its cells and a numbered equation's row, which Word would otherwise read as one table", () => {
+    const equation = (name: string) => ({
+      type: 'equation',
+      id: name,
+      mathml: EQUATION,
+      numbered: true,
+    });
+    for (const content of [
+      [said('before'), equation('e1'), equation('e2'), said('after')],
+      [said('before'), small('t1', 'table'), equation('e2'), said('after')],
+    ]) {
+      const { blocks, tables } = between(content);
+      expect(tables).toHaveLength(2);
+      expect(tables[1]! - tables[0]!).toBe(2);
+      const spacer = blocks[tables[0]! + 1]!;
+      expect(spacer.name).toBe('w:p');
+      expect(textOf(spacer)).toBe('');
+      expect(spacing(spacer)).toMatchObject({ 'w:line': '2', 'w:lineRule': 'exact' });
+    }
+  });
+
+  it('keeps the space the PDF puts above a table whose caption is below it after a floated figure, whose anchor stands out of the flow, and the space below a table ending in its cells before one', () => {
+    const anchorOf = (content: unknown[]) => {
+      const { docx } = tabledOf(content, { theme: captionedTheme, assets: IMAGES });
+      const { body } = bodyOf(docx);
+      return body.find((each) => all(each, 'wp:anchor').length > 0)!;
+    };
+    // The anchor stands between the paragraph and the table: the leading Word sets inside the table's
+    // first cell, 3.35 at the cell's 14.35 line and 11pt, is its space after, as the paragraph before
+    // a table carries it; the cells' space before is none.
+    expect(
+      spacing(
+        anchorOf([
+          said('before'),
+          figure('f1', BLUE, 'Up top', { imageStyle: 'topped' }),
+          small('t2', 'footed'),
+        ]),
+      ),
+    ).toMatchObject({ 'w:after': twips(3.35) });
+    // After a table ending in its cells, the cells' space after, 2.75, is the anchor's space before.
+    expect(
+      spacing(
+        anchorOf([
+          small('t1', 'table'),
+          figure('f1', BLUE, 'Up top', { imageStyle: 'topped' }),
+          said('after'),
+        ]),
+      ),
+    ).toMatchObject({ 'w:before': twips(2.75) });
+  });
+
+  it("reads whether a table's caption is below it from the theme it writes the table in, so no reference names a bookmark it does not write", () => {
+    const xref = (name: string, block: string) => ({
+      type: 'crossReference',
+      id: name,
+      target: { kind: 'block', block },
+      display: 'relative',
+    });
+    // The published document's projection of the theme saying otherwise of both tables: the writer
+    // writes each table from its own resolved theme, and must name for above and below only the
+    // bookmarks it writes.
+    const { bytes } = writtenOf(
+      [
+        paragraph('p1', text('See '), xref('x1', 't1'), text(' and '), xref('x3', 't3')),
+        small('t1', 'table'),
+        small('t3', 'footed'),
+      ],
+      { layout: UNLISTED, theme: captionedTheme },
+      undefined,
+      (document) => ({
+        ...document,
+        theme: {
+          ...document.theme!,
+          tables: {
+            ...document.theme!.tables,
+            table: { ...document.theme!.tables['table']!, captionPosition: 'bottom' },
+            footed: { ...document.theme!.tables['footed']!, captionPosition: 'top' },
+          },
+        },
+      }),
+    );
+    const xml = strFromU8(unzipSync(bytes)['word/document.xml']!);
+    const named = [...xml.matchAll(/(?:REF|PAGEREF) (_Ref[0-9]+)/g)].map((each) => each[1]!);
+    expect(named.length).toBeGreaterThan(0);
+    for (const name of named) expect(xml, name).toContain(`w:name="${name}"`);
+    // And the footed table, whose caption the writer sets below it, is named where it begins.
+    const [, footed] = [...xml.matchAll(/REF (_Ref[0-9]+) \\p/g)].map((each) => each[1]!);
+    const cell = xml.indexOf('<w:tc>', xml.indexOf('Cell t3') - 600);
+    expect(xml.indexOf(`w:name="${footed}"`)).toBeGreaterThan(cell);
+    expect(xml.indexOf(`w:name="${footed}"`)).toBeLessThan(xml.indexOf('Cell t3'));
   });
 
   it('names a table whose caption is below it for above and below, and for its page, where it begins - its first cell - as the PDF places it, both from inside the table and from outside it', () => {

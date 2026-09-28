@@ -54,7 +54,7 @@ import {
   projectStylesXml,
   readTheme,
   withAlternative,
-  type ParagraphCatalogue,
+  type ParagraphCatalogue2,
   type PublishingAsset,
   type ResolvedTheme,
   type Theme,
@@ -1500,7 +1500,7 @@ const paginated = (keep: {
   keepTogether: boolean;
 }) => {
   const PAGINATED = '5f0c3a3e-0d8a-4c1e-9d0b-6a51e2f9b001';
-  const paragraphs: ParagraphCatalogue = {
+  const paragraphs: ParagraphCatalogue2 = {
     schemaVersion: 2,
     kind: 'paragraph',
     base: {

@@ -113,11 +113,12 @@ import { spacingOverrides, type SpacingOverride } from './spacing.js';
  * What the job records as the output's producer version (R12). A version names the writer that made
  * the file, so it moves whenever what the writer writes does: `word/2` is Word 2's, which writes lists,
  * quotations, preformatted text, tables and figures where `word/1` refused them, `word/3` is Word
- * 3's, which writes footnotes and cross-references where `word/2` refused them, and `word/4` is Word
+ * 3's, which writes footnotes and cross-references where `word/2` refused them, `word/4` is Word
  * 4's, which writes equations, a reference to one and the list of equations where `word/3` refused
- * them.
+ * them, and `word/5` is W14.5's, which writes a caption on its style's side, parts any two tables that
+ * would meet with an empty paragraph, and names a table whose caption is below it where it begins.
  */
-export const WORD_WRITER_VERSION = 'word/4';
+export const WORD_WRITER_VERSION = 'word/5';
 
 /** What the writer is given: `assemble`'s answer for Word, the formats asked for, and the faces. */
 export interface WordWriting {
@@ -292,7 +293,7 @@ interface Paragraph {
    * paragraphs', which stand out of the flow as the PDF's band does, so that the flow's spaces reach
    * none of them (Word 2, ruling R8).
    */
-  readonly held?: { readonly before: number; readonly after: number };
+  held?: { readonly before: number; readonly after: number };
   /**
    * The text box it anchors, where it is a floated figure's anchor (`floatBox`): the drawing around
    * the box's paragraphs, which are written inside it. The paragraph itself holds nothing else and is a
@@ -469,14 +470,23 @@ type Bookmarked =
 
 /**
  * **Every target's bookmarks, by the anchor the published document gives it** (Word 3, ruling R3):
- * `_Ref` and nine digits, numbered in the order the document holds them - a node where its heading
- * stands, before its blocks and its children; a block where it begins, before what it holds; a
- * footnote where its mark stands, before its paragraphs - which is the order the writer writes them in.
- * Deterministic, so the same document makes the same names, and 13 characters, inside the 40 Word keeps
- * (M4). The published document carries an anchor exactly where a reference names it, so every target
- * is named once however many references name it, and nothing else is.
+ * `_Ref` and nine digits, numbered in the order the document holds its targets - a node's where its
+ * heading stands, before its blocks and its children; a block's where it begins, before what it holds;
+ * a footnote's where its mark stands, before its paragraphs. A caption's bookmarks are numbered with
+ * its block, before what the block holds, wherever the writer then writes the caption: since W14.5 a
+ * table's caption may follow its cells, so the numbers follow the document, not always the order of
+ * the XML. Deterministic, so the same document makes the same names, and 13 characters, inside the 40
+ * Word keeps (M4). The published document carries an anchor exactly where a reference names it, so
+ * every target is named once however many references name it, and nothing else is.
+ *
+ * `captionBelow` says of a table style whether its caption is below its table, from the theme the
+ * writer writes the table in, which is the one source: a table named where it begins is a table the
+ * writer writes a bookmark there for.
  */
-function bookmarksOf(document: PublishedDocument): Map<string, Bookmarked> {
+function bookmarksOf(
+  document: PublishedDocument,
+  captionBelow: (style: string) => boolean,
+): Map<string, Bookmarked> {
   const named = new Map<string, Bookmarked>();
   let count = 0;
   const next = (): Bookmark => {
@@ -514,11 +524,7 @@ function bookmarksOf(document: PublishedDocument): Map<string, Bookmarked> {
           const words = next();
           // A floated figure's in its anchor's paragraph, after the box that holds its caption.
           const anchored = each.type === 'figure' && each.placement === 'float' ? next() : null;
-          const begins =
-            each.type === 'table' &&
-            document.theme?.tables[each.style]?.captionPosition === 'bottom'
-              ? next()
-              : null;
+          const begins = each.type === 'table' && captionBelow(each.style) ? next() : null;
           named.set(each.anchor, { kind: 'caption', place, words, anchored, begins });
         }
         if (each.type === 'table') {
@@ -708,10 +714,11 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   const partIds = new Map(
     headerParts.parts.map((part) => [part.name, relationships.add(part.kind, part.name)]),
   );
-  // Two tables one straight after the other - a table ending in its cells, or a numbered equation's
-  // row, and a table whose caption is below it (W14.5) - are one table to Word, the second's caption
-  // title lost and no gap between them. An empty paragraph a tenth of a point high parts them, spaced
-  // below by the first's space after and above by the second's space before and leading (below).
+  // Any two tables one straight after the other are one table to Word - a table ending in its cells,
+  // a numbered equation's row, or a table whose caption is below it (W14.5), which begins in its
+  // cells - the second's caption title lost and no gap between them. An empty paragraph a tenth of a
+  // point high parts them, spaced above by the first's space after and below by the second's space
+  // before and leading (below).
   for (const section of sections) {
     for (let at = section.body.length - 1; at > 0; at -= 1) {
       if (isTable(section.body[at - 1]!) && isTable(section.body[at]!)) {
@@ -738,18 +745,26 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     }
     // The space the PDF puts above a table that begins its block - one whose caption is below it - on
     // the paragraph before it, as a caption above a table carries it (W14.5).
+    // A floated figure's anchor stands out of the flow, its spaces held (`held`) whatever the flow
+    // wants: the space is added to what it holds, or `settle` would drop it.
     const previous = inOrder[index - 1];
     const above = isTable(item) ? item.wanted?.before : undefined;
     if (isTable(item) && above !== undefined && previous !== undefined && !isTable(previous)) {
-      const own = writer.properties(previous.theme).spaceAfter;
-      previous.wanted = {
-        ...previous.wanted,
-        after: (previous.wanted?.after ?? own) + above + (item.lead ?? 0),
-      };
+      const added = above + (item.lead ?? 0);
+      if (previous.held !== undefined) {
+        previous.held = { ...previous.held, after: previous.held.after + added };
+      } else {
+        const own = writer.properties(previous.theme).spaceAfter;
+        previous.wanted = { ...previous.wanted, after: (previous.wanted?.after ?? own) + added };
+      }
     }
     const next = inOrder[index + 1];
     const after = isTable(item) ? item.wanted?.after : undefined;
     if (after === undefined || next === undefined || isTable(next)) return;
+    if (next.held !== undefined) {
+      next.held = { ...next.held, before: next.held.before + after };
+      return;
+    }
     const own = writer.properties(next.theme).spaceBefore;
     next.wanted = { ...next.wanted, before: (next.wanted?.before ?? own) + after };
   });
@@ -1084,7 +1099,10 @@ class Writer {
       readonly titles: ReadonlyMap<string, readonly WordTitleRun[]>;
     },
   ) {
-    this.bookmarks = bookmarksOf(published);
+    this.bookmarks = bookmarksOf(
+      published,
+      (style) => theme.tableStyles.get(style)?.caption === 'below',
+    );
     this.document = {
       tag: wordLanguage(published.language),
       rtl: published.direction === 'rtl',

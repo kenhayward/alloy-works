@@ -322,7 +322,7 @@ template 15 exactly as by template 14. The Word writer writes the caption paragr
 side, a caption above kept with what it captions, and the paragraph before a table whose caption is
 below carrying the space above its cells; from the final review, two tables that would meet are parted
 by an empty paragraph a tenth of a point high, which Word would otherwise read as one table, and such a
-table is named for above, below and its page at the head of its first cell, where the PDF places it. **The editor reads the theme through `projectCss`**, whose
+table is named for above, below and its page at the head of its first cell, where the PDF places it. From the re-review, any two tables that would meet are parted, which also fixes Word 4's two numbered equations in a row; a floated figure's anchor keeps the spaces the flow gives it; `begins` is read from the writer's own theme; and the writer is `word/5`. **The editor reads the theme through `projectCss`**, whose
 markup stands a table's caption first and a figure's last, so only the other side is written: the
 block's parts stacked and the caption ordered there, a table's note last. The design, with what it does
 not do, is [themes.md's](../design/themes.md#where-a-caption-sits), which claims STY-079 and STR-025;
