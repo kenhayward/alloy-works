@@ -81,11 +81,17 @@ describe('the OpenAPI document', () => {
   };
   const operation = (path: string, method: string) => document.paths[path]?.[method] as Operation;
 
-  it('says which operations need a session, and how one is presented', () => {
+  it('says which operations need a session or a token, and how each is presented', () => {
     expect(document.components.securitySchemes).toEqual({
       session: { type: 'apiKey', in: 'cookie', name: '__Host-aw_session' },
+      token: {
+        type: 'http',
+        scheme: 'bearer',
+        description: expect.stringContaining('awt_'),
+      },
     });
-    expect(operation('/v1/me', 'get').security).toEqual([{ session: [] }]);
+    expect(operation('/v1/me', 'get').security).toEqual([{ session: [] }, { token: [] }]);
+    expect(operation('/v1/sign-out', 'post').security).toEqual([{ session: [] }]);
     expect(operation('/v1/tenant', 'get').security).toEqual([]);
   });
 

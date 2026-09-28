@@ -128,6 +128,12 @@ describe('isExplainedPermission', () => {
     expect(isExplainedPermission(validPermission)).toBe(true);
   });
 
+  it('accepts a permission refused to the token a request was made with, as the service documents it', () => {
+    expect(isExplainedPermission({ ...validPermission, allowed: false, reason: 'scoped' })).toBe(
+      true,
+    );
+  });
+
   it('refuses a permission whose reason the service never documented', () => {
     expect(isExplainedPermission({ ...validPermission, reason: 'mystery' })).toBe(false);
   });
@@ -175,6 +181,19 @@ describe('explainAnswer', () => {
     };
     expect(explainAnswer(answer, places, people)).toBe(
       'Allowed at the space General, by Author allowed to Grace through a group.',
+    );
+  });
+
+  it('says a permission the grants allow was refused because the API token is not scoped to it', () => {
+    const answer: ExplainedPermission = {
+      ...validPermission,
+      allowed: false,
+      reason: 'scoped',
+      level: `space:${GENERAL}`,
+      grants: [{ role: 'Author', effect: 'allow', subject: { principal: GRACE }, through: null }],
+    };
+    expect(explainAnswer(answer, places, people)).toBe(
+      'Not allowed by this token: its scopes leave it out, though Author allowed to Grace at the space General would allow it.',
     );
   });
 

@@ -30,7 +30,7 @@ import {
 } from '@alloy-works/db';
 import { decide, type EffectiveField } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
-import { notFound, type Authorised } from './access.js';
+import { notFound, scopesOf, type Authorised } from './access.js';
 import { AppError } from './errors.js';
 import { cursorFor, pageAsked } from './listing.js';
 import type { SessionPrincipal } from './sessions.js';
@@ -174,7 +174,7 @@ export function componentHandlers(
     listSpaces: async (request: FastifyRequest) => {
       const asked = pageAsked('spaces', request.query as PageQuery);
       const spaces = await db.withTenant(tenantOf(request), (trx) =>
-        listSpacesFor(trx, principalOf(request).principalId, asked),
+        listSpacesFor(trx, principalOf(request).principalId, asked, scopesOf(request)),
       );
       return {
         items: [...spaces.items],

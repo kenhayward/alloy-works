@@ -1,0 +1,134 @@
+// apps/service/src/tokens.ts
+import { randomBytes } from 'node:crypto';
+import type {
+  CreateTokenBody,
+  TokenIssued,
+  TokenList,
+  TokenListQuery,
+  TokenParams,
+  TokenView,
+} from '@alloy-works/api-contract';
+import {
+  issueApiToken,
+  listApiTokens,
+  revokeApiToken,
+  type StoredApiToken,
+  type Tenant,
+  type TenantDatabase,
+} from '@alloy-works/db';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { notFound } from './access.js';
+import { afterCursor, cursorAfter, pageLimit } from './components.js';
+import { AppError } from './errors.js';
+import type { SessionPrincipal } from './sessions.js';
+import { hashToken } from './sessions.js';
+
+/** A secret scanner's handle on a token committed by mistake (TK-F). */
+export const TOKEN_PREFIX = 'awt_';
+
+/** `awt_` and 32 random bytes as base64url: 43 characters. */
+const TOKEN_SHAPE = /^awt_[A-Za-z0-9_-]{43}$/;
+
+/** A token lives at most a year (IAM-034, TK-C); the table holds the same bound (0038). */
+const TOKEN_MAX_DAYS = 365;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** A fresh secret, returned once and never kept: only its hash is. */
+export function newTokenSecret(): string {
+  return `${TOKEN_PREFIX}${randomBytes(32).toString('base64url')}`;
+}
+
+/**
+ * The secret an Authorization header carries, if it is a bearer holding something shaped like one of
+ * ours; undefined for any other header, which the request path refuses as unauthenticated rather than
+ * falling back to the cookie - a caller who sent a credential meant that one.
+ */
+export function bearerSecret(header: string): string | undefined {
+  const match = /^Bearer[ ]+(\S+)$/i.exec(header);
+  const secret = match?.[1];
+  return secret !== undefined && TOKEN_SHAPE.test(secret) ? secret : undefined;
+}
+
+export const unauthenticated = () => new AppError(401, 'unauthenticated', 'Sign in to continue.');
+
+/** A token at a route that takes a session alone (service-foundations.md, TK-D). */
+export const tokenNotAllowed = () =>
+  new AppError(
+    403,
+    'token_not_allowed',
+    'This takes a signed-in session. An API token cannot sign out, open the event stream or manage tokens.',
+  );
+
+function tokenView(stored: StoredApiToken): TokenView {
+  return {
+    id: stored.id,
+    name: stored.name,
+    scopes: [...stored.scopes] as TokenView['scopes'],
+    createdAt: stored.createdAt.toISOString(),
+    expiresAt: stored.expiresAt.toISOString(),
+    lastUsedAt: stored.lastUsedAt && stored.lastUsedAt.toISOString(),
+  };
+}
+
+/**
+ * A person's own tokens: issued, listed and revoked by them, with a session alone (TK-D). The routes
+ * decide no permission - a token is the person's to make, and can do no more than they may - so each
+ * runs in a transaction of its own.
+ */
+export function tokenHandlers(
+  db: TenantDatabase,
+  tenantOf: (request: FastifyRequest) => Tenant,
+  principalOf: (request: FastifyRequest) => SessionPrincipal,
+) {
+  return {
+    listTokens: async (request: FastifyRequest): Promise<TokenList> => {
+      const query = request.query as TokenListQuery;
+      const after = afterCursor(query.cursor);
+      const page = await db.withTenant(tenantOf(request), (trx) =>
+        listApiTokens(trx, principalOf(request).principalId, {
+          ...(after === undefined ? {} : { after }),
+          limit: pageLimit(query.limit),
+        }),
+      );
+      return { items: page.items.map(tokenView), next: cursorAfter(page.after) };
+    },
+
+    createToken: async (request: FastifyRequest): Promise<TokenIssued> => {
+      const body = request.body as CreateTokenBody;
+      const expiresAt = new Date(body.expiresAt);
+      const secret = newTokenSecret();
+      const issued = await db.withTenant(tenantOf(request), async (trx) => {
+        // By the transaction's clock, which is the one the table bounds the expiry by.
+        const { now } = await trx
+          .selectNoFrom((eb) => eb.fn<Date>('now').as('now'))
+          .executeTakeFirstOrThrow();
+        const latest = now.getTime() + TOKEN_MAX_DAYS * DAY_MS;
+        if (expiresAt.getTime() <= now.getTime() || expiresAt.getTime() > latest) {
+          throw new AppError(
+            400,
+            'token_expiry_invalid',
+            'A token needs an expiry in the future, and no more than 365 days away.',
+            'IAM-034',
+          );
+        }
+        return issueApiToken(trx, {
+          principalId: principalOf(request).principalId,
+          name: body.name,
+          tokenHash: hashToken(secret),
+          scopes: body.scopes,
+          expiresAt,
+        });
+      });
+      return { ...tokenView(issued), secret };
+    },
+
+    revokeToken: async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+      const { id } = request.params as TokenParams;
+      const revoked = await db.withTenant(tenantOf(request), (trx) =>
+        revokeApiToken(trx, principalOf(request).principalId, id),
+      );
+      if (!revoked) throw notFound();
+      return reply.status(204).send();
+    },
+  };
+}

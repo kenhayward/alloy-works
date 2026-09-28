@@ -54,7 +54,7 @@ export interface ShownRole {
 export interface ExplainedPermission {
   readonly permission: string;
   readonly allowed: boolean;
-  readonly reason: 'allowed' | 'denied' | 'not_granted' | 'capped';
+  readonly reason: 'allowed' | 'denied' | 'not_granted' | 'capped' | 'scoped';
   readonly level: string | null;
   readonly checked: readonly string[];
   readonly grants: readonly {
@@ -188,7 +188,8 @@ export function isExplainedPermission(value: unknown): value is ExplainedPermiss
     value.reason !== 'allowed' &&
     value.reason !== 'denied' &&
     value.reason !== 'not_granted' &&
-    value.reason !== 'capped'
+    value.reason !== 'capped' &&
+    value.reason !== 'scoped'
   ) {
     return false;
   }
@@ -279,6 +280,8 @@ export function explainAnswer(
       return `Refused: nothing grants it at ${answer.checked.map(where).join(', ')}.`;
     case 'capped':
       return 'Refused: someone from outside the organisation may never have it, whatever is granted.';
+    case 'scoped':
+      return `Not allowed by this token: its scopes leave it out, though ${grants} at ${where(answer.level!)} would allow it.`;
     default:
       // Only reachable from a body this page did not validate as an ExplainedPermission: a defensive
       // fallback, not a state the service is expected to send.

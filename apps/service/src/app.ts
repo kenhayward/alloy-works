@@ -16,13 +16,20 @@ import {
 import {
   claimInvitation,
   enqueueJob,
+  findApiToken,
   loadFacts,
   type SignInRoute,
   type Tenant,
   type TenantDatabase,
   type TenantListener,
 } from '@alloy-works/db';
-import { decide, formatLevel, permissions, type Decision } from '@alloy-works/domain';
+import {
+  decide,
+  formatLevel,
+  permissions,
+  type Decision,
+  type Permission,
+} from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
@@ -69,6 +76,7 @@ import {
 import { signState, verifyState } from './sign-in-state.js';
 import { streamToViewer } from './stream.js';
 import { cachedResolver } from './tenants.js';
+import { bearerSecret, tokenHandlers, tokenNotAllowed, unauthenticated } from './tokens.js';
 import type { ZodTypeProvider } from './type-provider.js';
 
 declare module 'fastify' {
@@ -77,8 +85,16 @@ declare module 'fastify' {
     tenant: Tenant | null;
     /** Set before an authenticated handler runs; null on routes that need no session. */
     principal: SessionPrincipal | null;
+    /**
+     * How the principal was found, set with it: a session, or a personal token and the scopes that
+     * mask every decision taken for the request (service-foundations.md, TK-A).
+     */
+    credential: Credential | null;
   }
 }
+
+export type Credential =
+  { readonly kind: 'session' } | { readonly kind: 'token'; readonly scopes: readonly Permission[] };
 
 export interface AppOptions extends HttpOptions {
   readonly db: TenantDatabase;
@@ -197,6 +213,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   });
   app.decorateRequest('tenant', null);
   app.decorateRequest('principal', null);
+  app.decorateRequest('credential', null);
 
   function secret(name: string): string {
     const value = secrets.get(name);
@@ -310,6 +327,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...managingAccessHandlers(),
     ...invitationHandlers(),
     ...settingsHandlers(db, tenantOf),
+    ...tokenHandlers(db, tenantOf, principalOf),
 
     getHealth: async () => ({ status: 'ok' }),
 
@@ -699,16 +717,40 @@ export function buildApp(options: AppOptions): FastifyInstance {
       });
     }
     if (route.access.check !== 'none') {
+      const sessionAlone = route.access.credential === 'session';
       // After the tenant is known, and before the request's own parameters are looked at: a session
-      // is found only in the tenant whose hostname this is, so another environment's is simply not
-      // there (IAM-003).
+      // or a token is found only in the tenant whose hostname this is, so another environment's is
+      // simply not there (IAM-003).
       onRequest.push(async (request) => {
+        // A bearer first, and alone: a request carrying one is decided by it whatever cookie it also
+        // carries, and one that is not a token of ours is refused rather than passed over.
+        const authorization = request.headers.authorization;
+        if (authorization !== undefined) {
+          const secret = bearerSecret(authorization);
+          const holder =
+            secret === undefined
+              ? undefined
+              : await db.withTenant(tenantOf(request), (trx) =>
+                  findApiToken(trx, hashToken(secret)),
+                );
+          if (!holder) throw unauthenticated();
+          // Found first, so a revoked or foreign token is unauthenticated wherever it is sent.
+          if (sessionAlone) throw tokenNotAllowed();
+          request.principal = {
+            principalId: holder.principalId,
+            email: holder.email,
+            displayName: holder.displayName,
+          };
+          request.credential = { kind: 'token', scopes: holder.scopes };
+          return;
+        }
         const token = request.cookies[SESSION_COOKIE];
         const principal = token
           ? await db.withTenant(tenantOf(request), (trx) => findSession(trx, token))
           : undefined;
-        if (!principal) throw new AppError(401, 'unauthenticated', 'Sign in to continue.');
+        if (!principal) throw unauthenticated();
         request.principal = principal;
+        request.credential = { kind: 'session' };
       });
     }
     http.route({

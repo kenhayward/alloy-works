@@ -28,7 +28,7 @@ import {
 import { readOutline, walkOutline } from '@alloy-works/domain';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
-import { authoriseAt, notFound, type Authorised } from './access.js';
+import { authoriseAt, callerOf, notFound, type Authorised } from './access.js';
 import { versionView } from './components.js';
 import { storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
@@ -276,7 +276,7 @@ export function publishingHandlers(
         // links at the next request, not at the hour's end (W10.2's review). Refused as if there
         // were no such request, as the document itself is.
         if (found.kind === 'preview') {
-          await authoriseAt(trx, principal.principalId, 'read', {
+          await authoriseAt(trx, callerOf(request), 'read', {
             kind: 'artifact',
             id: found.documentId,
           });

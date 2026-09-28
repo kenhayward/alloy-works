@@ -193,7 +193,12 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
     (paths[route.path] ??= {})[route.method.toLowerCase()] = {
       operationId: route.operationId,
       summary: route.summary,
-      security: route.access.check === 'none' ? [] : [{ session: [] }],
+      security:
+        route.access.check === 'none'
+          ? []
+          : route.access.credential === 'session'
+            ? [{ session: [] }]
+            : [{ session: [] }, { token: [] }],
       ...(parameters.length > 0 ? { parameters } : {}),
       ...(route.body
         ? { requestBody: requestBody(route.body, `${route.operationId}Body`, definitions) }
@@ -221,7 +226,15 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
     openapi: '3.1.0',
     info: { title: 'Alloy Works', version: API_VERSION, description: COMPATIBILITY },
     components: {
-      securitySchemes: { session: { type: 'apiKey', in: 'cookie', name: SESSION_COOKIE } },
+      securitySchemes: {
+        session: { type: 'apiKey', in: 'cookie', name: SESSION_COOKIE },
+        token: {
+          type: 'http',
+          scheme: 'bearer',
+          description:
+            'A personal API token, awt_ and 43 characters, issued by POST /v1/tokens. It acts as the person who issued it, masked to its scopes',
+        },
+      },
       ...(Object.keys(definitions).length > 0 ? { schemas: definitions } : {}),
     },
     paths,

@@ -11,6 +11,11 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "__Host-aw_session"
+      },
+      "token": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A personal API token, awt_ and 43 characters, issued by POST /v1/tokens. It acts as the person who issued it, masked to its scopes"
       }
     },
     "schemas": {
@@ -1513,6 +1518,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -1718,6 +1726,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -1785,9 +1796,10 @@
                               "allowed",
                               "denied",
                               "not_granted",
-                              "capped"
+                              "capped",
+                              "scoped"
                             ],
-                            "description": "capped: an external principal, refused whatever the grants say"
+                            "description": "capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it"
                           },
                           "level": {
                             "description": "The level that decided, or null when none said anything",
@@ -2035,6 +2047,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -2226,6 +2241,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -2561,6 +2579,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -2810,6 +2831,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -2990,6 +3014,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -3371,6 +3398,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -3867,6 +3897,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -4292,6 +4325,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -4678,6 +4714,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -5228,6 +5267,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -5727,6 +5769,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -6100,6 +6145,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -6388,6 +6436,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -6901,6 +6952,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -7132,6 +7186,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "requestBody": {
@@ -7559,6 +7616,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -7794,6 +7854,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -8486,6 +8549,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -8825,6 +8891,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -9356,6 +9425,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -9623,6 +9695,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -9960,6 +10035,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -13093,6 +13171,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -13340,6 +13421,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -13985,6 +14069,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -14411,6 +14498,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -15066,6 +15156,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -15374,6 +15467,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -16894,6 +16990,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -17313,6 +17412,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "requestBody": {
@@ -17710,6 +17812,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -17892,6 +17997,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -18221,6 +18329,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "requestBody": {
@@ -18505,6 +18616,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -18720,6 +18834,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "responses": {
@@ -18837,6 +18954,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -19012,6 +19132,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "responses": {
@@ -19175,6 +19298,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -19496,6 +19622,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -19833,6 +19962,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -20179,6 +20311,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -20817,6 +20952,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -21132,6 +21270,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "responses": {
@@ -21279,6 +21420,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -21438,6 +21582,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -22106,6 +22253,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "responses": {
@@ -22204,6 +22354,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "requestBody": {
@@ -22989,6 +23142,39 @@
               }
             }
           },
+          "403": {
+            "description": "token_not_allowed: this takes a signed-in session, never a token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
           "default": {
             "description": "An error, in the one shape every error takes",
             "content": {
@@ -23032,6 +23218,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -23212,6 +23401,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -23478,6 +23670,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -23740,6 +23935,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -24304,6 +24502,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -25033,6 +25234,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -25594,6 +25798,39 @@
               }
             }
           },
+          "403": {
+            "description": "token_not_allowed: this takes a signed-in session, never a token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
           "503": {
             "description": "This environment cannot stream yet",
             "content": {
@@ -25670,6 +25907,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -25960,6 +26200,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -26207,6 +26450,9 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "token": []
           }
         ],
         "parameters": [
@@ -26906,6 +27152,673 @@
           },
           "404": {
             "description": "No environment is served at this address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tokens": {
+      "get": {
+        "operationId": "listTokens",
+        "summary": "The caller's own tokens, a page at a time, never their secrets",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "At most this many, 50 when absent",
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of the caller's tokens",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "What the person called it, to tell their tokens apart"
+                          },
+                          "scopes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "create",
+                                "edit",
+                                "comment",
+                                "suggest",
+                                "approve",
+                                "publish",
+                                "design",
+                                "manage_definitions",
+                                "administer"
+                              ]
+                            },
+                            "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "description": "When it stops working; nothing extends a token"
+                          },
+                          "lastUsedAt": {
+                            "description": "When a request last used it, to the minute, or null for never",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "scopes",
+                          "createdAt",
+                          "expiresAt",
+                          "lastUsedAt"
+                        ]
+                      }
+                    },
+                    "next": {
+                      "description": "The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "next"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A cursor this listing did not give out, or a limit outside 1 to 100",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "token_not_allowed: tokens are managed with a signed-in session, never a token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createToken",
+        "summary": "Issue the caller a token that acts as them, masked to its scopes, until it expires",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80,
+                    "description": "1 to 80 characters, trimmed"
+                  },
+                  "scopes": {
+                    "maxItems": 9,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "create",
+                        "edit",
+                        "comment",
+                        "suggest",
+                        "approve",
+                        "publish",
+                        "design",
+                        "manage_definitions",
+                        "administer"
+                      ]
+                    },
+                    "description": "The permissions it may use: a mask over its creator's grants, never a grant"
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                    "description": "When it stops working: required, in the future and at most 365 days away"
+                  }
+                },
+                "required": [
+                  "name",
+                  "scopes",
+                  "expiresAt"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Issued, with its secret, shown this once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "What the person called it, to tell their tokens apart"
+                    },
+                    "scopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "create",
+                          "edit",
+                          "comment",
+                          "suggest",
+                          "approve",
+                          "publish",
+                          "design",
+                          "manage_definitions",
+                          "administer"
+                        ]
+                      },
+                      "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "description": "When it stops working; nothing extends a token"
+                    },
+                    "lastUsedAt": {
+                      "description": "When a request last used it, to the minute, or null for never",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "secret": {
+                      "type": "string",
+                      "description": "The token, awt_ and 43 characters, shown this once: only its hash is kept"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "scopes",
+                    "createdAt",
+                    "expiresAt",
+                    "lastUsedAt",
+                    "secret"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request, or token_expiry_invalid: an expiry past, or more than 365 days away",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "token_not_allowed: tokens are managed with a signed-in session, never a token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tokens/{id}": {
+      "delete": {
+        "operationId": "revokeToken",
+        "summary": "Revoke one of the caller's own tokens: the next request with it is refused",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "token_not_allowed: tokens are managed with a signed-in session, never a token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such token of the caller's in this environment",
             "content": {
               "application/json": {
                 "schema": {

@@ -239,6 +239,20 @@ describe('the listings through the service', () => {
       });
       expect(sent.statusCode, email).toBe(200);
     }
+    // Two of Grace's own tokens, so the tokens listing has pages to turn.
+    for (const name of ['Nightly import', 'Publish on merge']) {
+      const issued = await app.inject({
+        method: 'POST',
+        url: '/v1/tokens',
+        headers: { host: HOST, cookie },
+        payload: {
+          name,
+          scopes: [],
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+      });
+      expect(issued.statusCode, name).toBe(200);
+    }
     const spaces = (await get('/v1/spaces?limit=100')).json<Page>();
     const general = spaces.items.find((each) => each.name === 'General')!.id;
     const documents = (await get('/v1/documents?limit=100')).json<Page>();
@@ -289,6 +303,7 @@ describe('the listings through the service', () => {
       listTemplates: '/v1/templates',
       listDefinitions: '/v1/definitions',
       listPeople: '/v1/people',
+      listTokens: '/v1/tokens',
     };
     // Every route that answers a list: a new one is listed here, and so paged, or this fails.
     const listings = allRoutes.filter(

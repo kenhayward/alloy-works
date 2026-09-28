@@ -393,7 +393,10 @@ export function documentHandlers(
      * may not read is never read and its occurrence answers `null`, and each resolved version's
      * content and number read once, in one query - the number is what the view's label shows (CNT-162).
      */
-    getDocumentTexts: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+    getDocumentTexts: async (
+      request: FastifyRequest,
+      { trx, principalId, facts: onDocument }: Authorised,
+    ) => {
       const { id } = request.params as DocumentParams;
       const { document, outline } = await latestOutline(trx, id);
       const inputs = await numberingInputs(trx, outline, principalId);
@@ -424,7 +427,9 @@ export function documentHandlers(
           return [
             component,
             {
-              mayEdit: decide('edit', facts.get(component)!).allowed,
+              // Masked by the request's token, as the document's own flags are (TK-A).
+              mayEdit: decide('edit', { ...facts.get(component)!, scopes: onDocument.scopes })
+                .allowed,
               lock: lock ? lockView(lock, principalId) : null,
             },
           ] as const;
