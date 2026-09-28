@@ -552,7 +552,9 @@ describe('a reference asking for a form its target has not got (W-N)', () => {
   it('shows a title form of a section whose title holds an equation as unavailable, saying why', () => {
     const section = { kind: 'node', node: SECTION } as const;
     const context = {
-      targets: [{ ...target(section, 'section', '1', 'Growth as'), titleHoldsEquation: true as const }],
+      targets: [
+        { ...target(section, 'section', '1', 'Growth as'), titleHoldsEquation: true as const },
+      ],
     };
     const doc = (display: CrossReferenceDisplay) => docOf(para('b1', ref(section, display)));
     const unavailable = {
