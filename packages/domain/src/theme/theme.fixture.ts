@@ -4,21 +4,22 @@ import {
   SECOND_DEFAULT_CATALOGUES,
   THIRD_DEFAULT_THEME,
 } from './default.js';
-import { readTheme, type ResolvedTheme, type ThemeReadOutcome } from './read.js';
-import { CATALOGUE_KINDS } from './schema.js';
+import { readTheme, upgradeCatalogue2, type ResolvedTheme, type ThemeReadOutcome } from './read.js';
+import { CATALOGUE_KINDS, type ImageCatalogue, type TableCatalogue, type Theme } from './schema.js';
 
 /**
  * The default theme's inputs as a test changes them: a fresh copy each call, so no test sees another's
  * edits. Kept out of the build (`*.fixture.ts`).
  */
-export function defaultInputs() {
+export function defaultInputs(): ThemeInputs {
   return {
     theme: structuredClone(DEFAULT_THEME),
     catalogues: structuredClone(DEFAULT_CATALOGUES),
   };
 }
 
-export type ThemeInputs = ReturnType<typeof defaultInputs>;
+/** A theme and its six catalogues, each as the default's 0.5 rows hold them. */
+export type ThemeInputs = { theme: Theme; catalogues: typeof DEFAULT_CATALOGUES };
 
 /**
  * The default theme's 0.3, before its 0.4 added styles for an author to choose: each catalogue holding
@@ -27,9 +28,16 @@ export type ThemeInputs = ReturnType<typeof defaultInputs>;
  * that what it counts is the rule's, not the styles the default happens to offer.
  */
 export function plainInputs(): ThemeInputs {
+  const catalogues = structuredClone(SECOND_DEFAULT_CATALOGUES);
+  // Its table and image catalogues as the reader reads their `catalogue/2` rows, at `catalogue/3`, so
+  // a test changes a style in the shape it is read in.
   return {
     theme: structuredClone(THIRD_DEFAULT_THEME),
-    catalogues: structuredClone(SECOND_DEFAULT_CATALOGUES),
+    catalogues: {
+      ...catalogues,
+      table: upgradeCatalogue2(catalogues.table) as TableCatalogue,
+      image: upgradeCatalogue2(catalogues.image) as ImageCatalogue,
+    },
   };
 }
 

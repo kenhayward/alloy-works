@@ -200,11 +200,12 @@ describe('a table in the PDF (tables 2)', () => {
   }, 120_000);
 
   it('sets a document holding no table marked unnumbered as template 13 set it, so what was published publishes the same', async () => {
-    // Template 13 reads `publishing/13`, which has no `listed`: the same document, as it was made.
+    // Template 13 reads `publishing/13`, which has no `listed` and no caption's side (W14.5): the same
+    // document, as it was made, against what the current template makes of it.
     const assembled = assemble(inputOf([readings]));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     const asThirteen = JSON.parse(JSON.stringify(assembled.document), (key, value: unknown) =>
-      key === 'listed' ? undefined : value,
+      key === 'listed' || key === 'captionPosition' ? undefined : value,
     ) as { schema: string };
     asThirteen.schema = 'publishing/13';
     const [before, after] = await Promise.all([
@@ -217,7 +218,7 @@ describe('a table in the PDF (tables 2)', () => {
         )
         .then(readPdf),
     ]);
-    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(14);
+    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(15);
     expect(after.pages).toBe(before.pages);
     expect(after.taggedText).toEqual(before.taggedText);
     expect(after.artifactText).toEqual(before.artifactText);

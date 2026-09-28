@@ -351,6 +351,8 @@ interface Written {
 function written(
   over: Partial<AssembleInput> & { readonly layout?: Layout } = {},
   formats: readonly [PublishingFormat, ...PublishingFormat[]] = ['docx'],
+  /** The published document as the writer is handed it, changed where a test must. */
+  handed: (document: PublishedDocument) => PublishedDocument = (document) => document,
 ): Written {
   const theme = (over.theme ?? DEFAULT_THEME) as ResolvedTheme;
   const assembled = assemble({
@@ -370,7 +372,7 @@ function written(
   const faces = facesOf(theme);
   const images = imagesOf(over.assets ?? new Map());
   const { bytes, report } = writeDocx({
-    document: assembled.document,
+    document: handed(assembled.document),
     numbering: assembled.numbering,
     word: assembled.word,
     formats,
@@ -520,8 +522,8 @@ describe('writeDocx: the package (Word 1, ruling R6)', () => {
     }
   });
 
-  it('is the Word writer at word/4', () => {
-    expect(WORD_WRITER_VERSION).toBe('word/4');
+  it('is the Word writer at word/5', () => {
+    expect(WORD_WRITER_VERSION).toBe('word/5');
   });
 });
 
@@ -1322,6 +1324,7 @@ const writtenOf = (
   content: unknown[],
   over: Parameters<typeof written>[0] = {},
   formats?: Parameters<typeof written>[1],
+  handed?: Parameters<typeof written>[2],
 ): Written =>
   written(
     {
@@ -1336,6 +1339,7 @@ const writtenOf = (
       occurrences: new Map([[id('blocks'), component('Blocks', content)]]),
     },
     formats,
+    handed,
   );
 
 const list = (name: string, kind: string, items: unknown[], over: object = {}) => ({
@@ -1819,6 +1823,7 @@ const RULED = {
   },
   padding: 6,
   breaks: { repeatHeader: false, keepRowsWhole: true, continuationLabel: true },
+  caption: 'above' as const,
 };
 const ruledTheme = themeWith((inputs) => {
   inputs.catalogues.table.styles.push(RULED);
@@ -2270,6 +2275,7 @@ const floatedTheme = themeWith((inputs) => {
     maximum: { value: 0.6, unit: 'textHeight' },
     placement: 'float',
     alignment: 'end',
+    caption: 'below',
   });
 });
 
@@ -2556,6 +2562,313 @@ describe('writeDocx: figures and images (Word 2, ruling R8)', () => {
       'xmlns:a': 'http://schemas.openxmlformats.org/drawingml/2006/main',
       'xmlns:pic': 'http://schemas.openxmlformats.org/drawingml/2006/picture',
     });
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------
+// W14.5 (W-I): a caption where its style places it.
+// ---------------------------------------------------------------------------------------------------
+
+/**
+ * A table style setting its caption below the table, and two image styles setting a figure's above
+ * its image - one as a block, one floated - each otherwise the default's.
+ */
+const captionedTheme = themeWith((inputs) => {
+  const [table] = inputs.catalogues.table.styles;
+  inputs.catalogues.table.styles.push({
+    ...table!,
+    id: 'footed',
+    name: 'Footed',
+    caption: 'below',
+  });
+  const [figure] = inputs.catalogues.image.styles;
+  if (figure!.placement === 'inline') throw new Error('The first image style places a figure');
+  inputs.catalogues.image.styles.push(
+    { ...figure!, id: 'headed', name: 'Headed', caption: 'above' },
+    { ...figure!, id: 'topped', name: 'Topped', placement: 'float', caption: 'above' },
+  );
+});
+
+describe('writeDocx: a caption where its style places it (W14.5)', () => {
+  const captioned = tabledOf(
+    [
+      said('before'),
+      readings({ style: 'footed' }),
+      said('between'),
+      figure('f1', RED, 'Shapes at rest', { imageStyle: 'headed' }),
+      said('after'),
+      figure('f2', BLUE, 'Blue on top', { imageStyle: 'topped' }),
+    ],
+    { theme: captionedTheme, assets: IMAGES },
+  );
+  const { body, at } = bodyOf(captioned.docx);
+  const shown = blocksOf(captioned.docx).map((each) =>
+    each.name === 'w:tbl'
+      ? 'table'
+      : drawings(each).some((drawing) => drawing.name === 'wp:inline')
+        ? 'image'
+        : textOf(each),
+  );
+
+  it("STY-079 sets a table's caption below it where its table style says, before its note, numbered by Word's fields as one above it is", () => {
+    expect(shown.slice(shown.indexOf('before'), shown.indexOf('between') + 1)).toEqual([
+      'before',
+      'table',
+      'Table 1.1 Readings at noon',
+      'Measured by Grace.',
+      'between',
+    ]);
+    const caption = at('Table 1.1 Readings at noon');
+    expect(styleOf(caption)).toBe('caption');
+    expect(fieldCodes(caption)).toEqual(['STYLEREF 1 \\s', 'SEQ Table \\* arabic \\s 1']);
+    expect(properties(caption)).not.toContain('w:keepNext');
+    // Word still names the table by its caption's words.
+    const table = blocksOf(captioned.docx).find((each) => each.name === 'w:tbl')!;
+    expect(first(first(table, 'w:tblPr')!, 'w:tblCaption')!.attrs['w:val']).toBe(
+      'Table 1.1 Readings at noon',
+    );
+  });
+
+  it("STY-079 sets a figure's caption above its image where its image style says, kept with the image, as a block and floated", () => {
+    expect(shown.slice(shown.indexOf('between'), shown.indexOf('after') + 1)).toEqual([
+      'between',
+      'Figure 1.1 Shapes at rest',
+      'image',
+      'after',
+    ]);
+    const caption = at('Figure 1.1 Shapes at rest');
+    expect(styleOf(caption)).toBe('caption');
+    expect(properties(caption)).toContain('w:keepNext');
+    expect(fieldCodes(caption)).toEqual(['STYLEREF 1 \\s', 'SEQ Figure \\* arabic \\s 1']);
+    // Floated, its caption at the head of its box, the image below it.
+    const anchored = body.find((each) => all(each, 'wp:anchor').length > 0)!;
+    const inside = kids(first(anchored, 'w:txbxContent')!, 'w:p');
+    expect(inside.map((each) => (drawings(each).length > 0 ? 'image' : textOf(each)))).toEqual([
+      'Figure 1.2 Blue on top',
+      'image',
+    ]);
+  });
+
+  it("spaces a caption on its other side as the PDF does: the cells' space after and the caption's space before between a table and a caption below it, and the caption's space after alone between a caption above and its image", () => {
+    // The default table cell and caption are the body's spaces - none before, 2.75 after - and a
+    // 14.35 line at 11pt. Before a table whose caption is below, the paragraph above it gives the
+    // cells' space before and the leading Word sets inside the cell's first line, as a caption above
+    // the table does (`apart`).
+    expect(spacing(at('before'))?.['w:after']).toBe(twips(2.75 + 3.35));
+    expect(spacing(at('Table 1.1 Readings at noon'))?.['w:before']).toBe(twips(2.75));
+    // Above an image, which Word sets no leading over: the caption's space after, and nothing more.
+    const caption = at('Figure 1.1 Shapes at rest');
+    const image = body[body.indexOf(caption) + 1]!;
+    expect(spacing(caption)?.['w:after']).toBeUndefined();
+    expect(spacing(image)?.['w:before'] ?? '0').toBe('0');
+  });
+
+  /** An equation to number, whose row Word writes as a table of its own. */
+  const EQUATION =
+    '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x squared">' +
+    '<msup><mi>x</mi><mn>2</mn></msup></math>';
+  /** A table of one cell under this style, its every identifier its own. */
+  const small = (name: string, style: string, ...cells: unknown[][]) => ({
+    type: 'table',
+    id: name,
+    style,
+    caption: [text(`Caption ${name}`)],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: (cells.length === 0 ? [[text(`Cell ${name}`)]] : cells).map((runs, at) => ({
+      cells: [
+        {
+          content: [paragraph(`${name}c${at}`, ...(runs as ReturnType<typeof text>[]))],
+          colspan: 1,
+          rowspan: 1,
+        },
+      ],
+    })),
+  });
+  /** The document's tables and paragraphs in order, and the two tables' neighbours. */
+  const between = (content: unknown[]) => {
+    const { docx } = tabledOf(content, { theme: captionedTheme });
+    const blocks = blocksOf(docx);
+    const tables = blocks.flatMap((each, at) => (each.name === 'w:tbl' ? [at] : []));
+    return { blocks, tables };
+  };
+
+  it("never writes a table whose caption is below it straight after another table, which Word would read as one table: a paragraph a tenth of a point high stands between them, carrying the PDF's space", () => {
+    // A table ending in its cells - its caption above, no note - then one beginning in its cells.
+    const { blocks, tables } = between([
+      said('before'),
+      small('t1', 'table'),
+      small('t2', 'footed'),
+      said('after'),
+    ]);
+    expect(tables).toHaveLength(2);
+    expect(tables[1]! - tables[0]!).toBe(2);
+    const spacer = blocks[tables[0]! + 1]!;
+    expect(spacer.name).toBe('w:p');
+    expect(textOf(spacer)).toBe('');
+    // The cells' space after above it; the cells' space before, and the leading Word sets inside the
+    // next table's first cell, below it: the PDF's gap between the two (`apart`), and no line of its
+    // own but a tenth of a point.
+    expect(spacing(spacer)).toMatchObject({
+      'w:before': twips(2.75),
+      'w:after': twips(3.35),
+      'w:line': '2',
+      'w:lineRule': 'exact',
+    });
+    // Each still names itself by its own caption, which Word reads as the table's title.
+    const captions = tables.map(
+      (at) => first(first(blocks[at]!, 'w:tblPr')!, 'w:tblCaption')!.attrs['w:val'],
+    );
+    expect(captions).toEqual(['Table 1.1 Caption t1', 'Table 1.2 Caption t2']);
+  });
+
+  it("stands the same paragraph between a numbered equation's row and a table whose caption is below it", () => {
+    const { blocks, tables } = between([
+      said('before'),
+      { type: 'equation', id: 'e1', mathml: EQUATION, numbered: true },
+      small('t2', 'footed'),
+      said('after'),
+    ]);
+    // The equation's row is a table of its own, its number beside it.
+    expect(tables).toHaveLength(2);
+    const spacer = blocks[tables[0]! + 1]!;
+    expect(spacer.name).toBe('w:p');
+    expect(textOf(spacer)).toBe('');
+    expect(spacing(spacer)).toMatchObject({ 'w:line': '2', 'w:lineRule': 'exact' });
+    expect(tables[1]! - tables[0]!).toBe(2);
+  });
+
+  it("stands the same paragraph between two numbered equations' rows, and between a table ending in its cells and a numbered equation's row, which Word would otherwise read as one table", () => {
+    const equation = (name: string) => ({
+      type: 'equation',
+      id: name,
+      mathml: EQUATION,
+      numbered: true,
+    });
+    for (const content of [
+      [said('before'), equation('e1'), equation('e2'), said('after')],
+      [said('before'), small('t1', 'table'), equation('e2'), said('after')],
+    ]) {
+      const { blocks, tables } = between(content);
+      expect(tables).toHaveLength(2);
+      expect(tables[1]! - tables[0]!).toBe(2);
+      const spacer = blocks[tables[0]! + 1]!;
+      expect(spacer.name).toBe('w:p');
+      expect(textOf(spacer)).toBe('');
+      expect(spacing(spacer)).toMatchObject({ 'w:line': '2', 'w:lineRule': 'exact' });
+    }
+  });
+
+  it('keeps the space the PDF puts above a table whose caption is below it after a floated figure, whose anchor stands out of the flow, and the space below a table ending in its cells before one', () => {
+    const anchorOf = (content: unknown[]) => {
+      const { docx } = tabledOf(content, { theme: captionedTheme, assets: IMAGES });
+      const { body } = bodyOf(docx);
+      return body.find((each) => all(each, 'wp:anchor').length > 0)!;
+    };
+    // The anchor stands between the paragraph and the table: the leading Word sets inside the table's
+    // first cell, 3.35 at the cell's 14.35 line and 11pt, is its space after, as the paragraph before
+    // a table carries it; the cells' space before is none.
+    expect(
+      spacing(
+        anchorOf([
+          said('before'),
+          figure('f1', BLUE, 'Up top', { imageStyle: 'topped' }),
+          small('t2', 'footed'),
+        ]),
+      ),
+    ).toMatchObject({ 'w:after': twips(3.35) });
+    // After a table ending in its cells, the cells' space after, 2.75, is the anchor's space before.
+    expect(
+      spacing(
+        anchorOf([
+          small('t1', 'table'),
+          figure('f1', BLUE, 'Up top', { imageStyle: 'topped' }),
+          said('after'),
+        ]),
+      ),
+    ).toMatchObject({ 'w:before': twips(2.75) });
+  });
+
+  it("reads whether a table's caption is below it from the theme it writes the table in, so no reference names a bookmark it does not write", () => {
+    const xref = (name: string, block: string) => ({
+      type: 'crossReference',
+      id: name,
+      target: { kind: 'block', block },
+      display: 'relative',
+    });
+    // The published document's projection of the theme saying otherwise of both tables: the writer
+    // writes each table from its own resolved theme, and must name for above and below only the
+    // bookmarks it writes.
+    const { bytes } = writtenOf(
+      [
+        paragraph('p1', text('See '), xref('x1', 't1'), text(' and '), xref('x3', 't3')),
+        small('t1', 'table'),
+        small('t3', 'footed'),
+      ],
+      { layout: UNLISTED, theme: captionedTheme },
+      undefined,
+      (document) => ({
+        ...document,
+        theme: {
+          ...document.theme!,
+          tables: {
+            ...document.theme!.tables,
+            table: { ...document.theme!.tables['table']!, captionPosition: 'bottom' },
+            footed: { ...document.theme!.tables['footed']!, captionPosition: 'top' },
+          },
+        },
+      }),
+    );
+    const xml = strFromU8(unzipSync(bytes)['word/document.xml']!);
+    const named = [...xml.matchAll(/(?:REF|PAGEREF) (_Ref[0-9]+)/g)].map((each) => each[1]!);
+    expect(named.length).toBeGreaterThan(0);
+    for (const name of named) expect(xml, name).toContain(`w:name="${name}"`);
+    // And the footed table, whose caption the writer sets below it, is named where it begins.
+    const [, footed] = [...xml.matchAll(/REF (_Ref[0-9]+) \\p/g)].map((each) => each[1]!);
+    const cell = xml.indexOf('<w:tc>', xml.indexOf('Cell t3') - 600);
+    expect(xml.indexOf(`w:name="${footed}"`)).toBeGreaterThan(cell);
+    expect(xml.indexOf(`w:name="${footed}"`)).toBeLessThan(xml.indexOf('Cell t3'));
+  });
+
+  it('names a table whose caption is below it for above and below, and for its page, where it begins - its first cell - as the PDF places it, both from inside the table and from outside it', () => {
+    const xref = (name: string, display: string) => ({
+      type: 'crossReference',
+      id: name,
+      target: { kind: 'block', block: 't3' },
+      display,
+    });
+    const { docx } = tabledOf(
+      [
+        paragraph('p1', text('See '), xref('x1', 'relative'), text(' on '), xref('x2', 'page')),
+        small('t3', 'footed', [text('First')], [text('Then '), xref('x3', 'relative')]),
+      ],
+      { theme: captionedTheme },
+    );
+    const xml = new TextDecoder().decode(docx.files['word/document.xml']);
+    const relative = [...xml.matchAll(/REF (_Ref[0-9]+) \\p/g)].map((each) => each[1]);
+    const page = [...xml.matchAll(/PAGEREF (_Ref[0-9]+)/g)].map((each) => each[1]);
+    expect(relative).toHaveLength(2);
+    expect(new Set([...relative, ...page]).size).toBe(1);
+    const [name] = relative;
+    const start = xml.indexOf(`<w:bookmarkStart w:id="`, xml.indexOf('<w:tbl>'));
+    // Its bookmark holds nothing, at the head of the table's first cell's first paragraph.
+    expect(xml.slice(start)).toMatch(
+      new RegExp(`^<w:bookmarkStart w:id="[0-9]+" w:name="${name}"/>`),
+    );
+    expect(xml.lastIndexOf('<w:p>', start)).toBeGreaterThan(xml.indexOf('<w:tc>'));
+    expect(xml.indexOf('First')).toBeGreaterThan(start);
+    // So the reference before the table reads below, and the one inside it above, as the PDF prints.
+    const results = (at: number) => {
+      const code = xml.indexOf(`REF ${name} \\p`, at);
+      const separate = xml.indexOf('w:fldCharType="separate"', code);
+      return /<w:t[^>]*>([^<]*)<\/w:t>/.exec(xml.slice(separate))?.[1];
+    };
+    expect(xml.indexOf(`REF ${name} \\p`)).toBeLessThan(start);
+    expect(results(0)).toBe('below');
+    expect(xml.indexOf(`REF ${name} \\p`, start)).toBeGreaterThan(start);
+    expect(results(start)).toBe('above');
+    // And the caption, after the cells, still holds the bookmarks a number and a title are read from.
+    expect(xml.indexOf('>Caption t3<')).toBeGreaterThan(xml.indexOf('</w:tbl>'));
   });
 });
 

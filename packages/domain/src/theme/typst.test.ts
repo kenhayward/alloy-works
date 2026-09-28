@@ -153,7 +153,7 @@ describe("publishing/12's projection, kept as template 12 reads it", () => {
   });
 });
 
-describe('projectTypst, for publishing/13', () => {
+describe('projectTypst, for publishing/13 to publishing/15', () => {
   const current = projectTypst(resolved());
 
   it("states every paragraph style as publishing/12's does, with its identifier and its contextual spacing", () => {
@@ -186,6 +186,7 @@ describe('projectTypst, for publishing/13', () => {
         repeatHeader: true,
         keepRowsWhole: false,
         continuationLabel: false,
+        captionPosition: 'top',
       },
       // The default theme's 0.4's Banded.
       banded: {
@@ -201,6 +202,7 @@ describe('projectTypst, for publishing/13', () => {
         repeatHeader: true,
         keepRowsWhole: false,
         continuationLabel: false,
+        captionPosition: 'top',
       },
     });
 
@@ -230,6 +232,7 @@ describe('projectTypst, for publishing/13', () => {
       repeatHeader: false,
       keepRowsWhole: true,
       continuationLabel: true,
+      captionPosition: 'top',
     });
   });
 
@@ -240,12 +243,14 @@ describe('projectTypst, for publishing/13', () => {
         maximum: { value: 0.6, unit: 'textHeight' },
         placement: 'block',
         align: 'center',
+        captionPosition: 'bottom',
       },
       inline: {
         fixed: { dimension: 'height', value: 1.2, unit: 'em' },
         maximum: { value: 1, unit: 'measure' },
         placement: 'inline',
         align: null,
+        captionPosition: null,
       },
       // The default theme's 0.4's Half width.
       'half-width': {
@@ -253,6 +258,7 @@ describe('projectTypst, for publishing/13', () => {
         maximum: { value: 0.6, unit: 'textHeight' },
         placement: 'block',
         align: 'center',
+        captionPosition: 'bottom',
       },
     });
     const inputs = defaultInputs();
@@ -262,10 +268,40 @@ describe('projectTypst, for publishing/13', () => {
       name: 'Floated',
       placement: 'float',
       alignment: 'end',
+      caption: 'below',
     });
     expect(projectTypst(resolved(inputs)).images['floated']).toMatchObject({
       placement: 'float',
       align: 'end',
+    });
+  });
+
+  it("carries where each table style and each style placing a figure sets its caption, in the engine's terms, and none for an image in a line of text", () => {
+    const inputs = defaultInputs();
+    const [table] = inputs.catalogues.table.styles;
+    const [figure] = inputs.catalogues.image.styles;
+    inputs.catalogues.table.styles.push({ ...table!, id: 'foot', name: 'Foot', caption: 'below' });
+    if (figure!.placement === 'inline') throw new Error('The first image style places a figure');
+    inputs.catalogues.image.styles.push(
+      { ...figure!, id: 'head', name: 'Head', caption: 'above' },
+      { ...figure!, id: 'afloat', name: 'Afloat', placement: 'float', caption: 'above' },
+    );
+    const projected = projectTypst(resolved(inputs));
+    expect(
+      Object.fromEntries(
+        Object.entries(projected.tables).map(([id, style]) => [id, style.captionPosition]),
+      ),
+    ).toEqual({ table: 'top', banded: 'top', foot: 'bottom' });
+    expect(
+      Object.fromEntries(
+        Object.entries(projected.images).map(([id, style]) => [id, style.captionPosition]),
+      ),
+    ).toEqual({
+      figure: 'bottom',
+      inline: null,
+      'half-width': 'bottom',
+      head: 'top',
+      afloat: 'top',
     });
   });
 

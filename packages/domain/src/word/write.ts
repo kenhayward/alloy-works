@@ -113,11 +113,12 @@ import { spacingOverrides, type SpacingOverride } from './spacing.js';
  * What the job records as the output's producer version (R12). A version names the writer that made
  * the file, so it moves whenever what the writer writes does: `word/2` is Word 2's, which writes lists,
  * quotations, preformatted text, tables and figures where `word/1` refused them, `word/3` is Word
- * 3's, which writes footnotes and cross-references where `word/2` refused them, and `word/4` is Word
+ * 3's, which writes footnotes and cross-references where `word/2` refused them, `word/4` is Word
  * 4's, which writes equations, a reference to one and the list of equations where `word/3` refused
- * them.
+ * them, and `word/5` is W14.5's, which writes a caption on its style's side, parts any two tables that
+ * would meet with an empty paragraph, and names a table whose caption is below it where it begins.
  */
-export const WORD_WRITER_VERSION = 'word/4';
+export const WORD_WRITER_VERSION = 'word/5';
 
 /** What the writer is given: `assemble`'s answer for Word, the formats asked for, and the faces. */
 export interface WordWriting {
@@ -292,7 +293,7 @@ interface Paragraph {
    * paragraphs', which stand out of the flow as the PDF's band does, so that the flow's spaces reach
    * none of them (Word 2, ruling R8).
    */
-  readonly held?: { readonly before: number; readonly after: number };
+  held?: { readonly before: number; readonly after: number };
   /**
    * The text box it anchors, where it is a floated figure's anchor (`floatBox`): the drawing around
    * the box's paragraphs, which are written inside it. The paragraph itself holds nothing else and is a
@@ -301,6 +302,11 @@ interface Paragraph {
   readonly box?: FloatBox;
   /** What it states over its style for Word to space it so (`spacingOverrides`). */
   spacing?: SpacingOverride;
+  /**
+   * The empty paragraph a tenth of a point high between two tables (W14.5), which Word would otherwise
+   * read as one: its spaces the PDF's gap between them, and no line of its own.
+   */
+  readonly spacer?: boolean;
   /**
    * The empty paragraph a point high after a table that ends a section, which carries the section's
    * properties or closes the body, since Word ends each with a paragraph (Word 2, ruling R7).
@@ -331,9 +337,16 @@ interface WordTable {
   }[];
   /**
    * The space the PDF puts below it, where it ends in its cells: the paragraph after it carries it, as
-   * no paragraph of its own can.
+   * no paragraph of its own can. And the space above it, where it begins its block - a table whose
+   * caption is below it (W14.5) - which the paragraph before it carries, with `lead`.
    */
   wanted?: { before?: number; after?: number };
+  /**
+   * The leading of the table cell place's style, where the table begins its block: the PDF puts it
+   * above the cells (`apart`), and Word sets it inside the first cell, whose top padding gives it up
+   * (`tableProperties`), so the paragraph before the table takes it with the space before (W14.5).
+   */
+  readonly lead?: number;
   /**
    * The paragraphs the space around it is stated on, where it is a numbered equation's row (Word 4):
    * each of its two cells' alike, so that the label stays on the middle of the equation, and nothing
@@ -447,18 +460,33 @@ type Bookmarked =
       readonly place: Bookmark;
       readonly words: Bookmark;
       readonly anchored: Bookmark | null;
+      /**
+       * A table whose caption is below it (W14.5): holding nothing at the head of its first cell,
+       * where the PDF places the table, which above and below and a page are read from - its
+       * caption, after the cells, would put a reference inside the table below it in Word.
+       */
+      readonly begins: Bookmark | null;
     };
 
 /**
  * **Every target's bookmarks, by the anchor the published document gives it** (Word 3, ruling R3):
- * `_Ref` and nine digits, numbered in the order the document holds them - a node where its heading
- * stands, before its blocks and its children; a block where it begins, before what it holds; a
- * footnote where its mark stands, before its paragraphs - which is the order the writer writes them in.
- * Deterministic, so the same document makes the same names, and 13 characters, inside the 40 Word keeps
- * (M4). The published document carries an anchor exactly where a reference names it, so every target
- * is named once however many references name it, and nothing else is.
+ * `_Ref` and nine digits, numbered in the order the document holds its targets - a node's where its
+ * heading stands, before its blocks and its children; a block's where it begins, before what it holds;
+ * a footnote's where its mark stands, before its paragraphs. A caption's bookmarks are numbered with
+ * its block, before what the block holds, wherever the writer then writes the caption: since W14.5 a
+ * table's caption may follow its cells, so the numbers follow the document, not always the order of
+ * the XML. Deterministic, so the same document makes the same names, and 13 characters, inside the 40
+ * Word keeps (M4). The published document carries an anchor exactly where a reference names it, so
+ * every target is named once however many references name it, and nothing else is.
+ *
+ * `captionBelow` says of a table style whether its caption is below its table, from the theme the
+ * writer writes the table in, which is the one source: a table named where it begins is a table the
+ * writer writes a bookmark there for.
  */
-function bookmarksOf(document: PublishedDocument): Map<string, Bookmarked> {
+function bookmarksOf(
+  document: PublishedDocument,
+  captionBelow: (style: string) => boolean,
+): Map<string, Bookmarked> {
   const named = new Map<string, Bookmarked>();
   let count = 0;
   const next = (): Bookmark => {
@@ -496,7 +524,8 @@ function bookmarksOf(document: PublishedDocument): Map<string, Bookmarked> {
           const words = next();
           // A floated figure's in its anchor's paragraph, after the box that holds its caption.
           const anchored = each.type === 'figure' && each.placement === 'float' ? next() : null;
-          named.set(each.anchor, { kind: 'caption', place, words, anchored });
+          const begins = each.type === 'table' && captionBelow(each.style) ? next() : null;
+          named.set(each.anchor, { kind: 'caption', place, words, anchored, begins });
         }
         if (each.type === 'table') {
           for (const row of each.rows) for (const cell of row.cells) cell.blocks.forEach(block);
@@ -685,6 +714,25 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   const partIds = new Map(
     headerParts.parts.map((part) => [part.name, relationships.add(part.kind, part.name)]),
   );
+  // Any two tables one straight after the other are one table to Word - a table ending in its cells,
+  // a numbered equation's row, or a table whose caption is below it (W14.5), which begins in its
+  // cells - the second's caption title lost and no gap between them. An empty paragraph a tenth of a
+  // point high parts them, spaced above by the first's space after and below by the second's space
+  // before and leading (below).
+  for (const section of sections) {
+    for (let at = section.body.length - 1; at > 0; at -= 1) {
+      if (isTable(section.body[at - 1]!) && isTable(section.body[at]!)) {
+        const text = theme.places.text;
+        section.body.splice(at, 0, {
+          style: text,
+          theme: text,
+          content: '',
+          spacer: true,
+          wanted: { before: 0, after: 0 },
+        });
+      }
+    }
+  }
   // Over the whole body in order, since Word asks a paragraph's neighbours across a section's break as
   // it does within one.
   const inOrder = sections.flatMap((section) => section.body);
@@ -695,9 +743,28 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       for (const paragraph of item.spaced) paragraph.wanted = { ...item.wanted };
       return;
     }
+    // The space the PDF puts above a table that begins its block - one whose caption is below it - on
+    // the paragraph before it, as a caption above a table carries it (W14.5).
+    // A floated figure's anchor stands out of the flow, its spaces held (`held`) whatever the flow
+    // wants: the space is added to what it holds, or `settle` would drop it.
+    const previous = inOrder[index - 1];
+    const above = isTable(item) ? item.wanted?.before : undefined;
+    if (isTable(item) && above !== undefined && previous !== undefined && !isTable(previous)) {
+      const added = above + (item.lead ?? 0);
+      if (previous.held !== undefined) {
+        previous.held = { ...previous.held, after: previous.held.after + added };
+      } else {
+        const own = writer.properties(previous.theme).spaceAfter;
+        previous.wanted = { ...previous.wanted, after: (previous.wanted?.after ?? own) + added };
+      }
+    }
     const next = inOrder[index + 1];
     const after = isTable(item) ? item.wanted?.after : undefined;
     if (after === undefined || next === undefined || isTable(next)) return;
+    if (next.held !== undefined) {
+      next.held = { ...next.held, before: next.held.before + after };
+      return;
+    }
     const own = writer.properties(next.theme).spaceBefore;
     next.wanted = { ...next.wanted, before: (next.wanted?.before ?? own) + after };
   });
@@ -1032,7 +1099,10 @@ class Writer {
       readonly titles: ReadonlyMap<string, readonly WordTitleRun[]>;
     },
   ) {
-    this.bookmarks = bookmarksOf(published);
+    this.bookmarks = bookmarksOf(
+      published,
+      (style) => theme.tableStyles.get(style)?.caption === 'below',
+    );
     this.document = {
       tag: wordLanguage(published.language),
       rtl: published.direction === 'rtl',
@@ -1582,7 +1652,8 @@ class Writer {
 
   /**
    * **A table** (Word 2, ruling R7; WO-F): its caption, a paragraph above it in the caption role's
-   * style kept with it, numbered by Word's fields (R1); the table in its table style (`tableStyle` in
+   * style kept with it - or below it, before its note, where its table style places it there (W14.5;
+   * STY-079) - numbered by Word's fields (R1); the table in its table style (`tableStyle` in
    * the projection), the measure wide - or what is left of it where a list or a quotation stands it in
    * - its columns equal and fixed, as template 13 gives them; and its note, a paragraph after it in
    * the table note role's style. Each header row is marked one, which is how Word repeats it too; each
@@ -1598,23 +1669,39 @@ class Writer {
     const noteRole = this.theme.roles.tableNote;
     const cellStyle = this.theme.places.tableCell;
     const cell = this.properties(cellStyle);
+    const below = style.caption === 'below';
+    // Its cells first where its caption follows them, so that what it holds is written in the order
+    // it stands.
+    const cells = below ? this.rows(table, style, place, passage) : null;
     const caption = this.paragraph(captionRole, this.captionRuns(table, captionRole, passage), {
-      keepNext: true,
+      ...(below ? {} : { keepNext: true }),
       bidi: passage.rtl,
       ...this.indented(captionRole, place),
     });
+    const captionStyle = this.properties(captionRole);
     // Template 13's caption stands its space after, the cells' space before and their leading above
     // the table (`apart`), and a cell's first line at the cell's padding. Word sets a cell's first line
     // with its leading above its text, so the table's top padding gives the leading up
-    // (`tableProperties`) and the caption's space after takes it, measured.
-    caption.wanted = {
-      after: this.properties(captionRole).spaceAfter + cell.spaceBefore + leading(cell),
-    };
+    // (`tableProperties`) and the caption's space after takes it, measured. Below the table, template
+    // 15's caption stands the cells' space after and its own space before below them, and Word sets
+    // its leading above its text itself; the space above the table is the paragraph's before it, the
+    // cells' leading with it (`lead`).
+    caption.wanted = below
+      ? { before: cell.spaceAfter + captionStyle.spaceBefore, after: captionStyle.spaceAfter }
+      : { after: captionStyle.spaceAfter + cell.spaceBefore + leading(cell) };
+    // Where its caption is below it, where it begins - the head of its first cell - is named for
+    // above and below and its page, as the PDF places it (W14.5).
+    const begins = below ? this.bookmarkOf(table.anchor, 'caption')?.begins : undefined;
+    const first = cells?.[0]?.cells[0]?.paragraphs[0];
+    if (begins !== undefined && begins !== null && first !== undefined) {
+      first.content = bookmarked(begins, '') + first.content;
+    }
     // Its cells before its note, so that the drawings in them are numbered in the order they stand.
     const written: WordTable = {
       kind: 'table',
       properties: this.tableProperties(table, style, place, passage),
-      rows: this.rows(table, style, place, passage),
+      rows: cells ?? this.rows(table, style, place, passage),
+      ...(below ? { lead: leading(cell) } : {}),
     };
     const note =
       table.note === null
@@ -1625,13 +1712,18 @@ class Writer {
             { bidi: passage.rtl, ...this.indented(noteRole, place) },
           );
     if (note !== null) {
-      note.wanted = { before: cell.spaceAfter + this.properties(noteRole).spaceBefore };
+      // Below the cells, or below a caption below them, which stands its space after above the note.
+      note.wanted = {
+        before: (below ? 0 : cell.spaceAfter) + this.properties(noteRole).spaceBefore,
+      };
     }
     this.report(table, style);
+    const body: Body[] = below ? [written, caption] : [caption, written];
+    if (note !== null) body.push(note);
     return {
-      body: note === null ? [caption, written] : [caption, written, note],
-      top: captionRole,
-      bottom: note === null ? cellStyle : noteRole,
+      body,
+      top: below ? cellStyle : captionRole,
+      bottom: note !== null ? noteRole : below ? captionRole : cellStyle,
       container: true,
     };
   }
@@ -1970,7 +2062,8 @@ class Writer {
    * Word page, in a paragraph of its own in the caption role's style - as the figure's top is spaced by
    * that style's space before - aligned as its image style says and kept on the page with its caption,
    * as the PDF's figure is never parted from it; and its caption a paragraph below it in the caption
-   * role's style, numbered by Word's fields (R1), the caption kept, number and all, where the image is
+   * role's style - or above it, kept with the image, where its image style places it there (W14.5;
+   * STY-079) - numbered by Word's fields (R1), the caption kept, number and all, where the image is
    * decorative (decision F-M). As a block, the image stands across what its place leaves of the
    * measure. Floated, image and caption are one text box (`floatBox`) at the head of the text area of
    * the page it falls on, the measure wide, as the PDF's band is: measured, Word keeps them together
@@ -1985,6 +2078,7 @@ class Writer {
     }
     const properties = this.properties(role);
     const common = { bidi: passage.rtl, justify: justification(figure.alignment) };
+    const above = figure.captionPosition === 'top';
     if (figure.placement === 'float') {
       // The box is numbered before the image it holds, as the document holds them.
       const number = (this.drawings += 1);
@@ -1992,17 +2086,23 @@ class Writer {
       const image = this.paragraph(role, drawn, {
         ...common,
         // The band's image at its head; its caption its style's space before below it, and nothing
-        // after it but the box's clearance, measured against the PDF's band.
+        // after it but the box's clearance, measured against the PDF's band. Under a caption above
+        // it, its caption's space after above it, and nothing else (W14.5).
         held: { before: 0, after: 0 },
         ...this.across(role, TOP_LEVEL),
       });
       const caption = this.paragraph(role, this.captionRuns(figure, role, passage, true), {
         bidi: passage.rtl,
-        held: { before: properties.spaceBefore, after: 0 },
+        held: above
+          ? { before: 0, after: properties.spaceAfter }
+          : { before: properties.spaceBefore, after: 0 },
         ...this.indented(role, TOP_LEVEL),
       });
-      const height = size.height + properties.spaceBefore + properties.lineSpacing;
-      const box = this.floatBox(number, height, [image, caption]);
+      const height =
+        size.height +
+        (above ? properties.spaceAfter : properties.spaceBefore) +
+        properties.lineSpacing;
+      const box = this.floatBox(number, height, above ? [caption, image] : [image, caption]);
       // Where a reference names it, its place in the text for above and below, after the box.
       const anchor = this.paragraph(
         role,
@@ -2012,6 +2112,20 @@ class Writer {
       return { body: [anchor], top: role, bottom: role, container: true };
     }
     const drawn = this.drawingRun(figure.path, size, figure.alternative);
+    if (above) {
+      // Template 15's `figure` sets a caption above its image as a block above a block: the caption's
+      // space after between them, the image having no space and no leading of its own. The figure's
+      // top is the caption's, whose leading Word sets above its text itself, as the PDF does.
+      const caption = this.paragraph(role, this.captionRuns(figure, role, passage), {
+        keepNext: true,
+        bidi: passage.rtl,
+        ...this.indented(role, place),
+      });
+      const image = this.paragraph(role, drawn, { ...common, ...this.across(role, place) });
+      caption.wanted = { after: properties.spaceAfter };
+      image.wanted = { before: 0 };
+      return { body: [caption, image], top: role, bottom: role, container: true };
+    }
     const image = this.paragraph(role, drawn, {
       ...common,
       keepNext: true,
@@ -2570,11 +2684,16 @@ class Writer {
         );
       case 'relative':
         return field(
-          `REF ${(target.kind === 'caption' ? (target.anchored ?? place) : place).name} ${BACKSLASH}p`,
+          `REF ${(target.kind === 'caption' ? (target.anchored ?? target.begins ?? place) : place).name} ${BACKSLASH}p`,
           run.text ?? '',
         );
+      // A table whose caption is below it is on the page it begins on, as the PDF gives it (W14.5).
       case 'page':
-        return field(`PAGEREF ${place.name}`, '', numeral);
+        return field(
+          `PAGEREF ${(target.kind === 'caption' ? (target.begins ?? place) : place).name}`,
+          '',
+          numeral,
+        );
     }
   }
 
@@ -2927,14 +3046,19 @@ function paragraphXml(paragraph: Paragraph, sectionProperties?: string): string 
     (paragraph.bidi === true ? '<w:bidi/>' : '') +
     (paragraph.closing === true
       ? '<w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/>'
-      : before === undefined && after === undefined && paragraph.box === undefined
+      : before === undefined &&
+          after === undefined &&
+          paragraph.box === undefined &&
+          paragraph.spacer !== true
         ? ''
         : '<w:spacing' +
           (before === undefined ? '' : ` w:before="${twips(before)}"`) +
           (after === undefined ? '' : ` w:after="${twips(after)}"`) +
           // A floated figure's anchor a tenth of a point high: measured, the text after it stands
-          // where it stood after a frame.
-          (paragraph.box === undefined ? '' : ' w:line="2" w:lineRule="exact"') +
+          // where it stood after a frame. A spacer between two tables likewise.
+          (paragraph.box === undefined && paragraph.spacer !== true
+            ? ''
+            : ' w:line="2" w:lineRule="exact"') +
           '/>') +
     (paragraph.indent === undefined ? '' : indentXml(paragraph.indent)) +
     (paragraph.spacing?.contextual === false ? '<w:contextualSpacing w:val="0"/>' : '') +

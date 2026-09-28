@@ -1,5 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { equationAlternative } from '@alloy-works/domain';
+import { DEFAULT_CATALOGUES, equationAlternative } from '@alloy-works/domain';
 import {
   fromEditor,
   NodeSelection,
@@ -22,7 +22,11 @@ import { describeEquation } from './speech.js';
 import { designTiming } from './session.js';
 import { ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
-import { CHOOSING_PRESENTATION, DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
+import {
+  CHOOSING_PRESENTATION,
+  DEFAULT_PRESENTATION,
+  presentationWith,
+} from '../theme/presentation.fixture.js';
 
 shimRangeMeasurement();
 
@@ -5843,6 +5847,116 @@ describe('the surface set in the theme\'s type, at the layout\'s measure (themes
     const cell = view!.dom.querySelector('figure[data-table-style="table"] th') as HTMLElement;
     expect(getComputedStyle(cell).getPropertyValue('border-block')).toBe(
       'calc(1pt * var(--aw-zoom)) solid #000000',
+    );
+  });
+
+  it("STY-079 stands a table's caption and a figure's on the side their styles place them - a table's below its cells and before its note, a figure's above its image - and leaves the default's where the markup has them", async () => {
+    const ASSET = '00000000-0000-4000-8000-0000000000a1';
+    const [table] = DEFAULT_CATALOGUES.table.styles;
+    const [figure] = DEFAULT_CATALOGUES.image.styles;
+    const captioned = (id: string, style: string) => ({
+      type: 'table',
+      id,
+      style,
+      caption: [{ type: 'text', value: `Readings ${id}`, marks: [] }],
+      headerRows: 0,
+      headerColumns: 0,
+      note: [{ type: 'text', value: `Noted ${id}`, marks: [] }],
+      rows: [
+        {
+          cells: [
+            {
+              content: [
+                {
+                  type: 'paragraph',
+                  id: `${id}c1`,
+                  style: 'body',
+                  content: [{ type: 'text', value: 'Tray', marks: [] }],
+                },
+              ],
+              colspan: 1,
+              rowspan: 1,
+            },
+          ],
+        },
+      ],
+    });
+    const pictured = (id: string, imageStyle: string) => ({
+      type: 'figure',
+      id,
+      asset: ASSET,
+      imageStyle,
+      caption: [{ type: 'text', value: `The tray ${id}`, marks: [] }],
+      alternative: { kind: 'decorative' },
+    });
+    const stored = {
+      ...content('Unbox the printer.'),
+      content: [
+        captioned('t1', 'table'),
+        captioned('t2', 'footed'),
+        pictured('f1', 'figure'),
+        pictured('f2', 'headed'),
+      ],
+    };
+    const { client } = service({
+      'GET /v1/components/{id}': () => json(200, opened({ content: stored })),
+      'GET /v1/presentation': () =>
+        json(
+          200,
+          presentationWith({
+            table: [{ ...table, id: 'footed', name: 'Footed', caption: 'below' }],
+            image: [{ ...figure, id: 'headed', name: 'Headed', caption: 'above' }],
+          }),
+        ),
+      [`GET /v1/asset-versions/${ASSET}`]: () =>
+        json(200, {
+          id: ASSET,
+          asset: 'a1',
+          number: '0.1',
+          format: 'png',
+          bytes: 11,
+          width: 1200,
+          height: 800,
+          resolution: null,
+          alternative: null,
+        }),
+    });
+    let view: EditorView | undefined;
+    render(
+      <PresentationProvider client={client}>
+        <ComponentEditor
+          componentId={COMPONENT}
+          client={client}
+          principalId={ADA}
+          sessionId={SESSION}
+          timing={quick}
+          onView={(mounted) => (view = mounted)}
+        />
+      </PresentationProvider>,
+    );
+    await screen.findByLabelText('Title');
+    const at = (selector: string) => view!.dom.querySelector(selector) as HTMLElement;
+    const declared = (selector: string, property: string) =>
+      getComputedStyle(at(selector)).getPropertyValue(property);
+    // The styles reach the surface once the theme has: wait for a rule the theme writes.
+    await waitFor(() =>
+      expect(declared('figure[data-table-style="footed"]', 'display')).toBe('flex'),
+    );
+    // Below its cells, the note after it: the table's parts stacked, the caption ordered after them.
+    expect(declared('figure[data-table-style="footed"]', 'flex-direction')).toBe('column');
+    expect(declared('figure[data-table-style="footed"] > .aw-table-caption', 'order')).toBe('1');
+    expect(declared('figure[data-table-style="footed"] > .aw-table-note', 'order')).toBe('2');
+    // Above its image: the caption's body ordered before the image.
+    expect(declared('figure[data-image-style="headed"]', 'display')).toBe('flex');
+    expect(declared('figure[data-image-style="headed"] > .aw-figure-body', 'order')).toBe('-1');
+    // The default's: a table's caption first in its markup and a figure's last, where each stands.
+    expect(declared('figure[data-table-style="table"]', 'display')).not.toBe('flex');
+    expect(declared('figure[data-table-style="table"] > .aw-table-caption', 'order')).toBe('0');
+    expect(declared('figure[data-image-style="figure"]', 'display')).not.toBe('flex');
+    expect(declared('figure[data-image-style="figure"] > .aw-figure-body', 'order')).toBe('0');
+    // And the caption is still the caption, in the markup the stored table and figure are read from.
+    expect(at('figure[data-table-style="footed"]').firstElementChild).toHaveClass(
+      'aw-table-caption',
     );
   });
 

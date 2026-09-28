@@ -3,6 +3,32 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.121.0 - 2026-09-28 (PR #322)
+
+### Added
+
+- **A table style or a figure's image style says where the caption goes.** A theme's table style can
+  set a table's caption above the table or below it, and an image style can set a figure's caption
+  below the image or above it. The PDF, the Word document and the editor all put the caption on that
+  side; below a table, the caption comes after the table and before its note. Numbers, the lists of
+  tables and figures, cross-references and what a screen reader is told are as before.
+
+### Changed
+
+- **The default theme keeps today's placement.** It moves to version 0.5, which says outright what it
+  always did: a table's caption above the table and a figure's below the image. Publications already
+  made are unchanged, and a PDF you publish next looks as it would have; a Word document differs only
+  as the fix below says. No screen edits a theme in this release, so a caption on the other side
+  appears only under a theme whose styles are changed outside the app. An environment that has
+  changed its own table or image styles keeps them, with their captions where they always were.
+
+### Fixed
+
+- **Two tables or equations in a row are kept apart in Word.** A numbered equation followed by
+  another, or a table followed straight away by a numbered equation or another table, was written as
+  one Word table: Word lost the second table's title and put no space between them. They now stand
+  apart, spaced as in the PDF.
+
 ## 0.120.1 - 2026-09-28 (PR #321)
 
 ### Changed

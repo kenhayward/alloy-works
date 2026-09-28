@@ -7,9 +7,13 @@ import type { MathsTree } from './maths.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/14` is the document whose **tables and figures say whether the list of their kind lists
- * them** (W14.4, STR-071): `listed` false for one the author marked unnumbered, which takes no number
- * and is left out of that list. Otherwise it is `publishing/13`, the document whose **tables and
+ * `publishing/15` is the document whose **tables and figures have their captions where their styles
+ * say** (W14.5, W-I; STY-079, STR-025): the theme's projection carries each table style's
+ * `captionPosition`, and a figure carries its own, from its image style - above or below the block, in
+ * the engine's terms. Otherwise it is `publishing/14`, the document whose **tables and figures say
+ * whether the list of their kind lists them** (W14.4, STR-071): `listed` false for one the author
+ * marked unnumbered, which takes no number and is left out of that list. Otherwise it is
+ * `publishing/13`, the document whose **tables and
  * images are set from their styles** (themes 2, ruling R5): the theme's projection carries its table and image styles and each paragraph style's
  * contextual spacing, a table carries the style it is set in, a figure and an image in a line their
  * placement and the size their style gives them, and the layout's words what a continued table's label
@@ -18,11 +22,11 @@ import type { MathsTree } from './maths.js';
  * set in, runs that carry their marks and may be images, footnotes, cross-references or equations,
  * blocks that may be lists, quotations, preformatted text, tables with their notes, figures and
  * equations, each carrying its anchor where a reference names it, and nodes' titles as runs, with its
- * generated lists after the contents, which `apps/worker/templates/publication/14/` reads. It is never
+ * generated lists after the contents, which `apps/worker/templates/publication/15/` reads. It is never
  * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
  * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/14';
+export const PUBLISHING_SCHEMA = 'publishing/15';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -121,6 +125,14 @@ export const PUBLISHING_SCHEMA_12 = 'publishing/12';
  * with it are a record.
  */
 export const PUBLISHING_SCHEMA_13 = 'publishing/13';
+
+/**
+ * The document as it stood before a caption's side was its style's - a table's always above it and a
+ * figure's always below - frozen by W14.5 for the reason `publishing/13` is:
+ * `apps/worker/templates/publication/14/` asserts it, and a template version and the publications made
+ * with it are a record.
+ */
+export const PUBLISHING_SCHEMA_14 = 'publishing/14';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -446,6 +458,12 @@ export interface PublishedFigure {
   readonly alignment: 'start' | 'center' | 'end';
   /** Whether the list of figures lists it, as a table's `listed` says of the list of tables (W14.4). */
   readonly listed: boolean;
+  /**
+   * Where its caption stands, from its image style (W14.5; STY-079): `top` above the image, `bottom`
+   * below it, in the engine's terms, as a table's style says of its own in `theme.tables`. A template
+   * places the caption there and decides nothing.
+   */
+  readonly captionPosition: 'top' | 'bottom';
 }
 
 /**

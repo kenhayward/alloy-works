@@ -198,6 +198,8 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_12',
         // Frozen by W14.4, which made `publishing/14`: the schema template 13 reads.
         'PUBLISHING_SCHEMA_13',
+        // Frozen by W14.5, which made `publishing/15`: the schema template 14 reads.
+        'PUBLISHING_SCHEMA_14',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',
@@ -330,6 +332,15 @@ describe('the domain package', () => {
         'SECOND_DEFAULT_CATALOGUE_VERSIONS',
         'THIRD_DEFAULT_THEME',
         'THIRD_DEFAULT_THEME_VERSION',
+        // W14.5 (W-I): where a caption sits, the upgrade the reader reads a catalogue/2 by, and the
+        // default theme's 0.4 frozen as 0034 stored it, beside its 0.5.
+        'CAPTION_PLACEMENTS',
+        'upgradeCatalogue2',
+        'FOURTH_DEFAULT_CATALOGUES',
+        'FOURTH_DEFAULT_CATALOGUES_BY_VERSION',
+        'FOURTH_DEFAULT_CATALOGUE_VERSIONS',
+        'FOURTH_DEFAULT_THEME',
+        'FOURTH_DEFAULT_THEME_VERSION',
       ].sort(),
     );
   });

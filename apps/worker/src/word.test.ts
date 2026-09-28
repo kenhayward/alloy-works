@@ -327,7 +327,10 @@ const theme: ResolvedTheme = (() => {
         },
         padding: 5,
         breaks: { repeatHeader: false, keepRowsWhole: true, continuationLabel: true },
+        caption: 'above',
       },
+      // W14.5: the default's own, its caption below the table.
+      { ...DEFAULT_CATALOGUES.table.styles[0]!, id: 'footed', name: 'Footed', caption: 'below' },
     ],
   };
   const images: ImageCatalogue = {
@@ -342,6 +345,18 @@ const theme: ResolvedTheme = (() => {
         maximum: { value: 0.6, unit: 'textHeight' },
         placement: 'float',
         alignment: 'end',
+        caption: 'below',
+      },
+      // W14.5: a block across the measure, as the default's figure is, its caption above the image.
+      {
+        id: 'headed',
+        name: 'Headed',
+        appliesTo: ['figure'],
+        fixed: { dimension: 'width', value: 1, unit: 'measure' },
+        maximum: { value: 0.6, unit: 'textHeight' },
+        placement: 'block',
+        alignment: 'centre',
+        caption: 'above',
       },
     ],
   };
@@ -965,6 +980,82 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
       .map((match) => match[1])
       .join('');
     expect(words).toBe('Table 2.1 Keys');
+  });
+
+  it("STY-079 writes a table's caption below it and a figure's above it where their styles place them, each numbered by Word's fields as before, never one table straight after another, which the Open XML SDK finds nothing wrong with", async () => {
+    const footed = (name: string) => ({
+      type: 'table',
+      id: name,
+      style: 'footed',
+      caption: [text(`Footed ${name}`)],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [cell(`In ${name}`)] }],
+    });
+    const restyled = (source: typeof READINGS, change: (block: object) => object) =>
+      parseContentDocument({
+        ...(JSON.parse(JSON.stringify(source)) as object),
+        content: (source.content as readonly object[]).map(change),
+      });
+    const placed: AssembleInput & { readonly layout: Layout } = {
+      ...input,
+      occurrences: new Map([
+        ...input.occurrences,
+        [id('readings'), restyled(READINGS, (block) => ({ ...block, style: 'footed' }))],
+        [
+          id('figures'),
+          parseContentDocument({
+            ...(JSON.parse(JSON.stringify(FIGURED)) as object),
+            content: [
+              ...(FIGURED.content as readonly object[]).map((block) =>
+                (block as { id?: string }).id === 'f1' ? { ...block, imageStyle: 'headed' } : block,
+              ),
+              // After the Keys table, which ends in its cells, a table whose caption is below it,
+              // then a numbered equation's row and another: none of them one table to Word.
+              footed('t9'),
+              displayed('e9', 'numbered'),
+              footed('t10'),
+            ],
+          }),
+        ],
+      ]),
+    };
+    const assembled = assemble(placed);
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const { bytes } = writeDocx({
+      document: assembled.document,
+      numbering: assembled.numbering,
+      word: assembled.word!,
+      formats: placed.formats,
+      faces,
+      images: IMAGES,
+    });
+    expect(await checkOoxml(bytes)).toEqual([]);
+    const document = strFromU8(unzipSync(bytes)['word/document.xml']!);
+    const at = (words: string, from = 0) => {
+      const found = document.indexOf(words, from);
+      expect(found, words).toBeGreaterThan(-1);
+      return found;
+    };
+    // The readings table's caption, its number Word's field, after the table's last cell and before
+    // its note.
+    const start = document.lastIndexOf('<w:tbl>', at('Station'));
+    const end = at('</w:tbl>', start);
+    const numbered = at('SEQ Table', end);
+    expect(numbered).toBeLessThan(at('Measured by'));
+    expect(document.slice(start, end)).not.toContain('SEQ Table');
+    // The figure's caption, its number Word's field, before the image it captions.
+    const squares = at('Two squares', at('The shapes Ada drew.'));
+    expect(document.lastIndexOf('SEQ Figure', squares)).toBeGreaterThan(at('The shapes Ada drew.'));
+    expect(at('<wp:inline', squares)).toBeGreaterThan(squares);
+    expect(document.lastIndexOf('<wp:inline', squares)).toBeLessThan(at('The shapes Ada drew.'));
+    // Two tables never meet: a paragraph stands between each table and the next.
+    expect(document).not.toMatch(/<\/w:tbl>\s*<w:tbl>/);
+    expect(
+      document.match(
+        /<\/w:tbl><w:p><w:pPr><w:pStyle w:val="[^"]+"\/><w:spacing[^>]*w:line="2" w:lineRule="exact"/g,
+      ),
+    ).toHaveLength(2);
   });
 
   it("writes each footnote as Word's own - in text, in a cell and, for Word alone, in a table's header row, which the PDF refuses - which the Open XML SDK finds nothing wrong with (Word 3)", async () => {

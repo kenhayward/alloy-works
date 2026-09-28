@@ -38,13 +38,13 @@ import {
   PUBLISHING_SCHEMA,
   readTheme,
   withAlternative,
-  type CharacterCatalogue,
+  type CharacterCatalogue2,
   type CharacterProperties,
   type ContentDocument,
   type Layout,
   type OutlineDocument,
   type OutlineNode,
-  type ParagraphCatalogue,
+  type ParagraphCatalogue2,
   type ParagraphProperties,
   type ResolvedParagraphProperties,
   type ResolvedTheme,
@@ -102,7 +102,7 @@ const read = (theme: Theme, catalogues: ReadonlyMap<string, unknown>): ResolvedT
 const restyled = (
   base: ResolvedParagraphProperties,
   properties: Readonly<Record<string, ParagraphProperties>>,
-): ParagraphCatalogue => ({
+): ParagraphCatalogue2 => ({
   schemaVersion: 2,
   kind: 'paragraph',
   base,
@@ -203,7 +203,7 @@ const LEDGER_RENDERINGS: Readonly<Record<StyledMark, CharacterProperties>> = {
   superscript: { position: 'superscript', bold: true },
   inlineCode: { typeface: 'serif', scale: 1.2 },
 };
-const ledgerMarks: CharacterCatalogue = {
+const ledgerMarks: CharacterCatalogue2 = {
   schemaVersion: 2,
   kind: 'character',
   styles: DEFAULT_CATALOGUES.character.styles.map((style) => ({
@@ -212,7 +212,7 @@ const ledgerMarks: CharacterCatalogue = {
   })),
 };
 /** A theme on the ledger's marks and paper, with this paragraph catalogue. */
-const onLedger = (paragraphs: ParagraphCatalogue): ResolvedTheme =>
+const onLedger = (paragraphs: ParagraphCatalogue2): ResolvedTheme =>
   read(
     {
       ...DEFAULT_THEME,

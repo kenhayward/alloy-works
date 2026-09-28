@@ -236,6 +236,7 @@ describe('projectCss for tables and images (W8.3)', () => {
       },
       padding: 4,
       breaks: { repeatHeader: true, keepRowsWhole: true, continuationLabel: false },
+      caption: 'above',
     });
     return projectCss(resolved(inputs));
   }
@@ -300,6 +301,46 @@ describe('projectCss for tables and images (W8.3)', () => {
     expect(ruleFor(css, `${table} [scope="col"]`)).toBe('background-color: transparent');
     expect(css).not.toContain(`${table} tr:nth-child`);
     expect(css).not.toContain(`${table} [scope="col"] [data-style]`);
+  });
+
+  it("stands a caption on the side its style places it: a table's below its cells and before its note, a figure's above its image, and where the markup already stands one, nothing", () => {
+    const inputs = defaultInputs();
+    const [table] = inputs.catalogues.table.styles;
+    inputs.catalogues.table.styles.push({
+      ...table!,
+      id: 'footed',
+      name: 'Footed',
+      caption: 'below',
+    });
+    const [figure] = inputs.catalogues.image.styles;
+    if (figure!.placement === 'inline') throw new Error('The first image style places a figure');
+    inputs.catalogues.image.styles.push({
+      ...figure!,
+      id: 'headed',
+      name: 'Headed',
+      caption: 'above',
+    });
+    const text = projectCss(resolved(inputs));
+    const footed = '.aw-canvas.aw-canvas [data-table-style="footed"]';
+    expect(ruleFor(text, footed)).toBe('display: flex; flex-direction: column');
+    expect(ruleFor(text, `${footed} > .aw-table-caption`)).toBe('order: 1');
+    expect(ruleFor(text, `${footed} > .aw-table-note`)).toBe('order: 2');
+    const headed = '.aw-canvas.aw-canvas figure[data-image-style="headed"]';
+    expect(ruleFor(text, headed)).toBe('display: flex; flex-direction: column');
+    expect(ruleFor(text, `${headed} > .aw-figure-body`)).toBe('order: -1');
+    // A table's caption is the first thing in its markup and a figure's the last, which is where the
+    // default's styles place them: nothing moves either.
+    for (const selector of [
+      '.aw-canvas.aw-canvas [data-table-style="table"]',
+      '.aw-canvas.aw-canvas [data-table-style="banded"]',
+      '.aw-canvas.aw-canvas figure[data-image-style="figure"]',
+      '.aw-canvas.aw-canvas figure[data-image-style="half-width"]',
+    ]) {
+      const ruled = text
+        .split('\n')
+        .some((line) => line.split(' { ')[0]!.split(', ').includes(selector));
+      expect(ruled, selector).toBe(false);
+    }
   });
 
   it("aligns a figure within its band by its image style, and leaves an image's size to its style's resolution", () => {

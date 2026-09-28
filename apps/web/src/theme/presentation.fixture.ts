@@ -4,7 +4,7 @@ import { DEFAULT_CATALOGUES_BY_VERSION, DEFAULT_THEME } from '@alloy-works/domai
 export const DEFAULT_PRESENTATION = {
   theme: {
     versionId: 'theme-version',
-    number: '0.4',
+    number: '0.5',
     content: DEFAULT_THEME,
     catalogues: [...DEFAULT_CATALOGUES_BY_VERSION].map(([versionId, content]) => ({
       versionId,

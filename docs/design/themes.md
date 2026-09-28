@@ -48,6 +48,8 @@ conformance suite.
 | **STY-016** | The other dimension is derived from the asset's intrinsic proportions at resolution, never declared                                                                                                                                                                                                                  |
 | **STY-017** | An image style declares a maximum for the free dimension; exceeding it re-derives from that dimension instead                                                                                                                                                                                                        |
 | **STY-018** | Placement - inline, block, floated - and alignment are image style properties                                                                                                                                                                                                                                        |
+| **STY-079** | A table style and an image style placing a figure each declare `caption: 'above' \| 'below'`, required at `catalogue/3`, and the editor, the PDF and Word each set the caption on that side ([Where a caption sits](#where-a-caption-sits))                                                                          |
+| **STR-025** | Where a caption sits is the table or image style's `caption`, and a table or a figure holds only the identifier of its style: the content model has no member for a side ([Where a caption sits](#where-a-caption-sits))                                                                                             |
 | **STY-078** | An asset version cannot be stored without its intrinsic width and height - AST records them on ingest, and the stored shape refuses a version without them - so resolution always has them. STY-019, which it supersedes, asked for a named failure that could not arise                                             |
 | **STY-024** | A theme binds one catalogue of each kind, a set of typefaces, and a paper colour, and is itself an artifact                                                                                                                                                                                                          |
 | **STY-025** | The theme a document uses is the one its template binds; the resolver is given it, never chooses                                                                                                                                                                                                                     |
@@ -203,7 +205,9 @@ Header row and header column treatment (fill, weight, rule beneath), banding (fi
 rows), rules (outer, horizontal inside, vertical inside - each a width and colour or none), cell
 padding, alignment by column type, default field formats by column type (STY-014), and break
 behaviour: whether the header repeats, the continuation label, and whether rows are kept whole
-(STY-013). The editor renders all of it except break behaviour, which is pagination.
+(STY-013); and where its caption sits, above the table or below it (STY-079, since
+[W14.5](#where-a-caption-sits)). The editor renders all of it except break behaviour, which is
+pagination.
 
 The continuation label matters beyond appearance: the spike found that no engine can express one
 without per-document work. In this design it is a table style property the Typst template renders -
@@ -215,7 +219,9 @@ label appears and how it is set ([TH-I](#decisions-for-ken)).
 
 The fixed dimension and its value, as points or as a fraction of the measure; a maximum for the other
 dimension; placement and alignment (STY-015 to STY-018), floated meaning a band at the page's head or
-foot, the only float the engine has ([TH-J](#decisions-for-ken)). Resolution derives the free dimension from the
+foot, the only float the engine has ([TH-J](#decisions-for-ken)); and, for a style placing a figure,
+where its caption sits, above the image or below it (STY-079). A style for an image in a line of text
+states no side: such an image has no caption. Resolution derives the free dimension from the
 asset's intrinsic proportions and re-derives from the maximum where it would be exceeded. It always
 has them: an asset version cannot be stored without them (STY-078). Because the editor's column is the
 layout's measure (below), an image styled at "column width" is the width it will print.
@@ -798,7 +804,69 @@ Taken as recommended, on Ken's instruction of 2026-09-27 to continue with W8, an
 
 **What W8 claims.** STY-070 and CNT-122 are claimed here from this section. The editor half of
 CNT-122 was the missing half; the publish half was built by themes 2. STY-039's claim is restated for
-the faces in `packages/fonts`. STR-025 is not claimed (ET-J).
+the faces in `packages/fonts`. STR-025 was not claimed then (ET-J); W14.5 claims it, with STY-079, in
+[Where a caption sits](#where-a-caption-sits).
+
+## Where a caption sits
+
+Built by W14.5 of [W14](../plans/2026-09-28-w14-publishing-finished.md), under its decision W-I, for
+STY-079 and STR-025. **Where a caption sits is a property of the style, never of the content**
+(STR-025): a table and a figure hold the identifier of their style, as they always did, and nothing
+that says a side, which the content model refuses as it refuses any member it does not have.
+
+**`catalogue/3`** is one new version of every kind, as `catalogue/2` was. It gives a table style and
+an image style placing a figure - as a block or floated - `caption: 'above' | 'below'`, required as
+every other property of theirs is (STY-079); a style for an image in a line of text states none, and
+one that does is refused. Nothing else moves. `catalogue/2` is frozen beside it as
+`catalogueSchema2`, which every row 0025 and 0034 wrote is still held to, and the reader upgrades a
+version 2 catalogue in memory (`upgradeCatalogue2`): **a table's caption above it and a figure's below
+it, where every output set them before a style could say**. A version 1 catalogue is upgraded to 2 and
+held to version 2's parse on the way, so a property a version never had is refused rather than
+upgraded past. The store writes a catalogue as the reader reads it, at 3, and a 0.4 row saved again,
+at 2, is the same catalogue and records nothing.
+
+**The default theme's 0.5**, seeded by migration 0043, binds new versions of the table and image
+catalogues at `catalogue/3`, each 0.4's with every style stating the side it always had - `table` and
+`Banded` above, `figure` and `Half width` below - and is otherwise 0.4. It reads style for style as
+0.4 does, so nothing published moves, and a request made under 0.4 still publishes under it. Its guard is 0034's: an environment that
+recorded its own table or image catalogue, or its own theme, after 0.4 keeps it, and its catalogue/2
+styles read with their captions where they always stood.
+
+**Every output reads the side from the style it already reads.**
+
+- **The PDF.** `publishing/15` carries each table style's `captionPosition` in the theme's
+  projection, and a figure's own from its image style, in the engine's terms, `top` or `bottom`.
+  Template 15 is template 14 with the caption's `figure.caption(position: ..)` set from it: a table's
+  caption below its cells is spaced from them as a block below a block is (`apart`), its note after
+  both, and a figure's above its image is its space after from the image, which has no leading. The
+  tagging is template 14's either way, measured: the `Caption` stays the `Table`'s first child, which
+  keeps it the table's programmatic caption (TAB-039), and a figure stays a `Div` of its `Caption` and
+  its `Figure`. veraPDF passes both. Under the default theme, template 15 sets a document exactly as
+  template 14 did.
+- **Word.** The writer writes the caption paragraph before the table or the figure's image, or after
+  it, as the style says, its `SEQ` field unchanged. A caption above is kept with what it captions; a
+  table whose caption is below begins with its cells, and the paragraph before it carries the space
+  the PDF puts above them, as a caption above does. Such a table is never written straight after
+  another table, which Word would read as one: a paragraph a tenth of a point high parts them,
+  carrying the PDF's gap. Above, below and its page are read from a bookmark at the head of its first
+  cell, where the PDF places the table, rather than from its caption after the cells. A floated
+  figure's box holds the caption and the image in the order they stand
+  ([word-output.md](word-output.md)).
+- **The editor.** The markup stands a table's caption before its cells and a figure's after its image,
+  so a style placing a caption there needs nothing; one placing it on the other side stacks the
+  block's parts and orders the caption there, a table's note staying last (`projectCss`). The caption is
+  typed in place wherever it is shown. **CSS `order` moves the caption only as it is drawn**: the
+  document keeps its order, so where a style draws a caption on the other side, the arrow keys still
+  move through it in document order - out of a table's caption drawn below it, the down arrow goes into
+  its first cell, above. No style in T1 draws one there, so no author meets it yet.
+
+**What this does not do.** Nothing in T1 edits a theme, and the default's styles keep the sides they
+always had, so an author sees a caption moved only under a theme whose style moves it - written through
+`addCatalogueVersion`, which no route reaches. A caption below a table is not kept on the page with the
+table's last row, in the PDF or in Word: the engine lets a breakable figure's caption fall to the next
+page, and Word's rule would keep the row with the caption only if every paragraph in the row asked it
+to. A floated figure's caption above its image in Word has the leading Word sets above a line's text at
+the head of its box, where the PDF's band has none; neither was measured in Word itself.
 
 ## Safety
 

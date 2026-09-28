@@ -302,6 +302,32 @@ a caption nor a number.
 2. Template 15 and `publishing/15` (W14.4 took 14); the Word writer; the editor's projection.
 3. Tests: STY-079, STR-025.
 
+**W14.5, as built.** W-I as decided. `catalogue/3` gives a table style and an image style placing a
+figure a required `caption: 'above' | 'below'`; an image style for an image in a line states none, and
+one that does is refused. `catalogueSchema2` freezes version 2, which every 0025 and 0034 row is held
+to before `upgradeCatalogue2` reads it at 3 - a table's caption above, a figure's below - and a
+version 1 row is upgraded through 2 and held to its parse on the way. **Every write path was checked
+against the member**: the store's one catalogue writer, `addCatalogueVersion`, writes a catalogue as
+the reader reads it, at 3, answers a 0.4 row given again at 2 unchanged and refuses a caption stated at
+2; the migrations write literals the domain's test recomputes; no route and no dev setup writes a
+catalogue, and the renderer reads through `readTheme`. The default theme's **0.5**, seeded by
+**migration 0043**, binds new table and image catalogue versions,
+0.4's with each side stated, on 0034's guard. It reads style for style as 0.4 does. `publishing/15`
+carries `captionPosition` on the theme's table and image styles and on a figure, `top` or `bottom`;
+`PUBLISHING_SCHEMA_14` freezes `publishing/14`; **template 15** is template 14 with each caption's
+`figure.caption(position: ..)` from them, and `PIPELINE_VERSION` is `'15'`. The tagging did not move,
+measured: a table's `Caption` stays its first child below the cells too, and a figure a `Div` of its
+`Caption` and its `Figure`; veraPDF passes both sides. A document under the default theme is set by
+template 15 exactly as by template 14. The Word writer writes the caption paragraph on the style's
+side, a caption above kept with what it captions, and the paragraph before a table whose caption is
+below carrying the space above its cells; from the final review, two tables that would meet are parted
+by an empty paragraph a tenth of a point high, which Word would otherwise read as one table, and such a
+table is named for above, below and its page at the head of its first cell, where the PDF places it. From the re-review, any two tables that would meet are parted, which also fixes Word 4's two numbered equations in a row; a floated figure's anchor keeps the spaces the flow gives it; `begins` is read from the writer's own theme; and the writer is `word/5`. **The editor reads the theme through `projectCss`**, whose
+markup stands a table's caption first and a figure's last, so only the other side is written: the
+block's parts stacked and the caption ordered there, a table's note last. The design, with what it does
+not do, is [themes.md's](../design/themes.md#where-a-caption-sits), which claims STY-079 and STR-025;
+structure.md's gap is closed. Not run: Word itself, the end-to-end suite and CI's Linux runner.
+
 ## W14.6: Word's report whole, and two claims
 
 1. The report kinds W-J names, written by the Word writer and worded on the publication's page.

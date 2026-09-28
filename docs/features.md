@@ -268,7 +268,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   page's text, at its printed size at 100%; **Zoom** beside it sets 50% to 200%, or **Fit** to the
   column, and is remembered in this browser. The paper stays white in dark mode. A table is ruled,
   filled, banded and padded as its table style says, and a figure and an image in a line are the size
-  their image styles give them, from the image's own pixels, as a publication sets them. Page breaks,
+  their image styles give them, from the image's own pixels, as a publication sets them. A table's
+  caption and a figure's stand above or below it as its style says, where the publication sets them.
+  Page breaks,
   hyphenation, keeping lines together, a table's header repeated on each page and a floated figure's
   place on its page are left to the publication.
 
@@ -683,7 +685,8 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   may split across a page break or moves whole to the next page where it fits on one, and whether
   each page it continues onto is labelled **Table 1.1 (continued)**, in the layout's words. The
   default's looks as tables did: every rule a thin black line, the header neither filled nor bold and repeated, rows allowed to
-  split, and no label. A table whose caption is empty is refused, naming it, because the caption is what names it to a reader; so
+  split, and no label. **The table style also says where the caption stands**: above the table, as the
+  default's does, or below it, with the table's note beneath the caption. A table whose caption is empty is refused, naming it, because the caption is what names it to a reader; so
   is one whose header cell is merged down into rows that are not header rows, which would make the
   PDF read a row of data as more header.
 
@@ -697,8 +700,9 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   than 60 per cent of the page's text area, so a tall image is made smaller rather than running off
   the page. **Its size and place come from its image style** in the theme: the width or the height it
   fixes, the most the other may be, its shape always kept, and whether it stands in the text or floats
-  to the head or foot of a page, at the start, the centre or the end. The default's is the full width
-  of the text, centred where it stands. A screen reader is told what it shows, in the language that description is written in -
+  to the head or foot of a page, at the start, the centre or the end, and whether its caption stands
+  below the image or above it. The default's is the full width of the text, centred where it stands,
+  its caption below. A screen reader is told what it shows, in the language that description is written in -
   the image's own description in its own language, or the figure's own in the component's. A
   decorative figure's image is passed over by a screen reader altogether; its caption and number stay.
   A long caption makes the image smaller, so the two still stand on one page. A figure is refused,
@@ -768,9 +772,10 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   one line in Word, its characters set a little closer where Word's slightly larger type would wrap
   it. A table is a Word table in its table style, with its rules, padding, header fills and weight
   and banding, its merged cells merged, its header rows marked so a screen reader reads them as
-  headers and Word repeats them on every page, its caption above it and its note beneath. A figure
-  is its image, sized for the Word page, with its description or marked decorative, and its caption
-  below; a floated figure stands at the head of its page with its caption beneath it, as in the PDF;
+  headers and Word repeats them on every page, its caption above it or below it as its style says,
+  and its note beneath. A figure is its image, sized for the Word page, with its description or marked
+  decorative, and its caption below or above it as its style says; a floated figure stands at the head
+  of its page with its caption above or below its image as in the PDF;
   an image in a line of text or a table's cell stays in its line. Figures and tables are numbered by
   Word, so moving one renumbers the rest, and the lists of figures and of tables follow the
   contents, their pages filled in by Word as the contents' are. What Word cannot carry of a table is

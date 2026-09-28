@@ -160,7 +160,6 @@ design claims it.
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | STR-013                   | The scheme's vocabulary and its application are here; **PUB-011** puts the declaration on the layout artifact, which is not designed. Answered jointly, claimed by neither                                                                                                                                                                                                                                             |
 | STR-024                   | A caption's label - the word "Figure" - is a member of the scheme, and PUB-011 says the layout declares it. The computation is here, the text is the component's, the label is PUB's: three clauses, two elsewhere                                                                                                                                                                                                     |
-| STR-025                   | Caption placement is a style property, and **STY-003's six catalogues contain no caption style**. Nothing this design can do makes the requirement true - see the recommendation below                                                                                                                                                                                                                                 |
 | STR-069                   | STR-026 was split. Its T1 half, STR-068 - an outline node, a caption-bearing block or a footnote, by identity - is claimed above: a component's reference to a section was its last gap, closed by XR-B's `node` target, built by cross-references 1. STR-069, **a bibliography entry**, is T6's: no `entry` arm until **LIB** says what an entry's identity is                                                        |
 | STR-027                   | Claimed by publishing.md, which prints all five: a number, a title and both come from resolution here, a page from the engine at the target's label, and a relative form by document order in the layout's words, which only the publish holds. Built by cross-references 2                                                                                                                                            |
 | STR-029, STR-030, STR-055 | The named failures, above. STR-029 and STR-055 are publishing.md's, where the publish fails; STR-030 also needs REU's condition evaluation. STR-055's member exists (`withoutPages`), and rendering it waits for a format without pages                                                                                                                                                                                |
@@ -197,7 +196,8 @@ would reach another component's block in one document only, and the product is f
 
 1. **A caption style.** STR-025 sends caption placement to STY, and STY-003's catalogues are
    paragraph, character, table, image, admonition and citation. A caption style catalogue, or a
-   placement member on the existing ones, is the requirement STR-025 assumes exists.
+   placement member on the existing ones, is the requirement STR-025 assumes exists. Filed as STY-079,
+   a placement member on the table and image styles, and built by W14.5 ([themes.md](themes.md#where-a-caption-sits)).
 2. **A budget for navigation.** STR-039 cites "the budget in scope §11", which names time to open a
    300-page document as a quantity and gives no number. CNT-136, PUB-064, SCH-033 and REL-031 each
    carry one; this does not, so the requirement cannot be verified. The obvious candidate is the
@@ -680,10 +680,9 @@ is still required - TAB-034 for a table, CNT-017 for a figure - since unnumbered
 reference names it by its caption, and a number form of one fails the publish by name (W14's W-N). The numbering route answers a caption's number, and the
 document page's lists show it.
 
-**Where a caption is rendered, and on which side of its block, is not here and is not anywhere.**
-STR-025 makes placement a style property; STY's six catalogues have no caption style. The design
-carries the number and the label and stops, and the gap is named above rather than filled by
-inventing a style kind for another area.
+**Where a caption is rendered, and on which side of its block, is not here.** STR-025 makes placement
+a style property, and STY-079, filed for it, puts it on the table and image styles: [themes.md](themes.md#where-a-caption-sits)
+claims both, since W14.5. This design carries the number and the label and stops.
 
 ## Cross-references
 

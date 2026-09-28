@@ -73,6 +73,10 @@ export const PROJECTED_CHARACTER_PROPERTIES = [
  *   exactly that amount. Measured against Word's model in spikes/theme-conformance.
  * - **Contextual spacing** drops the space between two neighbours of one style that both ask for it:
  *   siblings, so never across a quotation's, a list item's or a cell's edge.
+ * - **A caption stands where its style places it** (STY-079, W14.5): the markup stands a table's
+ *   caption before its cells and a figure's after its image, so a style placing one there needs
+ *   nothing, and one placing it on the other side stacks the block's parts and orders the caption
+ *   there - a table's note staying last.
  * - **A mark states every property**: the style's value where it states one, and otherwise the text's
  *   own, so a browser's default for `strong`, `a`, `code` or `sup` never shows through.
  *
@@ -128,14 +132,23 @@ export function projectCss(theme: ResolvedTheme): string {
     rules.push(
       `${CANVAS} [data-image-style="${image.id}"] .aw-figure-image { text-align: ${ALIGN[image.alignment]}; }`,
     );
+    // Where its caption stands (STY-079): a figure's is the last thing in its markup, below the image,
+    // so only a caption above it is moved - to the head of the figure, which stacks what it holds.
+    if (image.caption === 'above') {
+      const at = `${CANVAS} figure[data-image-style="${image.id}"]`;
+      rules.push(
+        `${at} { display: flex; flex-direction: column; }`,
+        `${at} > .aw-figure-body { order: -1; }`,
+      );
+    }
   }
 
   return rules.join('\n') + '\n';
 }
 
 /**
- * A table style's rules on the surface's tables (STY-076, TH-I), as template 13 draws them: its rules
- * inside and its outer frame; its cells' padding; its header row's and header column's fill, bold and
+ * A table style's rules on the surface's tables (STY-076, TH-I), as template 13 draws them: the side
+ * its caption stands on (STY-079), as template 15 sets it; its rules inside and its outer frame; its cells' padding; its header row's and header column's fill, bold and
  * rule - the header row's below its last row, the header column's after its last column; and the band
  * behind every other body row from the first, under a filled header column's own fill. Header cells are
  * told by the `scope` the editor gives them from the table's header counts. What depends on pages -
@@ -143,6 +156,16 @@ export function projectCss(theme: ResolvedTheme): string {
  */
 function tableRules(style: TableStyle): string[] {
   const at = `${CANVAS} [data-table-style="${style.id}"]`;
+  // Where its caption stands (STY-079): a table's is the first thing in its markup, above the cells, so
+  // only a caption below them is moved - after the cells and before the note, which stays last.
+  const placed =
+    style.caption === 'below'
+      ? [
+          `${at} { display: flex; flex-direction: column; }`,
+          `${at} > .aw-table-caption { order: 1; }`,
+          `${at} > .aw-table-note { order: 2; }`,
+        ]
+      : [];
   const line = (rule: TableRule) =>
     rule === 'none' ? 'none' : `${zoomed(rule.width)} solid ${rule.colour}`;
   const fill = (colour: string) => (colour === 'none' ? 'transparent' : colour);
@@ -192,7 +215,7 @@ function tableRules(style: TableStyle): string[] {
         `{ border-inline-start: ${line(style.headerColumn.rule)}; }`,
     );
   }
-  return rules;
+  return [...placed, ...rules];
 }
 
 /**

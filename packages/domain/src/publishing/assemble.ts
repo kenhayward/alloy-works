@@ -1380,6 +1380,7 @@ export function assemble(given: AssembleInput): Assembled {
             placement: imageStyle.placement,
             alignment: ALIGNMENTS[imageStyle.alignment],
             listed: entry !== undefined,
+            captionPosition: imageStyle.caption === 'above' ? 'top' : 'bottom',
           },
         ];
       }

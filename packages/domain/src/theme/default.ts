@@ -5,10 +5,12 @@ import type {
   CitationCatalogue1,
   ImageCatalogue,
   ImageCatalogue1,
-  ParagraphCatalogue,
+  ImageCatalogue2,
   ParagraphCatalogue1,
+  ParagraphCatalogue2,
   TableCatalogue,
   TableCatalogue1,
+  TableCatalogue2,
   Theme,
   Typeface,
 } from './schema.js';
@@ -18,7 +20,7 @@ import type {
  * every publication is set from until TPL lets a template bind another. As data - a `theme/1` and the
  * six catalogue versions it binds - which the store seeds as literals and a test recomputes from here.
  *
- * **Four versions, all stated, because all are stored.** **0.1**, the `FIRST_` constants, is exactly
+ * **Five versions, all stated, because all are stored.** **0.1**, the `FIRST_` constants, is exactly
  * what migration 0024 seeded: six `catalogue/1` versions and the theme naming them. Frozen - the rows
  * are insert-only and the store's test recomputes their hashes from these - so nothing in it may change.
  * **0.2** is themes 2's (ruling R3), seeded by 0025: new versions of the paragraph, table and image
@@ -26,10 +28,12 @@ import type {
  * and the theme naming them; the character, admonition and citation catalogues are 0.1's. Its
  * catalogues and its theme, frozen too, are the `SECOND_` constants. **0.3**, `THIRD_DEFAULT_THEME`,
  * is Word 1's (ruling R5), seeded by 0026: 0.2 with the maths face's Word face declared, binding the
- * same six catalogues. **0.4**, the unprefixed `DEFAULT_` constants, is the theme in the editor's
- * (ET-H), seeded by 0034: new versions of the paragraph, table and image catalogues, each 0.2's with
- * styles an author may choose added - Lead, Centred and Small print, Banded, and Half width - and 0.3
- * naming them.
+ * same six catalogues. **0.4**, the `FOURTH_` constants, is the theme in the editor's (ET-H), seeded
+ * by 0034: new versions of the paragraph, table and image catalogues, each 0.2's with styles an author
+ * may choose added - Lead, Centred and Small print, Banded, and Half width - and 0.3 naming them.
+ * **0.5**, the unprefixed `DEFAULT_` constants, is W14.5's (W-I), seeded by 0043: new versions of the
+ * table and image catalogues at `catalogue/3`, each 0.4's with every style saying where its caption
+ * sits - a table's above, a figure's below, where they always stood - and 0.4 naming them.
  *
  * **Its numbers are template 11's wherever template 11 wrote one** - the body at 11pt, headings at 16
  * and 13pt bold, preformatted text at 8.8pt on `luma(240)`, which is `#f0f0f0`, in a 6pt panel, its
@@ -531,7 +535,7 @@ export const FIRST_DEFAULT_THEME: Theme = {
  * The quotation asks for **contextual spacing**, so its own paragraphs stand a line apart, 14.35pt,
  * where template 11 put them 17.1pt: the one distance this moves (ruling R3).
  */
-const secondParagraph: ParagraphCatalogue = {
+const secondParagraph: ParagraphCatalogue2 = {
   ...firstParagraph,
   schemaVersion: 2,
   base: { ...firstParagraph.base, contextualSpacing: false },
@@ -560,7 +564,7 @@ const secondParagraph: ParagraphCatalogue = {
  * label**: measured in the design, one leaves an empty header cell in the structure tree on a table's
  * first page, which is a cost a theme should choose rather than be given.
  */
-const secondTable: TableCatalogue = {
+const secondTable: TableCatalogue2 = {
   schemaVersion: 2,
   kind: 'table',
   styles: [
@@ -588,7 +592,7 @@ const secondTable: TableCatalogue = {
  * text block's height, and stands as a block, centred; an image in a line of text fixes its height at
  * 1.2 ems of the text it stands in, is at most the measure wide, and stands where its text puts it.
  */
-const secondImage: ImageCatalogue = {
+const secondImage: ImageCatalogue2 = {
   schemaVersion: 2,
   kind: 'image',
   styles: [
@@ -626,12 +630,12 @@ export const SECOND_DEFAULT_CATALOGUE_VERSIONS: Readonly<Record<CatalogueKind, s
   citation: FIRST_DEFAULT_CATALOGUE_VERSIONS.citation,
 };
 
-/** The six catalogues' contents, by kind, each as its row holds it. */
-type DefaultCatalogues = {
-  readonly paragraph: ParagraphCatalogue;
+/** The six catalogues' contents at 0.2 and at 0.4, by kind, each as its row holds it. */
+type DefaultCatalogues2 = {
+  readonly paragraph: ParagraphCatalogue2;
   readonly character: CharacterCatalogue1;
-  readonly table: TableCatalogue;
-  readonly image: ImageCatalogue;
+  readonly table: TableCatalogue2;
+  readonly image: ImageCatalogue2;
   readonly admonition: AdmonitionCatalogue1;
   readonly citation: CitationCatalogue1;
 };
@@ -641,7 +645,7 @@ type DefaultCatalogues = {
  * and image catalogues at `catalogue/2`, and 0.1's character, admonition and citation catalogues at
  * `catalogue/1`, which the reader upgrades. Frozen, as 0025 stored them.
  */
-export const SECOND_DEFAULT_CATALOGUES: DefaultCatalogues = {
+export const SECOND_DEFAULT_CATALOGUES: DefaultCatalogues2 = {
   paragraph: secondParagraph,
   character,
   table: secondTable,
@@ -719,7 +723,7 @@ export const THIRD_DEFAULT_THEME: Theme = {
  * 9pt and its line spacing, 11.74, and its space after. Lead is for running text alone; the other two
  * for a list's item as well.
  */
-const paragraph: ParagraphCatalogue = {
+const paragraph: ParagraphCatalogue2 = {
   ...secondParagraph,
   styles: [
     ...secondParagraph.styles,
@@ -753,7 +757,7 @@ const paragraph: ParagraphCatalogue = {
  * outer edge ruled 1pt black and the rows 0.5pt grey, with no rule between columns; padded 5pt, the
  * header repeated, as `table` is. Black text holds its contrast on either fill.
  */
-const table: TableCatalogue = {
+const fourthTable: TableCatalogue2 = {
   ...secondTable,
   styles: [
     ...secondTable.styles,
@@ -780,7 +784,7 @@ const table: TableCatalogue = {
  * **Half width** - a figure half the measure wide, at most 60 per cent of the text block high as
  * `figure` is, as a block, centred.
  */
-const image: ImageCatalogue = {
+const fourthImage: ImageCatalogue2 = {
   ...secondImage,
   styles: [
     ...secondImage.styles,
@@ -801,7 +805,7 @@ const image: ImageCatalogue = {
  * and image catalogues' third versions, which 0034 seeds and the theme's content names, and 0.1's for
  * the other three.
  */
-export const DEFAULT_CATALOGUE_VERSIONS: Readonly<Record<CatalogueKind, string>> = {
+export const FOURTH_DEFAULT_CATALOGUE_VERSIONS: Readonly<Record<CatalogueKind, string>> = {
   paragraph: 'd056b809-2dfa-4283-b99c-6fbc37cc7c84',
   character: FIRST_DEFAULT_CATALOGUE_VERSIONS.character,
   table: 'd1d81250-e486-4e06-b7e5-ebb68fe97e97',
@@ -811,9 +815,93 @@ export const DEFAULT_CATALOGUE_VERSIONS: Readonly<Record<CatalogueKind, string>>
 };
 
 /**
- * **The six catalogues the default theme binds as it stands, 0.4**, by kind, each as its row holds it:
- * the paragraph, table and image catalogues at `catalogue/2`, and 0.1's character, admonition and
- * citation catalogues at `catalogue/1`, which the reader upgrades.
+ * **The six catalogues the default theme's 0.4 binds**, by kind, each as its row holds it: the
+ * paragraph, table and image catalogues at `catalogue/2`, and 0.1's character, admonition and
+ * citation catalogues at `catalogue/1`, which the reader upgrades. Frozen, as 0034 stored them.
+ */
+export const FOURTH_DEFAULT_CATALOGUES: DefaultCatalogues2 = {
+  paragraph,
+  character,
+  table: fourthTable,
+  image: fourthImage,
+  admonition,
+  citation,
+};
+
+/** The same six, by the version identifier the theme's 0.4 names each by. */
+export const FOURTH_DEFAULT_CATALOGUES_BY_VERSION: ReadonlyMap<string, unknown> = new Map(
+  (Object.keys(FOURTH_DEFAULT_CATALOGUE_VERSIONS) as CatalogueKind[]).map((kind) => [
+    FOURTH_DEFAULT_CATALOGUE_VERSIONS[kind],
+    FOURTH_DEFAULT_CATALOGUES[kind],
+  ]),
+);
+
+/** The fixed identifier the store seeds the default theme's 0.4 under, by 0034, as 0.3's is fixed. */
+export const FOURTH_DEFAULT_THEME_VERSION = '80a7869a-6ceb-43b2-b748-81e3e4fee2dd';
+
+/**
+ * **The default theme's 0.4, as migration 0034 stored it**: 0.3 naming the catalogue versions above,
+ * nothing else changed. Frozen, as 0.3 is.
+ */
+export const FOURTH_DEFAULT_THEME: Theme = {
+  ...THIRD_DEFAULT_THEME,
+  catalogues: { ...FOURTH_DEFAULT_CATALOGUE_VERSIONS },
+};
+
+// ---------------------------------------------------------------------------------------------------
+// Version 0.5 (W14.5, W-I): new versions of the table and image catalogues, at `catalogue/3`, each
+// 0.4's with every style saying where its caption sits, and the theme naming them. Nothing moves: a
+// table's caption stays above it and a figure's below it, as every output set them before.
+// ---------------------------------------------------------------------------------------------------
+
+/**
+ * The table catalogue the theme's 0.5 binds, its fourth version: 0.4's `table` and `Banded`, each with
+ * its **caption above** the table, where every output has set a table's (STY-079).
+ */
+const table: TableCatalogue = {
+  ...fourthTable,
+  schemaVersion: 3,
+  styles: fourthTable.styles.map((style) => ({ ...style, caption: 'above' })),
+};
+
+/**
+ * The image catalogue the theme's 0.5 binds, its fourth version: 0.4's `figure` and `Half width`, each
+ * with its **caption below** the image, where every output has set a figure's, and `inline`, which
+ * places an image in a line of text, with no caption to place (STY-079).
+ */
+const image: ImageCatalogue = {
+  ...fourthImage,
+  schemaVersion: 3,
+  styles: fourthImage.styles.map((style) =>
+    style.placement === 'inline' ? style : { ...style, caption: 'below' },
+  ),
+};
+
+/**
+ * The six catalogue versions the theme's 0.5 binds: new, fixed identifiers for the table and image
+ * catalogues' fourth versions, which 0043 seeds and the theme's content names, and 0.4's for the
+ * other four.
+ */
+export const DEFAULT_CATALOGUE_VERSIONS: Readonly<Record<CatalogueKind, string>> = {
+  ...FOURTH_DEFAULT_CATALOGUE_VERSIONS,
+  table: 'b5fd3598-cc54-4c58-a546-8b33d795aa15',
+  image: 'fda41d97-12ba-4581-b066-060d060c86a0',
+};
+
+/** The six catalogues' contents at 0.5, by kind, each as its row holds it. */
+type DefaultCatalogues = {
+  readonly paragraph: ParagraphCatalogue2;
+  readonly character: CharacterCatalogue1;
+  readonly table: TableCatalogue;
+  readonly image: ImageCatalogue;
+  readonly admonition: AdmonitionCatalogue1;
+  readonly citation: CitationCatalogue1;
+};
+
+/**
+ * **The six catalogues the default theme binds as it stands, 0.5**, by kind, each as its row holds it:
+ * the table and image catalogues at `catalogue/3`, 0.4's paragraph catalogue at `catalogue/2`, and 0.1's
+ * character, admonition and citation catalogues at `catalogue/1`, which the reader upgrades.
  */
 export const DEFAULT_CATALOGUES: DefaultCatalogues = {
   paragraph,
@@ -824,7 +912,7 @@ export const DEFAULT_CATALOGUES: DefaultCatalogues = {
   citation,
 };
 
-/** The same six, by the version identifier the theme's 0.4 names each by. */
+/** The same six, by the version identifier the theme's 0.5 names each by. */
 export const DEFAULT_CATALOGUES_BY_VERSION: ReadonlyMap<string, unknown> = new Map(
   (Object.keys(DEFAULT_CATALOGUE_VERSIONS) as CatalogueKind[]).map((kind) => [
     DEFAULT_CATALOGUE_VERSIONS[kind],
@@ -832,14 +920,14 @@ export const DEFAULT_CATALOGUES_BY_VERSION: ReadonlyMap<string, unknown> = new M
   ]),
 );
 
-/** The fixed identifier the store seeds the default theme's 0.4 under, by 0034, as 0.3's is fixed. */
-export const DEFAULT_THEME_VERSION = '80a7869a-6ceb-43b2-b748-81e3e4fee2dd';
+/** The fixed identifier the store seeds the default theme's 0.5 under, by 0043, as 0.4's is fixed. */
+export const DEFAULT_THEME_VERSION = '072142c4-8d63-42d6-815a-a447abd0a647';
 
 /**
- * **The default theme as it stands, 0.4**: 0.3 naming the catalogue versions above, nothing else
+ * **The default theme as it stands, 0.5**: 0.4 naming the catalogue versions above, nothing else
  * changed.
  */
 export const DEFAULT_THEME: Theme = {
-  ...THIRD_DEFAULT_THEME,
+  ...FOURTH_DEFAULT_THEME,
   catalogues: { ...DEFAULT_CATALOGUE_VERSIONS },
 };

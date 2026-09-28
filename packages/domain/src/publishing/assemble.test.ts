@@ -50,6 +50,7 @@ import {
   PUBLISHING_SCHEMA_11,
   PUBLISHING_SCHEMA_12,
   PUBLISHING_SCHEMA_13,
+  PUBLISHING_SCHEMA_14,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -1146,8 +1147,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/14, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/14');
+  it('assembles under a layout as publishing/15, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/15');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1733,8 +1734,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/14, and publishing/4 to publishing/13 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/14');
+  it('makes publishing/15, and publishing/4 to publishing/14 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/15');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1745,6 +1746,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_11).toBe('publishing/11');
     expect(PUBLISHING_SCHEMA_12).toBe('publishing/12');
     expect(PUBLISHING_SCHEMA_13).toBe('publishing/13');
+    expect(PUBLISHING_SCHEMA_14).toBe('publishing/14');
   });
 });
 
@@ -2071,10 +2073,11 @@ describe('a figure, published (figures 3)', () => {
       width: 451.28,
       height: 338.46,
       alternative: { text: 'Two red squares', language: { lang: 'en', region: 'GB' } },
-      // The default `figure` style's (themes 2): a block, centred.
+      // The default `figure` style's (themes 2): a block, centred, its caption below (W14.5).
       placement: 'block',
       alignment: 'center',
       listed: true,
+      captionPosition: 'bottom',
     });
   });
 
@@ -4499,11 +4502,11 @@ describe('the theme a publication is set from (themes 1)', () => {
     return styles;
   };
 
-  it('makes publishing/14, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
+  it('makes publishing/15, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/14');
+    expect(assembled.document.schema).toBe('publishing/15');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
     expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
     expect(Object.keys(assembled.document.theme.images)).toEqual([
@@ -4966,6 +4969,7 @@ describe('table and image styles, published (themes 2)', () => {
     maximum: Length,
     placement: 'block' | 'float' = 'block',
     alignment: 'start' | 'centre' | 'end' = 'centre',
+    caption: 'above' | 'below' = 'below',
   ): ImageStyleInput => ({
     id,
     name: id,
@@ -4974,6 +4978,7 @@ describe('table and image styles, published (themes 2)', () => {
     maximum,
     placement,
     alignment,
+    caption,
   });
   const inlineStyle = (
     id: string,
@@ -5134,6 +5139,18 @@ describe('table and image styles, published (themes 2)', () => {
       assemble(under(theme, paragraph('p1', text('Press '), image('inline')))),
     );
     expect(inline.placement).toBe('inline');
+  });
+
+  it("carries where a figure's style sets its caption, above or below, in the engine's terms", () => {
+    const theme = styled([
+      figureStyle('head', width(0.5, 'measure'), most(1, 'textHeight'), 'block', 'centre', 'above'),
+      figureStyle('afloat', width(0.5, 'measure'), most(1, 'textHeight'), 'float', 'end', 'above'),
+    ]);
+    const position = (style: string) =>
+      figureOf(assemble(under(theme, figure(style)))).captionPosition;
+    expect(position('head')).toBe('top');
+    expect(position('afloat')).toBe('top');
+    expect(position('figure')).toBe('bottom');
   });
 
   it("carries the table's style, and measures what a cell holds by that style's padding", () => {
@@ -5570,6 +5587,7 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       maximum: { value: 1, unit: 'textHeight' },
       placement: 'float',
       alignment: 'end',
+      caption: 'below',
     });
     const caption = (name: string, target: string) => [
       text('Shapes, see '),

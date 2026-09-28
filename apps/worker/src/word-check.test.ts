@@ -711,6 +711,7 @@ const constructsTheme: ResolvedTheme = (() => {
         },
         padding: 5,
         breaks: { repeatHeader: false, keepRowsWhole: true, continuationLabel: false },
+        caption: 'above',
       },
     ],
   };
@@ -726,6 +727,7 @@ const constructsTheme: ResolvedTheme = (() => {
         maximum: { value: 0.6, unit: 'textHeight' },
         placement: 'float',
         alignment: 'end',
+        caption: 'below',
       },
     ],
   };

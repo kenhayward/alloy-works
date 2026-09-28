@@ -1925,3 +1925,34 @@ describe('a figure or a table explicitly unnumbered (issue #129, W-H)', () => {
     expect(canonicalise(once)).toContain('"numbered":false');
   });
 });
+
+describe('where a caption sits (W14.5, W-I)', () => {
+  const run = (value: string) => ({ type: 'text', value, marks: [] });
+  const table = (over: Record<string, unknown> = {}) => ({
+    type: 'table',
+    id: 'T1',
+    caption: [run('Readings')],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [{ cells: [{ content: [paragraph('T1p1', 'alpha')] }] }],
+    ...over,
+  });
+  const figure = (over: Record<string, unknown> = {}) => ({
+    type: 'figure',
+    id: 'F1',
+    asset: ASSET_VERSION,
+    imageStyle: 'figure',
+    caption: [run('Site plan')],
+    alternative: { kind: 'decorative' },
+    ...over,
+  });
+
+  it('STR-025 lets a table or a figure hold no side for its caption: the side is its style, which the block names', () => {
+    const held = parseContentDocument(doc([table(), figure()]));
+    expect(held.content).toMatchObject([{ style: 'table' }, { imageStyle: 'figure' }]);
+    for (const side of ['above', 'below']) {
+      expect(() => parseContentDocument(doc([table({ captionPlacement: side })])), side).toThrow();
+      expect(() => parseContentDocument(doc([figure({ captionPlacement: side })])), side).toThrow();
+    }
+  });
+});

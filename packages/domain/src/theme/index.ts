@@ -5,6 +5,7 @@
  * three projections, of which the PDF's is the one read today.
  */
 export {
+  CAPTION_PLACEMENTS,
   CATALOGUE_KINDS,
   CATALOGUE_SCHEMA_VERSION,
   IMAGE_UNITS,
@@ -16,21 +17,29 @@ export {
 export type {
   AdmonitionCatalogue,
   AdmonitionCatalogue1,
+  AdmonitionCatalogue2,
+  CaptionPlacement,
   Catalogue,
   Catalogue1,
+  Catalogue2,
   CatalogueKind,
   CharacterCatalogue,
   CharacterCatalogue1,
+  CharacterCatalogue2,
   CharacterProperties,
   CharacterStyle,
   CitationCatalogue,
   CitationCatalogue1,
+  CitationCatalogue2,
   ImageCatalogue,
   ImageCatalogue1,
+  ImageCatalogue2,
   ImageLength,
   ImageStyle,
+  ImageStyle2,
   ParagraphCatalogue,
   ParagraphCatalogue1,
+  ParagraphCatalogue2,
   ParagraphProperties,
   ParagraphStyle,
   Place,
@@ -40,13 +49,21 @@ export type {
   StyledMark,
   TableCatalogue,
   TableCatalogue1,
+  TableCatalogue2,
   TableRule,
   TableStyle,
+  TableStyle2,
   Theme,
   Typeface,
 } from './schema.js';
 
-export { readCatalogue, readTheme, themeRefusalCodes, upgradeCatalogue1 } from './read.js';
+export {
+  readCatalogue,
+  readTheme,
+  themeRefusalCodes,
+  upgradeCatalogue1,
+  upgradeCatalogue2,
+} from './read.js';
 export type {
   CatalogueReadOutcome,
   ResolvedCharacterStyle,
@@ -67,6 +84,11 @@ export {
   FIRST_DEFAULT_CATALOGUES_BY_VERSION,
   FIRST_DEFAULT_CATALOGUE_VERSIONS,
   FIRST_DEFAULT_THEME,
+  FOURTH_DEFAULT_CATALOGUES,
+  FOURTH_DEFAULT_CATALOGUES_BY_VERSION,
+  FOURTH_DEFAULT_CATALOGUE_VERSIONS,
+  FOURTH_DEFAULT_THEME,
+  FOURTH_DEFAULT_THEME_VERSION,
   SECOND_DEFAULT_CATALOGUES,
   SECOND_DEFAULT_CATALOGUES_BY_VERSION,
   SECOND_DEFAULT_CATALOGUE_VERSIONS,

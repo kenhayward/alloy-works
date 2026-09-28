@@ -582,14 +582,14 @@ describe('publishing a document, from the request to the stored PDF', () => {
   it("PUB-063 records the engine, the engine's version and the template's version that made it", async () => {
     const { request } = await published();
     const row = await publicationOf(request);
-    // Made under a layout and a theme, so by template 14 and pipeline 14, under the layout its request
+    // Made under a layout and a theme, so by template 15 and pipeline 15, under the layout its request
     // recorded.
     expect(row).toMatchObject({
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 14,
-      pipeline_version: '14',
+      template_version: 15,
+      pipeline_version: '15',
       layout_version_id: (await requestRow(request)).layout_version_id,
     });
     expect(row!.layout_version_id).not.toBeNull();
@@ -1044,11 +1044,11 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine_version: null,
       template: null,
       template_version: null,
-      pipeline_version: '14',
+      pipeline_version: '15',
       format: 'docx',
       standard: null,
       producer: 'word',
-      producer_version: 'word/4',
+      producer_version: 'word/5',
       report: [
         // The titles the PDF tags as headings, which Word sets as body text (W14.6's final review).
         { kind: 'titles_not_headings', titles: ['document', 'contents'] },
@@ -1077,12 +1077,12 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 14,
-      pipeline_version: '14',
+      template_version: 15,
+      pipeline_version: '15',
       format: 'pdf',
       standard: 'ua-1',
       producer: 'typst',
-      producer_version: '14',
+      producer_version: '15',
       report: [],
     });
     // Beside a PDF, the Word document's pages are cited in the PDF, and it says so; and its titles
@@ -1091,7 +1091,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       format: 'docx',
       standard: null,
       producer: 'word',
-      producer_version: 'word/4',
+      producer_version: 'word/5',
       report: [
         { kind: 'titles_not_headings', titles: ['document', 'contents'] },
         { kind: 'pages_cite_the_pdf' },
@@ -1160,7 +1160,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
         format: 'pdf',
         standard: 'ua-1',
         producer: 'typst',
-        producer_version: '14',
+        producer_version: '15',
         report: [],
       }),
     ]);
