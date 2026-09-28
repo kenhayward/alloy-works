@@ -23,6 +23,11 @@ export interface Job {
 /** Waking a worker that is waiting rather than polling. The payload is empty, so it carries nothing. */
 export const JOB_CHANNEL = 'aw_jobs';
 
+/** How long a job that failed its attempt waits before it may run again, doubling each time. */
+export function retryDelayMs(attempts: number): number {
+  return 1000 * 2 ** attempts;
+}
+
 /**
  * Queues work from inside the tenant's own transaction, so the job exists exactly when the row it is
  * about does. The tenant comes from the role doing the insert: a row naming another tenant is
@@ -128,7 +133,7 @@ export function createJobQueue(url: string): JobQueue {
                    where id = ${job.id}::bigint`.execute(db);
         return 'failed';
       }
-      const retryInMs = options.retryInMs ?? 1000 * 2 ** job.attempts;
+      const retryInMs = options.retryInMs ?? retryDelayMs(job.attempts);
       await sql`update platform.job
                    set locked_until = null,
                        last_error = ${reason},

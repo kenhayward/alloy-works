@@ -1272,7 +1272,8 @@ const FIXTURES: readonly Fixture[] = [
   {
     name: 'deep',
     layout: withMatter({ contents: { depth: 6 } }),
-    formats: ['pdf', 'docx'],
+    // Word alone: a heading deeper than six levels is refused for the PDF (W14.2, PUB-103).
+    formats: ['docx'],
     sections: ['cover', 'contents', 'body'],
     outline: deepOutline,
   },
@@ -1302,7 +1303,8 @@ const FIXTURES: readonly Fixture[] = [
   {
     name: 'deep-captions',
     layout: deepCaptionsLayout,
-    formats: ['pdf', 'docx'],
+    // Word alone: a heading deeper than six levels is refused for the PDF (W14.2, PUB-103).
+    formats: ['docx'],
     sections: ['cover', 'contents', 'body'],
     outline: deepCaptionsOutline,
     serifOnly: true,

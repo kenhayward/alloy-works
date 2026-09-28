@@ -253,6 +253,7 @@ export function Publishing({
                 label="Why it could not be published"
                 failures={publish.failures}
                 placeOf={placeOf}
+                wordOffered={offersWord}
               />
             )}
           </>
