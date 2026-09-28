@@ -18,9 +18,13 @@ class CheckFailed extends Error {
   readonly code = 'check_failed';
 }
 
+/** The type veraPDF's whole report is kept as: its JSON, as it wrote it. */
+export const REPORT_CONTENT_TYPE = 'application/json';
+
 /**
  * `check_pdf` (W14.1, W-B): a recorded publication's PDF checked by veraPDF against PDF/UA-1, and what
- * it found kept beside the publication in `publication_check` (W-C; PUB-091). Queued by
+ * it found kept beside the publication in `publication_check` (W-C; PUB-091): veraPDF's whole report in
+ * the tenant's store by its hash, as the PDF is kept, and a summary of it for the page. Queued by
  * `recordPublication` in the transaction that records the publication, so a worker that dies once the
  * record commits leaves it queued, and the next worker takes it (ADR-0030: the report joins the
  * publication after it is recorded).
@@ -62,6 +66,10 @@ export function checkJob(deps: {
       if (verdict.profile !== PDF_UA_1_PROFILE) {
         throw new CheckFailed(`veraPDF checked against ${verdict.profile}, not PDF/UA-1.`);
       }
+      // The report is kept before the row names it, so no row names bytes the store lacks. A run that
+      // fails between the two leaves a report in the store that nothing names, which is the lesser
+      // mistake: the next run keeps its own, and its row names that one.
+      const kept = await found.store.put(Buffer.from(verdict.report, 'utf8'), REPORT_CONTENT_TYPE);
       await deps.db.withTenant(tenant, (trx) =>
         recordPublicationCheck(trx, {
           publicationId: publication,
@@ -69,6 +77,7 @@ export function checkJob(deps: {
           compliant: verdict.compliant,
           // PDF/UA-1's profile has fewer rules than the bound, so this keeps every one.
           failedRules: verdict.rules.slice(0, MAX_FAILED_RULES),
+          report: { key: kept.key, sha256: kept.sha256, bytes: kept.size },
         }),
       );
     },

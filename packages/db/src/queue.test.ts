@@ -135,6 +135,40 @@ describe('the job queue', () => {
     );
   });
 
+  it("answers the subjects of a tenant's jobs of one kind still waiting or running, and none finished, given up, of another kind or another tenant's", async () => {
+    const subject = (n: number) => `99999999-0000-4000-8000-${String(n).padStart(12, '0')}`;
+    const check = (tenant: Tenant, id: string) =>
+      service.withTenant(tenant, (trx) => enqueueJob(trx, 'check_pdf', id));
+    await check(a, subject(1)); // waiting
+    await check(a, subject(2)); // running
+    await check(a, subject(3)); // finished
+    await check(a, subject(4)); // given up
+    await check(b, subject(5)); // another tenant's
+    await service.withTenant(a, (trx) => enqueueJob(trx, 'publish', subject(6)));
+    // Running, finished and given up, set as the queue would leave each.
+    await queryAs(
+      db.adminUrl,
+      `update platform.job set attempts = 1, locked_by = 'worker-1', locked_until = now() + interval '1 minute'
+        where subject_id = $1`,
+      [subject(2)],
+    );
+    await queryAs(
+      db.adminUrl,
+      'update platform.job set finished_at = now() where subject_id = $1',
+      [subject(3)],
+    );
+    await queryAs(
+      db.adminUrl,
+      `update platform.job set attempts = 3, failed_at = now(), last_error = 'check_failed'
+        where subject_id = $1`,
+      [subject(4)],
+    );
+
+    expect((await queue.waiting(a.id, 'check_pdf')).sort()).toEqual([subject(1), subject(2)]);
+    expect(await queue.waiting(b.id, 'check_pdf')).toEqual([subject(5)]);
+    expect(await queue.waiting(a.id, 'ingest')).toEqual([]);
+  });
+
   it('knows every tenant, and one by name', async () => {
     const all = await service.tenants();
     expect(all.map((tenant) => tenant.id).sort()).toEqual([a.id, b.id].sort());

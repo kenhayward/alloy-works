@@ -2322,6 +2322,13 @@ describe('requesting and recording a publication', () => {
       )
     ).rows.map((row: { subject_id: string }) => row.subject_id);
 
+  /** veraPDF's whole report, as the worker keeps it in the tenant's store by its hash (PUB-091). */
+  const keptReport = (fill = 'a') => ({
+    key: `${production.role}/sha256/${fill.repeat(64)}`,
+    sha256: fill.repeat(64),
+    bytes: 4096,
+  });
+
   /** A check veraPDF failed, as the worker records it (W-C): two rules, one described. */
   const failedCheck = (publicationId: string) => ({
     publicationId,
@@ -2331,6 +2338,7 @@ describe('requesting and recording a publication', () => {
       { clause: '5', test: 1, description: 'The PDF/UA identification is missing' },
       { clause: '7.1', test: 10 },
     ],
+    report: keptReport(),
   });
 
   it('queues one check_pdf job for a publication with a PDF, in the transaction that records it, and none for Word alone or a record rolled back', async () => {
@@ -2400,6 +2408,9 @@ describe('requesting and recording a publication', () => {
         profile: 'ua1',
         compliant: false,
         failed_rules: failedCheck(checked).failedRules,
+        report_key: keptReport().key,
+        report_sha256: keptReport().sha256,
+        report_bytes: 4096,
         checked_at: expect.any(Date),
       },
     ]);
@@ -2427,12 +2438,16 @@ describe('requesting and recording a publication', () => {
       profile?: string;
       compliant?: boolean;
       rules?: unknown;
-    }) =>
-      sql`insert into publication_check (publication_id, format, checker, checker_version, profile,
-            compliant, failed_rules)
+      report?: { key: string; sha256: string; bytes: number };
+    }) => {
+      const report = values.report ?? keptReport();
+      return sql`insert into publication_check (publication_id, format, checker, checker_version,
+            profile, compliant, failed_rules, report_key, report_sha256, report_bytes)
           values (${values.publication}, ${values.format ?? 'pdf'}, ${values.checker ?? 'verapdf'},
             ${values.version ?? '1.30.2'}, ${values.profile ?? 'ua1'}, ${values.compliant ?? false},
-            ${JSON.stringify(values.rules ?? [{ clause: '5', test: 1 }])})`;
+            ${JSON.stringify(values.rules ?? [{ clause: '5', test: 1 }])},
+            ${report.key}, ${report.sha256}, ${report.bytes})`;
+    };
     const tooMany = Array.from({ length: 201 }, (_, index) => ({ clause: '7.1', test: index }));
     for (const [values, refusal] of [
       [{ publication: wordOnly }, /publication_check_publication_id_format_fkey/],
@@ -2452,6 +2467,29 @@ describe('requesting and recording a publication', () => {
         /publication_check_failed_rules/,
       ],
       [{ publication: unchecked, rules: tooMany }, /publication_check_failed_rules/],
+      // The whole report, kept by its hash in this tenant's own store and nowhere else.
+      [
+        {
+          publication: unchecked,
+          report: { ...keptReport(), key: `t_another/sha256/${'a'.repeat(64)}` },
+        },
+        /a report is kept in its own tenant's store/,
+      ],
+      [
+        { publication: unchecked, report: { ...keptReport(), key: keptReport('b').key } },
+        /"publication_check_report_key"/,
+      ],
+      [
+        {
+          publication: unchecked,
+          report: { key: `${production.role}/sha256/latest`, sha256: 'latest', bytes: 1 },
+        },
+        /publication_check_report_sha256_check/,
+      ],
+      [
+        { publication: unchecked, report: { ...keptReport(), bytes: 0 } },
+        /publication_check_report_bytes_check/,
+      ],
     ] as const) {
       await expect(
         service.withTenant(production, (trx) => insert(values).execute(trx)),
@@ -2530,6 +2568,7 @@ describe('requesting and recording a publication', () => {
           profile: 'ua1',
           compliant: false,
           failedRules: failedCheck(id).failedRules,
+          report: keptReport(),
           checkedAt: expect.any(Date),
         },
       ],
@@ -2994,6 +3033,7 @@ describe('requesting and recording a publication', () => {
       const recent = await previewed(trx, await document(), ada);
       const queued = await previewed(trx, await document(), ada);
       const publish = await requested(trx, await document(), ada);
+      const underReport = await previewed(trx, await document(), ada);
 
       await finishedAgo(trx, alone, '2 hours', '4');
       await finishedAgo(trx, failed, '2 hours');
@@ -3010,8 +3050,17 @@ describe('requesting and recording a publication', () => {
       // And an image's version names this one's: however unlikely, bytes are bytes.
       await finishedAgo(trx, underImage, '2 hours', '9');
       await finishedAgo(trx, recent, '50 minutes', '8');
+      // So does the publication's check, by the report veraPDF wrote.
+      await finishedAgo(trx, underReport, '2 hours', '1');
+      await recordPublicationCheck(trx, {
+        publicationId: publication,
+        checkerVersion: '1.30.2',
+        compliant: true,
+        failedRules: [],
+        report: previewPdf('1'),
+      });
       return {
-        swept: [alone, failed, ...twins, older, beside, underImage],
+        swept: [alone, failed, ...twins, older, beside, underImage, underReport],
         kept: [newer, recent, queued, publish],
       };
     });

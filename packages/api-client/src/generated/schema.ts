@@ -9311,6 +9311,13 @@ export interface operations {
                                     /** @description What the rule asks for, in veraPDF's words */
                                     description?: string;
                                 }[];
+                                /** @description veraPDF's whole report, as it wrote it, kept with the publication */
+                                report: {
+                                    bytes: number;
+                                    sha256: string;
+                                    /** @description A link to veraPDF's whole report, its JSON, valid for five minutes, saved as `{id}-verapdf.json` */
+                                    download: string;
+                                };
                                 checkedAt: string;
                             } | null;
                         } | {

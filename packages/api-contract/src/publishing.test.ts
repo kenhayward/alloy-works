@@ -125,17 +125,22 @@ describe('the publishing contract (Word 1)', () => {
         { clause: '5', test: 1, description: 'Identify it' },
         { clause: '7.1', test: 10 },
       ],
+      report: { bytes: 4096, sha256: 'a'.repeat(64), download: 'https://store/r.json' },
       checkedAt: '2026-09-28T10:00:00.000Z',
     };
     expect(PublicationView.parse(viewWith([{ ...pdf, check }])).outputs[0]).toMatchObject({
       check,
     });
     expect(PublicationView.parse(viewWith([pdf])).outputs[0]).toMatchObject({ check: null });
-    // Only veraPDF against PDF/UA-1, each rule by its clause and test.
+    const unreported: Partial<typeof check> = { ...check };
+    delete unreported.report;
+    // Only veraPDF against PDF/UA-1, each rule by its clause and test, and always its whole report.
     for (const wrong of [
       { ...check, checker: 'pdfbox' },
       { ...check, profile: 'ua2' },
       { ...check, failedRules: [{ clause: '5' }] },
+      unreported,
+      { ...check, report: { bytes: 4096, sha256: 'a'.repeat(64) } },
     ]) {
       expect(PublicationView.safeParse(viewWith([{ ...pdf, check: wrong }])).success).toBe(false);
     }

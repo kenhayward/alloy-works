@@ -54,7 +54,7 @@ worker run from source. [`docs/development.md`](../docs/development.md) is that 
 | `stand-in-idp` | `tools`                    | `127.0.0.1:9090`      | Signing in, as an organisation's provider and as Google        |
 | `setup`        | `tools`                    | runs once, then exits | Migrations, two invented environments, a store credential each |
 | `service`      | `service`                  | `127.0.0.1:8088`      | The API, and the renderer beside it                            |
-| `worker`       | `worker`                   | no port               | Claims jobs and runs them, carrying the pinned Typst           |
+| `worker`       | `worker`                   | no port               | Claims jobs and runs them, carrying Typst and veraPDF          |
 
 `service` and `worker` wait for `setup` to finish, and `setup` waits for the database and the store
 to be healthy, so one `up` is enough from nothing.
@@ -89,16 +89,27 @@ docker build -f deploy/Dockerfile --target worker -t alloy-works-worker .
 how the ignore list stays next to the file it belongs to. If you rename the Dockerfile, rename that
 with it: nothing fails loudly when it stops matching, the build just gets slower and fatter.
 
-| Target    | Carries                                                                             |
-| --------- | ----------------------------------------------------------------------------------- |
-| `build`   | The workspaces the containers need, installed and built; the others copy from it    |
-| `tools`   | The whole workspace, for the setup step and the stand-in provider. Development only |
-| `service` | `apps/service` and its production dependencies, plus the built renderer             |
-| `worker`  | The same for `apps/worker`, plus the pinned Typst binary, checked against its hash  |
+| Target    | Carries                                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `build`   | The workspaces the containers need, installed and built; the others copy from it                                    |
+| `tools`   | The whole workspace, for the setup step and the stand-in provider. Development only                                 |
+| `service` | `apps/service` and its production dependencies, plus the built renderer                                             |
+| `worker`  | The same for `apps/worker`, plus the pinned Typst binary, checked against its hash, and veraPDF on Debian's Java 17 |
 
 Neither shipped image carries development tooling, test files or Electron. Both run as the `node`
-user. CI builds both on every pull request and runs each entry point; nothing is pushed anywhere,
-because where they would be pushed comes with hosting.
+user. CI builds both on every pull request, for x86-64, and runs each entry point; nothing is pushed
+anywhere, because where they would be pushed comes with hosting.
+
+**The worker image builds for x86-64 and arm64.** Typst is downloaded for the architecture being
+built, and veraPDF, which checks every publication's PDF, runs on Debian's `openjdk-17-jre-headless`,
+which Debian publishes for both. Only veraPDF's jars and launcher are copied from its pinned
+`verapdf/cli` image, which is published for x86-64 alone; `VERAPDF_PLATFORM` names that platform, so
+an arm64 build takes the same jars. An arm64 build has been made under emulation and its veraPDF run
+there; no arm64 machine has run the worker natively yet:
+
+```bash
+docker buildx build --platform linux/arm64 -f deploy/Dockerfile --target worker .
+```
 
 ## When a port is already taken
 
@@ -143,15 +154,17 @@ Each image refuses to start without its configuration and says which variable is
 than failing somewhere further in. The compose file sets all of them, and the two `*.env.example`
 files above set the same ones for a run from source; these are the ones worth knowing:
 
-| Variable                           | Read by         | What it does                                                        |
-| ---------------------------------- | --------------- | ------------------------------------------------------------------- |
-| `DATABASE_URL`                     | service, worker | Which database, as which login role                                 |
-| `RENDERER_ROOT`                    | service         | Where the built renderer is; without it, the API and nothing else   |
-| `OBJECT_STORE_ENDPOINT`, `_BUCKET` | service, worker | The object store, which must be an address a browser can follow too |
-| `SECRET_OBJECT_STORE_KEY`          | service, worker | Seals each environment's store credential before it is stored       |
-| `SIGN_IN_HOST`, `GOOGLE_CLIENT_ID` | service         | The Google route; set together or not at all                        |
-| `DEV_EXTRA_HOSTNAME`               | setup           | An extra address for the development environment                    |
-| `ALLOY_SERVICE_URL`                | the desktop app | Which environment its window opens                                  |
+| Variable                           | Read by         | What it does                                                           |
+| ---------------------------------- | --------------- | ---------------------------------------------------------------------- |
+| `DATABASE_URL`                     | service, worker | Which database, as which login role                                    |
+| `RENDERER_ROOT`                    | service         | Where the built renderer is; without it, the API and nothing else      |
+| `OBJECT_STORE_ENDPOINT`, `_BUCKET` | service, worker | The object store, which must be an address a browser can follow too    |
+| `SECRET_OBJECT_STORE_KEY`          | service, worker | Seals each environment's store credential before it is stored          |
+| `VERAPDF_COMMAND`                  | worker          | veraPDF's launcher; the image's own, `/opt/verapdf/verapdf`, unset     |
+| `SWEEP_INTERVAL_MS`                | worker          | How often the sweeps run, a check that gave up queued again among them |
+| `SIGN_IN_HOST`, `GOOGLE_CLIENT_ID` | service         | The Google route; set together or not at all                           |
+| `DEV_EXTRA_HOSTNAME`               | setup           | An extra address for the development environment                       |
+| `ALLOY_SERVICE_URL`                | the desktop app | Which environment its window opens                                     |
 
 Secrets arrive as `SECRET_*` variables and never reach a log: the configuration the service logs at
 start-up names them, never their values.

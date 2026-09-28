@@ -403,6 +403,17 @@ export function publishingHandlers(
                     profile: output.check.profile,
                     compliant: output.check.compliant,
                     failedRules: output.check.failedRules.map((rule) => ({ ...rule })),
+                    // veraPDF's whole report, kept by its hash as the PDF is, and saved as the
+                    // publication's id: never the title, which would reach the store's logs.
+                    report: {
+                      bytes: output.check.report.bytes,
+                      sha256: output.check.report.sha256,
+                      download: await store.signedLink(
+                        output.check.report.key,
+                        DOWNLOAD_SECONDS,
+                        `${publication.id}-verapdf.json`,
+                      ),
+                    },
                     checkedAt: output.check.checkedAt.toISOString(),
                   },
                 }

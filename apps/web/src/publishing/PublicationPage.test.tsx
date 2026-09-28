@@ -326,13 +326,28 @@ describe('a publication at its own address', () => {
     view: LINK,
     check,
   });
+  const REPORT_LINK = 'https://store.example/report?signed';
   const check = (compliant: boolean, failedRules: unknown[]) => ({
     checker: 'verapdf',
     checkerVersion: '1.30.2',
     profile: 'ua1',
     compliant,
     failedRules,
+    report: { bytes: 20_480, sha256: 'b'.repeat(64), download: REPORT_LINK },
     checkedAt: '2026-09-19T09:01:00.000Z',
+  });
+
+  it("offers veraPDF's whole report to download beside what it found", async () => {
+    open(
+      json(200, { ...record, outputs: [checkedPdf(check(false, [{ clause: '7.1', test: 9 }]))] }),
+    );
+    const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+
+    expect(within(aside).getByRole('link', { name: 'Download the full report' })).toHaveAttribute(
+      'href',
+      REPORT_LINK,
+    );
+    expect(aside).toHaveTextContent('Download the full report (20 KB)');
   });
 
   it('says a PDF not yet checked for accessibility is not yet checked', async () => {
@@ -341,6 +356,8 @@ describe('a publication at its own address', () => {
 
     expect(within(aside).getByText('Not yet checked for accessibility.')).toBeInTheDocument();
     expect(within(aside).queryByRole('list', { name: /failed/ })).toBeNull();
+    // Nor is there a report to download before the check has written one.
+    expect(within(aside).queryByRole('link', { name: 'Download the full report' })).toBeNull();
   });
 
   it("says a PDF veraPDF passed was checked for PDF/UA-1 and passed, naming veraPDF's version", async () => {

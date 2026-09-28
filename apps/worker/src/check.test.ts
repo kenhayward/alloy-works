@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -37,6 +37,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
 import { checkJob } from './jobs/check.js';
 import { publishJob } from './jobs/publish.js';
+import { sweepUncheckedPublications } from './sweep.js';
 import { suiteChecker } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 import type { Checker } from './verapdf.js';
@@ -74,12 +75,15 @@ describe("checking a publication's PDF with veraPDF, after it is recorded", () =
   let general: string;
   const log: WorkerLog = { info: () => {}, warn: () => {}, error: () => {} };
 
-  /** veraPDF as the suite runs it, counting what it is asked to check. */
+  /** veraPDF as the suite runs it, counting what it is asked to check and keeping its last report. */
   let asked = 0;
+  let lastReport = '';
   const counting: Checker = {
-    check: (pdf) => {
+    check: async (pdf) => {
       asked += 1;
-      return suiteChecker.check(pdf);
+      const verdict = await suiteChecker.check(pdf);
+      lastReport = verdict.report;
+      return verdict;
     },
     close: async () => {},
   };
@@ -318,7 +322,36 @@ describe("checking a publication's PDF with veraPDF, after it is recorded", () =
       profile: 'ua1',
       compliant: true,
       failedRules: [],
+      report: {
+        key: expect.stringMatching(new RegExp(`^${tenant.role}/sha256/[0-9a-f]{64}$`)),
+        sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+        bytes: expect.any(Number),
+      },
       checkedAt: expect.any(Date),
+    });
+  }, 120_000);
+
+  it("PUB-091 retains veraPDF's whole report with the publication, byte for byte, in the tenant's store by its hash", async () => {
+    const publication = await recordedOver(await untagged());
+
+    expect(await work()).toBe('done');
+
+    const check = (await checkOf(publication))!;
+    const store = await service.withTenant(tenant, (trx) => stores.forTenant(trx, tenant));
+    const kept = await store.get(check.report.key);
+    // The very report the summary was read from, not a summary of it.
+    expect(kept.equals(Buffer.from(lastReport, 'utf8'))).toBe(true);
+    expect(check.report).toEqual({
+      key: `${tenant.role}/sha256/${check.report.sha256}`,
+      sha256: createHash('sha256').update(kept).digest('hex'),
+      bytes: kept.byteLength,
+    });
+    const report = JSON.parse(kept.toString('utf8')) as {
+      report: { jobs: { validationResult: { compliant: boolean; profileName: string }[] }[] };
+    };
+    expect(report.report.jobs[0]!.validationResult[0]).toMatchObject({
+      compliant: false,
+      profileName: 'PDF/UA-1 validation profile',
     });
   }, 120_000);
 
@@ -446,5 +479,64 @@ describe("checking a publication's PDF with veraPDF, after it is recorded", () =
 
     expect(await work()).toBe('done');
     expect(await checkOf(publication)).toMatchObject({ compliant: false });
+  }, 120_000);
+
+  // Last in the file: it leaves nothing queued, but asks the sweep of every publication in the tenant.
+  it('PUB-091 queues a check again, from the sweep, for a publication whose check gave up, and none for one checked, one whose check is still queued, or one recorded under five minutes ago', async () => {
+    const broken: Checker = {
+      check: async () => {
+        throw new Error('veraPDF could not start: spawn /opt/verapdf/verapdf ENOENT');
+      },
+      close: async () => {},
+    };
+    const eager: JobQueue = {
+      ...queue,
+      fail: (job, reason) => queue.fail(job, reason, { retryInMs: 0 }),
+    };
+    const failing = () =>
+      processNext({
+        queue: eager,
+        db: worker,
+        handlers: { check_pdf: checkJob({ db: worker, stores, checker: broken }) },
+        workerId: 'worker-1',
+        leaseMs: 60_000,
+        log,
+      });
+    const sweep = (at: Date) => sweepUncheckedPublications(worker, queue, log, at);
+
+    const gaveUp = await recordedOver(await untagged());
+    // Every attempt the queue allows, and the last gives up: nothing retries it, and its page would
+    // say it is not yet checked for ever.
+    expect(await failing()).toBe('retry');
+    expect(await failing()).toBe('retry');
+    expect(await failing()).toBe('failed');
+    expect(await checkOf(gaveUp)).toBeNull();
+    const checked = await recordedOver(await untagged());
+    expect(await work()).toBe('done');
+    const queued = await recordedOver(await untagged());
+
+    // Under five minutes after it was recorded, its check is still within ADR-0030's bound.
+    expect(await sweep(new Date())).toBe(0);
+    expect(await checkJobsOf(gaveUp)).toHaveLength(1);
+
+    // Five minutes on, the sweep queues one check, for the publication whose check gave up.
+    const later = new Date(Date.now() + 6 * 60_000);
+    expect(await sweep(later)).toBe(1);
+    expect(await checkJobsOf(gaveUp)).toMatchObject([
+      { finished: false, attempts: 3 },
+      { finished: false, attempts: 0, locked_by: null },
+    ]);
+    expect(await checkJobsOf(checked)).toHaveLength(1);
+    expect(await checkJobsOf(queued)).toHaveLength(1);
+    // The next sweep finds that check waiting, and queues no other.
+    expect(await sweep(later)).toBe(0);
+
+    // And the check queued again is done, as is the one that was waiting all along.
+    while ((await work()) !== 'idle') {
+      // Each job in turn.
+    }
+    expect(await checkOf(gaveUp)).toMatchObject({ compliant: false });
+    expect(await checkOf(queued)).toMatchObject({ compliant: false });
+    expect(await sweep(later)).toBe(0);
   }, 120_000);
 });

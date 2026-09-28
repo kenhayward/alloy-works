@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   bootstrapCluster,
   configureOrganisationSignIn,
@@ -827,8 +828,13 @@ describe('publishing a document through the service', () => {
       }>().outputs[0]!;
     expect(await pdfOf()).toMatchObject({ format: 'pdf', check: null });
 
-    await tenantDb.withTenant(tenant, (trx) =>
-      recordPublicationCheck(trx, {
+    // veraPDF's whole report, kept by the worker in the tenant's store by its hash.
+    const report = '{"report":{"jobs":[]}}';
+    await tenantDb.withTenant(tenant, async (trx) => {
+      const kept = await (
+        await stores.forTenant(trx, tenant)
+      ).put(Buffer.from(report, 'utf8'), 'application/json');
+      await recordPublicationCheck(trx, {
         publicationId: id,
         checkerVersion: '1.30.2',
         compliant: false,
@@ -836,10 +842,12 @@ describe('publishing a document through the service', () => {
           { clause: '5', test: 1, description: 'The PDF/UA identification is missing' },
           { clause: '7.1', test: 10 },
         ],
-      }),
-    );
+        report: { key: kept.key, sha256: kept.sha256, bytes: kept.size },
+      });
+    });
 
-    expect((await pdfOf()).check).toEqual({
+    const { check } = (await pdfOf()) as { check: { report: { download: string } } };
+    expect(check).toEqual({
       checker: 'verapdf',
       checkerVersion: '1.30.2',
       profile: 'ua1',
@@ -848,8 +856,21 @@ describe('publishing a document through the service', () => {
         { clause: '5', test: 1, description: 'The PDF/UA identification is missing' },
         { clause: '7.1', test: 10 },
       ],
+      report: {
+        bytes: Buffer.byteLength(report),
+        sha256: createHash('sha256').update(report).digest('hex'),
+        download: expect.any(String),
+      },
       checkedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
     });
+    // The report itself, to save, under the publication's id and never its title.
+    const saved = await fetch(check.report.download);
+    expect(saved.status).toBe(200);
+    expect(saved.headers.get('content-disposition')).toBe(
+      `attachment; filename="${id}-verapdf.json"`,
+    );
+    expect(saved.headers.get('content-type')).toBe('application/json');
+    expect(await saved.text()).toBe(report);
   });
 
   it('opens a Word-only publication with no PDF engine or template', async () => {

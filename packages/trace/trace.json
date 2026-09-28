@@ -15731,7 +15731,7 @@
         },
         {
           "id": "PUB-091",
-          "howItIsMet": "veraPDF checks every PDF in the worker against its PDF/UA-1 profile, after the publication is recorded (ADR-0030), by a `check_pdf` job queued in the transaction that records it; its report - veraPDF's version, the profile, compliant or not, and each rule failed with veraPDF's words for it - is kept beside the publication in `publication_check`, one row per PDF output, insert-only, and shown on its page (W14.1)"
+          "howItIsMet": "veraPDF checks every PDF in the worker against its PDF/UA-1 profile, after the publication is recorded (ADR-0030), by a `check_pdf` job queued in the transaction that records it, and queued again by the worker's sweep where it gave up; its report is retained whole - veraPDF's JSON, as it wrote it, in the tenant's store by its hash, as the PDF is - and summarised beside the publication in `publication_check`, one row per PDF output, insert-only: veraPDF's version, the profile, compliant or not, each rule failed with veraPDF's words for it, and the report's key, digest and size. Its page shows the summary and offers the report to download (W14.1)"
         },
         {
           "id": "PUB-037",
@@ -17266,43 +17266,43 @@
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 421,
+      "line": 422,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 356,
+      "line": 357,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 449,
+      "line": 450,
       "kind": "rule"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 657,
+      "line": 658,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 599,
+      "line": 600,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 538,
+      "line": 539,
       "kind": "rule"
     },
     {
       "id": "PUB-095",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 466,
+      "line": 467,
       "kind": "rule"
     },
     {
@@ -17806,7 +17806,7 @@
     {
       "id": "PUB-091",
       "file": "apps/worker/src/check.test.ts",
-      "line": 301,
+      "line": 305,
       "kind": "title"
     },
     {

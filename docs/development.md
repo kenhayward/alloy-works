@@ -477,10 +477,14 @@ pnpm --filter @alloy-works/worker fetch-verapdf   # verapdf/cli, pulled by diges
 ```
 
 The worker checks every publication's PDF with veraPDF after recording it, running
-`/opt/verapdf/verapdf`, where the worker image holds it with its Java runtime. Run from source, a worker
-has no veraPDF there unless one is installed and `VERAPDF_COMMAND` in `deploy/worker.env` names its
-launcher: without one, each check is tried three times and given up, and the publication's page says
-it is not yet checked. The worker in the compose stack checks every publication.
+`/opt/verapdf/verapdf`, where the worker image holds it beside Debian's Java 17. Run from source, a
+worker has no veraPDF there unless one is installed, with a Java runtime of 11 or later, and
+`VERAPDF_COMMAND` in `deploy/worker.env` names its launcher: without one, each check is tried three
+times and given up, and the publication's page says it is not yet checked. Each sweep
+(`SWEEP_INTERVAL_MS`, ten minutes by default) queues a check that gave up again, five minutes or more
+after its publication was recorded, so installing veraPDF later checks them without publishing again.
+The worker in the compose stack checks every publication, and keeps veraPDF's whole report beside it,
+which the publication's page offers as **Download the full report**.
 
 The worker runs every publish, too: with it stopped, a document asked to publish stays queued (see the
 publishing steps under [The service](#the-service)). With the service signed in to (above), ask for a

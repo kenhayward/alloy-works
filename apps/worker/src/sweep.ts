@@ -1,4 +1,11 @@
-import { sweepIterations, sweepPreviews, type TenantDatabase } from '@alloy-works/db';
+import {
+  enqueueJob,
+  publicationsToCheckAgain,
+  sweepIterations,
+  sweepPreviews,
+  type JobQueue,
+  type TenantDatabase,
+} from '@alloy-works/db';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import type { WorkerLog } from './worker.js';
 
@@ -47,6 +54,43 @@ export async function sweepExpiredIterations(db: TenantDatabase, log: WorkerLog)
     }
   }
   return removed;
+}
+
+/**
+ * The check sweep (W14.1, ADR-0030), in every tenant: each publication with a PDF still unchecked five
+ * minutes after it was recorded, with no `check_pdf` job waiting or running for it, has one queued
+ * again. Its check gave up after its last attempt - veraPDF would not start, the store would not
+ * answer - and nothing else would ever try it again, leaving its page saying it is not yet checked.
+ *
+ * The queue is read by the worker's own role, which may, before the tenant's publications are: a
+ * tenant's role may enqueue and never read the queue, and this widens neither. Read in that order, a
+ * check that finishes between the two has recorded its row before its job was finished, so it is not
+ * asked for again; and a publication recorded between them is under five minutes old. Two workers
+ * sweeping at once may each queue one, which costs one check that finds it checked and asks veraPDF
+ * nothing. A check that gives up every time is queued again at every sweep, which says so in the log.
+ *
+ * A tenant whose sweep fails is logged and passed over. Answers how many checks were queued.
+ */
+export async function sweepUncheckedPublications(
+  db: TenantDatabase,
+  queue: Pick<JobQueue, 'waiting'>,
+  log: WorkerLog,
+  now: Date = new Date(),
+): Promise<number> {
+  let queued = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      const waiting = await queue.waiting(tenant.id, 'check_pdf');
+      queued += await db.withTenant(tenant, async (trx) => {
+        const again = await publicationsToCheckAgain(trx, { now, waiting });
+        for (const publication of again) await enqueueJob(trx, 'check_pdf', publication);
+        return again.length;
+      });
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the check sweep failed in a tenant');
+    }
+  }
+  return queued;
 }
 
 /**

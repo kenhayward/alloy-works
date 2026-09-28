@@ -125,7 +125,7 @@ jobs:
         run: |
           set -e
           docker run --rm alloy-works-worker typst --version | grep '0.15.1'
-          # veraPDF and its Java runtime, copied from its pinned image, run as the worker's user.
+          # veraPDF's jars from its pinned image, on Debian's Java runtime, run as the worker's user.
           docker run --rm alloy-works-worker /opt/verapdf/verapdf --version | grep 'veraPDF 1.30.2'
           docker run --rm alloy-works-service 2>&1 | grep 'The service cannot start' || \
             { echo 'the service image did not reach its configuration'; exit 1; }

@@ -139,5 +139,9 @@ export interface PublicationCheckTable {
   compliant: ColumnType<boolean, boolean, never>;
   /** Each failed rule, `{ clause, test, description? }`, JSONB in as the text of a JSON document. */
   failed_rules: ColumnType<unknown, string, never>;
+  /** veraPDF's whole report, kept in the tenant's store by its hash (PUB-091). */
+  report_key: ColumnType<string, string, never>;
+  report_sha256: ColumnType<string, string, never>;
+  report_bytes: ColumnType<number, number, never>;
   checked_at: ColumnType<Date, never, never>;
 }

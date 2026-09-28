@@ -10,7 +10,12 @@ import { checkJob } from './jobs/check.js';
 import { ingestJob } from './jobs/ingest.js';
 import { publishJob } from './jobs/publish.js';
 import { sampleJob } from './jobs/sample.js';
-import { sweepExpiredIterations, sweepExpiredPreviews, sweepExpiredSignIns } from './sweep.js';
+import {
+  sweepExpiredIterations,
+  sweepExpiredPreviews,
+  sweepExpiredSignIns,
+  sweepUncheckedPublications,
+} from './sweep.js';
 import { createTypst } from './typst.js';
 import { startLocalVeraPdf } from './verapdf.js';
 import { processNext, type JobHandler } from './worker.js';
@@ -55,6 +60,10 @@ const sweep = setInterval(() => {
   void sweepExpiredIterations(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired iterations'))
     .catch((error: unknown) => log.error({ err: error }, 'iteration sweep failed'));
+  // Checks that gave up, five minutes after their publication was recorded, queued again (W14.1).
+  void sweepUncheckedPublications(db, queue, log)
+    .then((queued) => queued > 0 && log.warn({ queued }, 'queued checks that had given up'))
+    .catch((error: unknown) => log.error({ err: error }, 'check sweep failed'));
 }, config.sweepIntervalMs);
 
 const stop = async (signal: string) => {

@@ -30,6 +30,8 @@ export interface VeraPdfVerdict {
   readonly failures: readonly string[];
   /** Each failed rule, with veraPDF's words for it. */
   readonly rules: readonly VeraPdfRule[];
+  /** The report itself, whole, as veraPDF wrote it: what the rest was read from, and what is kept. */
+  readonly report: string;
 }
 
 interface Report {
@@ -76,6 +78,7 @@ export function verdictOf(stdout: string, exit: number): VeraPdfVerdict {
     failedRules: result.details.failedRules,
     failures: rules.map((rule) => `${rule.clause}-${rule.test}`),
     rules,
+    report: stdout,
   };
 }
 

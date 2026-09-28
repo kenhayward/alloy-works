@@ -1221,7 +1221,10 @@ export async function sweepPreviews(trx: TenantTransaction): Promise<string[]> {
     union select object_key from asset_upload
       where object_key = any(${keys}::text[]) and state in ('checking', 'ready')
     union select content ->> 'object' from artifact_version
-      where kind = 'asset' and content ->> 'object' = any(${keys}::text[])`.execute(trx);
+      where kind = 'asset' and content ->> 'object' = any(${keys}::text[])
+    union select report_key from publication_check where report_key = any(${keys}::text[])`.execute(
+    trx,
+  );
   const kept = new Set(named.rows.map((row) => row.key));
   return keys.filter((key) => !kept.has(key));
 }
@@ -1240,6 +1243,13 @@ export const MAX_FAILED_RULES = 200;
 /** The longest description of a rule a check keeps; veraPDF's own are a sentence or two. */
 const MAX_RULE_DESCRIPTION = 1000;
 
+/** veraPDF's whole report, as it wrote it, kept in the tenant's store by its hash (PUB-091). */
+export interface KeptReport {
+  readonly key: string;
+  readonly sha256: string;
+  readonly bytes: number;
+}
+
 /** What veraPDF found of a publication's PDF, as the `check_pdf` job records it (0040, W-C). */
 export interface NewPublicationCheck {
   readonly publicationId: string;
@@ -1247,6 +1257,8 @@ export interface NewPublicationCheck {
   readonly checkerVersion: string;
   readonly compliant: boolean;
   readonly failedRules: readonly FailedRule[];
+  /** The report the summary above was read from, already in the store. */
+  readonly report: KeptReport;
 }
 
 /** A PDF's check as a reader is shown it: veraPDF at its version, against PDF/UA-1, and when. */
@@ -1256,6 +1268,8 @@ export interface StoredPublicationCheck {
   readonly profile: 'ua1';
   readonly compliant: boolean;
   readonly failedRules: readonly FailedRule[];
+  /** veraPDF's whole report, where the store keeps it. */
+  readonly report: KeptReport;
   readonly checkedAt: Date;
 }
 
@@ -1281,6 +1295,45 @@ export async function publicationToCheck(
   if (!row) return undefined;
   if (row.checked_at !== null) return 'checked';
   return { key: row.object_key, sha256: row.sha256 };
+}
+
+/** How long after its publication is recorded its check may take (ADR-0030), before a sweep asks again. */
+export const CHECK_WITHIN_MS = 5 * 60_000;
+
+/** The most publications one sweep queues a check for in one tenant: the rest wait for the next. */
+const RECHECK_LIMIT = 100;
+
+/**
+ * The publications whose PDF is still unchecked this long after they were recorded, and whose check
+ * is not among `waiting` - the subjects of the tenant's `check_pdf` jobs still to run, which the
+ * caller reads from the queue first. Its check gave up, then, after its last attempt: the sweep queues
+ * another. Oldest first, and at most a hundred. Recorded is when its request was finished, by the
+ * database's clock, or when it was published where the request has gone.
+ */
+export async function publicationsToCheckAgain(
+  trx: TenantTransaction,
+  options: { readonly now: Date; readonly waiting: readonly string[] },
+): Promise<string[]> {
+  const before = new Date(options.now.getTime() - CHECK_WITHIN_MS);
+  const recorded = sql<Date>`coalesce(r.finished_at, p.published_at)`;
+  const rows = await trx
+    .selectFrom('publication as p')
+    .innerJoin('publication_output as o', (join) =>
+      join.onRef('o.publication_id', '=', 'p.id').on('o.format', '=', 'pdf'),
+    )
+    .leftJoin('publication_request as r', 'r.id', 'p.request_id')
+    .leftJoin('publication_check as c', (join) =>
+      join.onRef('c.publication_id', '=', 'o.publication_id').onRef('c.format', '=', 'o.format'),
+    )
+    .select('p.id')
+    .where('c.publication_id', 'is', null)
+    .where(recorded, '<=', before)
+    .where(sql<boolean>`p.id <> all(${[...options.waiting]}::uuid[])`)
+    .orderBy(recorded)
+    .orderBy('p.id')
+    .limit(RECHECK_LIMIT)
+    .execute();
+  return rows.map((row) => row.id);
 }
 
 /**
@@ -1314,6 +1367,9 @@ export async function recordPublicationCheck(
       profile: 'ua1',
       compliant: check.compliant,
       failed_rules: JSON.stringify(failedRules),
+      report_key: check.report.key,
+      report_sha256: check.report.sha256,
+      report_bytes: check.report.bytes,
     })
     .onConflict((conflict) => conflict.columns(['publication_id', 'format']).doNothing())
     .executeTakeFirst();
@@ -1402,7 +1458,16 @@ export async function readPublication(
     .execute();
   const checks = await trx
     .selectFrom('publication_check')
-    .select(['format', 'checker_version', 'compliant', 'failed_rules', 'checked_at'])
+    .select([
+      'format',
+      'checker_version',
+      'compliant',
+      'failed_rules',
+      'report_key',
+      'report_sha256',
+      'report_bytes',
+      'checked_at',
+    ])
     .where('publication_id', '=', id)
     .execute();
   // In the order the publication names its formats, the PDF first.
@@ -1434,6 +1499,9 @@ function checkOf(
         readonly checker_version: string;
         readonly compliant: boolean;
         readonly failed_rules: unknown;
+        readonly report_key: string;
+        readonly report_sha256: string;
+        readonly report_bytes: number;
         readonly checked_at: Date;
       }
     | undefined,
@@ -1445,6 +1513,7 @@ function checkOf(
     profile: 'ua1',
     compliant: row.compliant,
     failedRules: row.failed_rules as FailedRule[],
+    report: { key: row.report_key, sha256: row.report_sha256, bytes: row.report_bytes },
     checkedAt: row.checked_at,
   };
 }

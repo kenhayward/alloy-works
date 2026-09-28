@@ -51,6 +51,8 @@ describe('reading a veraPDF report for the worker', () => {
         { clause: '5', test: 1, description: 'Identify it' },
         { clause: '7.1', test: 10 },
       ],
+      // And the report itself, whole, as veraPDF wrote it, for the job to keep.
+      report,
     });
   });
 

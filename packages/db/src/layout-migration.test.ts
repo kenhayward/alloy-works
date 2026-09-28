@@ -272,6 +272,11 @@ describe('migration 0018, which gives every environment its default layout', () 
         tgenabled: 'O',
       },
       {
+        relname: 'publication_check',
+        tgname: 'publication_check_report_in_own_store',
+        tgenabled: 'O',
+      },
+      {
         relname: 'publication_input',
         tgname: 'publication_input_while_queued',
         tgenabled: 'O',

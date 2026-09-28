@@ -20,6 +20,13 @@ create table publication_check (
   -- clause, and what the rule asks for, in veraPDF's words. Bounded: PDF/UA-1's profile has fewer rules
   -- than the bound, so a list longer than it is not a report.
   failed_rules jsonb not null,
+  -- veraPDF's whole report, as it wrote it (PUB-091: the report retained with the publication), kept
+  -- in the tenant's store by its hash, as the PDF is. The summary above is what the page shows; this is
+  -- the report itself. The key names the digest it records, and the trigger below holds it to the
+  -- tenant's own store.
+  report_key text not null,
+  report_sha256 text not null check (report_sha256 ~ '^[0-9a-f]{64}$'),
+  report_bytes integer not null check (report_bytes > 0),
   checked_at timestamptz not null default now(),
   primary key (publication_id, format),
   foreign key (publication_id, format)
@@ -40,6 +47,7 @@ create table publication_check (
         )
     end
   ),
+  constraint publication_check_report_key check (report_key like '%/sha256/' || report_sha256),
   -- A PDF that passed failed nothing.
   constraint publication_check_compliant_without_failures check (
     not compliant or failed_rules = '[]'::jsonb
@@ -54,10 +62,27 @@ begin
     current_schema()
   );
   execute format(
-    'grant insert (publication_id, format, checker, checker_version, profile, compliant, failed_rules) '
-    'on publication_check to %I',
+    'grant insert (publication_id, format, checker, checker_version, profile, compliant, failed_rules, '
+    'report_key, report_sha256, report_bytes) on publication_check to %I',
     current_schema()
   );
   execute format('grant select on publication_check to %I', current_schema());
 end
 $$;
+
+-- A report is kept in its own tenant's store: the schema's name is the tenant's role, which is the
+-- prefix `packages/objects` gives every key, as publication_part_while_queued (0017) holds an output's.
+-- Checked by the table's own schema rather than in a check reading the session's, so a restore with an
+-- empty search path copies every row back.
+create function publication_check_report_in_own_store() returns trigger
+language plpgsql as $$
+begin
+  if split_part(new.report_key, '/', 1) <> tg_table_schema then
+    raise exception 'publication_check: a report is kept in its own tenant''s store';
+  end if;
+  return new;
+end
+$$;
+
+create trigger publication_check_report_in_own_store before insert on publication_check
+  for each row execute function publication_check_report_in_own_store();

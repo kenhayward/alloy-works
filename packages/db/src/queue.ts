@@ -52,6 +52,12 @@ export interface JobQueue {
   ): Promise<'retry' | 'failed'>;
   /** Jobs whose claims ran out with no attempts left: their workers never came back. */
   abandoned(): Promise<Job[]>;
+  /**
+   * The subjects of a tenant's jobs of one kind still to run or running - neither finished nor given
+   * up - for a sweep deciding whether a job is still coming. The worker's to ask: a tenant's own role
+   * may enqueue work and never read the queue, and this widens neither.
+   */
+  waiting(tenantId: string, kind: JobKind): Promise<string[]>;
   close(): Promise<void>;
 }
 
@@ -133,6 +139,14 @@ export function createJobQueue(url: string): JobQueue {
            and locked_until < now()
         returning id, tenant_id, kind, subject_id, attempts, max_attempts`.execute(db);
       return rows.map(asJob);
+    },
+
+    async waiting(tenantId, kind) {
+      const { rows } = await sql<{ subject_id: string }>`
+        select distinct subject_id from platform.job
+         where tenant_id = ${tenantId} and kind = ${kind} and subject_id is not null
+           and finished_at is null and failed_at is null`.execute(db);
+      return rows.map((row) => row.subject_id);
     },
 
     close: () => db.destroy(),

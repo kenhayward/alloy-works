@@ -176,6 +176,17 @@ const PdfCheckView = z.object({
       }),
     )
     .describe('Each rule the PDF failed; none where it passed'),
+  report: z
+    .object({
+      bytes: z.number().int(),
+      sha256: z.string(),
+      download: z
+        .string()
+        .describe(
+          "A link to veraPDF's whole report, its JSON, valid for five minutes, saved as `{id}-verapdf.json`",
+        ),
+    })
+    .describe("veraPDF's whole report, as it wrote it, kept with the publication"),
   checkedAt: z.string(),
 });
 

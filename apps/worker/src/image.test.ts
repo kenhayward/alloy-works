@@ -14,7 +14,12 @@ describe("the worker image's veraPDF", () => {
       (match) => match[1],
     );
     expect(declared).toEqual([VERAPDF_IMAGE]);
-    expect(dockerfile).toMatch(/^FROM \$\{VERAPDF_IMAGE\} AS verapdf$/m);
+    // Taken as the one platform it is published for, whatever the worker is built for: only its jars
+    // are copied, which are the same on every one.
+    expect(dockerfile).toMatch(/^ARG VERAPDF_PLATFORM=linux\/amd64$/m);
+    expect(dockerfile).toMatch(
+      /^FROM --platform=\$\{VERAPDF_PLATFORM\} \$\{VERAPDF_IMAGE\} AS verapdf$/m,
+    );
     // And named nowhere else in the file.
     expect(dockerfile.match(/verapdf\/cli/g)).toHaveLength(1);
   });
@@ -25,9 +30,23 @@ describe("the worker image's veraPDF", () => {
 
     expect(VERAPDF_COMMAND).toBe('/opt/verapdf/verapdf');
     expect(worker).toMatch(/^COPY --from=verapdf \/opt\/verapdf \/opt\/verapdf$/m);
-    expect(worker).toMatch(/^COPY --from=verapdf \/opt\/java\/openjdk \/opt\/java\/openjdk$/m);
-    expect(worker).toMatch(/JAVA_HOME=\/opt\/java\/openjdk/);
     // The image's build runs it, so an image that cannot is never made.
     expect(worker).toMatch(/\/opt\/verapdf\/verapdf --version/);
+  });
+
+  it("runs veraPDF on Debian's own Java runtime, so the image builds for every architecture", async () => {
+    const dockerfile = await readFile(DOCKERFILE, 'utf8');
+    const worker = dockerfile.slice(dockerfile.indexOf('FROM base AS worker'));
+
+    // veraPDF's jars are the only thing taken from its image: its Java runtime is built for musl on
+    // x86-64 alone, and an arm64 worker given it could not start it.
+    expect(worker.match(/^COPY --from=verapdf .*$/gm)).toEqual([
+      'COPY --from=verapdf /opt/verapdf /opt/verapdf',
+    ]);
+    expect(worker).not.toMatch(/musl-x86_64|\/opt\/java\/openjdk/);
+    // Debian publishes this for each architecture the worker is built for.
+    expect(worker).toMatch(
+      /apt-get install -y --no-install-recommends[^\n]*openjdk-17-jre-headless/,
+    );
   });
 });

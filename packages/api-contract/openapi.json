@@ -22117,6 +22117,29 @@
                                         },
                                         "description": "Each rule the PDF failed; none where it passed"
                                       },
+                                      "report": {
+                                        "type": "object",
+                                        "properties": {
+                                          "bytes": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "sha256": {
+                                            "type": "string"
+                                          },
+                                          "download": {
+                                            "type": "string",
+                                            "description": "A link to veraPDF's whole report, its JSON, valid for five minutes, saved as `{id}-verapdf.json`"
+                                          }
+                                        },
+                                        "required": [
+                                          "bytes",
+                                          "sha256",
+                                          "download"
+                                        ],
+                                        "description": "veraPDF's whole report, as it wrote it, kept with the publication"
+                                      },
                                       "checkedAt": {
                                         "type": "string"
                                       }
@@ -22127,6 +22150,7 @@
                                       "profile",
                                       "compliant",
                                       "failedRules",
+                                      "report",
                                       "checkedAt"
                                     ]
                                   },

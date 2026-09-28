@@ -38,6 +38,8 @@ interface Check {
   readonly checkerVersion: string;
   readonly compliant: boolean;
   readonly failedRules: readonly FailedRule[];
+  /** veraPDF's whole report to save, where the service offers it. */
+  readonly report: { readonly download: string; readonly bytes: number | null } | null;
 }
 
 interface Shown {
@@ -61,9 +63,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function checkIn(value: unknown): Check | null {
   if (!isRecord(value) || typeof value.checkerVersion !== 'string') return null;
   if (typeof value.compliant !== 'boolean' || !Array.isArray(value.failedRules)) return null;
+  const report = value.report;
   return {
     checkerVersion: value.checkerVersion,
     compliant: value.compliant,
+    report:
+      isRecord(report) && typeof report.download === 'string'
+        ? {
+            download: report.download,
+            bytes: typeof report.bytes === 'number' ? report.bytes : null,
+          }
+        : null,
     failedRules: value.failedRules.flatMap((rule): FailedRule[] =>
       isRecord(rule) && typeof rule.clause === 'string' && typeof rule.test === 'number'
         ? [
@@ -233,6 +243,12 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
               </li>
             ))}
           </ul>
+        )}
+        {pdf?.check?.report != null && (
+          <p>
+            <a href={pdf.check.report.download}>Download the full report</a>
+            {size(pdf.check.report.bytes)}
+          </p>
         )}
         {/* The writer's version as the template's is named, a number: the store's `word/1` names the
             producer too, which the sentence already does (the final review of Word 1, M7). */}
