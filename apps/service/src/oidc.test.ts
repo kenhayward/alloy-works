@@ -1,6 +1,13 @@
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createOidcClient, SCOPES, SignInFailed, type ProviderSettings } from './oidc.js';
+import {
+  createOidcClient,
+  groupValues,
+  MOST_GROUP_VALUES,
+  SCOPES,
+  SignInFailed,
+  type ProviderSettings,
+} from './oidc.js';
 import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
 
 const REDIRECT = 'http://acme.alloy.test/v1/sign-in/organisation/callback';
@@ -82,6 +89,26 @@ describe('the OpenID Connect client', () => {
     );
   });
 
+  it("refuses an ID token whose signature does not verify against the provider's published keys", async () => {
+    const forging = await startStandInProvider({
+      clients: [{ clientId: 'alloy', clientSecret: 'stand-in-secret', redirectUris: [REDIRECT] }],
+      signsWithUnpublishedKey: true,
+    });
+    try {
+      const settings = {
+        issuer: forging.issuer,
+        clientId: 'alloy',
+        clientSecret: 'stand-in-secret',
+        groupsClaim: 'groups',
+      };
+      const start = await oidc.start(settings, REDIRECT);
+      const back = await completeAtStandIn(start.url, 'grace', forging.issuer);
+      await expect(oidc.finish(settings, back, start)).rejects.toThrow(SignInFailed);
+    } finally {
+      await forging.close();
+    }
+  });
+
   it('refuses a provider reached over plain HTTP unless told the stand-in is allowed', async () => {
     const strict = createOidcClient({ allowInsecureIssuers: false });
     await expect(strict.start(provider, REDIRECT)).rejects.toThrow(/HTTPS/);
@@ -123,6 +150,33 @@ describe('the OpenID Connect client', () => {
       }
     } finally {
       await odd.close();
+    }
+  });
+
+  it('keeps the first thousand distinct values of a claim and ignores the rest, so no claim is too long to follow', async () => {
+    const many = Array.from({ length: 1500 }, (_, index) => `group-${index}`);
+    const kept = groupValues(['group-0', ...many]);
+    expect(kept).toHaveLength(1000);
+    expect(kept[0]).toBe('group-0');
+    expect(kept.at(-1)).toBe('group-999');
+    expect(MOST_GROUP_VALUES).toBe(kept.length);
+
+    const lots = await startStandInProvider({
+      clients: [{ clientId: 'alloy', clientSecret: 'stand-in-secret', redirectUris: [REDIRECT] }],
+      users: [{ id: 'ada', name: 'Ada', email: 'ada@example.com', groups: many }],
+    });
+    try {
+      const settings = {
+        issuer: lots.issuer,
+        clientId: 'alloy',
+        clientSecret: 'stand-in-secret',
+        groupsClaim: 'groups',
+      };
+      const start = await oidc.start(settings, REDIRECT);
+      const back = await completeAtStandIn(start.url, 'ada', lots.issuer);
+      expect((await oidc.finish(settings, back, start)).groups).toEqual(many.slice(0, 1000));
+    } finally {
+      await lots.close();
     }
   });
 

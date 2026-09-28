@@ -15,8 +15,8 @@ export interface StandInUser {
    */
   readonly hostedDomain?: string;
   /**
-   * The directory groups the user is in, sent as a `groups` claim in the ID token, as an organisation's
-   * provider is configured to send them (access.md, GP-A). Read at each sign-in, so a test holding the
+   * The directory groups the user is in, sent as a `groups` claim in the ID token and never at
+   * userinfo, as an organisation's provider is configured to send them (access.md, GP-A). Read at each sign-in, so a test holding the
    * user can change them between two. None, when absent: the claim is left out.
    */
   readonly groups?: readonly string[];
@@ -39,6 +39,12 @@ export interface StandInOptions {
    * OpenID Connect requires the issuer it advertises to be the one its clients expect.
    */
   readonly issuer?: string;
+  /**
+   * Publishes a key other than the one it signs with, under the same key id, so every ID token it
+   * issues arrives as a forged or tampered one would: well formed, and failing its signature check.
+   * For a test that a client refuses such a token.
+   */
+  readonly signsWithUnpublishedKey?: boolean;
 }
 
 export interface StandInProvider {
@@ -133,6 +139,15 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
     use: 'sig',
   };
 
+  const published = options.signsWithUnpublishedKey
+    ? {
+        ...(await exportJWK((await generateKeyPair('RS256', { extractable: true })).publicKey)),
+        kid: 'stand-in',
+        alg: 'RS256',
+        use: 'sig',
+      }
+    : undefined;
+
   // Google's `prompt=select_account`: asked for, it shows the users to pick from even to a browser
   // already signed in here, which is how signing out and back in switches person.
   const policy = interactionPolicy.base();
@@ -174,13 +189,15 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
       return (
         user && {
           accountId: user.id,
-          claims: async () => ({
+          // `groups` in the ID token alone, never at userinfo, as the service reads them (GP-A): a
+          // client that read them anywhere else would find none here, and its tests would say so.
+          claims: async (use) => ({
             sub: user.id,
             name: user.name,
             email: user.email,
             email_verified: user.emailVerified ?? true,
             ...(user.hostedDomain === undefined ? {} : { hd: user.hostedDomain }),
-            ...(user.groups === undefined ? {} : { groups: user.groups }),
+            ...(user.groups === undefined || use !== 'id_token' ? {} : { groups: user.groups }),
           }),
         }
       );
@@ -196,6 +213,13 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
       return grant;
     },
   });
+
+  if (published) {
+    provider.use(async (ctx, next) => {
+      await next();
+      if (ctx.path === '/jwks') ctx.body = { keys: [published] };
+    });
+  }
 
   provider.use(async (ctx, next) => {
     const match = /^\/interaction\/([^/]+)$/.exec(ctx.path);

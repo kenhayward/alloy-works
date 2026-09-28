@@ -131,6 +131,20 @@ describe('the stand-in provider', () => {
       expect(tokens.claims()?.groups, user).toEqual(groups);
     }
   });
+
+  it('asserts groups in the ID token alone, never at userinfo, so a client reading them elsewhere finds none', async () => {
+    const { url, codeVerifier, state, nonce } = await authorise({ login_hint: 'grace' });
+    const { landed } = await follow(url);
+    const tokens = await client.authorizationCodeGrant(config, landed!, {
+      pkceCodeVerifier: codeVerifier,
+      expectedState: state,
+      expectedNonce: nonce,
+    });
+    expect(tokens.claims()?.groups).toEqual(['authors', 'publishers']);
+    const userinfo = await client.fetchUserInfo(config, tokens.access_token, 'grace');
+    expect(userinfo).toMatchObject({ sub: 'grace', name: 'Grace' });
+    expect(userinfo).not.toHaveProperty('groups');
+  });
 });
 
 describe("a stand-in whose users' groups change", () => {
@@ -174,6 +188,53 @@ describe("a stand-in whose users' groups change", () => {
       expect(await groupsNow()).toEqual(['publishers']);
     } finally {
       await idp.close();
+    }
+  });
+});
+
+describe('a stand-in whose ID tokens do not verify', () => {
+  it('signs with a key other than the one it publishes, when told to, so a client checking signatures refuses its tokens', async () => {
+    const signIn = async (idp: StandInProvider) => {
+      const config = await client.discovery(
+        new URL(idp.issuer),
+        'alloy',
+        'stand-in-secret',
+        undefined,
+        { execute: [client.allowInsecureRequests, client.enableNonRepudiationChecks] },
+      );
+      const codeVerifier = client.randomPKCECodeVerifier();
+      const state = client.randomState();
+      const nonce = client.randomNonce();
+      const url = client.buildAuthorizationUrl(config, {
+        redirect_uri: REDIRECT,
+        scope: 'openid email profile',
+        code_challenge: await client.calculatePKCECodeChallenge(codeVerifier),
+        code_challenge_method: 'S256',
+        state,
+        nonce,
+        login_hint: 'ada',
+      });
+      const back = await completeAtStandIn(url.href, 'ada', idp.issuer);
+      const tokens = await client.authorizationCodeGrant(config, back, {
+        pkceCodeVerifier: codeVerifier,
+        expectedState: state,
+        expectedNonce: nonce,
+      });
+      return tokens.claims()?.sub;
+    };
+    const clients = [
+      { clientId: 'alloy', clientSecret: 'stand-in-secret', redirectUris: [REDIRECT] },
+    ];
+    const honest = await startStandInProvider({ clients });
+    const forging = await startStandInProvider({ clients, signsWithUnpublishedKey: true });
+    try {
+      await expect(signIn(honest)).resolves.toBe('ada');
+      await expect(signIn(forging)).rejects.toMatchObject({
+        cause: { message: 'JWT signature verification failed' },
+      });
+    } finally {
+      await honest.close();
+      await forging.close();
     }
   });
 });

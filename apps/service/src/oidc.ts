@@ -30,17 +30,29 @@ export interface Identity {
   /** The Workspace domain managing the account (Google's `hd`); null for a personal account. */
   readonly hostedDomain: string | null;
   /**
-   * The group values the provider asserted in the configured claim, each once. None where no claim is
-   * configured, where the claim is absent, or where it is not a list; a member that is not a string is
-   * dropped (GP-B).
+   * The group values the provider asserted in the configured claim, each once, and no more than
+   * `MOST_GROUP_VALUES` of them. None where no claim is configured, where the claim is absent, or
+   * where it is not a list; a member that is not a string is dropped (GP-B).
    */
   readonly groups: readonly string[];
 }
 
-/** A claim's group values: a list's strings, each once, or none for anything that is not a list. */
+/**
+ * The most group values a sign-in follows. The first this many distinct strings of a claim are kept,
+ * in the claim's order, and the rest are ignored, so a claim of any length signs its principal in
+ * rather than failing on a statement too large for Postgres; a directory asserting more than this
+ * for one person is asserting far more than any environment makes groups for.
+ */
+export const MOST_GROUP_VALUES = 1000;
+
+/**
+ * A claim's group values: a list's strings, each once, the first `MOST_GROUP_VALUES` of them, or none
+ * for anything that is not a list.
+ */
 export function groupValues(claim: unknown): readonly string[] {
   if (!Array.isArray(claim)) return [];
-  return [...new Set(claim.filter((value): value is string => typeof value === 'string'))];
+  const strings = claim.filter((value): value is string => typeof value === 'string');
+  return [...new Set(strings)].slice(0, MOST_GROUP_VALUES);
 }
 
 /** Anything that stops a sign-in: its message is safe to show, and the cause is for the log. */
@@ -63,6 +75,11 @@ export interface OidcClient {
 /**
  * The authorisation code flow with PKCE, over openid-client. Each provider's configuration is
  * discovered once and kept; a failed discovery is forgotten, so it is tried again next time.
+ *
+ * Every ID token's signature is checked against the keys the provider publishes at its `jwks_uri`
+ * (`enableNonRepudiationChecks`), for the organisation's provider and Google alike. openid-client
+ * leaves that off by default, trusting the TLS connection to the token endpoint instead; the ID token
+ * now carries the groups that confer roles (GP-A), so it is held to its signature as well.
  */
 export function createOidcClient(options: { readonly allowInsecureIssuers: boolean }): OidcClient {
   const configurations = new Map<string, Promise<client.Configuration>>();
@@ -75,13 +92,12 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
     const key = `${provider.issuer} ${provider.clientId}`;
     let found = configurations.get(key);
     if (!found) {
-      found = client.discovery(
-        issuer,
-        provider.clientId,
-        provider.clientSecret,
-        undefined,
-        options.allowInsecureIssuers ? { execute: [client.allowInsecureRequests] } : undefined,
-      );
+      found = client.discovery(issuer, provider.clientId, provider.clientSecret, undefined, {
+        execute: [
+          ...(options.allowInsecureIssuers ? [client.allowInsecureRequests] : []),
+          client.enableNonRepudiationChecks,
+        ],
+      });
       found.catch(() => configurations.delete(key));
       configurations.set(key, found);
     }
