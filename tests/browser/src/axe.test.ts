@@ -1,6 +1,6 @@
 import type { Page } from 'playwright-core';
 import { describe, expect, it } from 'vitest';
-import { checkAxe } from './testing/axe.js';
+import { checkAxe, type Sign } from './testing/axe.js';
 import { withPage } from './testing/page.js';
 
 /**
@@ -135,6 +135,19 @@ describe("checkAxe's allow-list", () => {
         }),
       ).rejects.toThrow(
         /in the next screen: the state has not arrived - .*Nothing wrong here.* is still on the page/,
+      );
+    });
+  });
+
+  it('refuses a state known by nothing, which would pass wherever the page was', async ({
+    task,
+  }) => {
+    await withPage(async (tab) => {
+      await tab.setContent(QUIET);
+      // The type refuses an empty list; a list built at run time can still be empty.
+      const nothing = [] as unknown as [Sign];
+      await expect(checkAxe(tab, 'anywhere', task.meta, { shows: nothing })).rejects.toThrow(
+        /in anywhere: the state names nothing it is known by/,
       );
     });
   });

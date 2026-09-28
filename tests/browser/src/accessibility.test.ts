@@ -20,6 +20,11 @@ import { allowPageNoise, withPage } from './testing/page.js';
  * the network checks the screen before, and passes having checked nothing (the W13.2 review).
  */
 
+/** Waits until each of `gone` has left the page. */
+async function leave(...gone: readonly Locator[]): Promise<void> {
+  for (const each of gone) await each.waitFor({ state: 'hidden' });
+}
+
 /** Waits until the state `arrival` names is on the page: each sign there, each thing it hides gone. */
 async function arrive({ shows, hides = [] }: Arrival): Promise<void> {
   const signs: readonly Sign[] = Array.isArray(shows) ? shows : [shows as Sign];
@@ -75,7 +80,10 @@ const PANELS = ['List', 'Table', 'Preformatted text', 'Figure', 'Image'] as cons
 type Panel = (typeof PANELS)[number];
 
 /** Those `shown` open, and every other one gone. */
-function panels(page: Page, shown: readonly Panel[]): Arrival {
+function panels(
+  page: Page,
+  shown: readonly Panel[],
+): { readonly shows: Locator[]; readonly hides: Locator[] } {
   const panel = (name: Panel) => page.getByRole('group', { name, exact: true });
   return {
     shows: shown.map(panel),
@@ -145,11 +153,11 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
 
       // Each list, by the workspace's own links, as a person moves between them: its heading, and a
       // table of what it lists or its words for none.
-      for (const [link, state] of [
-        ['Components', 'the components list'],
-        ['Documents', 'the documents list'],
-        ['Publications', 'the publications list'],
-        ['Templates', 'the templates list'],
+      for (const [link, state, none] of [
+        ['Components', 'the components list', 'There are no components you may read.'],
+        ['Documents', 'the documents list', 'There are no documents you may read.'],
+        ['Publications', 'the publications list', 'Nothing has been published that you may read.'],
+        ['Templates', 'the templates list', 'There are no templates you may read.'],
       ] as const) {
         await page.goto(`${SERVICE}/#/components`);
         await arrive({ shows: heading('Components') });
@@ -159,7 +167,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
           .click();
         const list = page.getByRole('region', { name: link, exact: true });
         await check(state, {
-          shows: [heading(link), list.getByRole('table').or(list.getByRole('paragraph')).first()],
+          shows: [heading(link), list.getByRole('table').or(list.getByText(none, { exact: true }))],
         });
       }
 
@@ -198,7 +206,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
       await page.keyboard.press('Escape');
       await page.keyboard.press('Escape');
-      await arrive({ shows: [], hides: [page.getByRole('dialog')] });
+      await leave(page.getByRole('dialog'));
 
       await account.click();
       await page.getByRole('button', { name: 'Administration' }).click();
@@ -265,8 +273,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       ) => {
         await target.click();
         const beside = panels(page, shown);
-        const signed = Array.isArray(beside.shows) ? beside.shows : [beside.shows];
-        await check(state, { shows: [...signed, ...signs], hides: beside.hides ?? [] });
+        await check(state, { shows: [surface, ...beside.shows, ...signs], hides: beside.hides });
       };
       await at(
         'the cursor among the nine marks',
@@ -532,7 +539,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         tree,
         text.getByRole('heading', { name: /Introduction/ }),
         text.getByText('The last paragraph.'),
-      ];
+      ] as const;
       // A node's own row: the item holds its children too, and a click at its middle can land on one.
       const row = (name: RegExp) =>
         tree.getByRole('treeitem', { name }).first().locator('[data-row]').first();
@@ -574,7 +581,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         hides: [versions.getByText('Reading the versions...')],
       });
       await page.keyboard.press('Escape');
-      await arrive({ shows: [], hides: [versions] });
+      await leave(versions);
 
       // A section's title editor, and the Equation dialog beside it.
       await row(/Methods/).click();
@@ -594,7 +601,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       const question = page.getByRole('group', { name: 'Confirm removal' });
       await check('the removal asked about', { shows: question });
       await question.getByRole('button', { name: 'Keep' }).click();
-      await arrive({ shows: [], hides: [question] });
+      await leave(question);
 
       // The component opened in place, for editing inside the document.
       await text.getByText('The last paragraph.').click();
@@ -602,7 +609,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         shows: [surfaceOf(page), page.getByText('Saved', { exact: true })],
       });
       await page.getByRole('button', { name: 'Done editing' }).click();
-      await arrive({ shows: [], hides: [surfaceOf(page)] });
+      await leave(surfaceOf(page));
 
       // A preview asked for, and shown in its pane.
       await page.getByRole('button', { name: 'Preview', exact: true }).click();
@@ -614,7 +621,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         ],
       });
       await page.getByRole('button', { name: 'Close the preview' }).click();
-      await arrive({ shows: [], hides: [preview] });
+      await leave(preview);
 
       // Published, and the publication's own page.
       await page

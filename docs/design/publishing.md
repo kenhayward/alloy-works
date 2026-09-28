@@ -194,7 +194,7 @@ the ten the requirement allows.
 
 ## What this document does not own
 
-Fifty-nine claims. What is left out is either answered only in part, answered with another design,
+Sixty claims. What is left out is either answered only in part, answered with another design,
 or not T1's.
 
 | Left unclaimed                       | Why                                                                                                                                                                                                                                                                |

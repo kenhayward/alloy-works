@@ -49,9 +49,12 @@ const AXE_SOURCE = readFileSync(
  */
 export type Sign = Locator | { readonly said: string; readonly holds: () => Promise<boolean> };
 
-/** What a state is known by: every sign in `shows` there, and every element in `hides` gone. */
+/**
+ * What a state is known by: every sign in `shows` there - at least one, since a state known by nothing
+ * passes wherever the page is - and every element in `hides` gone.
+ */
 export interface Arrival {
-  readonly shows: Sign | readonly Sign[];
+  readonly shows: Sign | readonly [Sign, ...Sign[]];
   readonly hides?: readonly Locator[];
 }
 
@@ -63,6 +66,13 @@ export interface Arrival {
  */
 async function arrived(state: string, { shows, hides = [] }: Arrival): Promise<void> {
   const signs: readonly Sign[] = Array.isArray(shows) ? shows : [shows as Sign];
+  // The type asks for one; a list built at run time can still come to none.
+  if (signs.length === 0) {
+    throw new Error(
+      `axe, in ${state}: the state names nothing it is known by, so it would pass on any screen. ` +
+        'Name what shows it has arrived.',
+    );
+  }
   for (const sign of signs) {
     const there = 'holds' in sign ? await sign.holds() : await sign.isVisible();
     if (!there) {

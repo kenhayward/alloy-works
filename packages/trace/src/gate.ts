@@ -3,6 +3,7 @@ import {
   ATTESTATION_MIN_LENGTH,
   attestationIsSubstantial,
   inheritedFrom,
+  isRecordOf,
   recordsNamed,
   type Baseline,
   type TraceModel,
@@ -55,11 +56,11 @@ export function gate(
   model: TraceModel,
   outcomes: Map<string, TestOutcome>,
   /**
-   * Whether a file is there, by its path from the repository's root, for the records an attestation
-   * names under `docs/audits/`: asked, not read, so the gate stays a pure function of what it is
-   * handed. Left out, no record is looked for.
+   * Whether a file - a file, not a folder - is there, by its path from the repository's root, for the
+   * records an attestation names under `docs/audits/`: asked, not read, so the gate stays a pure
+   * function of what it is handed. Required, so no caller can forget to look.
    */
-  recordExists?: (path: string) => boolean,
+  recordExists: (path: string) => boolean,
 ): GateResult {
   const requirementById = new Map(
     model.requirements.map((requirement) => [requirement.id, requirement]),
@@ -124,17 +125,19 @@ export function gate(
   }
   // Rule 6: an attestation that names its record in docs/audits/ names a file that is there. The
   // record is the evidence the person's name stands for; a row pointing at nothing attests nothing.
-  if (recordExists !== undefined) {
-    for (const row of baseline.verification) {
-      if (row.kind !== 'attestation' || !includedIds.has(row.id)) continue;
-      for (const record of recordsNamed(row.by)) {
-        if (recordExists(record)) continue;
-        declarationProblems.push({
-          kind: 'missing-record',
-          id: row.id,
-          detail: `${row.id} is attested by ${record} in baseline ${baseline.name}, which is not there`,
-        });
-      }
+  // A path that is not `docs/audits/<this release>/<name>.md` is refused before the disk is asked.
+  for (const row of baseline.verification) {
+    if (row.kind !== 'attestation' || !includedIds.has(row.id)) continue;
+    for (const record of recordsNamed(row.by)) {
+      const ours = isRecordOf(record, baseline.name);
+      if (ours && recordExists(record)) continue;
+      declarationProblems.push({
+        kind: 'missing-record',
+        id: row.id,
+        detail: `${row.id} is attested by ${record} in baseline ${baseline.name}, which is ${
+          ours ? 'not there' : 'not a record of this release'
+        }`,
+      });
     }
   }
 

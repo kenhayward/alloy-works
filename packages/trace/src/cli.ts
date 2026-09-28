@@ -1,7 +1,7 @@
 // The query surface over the committed corpus. Thin by design: what is worth testing lives in
 // format.ts and state.ts, which are pure and tested without a process.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { EOL } from 'node:os';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -367,6 +367,54 @@ function areaDocumentPath(repoRoot: string, area: string): string | undefined {
   return match === undefined ? undefined : join(dir, match);
 }
 
+/** Whether a record an attestation names is a file under `root` - a folder of that name is not one. */
+function recordIn(root: string): (record: string) => boolean {
+  return (record) => {
+    const path = join(root, record);
+    return existsSync(path) && statSync(path).isFile();
+  };
+}
+
+/**
+ * `pnpm trace gate [version]`: the newest baseline, or the one named, decided against the reports in
+ * `.trace-results` and the records its attestations name, all read under `root`. Exported so a test can
+ * run it over a repository of its own; `main` runs it over this one.
+ */
+export function runGate(root: string, model: TraceModel, argument: string | undefined): number {
+  const files = baselineFiles(root);
+  if (files.length === 0) return fail(`No baseline in docs/specification/${BASELINES_DIR}.`);
+
+  const file = argument === undefined ? files[files.length - 1]! : `${argument}.md`;
+  const dir = join(root, 'docs', 'specification', BASELINES_DIR);
+  const path = join(dir, file);
+  if (!existsSync(path)) {
+    return fail(`No baseline ${file} in docs/specification/${BASELINES_DIR}.`);
+  }
+  const baseline = parseBaseline(file, readFileSync(path, 'utf8'));
+
+  const results = loadResults(root, DEFAULT_RESULTS_DIR);
+  if (results === undefined) {
+    return fail(
+      `No ${DEFAULT_RESULTS_DIR} directory. Run \`pnpm test\` first - it writes the JSON reports the gate reads.`,
+    );
+  }
+  if (results.problems.length > 0) {
+    console.log(
+      [
+        `${results.problems.length} problem(s) with the reports in ${DEFAULT_RESULTS_DIR} - refusing to run the gate:`,
+        '',
+        ...results.problems,
+      ].join('\n'),
+    );
+    return 1;
+  }
+
+  const result = gate(baseline, model, results.outcomes, recordIn(root));
+  const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
+  console.log(formatGate(result, includedIds));
+  return result.met === result.total && result.declarationProblems.length === 0 ? 0 : 1;
+}
+
 function main(argv: string[]): number {
   try {
     const [command, argument] = argv;
@@ -502,42 +550,8 @@ function main(argv: string[]): number {
         console.log(formatStats(model, results.outcomes));
         return 0;
       }
-      case 'gate': {
-        const files = baselineFiles(REPO_ROOT);
-        if (files.length === 0) return fail(`No baseline in docs/specification/${BASELINES_DIR}.`);
-
-        const file = argument === undefined ? files[files.length - 1]! : `${argument}.md`;
-        const dir = join(REPO_ROOT, 'docs', 'specification', BASELINES_DIR);
-        const path = join(dir, file);
-        if (!existsSync(path)) {
-          return fail(`No baseline ${file} in docs/specification/${BASELINES_DIR}.`);
-        }
-        const baseline = parseBaseline(file, readFileSync(path, 'utf8'));
-
-        const results = loadResults(REPO_ROOT, DEFAULT_RESULTS_DIR);
-        if (results === undefined) {
-          return fail(
-            `No ${DEFAULT_RESULTS_DIR} directory. Run \`pnpm test\` first - it writes the JSON reports the gate reads.`,
-          );
-        }
-        if (results.problems.length > 0) {
-          console.log(
-            [
-              `${results.problems.length} problem(s) with the reports in ${DEFAULT_RESULTS_DIR} - refusing to run the gate:`,
-              '',
-              ...results.problems,
-            ].join('\n'),
-          );
-          return 1;
-        }
-
-        const result = gate(baseline, model, results.outcomes, (record) =>
-          existsSync(join(REPO_ROOT, record)),
-        );
-        const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
-        console.log(formatGate(result, includedIds));
-        return result.met === result.total && result.declarationProblems.length === 0 ? 0 : 1;
-      }
+      case 'gate':
+        return runGate(REPO_ROOT, model, argument);
       case 'pack': {
         if (argument === undefined) return fail('pack needs a version, such as 0.13.0.');
 
@@ -577,9 +591,7 @@ function main(argv: string[]): number {
           return 1;
         }
 
-        const result = gate(baseline, model, results.outcomes, (record) =>
-          existsSync(join(REPO_ROOT, record)),
-        );
+        const result = gate(baseline, model, results.outcomes, recordIn(REPO_ROOT));
         if (result.met !== result.total || result.declarationProblems.length > 0) {
           const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
           console.log(

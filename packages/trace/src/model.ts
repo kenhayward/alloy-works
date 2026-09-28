@@ -150,7 +150,18 @@ export function inheritedFrom(by: string): string[] {
  * how to look.
  */
 export function recordsNamed(by: string): string[] {
-  return [...by.matchAll(/docs\/audits\/[^\s,;)]+/g)].map((match) => match[0]);
+  // Up to the next space, comma, semicolon, bracket or backtick, and without a closing full stop: the
+  // path as the row sets it off, whatever it is, for `isRecordOf` to judge.
+  return [...by.matchAll(/docs\/audits\/[^\s,;)`]*/g)].map((match) => match[0].replace(/\.+$/, ''));
+}
+
+/**
+ * Whether `path` is a record of release `version`: `docs/audits/<version>/<name>.md` and nothing else -
+ * never a folder, another release's record, or a path that climbs out of `docs/audits/`.
+ */
+export function isRecordOf(path: string, version: string): boolean {
+  const match = /^docs\/audits\/([0-9A-Za-z.+-]+)\/[a-z0-9-]+\.md$/.exec(path);
+  return match !== null && match[1] === version;
 }
 
 export function attestationIsSubstantial(by: string): boolean {

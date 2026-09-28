@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { Baseline, Requirement, TraceModel } from './model.js';
 import { gate } from './gate.js';
+
+/** No record under docs/audits/ is there: these baselines name none, or name one to be refused. */
+const noRecords = (): boolean => false;
 import type { TestOutcome } from './results.js';
 
 const requirement = (id: string, status = 'Specified'): Requirement => ({
@@ -37,7 +40,7 @@ const outcomes = (entries: TestOutcome[]): Map<string, TestOutcome> =>
 
 describe('deciding a baseline', () => {
   it('fails an included requirement that no test names', () => {
-    const result = gate(baseline({}), model({}), outcomes([]));
+    const result = gate(baseline({}), model({}), outcomes([]), noRecords);
 
     expect(result.met).toBe(0);
     expect(result.unmet).toEqual([
@@ -53,6 +56,7 @@ describe('deciding a baseline', () => {
         citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
       }),
       outcomes([{ id: 'ZZZ-001', outcome: 'failed', tests: ['a (ZZZ-001)'] }]),
+      noRecords,
     );
 
     expect(result.met).toBe(0);
@@ -72,6 +76,7 @@ describe('deciding a baseline', () => {
       baseline({}),
       model({ citations: [] }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['covers ZZZ-001'] }]),
+      noRecords,
     );
 
     expect(result.met).toBe(0);
@@ -87,6 +92,7 @@ describe('deciding a baseline', () => {
         requirements: [requirement('ZZZ-001', 'Superseded by ZZZ-002'), requirement('ZZZ-002')],
       }),
       outcomes([]),
+      noRecords,
     );
 
     expect(result.unmet).toEqual([
@@ -108,6 +114,7 @@ describe('deciding a baseline', () => {
         citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
       }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]),
+      noRecords,
     );
 
     expect(result.unmet).toEqual([]);
@@ -125,6 +132,7 @@ describe('deciding a baseline', () => {
       }),
       model({}),
       outcomes([]),
+      noRecords,
     );
 
     expect(result.unmet).toContainEqual({
@@ -142,6 +150,7 @@ describe('deciding a baseline', () => {
       }),
       model({ citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }] }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]),
+      noRecords,
     );
 
     expect(result.unmet).toEqual([
@@ -174,6 +183,7 @@ describe('deciding a baseline', () => {
       baseline({ included: all, verification: [attested, inheriting] }),
       three,
       passed,
+      noRecords,
     );
     expect(met.unmet).toEqual([]);
     expect(met.met).toBe(3);
@@ -185,6 +195,7 @@ describe('deciding a baseline', () => {
       }),
       three,
       passed,
+      noRecords,
     );
     expect(withoutTheSuite.unmet).toEqual([
       {
@@ -198,6 +209,7 @@ describe('deciding a baseline', () => {
       baseline({ included: all, verification: [attested, inheriting] }),
       three,
       outcomes([{ id: 'ZZZ-001', outcome: 'failed', tests: ['a (ZZZ-001)'] }]),
+      noRecords,
     );
     expect(suiteFailed.unmet).toContainEqual({
       id: 'ZZZ-003',
@@ -212,7 +224,7 @@ describe('deciding a baseline', () => {
         {
           id: 'ZZZ-001',
           kind: 'attestation',
-          by: 'Ada Lovelace, 2026-09-13, docs/audits/0.0.0/wcag.md',
+          by: 'Ada Lovelace, 2026-09-13, docs/audits/0.0.0-invented/wcag.md',
         },
       ],
     });
@@ -223,7 +235,7 @@ describe('deciding a baseline', () => {
         kind: 'missing-record',
         id: 'ZZZ-001',
         detail:
-          'ZZZ-001 is attested by docs/audits/0.0.0/wcag.md in baseline 0.0.0-invented, which is not there',
+          'ZZZ-001 is attested by docs/audits/0.0.0-invented/wcag.md in baseline 0.0.0-invented, which is not there',
       },
     ]);
 
@@ -234,7 +246,31 @@ describe('deciding a baseline', () => {
     });
     expect(present.declarationProblems).toEqual([]);
     expect(present.met).toBe(1);
-    expect(asked).toEqual(['docs/audits/0.0.0/wcag.md']);
+    expect(asked).toEqual(['docs/audits/0.0.0-invented/wcag.md']);
+  });
+
+  it("refuses an attestation whose record is not this release's, even where the path is there", () => {
+    const attestedBy = (by: string) =>
+      baseline({ name: '0.1.0', verification: [{ id: 'ZZZ-001', kind: 'attestation', by }] });
+    for (const record of [
+      'docs/audits/0.0.9/wcag.md',
+      'docs/audits/../../package.json',
+      'docs/audits/0.1.0/',
+    ]) {
+      const result = gate(
+        attestedBy(`Ada Lovelace, 2026-09-13, ${record}`),
+        model({}),
+        outcomes([]),
+        () => true,
+      );
+      expect(result.declarationProblems).toEqual([
+        {
+          kind: 'missing-record',
+          id: 'ZZZ-001',
+          detail: `ZZZ-001 is attested by ${record} in baseline 0.1.0, which is not a record of this release`,
+        },
+      ]);
+    }
   });
 
   // The `by` text itself lives in the baseline's own verification row, which the caller already
@@ -249,6 +285,7 @@ describe('deciding a baseline', () => {
       }),
       model({}),
       outcomes([]),
+      noRecords,
     );
 
     expect(result.unmet).toEqual([]);
@@ -264,6 +301,7 @@ describe('deciding a baseline', () => {
       baseline({ verification: [{ id: 'ZZZ-001', kind: 'attestation', by: 'x' }] }),
       model({}),
       outcomes([]),
+      noRecords,
     );
 
     expect(result.met).toBe(0);
@@ -291,6 +329,7 @@ describe('deciding a baseline', () => {
         citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
       }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]),
+      noRecords,
     );
 
     expect(result.unmet).toEqual([]);
@@ -315,6 +354,7 @@ describe('deciding a baseline', () => {
         citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
       }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]),
+      noRecords,
     );
 
     expect(result.unmet).toEqual([]);
@@ -333,6 +373,7 @@ describe('deciding a baseline', () => {
       baseline({}),
       model({ citations: [{ id: 'ZZZ-404', file: 'a.test.ts', line: 1, kind: 'title' }] }),
       outcomes([]),
+      noRecords,
     );
 
     expect(result.problems.map((problem) => problem.kind)).toContain('cites-unknown');
@@ -352,6 +393,7 @@ describe('deciding a baseline', () => {
         citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
       }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]),
+      noRecords,
     );
 
     expect(result.problems.map((problem) => problem.kind)).toContain('claimed-twice');
@@ -384,6 +426,7 @@ describe('deciding a baseline', () => {
         { id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] },
         { id: 'ZZZ-003', outcome: 'passed', tests: ['a (ZZZ-003)'] },
       ]),
+      noRecords,
     );
 
     expect(result.problems.map((problem) => problem.kind)).toContain('not-contiguous');
@@ -412,6 +455,7 @@ describe('deciding a baseline', () => {
       }),
       model({ citations: [] }),
       outcomes([]),
+      noRecords,
     );
 
     expect(result.met).toBe(0);
@@ -433,6 +477,7 @@ describe('deciding a baseline', () => {
       baseline({ verification: [{ id: 'ZZZ-001', kind: 'attestation', by: '   ' }] }),
       model({}),
       outcomes([]),
+      noRecords,
     );
 
     expect(result.met).toBe(0);
@@ -464,6 +509,7 @@ describe('deciding a baseline', () => {
         citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
       }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]),
+      noRecords,
     );
 
     expect(result.declarationProblems.map((problem) => problem.kind).sort()).toEqual([
@@ -492,6 +538,7 @@ describe('deciding a baseline', () => {
       }),
       model({}),
       outcomes([]),
+      noRecords,
     );
 
     expect(result.unmet.map((unmet) => unmet.id).sort()).toEqual(['ZZZ-001', 'ZZZ-002']);
