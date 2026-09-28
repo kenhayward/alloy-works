@@ -52,6 +52,38 @@ export type CutResult =
   | { readonly ok: true; readonly outcome: 'cut' | 'unchanged'; readonly version: VersionRef }
   | { readonly ok: false; readonly code: string };
 
+/** One of the author's own iterations, as the Recovery panel lists it: never its content (RC-E). */
+export interface SavedIteration {
+  readonly id: string;
+  /** When the service accepted it, as the service wrote the time. */
+  readonly savedAt: string;
+  /** Saved from the session this page is editing under now, rather than another window's. */
+  readonly thisWindow: boolean;
+  /** The version the session that wrote it had opened. */
+  readonly openedFrom: VersionRef;
+}
+
+/** Why reading iterations back was refused: the lock is not this session's, or as any refusal. */
+type ReadRefusal = 'lock_held' | 'lock_required' | 'failed' | Refusal;
+
+export type IterationPage =
+  | {
+      readonly ok: true;
+      readonly items: readonly SavedIteration[];
+      /** The cursor for the next page, older than these, or null at the end. */
+      readonly next: string | null;
+    }
+  | { readonly ok: false; readonly code: ReadRefusal };
+
+export type IterationRead =
+  | {
+      readonly ok: true;
+      /** As stored: the component migrates and validates it before opening it (CNT-012, CNT-013). */
+      readonly content: unknown;
+      readonly values: Readonly<Record<string, unknown>>;
+    }
+  | { readonly ok: false; readonly code: ReadRefusal };
+
 /**
  * The service as a session sees it: four writes, each carrying the session's own identity, which the
  * adapter adds. A hand-written fake stands in for it in tests.
@@ -87,6 +119,10 @@ export interface SessionService {
   cut(openedFrom: string): Promise<CutResult>;
   /** As `cut`'s. */
   release(openedFrom: string): Promise<CutResult>;
+  /** The author's own retained iterations, newest first, a page at a time, under this session. */
+  iterations(cursor?: string): Promise<IterationPage>;
+  /** One of them, content and values. */
+  iteration(id: string): Promise<IterationRead>;
 }
 
 /** Time, given so that tests can move it. */
@@ -102,8 +138,13 @@ export const browserClock: Clock = {
   clearTimeout: (handle) => globalThis.clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
 
-/** component-editor.md, "The session": the states this slice has. Recovery is the next plan's. */
-export type Phase = 'reading' | 'claiming' | 'editing' | 'cutting' | 'releasing' | 'lost';
+/**
+ * component-editor.md, "The session". `recovery` is Recovery as W11 builds it: the lock is held by
+ * this session, and the author is choosing saved text to restore, or closing the list to go on
+ * editing what is on screen. The surface takes no change while it stands.
+ */
+export type Phase =
+  'reading' | 'claiming' | 'editing' | 'cutting' | 'releasing' | 'lost' | 'recovery';
 
 /**
  * CNT-068's three states, plus `stopped` (fix round 1, finding 3): not saved, and nothing is trying to
@@ -126,8 +167,8 @@ export interface SessionView {
   readonly dirty: boolean;
   /**
    * True in `lost`, when the session can resume with a fresh claim - a stale or conflicting save's own
-   * recovery (fix round 1, finding 1). False otherwise, including every other lock-gone `lost`, which
-   * this slice has no recovery for (Recovery is the next plan's).
+   * recovery (fix round 1, finding 1) - or open Recovery. False otherwise, including every other
+   * lock-gone `lost`.
    */
   readonly recoverable: boolean;
 }
@@ -176,6 +217,16 @@ export interface SessionOptions {
   readonly onRefused: (holder: Holder, hadPending: boolean) => void;
   /** A version was cut or the session opened from a new one: undo must not reach past it (CNT-103). */
   readonly onVersion: (version: VersionRef) => void;
+  /**
+   * Opens a restored iteration as the session's text and values, with a fresh history (RC-G), once it
+   * is migrated and validated as a stored version is (CNT-012, CNT-013); or answers why it will not
+   * read, naming it by `label`, and opens nothing. Absent, nothing can be restored.
+   */
+  readonly open?: (
+    content: unknown,
+    values: Readonly<Record<string, unknown>>,
+    label: string,
+  ) => string | null;
 }
 
 export interface Session {
@@ -187,11 +238,31 @@ export interface Session {
   doneEditing(): Promise<void>;
   /** Claim again after a refusal; `move` continues here when the holder is this author elsewhere. */
   claimAgain(move: boolean): void;
+  /**
+   * Recover (component-editor.md, "Recovery, as W11 builds it"): from reading, or from a `lost` that
+   * is `recoverable`, claims afresh - moving the lock from the author's own other window - and opens
+   * Recovery.
+   */
+  recover(): void;
+  /** Closes Recovery and goes on editing what is on screen. */
+  closeRecovery(): void;
+  /** The author's own saved iterations, a page at a time, while this session holds the lock. */
+  iterations(cursor?: string): Promise<IterationPage>;
+  /**
+   * Restores one: what is on screen is saved first, and acknowledged; then the iteration is read,
+   * opened by `open`, and sent as the next save. Answers null once restored, or why nothing was, which
+   * is also the session's notice. `label` names it, as "the text saved at 14:02:07".
+   */
+  restore(id: string, label: string): Promise<string | null>;
   view(): SessionView;
   dispose(): void;
 }
 
 const HELD = 'lock_held';
+
+/** Recovery, announced as it opens (component-editor.md, "Accessibility"). */
+const RECOVERY_OPENED =
+  'Your saved text is listed. Restore some of it, or close the list to go on editing.';
 
 /**
  * The editing session, as a state machine over a service and a clock (component-editor.md, "The
@@ -225,8 +296,9 @@ export function createSession(options: SessionOptions): Session {
    * own "saving" moment (send() resets it each attempt) never papers back over the indicator. */
   let hasFailed = false;
   /** Set when `lost` was entered because the service is ahead of this page (a stale or conflicting
-   * sequence): the one case this slice lets the author recover from, by claiming afresh. A lock simply
-   * gone stays unrecoverable here - Recovery is the next plan's. */
+   * sequence): the one case this page lets the author recover from, by claiming afresh, to go on or
+   * into Recovery. A lock simply gone stays unrecoverable in this page; what it saved is offered as
+   * Recover the next time the component is opened (W11.2). */
   let lostFromStale = false;
   let disposed = false;
   /** Set once a claim has ever discarded a pending change (fix round 2, finding 2): stays true across
@@ -515,7 +587,14 @@ export function createSession(options: SessionOptions): Session {
     if (disposed) return false;
     if (!force && retry !== null) return false;
     if (!dirty) return save === 'saved';
-    if (phase !== 'editing' && phase !== 'cutting' && phase !== 'releasing') return false;
+    if (
+      phase !== 'editing' &&
+      phase !== 'cutting' &&
+      phase !== 'releasing' &&
+      phase !== 'recovery'
+    ) {
+      return false;
+    }
     inFlight = send();
     try {
       return await inFlight;
@@ -533,7 +612,11 @@ export function createSession(options: SessionOptions): Session {
     }, timing.continuousMs);
   };
 
-  const claim = async (move: boolean, fresh: boolean) => {
+  /**
+   * `into` is where a granted claim goes: editing, or Recovery for a claim that Recover asked for,
+   * which then lists what the author saved rather than letting them type.
+   */
+  const claim = async (move: boolean, fresh: boolean, into: 'editing' | 'recovery' = 'editing') => {
     phase = 'claiming';
     holder = null;
     notice = 'Starting to edit.';
@@ -555,8 +638,8 @@ export function createSession(options: SessionOptions): Session {
     const result = await claimWithin(move, fresh);
     if (disposed) return;
     if (result.ok) {
-      phase = 'editing';
-      notice = 'You are editing this component.';
+      phase = into;
+      notice = into === 'recovery' ? RECOVERY_OPENED : 'You are editing this component.';
       // A successful claim is the real state, told plainly (fix round 2, finding 3): the previous
       // value could be `stopped`, left over from a refusal this claim has now resolved, which would
       // otherwise say "not saved" while there was nothing left unsaved. Whatever was kept as text
@@ -722,6 +805,65 @@ export function createSession(options: SessionOptions): Session {
       if (phase === 'reading') void claim(move, false);
       else if (phase === 'lost' && lostFromStale) void claim(move, true);
     },
+    recover() {
+      // Always a fresh session, and always moving: the id this page holds may be a reload's, which
+      // the service has already accepted saves from past this page's own count, and the author asked
+      // to recover here, which is to take the lock from any window of theirs. `move` moves nothing of
+      // anybody else's: a lock another author holds refuses it all the same, naming them.
+      if (phase === 'reading' || (phase === 'lost' && lostFromStale))
+        void claim(true, true, 'recovery');
+    },
+    closeRecovery() {
+      if (phase !== 'recovery') return;
+      phase = 'editing';
+      notice = 'You are editing this component.';
+      publish();
+      if (dirty) schedule();
+    },
+    iterations: (cursor) => service.iterations(cursor),
+    async restore(id, label) {
+      if (phase !== 'recovery' || options.open === undefined) return null;
+      const refuseRestore = (message: string) => {
+        notice = message;
+        publish();
+        return message;
+      };
+      // First what is on screen, acknowledged, so a restore can itself be undone by restoring what
+      // it replaced (component-editor.md, "Recovery").
+      const flushed = await flush(true);
+      if (disposed) return null;
+      // Lost, or a refusal that stopped saving, on the way: its own notice says why.
+      if ((phase as Phase) !== 'recovery') return notice;
+      if (!flushed) return refuseRestore('Not saved, so nothing was restored.');
+      const read = await service.iteration(id);
+      if (disposed) return null;
+      if ((phase as Phase) !== 'recovery') return notice;
+      if (!read.ok) {
+        if (read.code === HELD || read.code === 'lock_required') {
+          lose(lockGoneMessage());
+          return notice;
+        }
+        if (read.code === 'signed_out' || read.code === 'forbidden') {
+          refuse(read.code);
+          return notice;
+        }
+        return refuseRestore(
+          read.code === 'not_found'
+            ? 'That saved text is no longer kept.'
+            : 'The saved text could not be read. Try again.',
+        );
+      }
+      const refused = options.open(read.content, read.values, label);
+      if (refused !== null) return refuseRestore(refused);
+      // Opened, with a fresh history: the restored text is the next iteration sent.
+      phase = 'editing';
+      notice = `Restored ${label}.`;
+      dirty = true;
+      save = hasFailed ? 'failing' : 'saving';
+      publish();
+      await flush(true);
+      return null;
+    },
     view,
     dispose() {
       // Best effort: an unmount must not drop a change silently (fix round 1, finding 4). Fired before
@@ -735,7 +877,8 @@ export function createSession(options: SessionOptions): Session {
         (phase === 'claiming' ||
           phase === 'editing' ||
           phase === 'cutting' ||
-          phase === 'releasing')
+          phase === 'releasing' ||
+          phase === 'recovery')
       ) {
         // The snapshot must be taken now, synchronously: the caller destroys the view the instant
         // this returns, and `options.snapshot()` reads it.

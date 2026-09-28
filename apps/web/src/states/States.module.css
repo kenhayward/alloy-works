@@ -45,6 +45,11 @@
   color: var(--diff-del-fg);
 }
 
+/* Saved and never made a version: the warning edge the unsaved dot has, on the ordinary surface. */
+.notice[data-tone='unsaved'] {
+  border-color: var(--warn);
+}
+
 .notice[data-tone='editing'] {
   border-color: var(--state-private-fg);
   background: var(--state-private-bg);

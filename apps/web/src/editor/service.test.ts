@@ -513,4 +513,94 @@ describe('sessionService', () => {
       }
     });
   });
+  describe('reading iterations back', () => {
+    const OTHER = '5c4b3a29-1807-4f6e-9d5c-4b3a29180706';
+    const listed = {
+      items: [
+        {
+          id: 'i2',
+          session: SESSION,
+          sequence: 2,
+          createdAt: '2026-09-28T14:02:07.000Z',
+          openedFrom: { id: 'v1', number: '0.1' },
+        },
+        {
+          id: 'i1',
+          session: OTHER,
+          sequence: 5,
+          createdAt: '2026-09-28T13:40:00.000Z',
+          openedFrom: { id: 'v0', number: '0.1' },
+        },
+      ],
+      next: 'older',
+    };
+
+    it('lists under the session it holds, saying which were saved from this window', async () => {
+      const { client, requests } = harness(() => json(200, listed));
+      const service = sessionService(client, COMPONENT, SESSION, ADA);
+      expect(await service.iterations()).toEqual({
+        ok: true,
+        items: [
+          {
+            id: 'i2',
+            savedAt: '2026-09-28T14:02:07.000Z',
+            thisWindow: true,
+            openedFrom: { id: 'v1', number: '0.1' },
+          },
+          {
+            id: 'i1',
+            savedAt: '2026-09-28T13:40:00.000Z',
+            thisWindow: false,
+            openedFrom: { id: 'v0', number: '0.1' },
+          },
+        ],
+        next: 'older',
+      });
+      await service.iterations('older');
+      expect(requests.map((each) => each.path)).toEqual([
+        `/v1/components/${COMPONENT}/iterations?session=${SESSION}`,
+        `/v1/components/${COMPONENT}/iterations?session=${SESSION}&cursor=older`,
+      ]);
+    });
+
+    it('reads one under the session it holds, content and values', async () => {
+      const { client, requests } = harness(() =>
+        json(200, { ...listed.items[0], content: doc('Unbox'), values: { code: 'A1' } }),
+      );
+      const service = sessionService(client, COMPONENT, SESSION, ADA);
+      expect(await service.iteration('i2')).toEqual({
+        ok: true,
+        content: doc('Unbox'),
+        values: { code: 'A1' },
+      });
+      expect(requests[0]!.path).toBe(
+        `/v1/components/${COMPONENT}/iterations/i2?session=${SESSION}`,
+      );
+    });
+
+    it('answers a lock refusal by its code, and anything else as a save does', async () => {
+      const answers: [number, unknown, string][] = [
+        [
+          409,
+          {
+            code: 'lock_held',
+            message: 'held',
+            traceId: 't',
+            holder: { id: GRACE, name: 'Grace' },
+          },
+          'lock_held',
+        ],
+        [409, { code: 'lock_required', message: 'none', traceId: 't' }, 'lock_required'],
+        [404, { code: 'not_found', message: 'none', traceId: 't' }, 'not_found'],
+        [401, { code: 'unauthenticated', message: 'no', traceId: 't' }, 'signed_out'],
+        [500, { code: 'internal', message: 'no', traceId: 't' }, 'failed'],
+      ];
+      for (const [status, body, code] of answers) {
+        const { client } = harness(() => json(status, body));
+        const service = sessionService(client, COMPONENT, SESSION, ADA);
+        expect(await service.iterations(), code).toEqual({ ok: false, code });
+        expect(await service.iteration('i2'), code).toEqual({ ok: false, code });
+      }
+    });
+  });
 });

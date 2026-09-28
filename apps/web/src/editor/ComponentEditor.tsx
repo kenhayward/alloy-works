@@ -1,5 +1,5 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
-import { parseContentDocument, type ReportEntry } from '@alloy-works/domain';
+import { parseContentDocument, readContent, type ReportEntry } from '@alloy-works/domain';
 import {
   changeEquation,
   changeReference,
@@ -58,6 +58,8 @@ import { Icon } from './Icon.js';
 import { ListPanel } from './ListPanel.js';
 import { PasteReport, shownOfPaste } from './PasteReport.js';
 import { PreformattedPanel } from './PreformattedPanel.js';
+import { iterationLabel, sentenceCase, unsavedSentence } from './recovery.js';
+import { RecoveryPanel } from './RecoveryPanel.js';
 import { TablePanel } from './TablePanel.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
 import { askAndApply, pressCommand, type AskForValue, type MarkCommand } from './press.js';
@@ -296,6 +298,14 @@ export function ComponentEditor({
   const tableRegion = useRef<HTMLDivElement | null>(null);
   // The figure panel's, while the cursor stands in a figure (figures 2, ruling R5).
   const figureRegion = useRef<HTMLDivElement | null>(null);
+  // The Recovery panel's, while the session is in Recovery (W11.2).
+  const recoveryRegion = useRef<HTMLElement | null>(null);
+  // What was focused when Recovery was asked for, which the focus goes back to as it closes where it
+  // is still there; the surface otherwise, since the Recover that asked is gone by then.
+  const recoveryOpener = useRef<HTMLElement | null>(null);
+  // Whether this page has a session of its own running: once it has edited or recovered, what the
+  // component's GET said was saved and never made a version is no longer this page's to offer.
+  const [ownSession, setOwnSession] = useState(false);
   // The Figure dialog, open to make a figure or to give one another image, or closed.
   const [figureDialog, setFigureDialog] = useState<'Figure' | 'Image' | 'Replace image' | null>(
     null,
@@ -624,6 +634,7 @@ export function ComponentEditor({
     const opened = toEditor(parseContentDocument(component.content));
     if (!opened.editable) return undefined;
     staleLockKnown.current = false;
+    setOwnSession(false);
     const fresh = (doc = opened.doc, selection?: Selection) =>
       createEditorState({
         doc,
@@ -707,6 +718,7 @@ export function ComponentEditor({
           setNotice(said && next.phase === 'editing' ? `${next.notice} ${said}` : next.notice);
         }
         if (next.phase !== 'reading') staleLockKnown.current = true;
+        if (next.phase === 'editing' || next.phase === 'recovery') setOwnSession(true);
         // Lost, or stopped while editing goes on - signed out, or content the service refused (final
         // review, finding 2): either way what is on screen is not saved and nothing is retrying it.
         const stoppedEditing = next.phase === 'editing' && next.save === 'stopped';
@@ -747,6 +759,30 @@ export function ComponentEditor({
         // the refusal, and the next keystroke into that stale field would resend it - resurrecting
         // text the surface itself just discarded.
         setHeader(headerOf(view.state.doc));
+      },
+      /**
+       * Restoring (component-editor.md, "Recovery, as W11 builds it"): the stored iteration migrated
+       * and validated as a stored version is (CNT-012, CNT-013) - one that will not read is refused by
+       * name and nothing of it is opened - then opened as the text and the values, with a fresh
+       * history (RC-G): undo reaches nothing from before the restore, whose values it could not bring
+       * back.
+       */
+      open: (stored, restoredValues, label) => {
+        const read = readContent(stored, { artifact: component.id, version: label });
+        if (!read.ok || typeof restoredValues !== 'object' || Array.isArray(restoredValues)) {
+          return `${sentenceCase(label)} could not be read, so it was not restored.`;
+        }
+        const reopened = toEditor(read.document);
+        if (!reopened.editable) {
+          return `${sentenceCase(label)} holds content this editor cannot change yet (${reopened.unsupported.join(', ')}), so it was not restored.`;
+        }
+        view.updateState(fresh(reopened.doc));
+        heldValues.current = { ...restoredValues };
+        setValues(heldValues.current);
+        setValuesDrawn((drawn) => drawn + 1);
+        setHeader(headerOf(view.state.doc));
+        keptIsCurrent.current = false;
+        return null;
       },
       onVersion: () => {
         // Undo must not reach past a version (CNT-103): a fresh state has a fresh history. Cutting a
@@ -859,6 +895,23 @@ export function ComponentEditor({
     setStyleCheck(surface, styleCheck);
   }, [surface, styleCheck]);
 
+  // As Recovery closes - restored, or closed - the focus goes back to what asked for it where that
+  // is still there, and to the text otherwise: the Recover that asked is gone once the claim lands.
+  const inRecovery = session?.phase === 'recovery';
+  const wasInRecovery = useRef(false);
+  useEffect(() => {
+    if (inRecovery) {
+      wasInRecovery.current = true;
+      return;
+    }
+    if (!wasInRecovery.current) return;
+    wasInRecovery.current = false;
+    const back = recoveryOpener.current;
+    recoveryOpener.current = null;
+    if (back?.isConnected) back.focus();
+    else surface?.focus();
+  }, [inRecovery, surface]);
+
   // While there is something the service has not acknowledged, an unmount already flushes it best
   // effort (Session.dispose) but a page close does not run that cleanup at all - so a close is
   // guarded for as long as anything is dirty or being sent (fix round 1, finding 4): while dirty,
@@ -933,6 +986,7 @@ export function ComponentEditor({
       tableRegion.current,
       figureRegion.current,
       pasteRegion.current,
+      recoveryRegion.current,
       place.current,
       metadataRegion.current,
     ].filter((region) => region !== null);
@@ -1065,6 +1119,17 @@ export function ComponentEditor({
   // Standalone, Done is Done editing and releases a lock only this session can hold. In place it is
   // also the way out of the card, so it is offered while reading as well, and closes once released.
   const doneDisabled = onDone ? !(phase === 'editing' || phase === 'reading') : phase !== 'editing';
+  // What the component's GET said this author saved and never made a version (RC-F), offered while
+  // this page has no session of its own running.
+  const unsaved =
+    loaded.state === 'open' && shown.mayEdit && !ownSession && phase === 'reading'
+      ? (shown.unsaved ?? null)
+      : null;
+  const recover = () => {
+    recoveryOpener.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    controls.current?.recover();
+  };
   const done = async () => {
     if (phase === 'editing') {
       await controls.current?.doneEditing();
@@ -1227,10 +1292,38 @@ export function ComponentEditor({
                 Try again
               </button>
             )}
+            {/* Above the text, before anybody types (RC-F): claimed, the saved text is listed. */}
+            {unsaved !== null && (
+              <Notice tone="unsaved">
+                <p>{unsavedSentence(unsaved.savedAt)}</p>
+                <button type="button" onClick={recover}>
+                  Recover
+                </button>
+              </Notice>
+            )}
             {phase === 'lost' && session?.recoverable && (
-              <button type="button" onClick={() => controls.current?.claimAgain(true)}>
-                Continue
-              </button>
+              <>
+                <button type="button" onClick={() => controls.current?.claimAgain(true)}>
+                  Continue
+                </button>
+                <button type="button" onClick={recover}>
+                  Recover
+                </button>
+              </>
+            )}
+            {phase === 'recovery' && (
+              <RecoveryPanel
+                ref={recoveryRegion}
+                load={(cursor) =>
+                  controls.current?.iterations(cursor) ??
+                  Promise.resolve({ ok: false, code: 'failed' })
+                }
+                restore={(iteration) =>
+                  controls.current?.restore(iteration.id, iterationLabel(iteration.savedAt)) ??
+                  Promise.resolve(null)
+                }
+                onClose={() => controls.current?.closeRecovery()}
+              />
             )}
             {/* Beside the toolbar, and only while the cursor stands in a counted list. A
                 definition list carries no start and no numbering and its kind is the button that

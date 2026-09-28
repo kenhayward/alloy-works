@@ -9,6 +9,8 @@ import {
   type ClaimResult,
   type CutResult,
   type Holder,
+  type IterationPage,
+  type IterationRead,
   type SaveResult,
   type SessionService,
   type SessionView,
@@ -138,6 +140,38 @@ class FakeService implements SessionService {
     this.calls.push(`release from ${openedFrom}`);
     return this.cutAnswer(openedFrom);
   }
+  iterationsAnswer: (cursor?: string) => Promise<IterationPage> = async () => ({
+    ok: true,
+    items: [],
+    next: null,
+  });
+  /** An iteration saved with a paragraph naming it, unless a test says otherwise. */
+  iterationAnswer: (id: string) => Promise<IterationRead> = async (id) => ({
+    ok: true,
+    content: {
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: `Saved as ${id}.`, marks: [] }],
+        },
+      ],
+    },
+    values: { 'field-code': id },
+  });
+  async iterations(cursor?: string) {
+    this.calls.push(cursor === undefined ? 'list' : `list after ${cursor}`);
+    return this.iterationsAnswer(cursor);
+  }
+  async iteration(id: string) {
+    this.calls.push(`read ${id}`);
+    return this.iterationAnswer(id);
+  }
   /** Test setup only: pretend an earlier session under this same id already saved past this sequence -
    * as if this window's session id had been used before a reload (fix round 3). */
   seedAccepted(sequence: number, text: string) {
@@ -147,6 +181,9 @@ class FakeService implements SessionService {
 
 function harness(values?: () => Readonly<Record<string, unknown>>) {
   const clock = new FakeClock();
+  /** What each restore opened, and why the next one should be refused, or null to open it. */
+  const openedByRestore: { content: unknown; values: Readonly<Record<string, unknown>> }[] = [];
+  let openRefusal: string | null = null;
   const service = new FakeService();
   let text = 'Unbox the printer.';
   const views: SessionView[] = [];
@@ -189,6 +226,14 @@ function harness(values?: () => Readonly<Record<string, unknown>>) {
     },
     onVersion: (version) => versions.push(version),
     ...(values === undefined ? {} : { values }),
+    // As the component does: the restored text replaces what is on screen, and the next save sends it.
+    open: (content, restoredValues, label) => {
+      if (openRefusal !== null) return `${openRefusal} (${label})`;
+      openedByRestore.push({ content, values: restoredValues });
+      const paragraph = (content as { content: { content: { value: string }[] }[] }).content[0];
+      text = paragraph?.content[0]?.value ?? '';
+      return null;
+    },
   });
   const type = (next: string) => {
     text = next;
@@ -211,6 +256,10 @@ function harness(values?: () => Readonly<Record<string, unknown>>) {
     refusedPending,
     versions,
     storable,
+    openedByRestore,
+    refuseOpening: (why: string | null) => {
+      openRefusal = why;
+    },
   };
 }
 
@@ -1386,5 +1435,147 @@ describe('content the editor cannot make a document of (final review, critical 1
     expect(session.view().dirty).toBe(false);
     expect(service.saved.at(-1)).toMatchObject({ text: 'Unbox the printer, then plug it in.' });
     expect(session.view().notice).toBeNull();
+  });
+});
+
+describe('Recovery (component-editor.md, "Recovery, as W11 builds it")', () => {
+  /** Saves are refused as stale the first time only: the service already holds newer text. */
+  const staleOnce = (service: FakeService) => {
+    service.saveAnswer = async () =>
+      service.calls.filter((call) => call.startsWith('save')).length === 1
+        ? { ok: false, code: 'iteration_stale', latest: 7 }
+        : undefined;
+  };
+
+  it("claims afresh from reading, moving the lock from the author's own other window, and opens Recovery", async () => {
+    const { clock, service, session } = harness();
+    const before = service.sessionId;
+    session.recover();
+    expect(session.view().phase).toBe('claiming');
+    await clock.advance(0);
+    expect(service.calls).toEqual(['claim, moving']);
+    // A new session: a reload's own id may already have saved past this page's sequence.
+    expect(service.sessionId).not.toBe(before);
+    expect(session.view()).toMatchObject({
+      phase: 'recovery',
+      notice: 'Your saved text is listed. Restore some of it, or close the list to go on editing.',
+    });
+    expect(await session.iterations()).toEqual({ ok: true, items: [], next: null });
+    expect(service.calls).toEqual(['claim, moving', 'list']);
+  });
+
+  it('flushes what is on screen and waits for it to be accepted, then reads the iteration, opens it and sends it as the next save', async () => {
+    const { clock, service, session, type, openedByRestore } = harness();
+    staleOnce(service);
+    type('Unbox the printer and keep the box.');
+    await clock.advance(2_000);
+    expect(session.view()).toMatchObject({ phase: 'lost', recoverable: true });
+
+    session.recover();
+    await clock.advance(0);
+    expect(session.view().phase).toBe('recovery');
+    expect(await session.restore('it-1', 'the text saved at 14:02:07')).toBeNull();
+    expect(service.calls).toEqual([
+      'claim',
+      'save 1',
+      'claim, moving',
+      'save 1',
+      'read it-1',
+      'save 2',
+    ]);
+    // What was on screen is saved first, under the fresh session, so a restore is recoverable too.
+    expect(service.saved.map((each) => each.text)).toEqual([
+      'Unbox the printer and keep the box.',
+      'Saved as it-1.',
+    ]);
+    expect(openedByRestore).toEqual([
+      {
+        content: expect.objectContaining({ title: 'Install the printer' }),
+        values: { 'field-code': 'it-1' },
+      },
+    ]);
+    expect(session.view()).toMatchObject({
+      phase: 'editing',
+      save: 'saved',
+      dirty: false,
+      notice: 'Restored the text saved at 14:02:07.',
+    });
+  });
+
+  it('restores nothing, and reads nothing, when what is on screen cannot be saved first', async () => {
+    const { clock, service, session, type } = harness();
+    staleOnce(service);
+    type('Unbox the printer and keep the box.');
+    await clock.advance(2_000);
+    session.recover();
+    await clock.advance(0);
+    service.saveAnswer = async () => ({ ok: false, code: 'failed' });
+    expect(await session.restore('it-1', 'the text saved at 14:02:07')).toBe(
+      'Not saved, so nothing was restored.',
+    );
+    expect(service.calls).not.toContain('read it-1');
+    expect(session.view().phase).toBe('recovery');
+  });
+
+  it('refuses an iteration that will not read, by name, sends nothing of it and stays in Recovery', async () => {
+    const { clock, service, session, refuseOpening } = harness();
+    session.recover();
+    await clock.advance(0);
+    refuseOpening('It could not be read');
+    expect(await session.restore('it-1', 'the text saved at 14:02:07')).toBe(
+      'It could not be read (the text saved at 14:02:07)',
+    );
+    expect(service.calls).toEqual(['claim, moving', 'read it-1']);
+    expect(session.view()).toMatchObject({
+      phase: 'recovery',
+      notice: 'It could not be read (the text saved at 14:02:07)',
+    });
+  });
+
+  it('says so when the iteration is no longer kept, and stays in Recovery', async () => {
+    const { clock, service, session } = harness();
+    session.recover();
+    await clock.advance(0);
+    service.iterationAnswer = async () => ({ ok: false, code: 'not_found' });
+    expect(await session.restore('it-1', 'the text saved at 14:02:07')).toBe(
+      'That saved text is no longer kept.',
+    );
+    expect(session.view().phase).toBe('recovery');
+  });
+
+  it('goes on editing what is on screen when Recovery is closed', async () => {
+    const { clock, service, session, type } = harness();
+    staleOnce(service);
+    type('Unbox the printer and keep the box.');
+    await clock.advance(2_000);
+    session.recover();
+    session.closeRecovery();
+    // Closed before the claim came back: nothing to close yet, and Recovery opens.
+    await clock.advance(0);
+    expect(session.view().phase).toBe('recovery');
+    session.closeRecovery();
+    expect(session.view()).toMatchObject({
+      phase: 'editing',
+      notice: 'You are editing this component.',
+    });
+    await clock.advance(2_000);
+    expect(service.saved.map((each) => each.text)).toEqual(['Unbox the printer and keep the box.']);
+  });
+
+  it('names who holds the component when a Recover is refused, and stays reading', async () => {
+    const { clock, service, session } = harness();
+    const grace: Holder = {
+      name: 'Grace',
+      expectedRelease: '2026-09-16T09:15:00.000Z',
+      yours: false,
+    };
+    service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder: grace });
+    session.recover();
+    await clock.advance(0);
+    expect(session.view()).toMatchObject({
+      phase: 'reading',
+      holder: grace,
+      notice: heldSentence(grace),
+    });
   });
 });

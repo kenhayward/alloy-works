@@ -1,7 +1,15 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import type { ContentDocument } from '@alloy-works/domain';
 
-import type { ClaimResult, CutResult, Refusal, SaveResult, SessionService } from './session.js';
+import type {
+  ClaimResult,
+  CutResult,
+  IterationPage,
+  IterationRead,
+  Refusal,
+  SaveResult,
+  SessionService,
+} from './session.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -84,8 +92,16 @@ const savedCodes = [
   'iteration_conflict',
 ] as const;
 
+/** Why reading an iteration back was refused: the lock's two codes, or as any request is. */
+function readRefusalOf(response: Response | undefined, error: unknown) {
+  const code = codeOf(error);
+  if (code === 'lock_held' || code === 'lock_required') return code;
+  return refusalOf(response) ?? 'failed';
+}
+
 /**
- * The session's four writes, through the generated client and nothing else (API-001).
+ * The session's four writes, and its two reads of what it saved, through the generated client and
+ * nothing else (API-001).
  *
  * `initialSession` seeds the id this adapter claims under - normally `editingSessionFor`'s answer -
  * but the adapter, not the id passed in, owns it from here on (task 10, finding B): `claim(move,
@@ -197,6 +213,44 @@ export function sessionService(
         });
         if (data) return { ok: true, outcome: data.outcome, version: data.version };
         return { ok: false, code: refusalOf(response) ?? codeOf(error) };
+      } catch {
+        return { ok: false, code: 'failed' };
+      }
+    },
+
+    // Under the session this adapter holds now: the service answers only the one holding the lock.
+    async iterations(cursor): Promise<IterationPage> {
+      try {
+        const { data, error, response } = await client.GET('/v1/components/{id}/iterations', {
+          params: {
+            path,
+            query: { session: current, ...(cursor === undefined ? {} : { cursor }) },
+          },
+        });
+        if (!data) return { ok: false, code: readRefusalOf(response, error) };
+        return {
+          ok: true,
+          items: data.items.map((each) => ({
+            id: each.id,
+            savedAt: each.createdAt,
+            thisWindow: each.session === current,
+            openedFrom: { id: each.openedFrom.id, number: each.openedFrom.number },
+          })),
+          next: data.next,
+        };
+      } catch {
+        return { ok: false, code: 'failed' };
+      }
+    },
+
+    async iteration(id): Promise<IterationRead> {
+      try {
+        const { data, error, response } = await client.GET(
+          '/v1/components/{id}/iterations/{iteration}',
+          { params: { path: { ...path, iteration: id }, query: { session: current } } },
+        );
+        if (!data) return { ok: false, code: readRefusalOf(response, error) };
+        return { ok: true, content: data.content, values: data.values };
       } catch {
         return { ok: false, code: 'failed' };
       }
