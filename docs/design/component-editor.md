@@ -177,7 +177,7 @@ it.** The admission pipeline that paste and internal copy pass through (CNT-060 
 CNT-135), what every node and mark stores (CNT-017, CNT-022, CNT-027 to CNT-030, CNT-043, CNT-081,
 CNT-107, CNT-126, CNT-127, CNT-129) and identity (CNT-002, CNT-004) are
 [content-model.md](content-model.md)'s. Style resolution and the editor's rendering of it (CNT-097,
-STY-035, STY-037, STY-053, STY-058) are [themes.md](themes.md)'s. The API conventions every route
+STY-035, STY-037, STY-058, STY-080) are [themes.md](themes.md)'s. The API conventions every route
 follows - the error shape, cursors, idempotency keys, the generated contract (API-002, API-003, API-005
 to API-008) - are [service-foundations.md](service-foundations.md)'s.
 

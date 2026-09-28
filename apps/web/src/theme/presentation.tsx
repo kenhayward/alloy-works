@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { faceUrl } from './faces.js';
+import { capHeight, faceUrl } from './faces.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -140,7 +140,7 @@ export function PresentationProvider({
         }
         const projected = projectFontFaces(read.theme, faceUrl);
         // The faces, then the theme's own rules, which name them (STY-058).
-        setFaces(projected.css + CANVAS_CSS + projectCss(read.theme));
+        setFaces(projected.css + CANVAS_CSS + projectCss(read.theme, { capHeight }));
         setPresentation({
           state: 'ready',
           theme: read.theme,

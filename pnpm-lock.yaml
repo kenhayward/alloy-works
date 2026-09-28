@@ -479,6 +479,12 @@ importers:
       '@alloy-works/api-client':
         specifier: workspace:^
         version: link:../../packages/api-client
+      '@alloy-works/db':
+        specifier: workspace:^
+        version: link:../../packages/db
+      '@alloy-works/domain':
+        specifier: workspace:^
+        version: link:../../packages/domain
       '@alloy-works/stand-in-idp':
         specifier: workspace:^
         version: link:../../packages/stand-in-idp
@@ -491,6 +497,12 @@ importers:
       axe-core:
         specifier: 4.13.0
         version: 4.13.0
+      kysely:
+        specifier: ^0.29.5
+        version: 0.29.5
+      pdfjs-dist:
+        specifier: ^6.3.289
+        version: 6.3.289
       playwright-core:
         specifier: 1.63.0
         version: 1.63.0

@@ -6,6 +6,7 @@ import type { Ranges } from './covers.js';
 import { PINNED_FONT_FILES } from './pinned.js';
 
 export { codePoints } from './cmap.js';
+export { capHeight } from './metrics.js';
 
 /**
  * Where the pinned files are: `files/` beside this package's `src` and `dist` alike, so the worker finds

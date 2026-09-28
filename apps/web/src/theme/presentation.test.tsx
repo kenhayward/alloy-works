@@ -3,7 +3,7 @@ import { DEFAULT_THEME } from '@alloy-works/domain';
 import { PINNED_FONT_FILES } from '@alloy-works/fonts';
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { faceUrl } from './faces.js';
+import { capHeight, faceUrl } from './faces.js';
 import { PresentationProvider, usePresentation } from './presentation.js';
 import { DEFAULT_PRESENTATION } from './presentation.fixture.js';
 
@@ -61,6 +61,24 @@ describe("the presentation a page's text is set in", () => {
       expect(faces()).toContain(`src: url("${url}")`);
     }
     expect(faces().match(/@font-face/g)).toHaveLength(files.length);
+  });
+
+  it("places each block's baseline from its face's cap height, which the renderer's copy of the pinned files states", async () => {
+    const { client } = service({ 'GET /v1/presentation': () => json(200, DEFAULT_PRESENTATION) });
+    render(
+      <PresentationProvider client={client}>
+        <Shown />
+      </PresentationProvider>,
+    );
+    await screen.findByText(/^ready/);
+    // The body is in Liberation Serif, whose cap height is 1341/2048 of its em: 11pt on 14.35pt puts
+    // its first baseline 14.35 - (443 + 1341) / 2048 x 11 = 4.768pt below the trimmed line's top.
+    expect(faces()).toContain('@supports (text-box: trim-both cap alphabetic) {');
+    expect(faces()).toContain(
+      'padding-block: calc(var(--aw-before) + calc(4.768pt * var(--aw-zoom)))',
+    );
+    expect(capHeight(DEFAULT_THEME.typefaces[0]!)).toBe(1341 / 2048);
+    expect(capHeight({ ...DEFAULT_THEME.typefaces[0]!, files: [] })).toBeUndefined();
   });
 
   it("reads a document's presentation from the document's own route", async () => {

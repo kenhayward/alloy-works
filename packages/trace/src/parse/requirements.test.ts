@@ -147,6 +147,7 @@ describe('the real corpus', () => {
     // 1369, from 1368: STR-063, the service's share of STR-039's budget (issue #119), narrowed.
     // 1368, from 1367: IAM-073, a number revealing nothing a reader may not read (issue #130), narrowed.
     // 1367, from 1366: STR-062 (issue #73).
+    // 1474, from 1472 (2026-09-28): W13.4 - STY-080 and STY-081 supersede STY-053, the editor and Word each measured against the PDF (issue #328).
     // 1472, from 1471 (2026-09-28): W14.4 - STR-071 supersedes STR-070, a figure or a table explicitly unnumbered (issue #129).
     // 1471, from 1470 (2026-09-28): W14.7's final review - CNT-178 supersedes CNT-148, because macOS chooses its spelling checker's languages itself.
     // 1470, from 1458 (2026-09-28): the T1 audit's last decisions and rewordings: CNT-176 and CNT-177, PUB-098 to PUB-104, IAM-080 and IAM-081 supersede the rows they split, and STY-079 is new (issue #306).
@@ -160,7 +161,7 @@ describe('the real corpus', () => {
     // metadata and component types superseded - a template assigning schemas rather than owning
     // one, a component's type in its closed set, and relationship types using the same schemas.
     // Superseded rows keep their place, so the count only ever rises.
-    expect(total((document) => document.requirements)).toBe(1472);
+    expect(total((document) => document.requirements)).toBe(1474);
     expect(total((document) => document.nonRequirements)).toBe(117);
     expect(total((document) => document.questions)).toBe(135);
   });

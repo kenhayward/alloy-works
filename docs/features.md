@@ -274,6 +274,19 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   hyphenation, keeping lines together, a table's header repeated on each page and a floated figure's
   place on its page are left to the publication.
 
+  **Measured against the PDF on every change.** The browser tests publish one document under five
+  themes - the default, one that changes every setting the editor shows, and three made at random from
+  fixed seeds - and measure every word that begins a paragraph, a run, a cell or a caption in the
+  document view and in the PDF: where it starts and where its line sits, its size, face, weight,
+  slant, colour and underline and what is behind it, every table rule and every image. Anything more
+  than half a point apart fails; the largest difference found is under a third of a point. What does
+  not match yet, and is not measured: a caption's or a footnote's fill, padding and indents, and a
+  first-line indent on centred or preformatted text, which the editor shows and the PDF does not print
+  (issue #330); a line holding an image in the text, or a list item in a smaller style than its list,
+  which opens by a different amount (issue #331); how high a subscript or superscript sits (issue
+  #332); and where the document view places a section's heading (issue #333). Word is not measured
+  against the PDF yet.
+
 - **Choosing a style.** **Paragraph style**, beside the formatting toolbar, sets the style of the
   paragraphs the selection touches, from the styles the theme offers where they stand - a paragraph in
   running text, in a list, in a quotation or in a table's cell each has its own - with the default

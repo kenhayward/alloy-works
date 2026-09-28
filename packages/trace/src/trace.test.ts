@@ -67,11 +67,12 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
+    // 1474, from 1472 (2026-09-28): W13.4 - STY-080 and STY-081 supersede STY-053, the editor and Word each measured against the PDF (issue #328).
     // 1472, from 1471 (2026-09-28): W14.4 - STR-071 supersedes STR-070, a figure or a table explicitly unnumbered (issue #129).
     // 1471, from 1470 (2026-09-28): W14.7's final review - CNT-178 supersedes CNT-148, because macOS chooses its spelling checker's languages itself.
     // 1470, from 1458 (2026-09-28): the T1 audit's last decisions and rewordings: CNT-176 and CNT-177, PUB-098 to PUB-104, IAM-080 and IAM-081 supersede the rows they split, and STY-079 is new (issue #306).
     // 1458, from 1449 (2026-09-26): the rewordings Ken agreed after the T1 audit (K7, and W1's three): CNT-171 to CNT-175, STR-070, MET-042, STY-078 and API-061 supersede the rows they reword.
-    expect(model.requirements).toHaveLength(1472);
+    expect(model.requirements).toHaveLength(1474);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
     // 500, from 498 (2026-09-28): W14.5 - themes.md claims STY-079 and STR-025, which structure.md left unclaimed.
@@ -561,6 +562,8 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 548, from 547 (2026-09-28): W13.4 - STY-080 in tests/browser's styles.test.ts, the editor measured
+  // against the PDF under five themes.
   // 547, from 546 (2026-09-28): W13.1 - STR-006 in tests/browser's outline.test.ts, the outline
   // edited by keyboard alone, by the browser's own drag and drop and through the API: three titles in
   // one file, one citation.
@@ -693,7 +696,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(547);
+    expect(model.citations).toHaveLength(548);
   });
 
   it('cites no identifier the corpus does not hold', () => {

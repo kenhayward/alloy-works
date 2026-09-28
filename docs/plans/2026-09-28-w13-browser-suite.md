@@ -258,6 +258,33 @@ Only these could change the plan; everything else is built as written.
 7. docs/testing.md and themes.md: what is measured, where, and against what.
 8. Tests: STY-080, on the comparison over the five themes.
 
+**W13.4, as built** (PR #TBD). The rows arrived as issue #328. Departures from the above, each in
+[themes.md](../design/themes.md#the-theme-in-the-editor-measured):
+
+- **Question 3's answer: yes, and not by `addThemeVersion` alone.** The store takes every theme the
+  generator makes once it is narrowed to contrast, a line at least 1.2 of its size and a rule no wider
+  than twice its table's padding. But `addThemeVersion` writes a version of a theme that exists, and
+  nothing creates a theme or a catalogue artifact but a migration, so the suite copies the default's
+  rows as each new artifact's first version and writes the theme it measures as the next, through the
+  store's own writers. Fixed artifacts, so a later run writes nothing where a theme is unchanged.
+- **The first run found the editor half a point to twenty points from the PDF in twenty-eight places
+  under the default theme, and more under the others.** What was the editor's own is fixed in this
+  slice, in the projection (issue #329): spaces as padding rather than snapped borders, each block's
+  baseline placed from its face's cap height where the browser can trim a line to it - which needed each
+  pinned file's cap height in `@alloy-works/fonts` - tables with rules that take no room, lists, an
+  attribution, a preformatted block's label, figures, inline code and the application's own table and
+  `code` styles.
+- **STY-080 is worded over what both outputs render**, as STY-053 was over each output that renders a
+  property. What the PDF does not set - a caption's and a footnote's fill, padding and indents, the
+  first-line indent of centred or preformatted text (issue #330) - is outside it, and the themes state
+  none of it until the PDF does.
+- **Named and not compared**, each with its issue: the step into a line held open by something taller
+  than its text (#331), how far a script moves (#332), and where the document view places a section's
+  heading (#333); and without issues, a list's indent, a footnote's place, a label's start, equations and
+  floated figures.
+- **Measured beyond step 6**: a table's rules, their width, colour and where each runs against its cell's
+  text, and what stands behind each token - a fill, a band or the paper.
+
 ## Left, named
 
 - **STY-081 and PUB-023**: Word measured as the PDF is, which themes.md designed as LibreOffice's
