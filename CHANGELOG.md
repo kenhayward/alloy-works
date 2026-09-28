@@ -3,7 +3,7 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.122.0 - 2026-09-28 (PR #TBD)
+## 0.122.0 - 2026-09-28 (PR #326)
 
 ### Added
 
@@ -17,7 +17,7 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 ### Fixed
 
 - **A section's title now keeps the spaces you type.** Two spaces in a row, or a space at the end
-  while you were still typing, were drawn as one or dropped in the title field beside the outline.
+  while you were still typing, were drawn as one or dropped in the title field beside the outline (issue #325).
 
 ## 0.121.2 - 2026-09-28 (PR #324)
 
