@@ -32,7 +32,12 @@ function opened(text = 'Unbox the printer.') {
     language: 'en-GB',
     direction: 'ltr',
     content: [
-      { type: 'paragraph', id: 'b1', style: 'body', content: [{ type: 'text', value: text, marks: [] }] },
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [{ type: 'text', value: text, marks: [] }],
+      },
     ],
   });
   if (!read.editable) throw new Error('expected an editable document');
@@ -205,9 +210,14 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
       JSON.stringify({ ...good, doc: null }),
       JSON.stringify({
         ...good,
-        changes: [{ history: 'sideways', selection: null, transactions: [{ steps: [], held: true }] }],
+        changes: [
+          { history: 'sideways', selection: null, transactions: [{ steps: [], held: true }] },
+        ],
       }),
-      JSON.stringify({ ...good, changes: [{ history: 'new', selection: null, transactions: [{ steps: 'x', held: true }] }] }),
+      JSON.stringify({
+        ...good,
+        changes: [{ history: 'new', selection: null, transactions: [{ steps: 'x', held: true }] }],
+      }),
       JSON.stringify({ ...good, values: [] }),
       JSON.stringify({ ...good, revision: -1 }),
       JSON.stringify({ ...good, sent: { sequence: 1.5, revision: 0 } }),

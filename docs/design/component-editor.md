@@ -698,13 +698,27 @@ Session storage holds, per component and editing session: the version the sessio
 document at that point, every step since with the history's grouping, the latest metadata values, and
 the last sequence number sent.
 
-On reload the renderer asks the service for the session's latest accepted sequence. If this session still
-holds the lock and the opened-from version is unchanged, the steps are replayed into a fresh editor state
-with history, the values restored, and anything beyond the service's latest sequence sent as the next
-iteration - so undo reaches back exactly as far as it did, and the service's record is never overwritten
-by an older local one. Steps recorded against an older version are discarded (CNT-103). A lock no longer
-held means Recovery. Session storage that does not parse is discarded and the session opens from the
-service's latest iteration.
+On reload the renderer asks the service for the session's latest accepted sequence. If nobody but this
+session holds the lock - it holds it still, or it lapsed and nobody took it - and the opened-from version
+is unchanged, the session claims again under its own id (RC-H), the steps are replayed into a fresh
+editor state with history, the values restored, and anything the service has not got sent as the next
+iteration, above both the service's latest sequence and the last one this window sent - so undo and redo
+reach exactly as far as they did, and the service's record is never overwritten by an older local one.
+Steps recorded against an older version are discarded (CNT-169). A lock somebody else holds means
+Reading, with the changes offered as text to copy, as a refused claim offers them. Session storage that
+does not parse is discarded and the page opens as one opened afresh does: at the latest version, with
+**Recover** where something was saved and never made a version.
+
+**As built (W11.3).** The steps are kept as a log of changes, each the transaction the surface applied and
+every one the plugins appended to it, with how the history took it - a new event, joined to the last,
+not held, an undo or a redo - read off the history's depth rather than worked out again, and the selection
+before it. The grouping is replayed exactly, forced rather than left to timing, and an undo or a redo is
+replayed as the command, so redo survives too; the identifiers the session drew, which the history does
+not hold, are replayed from the log and none is drawn again. A replay that does not reproduce the log
+exactly is discarded as storage that does not parse is. Done editing forgets the steps as a cut does,
+whether or not anything was cut, so a reload after it claims nothing back. A reload opens with a caret
+where the selection was, never a footnote or a figure selected whole, whose editor or panel would not be
+drawn.
 
 **Undo covers content, not metadata.** ProseMirror's history is the document's - which includes the title,
 base language and base direction. A metadata field is an ordinary input with its own undo, and folding
@@ -728,10 +742,12 @@ loses the lock.** There is still no lock event: a window that loses the lock thi
 on its next save and goes to `lost`, keeping what it had not sent as text to copy, with no Recovery of its
 own. What either window saved is not lost - it is kept until the next version after the one it was opened
 from is cut, and for the tenant's window after that (VER-003) - and it is its author's to read from any
-window of theirs that holds the lock (RC-A). So opening the component again, by a reload of either window
-or in a new one, says when the author last saved work that was never made a version and offers
+window of theirs that holds the lock (RC-A). So opening the component again in a new window, or by a reload of a window that kept
+nothing unsaved, says when the author last saved work that was never made a version and offers
 **Recover**, which moves the lock to that window and lists both windows' saves, each marked as this
-window's or another's, to restore. Two gaps remain. Recovery is offered where a save was refused as
+window's or another's, to restore. A reload of a window that kept changes goes on instead (W11.3): it
+claims again under its own session, and while the other window holds the lock it is refused, its
+changes offered as text to copy, with **Continue here** to take the lock back. Two gaps remain. Recovery is offered where a save was refused as
 stale, beside **Continue**, but not in the window that lost the lock to a move; and it is offered only
 while the newest of the author's saves is on the latest version, so once a version is cut from one window,
 the other's earlier saves are kept, and listed by any Recovery opened later, but nothing offers them. See
@@ -787,7 +803,7 @@ component's `GET` answers its caller's own session the latest sequence it accept
   refused claim offers them.
 - **A version cut since:** the steps are discarded (CNT-169), and the iterations stay in Recovery.
 
-The title's one-line editor's history is limited to ProseMirror's default of 100 events today; W11.3 gives it no limit, as the component's has.
+The title's one-line editor's history was limited to ProseMirror's default of 100 events; W11.3 gave it no limit, as the component's has.
 
 **Retention** (VER-003, VER-004) is [storage-and-versioning.md](storage-and-versioning.md)'s: an iteration
 is kept until the next version after the one it was opened from is cut, and for the tenant's window

@@ -331,7 +331,9 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     expect(stack.claims.at(-1)).toEqual({ session: first!.session });
     expect(textOf(again)).toBe('Unbox the printer. Mind the cable. Keep the box.');
     expect(code()).toHaveValue('B2');
-    await waitFor(() => expect(editorStatus()).toHaveTextContent('You are editing this component.'));
+    await waitFor(() =>
+      expect(editorStatus()).toHaveTextContent('You are editing this component.'),
+    );
   });
 
   it('sends nothing again after a reload where the service already has everything', async () => {

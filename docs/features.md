@@ -113,7 +113,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   tries is told who is editing and until when. Your changes are saved a moment after you stop typing -
   the page says whether they are saved, saving, or not saved and being retried - and **Save version**
   or **Done editing** makes a version of them, numbered `0.2`, `0.3` and so on; nothing else does.
-  Undo reaches back within what you have done since the last version. Pasting is refused rather than
+  Undo reaches back within what you have done since the last version, and a reload keeps it: reload
+  the page while you are editing and what you typed is there as you left it, undo and redo reach as far
+  as they did, and anything not yet saved is saved. If somebody else has started editing it meanwhile,
+  what you typed is kept below for you to copy instead; if a version has been made since, it is not
+  brought back, and **Recover** has what was saved of it. Pasting is refused rather than
   put in unexamined. A pause longer than fifteen minutes lets somebody else start editing, but if
   nobody has, your next change carries on where you left off. If you are signed out, the page says so
   and keeps what was not saved, and your next change after signing in again saves it; if you may no
@@ -198,7 +202,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   attribution or a table's note - opens for reading only. There is no control for
   a defined term or a citation, an image cannot be pasted and an equation only from another
   component, changes saved but never made into a version are
-  kept for a while and can be got back with **Recover** - see below - undo does not survive a reload, and there is no metadata to fill in.
+  kept for a while and can be got back with **Recover** - see below.
   A list stops nesting at thirty levels: every control that would build a level becomes unavailable
   there, and `Tab` moves the focus on. `Backspace` at the start of a definition's term, or `Delete`
   at the end of the definition before it, joins the two definitions into one, the term's words running
@@ -528,8 +532,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   or from before a reload. You only ever see your own saved changes, and only while you are editing the
   component: if somebody else is, Recover says who. **Close**, or `Escape`, goes back to editing what is
   on screen. Not yet: the window that loses the component to another of your windows is not offered
-  the list, nothing offers saves made before the latest version was cut, and undo still does not survive
-  a reload.
+  the list, and nothing offers saves made before the latest version was cut.
 
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
   Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath

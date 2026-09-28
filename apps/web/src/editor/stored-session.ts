@@ -162,7 +162,9 @@ export function replayStored(
   // opens an editor or a panel of its own as the selection reaches it, which a page opened on the
   // selection already there never draws - and selecting it again would change nothing to draw it by.
   if (state.selection.toJSON().type === 'text') return state;
-  return state.apply(state.tr.setSelection(Selection.near(state.doc.resolve(state.selection.from))));
+  return state.apply(
+    state.tr.setSelection(Selection.near(state.doc.resolve(state.selection.from))),
+  );
 }
 
 /** Keeps one component's session as it changes: what the component editor tells it, it writes. */
@@ -196,7 +198,11 @@ export interface Recorder {
  * over newer, which is worse than none. The document and each change are turned into JSON once, as
  * they arrive, so a write costs a join rather than a walk of the whole session.
  */
-export function createRecorder(componentId: string, start: StoredSession, storage?: Store): Recorder {
+export function createRecorder(
+  componentId: string,
+  start: StoredSession,
+  storage?: Store,
+): Recorder {
   const key = keyFor(componentId);
   let kept = start;
   let docJson = JSON.stringify(start.doc);
@@ -256,7 +262,13 @@ export function createRecorder(componentId: string, start: StoredSession, storag
       write();
     },
     reset(version, doc, values) {
-      kept = freshSession({ session: kept.session, version, doc, values, sequence: kept.sent.sequence });
+      kept = freshSession({
+        session: kept.session,
+        version,
+        doc,
+        values,
+        sequence: kept.sent.sequence,
+      });
       docJson = JSON.stringify(kept.doc);
       changeJson = [];
       stopped = false;

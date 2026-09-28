@@ -74,8 +74,7 @@ function surface(doc: Node, newIdentifier = counter()) {
     /** Types at `pos`, at `time`: a second between two changes makes them two events. */
     type: (text: string, pos: number, time: number) =>
       apply(state.tr.insertText(text, pos).setTime(time)),
-    caret: (pos: number) =>
-      apply(state.tr.setSelection(Selection.near(state.doc.resolve(pos)))),
+    caret: (pos: number) => apply(state.tr.setSelection(Selection.near(state.doc.resolve(pos)))),
   };
 }
 

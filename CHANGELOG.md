@@ -3,6 +3,26 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.109.0 - 2026-09-28 (PR #298)
+
+### Added
+
+- **Undo survives a reload.** Reload the page while you are editing a component and everything you
+  typed is still there, as you left it: undo takes it back one step at a time, as far back as the
+  version you opened, and redo brings back what you had undone. This holds for the title, the language
+  and direction, and footnotes as much as the text. Your fields' values come back too.
+- **A reload loses nothing that was not yet saved.** Anything you typed that had not been saved when the
+  page went is saved as soon as it comes back, and you carry on editing where you were, even after a
+  pause long enough for the component to have been let go - as long as nobody else has started
+  editing it.
+- If somebody else has started editing the component meanwhile, the page opens for reading and keeps
+  what you typed below it for you to copy, as it does whenever you cannot start editing. If a version
+  has been made since, what you typed is not brought back, and undo does not reach past that version;
+  **Recover** still has anything that was saved. **Done editing** and **Save version** leave nothing
+  behind for a reload to bring back.
+- **Undo in a section's title reaches back as far as you have typed**, not only the last hundred
+  changes.
+
 ## 0.108.0 - 2026-09-28 (PR #297)
 
 ### Added

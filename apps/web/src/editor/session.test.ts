@@ -1161,8 +1161,14 @@ describe('the editing session', () => {
   });
 
   it('a reload refused its claim goes back to reading with the changes it held offered, as any refused claim does (W11.3)', async () => {
-    const { clock, service, session, refused, refusedPending } = harness(undefined, { sequence: 2 });
-    const grace: Holder = { name: 'Grace', expectedRelease: '2026-09-28T15:00:00.000Z', yours: false };
+    const { clock, service, session, refused, refusedPending } = harness(undefined, {
+      sequence: 2,
+    });
+    const grace: Holder = {
+      name: 'Grace',
+      expectedRelease: '2026-09-28T15:00:00.000Z',
+      yours: false,
+    };
     service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder: grace });
     session.resume(true);
     await clock.advance(designTiming.idleMs);
