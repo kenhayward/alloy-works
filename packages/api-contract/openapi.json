@@ -3383,6 +3383,23 @@
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
+          },
+          {
+            "name": "session",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "The editing session whose latest accepted sequence to answer, the caller's own",
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
           }
         ],
         "responses": {
@@ -3529,6 +3546,19 @@
                       ],
                       "description": "The caller's own newest iteration opened from the latest version, work saved and never made a version, by its time alone; null where there is none"
                     },
+                    "sequence": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The latest sequence the service has accepted from the editing session the `session` query names, the caller's own; null where none is named or it has saved none"
+                    },
                     "type": {
                       "type": "object",
                       "properties": {
@@ -3652,10 +3682,44 @@
                     "mayEdit",
                     "lock",
                     "unsaved",
+                    "sequence",
                     "type",
                     "fields",
                     "schemas",
                     "values"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A session that is not a lowercase uuid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
                   ]
                 }
               }
@@ -23886,6 +23950,19 @@
                       ],
                       "description": "The caller's own newest iteration opened from the latest version, work saved and never made a version, by its time alone; null where there is none"
                     },
+                    "sequence": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The latest sequence the service has accepted from the editing session the `session` query names, the caller's own; null where none is named or it has saved none"
+                    },
                     "type": {
                       "type": "object",
                       "properties": {
@@ -24009,6 +24086,7 @@
                     "mayEdit",
                     "lock",
                     "unsaved",
+                    "sequence",
                     "type",
                     "fields",
                     "schemas",

@@ -3,6 +3,38 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.109.0 - 2026-09-28 (PR #298)
+
+### Added
+
+- **Undo survives a reload.** Reload the page while you are editing a component and everything you
+  typed is still there, as you left it: undo takes it back one step at a time, as far back as the
+  version you opened, and redo brings back what you had undone. This holds for the title, the language
+  and direction, and footnotes as much as the text. Your fields' values come back too.
+- **A reload loses nothing that was not yet saved.** Anything you typed that had not been saved when the
+  page went is saved as soon as it comes back, and you carry on editing where you were, even after a
+  pause long enough for the component to have been let go - as long as nobody else has started
+  editing it.
+- If somebody else has started editing the component meanwhile, the page opens for reading and keeps
+  anything not yet saved below it for you to copy, as it does whenever you cannot start editing. If a
+  version has been made since, what you typed is not brought back, and undo does not reach past that
+  version; **Recover** still has anything that was saved. **Done editing** and **Save version** leave
+  nothing behind for a reload to bring back, and a reload straight after them carries on saving as
+  normal.
+- **A reload never saves over newer text.** A reload that finds newer text saved from another tab
+  sends nothing over it, and offers **Continue** and **Recover** as a refused save does. A copy of a tab
+  carries on as another window of yours does: whichever of the two saves second stops, says newer text
+  was saved from another window, and keeps what it had below for you to copy - and reloading it does not
+  take what it had for saved. A reload after a crash carries on as any reload does.
+- **Signing out forgets what a reload would bring back**, so nobody who signs in on the same tab after
+  you is given it, and nothing is kept again until the page has reloaded. If signing out fails and you
+  are still signed in, the page carries on keeping what you edit.
+- If what a reload finds cannot be brought back as it was, it is kept below for you to copy rather than
+  lost without a word, and it stays there - through editing, saving and further reloads - until you
+  choose **Dismiss**.
+- **Undo in a section's title reaches back as far as you have typed**, not only the last hundred
+  changes.
+
 ## 0.108.0 - 2026-09-28 (PR #297)
 
 ### Added

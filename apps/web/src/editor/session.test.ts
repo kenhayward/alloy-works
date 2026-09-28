@@ -117,9 +117,12 @@ class FakeService implements SessionService {
       result = overridden;
     } else {
       const last = this.accepted.get(this.sessionId);
-      if (last && sequence <= last.sequence) {
+      if (last && sequence === last.sequence && text === last.text) {
+        // The latest again, holding the same: acknowledged again, as packages/db answers a repeat.
+        result = { ok: true };
+      } else if (last && sequence <= last.sequence) {
         result =
-          sequence === last.sequence && text !== last.text
+          sequence === last.sequence
             ? { ok: false, code: 'iteration_conflict', latest: last.sequence }
             : { ok: false, code: 'iteration_stale', latest: last.sequence };
       } else {
@@ -179,8 +182,18 @@ class FakeService implements SessionService {
   }
 }
 
-function harness(values?: () => Readonly<Record<string, unknown>>) {
+/**
+ * `reload`: the session a reload makes, going on from `sequence` (W11.3); `sent` hears every sequence
+ * taken for a save, as the kept session does.
+ */
+function harness(
+  values?: () => Readonly<Record<string, unknown>>,
+  reload: { readonly sequence?: number } = {},
+) {
   const clock = new FakeClock();
+  const sent: number[] = [];
+  /** Every answer the service gave a save, as the kept session is told it. */
+  const answered: string[] = [];
   /** What each restore opened, and why the next one should be refused, or null to open it. */
   const openedByRestore: { content: unknown; values: Readonly<Record<string, unknown>> }[] = [];
   let openRefusal: string | null = null;
@@ -225,6 +238,10 @@ function harness(values?: () => Readonly<Record<string, unknown>>) {
       refusedPending.push(hadPending);
     },
     onVersion: (version) => versions.push(version),
+    onSent: (sequence) => sent.push(sequence),
+    onAccepted: (sequence) => answered.push(`accepted ${sequence}`),
+    onSaveRefused: (sequence) => answered.push(`refused ${sequence}`),
+    ...(reload.sequence === undefined ? {} : { sequence: reload.sequence }),
     ...(values === undefined ? {} : { values }),
     // As the component does: the restored text replaces what is on screen, and the next save sends it.
     open: (content, restoredValues, label) => {
@@ -257,6 +274,8 @@ function harness(values?: () => Readonly<Record<string, unknown>>) {
     versions,
     storable,
     openedByRestore,
+    sent,
+    answered,
     refuseOpening: (why: string | null) => {
       openRefusal = why;
     },
@@ -1112,7 +1131,7 @@ describe('the editing session', () => {
     expect(service.saved.at(-1)).toMatchObject({ sequence: 2, text: 'Unbox the printer' });
   });
 
-  it('a reload starting a new page at sequence 0 under the surviving session id goes to lost, never overwriting what was saved before', async () => {
+  it('a reload with nothing kept starts a new page at sequence 0 under the surviving session id and goes to lost, never overwriting what was saved before', async () => {
     const { clock, service, session, type } = harness();
     // Stands in for an earlier load of this same window having already saved past sequence 1 under
     // this session id, the way sessionStorage would carry the id across a reload (decision 14) while
@@ -1123,6 +1142,250 @@ describe('the editing session', () => {
     await clock.advance(2_000);
     expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
     expect(session.view().phase).toBe('lost');
+  });
+
+  it('a reload with changes kept claims again under the surviving session id and sends what the service has not got above its sequence (W11.3)', async () => {
+    const { clock, service, session, sent } = harness(undefined, { sequence: 5 });
+    service.seedAccepted(5, 'Unbox the printer.');
+    session.resume(true);
+    expect(session.view()).toMatchObject({ phase: 'claiming', dirty: true });
+    await clock.advance(designTiming.idleMs);
+    // Not fresh and not moving: the same session picking its own lock back up, as a lapsed one does.
+    expect(service.calls).toEqual(['claim', 'save 6']);
+    expect(service.sessionId).toBe('session-0');
+    expect(sent).toEqual([6]);
+    expect(session.view()).toMatchObject({ phase: 'editing', save: 'saved', dirty: false });
+  });
+
+  it('a reload whose changes the service already has claims again and sends nothing (W11.3)', async () => {
+    const { clock, service, session, type } = harness(undefined, { sequence: 5 });
+    service.seedAccepted(5, 'Unbox the printer.');
+    session.resume(false);
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual(['claim']);
+    expect(session.view()).toMatchObject({ phase: 'editing', save: 'saved', dirty: false });
+    // And the next change goes on above what the service has.
+    type('Unbox the printer and keep the box.');
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual(['claim', 'save 6']);
+  });
+
+  it('a reload refused its claim goes back to reading with the changes it held offered, as any refused claim does (W11.3)', async () => {
+    const { clock, service, session, refused, refusedPending } = harness(undefined, {
+      sequence: 2,
+    });
+    const grace: Holder = {
+      name: 'Grace',
+      expectedRelease: '2026-09-28T15:00:00.000Z',
+      yours: false,
+    };
+    service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder: grace });
+    session.resume(true);
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual(['claim']);
+    expect(refused).toEqual([grace]);
+    expect(refusedPending).toEqual([true]);
+    expect(session.view()).toMatchObject({ phase: 'reading', save: 'stopped', holder: grace });
+  });
+
+  /** A document of one paragraph, as a reload rebuilds the save it last sent. */
+  const documentOf = (text: string): ContentDocument => ({
+    schemaVersion: 1,
+    title: 'Install the printer',
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [{ type: 'text', value: text, marks: [] }],
+      },
+    ],
+  });
+
+  it('a reload whose last save was never answered sends it again at that number once the claim is granted, and acknowledged goes on as saved, what was typed after it sent as the next (a third look at W11.3)', async () => {
+    const { clock, service, session, sent, answered } = harness(() => ({ 'field-code': 'B2' }), {
+      sequence: 5,
+    });
+    service.seedAccepted(5, 'Unbox the printer.');
+    session.resume(true, {
+      content: documentOf('Unbox the printer.'),
+      values: { 'field-code': 'A1' },
+    });
+    expect(session.view()).toMatchObject({ phase: 'claiming', dirty: true });
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual(['claim', 'save 5', 'save 6']);
+    // What was sent then, values and all, and then what is on screen now.
+    expect(service.savedValues).toEqual([{ 'field-code': 'A1' }, { 'field-code': 'B2' }]);
+    // The repeat takes no number of its own.
+    expect(sent).toEqual([6]);
+    expect(answered).toEqual(['accepted 5', 'accepted 6']);
+    expect(session.view()).toMatchObject({ phase: 'editing', save: 'saved', dirty: false });
+  });
+
+  it('a reload whose last save, sent again, is refused as another page of the same session saved that number goes to lost as a stale save does, sending nothing more (a third look at W11.3)', async () => {
+    const { clock, service, session, sent, answered, type } = harness(undefined, { sequence: 5 });
+    service.seedAccepted(5, 'Unbox the printer. Keep the box.');
+    session.resume(true, { content: documentOf('Unbox the printer.'), values: {} });
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual(['claim', 'save 5']);
+    // A component with no fields sends none, again as before.
+    expect(service.savedValues).toEqual([undefined]);
+    expect(answered).toEqual(['refused 5']);
+    expect(sent).toEqual([]);
+    expect(session.view()).toMatchObject({
+      phase: 'lost',
+      save: 'stopped',
+      dirty: true,
+      recoverable: true,
+    });
+    expect(session.view().notice).toMatch(/^Newer text was saved from another window/);
+    type('Unbox the printer. Mind the cable.');
+    await clock.advance(30_000);
+    expect(service.calls).toEqual(['claim', 'save 5']);
+    // Continue starts a new session, which has nothing to send again.
+    session.claimAgain(true);
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual(['claim', 'save 5', 'claim, moving', 'save 1']);
+  });
+
+  it('a reload refused its claim sends its last save again first when it claims again under the same session (a third look at W11.3)', async () => {
+    const { clock, service, session } = harness(undefined, { sequence: 5 });
+    service.seedAccepted(5, 'Unbox the printer.');
+    const grace: Holder = {
+      name: 'Grace',
+      expectedRelease: '2026-09-28T15:00:00.000Z',
+      yours: false,
+    };
+    service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder: grace });
+    session.resume(true, { content: documentOf('Unbox the printer.'), values: {} });
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual(['claim']);
+    expect(session.view().phase).toBe('reading');
+    // Grace is done: Try again.
+    service.claimAnswer = async () => ({ ok: true });
+    session.claimAgain(false);
+    session.changed();
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual(['claim', 'claim', 'save 5', 'save 6']);
+  });
+
+  it('a reload whose last save, sent again, has no answer takes the service to be ahead, and one refused as signed out says so, neither sending anything more (a third look at W11.3)', async () => {
+    const failing = harness(undefined, { sequence: 5 });
+    failing.service.seedAccepted(5, 'Unbox the printer.');
+    failing.service.saveAnswer = async () => ({ ok: false, code: 'failed' });
+    failing.session.resume(true, { content: documentOf('Unbox the printer.'), values: {} });
+    await failing.clock.advance(30_000);
+    expect(failing.service.calls).toEqual(['claim', 'save 5']);
+    expect(failing.session.view()).toMatchObject({ phase: 'lost', recoverable: true });
+    expect(failing.session.view().notice).toMatch(/^Newer text was saved from another window/);
+
+    const signedOut = harness(undefined, { sequence: 5 });
+    signedOut.service.seedAccepted(5, 'Unbox the printer.');
+    signedOut.service.saveAnswer = async () => ({ ok: false, code: 'signed_out' });
+    signedOut.session.resume(true, { content: documentOf('Unbox the printer.'), values: {} });
+    await signedOut.clock.advance(30_000);
+    expect(signedOut.service.calls).toEqual(['claim', 'save 5']);
+    expect(signedOut.session.view()).toMatchObject({ phase: 'lost', recoverable: false });
+    expect(signedOut.session.view().notice).toBe(
+      'You are signed out. Sign in again; your unsaved text is kept below.',
+    );
+  });
+
+  it('a page that goes while its reload sends its last save again sends nothing more: what it kept settles it on the next (a third look at W11.3)', async () => {
+    const { clock, service, session, type } = harness(undefined, { sequence: 5 });
+    service.seedAccepted(5, 'Unbox the printer.');
+    let answer: () => void = () => {};
+    service.saveAnswer = () =>
+      new Promise((resolve) => {
+        answer = () => resolve(undefined);
+      });
+    session.resume(true, { content: documentOf('Unbox the printer.'), values: {} });
+    await clock.advance(0);
+    expect(service.calls).toEqual(['claim', 'save 5']);
+    type('Unbox the printer and keep the box.');
+    session.dispose();
+    answer();
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual(['claim', 'save 5']);
+  });
+
+  it('a reload the service has saved past under its session sends nothing and claims nothing, as a stale save stops (final review of W11.3, D1)', async () => {
+    const { clock, service, session } = harness(undefined, { sequence: 2 });
+    session.behind();
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual([]);
+    expect(session.view()).toMatchObject({
+      phase: 'lost',
+      save: 'stopped',
+      dirty: true,
+      recoverable: true,
+    });
+    expect(session.view().notice).toMatch(/^Newer text was saved from another window/);
+    // Continue starts a new session from what is on screen.
+    session.claimAgain(true);
+    await clock.advance(designTiming.idleMs);
+    expect(service.calls).toEqual(['claim, moving', 'save 1']);
+  });
+
+  it('tells the kept session every sequence it takes, the one a closing page sends among them', async () => {
+    const { clock, session, sent, type } = harness();
+    type('Unbox');
+    await clock.advance(designTiming.idleMs);
+    type('Unbox the printer');
+    await clock.advance(designTiming.idleMs);
+    type('Unbox the printer and keep the box.');
+    session.dispose();
+    expect(sent).toEqual([1, 2, 3]);
+  });
+
+  it('tells the kept session each save the service accepts, and each it refuses as behind it, stale or conflicting (re-review of W11.3, D1)', async () => {
+    const { clock, service, answered, type } = harness();
+    type('Unbox');
+    await clock.advance(designTiming.idleMs);
+    expect(answered).toEqual(['accepted 1']);
+    // Another page of the same session saved the next number first, with other text.
+    service.seedAccepted(2, 'Unbox the box.');
+    type('Unbox the printer');
+    await clock.advance(designTiming.idleMs);
+    expect(answered).toEqual(['accepted 1', 'refused 2']);
+
+    const behind = harness();
+    behind.service.seedAccepted(5, 'Unbox the box.');
+    behind.type('Unbox');
+    await behind.clock.advance(designTiming.idleMs);
+    expect(behind.answered).toEqual(['refused 1']);
+    // Nothing else the service answers is either: a failure is retried, and says nothing of it.
+    const failing = harness();
+    failing.service.saveAnswer = async () => ({ ok: false, code: 'failed' });
+    failing.type('Unbox');
+    await failing.clock.advance(designTiming.idleMs);
+    expect(failing.answered).toEqual([]);
+  });
+
+  it('tells the kept session the answers to saves that arrive after the page has gone: one on the wire as it went, and the one it sent as it went', async () => {
+    const { clock, service, session, answered, type } = harness();
+    type('Unbox');
+    await clock.advance(designTiming.idleMs);
+    let answer = () => {};
+    service.saveAnswer = () =>
+      new Promise((resolve) => {
+        answer = () => resolve(undefined);
+      });
+    type('Unbox the printer');
+    await clock.advance(designTiming.idleMs);
+    type('Unbox the printer and keep the box.');
+    session.dispose();
+    service.saveAnswer = async () => undefined;
+    answer();
+    await clock.advance(0);
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual([
+      'save 1',
+      'save 2',
+      'save 3',
+    ]);
+    expect(answered).toEqual(['accepted 1', 'accepted 2', 'accepted 3']);
   });
 
   it('aborts a claim that has already lost its race against the timeout (task 10, finding E)', async () => {

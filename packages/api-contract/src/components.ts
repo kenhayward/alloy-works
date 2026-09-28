@@ -7,6 +7,18 @@ import { ErrorBody, LowercaseUuid } from './schemas.js';
 export const ComponentParams = z.object({ id: z.uuid() });
 export type ComponentParams = z.infer<typeof ComponentParams>;
 
+/**
+ * Opening a component, naming the editing session a reload of this window kept (component-editor.md,
+ * "Undo across a reload"): the component answers that session's latest accepted sequence, the caller's
+ * own. Absent, it answers none.
+ */
+export const ComponentQuery = z.object({
+  session: LowercaseUuid.optional().describe(
+    "The editing session whose latest accepted sequence to answer, the caller's own",
+  ),
+});
+export type ComponentQuery = z.infer<typeof ComponentQuery>;
+
 /** A space, by the id it carries. */
 export const SpaceParams = z.object({ space: LowercaseUuid });
 export type SpaceParams = z.infer<typeof SpaceParams>;
@@ -178,6 +190,13 @@ export const ComponentView = z.object({
     .describe(
       "The caller's own newest iteration opened from the latest version, work saved and never made a version, by its time alone; null where there is none",
     ),
+  sequence: z
+    .number()
+    .int()
+    .nullable()
+    .describe(
+      "The latest sequence the service has accepted from the editing session the `session` query names, the caller's own; null where none is named or it has saved none",
+    ),
   type: z
     .object({ id: z.string(), name: z.string() })
     .describe('The component type its latest version records, at the current version'),
@@ -306,8 +325,10 @@ export const componentRoutes = {
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: ComponentParams,
+    query: ComponentQuery,
     responses: {
       200: { description: 'The component', schema: ComponentView },
+      400: { description: 'A session that is not a lowercase uuid', schema: ErrorBody },
       401: unauthenticated,
       403: {
         description: 'Never answered: a component the caller may read is one they may open',

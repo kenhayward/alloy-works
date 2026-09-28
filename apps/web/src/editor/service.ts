@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import type { ContentDocument } from '@alloy-works/domain';
 
+import { mayKeepEditing } from './editing-storage.js';
 import type {
   ClaimResult,
   CutResult,
@@ -51,11 +52,27 @@ function holdSession(componentId: string, id: string, storage?: SessionStorage):
     -HELD_KEPT,
   );
   try {
-    (storage ?? globalThis.sessionStorage).setItem(heldKeyFor(componentId), JSON.stringify(held));
+    if (mayKeepEditing()) {
+      (storage ?? globalThis.sessionStorage).setItem(heldKeyFor(componentId), JSON.stringify(held));
+    }
   } catch {
     // Unavailable storage: the window's own ids are remembered for this page alone.
   }
   return held;
+}
+
+/**
+ * The session id this window keeps for a component, or null where it keeps none that is one: what the
+ * component's `GET` names, so the service answers where that session's sequence stands whichever way
+ * the page then goes on (final review of W11.3, D3).
+ */
+export function storedSessionId(componentId: string, storage?: Pick<Storage, 'getItem'>) {
+  try {
+    const kept = (storage ?? globalThis.sessionStorage).getItem(storageKeyFor(componentId));
+    return kept !== null && LOWERCASE_UUID.test(kept) ? kept : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -90,7 +107,8 @@ export function editingSessionFor(
   }
   const made = crypto.randomUUID();
   try {
-    (storage ?? globalThis.sessionStorage).setItem(key, made);
+    // Kept for a reload, unless the author has signed out on this page (re-review of W11.3).
+    if (mayKeepEditing()) (storage ?? globalThis.sessionStorage).setItem(key, made);
   } catch {
     // As above.
   }
@@ -155,6 +173,8 @@ function readRefusalOf(response: Response | undefined, error: unknown) {
  *
  * `principal` is the signed-in principal's id, so a lock held from another window of the same author
  * is told apart from somebody else's.
+ *
+ * `onFresh` is told each id it mints, so the session a window keeps for a reload follows it (W11.3).
  */
 export function sessionService(
   client: Client,
@@ -162,6 +182,7 @@ export function sessionService(
   initialSession: string,
   principal: string,
   storage?: Pick<Storage, 'getItem' | 'setItem'>,
+  onFresh?: (session: string) => void,
 ): SessionService {
   const path = { id: componentId };
   let current = initialSession;
@@ -175,12 +196,16 @@ export function sessionService(
       if (fresh) {
         current = crypto.randomUUID();
         try {
-          // As `editingSessionFor`'s: the fallback is resolved inside the try (fix round 1, finding 6).
-          (storage ?? globalThis.sessionStorage).setItem(storageKeyFor(componentId), current);
+          // As `editingSessionFor`'s: the fallback is resolved inside the try (fix round 1, finding 6),
+          // and nothing is kept once the author has signed out on this page (re-review of W11.3, M1).
+          if (mayKeepEditing()) {
+            (storage ?? globalThis.sessionStorage).setItem(storageKeyFor(componentId), current);
+          }
         } catch {
           // Unavailable storage does not stop the session; it just is not remembered across a reload.
         }
         for (const each of holdSession(componentId, current, storage)) held.add(each);
+        onFresh?.(current);
       }
       try {
         const { data, error, response } = await client.POST('/v1/components/{id}/lock', {

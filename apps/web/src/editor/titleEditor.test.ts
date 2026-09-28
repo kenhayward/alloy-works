@@ -136,6 +136,23 @@ describe("a section title's field (equations 3, ruling R1)", () => {
     expect(editor.read()).toEqual([text('Methods')]);
   });
 
+  it('undoes back to the title it opened on however many changes were made, past the 100 a history keeps by default (W11.3)', () => {
+    const { editor, field } = mount([text('Method')]);
+    const { view } = editor;
+    // Each change a second apart, so each is an event of its own rather than one run of typing.
+    const start = Date.now();
+    for (let at = 1; at <= 150; at += 1) {
+      view.dispatch(
+        view.state.tr.insertText('s', view.state.doc.content.size).setTime(start + at * 1_000),
+      );
+    }
+    expect(editor.read()).toEqual([text(`Method${'s'.repeat(150)}`)]);
+    for (let at = 0; at < 150; at += 1) {
+      fireEvent.keyDown(field, { key: 'z', keyCode: 90, ctrlKey: true });
+    }
+    expect(editor.read()).toEqual([text('Method')]);
+  });
+
   it('places an equation at the caret and reports it, and changes one where it stands', () => {
     const { editor, changes, field } = mount([text('Growth as ')]);
     caretAtEnd(field);

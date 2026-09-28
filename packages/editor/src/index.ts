@@ -73,6 +73,18 @@ export {
   type ImageAt,
 } from './images.js';
 export { fromEditor, toEditor, type Opened } from './mapping.js';
+// What a reload replays (component-editor.md, "Undo across a reload"; W11.3).
+export {
+  mergeChange,
+  recordChange,
+  replayChanges,
+  replayPlain,
+  editorSchemaIdentity,
+  schemaIdentity,
+  type HistoryKind,
+  type RecordedChange,
+  type RecordedTransaction,
+} from './replay.js';
 export { identityPlugin, newBlockIdentifier, whereBlockIs } from './identity.js';
 export {
   applyMarkCommand,

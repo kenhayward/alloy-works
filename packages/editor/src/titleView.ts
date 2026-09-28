@@ -91,7 +91,9 @@ function titleState(title: readonly InlineNode[], options: TitleEditorOptions): 
     doc,
     selection: Selection.atEnd(doc),
     plugins: [
-      history(),
+      // No limit on depth, as the component's own history has none (state.ts): the field's history
+      // lasts as long as the field does, and an undo reaches back to the title it opened on (W11.3).
+      history({ depth: Infinity }),
       keymap({
         'Mod-z': undo,
         'Mod-y': redo,

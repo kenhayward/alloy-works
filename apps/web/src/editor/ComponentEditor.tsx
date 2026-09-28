@@ -38,6 +38,7 @@ import {
   somewhereToPutMark,
   toEditor,
   type ComponentHeader as Header,
+  type EditorState,
   type EditorView,
   type EquationAt,
   type ReferenceContext,
@@ -68,12 +69,31 @@ import { ReferenceDialog } from './ReferenceDialog.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { uploadImage } from './upload.js';
 import { heldSentence } from './held.js';
-import { editingSessionFor, sessionService } from './service.js';
+import { editingSessionFor, sessionService, storedSessionId } from './service.js';
+import {
+  answerFor,
+  continuing,
+  createRecorder,
+  forgetOffered,
+  freshSession,
+  keepOffered,
+  lastSent,
+  offeredWith,
+  readKept,
+  readOffered,
+  replayStored,
+  sentFor,
+  textOfKept,
+  type Recorder,
+  type Sent,
+  type StoredSession,
+} from './stored-session.js';
 import {
   browserClock,
   createSession,
   designTiming,
   type Clock,
+  type Repeat,
   type Session,
   type SessionView,
   type Timing,
@@ -155,11 +175,35 @@ type Loaded =
   | { readonly state: 'open'; readonly component: ComponentView };
 
 /** Every paragraph's text, one to a line: what can be kept of changes that could not be saved. */
-const textOf = (view: EditorView) => {
+const textOfDoc = (doc: EditorState['doc']) => {
   const lines: string[] = [];
-  view.state.doc.forEach((paragraph) => lines.push(paragraph.textContent));
+  doc.forEach((paragraph) => lines.push(paragraph.textContent));
   return lines.join('\n');
 };
+const textOf = (view: EditorView) => textOfDoc(view.state.doc);
+
+/**
+ * The save a reload's window last sent, rebuilt from what it kept exactly as it was sent, to send again
+ * where its answer never came back (a third look at W11.3); null where it cannot be, which is then taken
+ * for the service being ahead.
+ */
+const repeatOf = (stored: StoredSession, sentLater: Sent | null): Repeat | null => {
+  const sent = lastSent(stored, sentLater);
+  if (sent === null) return null;
+  try {
+    return { content: fromEditor(sent.doc), values: sent.values };
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Said where what a window kept before this page opened is offered as text to copy rather than brought
+ * back, or cannot be read at all, rather than dropping it unsaid (final review of W11.3, D5).
+ */
+const KEPT_OFFERED =
+  'What you typed before this page opened could not be brought back, so it is below for you to copy.';
+const KEPT_UNREADABLE = 'What you typed before this page opened could not be brought back.';
 
 /**
  * Whether the surface takes changes in this phase - the one predicate, shared by the view's own
@@ -263,6 +307,17 @@ export function ComponentEditor({
   const [attempt, setAttempt] = useState(0);
   const [session, setSession] = useState<SessionView | null>(null);
   const [kept, setKept] = useState<string | null>(null);
+  // What was offered on opening, from before this page opened, as text to copy: held until the author
+  // dismisses it, through claims, saves and reloads, since by then it is kept nowhere else (re-review
+  // of W11.3). `kept`, above, is a refusal's, and a claim that succeeds after it clears it.
+  const [offered, setOffered] = useState<string | null>(null);
+  // The same, and for which component and whom, as the page last showed it: a component opened over
+  // again reads it from here rather than from storage, which may have refused to keep it.
+  const offeredShown = useRef<{
+    readonly component: string;
+    readonly principal: string;
+    readonly text: string;
+  } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   // Said through the application's status bar, its one live region, where there is one (interface
   // slice 15); a component opened in place in a document shares it with the document's own notices.
@@ -340,6 +395,8 @@ export function ComponentEditor({
   // would put it back over whatever the page said since - a paste, a refused header field.
   const sessionNotice = useRef<string | null>(null);
   const controls = useRef<Session | null>(null);
+  // What this window keeps of the session for a reload (W11.3), told of every value changed.
+  const recorder = useRef<Recorder | null>(null);
   // The metadata panel's region, beside the surface wherever the component has fields; its values as
   // the author holds them, which the session reads whole at every save (definitions.md); and who a
   // `user` field may name.
@@ -587,13 +644,26 @@ export function ComponentEditor({
   // cut or a claim refused would otherwise start with none, and every reference would lose its label.
   const referenceContextRef = useRef(referenceContext);
   referenceContextRef.current = referenceContext;
+  // The session the component's last `GET` named, whose sequence it answered (final review of W11.3,
+  // D3): a page that goes on under that id goes on above it.
+  const askedSession = useRef<string | null>(null);
 
   useEffect(() => {
     let current = true;
+    // The session this window keeps for the component, if any, is asked where its sequence stands
+    // (W11.3): whether it goes on with kept changes or with none, as after a cut or a restore, which
+    // keep none (final review of W11.3, D3).
+    const asked = storedSessionId(componentId);
     void client
-      .GET('/v1/components/{id}', { params: { path: { id: componentId } } })
+      .GET('/v1/components/{id}', {
+        params: {
+          path: { id: componentId },
+          ...(asked === null ? {} : { query: { session: asked } }),
+        },
+      })
       .then(({ data, response }) => {
         if (!current) return;
+        askedSession.current = asked;
         if (!data) {
           // Only a 404 means missing or unreadable, which the service answers alike (final review,
           // finding 4): signed out, a server error or no answer is not the component's absence.
@@ -671,6 +741,33 @@ export function ComponentEditor({
     // The values' own base, as `base` is the text's: what a refused claim puts the fields back to.
     let baseValues: Record<string, unknown> = { ...component.values };
     let phase: SessionView['phase'] = 'reading';
+    // What this window kept of its session before a reload (component-editor.md, "Undo across a
+    // reload"), and only if it was kept for whoever is signed in now (final review of W11.3, D2):
+    // replayed only where it was recorded against the version that opens - a change recorded against
+    // an older one is never replayed (CNT-169) - where the author may still edit the component, and
+    // where every change replays exactly onto a document the model holds. Anything else opens as a
+    // page opened afresh does, with what was on screen offered as text to copy where it can be read
+    // and differs from what opens, or said to be lost where it cannot be read at all (D5).
+    const kept = readKept(component.id, principalId);
+    const stored: StoredSession | null = kept?.readable === true ? kept.session : null;
+    let offering: string | null = kept?.readable === false ? kept.text : null;
+    let unreadable = kept?.readable === false && kept.text === null;
+    let replayed: EditorState | null = null;
+    if (stored !== null && stored.version === component.version.id && stored.revision > 0) {
+      try {
+        if (!component.mayEdit) throw new Error('The component may no longer be edited');
+        const state = replayStored(stored, (doc) => fresh(doc));
+        // Storable as it stands, or the first save would refuse it.
+        fromEditor(state.doc);
+        replayed = state;
+      } catch {
+        offering = textOfKept(stored);
+        unreadable = offering === null;
+      }
+    }
+    // True from a replay until its claim is answered: a refusal puts the surface back to the version
+    // even where everything replayed was saved, since what is shown then is the latest version.
+    let ahead = false;
     keptIsCurrent.current = false;
     /**
      * Captures the surface into `kept`, once for whatever it currently holds (fix round 2, minor).
@@ -689,17 +786,136 @@ export function ComponentEditor({
     // GET just answered, says this caller already holds it under that very id - a reload while
     // holding keeps its lock, while reopening after Done editing (nothing holds it any longer) starts
     // a fresh session at sequence 0, never a false "newer text" notice from reusing a stale one.
+    // A replay goes on under the session it was recorded in, whoever holds the lock now: the claim
+    // says whether it may (RC-H).
     const initialSession =
       sessionIdRef.current ??
       editingSessionFor(
         component.id,
-        (stored) => component.lock?.yours === true && component.lock.session === stored,
+        (id) =>
+          (component.lock?.yours === true && component.lock.session === id) ||
+          (replayed !== null && stored?.session === id),
       );
+    // Replayed under the session it was kept in, or not at all: a page that starts under another id -
+    // the id it was kept under gone from storage - offers what was kept as text instead.
+    const sentLater = stored === null ? null : sentFor(component.id, stored.session);
+    const going =
+      replayed !== null && stored !== null && stored.session === initialSession
+        ? continuing(
+            stored,
+            askedSession.current === stored.session ? (component.sequence ?? null) : null,
+            sentLater,
+            // What the service said to this window of the last it sent: a save it holds at that
+            // number is this window's only where it said so (re-review of W11.3, D1).
+            answerFor(component.id, stored.session),
+          )
+        : null;
+    // Where it never said, the save is sent again after the claim, rebuilt exactly as it was sent, and
+    // the service's answer settles whose it is; one that cannot be rebuilt is taken for another page's
+    // (a third look at W11.3).
+    const repeat = going?.repeat === true && stored !== null ? repeatOf(stored, sentLater) : null;
+    const resumed =
+      replayed !== null && going !== null
+        ? {
+            state: replayed,
+            ...going,
+            ahead: going.ahead || (going.repeat && repeat === null),
+            repeat,
+          }
+        : null;
+    // True from a repeat until it is settled: refused, what is on screen is offered, as a replay the
+    // service has saved past is.
+    let repeating = resumed !== null && !resumed.ahead && resumed.repeat !== null;
+    if (replayed !== null && resumed === null) offering = textOfDoc(replayed.doc);
+    // A replay the service has saved past is offered too: it goes to `lost` with it on screen, and
+    // whatever goes on from there, what was kept has no other copy (D1; its re-review).
+    const offeredBehind = resumed?.ahead === true ? textOfDoc(resumed.state.doc) : null;
+    // Where the session's sequence goes on from: a replay's, or - an id reused with nothing kept, as
+    // after a cut or a restore - the larger of the service's answer for it and the last this window
+    // sent under it, never 0 under an id it has saves from (final review of W11.3, D3), nor below a
+    // save this window sent that the service had not yet taken when it answered (its re-review).
+    const startAt =
+      resumed?.sequence ??
+      Math.max(
+        initialSession === askedSession.current ? (component.sequence ?? 0) : 0,
+        sentFor(component.id, initialSession)?.sequence ?? 0,
+      );
+    const keeping = createRecorder(
+      component.id,
+      resumed !== null && stored !== null
+        ? stored
+        : freshSession({
+            principal: principalId,
+            session: initialSession,
+            version: component.version.id,
+            doc: opened.doc,
+            values: component.values,
+            sequence: startAt,
+          }),
+    );
+    recorder.current = keeping;
+    if (resumed !== null && stored !== null) {
+      heldValues.current = { ...stored.values };
+      setValues(heldValues.current);
+      setValuesDrawn((drawn) => drawn + 1);
+    }
+    // Offered where it says anything the version does not, beside whatever this window offered before
+    // and the author has not dismissed, and kept until they do (re-review of W11.3). What this page
+    // already shows for the component comes first: storage may have refused to keep it, and the record
+    // it came from is forgotten by now, so a component opened over again - for a new client, or the
+    // same component read again - would otherwise read nothing back and lose it (re-review of W11.3,
+    // M3).
+    const differs = (text: string | null) => (text !== textOfDoc(opened.doc) ? text : null);
+    const offeredKept = readOffered(component.id, principalId);
+    const shown =
+      offeredShown.current?.component === component.id &&
+      offeredShown.current.principal === principalId
+        ? offeredShown.current.text
+        : null;
+    const already = shown ?? offeredKept;
+    const offeredNow = offeredWith(offeredWith(already, differs(offering)), differs(offeredBehind));
+    offeredShown.current =
+      offeredNow === null
+        ? null
+        : { component: component.id, principal: principalId, text: offeredNow };
+    setOffered(offeredNow);
+    if (offeredNow !== null && offeredNow !== offeredKept) {
+      keepOffered(component.id, principalId, offeredNow);
+    }
+    if (differs(offering) !== null) setNotice(KEPT_OFFERED);
+    else if (unreadable) setNotice(KEPT_UNREADABLE);
+    /** Offers `text` beside whatever is offered already, once the page is open: a repeat refused. */
+    const offerAlso = (text: string) => {
+      const shownNow =
+        offeredShown.current?.component === component.id &&
+        offeredShown.current.principal === principalId
+          ? offeredShown.current.text
+          : null;
+      const next = offeredWith(shownNow, differs(text));
+      if (next === null || next === shownNow) return;
+      offeredShown.current = { component: component.id, principal: principalId, text: next };
+      setOffered(next);
+      keepOffered(component.id, principalId, next);
+    };
+    // Written at once when the page is hidden or goes, which runs no unmount (D4).
+    const keepNow = () => keeping.flush();
+    const keepIfHidden = () => {
+      if (document.visibilityState === 'hidden') keeping.flush();
+    };
+    window.addEventListener('pagehide', keepNow);
+    document.addEventListener('visibilitychange', keepIfHidden);
     // A new session has published nothing yet, and no paste is waiting on its claim.
     sessionNotice.current = null;
     pasteSaid.current = null;
     const editing = createSession({
-      service: sessionService(client, component.id, initialSession, principalId),
+      // A session claimed afresh is followed by what the window keeps, from which nothing is sent.
+      service: sessionService(client, component.id, initialSession, principalId, undefined, (id) =>
+        keeping.rebind(id),
+      ),
+      sequence: startAt,
+      onSent: (sequence) => keeping.sent(sequence),
+      onAccepted: (sequence) => keeping.accepted(sequence),
+      onSaveRefused: (sequence) => keeping.refused(sequence),
       clock: clockRef.current,
       timing: timingRef.current,
       version: { id: component.version.id, number: component.version.number },
@@ -718,6 +934,21 @@ export function ComponentEditor({
           setNotice(said && next.phase === 'editing' ? `${next.notice} ${said}` : next.notice);
         }
         if (next.phase !== 'reading') staleLockKnown.current = true;
+        if (next.phase === 'editing') ahead = false;
+        // A reload's last save, sent again, refused as another page's: what is on screen is offered,
+        // as a replay the service has saved past is, rather than kept as a refusal's (a third look at
+        // W11.3).
+        if (repeating && (next.phase === 'editing' || next.phase === 'lost')) {
+          repeating = false;
+          if (next.phase === 'lost' && next.recoverable) {
+            offerAlso(textOf(view));
+            keptIsCurrent.current = true;
+          }
+        }
+        // Released by Done editing, whether or not a version was cut: a reload claims nothing back.
+        if (previous === 'releasing' && next.phase === 'reading') {
+          keeping.reset(next.version.id, view.state.doc, heldValues.current);
+        }
         if (next.phase === 'editing' || next.phase === 'recovery') setOwnSession(true);
         // Lost, or stopped while editing goes on - signed out, or content the service refused (final
         // review, finding 2): either way what is on screen is not saved and nothing is retrying it.
@@ -740,8 +971,20 @@ export function ComponentEditor({
       onRefused: (_holder, hadPending) => {
         // Nothing was pending: there is nothing new to undo or offer, so nothing here changes (fix
         // round 2, finding 1) - a bare Try again must not add another copy of the unchanged, already
-        // saved version to the kept text.
-        if (!hadPending) return;
+        // saved version to the kept text. Unless the surface holds a replay whose claim this was:
+        // everything in it was saved, and the latest version is what goes back on screen, with
+        // Recover to reach what was saved.
+        if (!hadPending && !ahead) return;
+        ahead = false;
+        if (!hadPending) {
+          view.updateState(fresh(base));
+          heldValues.current = baseValues;
+          setValues(baseValues);
+          setValuesDrawn((drawn) => drawn + 1);
+          setHeader(headerOf(view.state.doc));
+          keeping.reset(editing.view().version.id, base, baseValues);
+          return;
+        }
         // The held changes are not applied: the surface goes back to the version, and what was typed
         // is offered as text, the one thing that can be kept without writing to the component.
         // `captureKept` appends rather than replaces (fix round 1, finding 2) and is a no-op when the
@@ -754,6 +997,8 @@ export function ComponentEditor({
         heldValues.current = baseValues;
         setValues(baseValues);
         setValuesDrawn((drawn) => drawn + 1);
+        // Nothing kept for a reload survives it: the held changes are offered as text, not replayed.
+        keeping.reset(editing.view().version.id, base, baseValues);
         // `updateState` does not go through `dispatch` above, so nothing else refreshes `header`
         // (review round 1, item 1): left alone, it would keep showing whatever was typed right up to
         // the refusal, and the next keystroke into that stale field would resend it - resurrecting
@@ -777,6 +1022,8 @@ export function ComponentEditor({
           return `${sentenceCase(label)} holds content this editor cannot change yet (${reopened.unsupported.join(', ')}), so it was not restored.`;
         }
         view.updateState(fresh(reopened.doc));
+        // And what the window keeps for a reload starts again from it, as the history does (RC-G).
+        keeping.reset(editing.view().version.id, reopened.doc, restoredValues);
         heldValues.current = { ...restoredValues };
         setValues(heldValues.current);
         setValuesDrawn((drawn) => drawn + 1);
@@ -784,7 +1031,7 @@ export function ComponentEditor({
         keptIsCurrent.current = false;
         return null;
       },
-      onVersion: () => {
+      onVersion: (cut) => {
         // Undo must not reach past a version (CNT-103): a fresh state has a fresh history. Cutting a
         // version changes nothing about the document itself, though, so the selection is carried over
         // rather than jumping back to the start (fix round 1, minor).
@@ -792,6 +1039,8 @@ export function ComponentEditor({
         base = view.state.doc;
         baseValues = heldValues.current;
         view.updateState(fresh(base, selection));
+        // And nothing kept for a reload reaches past it either: the kept changes go with the history.
+        keeping.reset(cut.id, base, baseValues);
         // As above: cutting changes nothing about the header, but this keeps that an invariant the
         // surface enforces rather than one a future change could silently break.
         setHeader(headerOf(view.state.doc));
@@ -800,14 +1049,18 @@ export function ComponentEditor({
     controls.current = editing;
     setSession(editing.view());
     const view = mountEditor(place.current, {
-      state: fresh(),
+      state: resumed?.state ?? fresh(),
       // Named once, from what the component opened with (task 5 brief): it does not follow a title
       // typed afterwards, which is wrong only after a rename, and the accessibility plan owns the
       // surface's naming.
       label: `Content of ${opened.doc.attrs.title as string}`,
       editable: () => component.mayEdit && isEditablePhase(phase),
       dispatch: (transaction, target) => {
-        target.updateState(target.state.apply(transaction));
+        const before = target.state;
+        const { state: after, transactions } = before.applyTransaction(transaction);
+        target.updateState(after);
+        // Kept for a reload with whatever the plugins appended, as the history took it (W11.3).
+        keeping.applied(before, transactions, after);
         // Every transaction, not only one that changed the document: a transaction that only moved
         // the caret is exactly the one the toolbar has to hear about.
         setTransactions((count) => count + 1);
@@ -837,8 +1090,25 @@ export function ComponentEditor({
       view.focus();
     }
     onViewRef.current?.(view);
+    // A reload going on: claimed again under its own session, and what the service has not got sent -
+    // unless the service holds a later save under it than this window sent, which nothing here may go
+    // on over (D1).
+    if (resumed?.ahead === true) {
+      // Offered already, above: `lost` captures nothing more of it.
+      keptIsCurrent.current = true;
+      editing.behind();
+    } else if (resumed !== null) {
+      ahead = true;
+      editing.resume(resumed.unsent, resumed.repeat ?? undefined);
+    }
     return () => {
+      window.removeEventListener('pagehide', keepNow);
+      document.removeEventListener('visibilitychange', keepIfHidden);
       editing.dispose();
+      // Whatever this page's session does after it is gone - a save queued behind one in flight - is
+      // not kept: a later page's record is not this one's to write over.
+      keeping.close();
+      if (recorder.current === keeping) recorder.current = null;
       controls.current = null;
       setSurface(null);
       view.destroy();
@@ -917,11 +1187,16 @@ export function ComponentEditor({
   // guarded for as long as anything is dirty or being sent (fix round 1, finding 4): while dirty,
   // while a save is in flight, while a retry is failing with content it has not yet acknowledged, or
   // while there is still text kept from a refusal that was never written anywhere (fix round 2,
-  // minor). The guard comes off the moment none of those is true any longer.
+  // minor), or text offered on opening that the author has not dismissed, which a reload keeps and a
+  // closed tab does not (re-review of W11.3). The guard comes off the moment none of those is true.
   useEffect(() => {
     if (!session) return undefined;
     const unacknowledged =
-      session.dirty || session.save === 'saving' || session.save === 'failing' || kept !== null;
+      session.dirty ||
+      session.save === 'saving' ||
+      session.save === 'failing' ||
+      kept !== null ||
+      offered !== null;
     if (!unacknowledged) return undefined;
     const warnBeforeClose = (event: BeforeUnloadEvent) => {
       event.preventDefault();
@@ -929,7 +1204,7 @@ export function ComponentEditor({
     };
     window.addEventListener('beforeunload', warnBeforeClose);
     return () => window.removeEventListener('beforeunload', warnBeforeClose);
-  }, [session, kept]);
+  }, [session, kept, offered]);
 
   /**
    * Puts the focus in a region: on the first control a Tab would reach inside it, or on the region
@@ -1448,10 +1723,30 @@ export function ComponentEditor({
                   onChange={(next) => {
                     heldValues.current = next;
                     setValues(next);
+                    recorder.current?.values(next);
                     controls.current?.changed();
                   }}
                 />
               </section>
+            )}
+            {offered !== null && (
+              <div>
+                <label>
+                  Text from before this page opened
+                  <textarea readOnly value={offered} />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOffered(null);
+                    offeredShown.current = null;
+                    forgetOffered(componentId);
+                    surface?.focus();
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
             )}
             {kept !== null && (
               <label>

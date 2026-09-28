@@ -700,21 +700,96 @@ service keeps the latest accepted sequence and the digest of what it accepted:
 The indicator says **saved** when the latest sequence is acknowledged, **saving** while one is in flight,
 and **not saved, retrying** once a save has failed for ten seconds. Retries back off to thirty seconds
 between attempts, and a limited response's `Retry-After` is honoured over the client's own backoff.
-Every unsent step, and the latest values, stay in session storage throughout.
+Every unsent step, and the latest values, stay in session storage throughout: written within a moment
+of each change, and at once as the page is hidden or goes.
 
 ### Undo across a reload
 
-Session storage holds, per component and editing session: the version the session opened from, the
-document at that point, every step since with the history's grouping, the latest metadata values, and
-the last sequence number sent.
+Session storage holds, per component and editing session: the principal it was kept for, the version the
+session opened from, the document at that point, every step since with the history's grouping, the
+latest metadata values, the last sequence number sent and what that save held, and the last answer the
+service gave to one.
 
-On reload the renderer asks the service for the session's latest accepted sequence. If this session still
-holds the lock and the opened-from version is unchanged, the steps are replayed into a fresh editor state
-with history, the values restored, and anything beyond the service's latest sequence sent as the next
-iteration - so undo reaches back exactly as far as it did, and the service's record is never overwritten
-by an older local one. Steps recorded against an older version are discarded (CNT-103). A lock no longer
-held means Recovery. Session storage that does not parse is discarded and the session opens from the
-service's latest iteration.
+On reload the renderer asks the service for the session's latest accepted sequence. **If that is above the
+last this window sent, another page holding the same session saved past it; if it equals the last this
+window sent, the save it holds is this window's where the service acknowledged that sequence to this
+window** - a sequence sent is not a sequence accepted, and another page may have saved that number first.
+**Where it equals the last this window sent and no answer to that number ever came** - most often the
+save a page sends as it goes, which arrives after its page has gone - that save is rebuilt from the kept
+steps exactly as it was sent and sent again at the same number, under the same session, once the claim is
+granted: the service answers the same content again as accepted, and the page goes on as saved, anything
+typed after that save sent as the next sequence; different content is refused as conflicting, and the
+page goes behind. A save the kept steps cannot rebuild exactly is not guessed at, and is taken for
+another page's. Where it is past, or that sequence was refused, or the save sent again is refused, nothing
+is sent or replayed over it: the page opens as a stale save leaves it, with **Continue** and **Recover**,
+and the kept changes on screen and offered as text to copy. If nobody but this
+session holds the lock - it holds it still, or it lapsed and nobody took it - and the opened-from version
+is unchanged, the session claims again under its own id (RC-H), the steps are replayed into a fresh
+editor state with history, the values restored, and anything the service has not got sent as the next
+iteration, above both the service's latest sequence and the last one this window sent - so undo and redo
+reach exactly as far as they did, and the service's record is never overwritten by an older local one.
+Steps recorded against an older version are discarded (CNT-169). A lock somebody else holds means
+Reading, with the changes offered as text to copy, as a refused claim offers them. Session storage that
+does not parse is discarded and the page opens as one opened afresh does: at the latest version, with
+**Recover** where something was saved and never made a version. Nothing kept for one author is replayed
+for another signed in on the same tab, and signing out forgets it all.
+
+**As built (W11.3).** The steps are kept as a log of changes, each the transaction the surface applied and
+every one the plugins appended to it, with how the history took it - a new event, joined to the last,
+not held, an undo or a redo - read off the history's depth rather than worked out again, and the selection
+before it. The grouping is replayed exactly, forced rather than left to timing, and an undo or a redo is
+replayed as the command, so redo survives too; the identifiers the session drew, which the history does
+not hold, are replayed from the log and none is drawn again. A replay that does not reproduce the log
+exactly is discarded as storage that does not parse is. Done editing forgets the steps as a cut does,
+whether or not anything was cut, so a reload after it claims nothing back. A reload opens with a caret
+where the selection was, never a footnote or a figure selected whole, whose editor or panel would not be
+drawn.
+
+**From the final review (W11.3).** Nothing tells a duplicated tab from a reload of the same tab, and
+nothing tries: the one sign there would be, a mark a page takes off session storage as it goes, is never
+taken off by a crash, a discarded tab or a browser restoring its session, none of which fires
+`pagehide`, so the next load of the same tab would be taken for a copy and lose its undo. A duplicated
+tab, which copies session storage and with it the session id and the kept steps, goes on as a second
+window of the same author under the same session ([Two windows, one author](#two-windows-one-author)),
+and the sequence keeps either from writing over the other: a reload whose session the service has saved
+past the last this window sent opens as a stale save does, sending nothing, and of two pages going on
+under one session the service refuses whichever sends a sequence it has already taken, and that one
+goes to `lost` with its text offered to copy. A crash is a reload like any other: the service holds
+nothing past what the page sent, so the next load replays and goes on. What this window sent is kept
+twice, in the record and under a key per session that only ever rises and is written by a save sent
+after the page has gone too, so a page's own last save is never taken for somebody else's.
+
+**From a second look at those fixes (W11.3).** Sent is not accepted: a page whose save of a number was
+refused because another page of the same session saved that number first, or whose last save, sent as it
+went, met the same, went on after a reload as saved. The last answer to a save is now kept beside what
+was sent, per session, only ever rising and written by an answer that arrives after the page has gone
+too, and a reload goes on over a save the service holds at the number it last sent only where that answer
+accepted it, once or again. A save that reached the service but whose answer was lost with the page was
+then offered as text with a notice of newer text that was false - never taken for saved when it may not
+be; a third look, below, sends it again instead. The record
+carries the principal it was kept for and is given to nobody else, and every editing key is forgotten at
+sign-out - which also stops the editor keeping anything for the rest of the page, so a save pending as
+the author signs out, or the flush as the page goes, cannot write it back. It carries its format and a
+hash of every node's and mark's spec, less what is drawn or read from the page: a record another build
+wrote, or one that will not replay, or one the author may no longer edit, is offered as its text to copy,
+its steps applied with no history, where that differs from what opens, and said to be lost where not
+even that can be read; a version cut since still discards it (CNT-169). Text offered on opening, from
+such a record or from a replay the service has saved past, has no other copy by then, so it stays
+offered through claims, saves and reloads until the author dismisses it, and is forgotten at sign-out
+with the rest. The GET names the kept session id whenever there is one, record or not, so a page that
+goes on under it after a cut or a restore starts above both the service's sequence and the last this
+window sent under it, rather than at 0. The record is written at most 300 ms after a change, at once
+for a send, and on `pagehide` or the page hidden, and a run of typing is kept as one step; storage that
+is full forgets other components' records before it stops keeping this one.
+
+**From a third look (W11.3).** That false notice was common: in a real browser the save a page sends as
+it goes often arrives, and its answer finds the page gone. The record now keeps what the last save held -
+how many of its steps, none typed after the save ever folded into them, and the values then - and a
+reload whose service holds a save at the number it last sent, with no answer to that number, sends it
+again at that number after the claim, rebuilt exactly, before anything else, sending nothing meanwhile,
+not even as the page goes. Acknowledged again, the page goes on as saved, with its undo; refused, or with
+no answer, it goes behind with its text offered. A record that cannot rebuild that save exactly - one
+started afresh since, by a cut or a restore - goes behind as before.
 
 **Undo covers content, not metadata.** ProseMirror's history is the document's - which includes the title,
 base language and base direction. A metadata field is an ordinary input with its own undo, and folding
@@ -733,13 +808,20 @@ unsent changes still held locally. From there it can move the lock back and save
 Iterations either session saved stay visible to that author, because the holder is the principal
 (VER-002).
 
+**A duplicated tab is a second window under the same session** (final review of W11.3): it copies the
+session id with everything else in session storage, and nothing tells it from a reload. Whichever of
+the two sends a sequence the service has already taken from the other is refused, and goes to `lost`
+with what it had not sent offered as text to copy, as a window that lost the lock does below.
+
 **Built, with Recovery (W11.2), this is true from a window opened afresh, not yet in the window that
 loses the lock.** There is still no lock event: a window that loses the lock this way finds itself refused
 on its next save and goes to `lost`, keeping what it had not sent as text to copy, with no Recovery of its
 own. What either window saved is not lost - it is kept until the next version after the one it was opened
 from is cut, and for the tenant's window after that (VER-003) - and it is its author's to read from any
-window of theirs that holds the lock (RC-A). So opening the component again, by a reload of either window
-or in a new one, offers it. Where nobody holds the lock, the editor says when the author last saved work
+window of theirs that holds the lock (RC-A). So opening the component again in a new window, or by a
+reload of a window that kept nothing unsaved, offers it. A reload of a window that kept changes goes on
+instead (W11.3): it claims again under its own session, and while the other window holds the lock it is
+refused, its changes offered as text to copy, with **Continue here** to take the lock back. Where nobody holds the lock, the editor says when the author last saved work
 that no version holds - even where somebody else has cut a version since - and offers **Recover**; where
 the author's other window holds it, the editor says they are editing in another window and offers
 **Recover here**. Either moves the lock to this window and lists both windows' saves, each marked as this
@@ -805,8 +887,15 @@ component's `GET` answers its caller's own session the latest sequence it accept
 - **The lock held by somebody else:** Reading. The held changes are offered as text to copy, as a
   refused claim offers them.
 - **A version cut since:** the steps are discarded (CNT-169), and the iterations stay in Recovery.
+- **The service holding a later save under the session than this window sent** - a duplicated tab:
+  nothing is sent, claimed or replayed over it; the page opens as a stale save leaves it, with
+  **Continue** and **Recover**, and the kept changes offered as text to copy (final review of W11.3).
+  So too where it holds one at the number this window last sent that the service refused to this window
+  (a second look at W11.3's fixes), or that this window sent again and the service refused (a third
+  look): one it never answered at all is sent again first, at the same number, and acknowledged again
+  goes on as saved.
 
-The title's one-line editor's history is limited to ProseMirror's default of 100 events today; W11.3 gives it no limit, as the component's has.
+The title's one-line editor's history was limited to ProseMirror's default of 100 events; W11.3 gave it no limit, as the component's has.
 
 **Retention** (VER-003, VER-004) is [storage-and-versioning.md](storage-and-versioning.md)'s: an iteration
 is kept until the next version after the one it was opened from is cut, and for the tenant's window

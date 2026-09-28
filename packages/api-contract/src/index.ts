@@ -9,6 +9,7 @@ export {
   ComponentList,
   ComponentListQuery,
   ComponentParams,
+  ComponentQuery,
   ComponentTypeList,
   ComponentVersionList,
   ComponentView,
