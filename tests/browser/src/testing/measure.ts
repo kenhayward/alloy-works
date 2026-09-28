@@ -159,18 +159,47 @@ export async function measureEditor(
         target.element.normalize();
       }
       // Preformatted text's label is drawn from its attribute, before its lines, where no marker can
-      // stand: only how it is set is read, from the label's own computed style.
+      // stand: how it is set is read from the label's own computed style, and where its word starts
+      // from its box - the block's, less the insets that stand it out of the block's own indents -
+      // its margins, padding and first-line indent, and its alignment, with the word's own width.
       for (const word of wanted) {
-        const labelled = text.querySelector(`pre[data-language="${word}"]`);
+        const labelled = text.querySelector<HTMLElement>(`pre[data-language="${word}"]`);
         if (!labelled) continue;
         const computed = getComputedStyle(labelled, '::before');
         const gradient = /linear-gradient\((rgba?\([^)]*\))/.exec(computed.backgroundImage);
+        const filled = !/rgba\([^)]*,\s*0\)|transparent/.test(computed.backgroundColor);
+        const block = labelled.getBoundingClientRect();
+        const px = (value: string) => parseFloat(value) || 0;
+        const boxLeft = block.left + px(computed.left);
+        const boxRight = block.right - px(computed.right);
+        const contentLeft = boxLeft + px(computed.marginLeft) + px(computed.paddingLeft);
+        const contentRight = boxRight - px(computed.marginRight) - px(computed.paddingRight);
+        const probe = document.createElement('span');
+        probe.textContent = word;
+        probe.style.cssText =
+          `position:absolute;visibility:hidden;white-space:pre;font-family:${computed.fontFamily};` +
+          `font-size:${computed.fontSize};font-weight:${computed.fontWeight};` +
+          `font-style:${computed.fontStyle};letter-spacing:${computed.letterSpacing}`;
+        document.body.append(probe);
+        const wide = probe.getBoundingClientRect().width;
+        probe.remove();
+        const align = computed.textAlign;
+        const start =
+          align === 'center'
+            ? contentLeft + (contentRight - contentLeft - wide) / 2
+            : align === 'end' || align === 'right'
+              ? contentRight - wide
+              : contentLeft + px(computed.textIndent);
         answers[word] = {
           underline: computed.textDecorationLine.includes('underline'),
           // Drawn above its block, over what holds the block.
-          background: gradient ? hex(gradient[1]!) : behind(labelled.parentElement),
+          background: gradient
+            ? hex(gradient[1]!)
+            : filled
+              ? hex(computed.backgroundColor)
+              : behind(labelled.parentElement),
           line: [Number.NaN, Number.NaN],
-          x: Number.NaN,
+          x: (start - left) / pxPerPt,
           baseline: Number.NaN,
           size: parseFloat(computed.fontSize) / pxPerPt,
           family: computed.fontFamily
@@ -366,17 +395,55 @@ export async function editorRules(
             /(rgba?\([^)]*\))\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+inset/g,
           ),
         ].map((each) => ({ colour: each[1]!, x: Number(each[2]), y: Number(each[3]) }));
-        const side = (pick: (shadow: { x: number; y: number }) => number) => {
+        // On the table's own edge, the rule's outer half is the table's shadow, as far as it is painted:
+        // up to the edge of whatever clips it - the canvas, which scrolls sideways - and no further.
+        const table = cell.closest('table')!;
+        const frame = table.getBoundingClientRect();
+        const spread = Number(
+          /(-?[\d.]+)px\s*$/.exec(
+            getComputedStyle(table)
+              .boxShadow.replace(/\binset\b.*$/, '')
+              .trim(),
+          )?.[1] ?? 0,
+        );
+        let clip = { top: -Infinity, bottom: Infinity, left: -Infinity, right: Infinity };
+        for (let at = table.parentElement; at; at = at.parentElement) {
+          const computed = getComputedStyle(at);
+          if (computed.overflowX === 'visible' && computed.overflowY === 'visible') continue;
+          const edge = at.getBoundingClientRect();
+          clip = {
+            top: edge.top + parseFloat(computed.borderTopWidth),
+            bottom: edge.bottom - parseFloat(computed.borderBottomWidth),
+            left: edge.left + parseFloat(computed.borderLeftWidth),
+            right: edge.right - parseFloat(computed.borderRightWidth),
+          };
+          break;
+        }
+        const outside = {
+          top: Math.max(0, Math.min(spread, frame.top - clip.top)),
+          bottom: Math.max(0, Math.min(spread, clip.bottom - frame.bottom)),
+          left: Math.max(0, Math.min(spread, frame.left - clip.left)),
+          right: Math.max(0, Math.min(spread, clip.right - frame.right)),
+        };
+        const onEdge = {
+          top: Math.abs(box.top - frame.top) < 0.5,
+          bottom: Math.abs(box.bottom - frame.bottom) < 0.5,
+          left: Math.abs(box.left - frame.left) < 0.5,
+          right: Math.abs(box.right - frame.right) < 0.5,
+        };
+        type Side = 'top' | 'bottom' | 'left' | 'right';
+        const side = (name: Side, pick: (shadow: { x: number; y: number }) => number) => {
           const shadow = shadows.find((each) => pick(each) > 0.001);
-          return !shadow || /rgba\([^)]*,\s*0\)/.test(shadow.colour)
-            ? null
-            : { width: (2 * pick(shadow)) / pxPerPt, colour: shadow.colour };
+          if (!shadow || /rgba\([^)]*,\s*0\)/.test(shadow.colour)) return null;
+          // The half inside the cell, and the other half: its neighbour's, or the table's shadow.
+          const other = onEdge[name] ? outside[name] : pick(shadow);
+          return { width: (pick(shadow) + other) / pxPerPt, colour: shadow.colour };
         };
         answers[token] = {
-          top: side((each) => each.y),
-          bottom: side((each) => -each.y),
-          left: side((each) => each.x),
-          right: side((each) => -each.x),
+          top: side('top', (each) => each.y),
+          bottom: side('bottom', (each) => -each.y),
+          left: side('left', (each) => each.x),
+          right: side('right', (each) => -each.x),
           edges: {
             top: (box.top - origin.top) / pxPerPt,
             bottom: (box.bottom - origin.top) / pxPerPt,
@@ -479,4 +546,41 @@ export function pdfRules(
     });
   }
   return rules;
+}
+
+/**
+ * The face an equation is drawn in, as the family the font files name: in the editor, its `math`
+ * element's; in the PDF, the first run on the line of `token` after it that is in another face than
+ * the token's - the equation beside it.
+ */
+export async function editorMathsFace(
+  page: Page,
+  families: Readonly<Record<string, string>>,
+): Promise<string | undefined> {
+  const family = await page.evaluate(() => {
+    const maths = document.querySelector('section.aw-canvas math mi, section.aw-canvas math');
+    return maths
+      ? getComputedStyle(maths)
+          .fontFamily.split(',')[0]!
+          .trim()
+          .replace(/^["']|["']$/g, '')
+      : undefined;
+  });
+  return family === undefined ? undefined : (families[family] ?? family);
+}
+
+export function pdfMathsFace(paint: Paint, token: Measured, margin: number): string | undefined {
+  const height = paint.pages[token.page - 1]!.height;
+  const y = height - token.baseline;
+  const run = paint.texts
+    .filter(
+      (each) =>
+        !each.artifact &&
+        each.page === token.page &&
+        Math.abs(each.y - y) < 3 &&
+        each.x > token.x + margin + 1 &&
+        faceOf(each.face).family !== token.family,
+    )
+    .sort((a, b) => a.x - b.x)[0];
+  return run && faceOf(run.face).family;
 }

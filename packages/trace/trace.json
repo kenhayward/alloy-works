@@ -16907,10 +16907,6 @@
           "howItIsMet": "A typeface whose licence forbids embedding in Word declares a permitted face for Word output, and the publish report names the substitution"
         },
         {
-          "id": "STY-080",
-          "howItIsMet": "The conformance suite's editor half, in the browser suite: every style property both the editor and the PDF render, measured in each against the other ([The theme in the editor, measured](#the-theme-in-the-editor-measured))"
-        },
-        {
           "id": "STY-054",
           "howItIsMet": "A typeface artifact carries its ascent and descent; the CSS projection and the Typst template both use them to put a line's extra space above it"
         },
@@ -19882,31 +19878,31 @@
     {
       "id": "CNT-082",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 155,
+      "line": 176,
       "kind": "title"
     },
     {
       "id": "CNT-097",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 203,
+      "line": 224,
       "kind": "title"
     },
     {
       "id": "CNT-115",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 292,
+      "line": 326,
       "kind": "title"
     },
     {
       "id": "STY-037",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 300,
+      "line": 334,
       "kind": "title"
     },
     {
       "id": "STY-050",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 155,
+      "line": 176,
       "kind": "title"
     },
     {
@@ -20279,12 +20275,6 @@
       "id": "STR-006",
       "file": "tests/browser/src/outline.test.ts",
       "line": 153,
-      "kind": "title"
-    },
-    {
-      "id": "STY-080",
-      "file": "tests/browser/src/styles.test.ts",
-      "line": 244,
       "kind": "title"
     },
     {

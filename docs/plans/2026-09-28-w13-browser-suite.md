@@ -280,10 +280,28 @@ Only these could change the plan; everything else is built as written.
   none of it until the PDF does.
 - **Named and not compared**, each with its issue: the step into a line held open by something taller
   than its text (#331), how far a script moves (#332), and where the document view places a section's
-  heading (#333); and without issues, a list's indent, a footnote's place, a label's start, equations and
-  floated figures.
+  heading (#333); and without issues, a footnote's place, equations' layout and floated figures.
 - **Measured beyond step 6**: a table's rules, their width, colour and where each runs against its cell's
   text, and what stands behind each token - a fill, a band or the paper.
+
+**W13.4's final review** (PR #334) found the STY-080 claim partial, and four other defects, each fixed
+test first:
+
+- **STY-080 is not claimed, and the test cites nothing.** Issues #331 and #333 are properties both
+  outputs render and which differ, so the claim was partial; themes.md names them beside its table,
+  and says plainly what the comparison leaves out as outside STY-080 and why. STY-060's list of approved
+  deviations stays empty between the editor and the PDF, and the test holds it so.
+- **A list's items** stood where the editor stylesheet put them, 6.4pt out under the default theme and
+  9pt under Contrary, and a list's start was not compared. The projection now sets a list as the engine
+  does - a column of markers as wide as the widest, then half an em - and the fixture holds a nested
+  list and a numbered one counted from nine, whose starts are compared.
+- **The equation's face and the preformatted label's start** are measured.
+- **A table's outer rule** was clipped at the canvas's edge, and the measurement read the rule it meant
+  to draw rather than the one painted: it reads the painted one now, and the canvas has room either
+  side of the measure.
+- **A block's fill** is a colour where it has no spaces of its own, so axe-core checks its contrast.
+- The test waits for the page to be drawn whole before it measures, and fails where the screen is not
+  the document's.
 
 ## Left, named
 

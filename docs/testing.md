@@ -644,7 +644,7 @@ each state. Another test shows structure.md's known limit: two `Alt+Down` presse
 answered send one move. And one holds issue #325 fixed: two spaces typed in a section's title are
 stored, computed as `break-spaces` and drawn as two.
 
-**The measured style** (`styles.test.ts`, STY-080; [themes.md](design/themes.md#the-theme-in-the-editor-measured))
+**The measured style** (`styles.test.ts`, toward STY-080; [themes.md](design/themes.md#the-theme-in-the-editor-measured))
 measures the editor against the PDF of the same document. One component holding a token at the head of
 every block and run a theme styles is placed in a document under each of five themes - the default, one
 differing from it in every property the editor projects, and three generated from seeds - and each
@@ -672,6 +672,12 @@ the seeds.
 - **The generator is narrowed** to what the store takes (contrast, a line at least 1.2 of its size, a
   rule no wider than twice its table's padding) and to what both outputs render: no mark larger than its
   text, no floated figure, and none of what the PDF does not set yet (issue #330).
+- **It cites nothing yet.** Two properties both outputs render still differ (issues #331 and #333), so
+  STY-080 is not claimed and a test cannot cite it; themes.md names them.
+- **A filled block with spaces of its own is a gradient**, painted between its spaces, which axe-core
+  cannot read as a background: it reports that block's text `incomplete`, for the audit, rather than
+  checking its contrast. A filled block with no spaces - and every fill the default theme has but
+  preformatted text's - is a colour, which axe checks.
 
 **What it cannot see.** Headless Chromium has no browser interface, so `Alt+Left` is never Back there
 whatever the page does: the test shows the tree prevented the key's default, which is what keeps it

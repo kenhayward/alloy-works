@@ -113,8 +113,9 @@ describe('projectCss', () => {
       `--aw-after: ${z('7')}`,
       `--aw-leading: ${z('4')}`,
       // Its fill between its spaces: the padding box less the space above and below it.
+      '--aw-fill: #f0f0f0',
       'background-color: transparent',
-      'background-image: linear-gradient(#f0f0f0, #f0f0f0)',
+      'background-image: linear-gradient(var(--aw-fill), var(--aw-fill))',
       'background-repeat: no-repeat',
       'background-position: 0 var(--aw-before)',
       'background-size: 100% calc(100% - var(--aw-before) - var(--aw-after))',
@@ -150,6 +151,26 @@ describe('projectCss', () => {
       'font-size: 0.52em',
       'line-height: 0',
     ]);
+  });
+
+  it('fills a block with no spaces of its own as a colour, which an accessibility checker can read, and one with spaces between them', () => {
+    const inputs = defaultInputs();
+    inputs.catalogues.paragraph.styles.push({
+      id: 'boxed',
+      name: 'Boxed',
+      appliesTo: ['text'],
+      properties: { background: '#eeeeee', padding: 3, spaceBefore: 0, spaceAfter: 0 },
+    });
+    const text = projectCss(resolved(inputs));
+    const boxed = ruleFor(text, '.aw-canvas.aw-canvas [data-style="boxed"]');
+    expect(boxed).toContain('--aw-fill: #eeeeee; background: #eeeeee');
+    expect(boxed).not.toContain('linear-gradient');
+    // A list gives its first and last items' blocks its own spaces: a filled one paints between them.
+    expect(text).toContain(
+      '.aw-canvas.aw-canvas :is(ul, ol) > li:first-child > [data-style]:first-child, ' +
+        '.aw-canvas.aw-canvas :is(ul, ol) > li:last-child > [data-style]:last-child { ' +
+        'background-image: linear-gradient(var(--aw-fill), var(--aw-fill));',
+    );
   });
 
   it("STY-050 CNT-082 spaces blocks by adding one's space after to the next's space before, never collapsing them", () => {
@@ -269,6 +290,19 @@ describe('projectCss', () => {
       `--aw-after: ${NONE}`,
     );
     expect(ruleFor(css, list)).toBe('margin-block: 0');
+    // Its items where the engine sets them: a column of markers as wide as the widest, half an em of
+    // the place's size, then the text - each item a row of the list's grid.
+    expect(rulesFor(css, list)).toContain(
+      'display: grid; grid-template-columns: max-content minmax(0, 1fr); ' +
+        `column-gap: ${z('5.5')}; padding-inline-start: 0; list-style: none`,
+    );
+    expect(ruleFor(css, `${list} > li`)).toContain('grid-template-columns: subgrid');
+    expect(ruleFor(css, '.aw-canvas.aw-canvas ol > li::before')).toBe(
+      'content: counter(list-item, decimal) "."; justify-self: end',
+    );
+    expect(ruleFor(css, '.aw-canvas.aw-canvas ul ul > li::before')).toBe(
+      'content: "\\25E6"; justify-self: start',
+    );
     expect(rulesFor(css, '.aw-canvas.aw-canvas li')).toEqual([
       'margin-block: 0',
       `font-family: "aw-face-serif"; font-size: ${z('11')}; color: #000000; line-height: 0`,

@@ -99,7 +99,13 @@ export function compare(
     // A footnote is read beside its anchor in the document view, in its paragraph's fill.
     if (token.where !== 'footnote') exactly(token, 'background', e.background, p.background);
 
-    if (token.where === 'flow' || token.where === 'mark' || token.where === 'cell') {
+    if (
+      token.where === 'flow' ||
+      token.where === 'mark' ||
+      token.where === 'cell' ||
+      token.where === 'list' ||
+      token.where === 'label'
+    ) {
       length(token, 'start', e.x, p.x);
     } else if (token.where === 'caption') {
       const align = alignment(token);
@@ -254,4 +260,25 @@ export function compareRules(
     }
   }
   return differences;
+}
+
+/** The face the equation beside `token` is drawn in, the editor's against the PDF's, exactly. */
+export function compareMathsFace(
+  token: string,
+  editor: string | undefined,
+  pdf: string | undefined,
+): Difference[] {
+  // The files name the family `STIX Two Math`; the PDF, `STIXTwoMath`.
+  const bare = (family: string | undefined) => family?.replace(/\s+/g, '');
+  return bare(editor) === bare(pdf) && editor !== undefined
+    ? []
+    : [
+        {
+          token,
+          what: "the equation's face",
+          property: 'maths face',
+          editor: editor ?? 'none',
+          pdf: pdf ?? 'none',
+        },
+      ];
 }

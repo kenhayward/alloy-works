@@ -62,6 +62,7 @@ function derive(
       ...style,
       properties: printable(
         style.id,
+        style.appliesTo,
         paragraph(style.id, resolved.paragraphStyles.get(style.id)!.properties),
       ) as ParagraphProperties,
     })),
@@ -89,14 +90,16 @@ function derive(
 }
 
 /**
- * **What the PDF sets of a style**, which is what STY-080 measures the editor against: every property
+ * **What the PDF sets of a style**, which is what the editor is measured against: every property
  * the editor renders but these, which the template does not set (issue #330) and the themes here
  * therefore never state - a caption's fill, padding and indents, since the template sets a caption's
- * text and not its block; the first line's indent of centred text, which the engine does not indent;
- * and of preformatted text, which it sets as code.
+ * text and not its block; the first line's indent of centred text, which the engine does not indent,
+ * of preformatted text, which it sets as code, and of a paragraph in a list's item, which it does not
+ * indent either.
  */
 function printable(
   id: string,
+  appliesTo: readonly string[],
   properties: ResolvedParagraphProperties,
 ): ResolvedParagraphProperties {
   const caption =
@@ -104,7 +107,9 @@ function printable(
       ? { background: 'none', padding: 0, startIndent: 0, endIndent: 0, firstLineIndent: 0 }
       : {};
   const unindented =
-    properties.alignment === 'centre' || id === DEFAULT_THEME.roles.preformatted
+    properties.alignment === 'centre' ||
+    id === DEFAULT_THEME.roles.preformatted ||
+    appliesTo.includes('listItem')
       ? { firstLineIndent: 0 }
       : {};
   return { ...properties, ...caption, ...unindented };

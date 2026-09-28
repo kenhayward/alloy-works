@@ -216,22 +216,48 @@ export interface ProjectCssOptions {
  * style's space before and after around the list as a whole, whatever style its first and last items
  * are in. The editor stylesheet's own space around a list and between its items stands down, and a
  * marker, in the place's face and size, does not open its line.
+ *
+ * **And its items where the engine sets them** (found by the browser suite, W13.4's review): no indent
+ * of the list's own, then a column of markers as wide as the widest - a bullet, or the widest number
+ * right-aligned in it - then half an em of the place's size, then the item's text, which is Typst's
+ * `list` and `enum` at their defaults. So a list is a grid of two columns, each item a row of it
+ * through `subgrid`, its marker drawn in the first and its blocks stacked in the second: the column is
+ * as wide as the widest marker the list draws, as the engine's is, which no length written here could
+ * know without the face's own widths. The bullets are the template's, cycling by depth; a number is the
+ * item's own, counted as the browser counts a list's items, from the list's start.
  */
 function listRules(theme: ResolvedTheme): string[] {
   const item = theme.paragraphStyles.get(theme.places.listItem);
   if (!item) return [];
   const p = item.properties;
   const list = `${CANVAS} :is(ul, ol)`;
+  const bullets = ['\\2022', '\\25E6', '\\25AA'];
   return [
     `${list}, ${CANVAS} li { margin-block: 0; }`,
     `${CANVAS} li { font-family: "${faceFamily(item.typeface.id)}"; font-size: ${zoomed(p.size)}; ` +
       `color: ${p.colour}; line-height: 0; }`,
+    `${list} { display: grid; grid-template-columns: max-content minmax(0, 1fr); ` +
+      `column-gap: ${zoomed(p.size / 2)}; padding-inline-start: 0; list-style: none; }`,
+    `${list} > li { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; ` +
+      'align-items: baseline; margin-inline: 0; counter-increment: list-item; }',
+    `${list} > li::before { grid-column: 1; grid-row: 1; }`,
+    `${CANVAS} ol > li::before { content: counter(list-item, decimal) "."; justify-self: end; }`,
+    `${CANVAS} ol[data-format="alphabetic"] > li::before { content: counter(list-item, lower-alpha) "."; }`,
+    `${CANVAS} ol[data-format="roman"] > li::before { content: counter(list-item, lower-roman) "."; }`,
+    ...[0, 1, 2, 3, 4, 5].map(
+      (depth) =>
+        `${CANVAS} ${'ul '.repeat(depth)}ul > li::before { content: "${bullets[depth % 3]}"; justify-self: start; }`,
+    ),
+    `${list} > li > * { grid-column: 2; min-width: 0; }`,
     `${list} > li > [data-style]:first-child ` +
       `{ margin-block-start: calc(${length(p.lineSpacing - p.size)} - var(--aw-leading)); }`,
     `${list} > li:first-child > [data-style]:first-child { --aw-before: ${length(p.spaceBefore)}; }`,
     `${list} > li:not(:first-child) > [data-style]:first-child { --aw-before: ${NONE}; }`,
     `${list} > li:last-child > [data-style]:last-child { --aw-after: ${length(p.spaceAfter)}; }`,
     `${list} > li:not(:last-child) > [data-style]:last-child { --aw-after: ${NONE}; }`,
+    // A filled block given the list's spaces paints its fill between them, whatever its own were.
+    `${list} > li:first-child > [data-style]:first-child, ${list} > li:last-child > [data-style]:last-child ` +
+      `{ ${BETWEEN_SPACES.join('; ')}; }`,
   ];
 }
 
@@ -479,18 +505,14 @@ function paragraphDeclarations(style: ResolvedParagraphStyle): string[] {
     // And its leading, the line spacing less the em a line of it is: what a block first in a cell
     // takes back (`tableRules`).
     `--aw-leading: ${length(p.lineSpacing - p.size)}`,
-    // Its fill, painted between its spaces: the padding box less the space above and below it.
+    // Its fill, painted between its spaces: where it has none, its padding box, as a colour, which an
+    // accessibility checker reads as the text's background; where it has spaces, the padding box less
+    // them, which only a positioned gradient paints - and which a checker cannot read, so it hands such
+    // text to a person (docs/testing.md).
     ...(filled
-      ? [
-          'background-color: transparent',
-          `background-image: linear-gradient(${p.background}, ${p.background})`,
-          'background-repeat: no-repeat',
-          'background-position: 0 var(--aw-before)',
-          'background-size: 100% calc(100% - var(--aw-before) - var(--aw-after))',
-        ]
+      ? fill(p.background, p.spaceBefore === 0 && p.spaceAfter === 0)
       : ['background: transparent']),
     `text-align: ${ALIGN[p.alignment]}`,
-    // The engine does not indent the first line of centred text, measured: nor does the canvas.
     `text-indent: ${zoomed(p.firstLineIndent)}`,
     `margin-inline: ${zoomed(p.startIndent)} ${zoomed(p.endIndent)}`,
     // No rule of its own: a style has no border property, so the frame the editor's stylesheet draws
@@ -546,6 +568,28 @@ function characterDeclarations(p: CharacterProperties, family: string | undefine
     ...(p.position === undefined && family === undefined && scale === 1 ? [] : ['line-height: 0']),
   ];
 }
+
+/**
+ * A block's fill, named once as `--aw-fill`: a colour where the block has no spaces of its own, and
+ * otherwise a gradient painted between them. Where a list gives its first or last item's block the
+ * list's spaces, `listRules` paints that block's fill as the gradient, from `--aw-fill`.
+ */
+function fill(colour: string, spaceless: boolean): string[] {
+  return [
+    `--aw-fill: ${colour}`,
+    ...(spaceless
+      ? [`background: ${colour}`]
+      : ['background-color: transparent', ...BETWEEN_SPACES]),
+  ];
+}
+
+/** A fill painted between a block's spaces, from its `--aw-fill`. */
+const BETWEEN_SPACES = [
+  'background-image: linear-gradient(var(--aw-fill), var(--aw-fill))',
+  'background-repeat: no-repeat',
+  'background-position: 0 var(--aw-before)',
+  'background-size: 100% calc(100% - var(--aw-before) - var(--aw-after))',
+];
 
 /** No length, with a unit, so that a `calc` can add it: what a space taken away is. */
 const NONE = 'calc(0pt * var(--aw-zoom))';

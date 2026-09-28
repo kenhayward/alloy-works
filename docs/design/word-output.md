@@ -1328,9 +1328,8 @@ first-class, and that suite does not measure Word's style values yet; and a math
 against STIX Two Math, not the Cambria Math Word sets it in, so one Cambria Math lacks is drawn from
 another face and not reported. Word's rebuilt contents, lists and running heads flattening a
 structured equation to its characters, which the final review named beside those two, is now reported
-(`equation_flattened`). PUB-023 is claimed when STY-081 - STY-053's Word half, split from it by W13.4
-
-- lands and the maths face's coverage is judged or reported; themes.md names STY-081 as its gap.
+(`equation_flattened`). PUB-023 is claimed when STY-081, STY-053's Word half, split from it by W13.4,
+lands and the maths face's coverage is judged or reported; themes.md names STY-081 as its gap.
 
 **PUB-035 is not claimed.** Word carries headings at their outline levels, images described or
 decorative, header rows marked, every run's language, footnotes and cross-references as Word's own,

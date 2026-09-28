@@ -75,6 +75,9 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1474);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 499, from 500 (2026-09-28): W13.4's final review - themes.md stopped claiming STY-080, which STY-053
+    // became with the split: two properties both outputs render still differ (issues #331, #333), named in
+    // prose beside the table.
     // 500, from 498 (2026-09-28): W14.5 - themes.md claims STY-079 and STR-025, which structure.md left unclaimed.
     // 498, from 497 (2026-09-28): W14.6 - service-foundations.md claims IAM-075, store by store, once #314 sealed each environment's sign-in secret.
     // 497, from 496 (2026-09-28): W14.4 after W14.6 - publishing.md claims TAB-034; structure.md's STR-070 claim moved to STR-071.
@@ -212,7 +215,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(500);
+    ).toBe(499);
   });
 });
 
@@ -562,6 +565,8 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 547, from 548 (2026-09-28): W13.4's final review - styles.test.ts no longer cites STY-080, whose
+  // claim was dropped as partial; the test stays, retitled, measuring the editor against the PDF.
   // 548, from 547 (2026-09-28): W13.4 - STY-080 in tests/browser's styles.test.ts, the editor measured
   // against the PDF under five themes.
   // 547, from 546 (2026-09-28): W13.1 - STR-006 in tests/browser's outline.test.ts, the outline
@@ -696,7 +701,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(548);
+    expect(model.citations).toHaveLength(547);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -1533,18 +1533,20 @@ theme's 0.4 (migration 0034, ET-H) gives them something to offer: Lead, Centred 
 running text, Banded for a table and Half width for a figure, beside each place's default.
 
 **The canvas as the page sets it** (W13.4). `projectCss` sets what the template decides of a block the
-way the template does, measured against the PDF by the browser suite (STY-080): a block's spaces are
-padding, named `--aw-before` and `--aw-after` so contextual spacing takes either away, with its fill a
-gradient painted between them; given each face's cap height - `projectCss(theme, { capHeight })`, which
+way the template does, measured against the PDF by the browser suite (toward STY-080): a block's spaces are
+padding, named `--aw-before` and `--aw-after` so contextual spacing takes either away, with its fill,
+`--aw-fill`, a colour where it has no spaces and otherwise a gradient painted between them; given each face's cap height - `projectCss(theme, { capHeight })`, which
 the provider passes from `capHeight` in `apps/web/src/theme/faces.ts`, from `@alloy-works/fonts`'
 `capHeightOfFile` - it adds, under `@supports (text-box: trim-both cap alphabetic)`, rules trimming each
 block to its first line's cap height and its last baseline and placing the baseline by padding, which a
 browser measures exactly where it rounds ascent and descent to whole pixels; a table's rules are inset
 shadows, custom properties `--aw-rule-<side>`, taking no room, with a cell's first and last blocks
-without their outer spaces; a list's items stand their place's leading apart; a quotation's
+without their outer spaces; a list is a grid of a marker column as wide as its widest marker and its
+items' text, each item a row through `subgrid`, its items their place's leading apart; a quotation's
 attribution stands within its indents; preformatted text's label stands above its block; a figure
 stands apart from its neighbours in a block of its own; and the application's own table and `code`
-styles stand down on the canvas.
+styles stand down on the canvas, which has 6pt of room either side of the measure for a table's outer
+rule (`CANVAS_CSS` in `presentation.tsx`).
 
 | Where                                | What                                                                                                                                                                                                                             |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

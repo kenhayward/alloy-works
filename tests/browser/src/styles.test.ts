@@ -13,6 +13,7 @@ import {
   approved,
   compare,
   compareImages,
+  compareMathsFace,
   compareRules,
   type Alignment,
   type Difference,
@@ -28,10 +29,12 @@ import {
 } from './testing/fixtures.js';
 import {
   editorImages,
+  editorMathsFace,
   editorRules,
   measureEditor,
   measurePdf,
   pdfImages,
+  pdfMathsFace,
   pdfRules,
 } from './testing/measure.js';
 import { withPage } from './testing/page.js';
@@ -41,7 +44,10 @@ import { COMPONENT_TITLE, HEADINGS, IMAGES, styledContent, type Token } from './
 import { contraryTheme, generatedTheme } from './testing/themes.js';
 
 /**
- * **The editor measured against the PDF** (STY-080; the W13 plan's W13.4 and B-M; ADR-0014's method).
+ * **The editor measured against the PDF** (the W13 plan's W13.4 and B-M; ADR-0014's method), toward
+ * STY-080, which it does not yet answer in full and so does not cite: two properties both outputs render
+ * still differ, the step into a line held open by something taller than its text (issue #331) and
+ * where the document view stands a section's heading (issue #333), and themes.md names them.
  * One component holding a token at the head of every block and run the theme styles (`styled.ts`) is
  * placed in a document under each of five themes - the default, one differing from it in every
  * property the editor projects, and three generated from seeds - and each document is published
@@ -102,6 +108,7 @@ async function measureView(
   shown: Awaited<ReturnType<typeof measureEditor>>;
   images: Awaited<ReturnType<typeof editorImages>>;
   rules: Awaited<ReturnType<typeof editorRules>>;
+  maths: string | undefined;
 }> {
   return withPage(async (page) => {
     // Wide enough that the column holds the measure without scrolling it sideways.
@@ -169,6 +176,7 @@ async function measureView(
         tokens.filter((each) => each.where === 'cell').map((each) => each.text),
         shown,
       ),
+      maths: await editorMathsFace(page, families),
     };
   });
 }
@@ -198,7 +206,7 @@ async function measureTheme(
     all.map((each) => each.text),
     MARGIN,
   );
-  const { shown, images, rules } = await measureView(document, all);
+  const { shown, images, rules, maths } = await measureView(document, all);
   const cells = all.filter((each) => each.where === 'cell').map((each) => each.text);
   if (process.env.ALLOY_BROWSER_STYLE_DUMP) {
     writeFileSync(
@@ -228,6 +236,11 @@ async function measureTheme(
       ...compareImages(IMAGES, images, pdfImages(paint, MARGIN), shown, printed, (property, by) =>
         largest(name, property, by),
       ),
+      ...compareMathsFace(
+        'Ze1',
+        maths,
+        printed.get('Ze1') && pdfMathsFace(paint, printed.get('Ze1')!, MARGIN),
+      ),
       ...compareRules(
         all,
         rules,
@@ -241,7 +254,7 @@ async function measureTheme(
 }
 
 describe('the editor measured against the PDF', () => {
-  it('STY-080 renders every style property the editor renders at the value the PDF prints it, within half a point, under the default, a contrary and three generated themes', async ({
+  it('sets what it measures where the PDF prints it, under the default, a contrary and three generated themes: each length within half a point, and each face, weight, posture, colour, underline and fill exactly', async ({
     task,
   }) => {
     const client = api();

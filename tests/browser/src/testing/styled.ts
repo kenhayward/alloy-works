@@ -25,6 +25,11 @@ export type Where =
    * so where an aligned line starts is not compared.
    */
   | 'footnoted'
+  /**
+   * The paragraph holding an equation, whose line is as long as each renderer's maths engine draws the
+   * equation - its layout is not the theme's - so where an aligned line starts is not compared.
+   */
+  | 'equated'
   /** A caption, which the PDF opens with its number and the editor does not. */
   | 'caption'
   /** A mark's run, part way along a line. */
@@ -151,6 +156,20 @@ export function styledContent(image: string): { content: object[]; tokens: Token
       {
         content: [
           paragraph('measured-item', 'body', [text(`${token('Zl1', 'list', 'a list item')} item`)]),
+          {
+            type: 'list',
+            id: 'measured-list-nested',
+            kind: 'unordered',
+            items: [
+              {
+                content: [
+                  paragraph('measured-item-nested', 'body', [
+                    text(`${token('Zl3', 'list', 'a nested list item')} item`),
+                  ]),
+                ],
+              },
+            ],
+          },
         ],
       },
       {
@@ -161,6 +180,21 @@ export function styledContent(image: string): { content: object[]; tokens: Token
         ],
       },
     ],
+  });
+
+  // Numbered from nine, so that its numbers differ in width: its items' text stands after the widest.
+  content.push({
+    type: 'list',
+    id: 'measured-numbered',
+    kind: 'ordered',
+    start: 9,
+    items: [9, 10].map((number) => ({
+      content: [
+        paragraph(`measured-numbered-${number}`, 'body', [
+          text(`${token(`Zo${number}`, 'list', `a numbered list's item ${number}`)} item`),
+        ]),
+      ],
+    })),
   });
 
   content.push({
@@ -233,6 +267,18 @@ export function styledContent(image: string): { content: object[]; tokens: Token
       alternative: { kind: 'inherited' },
     });
   }
+
+  // An equation in a line, whose face is the theme's maths face: only its face is the theme's.
+  content.push(
+    paragraph('measured-equation', 'body', [
+      text(`${token('Ze1', 'equated', 'the paragraph holding an equation', { grows: 'above' })} `),
+      {
+        type: 'equation',
+        mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"><mi>x</mi></math>',
+      },
+      text(' equation'),
+    ]),
+  );
 
   content.push(
     paragraph('measured-inline-image', 'body', [

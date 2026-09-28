@@ -74,6 +74,10 @@ describe("the presentation a page's text is set in", () => {
     // The body is in Liberation Serif, whose cap height is 1341/2048 of its em: 11pt on 14.35pt puts
     // its first baseline 14.35 - (443 + 1341) / 2048 x 11 = 4.768pt below the trimmed line's top.
     expect(faces()).toContain('@supports (text-box: trim-both cap alphabetic) {');
+    // And room either side of the measure for a table's outer rule, which the canvas would clip.
+    expect(faces()).toContain(
+      '.aw-canvas { overflow-x: auto; padding-inline: calc(6pt * var(--aw-zoom)); }',
+    );
     expect(faces()).toContain(
       'padding-block: calc(var(--aw-before) + calc(4.768pt * var(--aw-zoom)))',
     );

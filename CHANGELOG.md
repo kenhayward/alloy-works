@@ -11,25 +11,29 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   document under five themes - the default, one that changes every setting it can, and three made up at
   random from fixed seeds - and measure every word that starts a paragraph, a run, a cell or a caption
   in the editor and in the PDF: where it stands, its size, face, weight, slant, colour and underline,
-  what is behind it, each table rule and each image. Anything more than half a point apart fails the
-  test. The requirement it answers is split in two: the editor against the PDF, which this answers,
-  and Word against the PDF, which is still to come.
+  what is behind it, each table rule and each image, and the face an equation is drawn in. Anything
+  more than half a point apart fails the test. The requirement it works toward is split in two: the
+  editor against the PDF, which this measures all but two things of (issues #331 and #333), and Word
+  against the PDF, which is still to come.
 
 ### Fixed
 
 - **The editor now shows your text where the PDF prints it, to within half a point.** Paragraphs stood
   up to three quarters of a point closer together than on the page and moved a little with their size;
   tables were taller, with their headers in capitals; lists, tables and figures had the editor's own
-  space around them; preformatted text was in the browser's own typewriter face; a quotation's
-  attribution, a centred half-width figure, a line of inline code and a preformatted block's label each
-  stood somewhere else. Each now matches the page (issue #329).
+  space around them; preformatted text was in the browser's own typewriter face; a list's items started
+  up to 9 points away from where the PDF starts them; a table's outer rule was cut in half at the edge of
+  the text; a quotation's attribution, a centred half-width figure, a line of inline code and a
+  preformatted block's label each stood somewhere else. Each now matches the page (issue #329).
+- **Filled paragraphs are checked for contrast again.** A paragraph with a fill and no space above or
+  below it is filled with a plain colour, which the accessibility check reads.
 
 ### Known limits
 
 - A caption's or a footnote's fill, padding and indents, and a first-line indent on centred or
-  preformatted text, show in the editor and are not printed in the PDF (issue #330). A line holding an
-  image in the text, or a list item smaller than its list, opens by a different amount in the editor
-  than on the page (issue #331); a subscript or superscript sits at a slightly different height
+  preformatted text or in a list's item, show in the editor and are not printed in the PDF (issue #330).
+  A line holding an image or an equation in the text, or a list item smaller than its list, opens by a
+  different amount in the editor than on the page (issue #331); a subscript or superscript sits at a slightly different height
   (issue #332); and the document view spaces its section headings its own way (issue #333).
 
 ## 0.122.0 - 2026-09-28 (PR #326)
