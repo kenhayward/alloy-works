@@ -88,8 +88,8 @@ a web application and a desktop application**.
 > for Word by name - and nothing else authors or
 > publishes content: no image or equation pasted from outside the product, no metadata but the
 > fields a component's type or a document's template gives it, filled in beside the text,
-> no making a component type, no defined term written or resolved, no
-> document view, no list of equations in the default layout, no
+> component types made only through the API, no defined term written or resolved, no list of
+> equations in the default layout, no
 > choosing or editing a layout or a theme. A preview is asked for from the document page's
 > **Preview**, beside **Publish** and offered to anybody who may read the document, through
 > `POST /v1/documents/{id}/previews`, on `read`, made by the worker's `preview` job as a publish of
