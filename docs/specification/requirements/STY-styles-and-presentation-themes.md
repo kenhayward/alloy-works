@@ -114,6 +114,7 @@ a type, and those arrive with STY-014's field formats in T2; the rest of a table
 | **STY-016** | Resolving an image style must derive the other dimension from the asset's intrinsic proportions, and must never distort an image                                                                                                                                                                                                           | Constraint | Specified             |
 | **STY-017** | An image style must declare a maximum in the dimension it does not fix; where that would be exceeded the image must be constrained by that dimension instead, still preserving proportion                                                                                                                                                  | T1         | Specified             |
 | **STY-018** | An image style must declare placement: inline with text, block, or floated, with alignment                                                                                                                                                                                                                                                 | T1         | Specified             |
+| **STY-079** | A table style and an image style must each declare whether the caption of the block it sets sits above or below that block, and every output that renders captions - the editor, PDF and Word - must place the caption there (**STR-025**)                                                                                                 | T1         | Specified             |
 | **STY-019** | Resolving an image style must fail with a named error where the asset's intrinsic dimensions are not known (**AST** records them on ingest)                                                                                                                                                                                                | T1         | Superseded by STY-078 |
 | **STY-078** | An asset version must not be storable without its intrinsic width and height, so that resolving an image style always has them                                                                                                                                                                                                             | T1         | Specified             |
 | **STY-059** | Choosing a style from a catalogue must be understood as choosing from the theme's vocabulary rather than exercising free control: two image styles differing only in placement or alignment are two named choices an administrator made, and offering both must not be read as making alignment a per-block control (STY-011, **CNT-094**) | Constraint | Specified             |
@@ -396,3 +397,20 @@ is an edit.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 77, of which 4 superseded | 78, of which 5 superseded |
+
+### Ken's answer to the T1 audit's last decisions (K4, K5, K6, K8) and rewordings, 2026-09-28
+
+[The T1 audit](<../../reviews/T1 - Audit against the code.md>) asked Ken to decide K4, K5, K6 and K8,
+and the remaining T1 rows were read for what each could honestly close on. Ken took each recommendation,
+recorded by [ADR-0029](../../decisions/0029-a-browser-suite-in-ci-and-attested-audits.md),
+[ADR-0030](../../decisions/0030-the-conformance-report-joins-a-publication-after-it-is-recorded.md) and
+[ADR-0031](../../decisions/0031-t1-publishes-headings-to-six-levels.md). A requirement a person must check
+is its own row, verified by `attestation` in each release's baseline. STY-079 arrived as issue #306.
+
+| What was found                                                                                                                                          | Change                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| STR-025 asks for caption placement to be a property of the style, and no style row gave a caption a placement, so no style could meet it (T1 audit, K8) | **STY-079 added**: a table or image style says where its caption sits |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 78, of which 5 superseded | 79, of which 5 superseded |

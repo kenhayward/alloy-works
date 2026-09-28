@@ -15,6 +15,7 @@ instruction of 2026-09-27 to continue with W9, and are his to review.
 | **CNT-072** | The text is one canvas on the theme's paper: every heading, a section's and a component's, set in the theme's heading role for its depth, and each component's text beneath its heading, with no card around it ([One scroll](#one-scroll))                                                                                                                                                |
 | **CNT-073** | A component's edges and its label appear when the pointer or the focus is in it, and for all of them while **Show boundaries** is on, and never otherwise ([Boundaries](#boundaries)). The one component open in an editor keeps its edges while it is open: that is the editor an author opened and closes with Done, not chrome the page puts round a component whatever the reader does |
 | **CNT-154** | The page is in **Reading** or **Authoring**, said by a switch in its header that shows the mode it is in ([Modes](#modes))                                                                                                                                                                                                                                                                 |
+| **IAM-080** | Authoring is offered only where the document's `mayEdit` or an occurrence's allows it, and Reading otherwise, so a mode the permissions do not give is never offered ([Modes](#modes))                                                                                                                                                                                                     |
 | **CNT-105** | Authoring is offered where the reader may restructure the document or edit any component it places; anyone in Authoring may switch to Reading, and the page keeps that choice                                                                                                                                                                                                              |
 | **CNT-156** | Reading offers moving through the document and nothing that changes it; Authoring offers the outline's acts and each component's editor in place. The Publishing panel shows in both, to whoever may publish: publishing changes nothing in the document, and is the `publish` decision's rather than an editing affordance (DV-D, Ken's to overrule)                                      |
 | **CNT-162** | A component's label names the version its reference resolves to and whether it is the latest or pinned ([Versions](#versions))                                                                                                                                                                                                                                                             |
@@ -27,10 +28,9 @@ cites it, since the outline following each act is what STR-035's tracking rests 
 [component-editor.md](component-editor.md)'s**: the read text and the surface are one rendering, which
 One scroll keeps. **CNT-076**, a document of several hundred components, is W13's to measure.
 
-**IAM-023 is not claimed**, though its T1 half is built here: the modes in CNT-154 and CNT-155 must
-derive from permissions so that a mode a user cannot have is never offered, and this design derives
-Reading and Authoring so ([Modes](#modes)); CNT-155, the review mode, is T3's, and IAM-023 is claimed
-when it is designed.
+**IAM-023 was split on 2026-09-28**: its T1 half, **IAM-080** - the read and author modes of CNT-154
+derive from the permissions, so a mode a user cannot have is never offered - is what this design builds
+([Modes](#modes)), and is claimed above; IAM-081, the review mode's half, is T3's with CNT-155.
 
 **Not claimed, T3**: CNT-155 and CNT-157, the review mode and what it offers; CNT-159, choosing a
 revision; CNT-161, an audited re-point; CNT-163, showing latest-approved. An approved reference is shown,

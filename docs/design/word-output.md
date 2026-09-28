@@ -43,7 +43,10 @@ character is judged against STIX Two Math, not the Cambria Math Word sets it in.
 same terms" asks for structures Word does not carry here: a header column, a description's language,
 a quotation, preformatted text or a quoted phrase as structure, and a numbered equation as anything
 but a table; and no Word publication is checked for accessibility as PUB-091 checks the PDF. Each is
-argued in full in Word 4's part of [What was built](#what-was-built).
+argued in full in Word 4's part of [What was built](#what-was-built). **Since 2026-09-28 PUB-035 is
+superseded** by PUB-100, the structure Word carries wherever it can hold it and a report of what it
+cannot, and PUB-101, an automatic accessibility check of Word, in T3 (the T1 audit's last rewordings).
+W14 reads this design against PUB-100's every clause before claiming it.
 
 ## Parts
 

@@ -560,7 +560,9 @@ next. A greyed-out box does not.
 | **CNT-080** | Equations must be reachable and readable by assistive technology through their textual alternative                                                                                                                                                                                 | T1      | Specified             |
 | **CNT-137** | Inserting and resolving a suggestion or a comment must be announced to assistive technology, naming which annotation it was and what happened to it                                                                                                                                | T3      | Specified             |
 | **CNT-138** | Suggestions, comment anchors and redlines must be distinguishable without colour - by shape, border, marker or text - and must stay distinguishable in a high-contrast mode                                                                                                        | T3      | Specified             |
-| **CNT-139** | CNT-078 must be verified by an automated accessibility suite run in continuous integration over the editor, and by a recorded manual audit against the WCAG 2.2 AA criteria before each release, the result kept as evidence. Conformance asserted without both is not conformance | T1      | Specified             |
+| **CNT-139** | CNT-078 must be verified by an automated accessibility suite run in continuous integration over the editor, and by a recorded manual audit against the WCAG 2.2 AA criteria before each release, the result kept as evidence. Conformance asserted without both is not conformance | T1      | Superseded by CNT-176 |
+| **CNT-176** | CNT-078 must be verified by an automated accessibility suite run in continuous integration over the editor in a real browser                                                                                                                                                       | T1      | Specified             |
+| **CNT-177** | Before each release, the editor must be audited by a person against the WCAG 2.2 AA criteria, and the result kept as evidence with the release. Conformance asserted without both this and CNT-176 is not conformance                                                              | T1      | Specified             |
 
 **Review was right that this section was thin, and right about where.** Four requirements covered an
 entire editor while footnotes had seven. The three added are the ones whose absence would have
@@ -878,3 +880,20 @@ its identifier.
 | Counts       | Before                      | After                                       |
 | ------------ | --------------------------- | ------------------------------------------- |
 | Requirements | 175, of which 30 superseded | 175, of which 30 superseded and 1 withdrawn |
+
+### Ken's answer to the T1 audit's last decisions (K4, K5, K6, K8) and rewordings, 2026-09-28
+
+[The T1 audit](<../../reviews/T1 - Audit against the code.md>) asked Ken to decide K4, K5, K6 and K8,
+and the remaining T1 rows were read for what each could honestly close on. Ken took each recommendation,
+recorded by [ADR-0029](../../decisions/0029-a-browser-suite-in-ci-and-attested-audits.md),
+[ADR-0030](../../decisions/0030-the-conformance-report-joins-a-publication-after-it-is-recorded.md) and
+[ADR-0031](../../decisions/0031-t1-publishes-headings-to-six-levels.md). A requirement a person must check
+is its own row, verified by `attestation` in each release's baseline.
+
+| What was found                                                                                                                                              | Change                                                                                                                     |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| CNT-139 asked for an automated suite and a manual audit in one row; a test can show the first and never the second, so the row could never close (ADR-0029) | **CNT-139 superseded by CNT-176**, the automated suite, **and CNT-177**, the audit a person makes, verified by attestation |
+
+| Counts       | Before                                      | After                                       |
+| ------------ | ------------------------------------------- | ------------------------------------------- |
+| Requirements | 175, of which 30 superseded and 1 withdrawn | 177, of which 31 superseded and 1 withdrawn |
