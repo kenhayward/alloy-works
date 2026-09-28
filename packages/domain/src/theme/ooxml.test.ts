@@ -609,6 +609,7 @@ describe('projectStylesXml, table styles (Word 2, ruling R7)', () => {
       },
       padding: 6.2,
       breaks: { repeatHeader: false, keepRowsWhole: true, continuationLabel: false },
+      caption: 'above',
     });
     const from = projectStylesXml(resolved(inputs), BRITISH);
     for (const side of ['w:top', 'w:left', 'w:bottom', 'w:right']) {

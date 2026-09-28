@@ -1806,6 +1806,7 @@ const RULED = {
   },
   padding: 6,
   breaks: { repeatHeader: false, keepRowsWhole: true, continuationLabel: true },
+  caption: 'above' as const,
 };
 const ruledTheme = themeWith((inputs) => {
   inputs.catalogues.table.styles.push(RULED);
@@ -2253,6 +2254,7 @@ const floatedTheme = themeWith((inputs) => {
     maximum: { value: 0.6, unit: 'textHeight' },
     placement: 'float',
     alignment: 'end',
+    caption: 'below',
   });
 });
 
@@ -2539,6 +2541,105 @@ describe('writeDocx: figures and images (Word 2, ruling R8)', () => {
       'xmlns:a': 'http://schemas.openxmlformats.org/drawingml/2006/main',
       'xmlns:pic': 'http://schemas.openxmlformats.org/drawingml/2006/picture',
     });
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------
+// W14.5 (W-I): a caption where its style places it.
+// ---------------------------------------------------------------------------------------------------
+
+/**
+ * A table style setting its caption below the table, and two image styles setting a figure's above
+ * its image - one as a block, one floated - each otherwise the default's.
+ */
+const captionedTheme = themeWith((inputs) => {
+  const [table] = inputs.catalogues.table.styles;
+  inputs.catalogues.table.styles.push({
+    ...table!,
+    id: 'footed',
+    name: 'Footed',
+    caption: 'below',
+  });
+  const [figure] = inputs.catalogues.image.styles;
+  if (figure!.placement === 'inline') throw new Error('The first image style places a figure');
+  inputs.catalogues.image.styles.push(
+    { ...figure!, id: 'headed', name: 'Headed', caption: 'above' },
+    { ...figure!, id: 'topped', name: 'Topped', placement: 'float', caption: 'above' },
+  );
+});
+
+describe('writeDocx: a caption where its style places it (W14.5)', () => {
+  const captioned = tabledOf(
+    [
+      said('before'),
+      readings({ style: 'footed' }),
+      said('between'),
+      figure('f1', RED, 'Shapes at rest', { imageStyle: 'headed' }),
+      said('after'),
+      figure('f2', BLUE, 'Blue on top', { imageStyle: 'topped' }),
+    ],
+    { theme: captionedTheme, assets: IMAGES },
+  );
+  const { body, at } = bodyOf(captioned.docx);
+  const shown = blocksOf(captioned.docx).map((each) =>
+    each.name === 'w:tbl'
+      ? 'table'
+      : drawings(each).some((drawing) => drawing.name === 'wp:inline')
+        ? 'image'
+        : textOf(each),
+  );
+
+  it("STY-079 sets a table's caption below it where its table style says, before its note, numbered by Word's fields as one above it is", () => {
+    expect(shown.slice(shown.indexOf('before'), shown.indexOf('between') + 1)).toEqual([
+      'before',
+      'table',
+      'Table 1.1 Readings at noon',
+      'Measured by Grace.',
+      'between',
+    ]);
+    const caption = at('Table 1.1 Readings at noon');
+    expect(styleOf(caption)).toBe('caption');
+    expect(fieldCodes(caption)).toEqual(['STYLEREF 1 \\s', 'SEQ Table \\* arabic \\s 1']);
+    expect(properties(caption)).not.toContain('w:keepNext');
+    // Word still names the table by its caption's words.
+    const table = blocksOf(captioned.docx).find((each) => each.name === 'w:tbl')!;
+    expect(first(first(table, 'w:tblPr')!, 'w:tblCaption')!.attrs['w:val']).toBe(
+      'Table 1.1 Readings at noon',
+    );
+  });
+
+  it("STY-079 sets a figure's caption above its image where its image style says, kept with the image, as a block and floated", () => {
+    expect(shown.slice(shown.indexOf('between'), shown.indexOf('after') + 1)).toEqual([
+      'between',
+      'Figure 1.1 Shapes at rest',
+      'image',
+      'after',
+    ]);
+    const caption = at('Figure 1.1 Shapes at rest');
+    expect(styleOf(caption)).toBe('caption');
+    expect(properties(caption)).toContain('w:keepNext');
+    expect(fieldCodes(caption)).toEqual(['STYLEREF 1 \\s', 'SEQ Figure \\* arabic \\s 1']);
+    // Floated, its caption at the head of its box, the image below it.
+    const anchored = body.find((each) => all(each, 'wp:anchor').length > 0)!;
+    const inside = kids(first(anchored, 'w:txbxContent')!, 'w:p');
+    expect(inside.map((each) => (drawings(each).length > 0 ? 'image' : textOf(each)))).toEqual([
+      'Figure 1.2 Blue on top',
+      'image',
+    ]);
+  });
+
+  it("spaces a caption on its other side as the PDF does: the cells' space after and the caption's space before between a table and a caption below it, and the caption's space after alone between a caption above and its image", () => {
+    // The default table cell and caption are the body's spaces - none before, 2.75 after - and a
+    // 14.35 line at 11pt. Before a table whose caption is below, the paragraph above it gives the
+    // cells' space before and the leading Word sets inside the cell's first line, as a caption above
+    // the table does (`apart`).
+    expect(spacing(at('before'))?.['w:after']).toBe(twips(2.75 + 3.35));
+    expect(spacing(at('Table 1.1 Readings at noon'))?.['w:before']).toBe(twips(2.75));
+    // Above an image, which Word sets no leading over: the caption's space after, and nothing more.
+    const caption = at('Figure 1.1 Shapes at rest');
+    const image = body[body.indexOf(caption) + 1]!;
+    expect(spacing(caption)?.['w:after']).toBeUndefined();
+    expect(spacing(image)?.['w:before'] ?? '0').toBe('0');
   });
 });
 

@@ -3,6 +3,7 @@ import {
   readTheme,
   type Catalogue,
   type Catalogue1,
+  type Catalogue2,
   type CatalogueKind,
   type ResolvedTheme,
   type Theme,
@@ -29,9 +30,10 @@ export const DEFAULT_THEME_ID = '4ae73bd5-48cb-422a-a4f8-2183f0f72866';
  * The artifacts the default theme's six catalogues are versions of, one of each kind (STY-003), each in
  * no space. Their first versions' identifiers are the domain's `FIRST_DEFAULT_CATALOGUE_VERSIONS`, which the
  * theme's 0.1 names; 0025 gave the paragraph, table and image catalogues a second at `catalogue/2`,
- * `SECOND_DEFAULT_CATALOGUE_VERSIONS`, which the theme's 0.2 and 0.3 name (themes 2), and 0034 a third,
- * `DEFAULT_CATALOGUE_VERSIONS`, which its 0.4 names (ET-H); these are the artifacts behind them all,
- * which nothing names but the store.
+ * `SECOND_DEFAULT_CATALOGUE_VERSIONS`, which the theme's 0.2 and 0.3 name (themes 2), 0034 a third,
+ * `FOURTH_DEFAULT_CATALOGUE_VERSIONS`, which its 0.4 names (ET-H), and 0043 the table and image
+ * catalogues a fourth at `catalogue/3`, `DEFAULT_CATALOGUE_VERSIONS`, which its 0.5 names (W14.5);
+ * these are the artifacts behind them all, which nothing names but the store.
  */
 export const DEFAULT_CATALOGUE_IDS: Readonly<Record<CatalogueKind, string>> = {
   paragraph: 'd743fbe7-68f8-4530-8e93-46494d0fcdc2',
@@ -183,13 +185,15 @@ export async function themeAt(trx: TenantTransaction, versionId: string): Promis
 }
 
 /**
- * The next version of a catalogue, opened from its latest. Given at `catalogue/2`, or at `catalogue/1`,
- * which `readCatalogue` reads by upgrading it and which is written as it reads (themes 2, ruling R1).
+ * The next version of a catalogue, opened from its latest. Given at `catalogue/3`, or at `catalogue/1`
+ * or `catalogue/2`, which `readCatalogue` reads by upgrading it and which is written as it reads, at
+ * `catalogue/3` (themes 2, ruling R1; W14.5): a table style given at 2 is written with its caption
+ * above, and a figure's image style with its caption below, as every output set them before.
  */
 export interface NextCatalogueVersion extends Authorship {
   readonly artifactId: string;
   readonly openedFrom: string;
-  readonly catalogue: Catalogue | Catalogue1;
+  readonly catalogue: Catalogue | Catalogue2 | Catalogue1;
 }
 
 /**
@@ -263,8 +267,9 @@ export async function addCatalogueVersion(
   }
   if (refusals.length > 0) return { answer: 'refused', refusals };
 
-  // Whether it changed is decided between the two as both read: a `catalogue/1` row saved again,
-  // given at either version of the shape, is the same catalogue, and records nothing (themes 2).
+  // Whether it changed is decided between the two as both read: a `catalogue/1` or `catalogue/2` row
+  // saved again, given at any version of the shape, is the same catalogue, and records nothing
+  // (themes 2; W14.5).
   return recordReadVersion(trx, {
     artifactId: input.artifactId,
     openedFrom: input.openedFrom,

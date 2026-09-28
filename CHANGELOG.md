@@ -3,6 +3,23 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.119.0 - 2026-09-28 (PR #TBD)
+
+### Added
+
+- **A table style or a figure's image style says where the caption goes.** A theme's table style can
+  set a table's caption above the table or below it, and an image style can set a figure's caption
+  below the image or above it. The PDF, the Word document and the editor all put the caption on that
+  side; below a table, the caption comes after the table and before its note. Numbers, the lists of
+  tables and figures, cross-references and what a screen reader is told are as before.
+
+### Changed
+
+- **The default theme moves to version 0.5**, which says outright what it always did: a table's
+  caption above the table and a figure's below the image. Nothing you have published, and nothing you
+  publish next, looks any different. An environment that has changed its own table or image styles
+  keeps them, with their captions where they always were.
+
 ## 0.118.0 - 2026-09-28 (PR #315)
 
 ### Added

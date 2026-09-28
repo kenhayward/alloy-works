@@ -10,6 +10,11 @@ import {
   FIRST_DEFAULT_CATALOGUES_BY_VERSION,
   FIRST_DEFAULT_CATALOGUE_VERSIONS,
   FIRST_DEFAULT_THEME,
+  FOURTH_DEFAULT_CATALOGUES,
+  FOURTH_DEFAULT_CATALOGUES_BY_VERSION,
+  FOURTH_DEFAULT_CATALOGUE_VERSIONS,
+  FOURTH_DEFAULT_THEME,
+  FOURTH_DEFAULT_THEME_VERSION,
   SECOND_DEFAULT_CATALOGUES,
   SECOND_DEFAULT_CATALOGUES_BY_VERSION,
   SECOND_DEFAULT_CATALOGUE_VERSIONS,
@@ -136,7 +141,7 @@ describe('the default theme', () => {
   it("states template 12's look for its table style `table`: ruled 1pt black inside and out, padded 5pt, the header repeated and nothing else", () => {
     // Themes 2, ruling R3. No continuation label: measured in the design, one leaves an empty header
     // cell in the structure tree on a table's first page, which is a cost a theme should choose.
-    expect(DEFAULT_CATALOGUES.table).toMatchObject({ schemaVersion: 2, kind: 'table' });
+    expect(DEFAULT_CATALOGUES.table).toMatchObject({ schemaVersion: 3, kind: 'table' });
     expect(DEFAULT_CATALOGUES.table.styles.filter((each) => each.id === 'table')).toEqual([
       {
         id: 'table',
@@ -152,12 +157,13 @@ describe('the default theme', () => {
         },
         padding: 5,
         breaks: { repeatHeader: true, keepRowsWhole: false, continuationLabel: false },
+        caption: 'above',
       },
     ]);
   });
 
   it("states today's image rules: a figure the measure wide at most 60 per cent of the text block high, centred; an inline image 1.2 ems high at most the measure wide", () => {
-    expect(DEFAULT_CATALOGUES.image).toMatchObject({ schemaVersion: 2, kind: 'image' });
+    expect(DEFAULT_CATALOGUES.image).toMatchObject({ schemaVersion: 3, kind: 'image' });
     expect(
       DEFAULT_CATALOGUES.image.styles.filter((each) => ['figure', 'inline'].includes(each.id)),
     ).toEqual([
@@ -169,6 +175,7 @@ describe('the default theme', () => {
         maximum: { value: 0.6, unit: 'textHeight' },
         placement: 'block',
         alignment: 'centre',
+        caption: 'below',
       },
       {
         id: 'inline',
@@ -243,7 +250,75 @@ describe('the default theme', () => {
   });
 });
 
-describe("the default theme's version 0.4", () => {
+describe("the default theme's version 0.5", () => {
+  it('binds new versions of its table and image catalogues, each by a fixed identifier, and the other four as 0.4 did', () => {
+    expect(DEFAULT_CATALOGUE_VERSIONS).toEqual({
+      ...FOURTH_DEFAULT_CATALOGUE_VERSIONS,
+      table: 'b5fd3598-cc54-4c58-a546-8b33d795aa15',
+      image: 'fda41d97-12ba-4581-b066-060d060c86a0',
+    });
+    const earlier = [
+      ...Object.values(FIRST_DEFAULT_CATALOGUE_VERSIONS),
+      ...Object.values(SECOND_DEFAULT_CATALOGUE_VERSIONS),
+      ...Object.values(FOURTH_DEFAULT_CATALOGUE_VERSIONS),
+      SECOND_DEFAULT_THEME_VERSION,
+      THIRD_DEFAULT_THEME_VERSION,
+      FOURTH_DEFAULT_THEME_VERSION,
+    ];
+    for (const kind of ['table', 'image'] as const) {
+      expect(earlier, kind).not.toContain(DEFAULT_CATALOGUE_VERSIONS[kind]);
+      expect(DEFAULT_CATALOGUES[kind].schemaVersion, kind).toBe(3);
+    }
+    for (const kind of ['paragraph', 'character', 'admonition', 'citation'] as const) {
+      expect(DEFAULT_CATALOGUES[kind], kind).toBe(FOURTH_DEFAULT_CATALOGUES[kind]);
+    }
+    expect([...DEFAULT_CATALOGUES_BY_VERSION.keys()].sort()).toEqual(
+      Object.values(DEFAULT_CATALOGUE_VERSIONS).sort(),
+    );
+  });
+
+  it('is its 0.4 naming those catalogue versions, with nothing else changed, under a fixed identifier of its own', () => {
+    expect(DEFAULT_THEME).toEqual({
+      ...FOURTH_DEFAULT_THEME,
+      catalogues: DEFAULT_CATALOGUE_VERSIONS,
+    });
+    expect(DEFAULT_THEME_VERSION).toBe('072142c4-8d63-42d6-815a-a447abd0a647');
+    expect([
+      SECOND_DEFAULT_THEME_VERSION,
+      THIRD_DEFAULT_THEME_VERSION,
+      FOURTH_DEFAULT_THEME_VERSION,
+      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(DEFAULT_THEME_VERSION);
+  });
+
+  it("keeps every style 0.4's table and image catalogues held, each saying where its caption sits where 0.4 set it: a table's above it, a figure's below it", () => {
+    expect(DEFAULT_CATALOGUES.table).toEqual({
+      ...FOURTH_DEFAULT_CATALOGUES.table,
+      schemaVersion: 3,
+      styles: FOURTH_DEFAULT_CATALOGUES.table.styles.map((style) => ({
+        ...style,
+        caption: 'above',
+      })),
+    });
+    expect(DEFAULT_CATALOGUES.image).toEqual({
+      ...FOURTH_DEFAULT_CATALOGUES.image,
+      schemaVersion: 3,
+      styles: FOURTH_DEFAULT_CATALOGUES.image.styles.map((style) =>
+        style.placement === 'inline' ? style : { ...style, caption: 'below' },
+      ),
+    });
+  });
+
+  it('reads as its 0.4 does, style for style, so a publication made under either is set alike', () => {
+    const now = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+    const before = readTheme(FOURTH_DEFAULT_THEME, FOURTH_DEFAULT_CATALOGUES_BY_VERSION);
+    if (!now.ok || !before.ok) throw new Error('The default theme does not read');
+    expect({ ...now.theme, catalogues: null }).toEqual({ ...before.theme, catalogues: null });
+    expect(now.theme.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
+  });
+});
+
+describe("the default theme's version 0.4, as migration 0034 stored it", () => {
   const style = <T extends { id: string }>(styles: readonly T[], id: string) => {
     const found = styles.find((each) => each.id === id);
     expect(found, id).toBeDefined();
@@ -251,7 +326,7 @@ describe("the default theme's version 0.4", () => {
   };
 
   it('binds new versions of its paragraph, table and image catalogues, each by a fixed identifier, and the other three as 0.1 did', () => {
-    expect(DEFAULT_CATALOGUE_VERSIONS).toEqual({
+    expect(FOURTH_DEFAULT_CATALOGUE_VERSIONS).toEqual({
       paragraph: 'd056b809-2dfa-4283-b99c-6fbc37cc7c84',
       character: FIRST_DEFAULT_CATALOGUE_VERSIONS.character,
       table: 'd1d81250-e486-4e06-b7e5-ebb68fe97e97',
@@ -266,32 +341,32 @@ describe("the default theme's version 0.4", () => {
       THIRD_DEFAULT_THEME_VERSION,
     ];
     for (const kind of ['paragraph', 'table', 'image'] as const) {
-      expect(earlier, kind).not.toContain(DEFAULT_CATALOGUE_VERSIONS[kind]);
-      expect(DEFAULT_CATALOGUES[kind].schemaVersion, kind).toBe(2);
+      expect(earlier, kind).not.toContain(FOURTH_DEFAULT_CATALOGUE_VERSIONS[kind]);
+      expect(FOURTH_DEFAULT_CATALOGUES[kind].schemaVersion, kind).toBe(2);
     }
     for (const kind of ['character', 'admonition', 'citation'] as const) {
-      expect(DEFAULT_CATALOGUES[kind], kind).toBe(FIRST_DEFAULT_CATALOGUES[kind]);
+      expect(FOURTH_DEFAULT_CATALOGUES[kind], kind).toBe(FIRST_DEFAULT_CATALOGUES[kind]);
     }
-    expect([...DEFAULT_CATALOGUES_BY_VERSION.keys()].sort()).toEqual(
-      Object.values(DEFAULT_CATALOGUE_VERSIONS).sort(),
+    expect([...FOURTH_DEFAULT_CATALOGUES_BY_VERSION.keys()].sort()).toEqual(
+      Object.values(FOURTH_DEFAULT_CATALOGUE_VERSIONS).sort(),
     );
   });
 
   it('is its 0.3 naming those catalogue versions, with nothing else changed, under a fixed identifier of its own', () => {
-    expect(DEFAULT_THEME).toEqual({
+    expect(FOURTH_DEFAULT_THEME).toEqual({
       ...THIRD_DEFAULT_THEME,
-      catalogues: DEFAULT_CATALOGUE_VERSIONS,
+      catalogues: FOURTH_DEFAULT_CATALOGUE_VERSIONS,
     });
-    expect(DEFAULT_THEME_VERSION).toBe('80a7869a-6ceb-43b2-b748-81e3e4fee2dd');
+    expect(FOURTH_DEFAULT_THEME_VERSION).toBe('80a7869a-6ceb-43b2-b748-81e3e4fee2dd');
     expect([
       SECOND_DEFAULT_THEME_VERSION,
       THIRD_DEFAULT_THEME_VERSION,
-      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
-    ]).not.toContain(DEFAULT_THEME_VERSION);
+      ...Object.values(FOURTH_DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(FOURTH_DEFAULT_THEME_VERSION);
   });
 
   it("keeps every style 0.3's catalogues held, and adds Lead, Centred and Small print for running text, Banded for a table and Half width for a figure", () => {
-    expect(DEFAULT_CATALOGUES.paragraph).toEqual({
+    expect(FOURTH_DEFAULT_CATALOGUES.paragraph).toEqual({
       ...SECOND_DEFAULT_CATALOGUES.paragraph,
       styles: [
         ...SECOND_DEFAULT_CATALOGUES.paragraph.styles,
@@ -318,7 +393,7 @@ describe("the default theme's version 0.4", () => {
         },
       ],
     });
-    expect(DEFAULT_CATALOGUES.table).toEqual({
+    expect(FOURTH_DEFAULT_CATALOGUES.table).toEqual({
       ...SECOND_DEFAULT_CATALOGUES.table,
       styles: [
         ...SECOND_DEFAULT_CATALOGUES.table.styles,
@@ -339,7 +414,7 @@ describe("the default theme's version 0.4", () => {
         },
       ],
     });
-    expect(DEFAULT_CATALOGUES.image).toEqual({
+    expect(FOURTH_DEFAULT_CATALOGUES.image).toEqual({
       ...SECOND_DEFAULT_CATALOGUES.image,
       styles: [
         ...SECOND_DEFAULT_CATALOGUES.image.styles,
@@ -357,7 +432,7 @@ describe("the default theme's version 0.4", () => {
   });
 
   it('reads, each new paragraph style resolved over the body it is based on, and none set at a place or a role', () => {
-    const read = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+    const read = readTheme(FOURTH_DEFAULT_THEME, FOURTH_DEFAULT_CATALOGUES_BY_VERSION);
     if (!read.ok) throw new Error(read.refusals.map((each) => each.message).join('; '));
     const resolved = (id: string) => read.theme.paragraphStyles.get(id)!.properties;
     expect(resolved('lead')).toEqual({
@@ -373,10 +448,13 @@ describe("the default theme's version 0.4", () => {
       lineSpacing: 11.74,
       spaceAfter: 2.25,
     });
-    expect(style(DEFAULT_CATALOGUES.table.styles, 'banded').name).toBe('Banded');
-    expect(style(DEFAULT_CATALOGUES.image.styles, 'half-width').name).toBe('Half width');
+    expect(style(FOURTH_DEFAULT_CATALOGUES.table.styles, 'banded').name).toBe('Banded');
+    expect(style(FOURTH_DEFAULT_CATALOGUES.image.styles, 'half-width').name).toBe('Half width');
     // No place and no role is set in any of them: they are there to be chosen.
-    const bound = [...Object.values(DEFAULT_THEME.places), ...Object.values(DEFAULT_THEME.roles)];
+    const bound = [
+      ...Object.values(FOURTH_DEFAULT_THEME.places),
+      ...Object.values(FOURTH_DEFAULT_THEME.roles),
+    ];
     for (const id of ['lead', 'centred', 'small-print']) expect(bound, id).not.toContain(id);
   });
 });

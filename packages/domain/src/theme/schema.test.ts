@@ -5,6 +5,7 @@ import {
   DEFAULT_THEME,
   FIRST_DEFAULT_CATALOGUES,
   FIRST_DEFAULT_THEME,
+  FOURTH_DEFAULT_CATALOGUES,
 } from './default.js';
 import {
   CATALOGUE_KINDS,
@@ -14,6 +15,7 @@ import {
   STYLED_MARKS,
   catalogueSchema,
   catalogueSchema1,
+  catalogueSchema2,
   themeSchema,
 } from './schema.js';
 
@@ -236,18 +238,18 @@ const inlineStyle = () => ({
 
 const tables = (...styles: unknown[]) => ({ schemaVersion: 2, kind: 'table', styles });
 const images = (...styles: unknown[]) => ({ schemaVersion: 2, kind: 'image', styles });
-const accepts = (catalogue: unknown) => catalogueSchema.safeParse(catalogue).success;
+/** Whether `catalogue/2`'s frozen parse accepts it: the rows 0025 and 0034 wrote are held to it. */
+const accepts = (catalogue: unknown) => catalogueSchema2.safeParse(catalogue).success;
 
-describe('catalogue/2', () => {
-  it("is the current version, and holds the default theme's paragraph, table and image catalogues at it", () => {
-    expect(CATALOGUE_SCHEMA_VERSION).toBe(2);
+describe('catalogue/2, frozen as the rows written at it hold it', () => {
+  it("holds the default theme's 0.4 paragraph, table and image catalogues, which 0034 wrote at it", () => {
     for (const kind of ['paragraph', 'table', 'image'] as const) {
-      expect(DEFAULT_CATALOGUES[kind].schemaVersion, kind).toBe(2);
-      expect(() => catalogueSchema.parse(DEFAULT_CATALOGUES[kind]), kind).not.toThrow();
+      expect(FOURTH_DEFAULT_CATALOGUES[kind].schemaVersion, kind).toBe(2);
+      expect(() => catalogueSchema2.parse(FOURTH_DEFAULT_CATALOGUES[kind]), kind).not.toThrow();
     }
     // The other three are the rows 0.1 wrote, at version 1: nothing in them changed.
     for (const kind of ['character', 'admonition', 'citation'] as const) {
-      expect(DEFAULT_CATALOGUES[kind], kind).toBe(FIRST_DEFAULT_CATALOGUES[kind]);
+      expect(FOURTH_DEFAULT_CATALOGUES[kind], kind).toBe(FIRST_DEFAULT_CATALOGUES[kind]);
     }
   });
 
@@ -258,7 +260,7 @@ describe('catalogue/2', () => {
   });
 
   it('adds contextual spacing to the paragraph properties, stated by the base and by any style', () => {
-    const catalogue = clone(DEFAULT_CATALOGUES.paragraph);
+    const catalogue = clone(FOURTH_DEFAULT_CATALOGUES.paragraph);
     expect(catalogue.base.contextualSpacing).toBe(false);
     const base: Record<string, unknown> = { ...catalogue.base };
     delete base['contextualSpacing'];
@@ -270,12 +272,12 @@ describe('catalogue/2', () => {
   });
 
   it('keeps the rest of the paragraph and character properties as version 1 had them', () => {
-    const catalogue = clone(DEFAULT_CATALOGUES.paragraph);
+    const catalogue = clone(FOURTH_DEFAULT_CATALOGUES.paragraph);
     for (const extra of ['letterSpacing', 'smallCaps']) {
       const widened = { ...catalogue.styles[0]!, properties: { [extra]: 1 } };
       expect(accepts({ ...catalogue, styles: [widened] }), extra).toBe(false);
     }
-    const character = { ...clone(DEFAULT_CATALOGUES.character), schemaVersion: 2 };
+    const character = { ...clone(FOURTH_DEFAULT_CATALOGUES.character), schemaVersion: 2 };
     expect(accepts(character)).toBe(true);
     const sized = { ...character.styles[0]!, properties: { size: 9 } };
     expect(accepts({ ...character, styles: [sized] })).toBe(false);
@@ -411,6 +413,70 @@ describe('catalogue/2', () => {
     // An image in a line of text stands where its text puts it: an alignment would do nothing.
     expect(accepts(images({ ...inlineStyle(), alignment: 'centre' }))).toBe(false);
     expect(accepts(images({ ...figureStyle(), placement: 'wrapped' }))).toBe(false);
+  });
+
+  it("says nothing of where a caption sits: that is catalogue/3's, and a row at 2 stating it is refused", () => {
+    expect(accepts(tables({ ...tableStyle(), caption: 'above' }))).toBe(false);
+    expect(accepts(images({ ...figureStyle(), caption: 'below' }))).toBe(false);
+  });
+});
+
+const tables3 = (...styles: unknown[]) => ({ schemaVersion: 3, kind: 'table', styles });
+const images3 = (...styles: unknown[]) => ({ schemaVersion: 3, kind: 'image', styles });
+const accepts3 = (catalogue: unknown) => catalogueSchema.safeParse(catalogue).success;
+
+describe('catalogue/3', () => {
+  it("is the current version, and holds the default theme's table and image catalogues at it", () => {
+    expect(CATALOGUE_SCHEMA_VERSION).toBe(3);
+    for (const kind of ['table', 'image'] as const) {
+      expect(DEFAULT_CATALOGUES[kind].schemaVersion, kind).toBe(3);
+      expect(() => catalogueSchema.parse(DEFAULT_CATALOGUES[kind]), kind).not.toThrow();
+    }
+    // The paragraph catalogue is 0.4's row, at version 2, and the other three 0.1's, at version 1.
+    expect(DEFAULT_CATALOGUES.paragraph).toBe(FOURTH_DEFAULT_CATALOGUES.paragraph);
+    for (const kind of ['character', 'admonition', 'citation'] as const) {
+      expect(DEFAULT_CATALOGUES[kind], kind).toBe(FIRST_DEFAULT_CATALOGUES[kind]);
+    }
+  });
+
+  it('reads no catalogue/1 or catalogue/2 as it stands: the reader upgrades one first', () => {
+    for (const kind of CATALOGUE_KINDS) {
+      expect(accepts3(FIRST_DEFAULT_CATALOGUES[kind]), kind).toBe(false);
+      expect(accepts3(FOURTH_DEFAULT_CATALOGUES[kind]), kind).toBe(false);
+    }
+  });
+
+  it('keeps every other property catalogue/2 had, for every kind', () => {
+    const paragraph = { ...clone(FOURTH_DEFAULT_CATALOGUES.paragraph), schemaVersion: 3 };
+    expect(accepts3(paragraph)).toBe(true);
+    expect(accepts3({ ...clone(FIRST_DEFAULT_CATALOGUES.character), schemaVersion: 3 })).toBe(true);
+    expect(accepts3(tables3({ ...tableStyle(), caption: 'above' }))).toBe(true);
+    expect(accepts3(tables3({ ...tableStyle(), caption: 'above', padding: 37 }))).toBe(false);
+    expect(accepts3(images3({ ...figureStyle(), caption: 'below' }, inlineStyle()))).toBe(true);
+    expect(accepts3(images3({ ...figureStyle(), caption: 'below', wrap: 'around' }))).toBe(false);
+  });
+
+  it('STY-079 requires a table style to declare whether its caption sits above or below the table', () => {
+    for (const caption of ['above', 'below']) {
+      expect(accepts3(tables3({ ...tableStyle(), caption })), caption).toBe(true);
+    }
+    expect(accepts3(tables3(tableStyle()))).toBe(false);
+    for (const caption of ['top', 'bottom', 'beside', 'none', true]) {
+      expect(accepts3(tables3({ ...tableStyle(), caption })), String(caption)).toBe(false);
+    }
+  });
+
+  it('STY-079 requires an image style placing a figure to declare whether its caption sits above or below it, and one in a line of text, which has no caption, to declare nothing', () => {
+    for (const placement of ['block', 'float']) {
+      for (const caption of ['above', 'below']) {
+        const style = { ...figureStyle(), placement, caption };
+        expect(accepts3(images3(style)), `${placement} ${caption}`).toBe(true);
+      }
+      expect(accepts3(images3({ ...figureStyle(), placement })), placement).toBe(false);
+      expect(accepts3(images3({ ...figureStyle(), placement, caption: 'left' }))).toBe(false);
+    }
+    expect(accepts3(images3(inlineStyle()))).toBe(true);
+    expect(accepts3(images3({ ...inlineStyle(), caption: 'below' }))).toBe(false);
   });
 });
 

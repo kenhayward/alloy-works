@@ -21,7 +21,9 @@ import {
  *
  * **Two projections, one for each published shape that carries one.** `projectTypst` is
  * `publishing/13`'s `theme` (themes 2, ruling R1): every paragraph style with its contextual spacing,
- * and every table style and image style by identifier. `projectTypst12` is `publishing/12`'s (themes 1,
+ * and every table style and image style by identifier; and, since `publishing/15` (W14.5, W-I), where
+ * each table style and each style placing a figure sets its caption, `captionPosition`, which templates
+ * 13 and 14 never read and no document of their schemas is made with any more. `projectTypst12` is `publishing/12`'s (themes 1,
  * ruling R6), **frozen with template 12**, which reads exactly that shape. Each has its **own types**,
  * written out rather than derived from the other's, so a change made for one cannot move the other: a
  * shared type, widened for template 13, would silently widen what template 12 is handed too. 13's is
@@ -123,6 +125,11 @@ export interface TypstTableStyle {
   readonly keepRowsWhole: boolean;
   /** Whether a page after the table's first carries its label, in the layout's `words.continued`. */
   readonly continuationLabel: boolean;
+  /**
+   * Where the table's caption stands, `figure.caption(position: ..)` in the engine's terms: `top` for a
+   * style whose caption is above its table, `bottom` for one below it (STY-079; W14.5).
+   */
+  readonly captionPosition: 'top' | 'bottom';
 }
 
 /** An image style as template 13 places it (STY-015 to STY-018; TH-J). */
@@ -135,6 +142,11 @@ export interface TypstImageStyle {
   readonly placement: 'inline' | 'block' | 'float';
   /** Where a block or a floated image stands within its band, or null for one in a line of text. */
   readonly align: 'start' | 'center' | 'end' | null;
+  /**
+   * Where a figure's caption stands, as a table style's does, or null for an image in a line of text,
+   * which has no caption (STY-079; W14.5).
+   */
+  readonly captionPosition: 'top' | 'bottom' | null;
 }
 
 /** The theme as `publishing/13` carries it. */
@@ -218,8 +230,12 @@ function table(style: TableStyle): TypstTableStyle {
     repeatHeader: style.breaks.repeatHeader,
     keepRowsWhole: style.breaks.keepRowsWhole,
     continuationLabel: style.breaks.continuationLabel,
+    captionPosition: POSITION[style.caption],
   };
 }
+
+/** A caption's placement in the engine's terms. */
+const POSITION = { above: 'top', below: 'bottom' } as const;
 
 function image(style: ImageStyle): TypstImageStyle {
   return {
@@ -232,6 +248,7 @@ function image(style: ImageStyle): TypstImageStyle {
         : style.alignment === 'centre'
           ? 'center'
           : style.alignment,
+    captionPosition: style.placement === 'inline' ? null : POSITION[style.caption],
   };
 }
 

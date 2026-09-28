@@ -2,8 +2,9 @@ import {
   DEFAULT_CATALOGUES,
   DEFAULT_CATALOGUE_VERSIONS,
   DEFAULT_THEME,
+  FOURTH_DEFAULT_CATALOGUES,
   upgradeCatalogue1,
-  type ParagraphCatalogue,
+  type ParagraphCatalogue2,
   type Theme,
 } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -28,10 +29,10 @@ const PARAGRAPHS = DEFAULT_CATALOGUE_IDS.paragraph;
 
 /** The default paragraph catalogue with one style's stated properties replaced. */
 function withStyle(
-  catalogue: ParagraphCatalogue,
+  catalogue: ParagraphCatalogue2,
   id: string,
-  properties: ParagraphCatalogue['styles'][number]['properties'],
-): ParagraphCatalogue {
+  properties: ParagraphCatalogue2['styles'][number]['properties'],
+): ParagraphCatalogue2 {
   return {
     ...catalogue,
     styles: catalogue.styles.map((style) =>
@@ -96,7 +97,7 @@ describe("the theme's store", () => {
       const first = DEFAULT_CATALOGUES.paragraph;
 
       // 0.4 drops `attribution` and allocates `epigraph` in its place.
-      const second: ParagraphCatalogue = {
+      const second: ParagraphCatalogue2 = {
         ...first,
         styles: [
           ...first.styles.filter((style) => style.id !== 'attribution'),
@@ -284,7 +285,7 @@ describe("the theme's store", () => {
         current: { id: DEFAULT_CATALOGUE_VERSIONS.character },
       });
 
-      // A change is still a change, and is written as it reads, at catalogue/2.
+      // A change is still a change, and is written as it reads, at catalogue/3 (W14.5).
       const renamed = recorded(
         await addCatalogueVersion(trx, {
           artifactId: characters,
@@ -298,7 +299,61 @@ describe("the theme's store", () => {
           },
         }),
       );
-      expect(renamed).toMatchObject({ version: 2, schemaVersion: 2 });
+      expect(renamed).toMatchObject({ version: 2, schemaVersion: 3 });
+    });
+  });
+
+  it('reads a table or an image catalogue given at catalogue/2 as catalogue/3 does - each caption where it always stood - refuses one that states a caption at 2, and writes a caption moved at catalogue/3', async () => {
+    const tenant = await environment();
+    await service.withTenant(tenant, async (trx) => {
+      const author = await ada(trx);
+      // The theme's 0.4 catalogues, at catalogue/2, saved again over 0.5's, at catalogue/3: the same
+      // catalogues as both read, so neither records a version.
+      for (const kind of ['table', 'image'] as const) {
+        expect(
+          await addCatalogueVersion(trx, {
+            artifactId: DEFAULT_CATALOGUE_IDS[kind],
+            openedFrom: DEFAULT_CATALOGUE_VERSIONS[kind],
+            author,
+            catalogue: FOURTH_DEFAULT_CATALOGUES[kind],
+          }),
+          kind,
+        ).toMatchObject({
+          answer: 'version.unchanged',
+          current: { id: DEFAULT_CATALOGUE_VERSIONS[kind], schemaVersion: 3 },
+        });
+      }
+      // A caption's side was never catalogue/2's: stated at 2, it is refused, and nothing is written.
+      const [table] = FOURTH_DEFAULT_CATALOGUES.table.styles;
+      const stated = await addCatalogueVersion(trx, {
+        artifactId: DEFAULT_CATALOGUE_IDS.table,
+        openedFrom: DEFAULT_CATALOGUE_VERSIONS.table,
+        author,
+        catalogue: {
+          ...FOURTH_DEFAULT_CATALOGUES.table,
+          styles: [{ ...table!, caption: 'below' }],
+        } as unknown as ParagraphCatalogue2,
+      });
+      expect(stated).toMatchObject({
+        answer: 'refused',
+        refusals: [{ code: 'catalogue_malformed' }],
+      });
+      expect(await versionsOf(trx, DEFAULT_CATALOGUE_IDS.table)).toBe(4);
+      // At catalogue/3, a caption moved below its table is a change, written at 3.
+      const moved = recorded(
+        await addCatalogueVersion(trx, {
+          artifactId: DEFAULT_CATALOGUE_IDS.table,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.table,
+          author,
+          catalogue: {
+            ...DEFAULT_CATALOGUES.table,
+            styles: DEFAULT_CATALOGUES.table.styles.map((style) =>
+              style.id === 'table' ? { ...style, caption: 'below' as const } : style,
+            ),
+          },
+        }),
+      );
+      expect(moved).toMatchObject({ version: 5, schemaVersion: 3 });
     });
   });
 
@@ -332,12 +387,12 @@ describe("the theme's store", () => {
       expect(version).toMatchObject({
         kind: 'theme',
         revision: 0,
-        version: 5,
+        version: 6,
         author,
         content: next,
       });
       const now = await defaultTheme(trx);
-      expect(now).toMatchObject({ versionId: version.id, number: '0.5', content: next });
+      expect(now).toMatchObject({ versionId: version.id, number: '0.6', content: next });
       expect(now.theme.name).toBe('Italic captions');
       expect(now.theme.catalogues.paragraph).toBe(captions.id);
       expect(now.theme.paragraphStyles.get('caption')!.properties.italic).toBe(true);
@@ -394,7 +449,7 @@ describe("the theme's store", () => {
       });
 
       // Neither was saved: the environment is set from the theme it was.
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(4);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(5);
       expect((await latestVersion(trx, DEFAULT_THEME_ID))!.id).toBe(declared.versionId);
     });
   });
@@ -423,7 +478,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(4);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(5);
     });
   });
 });

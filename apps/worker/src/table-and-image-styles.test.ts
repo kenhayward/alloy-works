@@ -15,7 +15,7 @@ import {
   type ImageCatalogue,
   type ImageStyle,
   type Layout,
-  type ParagraphCatalogue,
+  type ParagraphCatalogue2,
   type PublishedDocument,
   type PublishingAsset,
   type ResolvedTheme,
@@ -28,6 +28,7 @@ import { loadPinnedFonts } from './fonts.js';
 import { rootImages } from './jobs/publish.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPaint, readPdf, type Paint, type ReadPdf } from './testing/pdf.js';
+import { defaultTheme } from './testing/theme.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
@@ -92,6 +93,7 @@ const ruled: TableStyle = {
   },
   padding: 8,
   breaks: { repeatHeader: true, keepRowsWhole: true, continuationLabel: true },
+  caption: 'above',
 };
 /** "Plain": the opposite of each - nothing filled, bold or ruled but its columns, and every break off. */
 const plain: TableStyle = {
@@ -104,6 +106,14 @@ const plain: TableStyle = {
   rules: { outer: 'none', horizontal: 'none', vertical: { width: 1, colour: '#006400' } },
   padding: 2,
   breaks: { repeatHeader: false, keepRowsWhole: false, continuationLabel: false },
+  caption: 'above',
+};
+/** "Footed": the default's `table`, its caption below it (W14.5). */
+const footed: TableStyle = {
+  ...(DEFAULT_CATALOGUES.table.styles[0] as TableStyle),
+  id: 'footed',
+  name: 'Footed',
+  caption: 'below',
 };
 const splitting: TableStyle = {
   ...ruled,
@@ -121,6 +131,7 @@ const placed = (
   name: string,
   placement: 'block' | 'float',
   alignment: 'start' | 'centre' | 'end',
+  caption: 'above' | 'below' = 'below',
 ): ImageStyle => ({
   id: name,
   name,
@@ -129,6 +140,7 @@ const placed = (
   maximum: { value: 1, unit: 'textHeight' },
   placement,
   alignment,
+  caption,
 });
 const IMAGE_STYLES: readonly ImageStyle[] = [
   placed('block-start', 'block', 'start'),
@@ -137,6 +149,9 @@ const IMAGE_STYLES: readonly ImageStyle[] = [
   placed('float-start', 'float', 'start'),
   placed('float-centre', 'float', 'centre'),
   placed('float-end', 'float', 'end'),
+  // Each with its caption above its image (W14.5).
+  placed('headed', 'block', 'centre', 'above'),
+  placed('topped', 'float', 'centre', 'above'),
   // Half the measure wide, 125, would be 93.75 high: held to a fifth of the text block, 57.6.
   {
     id: 'fixed-width',
@@ -146,6 +161,7 @@ const IMAGE_STYLES: readonly ImageStyle[] = [
     maximum: { value: 0.2, unit: 'textHeight' },
     placement: 'block',
     alignment: 'centre',
+    caption: 'below',
   },
   // 60 high would be 80 wide: held to three tenths of the measure, 75.
   {
@@ -156,6 +172,7 @@ const IMAGE_STYLES: readonly ImageStyle[] = [
     maximum: { value: 0.3, unit: 'measure' },
     placement: 'block',
     alignment: 'centre',
+    caption: 'below',
   },
 ];
 
@@ -169,7 +186,7 @@ const THEMED = {
   table: '7a0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9b02',
   image: '7a0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9b03',
 };
-const paragraphs: ParagraphCatalogue = {
+const paragraphs: ParagraphCatalogue2 = {
   ...DEFAULT_CATALOGUES.paragraph,
   styles: DEFAULT_CATALOGUES.paragraph.styles.map((style) =>
     style.id === 'table-cell'
@@ -179,7 +196,7 @@ const paragraphs: ParagraphCatalogue = {
 };
 const tables: TableCatalogue = {
   ...DEFAULT_CATALOGUES.table,
-  styles: [...DEFAULT_CATALOGUES.table.styles, ruled, plain, splitting, unlabelled],
+  styles: [...DEFAULT_CATALOGUES.table.styles, ruled, plain, splitting, unlabelled, footed],
 };
 const images: ImageCatalogue = {
   ...DEFAULT_CATALOGUES.image,
@@ -897,5 +914,204 @@ describe('an image placed and sized by its style (themes 2)', () => {
       [76.8, 57.6],
       [75, 56.25],
     ]);
+  }, 120_000);
+});
+
+// ------------------------------------------------------------------------------------------------
+// Where a caption sits (W14.5, W-I)
+// ------------------------------------------------------------------------------------------------
+
+/** A small table under this style: its caption, two rows and a note, each word its own. */
+const captioned = (name: string, style: string, word: string) => ({
+  type: 'table',
+  id: name,
+  style,
+  caption: [text(`${word}caption`)],
+  headerRows: 1,
+  headerColumns: 0,
+  note: [text(`${word}note`)],
+  rows: [
+    { cells: [cell(`${name}h1`, `${word}head`), cell(`${name}h2`, 'Value')] },
+    { cells: [cell(`${name}r1`, `${word}last`), cell(`${name}r2`, 'One')] },
+  ],
+});
+
+describe('a caption where its style places it (W14.5)', () => {
+  let made: Promise<Compiled> | undefined;
+  /**
+   * Each case on a page of its own: two tables alike in all but their style - `table`, its caption
+   * above, and `footed`, below - and three figures, a block with its caption below, a block with its
+   * caption above, and a float with its caption above, which goes to the head of its page.
+   */
+  const placedCaptions = async () =>
+    (made ??= (async () =>
+      compile(
+        small,
+        [
+          {
+            name: 'tables',
+            matter: 'appendix',
+            content: [captioned('t1', 'table', 'Above'), captioned('t2', 'footed', 'Below')],
+          },
+          {
+            name: 'blocks',
+            matter: 'appendix',
+            content: [
+              figure('fu', 'block-centre', 'Undercaption'),
+              figure('fo', 'headed', 'Overcaption'),
+            ],
+          },
+          {
+            name: 'float',
+            matter: 'appendix',
+            content: [para('h1', 'Floatword opens.'), figure('ft', 'topped', 'Topcaption')],
+          },
+        ],
+        [await redImage()],
+      ))());
+  const item = (read: ReadPdf, words: string) => {
+    const found = read.items.find((each) => each.text.includes(words));
+    if (found === undefined) throw new Error(`No text holds ${words}`);
+    return found;
+  };
+  const boxOf = (read: ReadPdf, name: string) => {
+    const found = read.figures.find((each) => each.alt === `The ${name} image`);
+    if (found?.box === null || found === undefined) throw new Error(`No box for ${name}`);
+    return found.box;
+  };
+
+  it("passes veraPDF, each caption on either side tagged as its table's or its figure's", async () => {
+    const { pdf, read } = await placedCaptions();
+    expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+    // Each table's caption its programmatic caption, the Table's first child, above it or below.
+    expect(read.elements).toMatchObject({ Table: 2, Figure: 3, Caption: 5 });
+    const tables = read.roles.flatMap((role, at) => (role === 'Table' ? [at] : []));
+    expect(tables).toHaveLength(2);
+    for (const at of tables) expect(read.roles[at + 1]).toBe('Caption');
+  }, 120_000);
+
+  it("STY-079 STR-025 sets a table's caption above it or below it as its table style says - two tables alike but for their style - its note last, and numbers each the same", async () => {
+    const { read } = await placedCaptions();
+    // Above: the caption over the header row, the note under the last row.
+    const above = item(read, 'Abovecaption');
+    expect(above.text).toContain('Table A.1');
+    expect(above.y).toBeGreaterThan(item(read, 'Abovehead').y);
+    expect(item(read, 'Abovenote').y).toBeLessThan(item(read, 'Abovelast').y);
+    // Below: the caption under the last row, and the note under the caption.
+    const below = item(read, 'Belowcaption');
+    expect(below.text).toContain('Table A.2');
+    expect(below.y).toBeLessThan(item(read, 'Belowlast').y);
+    expect(item(read, 'Belownote').y).toBeLessThan(below.y);
+    // Drawn below, and still the table's programmatic caption, its first child, which a reader is told
+    // first wherever it is drawn (TAB-039): the tagging is template 14's.
+    const table = read.reading.findIndex(
+      (each) => each.role === 'Table' && each.text.includes('Belowcaption'),
+    );
+    expect(read.reading[table + 1]).toMatchObject({ role: 'Caption' });
+    expect(read.reading[table + 1]!.text).toContain('Belowcaption');
+  }, 120_000);
+
+  it("STY-079 sets a figure's caption above its image or below it as its image style says, as a block and floated, each tagged as before", async () => {
+    const { read } = await placedCaptions();
+    expect(item(read, 'Undercaption').y).toBeLessThan(boxOf(read, 'fu')[1]);
+    const over = item(read, 'Overcaption');
+    expect(over.text).toContain('Figure B.2');
+    expect(over.y).toBeGreaterThan(boxOf(read, 'fo')[3]);
+    // In the flow, its caption the head of the figure: the space before the figure is above it.
+    expect(over.y).toBeLessThan(TOP);
+    // Floated to the head of its page, its caption at the band's head and the image under it, and
+    // both above the line of text it was placed after.
+    const top = item(read, 'Topcaption');
+    const band = boxOf(read, 'ft');
+    expect(top.y).toBeGreaterThan(band[3]);
+    expect(top.y).toBeLessThan(TOP);
+    expect(item(read, 'Floatword').y).toBeLessThan(band[1]);
+    // Tagged as template 14 tagged a figure, whichever side its caption is drawn on: a `Div` holding
+    // its `Caption` and then its `Figure`, the image's text.
+    const told = read.reading;
+    for (const words of ['Undercaption', 'Overcaption', 'Topcaption']) {
+      const caption = told.findIndex(
+        (each) => each.role === 'Caption' && each.text.includes(words),
+      );
+      expect(told[caption - 1], words).toMatchObject({ role: 'Div' });
+      expect(told.slice(caption + 1).find((each) => each.role !== 'Span')?.role, words).toBe(
+        'Figure',
+      );
+    }
+  }, 120_000);
+
+  it('sets a document under the default theme as template 14 set it, so what was published publishes the same', async () => {
+    const red = await redImage();
+    const assembled = assemble({
+      formats: ['pdf'],
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'The same',
+        language: 'en-GB',
+        direction: 'ltr',
+        nodes: [
+          {
+            type: 'reference',
+            id: id('same'),
+            component: COMPONENT,
+            mode: { kind: 'latest' },
+            numbered: true,
+            matter: 'body',
+            pageBreak: 'none',
+            values: {},
+            children: [],
+          },
+        ],
+      }),
+      occurrences: new Map([
+        [
+          id('same'),
+          parseContentDocument({
+            schemaVersion: 1,
+            title: 'same',
+            language: 'en-GB',
+            direction: 'ltr',
+            content: [
+              para('p1', 'Opens.'),
+              captioned('t1', 'table', 'Same'),
+              figure('f1', 'figure', 'Samecaption'),
+              para('p2', 'Closes.'),
+            ],
+          }) as ContentDocument,
+        ],
+      ]),
+      refused: [],
+      layout: small,
+      theme: defaultTheme,
+      revision: '0.1',
+      covers: fonts.covers,
+      assets: new Map([[red.version, red.asset]]),
+    });
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    // Template 14 reads `publishing/14`, which says nothing of a caption's side: the same document.
+    const asFourteen = JSON.parse(JSON.stringify(assembled.document), (key, value: unknown) =>
+      key === 'captionPosition' ? undefined : value,
+    ) as { schema: string };
+    asFourteen.schema = 'publishing/14';
+    const images = async () =>
+      rootImages(new Map([[red.version, red.asset]]), async () => red.bytes);
+    const [before, after] = await Promise.all([
+      typst.compile(PUBLICATION_TEMPLATE[14].file, JSON.stringify(asFourteen), at, await images()),
+      typst.compile(
+        PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+        JSON.stringify(assembled.document),
+        at,
+        await images(),
+      ),
+    ]);
+    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(15);
+    const [was, now] = await Promise.all([readPdf(before), readPdf(after)]);
+    expect(now.pages).toBe(was.pages);
+    expect(now.taggedText).toEqual(was.taggedText);
+    expect(now.items).toEqual(was.items);
+    expect(now.figures).toEqual(was.figures);
+    expect(now.elements).toEqual(was.elements);
+    expect(now.roles).toEqual(was.roles);
+    expect((await readPaint(after)).texts).toEqual((await readPaint(before)).texts);
   }, 120_000);
 });

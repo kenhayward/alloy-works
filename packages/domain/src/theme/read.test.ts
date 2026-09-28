@@ -8,6 +8,7 @@ import {
   FIRST_DEFAULT_CATALOGUES_BY_VERSION,
   FIRST_DEFAULT_CATALOGUE_VERSIONS,
   FIRST_DEFAULT_THEME,
+  FOURTH_DEFAULT_CATALOGUES,
   SECOND_DEFAULT_CATALOGUES,
 } from './default.js';
 import { readCatalogue, readTheme, themeRefusalCodes } from './read.js';
@@ -595,8 +596,15 @@ describe('table and image styles, when a theme is read', () => {
     const outcome = readTheme(FIRST_DEFAULT_THEME, FIRST_DEFAULT_CATALOGUES_BY_VERSION);
     if (!outcome.ok) throw new Error(outcome.refusals.map((each) => each.message).join('\n'));
     expect(outcome.theme.catalogues).toEqual(FIRST_DEFAULT_CATALOGUE_VERSIONS);
-    expect([...outcome.theme.tableStyles.values()]).toEqual(SECOND_DEFAULT_CATALOGUES.table.styles);
-    expect([...outcome.theme.imageStyles.values()]).toEqual(SECOND_DEFAULT_CATALOGUES.image.styles);
+    // Template 12's look, and today's rules, as 0.2 stated them; each caption where it always stood.
+    expect([...outcome.theme.tableStyles.values()]).toEqual(
+      SECOND_DEFAULT_CATALOGUES.table.styles.map((style) => ({ ...style, caption: 'above' })),
+    );
+    expect([...outcome.theme.imageStyles.values()]).toEqual(
+      SECOND_DEFAULT_CATALOGUES.image.styles.map((style) =>
+        style.placement === 'inline' ? style : { ...style, caption: 'below' },
+      ),
+    );
     // No contextual spacing anywhere, and the quotation as 0.1 had it.
     for (const style of outcome.theme.paragraphStyles.values()) {
       expect(style.properties.contextualSpacing, style.id).toBe(false);
@@ -614,7 +622,7 @@ describe('table and image styles, when a theme is read', () => {
     const rule = (width: number) => ({ width, colour: '#000000' });
     const withTables = (...styles: unknown[]) => {
       const inputs = defaultInputs();
-      (inputs.catalogues as { table: unknown }).table = { schemaVersion: 2, kind: 'table', styles };
+      (inputs.catalogues as { table: unknown }).table = { schemaVersion: 3, kind: 'table', styles };
       return inputs;
     };
     const outcome = read(
@@ -666,7 +674,7 @@ describe('table and image styles, when a theme is read', () => {
     ]);
     // And a catalogue on its own is refused alike, as the store reads it.
     const alone = readCatalogue({
-      schemaVersion: 2,
+      schemaVersion: 3,
       kind: 'table',
       styles: [{ ...table, rules: { ...table.rules, horizontal: rule(12) }, padding: 5 }],
     });
@@ -678,7 +686,7 @@ describe('table and image styles, when a theme is read', () => {
   /** The default inputs with the image catalogue's styles replaced. */
   const withImages = (...styles: unknown[]) => {
     const inputs = defaultInputs();
-    (inputs.catalogues as { image: unknown }).image = { schemaVersion: 2, kind: 'image', styles };
+    (inputs.catalogues as { image: unknown }).image = { schemaVersion: 3, kind: 'image', styles };
     return inputs;
   };
   const figure = DEFAULT_CATALOGUES.image.styles[0]!;
@@ -777,7 +785,7 @@ describe('table and image styles, when a theme is read', () => {
     expect(codes(outcome)).toEqual(['image_placement_not_applicable']);
     // And a catalogue on its own is refused alike, as the store reads it.
     const alone = readCatalogue({
-      schemaVersion: 2,
+      schemaVersion: 3,
       kind: 'image',
       styles: [{ ...inline, appliesTo: ['figure'] }],
     });
@@ -833,7 +841,7 @@ describe('contrast on a table style, when a theme is read', () => {
     const inputs = plainInputs();
     inputs.theme.places = { ...inputs.theme.places, listItem };
     (inputs.catalogues as { table: unknown }).table = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       kind: 'table',
       styles: [{ ...table, ...changes }],
     };
@@ -953,7 +961,7 @@ describe('contrast on a table style, when a theme is read', () => {
     // #aaaaaa header; `large`, 18pt, passes there as large text, and its subscript, 11.7pt, does not.
     const inputs = defaultInputs();
     (inputs.catalogues as { table: unknown }).table = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       kind: 'table',
       styles: [{ ...table, headerRow: { fill: '#aaaaaa', bold: false, rule: 'none' } }],
     };
@@ -993,7 +1001,7 @@ describe('contrast on a table style, when a theme is read', () => {
 
 describe('readCatalogue', () => {
   it('reads a catalogue on its own, as the store does when a version is saved', () => {
-    for (const kind of ['paragraph', 'table', 'image'] as const) {
+    for (const kind of ['table', 'image'] as const) {
       const outcome = readCatalogue(DEFAULT_CATALOGUES[kind]);
       expect(outcome, kind).toEqual({ ok: true, catalogue: DEFAULT_CATALOGUES[kind] });
     }
@@ -1001,27 +1009,25 @@ describe('readCatalogue', () => {
 
   it("reads every catalogue/1 by upgrading it: a table and an image style gain template 12's look and today's rules, a paragraph base no contextual spacing", () => {
     // What the default theme's 0.1 rows hold, read as a publication made under them is set: exactly
-    // the look 0.2 states outright.
-    expect(readCatalogue(FIRST_DEFAULT_CATALOGUES.table)).toEqual({
-      ok: true,
-      catalogue: SECOND_DEFAULT_CATALOGUES.table,
-    });
-    expect(readCatalogue(FIRST_DEFAULT_CATALOGUES.image)).toEqual({
-      ok: true,
-      catalogue: SECOND_DEFAULT_CATALOGUES.image,
-    });
+    // the look 0.2 states outright, read on as a catalogue/2 is (below).
+    expect(readCatalogue(FIRST_DEFAULT_CATALOGUES.table)).toEqual(
+      readCatalogue(SECOND_DEFAULT_CATALOGUES.table),
+    );
+    expect(readCatalogue(FIRST_DEFAULT_CATALOGUES.image)).toEqual(
+      readCatalogue(SECOND_DEFAULT_CATALOGUES.image),
+    );
     expect(readCatalogue(FIRST_DEFAULT_CATALOGUES.paragraph)).toEqual({
       ok: true,
       catalogue: {
         ...FIRST_DEFAULT_CATALOGUES.paragraph,
-        schemaVersion: 2,
+        schemaVersion: 3,
         base: { ...FIRST_DEFAULT_CATALOGUES.paragraph.base, contextualSpacing: false },
       },
     });
     for (const kind of ['character', 'admonition', 'citation'] as const) {
       expect(readCatalogue(FIRST_DEFAULT_CATALOGUES[kind]), kind).toEqual({
         ok: true,
-        catalogue: { ...FIRST_DEFAULT_CATALOGUES[kind], schemaVersion: 2 },
+        catalogue: { ...FIRST_DEFAULT_CATALOGUES[kind], schemaVersion: 3 },
       });
     }
 
@@ -1059,6 +1065,50 @@ describe('readCatalogue', () => {
     });
     expect(spaced.ok).toBe(false);
     expect(readCatalogue({ ...FIRST_DEFAULT_CATALOGUES.table, schemaVersion: 3 }).ok).toBe(false);
+  });
+
+  it("reads every catalogue/2 by upgrading it: a table's caption above its table and a figure's below its image, where every output set them before a style could say", () => {
+    // What the default theme's 0.4 rows hold, read as a publication made under them is set: exactly
+    // what 0.5 states outright, so nothing published under 0.4 moves.
+    expect(readCatalogue(FOURTH_DEFAULT_CATALOGUES.table)).toEqual({
+      ok: true,
+      catalogue: DEFAULT_CATALOGUES.table,
+    });
+    expect(readCatalogue(FOURTH_DEFAULT_CATALOGUES.image)).toEqual({
+      ok: true,
+      catalogue: DEFAULT_CATALOGUES.image,
+    });
+    // Every other kind changes only its version.
+    expect(readCatalogue(FOURTH_DEFAULT_CATALOGUES.paragraph)).toEqual({
+      ok: true,
+      catalogue: { ...FOURTH_DEFAULT_CATALOGUES.paragraph, schemaVersion: 3 },
+    });
+    // A floated figure's caption below too, and an image in a line of text given none.
+    const upgraded = readCatalogue({
+      ...FOURTH_DEFAULT_CATALOGUES.image,
+      styles: FOURTH_DEFAULT_CATALOGUES.image.styles.map((style) =>
+        style.placement === 'inline' ? style : { ...style, placement: 'float' },
+      ),
+    });
+    expect(upgraded.ok && upgraded.catalogue.kind === 'image' && upgraded.catalogue.styles).toEqual(
+      DEFAULT_CATALOGUES.image.styles.map((style) =>
+        style.placement === 'inline' ? style : { ...style, placement: 'float' },
+      ),
+    );
+  });
+
+  it('holds a catalogue/2 to the parse its rows were written against, before it upgrades it', () => {
+    // A caption's placement was never version 2's: stated at 2 it is refused, never upgraded past,
+    // so a table style at 2 cannot come to set its caption below by saying so.
+    const [table] = FOURTH_DEFAULT_CATALOGUES.table.styles;
+    const stated = readCatalogue({
+      ...FOURTH_DEFAULT_CATALOGUES.table,
+      styles: [{ ...table!, caption: 'below' }],
+    });
+    expect(stated.ok ? [] : stated.refusals.map((each) => each.code)).toEqual([
+      'catalogue_malformed',
+    ]);
+    expect(stated.ok ? '' : stated.refusals[0]!.message).toMatch(/^The catalogue does not read/);
   });
 
   it("refuses what it can know without a theme: the shape, duplicates, marks and chains, but not a typeface's name", () => {

@@ -517,8 +517,8 @@ describe('requesting and recording a publication', () => {
           theme: { ...declared.content, paper: '#fafafa' },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.4 since 0034, so the version recorded after it is 0.5.
-        expect((await defaultTheme(trx)).number).toBe('0.5');
+        // The default is at 0.5 since 0043, so the version recorded after it is 0.6.
+        expect((await defaultTheme(trx)).number).toBe('0.6');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.theme).toEqual({ versionId: declared.versionId, theme: declared.theme });

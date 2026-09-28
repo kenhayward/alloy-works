@@ -13,9 +13,11 @@ import {
   THEME_SCHEMA_VERSION,
   catalogueSchema,
   catalogueSchema1,
+  catalogueSchema2,
   themeSchema,
   type Catalogue,
   type Catalogue1,
+  type Catalogue2,
   type CatalogueKind,
   type CharacterCatalogue,
   type CharacterProperties,
@@ -51,8 +53,8 @@ export const themeRefusalCodes = [
   /** A catalogue version the theme names was not among those given. */
   'catalogue_missing',
   /**
-   * A catalogue is not a `catalogue/2`, nor a `catalogue/1` the reader can upgrade: one refusal for
-   * each place its shape fails.
+   * A catalogue is not a `catalogue/3`, nor a `catalogue/1` or `catalogue/2` the reader can upgrade:
+   * one refusal for each place its shape fails.
    */
   'catalogue_malformed',
   /** The theme names a catalogue of one kind where it binds another. */
@@ -193,7 +195,7 @@ const TEMPLATE_12_TABLE = {
   },
   padding: 5,
   breaks: { repeatHeader: true, keepRowsWhole: false, continuationLabel: false },
-} as const satisfies Omit<TableStyle, 'id' | 'name' | 'appliesTo'>;
+} as const satisfies Omit<TableStyle, 'id' | 'name' | 'appliesTo' | 'caption'>;
 
 /**
  * **What an image style at `catalogue/1` reads as**: today's rules, which `assemble` and template 12
@@ -222,7 +224,7 @@ const TODAYS_INLINE_IMAGE = {
  * contextual spacing, off, as no version 1 paragraph asked for it. A character catalogue, and the empty
  * two, change only their version. Pure, and it changes nothing it is given.
  */
-export function upgradeCatalogue1(catalogue: Catalogue1): Catalogue {
+export function upgradeCatalogue1(catalogue: Catalogue1): Catalogue2 {
   switch (catalogue.kind) {
     case 'paragraph':
       return {
@@ -260,9 +262,44 @@ export function upgradeCatalogue1(catalogue: Catalogue1): Catalogue {
 }
 
 /**
- * The catalogue's chain. Its one step is `upgradeCatalogue1`, which takes a version 1 catalogue
- * `catalogueSchema1` has parsed: `parseCatalogue` holds one to that parse first, so nothing version 1
- * refused is upgraded past it.
+ * **A `catalogue/2` as `catalogue/3` reads it** (W14's W-I), from one `catalogueSchema2` has already
+ * parsed: **where every output set a caption before a style could say** - a table's above its table,
+ * and a figure's below its image, floated or not. An image style for an image in a line of text says
+ * nothing, as it has no caption; every other kind changes only its version. So a publication made
+ * under a version 2 catalogue is set as it was. Pure, and it changes nothing it is given.
+ */
+export function upgradeCatalogue2(catalogue: Catalogue2): Catalogue {
+  switch (catalogue.kind) {
+    case 'table':
+      return {
+        ...catalogue,
+        schemaVersion: 3,
+        styles: catalogue.styles.map((style) => ({ ...style, caption: 'above' as const })),
+      };
+    case 'image':
+      return {
+        ...catalogue,
+        schemaVersion: 3,
+        styles: catalogue.styles.map((style) =>
+          style.placement === 'inline' ? { ...style } : { ...style, caption: 'below' as const },
+        ),
+      };
+    case 'paragraph':
+      return { ...catalogue, schemaVersion: 3 };
+    case 'character':
+      return { ...catalogue, schemaVersion: 3 };
+    case 'admonition':
+      return { ...catalogue, schemaVersion: 3 };
+    case 'citation':
+      return { ...catalogue, schemaVersion: 3 };
+  }
+}
+
+/**
+ * The catalogue's chain. Its steps are `upgradeCatalogue1` and `upgradeCatalogue2`, each taking a
+ * catalogue the frozen parse of its own version has passed: `parseCatalogue` holds a version 1 row to
+ * `catalogueSchema1`, and what it upgrades to, or a version 2 row, to `catalogueSchema2`, so nothing
+ * an earlier version refused is upgraded past it.
  */
 export const catalogueMigrationChain: MigrationChain = {
   subject: 'catalogue',
@@ -270,6 +307,8 @@ export const catalogueMigrationChain: MigrationChain = {
   migrations: {
     1: (catalogue) =>
       upgradeCatalogue1(catalogue as unknown as Catalogue1) as unknown as Record<string, unknown>,
+    2: (catalogue) =>
+      upgradeCatalogue2(catalogue as unknown as Catalogue2) as unknown as Record<string, unknown>,
   },
 };
 
@@ -908,17 +947,28 @@ function missingFace(what: string): ThemeRefusal {
 /**
  * A stored catalogue, read at the current version. One written at version 1 is held to
  * `catalogueSchema1`, the parse it was written against, before `upgradeCatalogue1` reads it as version
- * 2: a property version 1 never had is refused there, never upgraded past.
+ * 2; and one written at version 2, or upgraded to it, is held to `catalogueSchema2` before
+ * `upgradeCatalogue2` reads it as version 3. A property a version never had is refused there, never
+ * upgraded past.
  */
 function parseCatalogue(
   value: unknown,
   subject: string,
 ): { ok: true; value: Catalogue } | { ok: false; refusals: ThemeRefusal[] } {
   let stored = value;
-  if (typeof value === 'object' && value !== null && Reflect.get(value, 'schemaVersion') === 1) {
-    const first = issues(catalogueSchema1.safeParse(value), subject, 'catalogue_malformed');
+  const at = (version: number) =>
+    typeof stored === 'object' &&
+    stored !== null &&
+    Reflect.get(stored, 'schemaVersion') === version;
+  if (at(1)) {
+    const first = issues(catalogueSchema1.safeParse(stored), subject, 'catalogue_malformed');
     if (!first.ok) return first;
-    stored = first.value;
+    stored = upgradeCatalogue1(first.value);
+  }
+  if (at(2)) {
+    const second = issues(catalogueSchema2.safeParse(stored), subject, 'catalogue_malformed');
+    if (!second.ok) return second;
+    stored = second.value;
   }
   return parse(stored, catalogueMigrationChain, catalogueSchema, subject, 'catalogue_malformed');
 }

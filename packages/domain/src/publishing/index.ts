@@ -124,6 +124,9 @@ export {
   // Frozen by W14.4, which made `publishing/14`: the schema template 13 reads, and the schema of every
   // publication made before a table or a figure could be left out of the list of its kind.
   PUBLISHING_SCHEMA_13,
+  // Frozen by W14.5, which made `publishing/15`: the schema template 14 reads, and the schema of every
+  // publication made before a caption's side was its style's.
+  PUBLISHING_SCHEMA_14,
 } from './published.js';
 export type {
   PublishedBlock,

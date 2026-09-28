@@ -26,10 +26,17 @@ import { storableEverywhere, storableText } from '../stored/storable.js';
  * `contextualSpacing`. Every property of a table or image style is required - neither kind inherits,
  * so each style is whole as it stands. `catalogue/1` stays exactly as it was (`catalogueSchema1`),
  * since rows hold it, and the reader upgrades one in memory (`upgradeCatalogue1` in `read.ts`).
+ *
+ * **`catalogue/3`** (W14's W-I; STY-079, STR-025) is one new version for every kind again, which
+ * gives a table style and an image style placing a figure **where its caption sits**, `caption:
+ * 'above' | 'below'`, required as every other property of theirs is. An image style for an image in
+ * a line of text states none: such an image has no caption. `catalogue/2` stays exactly as it was
+ * (`catalogueSchema2`), and the reader upgrades one - a table's caption above, a figure's below, where
+ * every output set them before a style could say (`upgradeCatalogue2`).
  */
 
 export const THEME_SCHEMA_VERSION = 1;
-export const CATALOGUE_SCHEMA_VERSION = 2;
+export const CATALOGUE_SCHEMA_VERSION = 3;
 
 /** The six kinds of catalogue (STY-003), fixed: a seventh is a schema version, not a configuration. */
 export const CATALOGUE_KINDS = [
@@ -290,7 +297,7 @@ const headerSchema = z.strictObject({ fill, bold: z.boolean(), rule: ruleSchema 
  * whole, and whether a continued page carries a label, whose words are the layout's
  * (`words.continued`), since a theme has no language. Every property required: nothing inherits.
  */
-export const tableStyleSchema = z.strictObject({
+const tableStyleShape2 = {
   id: styleIdSchema,
   name,
   appliesTo: targets(z.enum(TABLE_TARGETS)),
@@ -305,7 +312,23 @@ export const tableStyleSchema = z.strictObject({
     keepRowsWhole: z.boolean(),
     continuationLabel: z.boolean(),
   }),
-});
+};
+
+/** A table style as `catalogue/2` states it, frozen: every property but where its caption sits. */
+const tableStyleSchema2 = z.strictObject(tableStyleShape2);
+
+/**
+ * **Where a block's caption sits** (STY-079, STR-025; W14's W-I): above the block or below it, in
+ * every output that sets a caption - the editor, the PDF and Word. A property of the style, never of
+ * the content, so every table or figure in one style has its caption on one side.
+ */
+export const CAPTION_PLACEMENTS = ['above', 'below'] as const;
+
+export type CaptionPlacement = (typeof CAPTION_PLACEMENTS)[number];
+
+const captionPlacement = z.enum(CAPTION_PLACEMENTS);
+
+export const tableStyleSchema = z.strictObject({ ...tableStyleShape2, caption: captionPlacement });
 
 /** The units an image's size is given in (STY-015, STY-017). */
 export const IMAGE_UNITS = ['pt', 'measure', 'textHeight', 'em'] as const;
@@ -349,19 +372,31 @@ const imageStyleShape = {
  * to `inlineImage`, and the other two only for `figure`: the reader's to refuse, by name
  * (`image_placement_not_applicable`).
  */
+const figurePlacementShape2 = {
+  ...imageStyleShape,
+  placement: z.enum(['block', 'float']),
+  alignment: z.enum(['start', 'centre', 'end']),
+};
+
+/** An image style as `catalogue/2` states it, frozen: a figure's says nothing of its caption. */
+const imageStyleSchema2 = z.discriminatedUnion('placement', [
+  z.strictObject({ ...imageStyleShape, placement: z.literal('inline') }),
+  z.strictObject(figurePlacementShape2),
+]);
+
+/**
+ * At `catalogue/3`, a style placing a figure - as a block or floated - says where its caption sits
+ * too; one placing an image in a line of text says nothing of a caption, which it has none of.
+ */
 export const imageStyleSchema = z.discriminatedUnion('placement', [
   z.strictObject({ ...imageStyleShape, placement: z.literal('inline') }),
-  z.strictObject({
-    ...imageStyleShape,
-    placement: z.enum(['block', 'float']),
-    alignment: z.enum(['start', 'centre', 'end']),
-  }),
+  z.strictObject({ ...figurePlacementShape2, caption: captionPlacement }),
 ]);
 
 const version = z.literal(CATALOGUE_SCHEMA_VERSION);
 
 /**
- * Every catalogue version written at `catalogue/2`. Whether its identifiers are unique, its marks each
+ * Every catalogue version written at `catalogue/3`. Whether its identifiers are unique, its marks each
  * styled once, its chains unbroken, and an image style's units and placement fit what it fixes and
  * applies to is the reader's (`readCatalogue`), which names each failure by code.
  */
@@ -391,6 +426,43 @@ export const catalogueSchema = z
     // Nothing to style yet: no admonition exists, and citations arrive with their processor (TH-C).
     z.strictObject({ schemaVersion: version, kind: z.literal('admonition'), styles: z.tuple([]) }),
     z.strictObject({ schemaVersion: version, kind: z.literal('citation'), styles: z.tuple([]) }),
+  ])
+  .refine(storableEverywhere, 'holds a character that cannot be stored');
+
+/**
+ * **`catalogue/2`, frozen**: exactly the parse themes 2 and the theme in the editor stored rows
+ * against - 0025's and 0034's - which the reader holds a version 2 row to before it upgrades it. A
+ * table style and an image style say nothing of where a caption sits. Nothing here may change. Its
+ * paragraph and character shapes are the current ones, which `catalogue/3` left as they were: a later
+ * version that changes one freezes version 2's copy here first, as version 1's is below.
+ */
+const version2 = z.literal(2);
+
+export const catalogueSchema2 = z
+  .discriminatedUnion('kind', [
+    z.strictObject({
+      schemaVersion: version2,
+      kind: z.literal('paragraph'),
+      base: paragraphBaseSchema,
+      styles: z.array(paragraphStyleSchema),
+    }),
+    z.strictObject({
+      schemaVersion: version2,
+      kind: z.literal('character'),
+      styles: z.array(characterStyleSchema),
+    }),
+    z.strictObject({
+      schemaVersion: version2,
+      kind: z.literal('table'),
+      styles: z.array(tableStyleSchema2),
+    }),
+    z.strictObject({
+      schemaVersion: version2,
+      kind: z.literal('image'),
+      styles: z.array(imageStyleSchema2),
+    }),
+    z.strictObject({ schemaVersion: version2, kind: z.literal('admonition'), styles: z.tuple([]) }),
+    z.strictObject({ schemaVersion: version2, kind: z.literal('citation'), styles: z.tuple([]) }),
   ])
   .refine(storableEverywhere, 'holds a character that cannot be stored');
 
@@ -538,6 +610,18 @@ export type ImageStyle = z.infer<typeof imageStyleSchema>;
 export type TableRule = TableStyle['rules']['outer'];
 /** An image's size in one dimension, as an image style gives it. */
 export type ImageLength = ImageStyle['maximum'];
+
+/** A catalogue as `catalogue/2` stored it: what the default theme's 0.2 and 0.4 rows hold, frozen. */
+export type Catalogue2 = z.infer<typeof catalogueSchema2>;
+export type ParagraphCatalogue2 = Extract<Catalogue2, { kind: 'paragraph' }>;
+export type CharacterCatalogue2 = Extract<Catalogue2, { kind: 'character' }>;
+export type TableCatalogue2 = Extract<Catalogue2, { kind: 'table' }>;
+export type ImageCatalogue2 = Extract<Catalogue2, { kind: 'image' }>;
+export type AdmonitionCatalogue2 = Extract<Catalogue2, { kind: 'admonition' }>;
+export type CitationCatalogue2 = Extract<Catalogue2, { kind: 'citation' }>;
+/** A table style and an image style as `catalogue/2` stated them. */
+export type TableStyle2 = TableCatalogue2['styles'][number];
+export type ImageStyle2 = ImageCatalogue2['styles'][number];
 
 /** A catalogue as `catalogue/1` stored it: what the default theme's 0.1 rows hold, frozen. */
 export type Catalogue1 = z.infer<typeof catalogueSchema1>;
