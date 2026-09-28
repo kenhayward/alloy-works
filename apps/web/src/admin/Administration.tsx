@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useState } from 'react';
 
+import { refusal, TokenTable, type ShownToken } from '../account/TokenTable.js';
 import { permissionName } from '../access/describe.js';
 import { Modal } from '../layouts/Modal.js';
 import { everyPage } from '../paging.js';
@@ -103,6 +104,79 @@ interface RoleRow {
 const day = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
 
+const nameOf = (person: PersonRow) => person.name ?? person.email ?? 'Somebody';
+
+/**
+ * One person's API tokens, for an administrator: each revoked after asking, which is how a departed
+ * person's tokens go without waiting for each to expire (service-foundations.md, TK-E).
+ */
+function PersonTokens({
+  client,
+  person,
+  onBack,
+}: {
+  client: Client;
+  person: PersonRow;
+  onBack: () => void;
+}) {
+  const [load] = useState(
+    () => () =>
+      everyPage<ShownToken>((cursor) =>
+        client.GET('/v1/principals/{id}/tokens', {
+          params: { path: { id: person.id }, query: cursor ? { cursor } : {} },
+        }),
+      ),
+  );
+  const read = useListing<ShownToken>(load, true);
+  const [revoked, setRevoked] = useState<ReadonlySet<string>>(new Set());
+  const [status, setStatus] = useState('');
+  const name = nameOf(person);
+
+  const revoke = async (token: ShownToken) => {
+    const gone = () => setRevoked((was) => new Set(was).add(token.id));
+    try {
+      const { response, error } = await client.DELETE('/v1/principals/{id}/tokens/{token}', {
+        params: { path: { id: person.id, token: token.id } },
+      });
+      if (response.ok) {
+        gone();
+        setStatus(`Revoked ${token.name}.`);
+      } else if (response.status === 404) {
+        gone();
+        setStatus(`${token.name} had already been revoked.`);
+      } else {
+        setStatus(refusal(error, `${token.name} could not be revoked.`));
+      }
+    } catch {
+      setStatus(`${token.name} could not be revoked.`);
+    }
+  };
+
+  return (
+    <>
+      <button type="button" onClick={onBack}>
+        Back to people
+      </button>
+      <h4>{`Tokens of ${name}`}</h4>
+      <Shown read={read} failed="The tokens could not be loaded.">
+        {(rows) => (
+          <TokenTable
+            label={`Tokens of ${name}`}
+            tokens={rows.filter((token) => !revoked.has(token.id))}
+            empty={
+              <Empty>
+                <p>{`${name} has no API tokens.`}</p>
+              </Empty>
+            }
+            onRevoke={revoke}
+          />
+        )}
+      </Shown>
+      <p role="status">{status}</p>
+    </>
+  );
+}
+
 /**
  * Administration, from the account chip: a modal over the page that asked for it, never a route
  * (docs/interface/README.md). The environment, its spaces, its people and invitations, its roles and
@@ -120,6 +194,7 @@ export function Administration({
   onClose: () => void;
 }) {
   const [shown, setShown] = useState<Section>('Environment');
+  const [tokensOf, setTokensOf] = useState<PersonRow | null>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
 
   useEffect(() => {
@@ -181,7 +256,10 @@ export function Administration({
               type="button"
               className={styles['section']}
               aria-current={shown === section ? 'true' : undefined}
-              onClick={() => setShown(section)}
+              onClick={() => {
+                setShown(section);
+                setTokensOf(null);
+              }}
             >
               {section}
             </button>
@@ -215,7 +293,10 @@ export function Administration({
               )}
             </Shown>
           )}
-          {shown === 'People and invitations' && (
+          {shown === 'People and invitations' && tokensOf !== null && (
+            <PersonTokens client={client} person={tokensOf} onBack={() => setTokensOf(null)} />
+          )}
+          {shown === 'People and invitations' && tokensOf === null && (
             <>
               <Shown read={people} failed="The people could not be loaded.">
                 {(rows) => (
@@ -223,7 +304,7 @@ export function Administration({
                     <tbody>
                       {rows.map((person) => (
                         <tr key={person.id}>
-                          <td>{person.name ?? person.email ?? 'Somebody'}</td>
+                          <td>{nameOf(person)}</td>
                           <td className={styles['muted']}>
                             {[
                               person.name !== null ? person.email : null,
@@ -232,6 +313,17 @@ export function Administration({
                             ]
                               .filter((each) => each !== null)
                               .join(', ')}
+                          </td>
+                          <td className={styles['act']}>
+                            {!person.invited && (
+                              <button
+                                type="button"
+                                aria-label={`Tokens of ${nameOf(person)}`}
+                                onClick={() => setTokensOf(person)}
+                              >
+                                Tokens
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}

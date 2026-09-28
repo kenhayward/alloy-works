@@ -1,6 +1,7 @@
 import { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { ApiTokens } from '../account/ApiTokens.js';
 import { Administration } from '../admin/Administration.js';
 import { forgetEditing, keepEditingAgain } from '../editor/editing-storage.js';
 import { THEMES } from '../theme/themes.js';
@@ -85,7 +86,7 @@ function Menu({
 
 /**
  * The band across the top of every screen, dark in every theme: the mark, which goes Home;
- * the module's name; then the environment and the account chip, which holds Sign out.
+ * the module's name; then the environment and the account chip, which holds API tokens, Administration and Sign out.
  */
 export function Header({
   module,
@@ -101,6 +102,7 @@ export function Header({
   const [environment, setEnvironment] = useState<string | undefined>();
   const [who, setWho] = useState<Person | 'nobody' | undefined>();
   const [administering, setAdministering] = useState(false);
+  const [managingTokens, setManagingTokens] = useState(false);
 
   useEffect(() => {
     let current = true;
@@ -200,6 +202,18 @@ export function Header({
                   className={styles['item']}
                   onClick={() => {
                     close();
+                    setManagingTokens(true);
+                  }}
+                >
+                  API tokens
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className={styles['item']}
+                  onClick={() => {
+                    close();
                     setAdministering(true);
                   }}
                 >
@@ -229,6 +243,7 @@ export function Header({
           )}
         </Menu>
       )}
+      {managingTokens && <ApiTokens client={client} onClose={() => setManagingTokens(false)} />}
       {administering && (
         <Administration client={client} about={about} onClose={() => setAdministering(false)} />
       )}

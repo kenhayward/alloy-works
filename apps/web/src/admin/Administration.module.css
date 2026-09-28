@@ -77,6 +77,10 @@
   font-weight: 600;
 }
 
+.act {
+  text-align: end;
+}
+
 .foot {
   grid-column: 1 / -1;
   margin: 0;

@@ -130,6 +130,54 @@ describe('Administration', () => {
     expect(screen.queryByText('You may not manage access here.')).toBeNull();
   });
 
+  it("lets an administrator open a person's tokens from People, and revoke one after asking", async () => {
+    const token = {
+      id: '11111111-1111-4111-8111-111111111111',
+      name: 'Nightly import',
+      scopes: ['edit'],
+      createdAt: '2026-09-01T09:00:00.000Z',
+      expiresAt: '2026-12-01T09:00:00.000Z',
+      lastUsedAt: null,
+    };
+    const deleted: string[] = [];
+    const answers: Record<string, () => Response> = {
+      ...everything,
+      '/v1/principals/p1/tokens': () => json(200, { items: [token], next: null }),
+    };
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (request.method === 'DELETE') {
+        deleted.push(url.pathname);
+        return json(200, { revoked: token.id });
+      }
+      const answer = answers[url.pathname];
+      return answer ? answer() : json(404, {});
+    }) as unknown as typeof fetch;
+    const client = createApiClient({ baseUrl: 'http://admin.test', fetch: fetching });
+    render(<Administration client={client} about={null} onClose={vi.fn()} />);
+
+    await userEvent.click(section('People and invitations'));
+    const people = await screen.findByRole('table', { name: 'People' });
+    await userEvent.click(within(people).getByRole('button', { name: 'Tokens of Ada' }));
+    const tokens = await screen.findByRole('table', { name: 'Tokens of Ada' });
+    expect(within(tokens).getByRole('cell', { name: 'Nightly import' })).toBeInTheDocument();
+    expect(within(tokens).getByRole('cell', { name: 'read, edit' })).toBeInTheDocument();
+
+    await userEvent.click(within(tokens).getByRole('button', { name: 'Revoke Nightly import' }));
+    expect(deleted).toEqual([]);
+    await userEvent.click(screen.getByRole('button', { name: 'Revoke token' }));
+    expect(await screen.findByText('Revoked Nightly import.')).toBeInTheDocument();
+    expect(deleted).toEqual([`/v1/principals/p1/tokens/${token.id}`]);
+    expect(screen.queryByRole('table', { name: 'Tokens of Ada' })).toBeNull();
+    expect(screen.getByText('Ada has no API tokens.')).toBeInTheDocument();
+    expect(tokens).not.toBeInTheDocument();
+
+    // And back to the people.
+    await userEvent.click(screen.getByRole('button', { name: 'Back to people' }));
+    expect(await screen.findByRole('table', { name: 'People' })).toBeInTheDocument();
+  });
+
   it('says which version this is in About, beside what it is given', async () => {
     const { client } = service(everything);
     render(
