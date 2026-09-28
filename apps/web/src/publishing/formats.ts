@@ -254,7 +254,7 @@ const flattenedName = (entry: { readonly block: string | null; readonly label: s
 const TITLE_WORDS: Record<UnheadedTitle, string> = {
   document: "the document's title",
   contents: 'the title of the contents',
-  lists: 'the titles of the lists after it',
+  lists: 'the titles of the lists of figures, tables and equations',
 };
 
 /** `a`, `a and b`, or `a, b and c`. */

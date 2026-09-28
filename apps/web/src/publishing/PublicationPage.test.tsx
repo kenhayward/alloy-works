@@ -333,9 +333,35 @@ describe('a publication at its own address', () => {
       'Word reads each equation aloud by its own reading of the maths, not by the description written for it, which the PDF gives a screen reader.',
       'Word sets equations in Cambria Math, whose characters are not checked here: a character it lacks is drawn from another typeface, so it can look different from the PDF.',
       'The list of figures in Word does not link to the figures, since one of them floats, which Word would then list with no page; in the PDF each entry is a link.',
-      "Word sets the document's title, the title of the contents and the titles of the lists after it as ordinary paragraphs rather than headings, so that its own contents does not list them; a screen reader does not announce them as headings, as it does in the PDF.",
+      "Word sets the document's title, the title of the contents and the titles of the lists of figures, tables and equations as ordinary paragraphs rather than headings, so that its own contents does not list them; a screen reader does not announce them as headings, as it does in the PDF.",
       "Word lays out its own pages, so its page numbers can differ from the PDF's. A page number cited from this publication is the PDF's.",
     ]);
+  });
+
+  it('PUB-100 names the titles Word sets as body text in words that read whichever of them stand: the lists with no contents before them, and the document alone (the final review of W14.6)', async () => {
+    for (const [titles, words] of [
+      [
+        ['document', 'lists'],
+        "the document's title and the titles of the lists of figures, tables and equations",
+      ],
+      [['document'], "the document's title"],
+    ] as const) {
+      const { unmount } = open(
+        json(200, {
+          ...record,
+          formats: ['pdf', 'docx'],
+          template: { name: 'publication', version: 13 },
+          pipeline: '13',
+          outputs: [pdfOutput, wordOutput([{ kind: 'titles_not_headings', titles }])],
+        }),
+      );
+      const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+      const report = within(aside).getByRole('list', { name: 'About the Word document' });
+      expect([...report.querySelectorAll('li')].map((each) => each.textContent)).toEqual([
+        `Word sets ${words} as ordinary paragraphs rather than headings, so that its own contents does not list them; a screen reader does not announce them as headings, as it does in the PDF.`,
+      ]);
+      unmount();
+    }
   });
 
   it('reads a publication in Word alone, which no PDF engine or template made, and offers it to save', async () => {
