@@ -527,8 +527,40 @@ describe('a reference asking for a form its target has not got (W-N)', () => {
         docOf(equationBlock('e1', false), para('b1', ref({ kind: 'block', block: 'e1' }, display))),
         null,
       )[0];
-    expect(at('number')).toMatchObject({ named: 'Equation' });
+    expect(at('number')).toMatchObject({
+      named: 'Equation',
+      // And the target it is shown from, placed against the reference, for the dialog to print from.
+      printing: { kind: 'equation', label: null, unnumbered: true, relative: 'above' },
+    });
     // One it can show names nothing apart from what it shows.
     expect(at('page')).not.toHaveProperty('named');
+    expect(at('page')).not.toHaveProperty('printing');
+  });
+
+  it("shows a number form of another component's table marked unnumbered as unavailable", () => {
+    const other = { kind: 'component', component: OTHER, block: 't9' } as const;
+    const context = {
+      targets: [{ ...target(other, 'table', null, 'Layout only'), unnumbered: true as const }],
+    };
+    const doc = (display: CrossReferenceDisplay) => docOf(para('b1', ref(other, display)));
+    expect(shown(doc('number'), context)).toEqual([
+      { text: 'Table not numbered - choose another form', broken: true },
+    ]);
+    expect(shown(doc('title'), context)).toEqual([{ text: 'Layout only', broken: false }]);
+  });
+
+  it('shows a title form of a section whose title holds an equation as unavailable, saying why', () => {
+    const section = { kind: 'node', node: SECTION } as const;
+    const context = {
+      targets: [{ ...target(section, 'section', '1', 'Growth as'), titleHoldsEquation: true as const }],
+    };
+    const doc = (display: CrossReferenceDisplay) => docOf(para('b1', ref(section, display)));
+    const unavailable = {
+      text: 'Section title holds an equation - choose another form',
+      broken: true,
+    };
+    expect(shown(doc('title'), context)).toEqual([unavailable]);
+    expect(shown(doc('numberAndTitle'), context)).toEqual([unavailable]);
+    expect(shown(doc('number'), context)).toEqual([{ text: '1', broken: false }]);
   });
 });

@@ -84,6 +84,11 @@ export interface Standing {
    * is named by it, and offers only its kind's forms, never the one it asked for.
    */
   readonly named?: string;
+  /**
+   * With `named`, the target it is shown from, placed against the reference: the option offers its
+   * forms and says what each prints from it, as the surface will draw it after the change.
+   */
+  readonly printing?: ReferenceTarget;
 }
 
 /**
@@ -157,15 +162,22 @@ export function referenceOptions(
     const has = formsFor(kind);
     const name = standing.named ?? standing.shown ?? kindWord(kind);
     const unavailable = standing.named !== undefined;
+    const printing = standing.printing;
     options = [
       {
         key: keyOf(standing.target),
         target: standing.target,
         name,
-        forms: EVERY_FORM.filter(
-          (form) => has.includes(form) || (!unavailable && form === standing.display),
-        ),
-        shows: () => name,
+        forms:
+          printing === undefined
+            ? EVERY_FORM.filter(
+                (form) => has.includes(form) || (!unavailable && form === standing.display),
+              )
+            : targetForms(printing),
+        shows:
+          printing === undefined
+            ? () => name
+            : (display) => printed(printing, display, printing.relative, context?.words),
       },
       ...options,
     ];
@@ -229,6 +241,7 @@ export function referenceChoicesIn(surface: EditorView, editing: EditorView): Re
             display: current.display,
             shown,
             ...(drawn?.named === undefined ? {} : { named: drawn.named }),
+            ...(drawn?.printing === undefined ? {} : { printing: drawn.printing }),
           },
     ),
     inDocument: context !== null,

@@ -609,8 +609,11 @@ title, and the publish refuses it by name, as it refuses a number of an unnumber
 **W-N covers a block equation left unnumbered too**: the live equation decides, over a page that may
 still number it, and a number form of one shows _Equation not numbered - choose another form_; the
 dialog opened on it names it _Equation_ and offers a page and a place alone, since the dialog never
-offers an unnumbered equation otherwise. **Any reference asking a target for a form it has not got
-is shown so, in words by the cause**: _Footnote has no title - choose another form_, and so on, since
+offers an unnumbered equation otherwise. What each form will show is printed from the equation, placed against the
+reference, as the surface draws it after the change. **Any reference asking a target for a form it has not got
+is shown so, in words by the cause**, whether it is in this component, another's or a section:
+_Footnote has no title - choose another form_, _Section title holds an equation - choose another
+form_ and so on, since
 the publish refuses each (`targetForms`); and a page that still calls a figure or a table unnumbered
 after it was numbered again is not trusted either, so the reference shows it as not numbered yet,
 _Table: Readings_, and the dialog offers every form.

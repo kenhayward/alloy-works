@@ -4847,6 +4847,8 @@ describe('cross-references in the editor (cross-references 1)', () => {
     expect(within(dialog).getByRole('radio', { name: 'Equation' })).toBeChecked();
     expect(choices(dialog, 'Show as')).toEqual(['Page', 'Above or below']);
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Above or below' }));
+    // What it will show is what the surface draws after the change, not the equation's name.
+    expect(within(dialog).getByText(/It will show/)).toHaveTextContent('It will show: above');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Change' }));
     expect(referencesIn(view)).toMatchObject([{ id: 'x1', display: 'relative' }]);
     expect(drawn()).toEqual(['above']);

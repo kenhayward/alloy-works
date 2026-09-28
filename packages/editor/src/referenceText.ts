@@ -45,6 +45,11 @@ export interface ReferenceShown {
    * rather than the words the surface shows in its place. Absent everywhere else.
    */
   readonly named?: string;
+  /**
+   * Where `named` is, the target the reference is shown from, placed against it (`relative`), so the
+   * dialog opened on it offers that target's forms and says what each will print.
+   */
+  readonly printing?: ReferenceTarget;
 }
 
 /** The class a broken reference carries, on the surface and read-only, so it is drawn apart. */
@@ -76,13 +81,15 @@ export function unavailableReference(
 ): string {
   const word = kindWord(target.kind);
   const wantsNumber = display === 'number' || display === 'numberAndTitle';
+  const wantsTitle = display === 'title' || display === 'numberAndTitle';
   if (wantsNumber && target.unnumbered) return `${word} not numbered - choose another form`;
+  if (wantsTitle && target.titleHoldsEquation) {
+    return `${word} title holds an equation - choose another form`;
+  }
   if (wantsNumber && !formsFor(target.kind).includes('number')) {
     return `${word} has no number - choose another form`;
   }
-  if (display === 'title' || display === 'numberAndTitle') {
-    return `${word} has no title - choose another form`;
-  }
+  if (wantsTitle) return `${word} has no title - choose another form`;
   return `${word} cannot be shown this way - choose another form`;
 }
 
@@ -166,6 +173,7 @@ export function referencesShown(
           text: unavailableReference(printing, display),
           broken: true,
           named: named(own.node),
+          printing: { ...printing, relative },
         });
       } else if (printing !== undefined) {
         shown.push({
@@ -179,6 +187,12 @@ export function referencesShown(
     } else if (context === null) {
       const text = target.kind === 'node' ? kindWord('section') : IN_ANOTHER_COMPONENT;
       shown.push({ pos, text, broken: false });
+    } else if (found !== undefined && !targetForms(found).includes(display)) {
+      // A section, or another component's block, asked for a form it has not got - a number of a
+      // figure or a table marked unnumbered, a title of a section whose title holds an equation - which
+      // the publish refuses, as for a block of this component (W-N). Offered by the page, so the
+      // dialog names it by its own option.
+      shown.push({ pos, text: unavailableReference(found, display), broken: true });
     } else if (found !== undefined) {
       shown.push({
         pos,
