@@ -168,6 +168,26 @@ describe('checking that a set of reports agree with each other', () => {
     expect(checkCoherence(reports, ['trace', 'e2e'])).toEqual([]);
   });
 
+  it('does not require tests/browser to have a report, since pnpm test never runs its stack suite', () => {
+    const reports = [{ name: 'trace', report: report([], {}) }];
+
+    expect(checkCoherence(reports, ['trace', 'e2e', 'browser'])).toEqual([]);
+  });
+
+  it('still refuses a failed or stale tests/browser report when it is present', () => {
+    const failed = [
+      { name: 'trace', report: report([], { startTime: NOW }) },
+      { name: 'browser', report: report([], { startTime: NOW, success: false }) },
+    ];
+    const stale = [
+      { name: 'trace', report: report([], { startTime: NOW }) },
+      { name: 'browser', report: report([], { startTime: NOW - 2 * 60 * 60 * 1000 }) },
+    ];
+
+    expect(checkCoherence(failed, ['trace', 'browser']).join(' ')).toMatch(/browser\.json.*failed/);
+    expect(checkCoherence(stale, ['trace', 'browser']).join(' ')).toMatch(/browser\.json.*stale/);
+  });
+
   it('still time-checks tests/e2e when its report is present', () => {
     const reports = [
       { name: 'trace', report: report([], { startTime: NOW }) },

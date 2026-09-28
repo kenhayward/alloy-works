@@ -20258,6 +20258,12 @@
       "kind": "title"
     },
     {
+      "id": "STR-006",
+      "file": "tests/browser/src/outline.test.ts",
+      "line": 153,
+      "kind": "title"
+    },
+    {
       "id": "AST-005",
       "file": "tests/e2e/src/stack.test.ts",
       "line": 483,

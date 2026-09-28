@@ -129,7 +129,27 @@ cp deploy/.env.example deploy/.env
 
 Each variable sets the port inside the container and the one published, and every setting that
 names it, so nothing has to be moved by hand. The end-to-end suite reads its own addresses:
-`ALLOY_E2E_SERVICE`, `ALLOY_E2E_IDP` and `ALLOY_E2E_IDP_ISSUER` tell it where a moved stack is.
+`ALLOY_E2E_SERVICE`, `ALLOY_E2E_IDP` and `ALLOY_E2E_IDP_ISSUER` tell it where a moved stack is. The
+browser suite reads `ALLOY_BROWSER_SERVICE`, `ALLOY_BROWSER_API` and `ALLOY_BROWSER_IDP`.
+
+**A second stack beside the first** needs a project name of its own as well as ports of its own, since
+the file names the project: `-p` overrides it, and every container, network and volume takes the new
+name, so the first stack is never touched.
+
+```bash
+SERVICE_PORT=8188 IDP_PORT=9190 STORE_PORT=8433 POSTGRES_PORT=5532 \
+  docker compose -p aw-browser -f deploy/compose.yaml up -d --build --wait
+docker compose -p aw-browser -f deploy/compose.yaml down -v
+```
+
+## Driving the stack in a browser
+
+`pnpm test:browser` drives the renderer this stack serves in a pinned Chromium, fetched once with
+`pnpm --filter @alloy-works/browser fetch-chromium`. It opens `http://dev.acme.localhost:8088`, signs
+in through the stand-in's own page as Ada, and makes what it needs through the API; a change to the
+renderer reaches it only once the `service` image is rebuilt. CI runs it in the whole-system job,
+after the end-to-end suite and against the same containers.
+[`docs/testing.md`](../docs/testing.md#the-browser-suite) has the rest.
 
 ## Settings for running from source
 

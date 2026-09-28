@@ -125,6 +125,7 @@ and its calls are one origin. Publishing, search and the rest of the proposed sy
 | API client                     | TypeScript - types generated from `openapi.json`, and the stream reader                                      | `packages/api-client`   |
 | Traceability                   | TypeScript - the requirement corpus parsed, compiled and queried                                             | `packages/trace`        |
 | End-to-end check               | Vitest over HTTP - the whole system in containers, no browser                                                | `tests/e2e`             |
+| Browser suite                  | Vitest over playwright-core and a pinned Chromium - the renderer against the whole system, axe-core with it  | `tests/browser`         |
 
 Everything that differs between a browser tab and an Electron window arrives through **one
 interface**, `PlatformBridge`. The renderer calls it and never branches on which delivery it is in.
@@ -358,6 +359,7 @@ pnpm --filter @alloy-works/service dev             # the service on :8088 (see d
 pnpm --filter @alloy-works/stand-in-idp start     # the stand-in sign-in provider on :9090
 pnpm --filter @alloy-works/worker dev             # the worker, claiming jobs (see docs/development.md)
 pnpm --filter @alloy-works/worker fetch-typst     # the pinned Typst, once per machine
+pnpm --filter @alloy-works/browser fetch-chromium # the pinned Chromium, once per machine, for the browser suite
 pnpm --filter @alloy-works/api-contract generate  # rewrite openapi.json after changing a route
 pnpm --filter @alloy-works/api-client generate    # rewrite the client's types after that
 pnpm --filter @alloy-works/trace generate         # rewrite trace.json after changing a requirement or a design
@@ -382,8 +384,9 @@ pnpm lint          # eslint, flat config at the root
 pnpm format        # prettier --check (pnpm exec prettier --write . to fix)
 pnpm typecheck     # tsc --noEmit across every workspace
 pnpm build         # domain (emits dist/) then the renderer and the shell
-pnpm test          # every suite but the end-to-end one, which needs a running stack
+pnpm test          # every suite but the end-to-end and browser ones, which need a running stack (the pin's tests run)
 pnpm test:e2e      # the whole system, after the stack is up (see deploy/README.md)
+pnpm test:browser  # the renderer in the pinned Chromium, after the stack is up (see docs/testing.md)
 pnpm dev:web       # the renderer alone, in a browser, on :5173
 pnpm app           # the dev server and the Electron shell together
 ```

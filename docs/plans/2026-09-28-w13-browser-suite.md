@@ -161,6 +161,18 @@ Only these could change the plan; everything else is built as written.
    reads; deploy/README.md says how to run the suite against the stack.
 9. Tests: STR-006; and, citing nothing, the pin held to `browsers.json`, and the trace exemption.
 
+**W13.1, as built** (PR #326). Two departures from the above:
+
+- **B-C's fixtures are not found by title once per stack.** Every STR-006 test changes the outline it
+  is given, so a shared fixture would be left in whatever shape the last run made it, and a failed run
+  would leave the next one a different outline to start from. Each test makes its own small document
+  through the API instead - a handful of requests - titled with what it is for and the moment it was
+  made. B-C's find-or-make still suits a fixture nothing changes, which W13.3's five-hundred-node
+  document is, and that slice takes it up.
+- **The pin's tests run in `pnpm test`**, from a second configuration, `vitest.pin.config.ts`, with no
+  global setup, so a Playwright upgrade without a new pin fails on every machine and not only in the
+  whole-system job. `pnpm test:browser` is the workspace's `test:browser` script.
+
 ## W13.2: Accessibility, verified
 
 1. The states, each a test step reached by the keyboard or the pointer as a person would, axe run in

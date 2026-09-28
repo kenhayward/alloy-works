@@ -20,9 +20,10 @@ Exceptions - throwaway spikes, generated code, pure configuration - need a human
 | `apps/web`        | Vitest | jsdom       | The renderer, via Testing Library                                   |
 | `apps/desktop`    | Vitest | node        | The shell's pure decisions - target resolution, the bridge contract |
 | `tests/e2e`       | Vitest | node        | The whole system in containers, driven over HTTP                    |
+| `tests/browser`   | Vitest | node        | The renderer in a pinned Chromium, against the whole system         |
 
-`pnpm test` runs every suite but the last, which needs a running stack; `pnpm test:e2e` runs that
-one. The reporter is **pinned explicitly** in every `vitest.config`: left
+`pnpm test` runs every suite but the last two, which need a running stack - apart from the browser
+workspace's pin tests, which need none; `pnpm test:e2e` and `pnpm test:browser` run those. The reporter is **pinned explicitly** in every `vitest.config`: left
 implicit, some runners print nothing a test logged on Windows while the identical run on Linux
 prints all of it, which makes a local run look pristine while CI drowns.
 
@@ -84,10 +85,9 @@ Graceful degradation hides failures - so where a fallback exists, something else
 
 ## Not wired up yet
 
-**There is no browser suite.** jsdom has no layout engine, so any question about _rendered_ output -
-geometry, measurement, what an editor actually draws - cannot be answered there; a test asserting it
-would be testing jsdom's polyfill. When the product grows a surface that needs it, add a Playwright
-suite as `pnpm test:browser` and run it as a separate CI step. Until then, do not fake it in jsdom.
+**Nothing is measured in jsdom.** jsdom has no layout engine, so any question about _rendered_
+output - geometry, measurement, what an editor actually draws - cannot be answered there; a test
+asserting it would be testing jsdom's polyfill. It belongs in [the browser suite](#the-browser-suite).
 
 **There is no coverage gate.** Adding one before the product exists would measure the scaffolding.
 
@@ -539,4 +539,111 @@ Two things it deliberately does not ask of the machine running it:
 
 What it does **not** cover, and where that lives instead: refusing another environment's session,
 which is `cross-tenant.test.ts` in the service, because Node's `fetch` will not let a test set the
-`Host` header; and anything a browser does, which waits for an interface with something to click.
+`Host` header; and anything a browser does, which is [the browser suite](#the-browser-suite)'s.
+
+## The browser suite
+
+`tests/browser` drives the renderer where it runs: a real Chromium, against the whole system in
+containers, the same stack the end-to-end suite drives
+([ADR-0029](decisions/0029-a-browser-suite-in-ci-and-attested-audits.md), and the W13 plan's
+decisions B-A to B-H). What jsdom cannot show is shown here - the browser's own drag and drop, where
+the focus really goes, what a live region says in the accessibility tree, a key the page takes from
+the browser, and axe-core's checks of WCAG 2.2 AA.
+
+```bash
+docker compose -f deploy/compose.yaml up -d --build --wait
+pnpm --filter @alloy-works/browser fetch-chromium   # once per machine, and after the pin moves
+pnpm test:browser
+```
+
+It is **left out of `pnpm test`** for the reason the end-to-end suite is, and `packages/trace` exempts
+its report from "no report at all" as it exempts e2e's, while still refusing one that failed or is
+stale; CI's gate job refuses to run without it, and without e2e's. Its report is
+`.trace-results/browser.json`. Its files run one at a time, since every file drives the one stack.
+The workspace has two configurations: `vitest.config.ts`, the suite, run by its `test:browser` script,
+and `vitest.pin.config.ts`, the pin's tests alone, which need no stack and are its `test` script - so
+`pnpm test` runs them on every machine, into `.trace-results/browser-pin.json`.
+
+**Vitest runs it, over `playwright-core` as a library** - not Playwright Test, whose report
+`packages/trace` would not read. A test takes a page from `withPage` (`src/testing/page.ts`): a fresh
+browser context, signed in, at a desktop viewport, closed after the test.
+
+**The browser is pinned as Typst is.** `src/chromium-release.ts` names Chrome for Testing's
+`chrome-headless-shell` at the build the installed `playwright-core` names in its own `browsers.json`,
+with a sha256 per platform; `fetch-chromium` downloads it from Google's public Chrome for Testing
+bucket, checks the hash (`checkArchive`) and unpacks it into `tests/browser/.tools/`, and the suite
+launches that executable by path and no other. Once it has unpacked a checked archive it writes the
+hash beside it, and a later run - or a CI cache restored - is trusted only while that marker names the
+pin (`isFetched`); otherwise it fetches again. `chromium-release.test.ts` holds the pin equal to
+`browsers.json`, so a Playwright upgrade without a new pin fails `pnpm test` by name. To move the pin: upgrade `playwright-core`, set
+the version and revision its `browsers.json` names, run `fetch-chromium --print-hashes`, which
+downloads every platform's archive and prints each one's hash, and copy those in. CI caches `.tools`
+keyed on the pin file, so a new pin downloads once. On Linux the build needs the shared libraries
+Google Chrome needs, which the CI runner's image carries with its own Chrome; a bare Debian image
+does not, and the launch then names the first one missing.
+
+**It signs in once per run, the way a person does**: the global setup (`src/testing/setup.ts`) opens
+the renderer, follows **Sign in** to the stand-in provider's own page, chooses Ada, and saves what the
+browser context holds; every test's context starts from that. It signs in from Node too, as the
+end-to-end suite does, and **every fixture is made through the API** by the generated client
+(`src/testing/api.ts`), the path a person's content takes. A test that changes what it is given makes
+its own - a small document is a handful of requests - titled with what it is for and when it was made.
+
+**The page's console is gated** as the jsdom suite's is: a `console.error`, a `console.warn` or an
+uncaught exception in the page fails the test that caused it, naming what was said and where. A test
+that provokes one on purpose calls `allowPageNoise()`, and the gate re-arms for the next test. There
+are no retries: a flaky test is fixed, or quarantined in its own pull request with an issue. The gate
+found one on its first run - a section's title field had no `white-space` rule, so ProseMirror warned
+and collapsed the spaces an author typed - which jsdom, computing no style, never could.
+
+**axe-core checks WCAG 2.2 AA's automatable criteria** - the tags `wcag2a`, `wcag2aa`, `wcag21a`,
+`wcag21aa` and `wcag22aa` - through `checkAxe` (`src/testing/axe.ts`), with the pinned `axe-core`
+injected by its own source. A violation fails the test unless it is on the allow-list in that file,
+which is compared exactly - a violation not on it fails, and one on it that axe no longer finds fails
+until it is taken off - and is empty. What axe marks `incomplete`, needing a person, is written into
+the test's `meta` for the audit, never failed on.
+
+**Where it finds the stack.** Three variables, each defaulting to the compose stack's own address, and
+passed through by turbo:
+
+| Variable                | Default                          | What it is                                           |
+| ----------------------- | -------------------------------- | ---------------------------------------------------- |
+| `ALLOY_BROWSER_SERVICE` | `http://dev.acme.localhost:8088` | The environment as the browser meets it              |
+| `ALLOY_BROWSER_API`     | `http://127.0.0.1:8088`          | The same environment as Node reaches it for fixtures |
+| `ALLOY_BROWSER_IDP`     | `http://idp.localhost:9090`      | The stand-in provider, by the name it calls itself   |
+
+Chromium resolves any `*.localhost` name to this machine itself, so the browser needs nothing from
+the machine's resolver; Node reaches the provider at `127.0.0.1` on the port its name carries. To
+drive a second stack beside one already running - on ports of its own, under a project name of its
+own, so the first is never touched:
+
+```bash
+SERVICE_PORT=8188 IDP_PORT=9190 STORE_PORT=8433 POSTGRES_PORT=5532 \
+  docker compose -p aw-browser -f deploy/compose.yaml up -d --build --wait
+ALLOY_BROWSER_SERVICE=http://dev.acme.localhost:8188 ALLOY_BROWSER_API=http://127.0.0.1:8188 \
+  ALLOY_BROWSER_IDP=http://idp.localhost:9190 pnpm test:browser
+docker compose -p aw-browser -f deploy/compose.yaml down -v
+```
+
+**CI runs it in the whole-system job**, after the end-to-end suite and against the same containers,
+whenever the stack came up; neither step is `continue-on-error`. Its report goes to the traceability
+gate's own job with the rest ([CI, branches and releases](ci-and-releases.md)).
+
+**What it covers so far.** `outline.test.ts` edits a document's outline the three ways STR-006 names,
+each act read back from the service: by keyboard alone - insert, move, promote and demote, retitle in
+**Title**, **Starts on**, and remove after its question - with no pointer press sent, the focus kept
+where the act was made, each act's announcement read from the live region, and every `Alt` and arrow
+key taken by the tree before the browser can act on it; by pointer - moves by the browser's own drag
+and drop onto a node, onto the gap before one and onto **Move to the end of the document**, then a
+node chosen by a click, **Add section**, **Title** clicked into and left, **Starts on** and
+**Remove section** with its question's **Remove**; and through the API. axe checks the outline panel in
+each state. Another test shows structure.md's known limit: two `Alt+Down` pressed before the first is
+answered send one move. And one holds issue #325 fixed: two spaces typed in a section's title are
+stored, computed as `break-spaces` and drawn as two.
+
+**What it cannot see.** Headless Chromium has no browser interface, so `Alt+Left` is never Back there
+whatever the page does: the test shows the tree prevented the key's default, which is what keeps it
+from a browser that has one, and that the address and the history did not move - the second half
+alone passes without the tree doing anything, as a run with the tree's `preventDefault` taken out
+showed. The suite drives the web delivery only: the desktop window loads the same renderer, and what
+differs there is the platform bridge, tested in `apps/desktop`.

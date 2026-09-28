@@ -561,6 +561,9 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 547, from 546 (2026-09-28): W13.1 - STR-006 in tests/browser's outline.test.ts, the outline
+  // edited by keyboard alone, by the browser's own drag and drop and through the API: three titles in
+  // one file, one citation.
   // 546, from 539 (2026-09-28): W14.5 - STY-079 in packages/domain's theme/schema.test.ts and
   // word/write.test.ts, in apps/worker's table-and-image-styles.test.ts and word.test.ts, and in
   // apps/web's editor/ComponentEditor.test.tsx; STR-025 in packages/domain's
@@ -690,7 +693,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(546);
+    expect(model.citations).toHaveLength(547);
   });
 
   it('cites no identifier the corpus does not hold', () => {

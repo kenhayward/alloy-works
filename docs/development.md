@@ -512,6 +512,26 @@ the service listens on the IPv4 address only - the same trap the renderer's dev 
 anything else on the machine listens on port 8088 over IPv6, a browser can reach that instead. Set
 `PORT` in `deploy/service.env` to a free port when that happens.
 
+## The browser suite
+
+`tests/browser` drives the renderer in a real Chromium against the compose stack. The browser is
+pinned, as Typst is, and fetched once per machine - Chrome for Testing's `chrome-headless-shell`,
+about 120 MB, from Google's public bucket, checked against its hash and unpacked into
+`tests/browser/.tools/`:
+
+```bash
+pnpm --filter @alloy-works/browser fetch-chromium   # Chromium 153.0.8010.12, checked against its hash
+docker compose -f deploy/compose.yaml up -d --build --wait
+pnpm test:browser
+```
+
+It reaches the stack at `http://dev.acme.localhost:8088`, which Chromium resolves itself, and its
+fixtures through the API at `127.0.0.1`. A stack on other ports is named by `ALLOY_BROWSER_SERVICE`,
+`ALLOY_BROWSER_API` and `ALLOY_BROWSER_IDP`; [docs/testing.md](testing.md#the-browser-suite) has the
+rest, including how to run a second stack beside the one you work against. After a change to the
+renderer, rebuild the stack's `service` image before running it: the suite drives what the image
+serves, not the source.
+
 ## Commands
 
 Everything below runs from the repo root.
@@ -521,8 +541,9 @@ pnpm lint          # eslint, flat config at the root, across every workspace
 pnpm format        # prettier --check (use `pnpm exec prettier --write .` to fix)
 pnpm typecheck     # tsc --noEmit in every workspace
 pnpm build         # domain (emits dist/) then the renderer and the shell
-pnpm test          # every suite in every workspace, apart from the end-to-end one
+pnpm test          # every suite in every workspace, apart from those needing the stack (below)
 pnpm test:e2e      # the whole system, which needs the stack up first
+pnpm test:browser  # the renderer in the pinned Chromium, against the stack (below)
 ```
 
 `build`, `typecheck` and `test` run through Turborepo, which builds `@alloy-works/domain` first

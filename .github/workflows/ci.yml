@@ -105,12 +105,17 @@ jobs:
         run: pnpm test
         continue-on-error: true
 
-      # NOT continue-on-error. The baseline declares what this release is answerable for, so the
-      # gate passes on the day it lands - and a traceability gate that is allowed to fail is not a
-      # gate. This is deliberately narrow: it says nothing about the checks above it, and does not
-      # begin the switch-over in docs/ci-and-releases.md.
-      - name: Traceability gate
-        run: pnpm trace gate
+      # What every suite above wrote, for the traceability gate's own job, which reads it beside the
+      # end-to-end and browser suites' reports from the whole-system job. `.trace-results` is a hidden
+      # directory, which the action leaves out unless told otherwise.
+      - name: Test reports
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: trace-results-build
+          path: .trace-results
+          include-hidden-files: true
+          if-no-files-found: error
 
       # The images are built on every pull request so a broken Dockerfile is found by the change
       # that broke it. They are never pushed: a registry comes with hosting.
@@ -153,12 +158,31 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # The pinned Chromium, cached by the file that pins it: a new pin is a new key, so a cached build
+      # is only ever the one the pin names, and fetch-chromium checks its hash whenever it downloads.
+      - name: Chromium cache
+        uses: actions/cache@v5
+        with:
+          path: tests/browser/.tools
+          key: chromium-${{ runner.os }}-${{ hashFiles('tests/browser/src/chromium-release.ts') }}
+
+      - name: Chromium
+        run: pnpm --filter @alloy-works/browser fetch-chromium
+
       - name: The stack
+        id: stack
         run: docker compose -f deploy/compose.yaml up -d --build --wait
 
       # Through turbo, which builds what the suite imports before running it.
       - name: End to end
         run: pnpm test:e2e
+
+      # The renderer in a real browser, against the same containers (the W13 plan's B-A): run whenever
+      # the stack came up, so a failing end-to-end check does not hide what the browser would say.
+      # NOT continue-on-error, and its report feeds the gate below, so a failing browser test fails it.
+      - name: Browser
+        if: ${{ !cancelled() && steps.stack.outcome == 'success' }}
+        run: pnpm test:browser
 
       - name: Stop the stack
         if: always()
@@ -171,3 +195,68 @@ jobs:
         with:
           name: compose-logs
           path: compose-logs.txt
+
+      # The end-to-end and browser suites' reports, for the gate. None at all means the stack never
+      # came up, and the gate's download then fails rather than passing without them.
+      - name: Test reports
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: trace-results-system
+          path: .trace-results
+          include-hidden-files: true
+          if-no-files-found: error
+
+  # The traceability gate, in a job of its own so it reads every suite's report: the build job's and
+  # the whole-system job's, the browser suite's among them (the W13 plan's B-G). It runs unless the run
+  # was cancelled, so a failed suite is read and refused rather than skipped.
+  #
+  # NOT continue-on-error. The baseline declares what this release is answerable for, so the gate
+  # passes on the day it lands - and a traceability gate that is allowed to fail is not a gate. It
+  # fails outright on a failed or stale report. It says nothing about the build job's own checks,
+  # and does not begin the switch-over in docs/ci-and-releases.md.
+  gate:
+    name: Traceability gate
+    needs: [build, end-to-end]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: The build job's reports
+        uses: actions/download-artifact@v5
+        with:
+          name: trace-results-build
+          path: .trace-results
+
+      - name: The whole system's reports
+        uses: actions/download-artifact@v5
+        with:
+          name: trace-results-system
+          path: .trace-results
+
+      # Both suites that drive the stack must have reported. `pnpm trace gate` exempts their reports
+      # from "no report at all", since `pnpm test` never writes them, so without this a run whose
+      # browser step never ran - the stack came up and the end-to-end step died with nothing written -
+      # would pass the gate on the build job's reports alone.
+      - name: Both system reports
+        run: |
+          for report in e2e browser; do
+            if [ ! -f ".trace-results/$report.json" ]; then
+              echo "::error::.trace-results/$report.json is missing: the whole-system job did not report its $report suite"
+              exit 1
+            fi
+          done
+
+      - name: Traceability gate
+        run: pnpm trace gate

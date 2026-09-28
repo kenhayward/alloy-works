@@ -90,6 +90,13 @@ export interface NamedReport {
 const HOUR_MS = 60 * 60 * 1000;
 
 /**
+ * The reports `pnpm test` never writes, because their suites drive a running stack: `pnpm test:e2e`'s
+ * and `pnpm test:browser`'s. (The browser workspace's own `test`, its pin's tests, writes
+ * `browser-pin.json` and is part of `pnpm test`.)
+ */
+const NEEDS_THE_STACK: ReadonlySet<string> = new Set(['e2e', 'browser']);
+
+/**
  * Whether a set of JSON reports is coherent enough to trust for `verify`. Nothing cleans
  * `.trace-results`, and each `vitest.config.ts` overwrites only its own file, so left unchecked a
  * report can silently outlive the run that produced it: `tests/e2e`'s report is never refreshed by
@@ -99,9 +106,10 @@ const HOUR_MS = 60 * 60 * 1000;
  * never happened, which is worse than not computing it at all.
  *
  * Returns one legible sentence per problem found, naming the report; an empty array means the set
- * agrees with itself. `tests/e2e` is exempt from the "no report at all" check - `pnpm test` excludes
- * it on purpose - but not from the staleness check, which is exactly what catches an `e2e.json` that
- * has not been refreshed in weeks.
+ * agrees with itself. `tests/e2e` and `tests/browser` are exempt from the "no report at all" check -
+ * `pnpm test` never writes either report, since each suite needs the whole stack up - but not from the failure
+ * or staleness checks, which are exactly what catch an `e2e.json` that has not been refreshed in weeks
+ * or a browser run that failed.
  */
 export function checkCoherence(reports: NamedReport[], expectedNames: string[]): string[] {
   const problems: string[] = [];
@@ -131,7 +139,7 @@ export function checkCoherence(reports: NamedReport[], expectedNames: string[]):
 
   const present = new Set(parsed.map(({ name }) => name));
   for (const expected of expectedNames) {
-    if (expected === 'e2e') continue;
+    if (NEEDS_THE_STACK.has(expected)) continue;
     if (!present.has(expected)) {
       problems.push(
         `${expected} has a vitest config but no report in .trace-results - run pnpm test first.`,
