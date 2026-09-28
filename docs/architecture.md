@@ -477,7 +477,7 @@ they first sign in. Nothing manages a role, a group or a principal's kind.
 | `db: src/first-administrator.ts`                 | `inviteFirstAdministrator`, run as a database administrator: an invitation whose principal holds Administrator at the tenant                                                                                                                      |
 | `api-contract: contract.ts`                      | `RouteAccess`: every route declares nothing, a session, or a permission and where its target comes from; and `credential: 'session'` where it takes a session alone, never a token                                                                |
 | `db: src/api-tokens.ts`                          | `issueApiToken`, `findApiToken` - by hash, unexpired, recording a use at most once a minute - `listApiTokens`, a person's own paged by id, and `revokeApiToken`, deleting one of a person's own                                                   |
-| `service: src/tokens.ts`                         | The token routes, the secret made and shown once, and `bearerSecret`, what an `Authorization` header carries                                                                                                                                      |
+| `service: src/tokens.ts`                         | The token routes, the secret made and shown once, `bearerSecret`, what an `Authorization` header carries, and `administeredTokenHandlers`, an administrator's list and revoke                                                                     |
 | `service: src/managing-access.ts`                | The grants, roles and people routes; each refusal a 409 with an underscore code                                                                                                                                                                   |
 | `service: src/invitations.ts`                    | The invitations routes: listing, inviting or renewing, and withdrawing with the principal's grants                                                                                                                                                |
 | `web: src/access/`                               | The access page: grants at a component's three levels, giving and removing, an explanation per person, and, to an administrator of the environment, inviting an address and withdrawing a waiting invitation                                      |
@@ -538,7 +538,9 @@ environments before either permits a sign-in, so she administers each from her f
 
 A person issues themselves a token for a script (W12.1, [ADR-0028](decisions/0028-personal-api-tokens-in-t1.md),
 service-foundations.md's TK-A to TK-F). It acts as them, can do no more than they may, can be limited to
-less, and expires. There is no page for it yet: the account page's tokens are W12.2's.
+less, and expires. An administrator of the environment lists and revokes anybody's (W12.2, TK-E), and
+both are done from the renderer: API tokens from the account chip, and Tokens on a person in
+Administration's People.
 
 **The request path.** For every route that checks anything, the hook reads `Authorization` before the
 cookie. Only the `Bearer` scheme, in any case, is a credential of ours: a header naming any other -
@@ -552,7 +554,7 @@ kind: 'token', scopes }`. Without the header, the session cookie is read as befo
 `request.credential` is `{ kind: 'session' }`.
 
 **Session-only routes.** A route declaring `credential: 'session'` refuses a found token `403
-token_not_allowed`: signing out, the event stream, the three token routes, and `POST /v1/samples`, the
+token_not_allowed`: signing out, the event stream, the five token routes, and `POST /v1/samples`, the
 development sample, which writes a row and queues a job. The token is looked up first, so one revoked or
 from another environment is still `401` there. A stolen token cannot mint a successor, and no stream is
 held open on a token after it is revoked. The published document says the same: those operations take
@@ -573,19 +575,35 @@ listings, a template or component read on a document's behalf, and `GET /v1/acce
 explains another principal's grants rather than this request's. A scope never lifts a refusal: `denied`,
 `not_granted` and `capped` keep their reasons, and `scoped` masks only an allow.
 
-**The routes**, each the caller's own and each taking a session alone:
+**The routes**, each taking a session alone. The first three are the caller's own, and decide no
+permission; the last two are an administrator's, each deciding `administer` at the tenant. They are
+routes of their own rather than the owner's widened, so each declares the one decision it takes, and the
+access, cross-tenant and listing harnesses hold each to it:
 
-| Route                    | What                                                                                                                                                                                                                                                                                                                                                                              |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /v1/tokens`         | The caller's tokens, paged by id: name, scopes, created, expires and last used; never a secret or a hash                                                                                                                                                                                                                                                                          |
-| `POST /v1/tokens`        | `{ name, scopes, expiresAt }`: a name of 1 to 80 characters, trimmed; scopes from the closed set without `read`, each once, else `400`; an expiry required, and `400 token_expiry_invalid` unless it is after the transaction's clock and at most 365 days past it. Answers the token and `secret`, `awt_` and 32 random bytes as base64url, once, with `Cache-Control: no-store` |
-| `DELETE /v1/tokens/{id}` | Revokes one of the caller's own by deleting its row: `204`, and the next request with it is `401`. Anybody else's is `404`                                                                                                                                                                                                                                                        |
+| Route                                       | What                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/tokens`                            | The caller's tokens, paged by id: name, scopes, created, expires and last used; never a secret or a hash                                                                                                                                                                                                                                                                          |
+| `POST /v1/tokens`                           | `{ name, scopes, expiresAt }`: a name of 1 to 80 characters, trimmed; scopes from the closed set without `read`, each once, else `400`; an expiry required, and `400 token_expiry_invalid` unless it is after the transaction's clock and at most 365 days past it. Answers the token and `secret`, `awt_` and 32 random bytes as base64url, once, with `Cache-Control: no-store` |
+| `DELETE /v1/tokens/{id}`                    | Revokes one of the caller's own by deleting its row: `204`, and the next request with it is `401`. Anybody else's is `404`                                                                                                                                                                                                                                                        |
+| `GET /v1/principals/{id}/tokens`            | A person's tokens, for an administrator, paged by id as the caller's own are: never a secret or a hash. A person the environment does not hold, another environment's among them, is `404`                                                                                                                                                                                        |
+| `DELETE /v1/principals/{id}/tokens/{token}` | Revokes that person's token, for an administrator: `200 { revoked }`, as removing a grant and withdrawing an invitation answer, and the next request with it is `401`. A token that is not that person's is `404`                                                                                                                                                                 |
 
 **What is kept.** Only the hash, in the tenant's schema. The secret is in the one answer that issues it and
 nowhere else: the request log never writes a header, and a test holds the log lines of a token issued,
 used, refused and revoked to having no `awt_` in them. `POST /v1/tokens` takes no idempotency key,
 because a kept answer would keep the secret for a day; a retry issues a second token, which its owner can
 see and revoke. A principal removed takes their tokens with them.
+
+**On the page.** `apps/web/src/account/`: `ApiTokens`, a modal from the account chip, lists the person's
+tokens - their name, what each may do in the access page's words, reading first, its expiry and its last
+use or `never` - and holds New token, a dialog opened beside it rather than inside it, so it closes
+alone: a name, the scopes as checkboxes, and an expiry as a date from tomorrow to a year away, 90 days
+unless changed, sent as the start of that day so the last day it offers is never more than 365 days
+off. The answer's secret is shown in that dialog, with Copy, and lives in its state alone: never in
+storage, the address or a log, and gone however the dialog closes. `TokenTable` is the list, each row
+with Revoke, which asks first in a dialog of its own and keeps focus in the list once the row has gone;
+Administration's People gives each person who has signed in a Tokens button showing theirs in it. A
+refusal is said in the service's own `message` where it gave one.
 
 ## The editor and its session
 

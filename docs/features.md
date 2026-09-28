@@ -522,7 +522,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   preview, and does nothing else. `GET /v1/tokens` lists yours, with when each was last used, and
   `DELETE /v1/tokens/{id}` revokes one: the next request with it is refused. A token cannot issue, list
   or revoke tokens, sign out, open the event stream or ask for a sample; those take a signed-in session.
-  There is no page for tokens yet, and an administrator cannot yet list or revoke somebody else's.
+- **API tokens on the page.** **API tokens**, in the account chip, lists your tokens with what each may
+  do, when it expires and when it was last used. **New token** asks for a name, what it may do besides
+  reading, which it always may, and an expiry from tomorrow to a year away, 90 days unless you change
+  it; the token is then shown once, with **Copy**, and is gone when the dialog closes: nothing keeps it
+  in the browser. **Revoke** asks first, and the next request with the token is refused.
+- **An administrator revokes anybody's tokens.** In Administration's People, **Tokens** beside a person
+  lists theirs, each with **Revoke**, which is how a person's tokens go when they leave, without waiting
+  for each to expire. Through the API it is `GET /v1/principals/{id}/tokens` and `DELETE
+/v1/principals/{id}/tokens/{token}`, which need administering the environment and a signed-in
+  session.
 
 - **Retrying safely through the API.** A request that makes or changes something can carry an
   `Idempotency-Key`; sent again with the same key - after an answer that was lost - it is answered as it
@@ -894,9 +903,8 @@ Named explicitly so nobody has to read the source to find out:
   images in a line of text, footnotes, cross-references and equations, and a published Word document
   of all of that. The one sample document is a
   fixed template with no content of yours in it.
-- No page for API tokens: a person issues, lists and revokes their own through the API alone, and
-  nobody can revoke another person's yet. No token belongs to anything but a person, so a script that
-  must outlive its author has nothing to run as.
+- No token belongs to anything but a person, so a script that must outlive its author has nothing to
+  run as, and nothing extends a token: a new one is issued.
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
