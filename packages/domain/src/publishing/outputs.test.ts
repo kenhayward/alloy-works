@@ -26,7 +26,75 @@ describe("an output's report", () => {
       'header_repeated',
       'continuation_label_omitted',
       'equation_flattened',
+      'description_language_lost',
+      'quotation_not_structure',
+      'preformatted_not_structure',
+      'definition_list_not_structure',
+      'quoted_phrase_not_structure',
+      'inline_code_not_structure',
+      'equation_numbered_as_table',
+      'equation_alternative_lost',
+      'maths_coverage_unchecked',
     ]);
+  });
+
+  it("names what Word cannot carry of the PDF's structure (W14.6, W-J): a quotation, preformatted text, a definition list and an image's description in another language by their place; a quoted phrase and inline code by the place of their runs, a heading's naming no block; a numbered equation by its place and label; and the maths once, its alternatives and the Word face's characters", () => {
+    const place = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 'q1' };
+    const heading = { node: 'rateaaaaaaaaaaaaaaaaaaaaaa', block: null };
+    const report: OutputReport = [
+      { kind: 'description_language_lost', ...place, block: 'f1' },
+      { kind: 'quotation_not_structure', ...place },
+      { kind: 'preformatted_not_structure', ...place, block: 'c1' },
+      { kind: 'definition_list_not_structure', ...place, block: 'd1' },
+      { kind: 'quoted_phrase_not_structure', ...place, block: 'p1' },
+      { kind: 'quoted_phrase_not_structure', ...heading },
+      { kind: 'inline_code_not_structure', ...place, block: 'p1' },
+      { kind: 'equation_numbered_as_table', ...place, block: 'e1', label: 'Equation 1' },
+      { kind: 'equation_alternative_lost' },
+      { kind: 'maths_coverage_unchecked', wordFamily: 'Cambria Math' },
+    ];
+    expect(parseOutputReport(JSON.parse(JSON.stringify(report)))).toEqual(report);
+    // Each place once; two places are two things.
+    expect(() =>
+      parseOutputReport([
+        { kind: 'quotation_not_structure', ...place },
+        { kind: 'quotation_not_structure', ...place },
+      ]),
+    ).toThrow(/once/);
+    expect(() =>
+      parseOutputReport([
+        { kind: 'equation_alternative_lost' },
+        { kind: 'equation_alternative_lost' },
+      ]),
+    ).toThrow(/once/);
+    // Closed: a block's place names its block, a numbered equation its label, the maths face a
+    // family as the theme spells one, and nothing else.
+    for (const kind of [
+      'description_language_lost',
+      'quotation_not_structure',
+      'preformatted_not_structure',
+      'definition_list_not_structure',
+    ]) {
+      expect(() => parseOutputReport([{ kind, ...heading }]), kind).toThrow();
+      expect(() => parseOutputReport([{ kind, ...place, label: null }]), kind).toThrow(
+        /Unrecognized key/,
+      );
+      expect(() => parseOutputReport([{ kind, ...place, node: 'Readings' }]), kind).toThrow();
+    }
+    for (const kind of ['quoted_phrase_not_structure', 'inline_code_not_structure']) {
+      expect(() => parseOutputReport([{ kind, node: place.node }]), kind).toThrow();
+      expect(() => parseOutputReport([{ kind, ...place, block: '' }]), kind).toThrow();
+    }
+    expect(() =>
+      parseOutputReport([{ kind: 'equation_numbered_as_table', ...place, label: null }]),
+    ).toThrow();
+    expect(() => parseOutputReport([{ kind: 'equation_alternative_lost', ...place }])).toThrow(
+      /Unrecognized key/,
+    );
+    expect(() => parseOutputReport([{ kind: 'maths_coverage_unchecked' }])).toThrow();
+    expect(() =>
+      parseOutputReport([{ kind: 'maths_coverage_unchecked', wordFamily: 'Cambria <Math>' }]),
+    ).toThrow();
   });
 
   it("names a heading or a listed caption holding an equation Word's rebuilt entries set as its characters in a row, by its place and its number or label (the final review of Word 4, I2)", () => {

@@ -187,7 +187,7 @@ const DocxOutputView = z.object({
   producer: z.literal('word'),
   producerVersion: z.string().describe("The Word writer's version, as `word/1`"),
   report: outputReportSchema.describe(
-    'What Word could not carry: a face it set in another, that page numbers cite the PDF, that it carries no page-cited output',
+    "What Word could not carry: a face it set in another; a table's header column, repeated header or continuation label; a heading or caption whose equation Word's rebuilt entries flatten; each structure the PDF tags that Word has no place for, by its place; the maths' alternatives and the Word face's characters, once; that page numbers cite the PDF; that it carries no page-cited output",
   ),
   download,
   view: z.null().describe('None: a browser saves a Word document rather than showing it'),

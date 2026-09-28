@@ -1228,6 +1228,9 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(outputs.map((each) => each.format)).toEqual(['pdf', 'docx']);
     expect(outputs.find((each) => each.format === 'docx')!.report).toEqual([
       { kind: 'face_substituted', family: 'STIX Two Math', wordFamily: 'Cambria Math' },
+      // W14.6: the maths once, its alternative and Cambria Math's characters.
+      { kind: 'equation_alternative_lost' },
+      { kind: 'maths_coverage_unchecked', wordFamily: 'Cambria Math' },
       { kind: 'pages_cite_the_pdf' },
     ]);
   }, 180_000);

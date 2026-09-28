@@ -97,6 +97,33 @@ describe('the publishing contract (Word 1)', () => {
     ).toBe(false);
   });
 
+  it("serves what Word cannot carry of the PDF's structure, each by its place - a quoted phrase's or inline code's perhaps a heading's, naming no block - a numbered equation by its label too, and the maths once (W14.6)", () => {
+    const place = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 'q1' };
+    const report = [
+      { kind: 'description_language_lost', ...place, block: 'f1' },
+      { kind: 'quotation_not_structure', ...place },
+      { kind: 'preformatted_not_structure', ...place, block: 'c1' },
+      { kind: 'definition_list_not_structure', ...place, block: 'd1' },
+      { kind: 'quoted_phrase_not_structure', ...place, block: null },
+      { kind: 'inline_code_not_structure', ...place, block: 'p1' },
+      { kind: 'equation_numbered_as_table', ...place, block: 'e1', label: 'Equation 1.1' },
+      { kind: 'equation_alternative_lost' },
+      { kind: 'maths_coverage_unchecked', wordFamily: 'Cambria Math' },
+    ];
+    expect(PublicationView.parse(viewWith([{ ...docx, report }])).outputs[0]!.report).toEqual(
+      report,
+    );
+    for (const wrong of [
+      { kind: 'quotation_not_structure', ...place, block: null },
+      { kind: 'equation_numbered_as_table', ...place },
+      { kind: 'maths_coverage_unchecked' },
+    ]) {
+      expect(PublicationView.safeParse(viewWith([{ ...docx, report: [wrong] }])).success).toBe(
+        false,
+      );
+    }
+  });
+
   it('shows each output with its format, standard, producer and report, and a view link for the PDF alone', () => {
     const both = PublicationView.parse(viewWith([pdf, docx]));
     expect(both.outputs).toEqual([pdf, docx]);

@@ -28,8 +28,16 @@ const family = typefaceSchema.shape.family;
  * (TAB-049); a header its style does not repeat, which Word repeats anyway, since it marks header rows
  * only by repeating them; and a continuation label, which Word cannot set. Word 4's (the final
  * review's I2): a heading or a listed caption holding an equation that is not a row of plain runs, which
- * Word's rebuilt contents, lists and running heads set as its characters in a row. Later slices add
- * their kinds as new members here, never by changing one already stored.
+ * Word's rebuilt contents, lists and running heads set as its characters in a row. W14.6's (W-J,
+ * PUB-100), each a structure the PDF gives a reader that Word has no place for: an image's
+ * description in a language other than the document's, since Word's description holds none; a
+ * quotation, preformatted text and a definition list, which the PDF tags `BlockQuote`, `Code` and a
+ * list and Word sets as paragraphs in their styles; a quoted phrase and inline code, which the PDF
+ * tags `Quote` and `Code` and Word sets as runs in their character styles; a numbered equation, which
+ * Word sets as a table of one row; and, once for a document setting an equation, the alternative
+ * the PDF's formula carries, which Word's own maths reading replaces, and the characters of the Word
+ * face the maths is set in, which nothing here can check. Later slices add their kinds as new members
+ * here, never by changing one already stored.
  */
 export const OUTPUT_REPORT_KINDS = [
   'face_substituted',
@@ -39,6 +47,15 @@ export const OUTPUT_REPORT_KINDS = [
   'header_repeated',
   'continuation_label_omitted',
   'equation_flattened',
+  'description_language_lost',
+  'quotation_not_structure',
+  'preformatted_not_structure',
+  'definition_list_not_structure',
+  'quoted_phrase_not_structure',
+  'inline_code_not_structure',
+  'equation_numbered_as_table',
+  'equation_alternative_lost',
+  'maths_coverage_unchecked',
 ] as const;
 
 /**
@@ -63,6 +80,15 @@ const titled = {
   label: z.string().min(1).nullable(),
 };
 
+/**
+ * A block a report names by its place alone (W14.6): a quotation, preformatted text, a definition list,
+ * or the figure or the block of runs an image stands in.
+ */
+const block = {
+  node: nodeIdentifierSchema,
+  block: z.string().min(1),
+};
+
 export const outputReportEntrySchema = z.discriminatedUnion('kind', [
   z
     .strictObject({ kind: z.literal('face_substituted'), family, wordFamily: family })
@@ -73,6 +99,28 @@ export const outputReportEntrySchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('header_repeated'), ...table }),
   z.strictObject({ kind: z.literal('continuation_label_omitted'), ...table }),
   z.strictObject({ kind: z.literal('equation_flattened'), ...titled }),
+  z.strictObject({ kind: z.literal('description_language_lost'), ...block }),
+  z.strictObject({ kind: z.literal('quotation_not_structure'), ...block }),
+  z.strictObject({ kind: z.literal('preformatted_not_structure'), ...block }),
+  z.strictObject({ kind: z.literal('definition_list_not_structure'), ...block }),
+  // Runs a heading holds name no block, as `titled`'s do.
+  z.strictObject({
+    kind: z.literal('quoted_phrase_not_structure'),
+    node: titled.node,
+    block: titled.block,
+  }),
+  z.strictObject({
+    kind: z.literal('inline_code_not_structure'),
+    node: titled.node,
+    block: titled.block,
+  }),
+  z.strictObject({
+    kind: z.literal('equation_numbered_as_table'),
+    ...block,
+    label: z.string().min(1),
+  }),
+  z.strictObject({ kind: z.literal('equation_alternative_lost') }),
+  z.strictObject({ kind: z.literal('maths_coverage_unchecked'), wordFamily: family }),
 ]);
 
 /**

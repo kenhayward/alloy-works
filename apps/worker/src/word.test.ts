@@ -726,12 +726,29 @@ const everything: AssembleInput & { readonly layout: Layout } = {
     ...cited.outline,
     nodes: [
       ...cited.outline.nodes.slice(0, 4),
+      reference('pictured', 13),
       ...equated.outline.nodes.slice(1, 3),
       ...cited.outline.nodes.slice(4),
       ...equated.outline.nodes.slice(3),
     ],
   }),
-  occurrences: new Map([...cited.occurrences, ...equated.occurrences]),
+  occurrences: new Map([
+    ...cited.occurrences,
+    ...equated.occurrences,
+    // A figure described in its component's language, which is not the document's (W14.6).
+    [
+      id('pictured'),
+      component(
+        'Bilder',
+        [
+          figure('g1', RED, 'Quadrate', {
+            alternative: { kind: 'own', text: 'Zwei rote Quadrate' },
+          }),
+        ],
+        { language: 'de-DE' },
+      ),
+    ],
+  ]),
 };
 
 /**
@@ -834,7 +851,16 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
 
     expect(await checkOoxml(bytes)).toEqual([]);
     const readings = { node: id('readings'), block: 't1', label: 'Table 2.1' };
+    const at = (node: string, block: string) => ({ node: id(node), block });
     expect(report).toEqual([
+      // W14.6: each structure the PDF tags that Word sets as paragraphs or runs, by its place.
+      { kind: 'inline_code_not_structure', ...at('marked', 'm1') },
+      { kind: 'quoted_phrase_not_structure', ...at('marked', 'm1') },
+      { kind: 'definition_list_not_structure', ...at('steps', 'D1') },
+      { kind: 'quotation_not_structure', ...at('steps', 'Q1') },
+      { kind: 'quotation_not_structure', ...at('steps', 'Q2') },
+      { kind: 'preformatted_not_structure', ...at('steps', 'C1') },
+      { kind: 'preformatted_not_structure', ...at('steps', 'C2') },
       { kind: 'header_column_lost', ...readings },
       { kind: 'header_repeated', ...readings },
       { kind: 'continuation_label_omitted', ...readings },
@@ -1128,7 +1154,7 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     });
   }, 120_000);
 
-  it("writes what Word carries of the PDF's accessibility: every heading at its outline level, every image described or flagged decorative, every table's header rows marked and its caption its title, every footnote Word's own, every cross-reference a field with the PDF's words, a link where the PDF's is one, every list's items on Word's own list, every run in its language, a note's and a reference's among them, and every equation Word's own maths, never an image and never described by us", () => {
+  it("PUB-100 writes what Word carries of the PDF's accessibility: every heading at its outline level, every image described or flagged decorative, every table's header rows marked and its caption its title, every footnote Word's own, every cross-reference a field with the PDF's words, a link where the PDF's is one, every list's items on Word's own list, every run in its language, a note's and a reference's among them, and every equation Word's own maths, never an image and never described by us", () => {
     // Words 1 to 3's document, with a section of references of every form beside its own (Word 3).
     const assembled = assemble(cited);
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
@@ -1537,7 +1563,7 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     expect(written).not.toContain('<math');
   }, 120_000);
 
-  it("carries every construct a T1 document can hold into Word as Word's own structure, with what the writer knows it loses named in the report, in a document the Open XML SDK finds nothing wrong with", async () => {
+  it("PUB-100 carries every construct a T1 document can hold into Word as Word's own structure, with what the writer knows it loses named in the report, in a document the Open XML SDK finds nothing wrong with", async () => {
     const assembled = assemble(everything);
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     const { bytes, report } = writeDocx({
@@ -1691,6 +1717,18 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
         'continuation_label_omitted',
         'face_substituted',
         'pages_cite_the_pdf',
+        // W14.6 (W-J): a description in another language than the document's, a quotation,
+        // preformatted text, a definition list, a quoted phrase and inline code, each by its place;
+        // each numbered equation, a table of one row in Word; and the maths once.
+        'description_language_lost',
+        'quotation_not_structure',
+        'preformatted_not_structure',
+        'definition_list_not_structure',
+        'quoted_phrase_not_structure',
+        'inline_code_not_structure',
+        'equation_numbered_as_table',
+        'equation_alternative_lost',
+        'maths_coverage_unchecked',
       ]),
     );
   }, 120_000);

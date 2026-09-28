@@ -22300,10 +22300,212 @@
                                         "block",
                                         "label"
                                       ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "description_language_lost"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "quotation_not_structure"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "preformatted_not_structure"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "definition_list_not_structure"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "quoted_phrase_not_structure"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "inline_code_not_structure"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "equation_numbered_as_table"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "label": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block",
+                                        "label"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "equation_alternative_lost"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "maths_coverage_unchecked"
+                                        },
+                                        "wordFamily": {
+                                          "type": "string",
+                                          "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} ._-]{0,62}$"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "wordFamily"
+                                      ]
                                     }
                                   ]
                                 },
-                                "description": "What Word could not carry: a face it set in another, that page numbers cite the PDF, that it carries no page-cited output"
+                                "description": "What Word could not carry: a face it set in another; a table's header column, repeated header or continuation label; a heading or caption whose equation Word's rebuilt entries flatten; each structure the PDF tags that Word has no place for, by its place; the maths' alternatives and the Word face's characters, once; that page numbers cite the PDF; that it carries no page-cited output"
                               },
                               "download": {
                                 "type": "string",

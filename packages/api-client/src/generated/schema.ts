@@ -9300,7 +9300,7 @@ export interface operations {
                             producer: "word";
                             /** @description The Word writer's version, as `word/1` */
                             producerVersion: string;
-                            /** @description What Word could not carry: a face it set in another, that page numbers cite the PDF, that it carries no page-cited output */
+                            /** @description What Word could not carry: a face it set in another; a table's header column, repeated header or continuation label; a heading or caption whose equation Word's rebuilt entries flatten; each structure the PDF tags that Word has no place for, by its place; the maths' alternatives and the Word face's characters, once; that page numbers cite the PDF; that it carries no page-cited output */
                             report: ({
                                 /** @constant */
                                 kind: "face_substituted";
@@ -9336,6 +9336,49 @@ export interface operations {
                                 node: string;
                                 block: string | null;
                                 label: string | null;
+                            } | {
+                                /** @constant */
+                                kind: "description_language_lost";
+                                node: string;
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "quotation_not_structure";
+                                node: string;
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "preformatted_not_structure";
+                                node: string;
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "definition_list_not_structure";
+                                node: string;
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "quoted_phrase_not_structure";
+                                node: string;
+                                block: string | null;
+                            } | {
+                                /** @constant */
+                                kind: "inline_code_not_structure";
+                                node: string;
+                                block: string | null;
+                            } | {
+                                /** @constant */
+                                kind: "equation_numbered_as_table";
+                                node: string;
+                                block: string;
+                                label: string;
+                            } | {
+                                /** @constant */
+                                kind: "equation_alternative_lost";
+                            } | {
+                                /** @constant */
+                                kind: "maths_coverage_unchecked";
+                                wordFamily: string;
                             })[];
                             /** @description A link to the bytes, valid for five minutes, named by the publication id and format */
                             download: string;
