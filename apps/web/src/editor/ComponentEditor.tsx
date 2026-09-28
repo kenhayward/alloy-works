@@ -77,6 +77,7 @@ import {
   forgetOffered,
   freshSession,
   keepOffered,
+  lastSent,
   offeredWith,
   readKept,
   readOffered,
@@ -84,6 +85,7 @@ import {
   sentFor,
   textOfKept,
   type Recorder,
+  type Sent,
   type StoredSession,
 } from './stored-session.js';
 import {
@@ -91,6 +93,7 @@ import {
   createSession,
   designTiming,
   type Clock,
+  type Repeat,
   type Session,
   type SessionView,
   type Timing,
@@ -178,6 +181,21 @@ const textOfDoc = (doc: EditorState['doc']) => {
   return lines.join('\n');
 };
 const textOf = (view: EditorView) => textOfDoc(view.state.doc);
+
+/**
+ * The save a reload's window last sent, rebuilt from what it kept exactly as it was sent, to send again
+ * where its answer never came back (a third look at W11.3); null where it cannot be, which is then taken
+ * for the service being ahead.
+ */
+const repeatOf = (stored: StoredSession, sentLater: Sent | null): Repeat | null => {
+  const sent = lastSent(stored, sentLater);
+  if (sent === null) return null;
+  try {
+    return { content: fromEditor(sent.doc), values: sent.values };
+  } catch {
+    return null;
+  }
+};
 
 /**
  * Said where what a window kept before this page opened is offered as text to copy rather than brought
@@ -780,20 +798,34 @@ export function ComponentEditor({
       );
     // Replayed under the session it was kept in, or not at all: a page that starts under another id -
     // the id it was kept under gone from storage - offers what was kept as text instead.
-    const resumed =
+    const sentLater = stored === null ? null : sentFor(component.id, stored.session);
+    const going =
       replayed !== null && stored !== null && stored.session === initialSession
+        ? continuing(
+            stored,
+            askedSession.current === stored.session ? (component.sequence ?? null) : null,
+            sentLater,
+            // What the service said to this window of the last it sent: a save it holds at that
+            // number is this window's only where it said so (re-review of W11.3, D1).
+            answerFor(component.id, stored.session),
+          )
+        : null;
+    // Where it never said, the save is sent again after the claim, rebuilt exactly as it was sent, and
+    // the service's answer settles whose it is; one that cannot be rebuilt is taken for another page's
+    // (a third look at W11.3).
+    const repeat = going?.repeat === true && stored !== null ? repeatOf(stored, sentLater) : null;
+    const resumed =
+      replayed !== null && going !== null
         ? {
             state: replayed,
-            ...continuing(
-              stored,
-              askedSession.current === stored.session ? (component.sequence ?? null) : null,
-              sentFor(component.id, stored.session),
-              // What the service said to this window of the last it sent: a save it holds at that
-              // number is this window's only where it said so (re-review of W11.3, D1).
-              answerFor(component.id, stored.session),
-            ),
+            ...going,
+            ahead: going.ahead || (going.repeat && repeat === null),
+            repeat,
           }
         : null;
+    // True from a repeat until it is settled: refused, what is on screen is offered, as a replay the
+    // service has saved past is.
+    let repeating = resumed !== null && !resumed.ahead && resumed.repeat !== null;
     if (replayed !== null && resumed === null) offering = textOfDoc(replayed.doc);
     // A replay the service has saved past is offered too: it goes to `lost` with it on screen, and
     // whatever goes on from there, what was kept has no other copy (D1; its re-review).
@@ -852,6 +884,19 @@ export function ComponentEditor({
     }
     if (differs(offering) !== null) setNotice(KEPT_OFFERED);
     else if (unreadable) setNotice(KEPT_UNREADABLE);
+    /** Offers `text` beside whatever is offered already, once the page is open: a repeat refused. */
+    const offerAlso = (text: string) => {
+      const shownNow =
+        offeredShown.current?.component === component.id &&
+        offeredShown.current.principal === principalId
+          ? offeredShown.current.text
+          : null;
+      const next = offeredWith(shownNow, differs(text));
+      if (next === null || next === shownNow) return;
+      offeredShown.current = { component: component.id, principal: principalId, text: next };
+      setOffered(next);
+      keepOffered(component.id, principalId, next);
+    };
     // Written at once when the page is hidden or goes, which runs no unmount (D4).
     const keepNow = () => keeping.flush();
     const keepIfHidden = () => {
@@ -890,6 +935,16 @@ export function ComponentEditor({
         }
         if (next.phase !== 'reading') staleLockKnown.current = true;
         if (next.phase === 'editing') ahead = false;
+        // A reload's last save, sent again, refused as another page's: what is on screen is offered,
+        // as a replay the service has saved past is, rather than kept as a refusal's (a third look at
+        // W11.3).
+        if (repeating && (next.phase === 'editing' || next.phase === 'lost')) {
+          repeating = false;
+          if (next.phase === 'lost' && next.recoverable) {
+            offerAlso(textOf(view));
+            keptIsCurrent.current = true;
+          }
+        }
         // Released by Done editing, whether or not a version was cut: a reload claims nothing back.
         if (previous === 'releasing' && next.phase === 'reading') {
           keeping.reset(next.version.id, view.state.doc, heldValues.current);
@@ -1044,7 +1099,7 @@ export function ComponentEditor({
       editing.behind();
     } else if (resumed !== null) {
       ahead = true;
-      editing.resume(resumed.unsent);
+      editing.resume(resumed.unsent, resumed.repeat ?? undefined);
     }
     return () => {
       window.removeEventListener('pagehide', keepNow);

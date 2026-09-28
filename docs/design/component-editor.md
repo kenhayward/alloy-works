@@ -707,15 +707,22 @@ of each change, and at once as the page is hidden or goes.
 
 Session storage holds, per component and editing session: the principal it was kept for, the version the
 session opened from, the document at that point, every step since with the history's grouping, the
-latest metadata values, the last sequence number sent, and the last answer the service gave to one.
+latest metadata values, the last sequence number sent and what that save held, and the last answer the
+service gave to one.
 
 On reload the renderer asks the service for the session's latest accepted sequence. **If that is above the
 last this window sent, another page holding the same session saved past it; if it equals the last this
-window sent, the save it holds is this window's only where the service acknowledged that sequence to this
+window sent, the save it holds is this window's where the service acknowledged that sequence to this
 window** - a sequence sent is not a sequence accepted, and another page may have saved that number first.
-Where it is past, or equal and not acknowledged, or that sequence was refused, nothing is sent or
-replayed over it: the page opens as a stale save leaves it, with **Continue** and **Recover**, and the
-kept changes on screen and offered as text to copy. If nobody but this
+**Where it equals the last this window sent and no answer to that number ever came** - most often the
+save a page sends as it goes, which arrives after its page has gone - that save is rebuilt from the kept
+steps exactly as it was sent and sent again at the same number, under the same session, once the claim is
+granted: the service answers the same content again as accepted, and the page goes on as saved, anything
+typed after that save sent as the next sequence; different content is refused as conflicting, and the
+page goes behind. A save the kept steps cannot rebuild exactly is not guessed at, and is taken for
+another page's. Where it is past, or that sequence was refused, or the save sent again is refused, nothing
+is sent or replayed over it: the page opens as a stale save leaves it, with **Continue** and **Recover**,
+and the kept changes on screen and offered as text to copy. If nobody but this
 session holds the lock - it holds it still, or it lapsed and nobody took it - and the opened-from version
 is unchanged, the session claims again under its own id (RC-H), the steps are replayed into a fresh
 editor state with history, the values restored, and anything the service has not got sent as the next
@@ -757,9 +764,9 @@ refused because another page of the same session saved that number first, or who
 went, met the same, went on after a reload as saved. The last answer to a save is now kept beside what
 was sent, per session, only ever rising and written by an answer that arrives after the page has gone
 too, and a reload goes on over a save the service holds at the number it last sent only where that answer
-accepted it, once or again. A save that reached the service but whose answer was lost with the page is
-then offered as text with a notice of newer text that is false - never taken for saved when it may not
-be. The record
+accepted it, once or again. A save that reached the service but whose answer was lost with the page was
+then offered as text with a notice of newer text that was false - never taken for saved when it may not
+be; a third look, below, sends it again instead. The record
 carries the principal it was kept for and is given to nobody else, and every editing key is forgotten at
 sign-out - which also stops the editor keeping anything for the rest of the page, so a save pending as
 the author signs out, or the flush as the page goes, cannot write it back. It carries its format and a
@@ -774,6 +781,15 @@ goes on under it after a cut or a restore starts above both the service's sequen
 window sent under it, rather than at 0. The record is written at most 300 ms after a change, at once
 for a send, and on `pagehide` or the page hidden, and a run of typing is kept as one step; storage that
 is full forgets other components' records before it stops keeping this one.
+
+**From a third look (W11.3).** That false notice was common: in a real browser the save a page sends as
+it goes often arrives, and its answer finds the page gone. The record now keeps what the last save held -
+how many of its steps, none typed after the save ever folded into them, and the values then - and a
+reload whose service holds a save at the number it last sent, with no answer to that number, sends it
+again at that number after the claim, rebuilt exactly, before anything else, sending nothing meanwhile,
+not even as the page goes. Acknowledged again, the page goes on as saved, with its undo; refused, or with
+no answer, it goes behind with its text offered. A record that cannot rebuild that save exactly - one
+started afresh since, by a cut or a restore - goes behind as before.
 
 **Undo covers content, not metadata.** ProseMirror's history is the document's - which includes the title,
 base language and base direction. A metadata field is an ordinary input with its own undo, and folding
@@ -874,8 +890,10 @@ component's `GET` answers its caller's own session the latest sequence it accept
 - **The service holding a later save under the session than this window sent** - a duplicated tab:
   nothing is sent, claimed or replayed over it; the page opens as a stale save leaves it, with
   **Continue** and **Recover**, and the kept changes offered as text to copy (final review of W11.3).
-  So too where it holds one at the number this window last sent that the service never acknowledged to
-  this window, or refused (a second look at W11.3's fixes).
+  So too where it holds one at the number this window last sent that the service refused to this window
+  (a second look at W11.3's fixes), or that this window sent again and the service refused (a third
+  look): one it never answered at all is sent again first, at the same number, and acknowledged again
+  goes on as saved.
 
 The title's one-line editor's history was limited to ProseMirror's default of 100 events; W11.3 gave it no limit, as the component's has.
 

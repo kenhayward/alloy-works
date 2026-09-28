@@ -45,12 +45,27 @@ export interface StoredSession {
   readonly revision: number;
   /** The last sequence sent, and the revision it carried. */
   readonly sent: Sent;
+  /**
+   * What that save held, so that a reload can send exactly it again (`lastSent`), or null where the
+   * record cannot say - nothing sent since it was started afresh, as by a cut or a restore.
+   */
+  readonly sentAs: SentAs | null;
 }
 
 /** A sequence sent, and the revision of the record it carried. */
 export interface Sent {
   readonly sequence: number;
   readonly revision: number;
+}
+
+/**
+ * What the last save sent held, as the record rebuilds it: the document with its first `changes`
+ * applied - none typed after it is ever folded into them (`mergeChange`) - and the values as they stood
+ * (a third look at W11.3).
+ */
+export interface SentAs {
+  readonly changes: number;
+  readonly values: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -64,7 +79,7 @@ export interface Answer {
 }
 
 /** Bumped whenever the record is written otherwise, so an older build's is offered, not replayed. */
-export const STORED_FORMAT = 2;
+export const STORED_FORMAT = 3;
 
 type Store = Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'>;
 
@@ -143,7 +158,14 @@ export function parseStoredSession(text: string | null): StoredSession | null {
     !read.changes.every(isChange) ||
     !isObject(read.values) ||
     !isCount(read.revision) ||
-    !isSent(read.sent)
+    !isSent(read.sent) ||
+    !(
+      read.sentAs === null ||
+      (isObject(read.sentAs) &&
+        isCount(read.sentAs.changes) &&
+        read.sentAs.changes <= read.changes.length &&
+        isObject(read.sentAs.values))
+    )
   ) {
     return null;
   }
@@ -361,6 +383,8 @@ export function freshSession(start: {
     values: { ...start.values },
     revision: 0,
     sent: { sequence: start.sequence, revision: 0 },
+    // Whatever was sent at that number was sent from before this document: it is not rebuilt.
+    sentAs: null,
   };
 }
 
@@ -373,34 +397,88 @@ export function freshSession(start: {
  * that this window may not have sent - another page holding the same session, a duplicated tab - over
  * which nothing may be sent or resumed (final review of W11.3, D1).
  *
- * Ahead where the service holds a later save than this window sent; and where it holds one at the very
- * number this window last sent, unless `answer`, the last answer this window was given (`answerFor`),
- * says the service accepted that number from it: a save sent is not a save accepted, and another page
- * may have saved that number first, refusing this window's (re-review of W11.3, D1). And ahead where
- * that number was refused, whatever the service is asked. Taken for ahead, what was kept is offered: the
- * worst of it is a notice of newer text that was this window's own, never a save taken for this
- * window's that was not.
+ * Ahead where the service holds a later save than this window sent, and where the number this window
+ * last sent was refused, whatever the service is asked (re-review of W11.3, D1). Where it holds one at
+ * the very number this window last sent, it is this window's own where `answer`, the last answer this
+ * window was given (`answerFor`), says the service accepted that number from it: a save sent is not a
+ * save accepted, and another page may have saved that number first, refusing this window's. Where no
+ * answer to that number ever came - most often a save sent as the page went, which arrived after its
+ * page had gone - it is a **repeat**: the save is sent again at the same number, after the claim, and
+ * the service settles whose it is, answering the same text again as accepted and other text as
+ * conflicting (a third look at W11.3). Only where the record can rebuild exactly what was sent
+ * (`lastSent`): anything else is taken for ahead. Taken for ahead, what was kept is offered: the worst
+ * of it is a notice of newer text that was this window's own, never a save taken for this window's that
+ * was not.
  */
 export function continuing(
   kept: StoredSession,
   latest: number | null,
   sentLater: Sent | null = null,
   answer: Answer | null = null,
-): { readonly sequence: number; readonly unsent: boolean; readonly ahead: boolean } {
+): {
+  readonly sequence: number;
+  readonly unsent: boolean;
+  readonly ahead: boolean;
+  readonly repeat: boolean;
+} {
   const accepted = latest ?? 0;
-  const last =
-    sentLater !== null && sentLater.sequence > kept.sent.sequence ? sentLater : kept.sent;
+  const last = lastOf(kept, sentLater);
   const answered = answer !== null && answer.sequence === last.sequence;
   const acknowledged = answered && answer.accepted;
   const refused = answered && !answer.accepted;
+  // Never answered: no answer kept, or one to an earlier number only.
+  const unanswered = answer === null || answer.sequence < last.sequence;
+  const repeat =
+    accepted > 0 && accepted === last.sequence && unanswered && sentPoint(kept, sentLater) !== null;
   return {
     sequence: Math.max(last.sequence, accepted),
     unsent: last.revision !== kept.revision || accepted !== last.sequence,
     ahead:
       accepted > last.sequence ||
-      (accepted > 0 && accepted === last.sequence && !acknowledged) ||
+      (accepted > 0 && accepted === last.sequence && !acknowledged && !repeat) ||
       (last.sequence > 0 && refused),
+    repeat,
   };
+}
+
+/** The last this window sent: the record's, or a later one sent after the record was closed. */
+const lastOf = (kept: StoredSession, sentLater: Sent | null): Sent =>
+  sentLater !== null && sentLater.sequence > kept.sent.sequence ? sentLater : kept.sent;
+
+/**
+ * What the last save held, where the record can say exactly: its own last send, as it kept it; or one
+ * sent after the record was closed - a page's last save, sent as it went - from the very revision the
+ * record was closed at, which is the record whole. Null for anything else, which is never guessed at.
+ */
+function sentPoint(kept: StoredSession, sentLater: Sent | null): SentAs | null {
+  const last = lastOf(kept, sentLater);
+  if (last === kept.sent) return kept.sentAs;
+  return last.revision === kept.revision
+    ? { changes: kept.changes.length, values: kept.values }
+    : null;
+}
+
+/**
+ * The last save this window sent, rebuilt from the record exactly as it was sent - the document with
+ * the changes it held applied, with no history, and the values then - for a reload to send again at
+ * the same number (`continuing`'s repeat); null where the record cannot rebuild it exactly, or it does
+ * not apply.
+ */
+export function lastSent(
+  kept: StoredSession,
+  sentLater: Sent | null,
+): { readonly doc: EditorState['doc']; readonly values: Readonly<Record<string, unknown>> } | null {
+  const point = sentPoint(kept, sentLater);
+  if (point === null) return null;
+  try {
+    const doc = editorSchema.nodeFromJSON(kept.doc);
+    doc.check();
+    const sent = replayPlain(doc, kept.changes.slice(0, point.changes));
+    sent.check();
+    return { doc: sent, values: { ...point.values } };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -531,12 +609,12 @@ export function createRecorder(
       forget();
       return;
     }
-    const { format, schema, principal, session, version, values, revision, sent } = kept;
+    const { format, schema, principal, session, version, values, revision, sent, sentAs } = kept;
     const text =
       `{"format":${format},"schema":${JSON.stringify(schema)},` +
       `"principal":${JSON.stringify(principal)},"session":${JSON.stringify(session)},` +
       `"version":${JSON.stringify(version)},"values":${JSON.stringify(values)},` +
-      `"revision":${revision},"sent":${JSON.stringify(sent)},` +
+      `"revision":${revision},"sent":${JSON.stringify(sent)},"sentAs":${JSON.stringify(sentAs)},` +
       `"doc":${docJson},"changes":[${changeJson.join(',')}]}`;
     try {
       storeOf(storage).setItem(key, text);
@@ -596,7 +674,14 @@ export function createRecorder(
       later();
     },
     sent(sequence) {
-      kept = { ...kept, sent: { sequence, revision: kept.revision } };
+      kept = {
+        ...kept,
+        sent: { sequence, revision: kept.revision },
+        sentAs: { changes: kept.changes.length, values: kept.values },
+      };
+      // Nothing typed from here on is folded into a change this save holds, so the record can still
+      // rebuild exactly what it sent (a third look at W11.3).
+      leftAt = null;
       keepSent(componentId, kept.session, kept.sent, storage);
       write();
     },
@@ -609,7 +694,7 @@ export function createRecorder(
     rebind(session) {
       // Nothing has been sent under the new id, so whatever has changed is the service's to have yet:
       // only a document with nothing changed on it is kept at all.
-      kept = { ...kept, session, sent: { sequence: 0, revision: 0 } };
+      kept = { ...kept, session, sent: { sequence: 0, revision: 0 }, sentAs: null };
       write();
     },
     reset(version, doc, values) {

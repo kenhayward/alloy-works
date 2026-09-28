@@ -17,6 +17,7 @@ import {
   forgetOffered,
   freshSession,
   keepOffered,
+  lastSent,
   offeredWith,
   readKept,
   readOffered,
@@ -201,6 +202,7 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
       sequence: 4,
       unsent: true,
       ahead: false,
+      repeat: false,
     });
   });
 
@@ -224,10 +226,16 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
       sequence: 3,
       unsent: false,
       ahead: false,
+      repeat: false,
     });
     // What was sent never arrived.
-    expect(continuing(kept, 2)).toEqual({ sequence: 3, unsent: true, ahead: false });
-    expect(continuing(kept, null)).toEqual({ sequence: 3, unsent: true, ahead: false });
+    expect(continuing(kept, 2)).toEqual({ sequence: 3, unsent: true, ahead: false, repeat: false });
+    expect(continuing(kept, null)).toEqual({
+      sequence: 3,
+      unsent: true,
+      ahead: false,
+      repeat: false,
+    });
   });
 
   it('says where the service holds a later save under the session than this window ever sent', () => {
@@ -242,37 +250,44 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
     live.recorder.close();
     live.recorder.sent(7);
     expect(readStoredSession(COMPONENT)!.sent.sequence).toBe(3);
-    expect(continuing(kept, 7, sentFor(COMPONENT, SESSION))).toMatchObject({ ahead: true });
+    // Never answered, it is sent again to settle whose it is (a third look at W11.3).
+    expect(continuing(kept, 7, sentFor(COMPONENT, SESSION))).toMatchObject({
+      ahead: false,
+      repeat: true,
+    });
     live.recorder.accepted(7);
     expect(continuing(kept, 7, sentFor(COMPONENT, SESSION), answerFor(COMPONENT, SESSION))).toEqual(
-      { sequence: 7, unsent: false, ahead: false },
+      { sequence: 7, unsent: false, ahead: false, repeat: false },
     );
     expect(
       continuing(kept, 8, sentFor(COMPONENT, SESSION), answerFor(COMPONENT, SESSION)),
     ).toMatchObject({ ahead: true });
   });
 
-  it('takes a save the service holds at the number it last sent for somebody else unless the service acknowledged it to this window, and never where it refused it (re-review of W11.3, D1)', () => {
+  it('takes a save the service holds at the number it last sent for its own where the service acknowledged it to this window, sends it again where it never answered, and never where it refused it (re-review of W11.3, D1)', () => {
     const live = recording();
     live.type(' Mind', 19, 1_000);
     live.recorder.sent(3);
     const kept = () => readStoredSession(COMPONENT)!;
     const answer = () => answerFor(COMPONENT, SESSION);
-    // Sent, and never answered: what the service holds at that number may be another page's.
-    expect(continuing(kept(), 3, null, answer())).toMatchObject({ ahead: true });
+    // Sent, and never answered: what the service holds at that number may be another page's, or this
+    // window's own whose answer went with its page, so it is sent again to settle which (a third look
+    // at W11.3).
+    expect(continuing(kept(), 3, null, answer())).toMatchObject({ ahead: false, repeat: true });
     live.recorder.accepted(3);
     expect(continuing(kept(), 3, null, answer())).toEqual({
       sequence: 3,
       unsent: false,
       ahead: false,
+      repeat: false,
     });
     // An answer to an earlier number says nothing of the last.
     live.recorder.sent(4);
-    expect(continuing(kept(), 4, null, answer())).toMatchObject({ ahead: true });
+    expect(continuing(kept(), 4, null, answer())).toMatchObject({ ahead: false, repeat: true });
     // Refused, as another page of the same session saved that number first: behind it, whatever the
     // service is asked or answers.
     live.recorder.refused(4);
-    expect(continuing(kept(), 4, null, answer())).toMatchObject({ ahead: true });
+    expect(continuing(kept(), 4, null, answer())).toMatchObject({ ahead: true, repeat: false });
     expect(continuing(kept(), null, null, answer())).toMatchObject({ ahead: true });
     // Nothing of the kind before anything is sent, or where the service has nothing yet.
     expect(continuing(freshKept(), 0, null, null)).toMatchObject({ ahead: false });
@@ -339,7 +354,63 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
       sequence: 0,
       unsent: true,
       ahead: false,
+      repeat: false,
     });
+  });
+
+  it('rebuilds exactly the save it last sent, which a reload sends again where its answer never came back, and nothing it cannot rebuild exactly (a third look at W11.3)', () => {
+    const live = recording();
+    live.type(' Mind', 19, 1_000);
+    live.recorder.sent(3);
+    // Typed on straight after, which the history joins to it, and a value changed: neither was sent.
+    live.type(' the cable.', 24, 1_100);
+    live.recorder.values({ code: 'B2' });
+    const kept = readStoredSession(COMPONENT)!;
+    const sent = () => sentFor(COMPONENT, SESSION);
+    const answer = () => answerFor(COMPONENT, SESSION);
+    // Kept apart from the change that was sent, though typed straight after it.
+    expect(kept.changes).toHaveLength(2);
+    expect(continuing(kept, 3, sent(), answer())).toEqual({
+      sequence: 3,
+      unsent: true,
+      ahead: false,
+      repeat: true,
+    });
+    const again = lastSent(kept, sent());
+    expect(again?.doc.textContent).toBe('Unbox the printer. Mind');
+    expect(again?.values).toEqual({ code: 'A1' });
+
+    // Where the record no longer says what that save held - reset since, as a cut resets it - it is
+    // not guessed at: the service is taken to be ahead.
+    live.recorder.reset('v1', live.state.doc, { code: 'B2' });
+    live.type(' Go.', 35, 9_000);
+    const reset = readStoredSession(COMPONENT)!;
+    expect(continuing(reset, 3, sent(), answer())).toMatchObject({ ahead: true, repeat: false });
+    expect(lastSent(reset, sent())).toBeNull();
+  });
+
+  it('rebuilds a save sent after the record was closed as the record whole, and only where nothing changed after it', () => {
+    const live = recording();
+    live.type(' Mind', 19, 1_000);
+    live.recorder.sent(3);
+    live.type(' the cable.', 24, 9_000);
+    // The page goes, its last save sent after the record was closed: the rising key hears it alone.
+    live.recorder.close();
+    live.recorder.sent(4);
+    const kept = readStoredSession(COMPONENT)!;
+    expect(kept.sent.sequence).toBe(3);
+    const sent = sentFor(COMPONENT, SESSION);
+    expect(continuing(kept, 4, sent)).toEqual({
+      sequence: 4,
+      unsent: false,
+      ahead: false,
+      repeat: true,
+    });
+    expect(lastSent(kept, sent)?.doc.textContent).toBe('Unbox the printer. Mind the cable.');
+    // Sent from a revision the record is not at: not rebuilt.
+    const other = { sequence: 4, revision: 1 };
+    expect(continuing(kept, 4, other)).toMatchObject({ ahead: true, repeat: false });
+    expect(lastSent(kept, other)).toBeNull();
   });
 
   it('writes nothing it is told once closed, so a page that has gone never writes over the next', () => {
@@ -415,6 +486,12 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
       JSON.stringify({ ...good, values: [] }),
       JSON.stringify({ ...good, revision: -1 }),
       JSON.stringify({ ...good, sent: { sequence: 1.5, revision: 0 } }),
+      // What the last save held, where it names more changes than the record keeps, or is not one.
+      JSON.stringify({ ...good, sentAs: { changes: 2, values: {} } }),
+      JSON.stringify({ ...good, sentAs: { changes: 0, values: [] } }),
+      JSON.stringify({ ...good, sentAs: undefined }),
+      // A record the last build wrote, without it.
+      JSON.stringify({ ...good, format: 2 }),
     ];
     broken.push(
       JSON.stringify({ ...good, principal: undefined }),

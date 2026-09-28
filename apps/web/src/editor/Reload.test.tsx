@@ -240,7 +240,13 @@ function service() {
     const page = state.page;
     const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       if (page !== state.page) return new Promise<Response>(() => {});
-      return answer(input instanceof Request ? input : new Request(String(input), init));
+      const answered = await answer(
+        input instanceof Request ? input : new Request(String(input), init),
+      );
+      // A page gone before its answer arrives never hears it, though the service did what it asked:
+      // its JavaScript went with it.
+      if (page !== state.page) return new Promise<Response>(() => {});
+      return answered;
     });
     return createApiClient({
       baseUrl: 'http://dev.acme.test',
@@ -729,7 +735,7 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     expect(stack.saves).toHaveLength(saved);
   });
 
-  it('opens behind, with its text offered, where its last save, sent as the page went, was never answered and the service holds another at that number', async () => {
+  it('CNT-068 opens behind, not saved and with its text offered, where its last save, sent as the page went, was never answered and another page of the same session saved other text at that number, which sending it again finds', async () => {
     const stack = service();
     const view = await openPage(stack);
     type(view, ' Mind the cable.', 19);
@@ -748,7 +754,100 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     expect(screen.getByLabelText('Text from before this page opened')).toHaveValue(
       'Unbox the printer. Mind the cable.',
     );
-    expect(stack.claims).toHaveLength(claimed);
+    expect(screen.getByText('Not saved')).toBeInTheDocument();
+    // Claimed again under the same session, its last save sent again at the same number, and refused.
+    expect(stack.claims).toHaveLength(claimed + 1);
+    expect(stack.claims.at(-1)).toEqual({ session: held });
+    expect(JSON.parse(sessionStorage.getItem(answerKey(held)) ?? 'null')).toEqual({
+      sequence: 1,
+      accepted: false,
+    });
+    // Nothing of this page's was saved over the other's.
+    expect(stack.saves).toHaveLength(1);
+    expect(stack.saves[0]!.body.content).toEqual(
+      document(paragraph('b1', 'Unbox the printer. Keep the box.')),
+    );
+  });
+
+  it('CNT-069 goes on as saved, with its undo, where its last save, sent as the page went, reached the service and the answer never came back', async () => {
+    const stack = service();
+    const view = await openPage(stack);
+    type(view, ' Mind the cable.', 19);
+    await editing();
+    const held = stack.state.lock!;
+
+    // The page goes, sending its last save as it does; the save arrives, and its answer finds nobody.
+    stack.state.holding = true;
+    window.dispatchEvent(new Event('pagehide'));
+    cleanup();
+    await waitFor(() => expect(stack.held()).toBe(1));
+    stack.state.page += 1;
+    stack.release();
+    await waitFor(() => expect(stack.saves).toHaveLength(1));
+    expect(sessionStorage.getItem(answerKey(held))).toBeNull();
+
+    const again = await openPage(stack);
+    await editing();
+    await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
+    expect(screen.queryByText(/^Newer text was saved/)).toBeNull();
+    expect(screen.queryByLabelText(/^Text /)).toBeNull();
+    expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
+    expect(stack.claims.at(-1)).toEqual({ session: held });
+    // Sent again and acknowledged as the same save: nothing new is saved.
+    expect(stack.saves).toHaveLength(1);
+    expect(JSON.parse(sessionStorage.getItem(answerKey(held)) ?? 'null')).toEqual({
+      sequence: 1,
+      accepted: true,
+    });
+    press(again, 'z');
+    expect(textOf(again)).toBe('Unbox the printer.');
+    press(again, 'y');
+    expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
+  });
+
+  it('CNT-067 sends what was typed after a save whose answer never came back as the next sequence, once that save, sent again, is acknowledged', async () => {
+    const stack = service();
+    const view = await openPage(stack, quick);
+    stack.state.holding = true;
+    type(view, ' Mind', 19);
+    await waitFor(() => expect(stack.held()).toBe(1));
+    const held = stack.state.lock!;
+    // Typed on while that save is on the wire, joined to it in the history, and a value changed.
+    act(() => {
+      clock += 100;
+      view.dispatch(view.state.tr.insertText(' the cable.', 24).setTime(clock));
+    });
+    fireEvent.change(code(), { target: { value: 'B2' } });
+
+    // The page goes: the save on the wire arrives, and its answer finds nobody.
+    window.dispatchEvent(new Event('pagehide'));
+    cleanup();
+    stack.state.page += 1;
+    stack.release();
+    await waitFor(() => expect(stack.saves).toHaveLength(1));
+    expect(stack.saves[0]).toMatchObject({
+      sequence: 1,
+      body: {
+        content: document(paragraph('b1', 'Unbox the printer. Mind')),
+        values: { 'field-code': 'A1' },
+      },
+    });
+
+    const again = await openPage(stack, quick);
+    await waitFor(() => expect(stack.saves).toHaveLength(2));
+    expect(stack.saves[1]).toMatchObject({
+      session: held,
+      sequence: 2,
+      body: {
+        openedFrom: 'v1',
+        content: document(paragraph('b1', 'Unbox the printer. Mind the cable.')),
+        values: { 'field-code': 'B2' },
+      },
+    });
+    await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
+    expect(screen.queryByText(/^Newer text was saved/)).toBeNull();
+    expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
+    expect(code()).toHaveValue('B2');
   });
 
   it('goes on as saved where its last save, sent as the page went, was acknowledged only after the page had gone', async () => {

@@ -245,6 +245,12 @@ export interface SessionOptions {
   readonly onSaveRefused?: (sequence: number) => void;
 }
 
+/** A save sent again as it was sent: the content, and the values, sent only where the session holds any. */
+export interface Repeat {
+  readonly content: ContentDocument;
+  readonly values: Readonly<Record<string, unknown>>;
+}
+
 export interface Session {
   /** A change was made to the content. The first one claims the lock (COL-005). */
   changed(): void;
@@ -259,8 +265,15 @@ export interface Session {
    * reading, claims again under the same session, neither fresh nor moving, as a lapsed lock is
    * claimed; `unsent` holds them as a change, sent as the next iteration once the claim is granted. A
    * refusal goes back to reading and offers them, as any refused claim does.
+   *
+   * `repeat` (a third look at W11.3): the last save this window sent, whose answer never came back,
+   * sent again once the claim is granted at the very number it took - the sequence the session goes on
+   * from - before anything else. Acknowledged again, the save the service holds there is this window's,
+   * and the session goes on; refused, it is another page's, and the session goes to `lost` as `behind`
+   * leaves it; with no answer, or any other, it goes there too rather than guess. A page that goes
+   * before it is acknowledged sends nothing more: what its window kept settles it on the next.
    */
-  resume(unsent: boolean): void;
+  resume(unsent: boolean, repeat?: Repeat): void;
   /**
    * A reload whose session the service has saved past, from a page this window never was - a
    * duplicated tab holding the same session (final review of W11.3, D1): from reading, goes to `lost`
@@ -346,6 +359,11 @@ export function createSession(options: SessionOptions): Session {
    * long as that earlier text is still only kept, not written anywhere. Cleared only by a successful
    * claim, which puts the kept text behind it (fix round 2, finding 3). */
   let somethingKept = false;
+  /** A reload's last save to send again (`resume`), from then until the service acknowledges it: sent
+   * first by every claim under this session, a refused one's retry too, and nothing else is sent
+   * meanwhile, not even as the page goes. A fresh session has nothing to settle (a third look at
+   * W11.3). */
+  let pendingRepeat: Repeat | null = null;
 
   const view = (): SessionView => ({
     phase,
@@ -625,6 +643,48 @@ export function createSession(options: SessionOptions): Session {
   };
 
   /**
+   * A reload's last save sent again at the number it took (`resume`'s repeat), once the claim is
+   * granted: answers whether the service acknowledged it again, the session going on; otherwise the
+   * session has gone to `lost`, where nothing more is sent. Raced against `timing.claimMs` as a save is.
+   */
+  const sendAgain = async (repeat: Repeat): Promise<boolean> => {
+    const at = sequence;
+    const controller = new AbortController();
+    let timer: unknown = null;
+    const timedOut = new Promise<SaveResult>((resolve) => {
+      timer = clock.setTimeout(() => {
+        controller.abort();
+        resolve({ ok: false, code: 'failed' });
+      }, timing.claimMs);
+    });
+    const result = await Promise.race([
+      service.save(
+        at,
+        version.id,
+        repeat.content,
+        controller.signal,
+        options.values === undefined ? undefined : repeat.values,
+      ),
+      timedOut,
+    ]);
+    cancel(timer);
+    answered(at, result);
+    if (disposed) return false;
+    if (result.ok) {
+      pendingRepeat = null;
+      savedAt = clock.now();
+      return true;
+    }
+    dirty = true;
+    // Signed out, forbidden and the rest say why. Anything else - refused as another page's, or no
+    // answer at all - leaves the save the service holds at that number perhaps somebody else's, which
+    // nothing may be sent over: as `behind`.
+    if (isRefusal(result.code)) lose(refusalMessage(result.code, true));
+    else lose(NEWER_TEXT, true);
+    return false;
+  };
+
+  /**
    * `force` bypasses a backoff already under way - the deliberate action a caller takes (a save
    * flushed before a cut, the backoff's own timer firing) tries now rather than waiting out someone
    * else's wait. Without it, idle and continuous firing during a backoff would each start a parallel
@@ -686,13 +746,19 @@ export function createSession(options: SessionOptions): Session {
     // so reload detection needs no help from this reset. The failure streak and its backoff are the
     // opposite: they are this session's own bookkeeping, not the service's, so they always start clean
     // on any claim (fix round 2, finding 6).
-    if (fresh) sequence = 0;
+    if (fresh) {
+      sequence = 0;
+      // A new session has saved nothing: nothing of the old one's is sent again under it.
+      pendingRepeat = null;
+    }
     failures = 0;
     hasFailed = false;
     publish();
     const result = await claimWithin(move, fresh);
     if (disposed) return;
     if (result.ok) {
+      // Still claiming, so nothing else is sent, until the reload's last save is settled.
+      if (pendingRepeat !== null && !(await sendAgain(pendingRepeat))) return;
       phase = into;
       notice = into === 'recovery' ? RECOVERY_OPENED : 'You are editing this component.';
       // A successful claim is the real state, told plainly (fix round 2, finding 3): the previous
@@ -875,10 +941,12 @@ export function createSession(options: SessionOptions): Session {
       if (phase === 'reading') void claim(move, false);
       else if (phase === 'lost' && lostFromStale) void claim(move, true);
     },
-    resume(unsent) {
+    resume(unsent, repeat) {
       if (phase !== 'reading' || disposed) return;
       dirty = unsent;
-      save = unsent ? 'saving' : 'saved';
+      // Saving while the repeat is unanswered, whatever it holds: nothing is saved until it is.
+      save = unsent || repeat !== undefined ? 'saving' : 'saved';
+      pendingRepeat = repeat ?? null;
       void claim(false, false);
     },
     behind() {
@@ -1001,8 +1069,11 @@ export function createSession(options: SessionOptions): Session {
       // `claiming` counts too (fix round 2, minor): typing that arrived while the very first claim is
       // still on the wire is exactly as unsent as typing during `editing`. `lost` does not: there is no
       // lock left to save under.
+      // Nor while a reload's last save, sent again, is unanswered (a third look at W11.3): what the
+      // service holds at that number may be another page's, and the window keeps everything anyway.
       if (
         dirty &&
+        pendingRepeat === null &&
         (phase === 'claiming' ||
           phase === 'editing' ||
           phase === 'cutting' ||

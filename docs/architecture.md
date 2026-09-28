@@ -818,7 +818,7 @@ storage beside the session's id, a record stamped with its format and `editorSch
 every node's and mark's spec, keys sorted, less functions, `parseDOM`, `toDOM` and `leafText` - and the
 principal it was kept for; the session, the version it
 opened from, the document then as the editor's JSON, the changes, the values, a revision bumped by every
-change and the sequence and revision of the last save sent. A run of typing is kept as one change:
+change and the sequence and revision of the last save sent, with what that save held. A run of typing is kept as one change:
 `mergeChange` folds a join of one held step onto a change of one held step, typed from the selection
 the last left, where `Step.merge` takes the two, which the history holds as one step already. The record
 is written whole at most 300 ms after a change - each change turned into JSON once - and at once for a
@@ -845,11 +845,20 @@ composition, each undo and redo replayed as the command and checked against the 
 history's depth checked after each change, and the history closed at the end; the state is then
 reconfigured with the surface's plugins, and a node selected whole is replaced by a caret beside it.
 Where the service's sequence for the session is above the last this window kept as sent - the record's
-or the rising one's - or equal to it without an answer accepting that sequence, or that sequence was
-refused, another page holding the same session may have saved that number first: a sequence sent is not a
-sequence accepted. `behind` sends and claims nothing and goes to `lost` as a stale save does, with
-Continue and Recover, and the replayed text kept to copy; where the save the service holds was this
-window's own after all, whose answer never reached it, the notice is false and nothing is lost. Otherwise the session starts from the larger of the last sequence sent and the service's, and
+or the rising one's - or that sequence was refused, another page holding the same session saved past it
+or saved that number first: a sequence sent is not a sequence accepted. `behind` sends and claims nothing
+and goes to `lost` as a stale save does, with Continue and Recover, and the replayed text offered to
+copy. Where it equals the last sent and no answer to that number was kept - a save sent as the page went,
+which arrived after it had gone, most often - `continuing` answers `repeat`, and `lastSent` rebuilds that
+save exactly: the record keeps `sentAs`, how many of its changes the save held and the values then,
+and the recorder folds nothing typed after a send into a change the send held; a save sent after the
+record was closed is the record whole, where its revision is the record's. `resume` then sends it again
+at the same number, under the same session, once the claim is granted and before anything else, and a
+page that goes meanwhile sends nothing; the service answers the same content again as accepted, and the
+session goes on, what was typed since sent as the next sequence, or refuses different content as
+conflicting, and the session goes to `lost` as `behind` leaves it, the text on screen offered. A save
+that cannot be rebuilt exactly, or a sent-again save with no answer, is taken for another page's, never
+guessed at. The record's format is 3. Otherwise the session starts from the larger of the last sequence sent and the service's, and
 `resume` claims again under the same id, neither fresh nor moving, holding the changes as unsent unless
 the service accepted the last send and nothing changed after it. A refusal puts the latest version back
 on screen, the changes offered as text where any were unsent, as any refused claim does. A record that
