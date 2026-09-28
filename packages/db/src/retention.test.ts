@@ -260,6 +260,8 @@ describe("keeping an iteration until the next cut, and for the tenant's window a
       const uncut = await component();
       const alone = await uncut.save('Unbox the printer.');
       await writtenAgo(alone, 400);
+      // The version it was opened from is old too: only there being no later one keeps it.
+      await cutAgo(uncut.first, 400);
       const made = await component();
       const iteration = await made.save('Unbox the printer.');
       await writtenAgo(iteration, 400);
@@ -280,6 +282,49 @@ describe("keeping an iteration until the next cut, and for the tenant's window a
       );
       expect(await kept(iteration)).toBe(false);
       expect(await kept(alone)).toBe(true);
+    });
+
+    it('refuses a delete however the deleting session shadows the tables the guard reads', async () => {
+      const uncut = await component();
+      const alone = await uncut.save('Unbox the printer.');
+      const made = await component();
+      const recent = await made.save('Unbox the printer.');
+      await made.cut();
+      // Temporary tables are searched first: a window of any length, and a later version long ago.
+      await expect(
+        service.withTenant(production, async (trx) => {
+          await sql`create temporary table editing_policy (iteration_retention_days integer) on commit drop`.execute(
+            trx,
+          );
+          await sql`insert into editing_policy values (-100000)`.execute(trx);
+          await sql`create temporary table artifact_version on commit drop as
+                      select * from ${sql.table(`${production.schema}.artifact_version`)} limit 0`.execute(
+            trx,
+          );
+          await sql`delete from iteration where id = ${recent}`.execute(trx);
+        }),
+      ).rejects.toThrow(/kept until the next version is cut, and for the window after it/);
+      await expect(
+        service.withTenant(production, async (trx) => {
+          await sql`create temporary table artifact_version (
+                      id uuid, artifact_id uuid, revision_no integer, version_no integer, created_at timestamptz) on commit drop`.execute(
+            trx,
+          );
+          await sql`insert into artifact_version
+                      select id, artifact_id, revision_no, version_no, now() - interval '1000 days'
+                        from ${sql.table(`${production.schema}.artifact_version`)} where id = ${uncut.first}`.execute(
+            trx,
+          );
+          await sql`insert into artifact_version
+                      select gen_random_uuid(), artifact_id, revision_no, version_no + 1, now() - interval '1000 days'
+                        from ${sql.table(`${production.schema}.artifact_version`)} where id = ${uncut.first}`.execute(
+            trx,
+          );
+          await sql`delete from iteration where id = ${alone}`.execute(trx);
+        }),
+      ).rejects.toThrow(/kept until the next version is cut, and for the window after it/);
+      expect(await kept(alone)).toBe(true);
+      expect(await kept(recent)).toBe(true);
     });
   });
 
