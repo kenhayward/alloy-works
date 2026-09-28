@@ -553,6 +553,10 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 510, from 506 (2026-09-28): W14.3 - PUB-087 in apps/worker's regression.test.ts, on the spike's
+  // nine cases and the fixed defects' cases, and PUB-092 there on the keep rules' four, three of them
+  // STY-008 too, moved from themes.test.ts, whose STY-008 describe keeps its citation; and PUB-098 in
+  // packages/domain's publishing/order.test.ts, on each adjacent pair of the order's stages.
   // 506, from 505 (2026-09-28): W14.1 - PUB-091 in apps/worker's check.test.ts, seven tests in one
   // file: a publication's PDF checked and its verdict kept, veraPDF's whole report retained, a failing
   // PDF's rules named, a check left queued by a worker that died after recording taken by the next, a
@@ -654,7 +658,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(506);
+    expect(model.citations).toHaveLength(510);
   });
 
   it('cites no identifier the corpus does not hold', () => {

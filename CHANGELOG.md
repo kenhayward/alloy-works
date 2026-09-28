@@ -3,6 +3,30 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.116.0 - 2026-09-28 (PR #TBD)
+
+### Added
+
+- **Every change to publishing is checked against the documents that tested the publishing engine
+  first.** The nine documents the engine was chosen with - tagged headings, lists, tables and figures,
+  twenty footnotes, a table crossing three pages, a three-hundred-page document edited near its
+  fortieth page, equations everywhere an equation can stand, page numbers and running heads in every
+  matter, typefaces, a long document's contents and lists, and the same bytes made twice - are now
+  published through the product's own pipeline on every change, and each must come out as it did when
+  the engine was chosen. Nothing changes in what you publish.
+- **Each publishing problem ever reported has a check of its own**, named by its issue: those fixed
+  must stay fixed, and those still open - such as a table's caption left at the foot of a page, a tab
+  lost from a PDF, or a section marked to start a new page that does not - are recorded as they stand,
+  so any change to them is noticed.
+
+### Changed
+
+- **The order in which a publication is put together is tested stage by stage**: each step is shown to
+  change the result if it came before the one ahead of it, or to be impossible to put there at all.
+- **Keeping a heading with its paragraph, keeping a paragraph together and avoiding lone lines at a
+  page's edge** are checked both in the PDF and in the rules a Word document is given, from the same
+  style.
+
 ## 0.115.1 - 2026-09-28 (PR #314)
 
 ### Fixed

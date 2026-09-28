@@ -2531,9 +2531,12 @@ faces, images })`, pure and deterministic - a fixed zip time, the parts in a fix
   runs that job with the suite's in its stead (`suiteChecker`). `apps/worker/src/marks.test.ts` is the same pattern over
   a marked document: every mark set, the links reaching the page, a quoted phrase given no quotation
   marks of its own, one run heard in another language, and veraPDF over the result. The corpus itself
-  holds three cases: nine heading levels, which veraPDF
-  passes; a PDF not made to PDF/UA-1, which veraPDF must fail; and `assemble`'s verdict on sixteen
-  character probes held to the engine's.
+  (W14.3) holds its first cases - nine heading levels, which veraPDF passes; a PDF not made to
+  PDF/UA-1, which veraPDF must fail; and `assemble`'s verdict on sixteen character probes held to the
+  engine's - then the publishing engine spike's nine cases ported from `spikes/publishing-engine`, a
+  case for every publishing defect filed, named by its issue (those still open pinned as they stand),
+  and the keep rules' cases, its documents built by `apps/worker/src/testing/corpus.ts`
+  (docs/testing.md). The resolution order's test is `packages/domain/src/publishing/order.test.ts`.
 - **The Open XML validator and the Word check.** `apps/worker/tools/ooxml-check/` is a .NET 8
   console program over the Open XML SDK's `OpenXmlValidator` (`DocumentFormat.OpenXml` 3.5.1, Office
   2019's rules), its packages pinned by a NuGet lock file and restored from nuget.org alone, built

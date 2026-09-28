@@ -207,24 +207,69 @@ creates and alters no role (the one cluster-wide row it can write, an existing t
 
 ## The regression corpus and veraPDF
 
-`apps/worker/src/regression.test.ts` holds the corpus - meant to be the publishing spike's cases,
-grown by a case for every publishing defect found (PUB-087). **Every publishing defect gets a case
-here, in the pull request that fixes it**, holding the outline that showed it and the outcome that is
-now right, so the corpus is the record of what has gone wrong and cannot again. A case is an outline,
-not Typst source: it goes through `assemble`, under the default layout, and the publication template
-(`apps/worker/templates/publication/2/`), so what is checked is what ships. Each PDF is read back by
-pdf.js, not by our own parser, through `apps/worker/src/testing/pdf.ts`: the bookmarks; per page, the
-text in artifacts, such as the draft notice at the top of each page, which a screen reader skips, and
-the text in tagged content, which it reads; the structure roles after the role map, which is what a
-screen reader is told a thing is, and every structure element in the tree's order with the text it
-holds on each page, which is the order it is told them in (a table on two pages is read twice, a row
-set on the other page empty on this one); whether it is marked tagged; its PDF/UA part, title and language;
-and the page as it is set - each page's label as a reader's page box shows it, each page's width and
-height in points, and the least x and the extreme baselines of each page's tagged text, which is
-where its margins are. It holds three cases today: nine heading levels; a PDF not made to PDF/UA-1, which proves the checker can say no; and
-sixteen character probes, each refused by `assemble` exactly where the pinned Typst would refuse it
-(the byte-order mark aside, which Typst refuses between some letters and not others, and `assemble`
-refuses everywhere). The spike's other cases arrive with what they exercise.
+`apps/worker/src/regression.test.ts` holds the corpus, one suite (W14's decision W-F): the publishing
+engine spike's nine cases, grown by a case for every publishing defect filed (PUB-087), and the keep
+rules' cases (PUB-092). **Every publishing defect gets a case here, named by its issue number in its
+title, in the pull request that fixes it**, holding the document that showed it and the outcome that
+is now right, so the corpus is the record of what has gone wrong and cannot again. A case is a
+document, not Typst source: it goes through `assemble`, under the default layout and theme unless it
+says otherwise, and the publication template the worker ships, so what is checked is what a publish
+makes. Its documents are built by `apps/worker/src/testing/corpus.ts`: the spike's seeded prose,
+ported from `cases.py` on a generator of its own, so the words differ from the spike's and the shapes
+do not, and the content model's shapes as a component and an outline store them. Each PDF is read
+back by pdf.js, not by our own parser, through `apps/worker/src/testing/pdf.ts`: the bookmarks; per
+page, the text in artifacts, such as the draft notice at the top of each page, which a screen reader
+skips, and the text in tagged content, which it reads; the structure roles after the role map, which
+is what a screen reader is told a thing is, and every structure element in the tree's order with the
+text it holds on each page, which is the order it is told them in (a table on two pages is read
+twice, a row set on the other page empty on this one); whether it is marked tagged; its PDF/UA part,
+title and language; the page as it is set - each page's label as a reader's page box shows it, each
+page's width and height in points, and the least x and the extreme baselines of each page's tagged
+text, which is where its margins are; and, through `readPaint`, every run as it is painted, with its
+face, size and place, and every face the file embeds.
+
+It holds, in its own describe blocks:
+
+- **The first cases**: nine heading levels; a PDF not made to PDF/UA-1, which proves the checker can
+  say no (the spike's control); sixteen character probes, each refused by `assemble` exactly where
+  the pinned Typst would refuse it (the byte-order mark aside, which Typst refuses between some
+  letters and not others, and `assemble` refuses everywhere); and the characters code drops a letter
+  before.
+- **The spike's nine**, ported from `spikes/publishing-engine` and judged as its checks judged them:
+  1, headings, a list, a header row, a described figure and a passage in French, tagged and passing
+  veraPDF; 2, twenty footnotes each at the foot of its mark's page, one longer than a page split; 3, a
+  forty-row table's header repeated on every page it crosses and a cell's note at its page's foot; 4,
+  an edit near the fortieth of some three hundred pages set where it stands inside the worker's
+  thirty-second compile limit, moving no body page before it; 5, equations in running text, a heading,
+  a cell, a note, a caption and blocks, each a formula with its words, two of three blocks numbered,
+  and Typst markup set as the characters it is; 6, each matter's page numbers and the running head's
+  chapter, from the cover to the appendix; 7, every face set embedded as a subset, and a face the
+  worker does not hold refused by name, where the engine would have set it in another face without a
+  word; 8, the spike's long document at its full size - four hundred sections, sixty figures, forty
+  tables - every contents entry, every figure listed and every cross-reference printing the right
+  page; 9, the same bytes of the same inputs. What the spike had that the corpus does not: case 4's
+  timing, which is PUB-102's budget on its declared reference document; case 8's reference list,
+  since a citation cannot resolve until LIB in T6; and case 9's second machine, since the suite runs
+  on one.
+- **The defects fixed**, by issue: #145 (a publication set in the pinned faces alone), #158 (a second
+  level of bullets in a glyph the faces have, moved here from `template.test.ts`) and #253 (a figure a
+  condition hides numbered, listed and referred to as though it were not there); and, in a describe
+  of its own citing nothing, since PUB-087 is the PDF's, Word's #7 (a Word publication's heading and
+  footnote numbers and a heading's spacing, held against the product's writer, since the defect's
+  `exportDocx` publishes nothing).
+- **The defects still open**, each pinned as it stands - #162, #163, #164, #165, #232, #233, #234 and
+  #235 - so that a change which moves one goes red here, and the pull request that fixes one turns its
+  case round to the outcome its issue asks for and moves it among the fixed. These cite no
+  requirement: they assert what is wrong.
+- **The keep rules** (PUB-092), moved here from `themes.test.ts`: keep-with-next, keep-together where
+  the page allows it and not where it does not, and widow and orphan control, each measured across the
+  foot of a small page on a grid of 12pt lines, and each read from the same style as the Word writer's
+  own rule, `w:keepNext`, `w:keepLines` and `w:widowControl`.
+
+A defect that was not in publishing output has no case here: the content model's (#88, a caption held
+as a string; #122 to #125), the editor's and the paste's, and the worker's retrying of a job its
+content fails (#146), whose case is in `sample.test.ts`. The publishing half of #148 is #253's case; its
+other half is the document page's numbering, not a publication's.
 
 The publish job's own suite, `apps/worker/src/publish.test.ts`, reads its publications the same way,
 and checks one multi-page publication with veraPDF too. `apps/worker/src/testing/verapdf.ts` runs the
@@ -249,10 +294,11 @@ types: what the stand-in answers is decided by the PDF's bytes. That it runs the
 by building the worker image, whose build runs `verapdf --version`, and by CI's entry-point step.
 Every publication now queues its check ahead of whatever is asked next, so a suite that publishes and
 then waits on another job takes it with `processNextBesideChecks` (`testing/work.ts`), which runs each
-check it meets and passes over it. Of the corpus's three cases, veraPDF checks two against PDF/UA-1: nine
-heading levels, which it must pass, and the PDF not made to PDF/UA-1, which it must fail. The sixteen
-character probes are not checked against PDF/UA-1 at all - each is compared only to what the pinned
-Typst itself would refuse, character by character.
+check it meets and passes over it. In the corpus veraPDF checks against PDF/UA-1 the nine heading
+levels, the spike's cases 1, 2, 3 and 5, and the keep-together case, which it must pass, and the PDF
+not made to PDF/UA-1, which it must fail. The sixteen character probes are not checked against
+PDF/UA-1 at all - each is compared only to what the pinned Typst itself would refuse, character by
+character.
 
 `apps/worker/src/layout.test.ts` is where template 2 is measured against the layout it was given: one
 fixture of several pages compiled under the product's default layout and under a test layout that
