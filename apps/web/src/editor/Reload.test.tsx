@@ -270,6 +270,9 @@ function service() {
 
 type Service = ReturnType<typeof service>;
 
+/** How long a page's mount is waited for: the editor's first load in a file, on CI's slower runner. */
+const MOUNT_MS = 5_000;
+
 /** Opens the component in a page of its own, as a tab does, over the one service and this window's storage. */
 async function openPage(stack: Service, timing: Timing = designTiming, principal = ADA) {
   let view: EditorView | undefined;
@@ -282,9 +285,16 @@ async function openPage(stack: Service, timing: Timing = designTiming, principal
       onView={(mounted) => (view = mounted)}
     />,
   );
-  await screen.findByRole('textbox', { name: 'Content of Install the printer' });
+  // A page's first mount in a file loads the editor, which on CI's runner has taken over the default
+  // second (issue #302): the surface is waited for as long as a slow machine needs, and a test still
+  // fails where it never comes.
+  await screen.findByRole(
+    'textbox',
+    { name: 'Content of Install the printer' },
+    { timeout: MOUNT_MS },
+  );
   // The header commits after ProseMirror mounts: wait for it, as every editor test does.
-  await screen.findByLabelText('Title');
+  await screen.findByLabelText('Title', {}, { timeout: MOUNT_MS });
   return view!;
 }
 
