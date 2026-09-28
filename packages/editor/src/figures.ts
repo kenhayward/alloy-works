@@ -18,6 +18,8 @@ export interface FigureAt {
   /** Its image style, which the Figure panel's Image style list shows. */
   readonly imageStyle: string;
   readonly alternative: Alternative;
+  /** Whether it takes a number, which the Figure panel's Numbered box shows (STR-071). */
+  readonly numbered: boolean;
 }
 
 /** The innermost figure the selection stands in - its caption, or the figure selected whole - or null. */
@@ -32,6 +34,7 @@ export function figureAt(state: EditorState): FigureAt | null {
       asset: node.attrs.asset as string,
       imageStyle: node.attrs.imageStyle as string,
       alternative: node.attrs.alternative as Alternative,
+      numbered: node.attrs.numbered !== false,
     };
   }
   const selected = state.doc.nodeAt(state.selection.from);
@@ -45,6 +48,7 @@ export function figureAt(state: EditorState): FigureAt | null {
       asset: selected.attrs.asset as string,
       imageStyle: selected.attrs.imageStyle as string,
       alternative: selected.attrs.alternative as Alternative,
+      numbered: selected.attrs.numbered !== false,
     };
   }
   return null;
@@ -153,6 +157,23 @@ export function replaceFigureImage(asset: string, alternative: Alternative): Com
           alternative: given,
         }),
       );
+    }
+    return true;
+  };
+}
+
+/**
+ * **Numbered**, from the Figure panel (STR-071): marks the figure the cursor stands in unnumbered, so
+ * it takes no number and uses up none, or numbered again. One step for the undo history; declined
+ * where it already is what it is asked to be, or where there is no figure.
+ */
+export function setFigureNumbered(numbered: boolean): Command {
+  return (state, dispatch) => {
+    const figure = figureAt(state);
+    if (figure === null || figure.numbered === numbered) return false;
+    if (dispatch) {
+      const node = state.doc.nodeAt(figure.pos)!;
+      dispatch(state.tr.setNodeMarkup(figure.pos, undefined, { ...node.attrs, numbered }));
     }
     return true;
   };

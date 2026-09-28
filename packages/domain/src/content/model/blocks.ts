@@ -27,6 +27,7 @@ export type BlockNode =
       headerColumns: number;
       keyColumns?: number[] | undefined;
       note?: z.infer<typeof inlineNodeSchema>[] | undefined;
+      numbered?: false | undefined;
       rows: { cells: { content: BlockNode[]; colspan: number; rowspan: number }[] }[];
     }
   | {
@@ -36,6 +37,7 @@ export type BlockNode =
       imageStyle: string;
       caption: z.infer<typeof inlineNodeSchema>[];
       alternative: z.infer<typeof alternativeSchema>;
+      numbered?: false | undefined;
     }
   | { type: 'preformatted'; id: string; text: string; language?: string | undefined }
   | {
@@ -120,6 +122,17 @@ export function startsOutsideItsNumbering(list: ListNode): boolean {
   return list.start === 0 && (list.format === 'alphabetic' || list.format === 'roman');
 }
 
+/**
+ * **A figure or a table the author has marked unnumbered** (issue #129, STR-071; W14's W-H): it takes
+ * no number and uses up none. Absent is numbered, and `false` is the only value stored, so a numbered
+ * one has one spelling and one digest - `numbered: true` stored explicitly would be a second. Optional,
+ * and so additive, as a definition list's term is: every table and figure stored before it stays
+ * valid, its canonical form unchanged, and `CURRENT_SCHEMA_VERSION` stays 1. An equation says
+ * `numbered` always (CNT-047), because it was stored that way from its first version; a figure and a
+ * table were stored without it, and a required member would have been a migration.
+ */
+const unnumbered = z.literal(false).optional();
+
 export const tableNodeSchema = z.strictObject({
   type: z.literal('table'),
   ...identified,
@@ -137,6 +150,7 @@ export const tableNodeSchema = z.strictObject({
   keyColumns: z.array(z.number().int().min(0)).optional(),
   /** CNT-038: a note on the table as a whole, which is not an inline anchor because a table is not a span. */
   note: z.array(inlineNodeSchema).optional(),
+  numbered: unnumbered,
   // The grid - rows covering one number of columns, no two cells covering one place - is a rule of
   // the walk, which can see the whole table (`checkTable` in document.ts).
   rows: z
@@ -165,6 +179,7 @@ export const figureNodeSchema = z.strictObject({
   /** Inline content, as a table's caption is (issue #88). */
   caption: z.array(inlineNodeSchema),
   alternative: alternativeSchema,
+  numbered: unnumbered,
 });
 
 export const preformattedNodeSchema = z.strictObject({

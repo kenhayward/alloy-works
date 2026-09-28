@@ -99,7 +99,7 @@ describe('numbering an outline', () => {
     expect([...sectionNumbers(numbered).values()]).toEqual(['1', '2', '2.1', '2.2', '2.2.1', '3']);
   });
 
-  it('STR-070 numbers every caption-bearing block in the sequence for its kind, wherever it is nested', () => {
+  it('STR-071 numbers every caption-bearing block in the sequence for its kind, wherever it is nested', () => {
     const figure = (block: string) => ({
       type: 'figure',
       id: block,
@@ -150,7 +150,72 @@ describe('numbering an outline', () => {
     ]);
   });
 
-  it('CNT-047 STR-070 gives an unnumbered block equation no number, and the next one the number it would have taken', () => {
+  it('STR-071 gives a figure or a table marked unnumbered no number, and the next of its kind the number it would have taken', () => {
+    const run = (value: string) => ({ type: 'text', value, marks: [] });
+    const figure = (block: string, over: object = {}) => ({
+      type: 'figure',
+      id: block,
+      asset: '00000000-0000-4000-8000-00000000a551',
+      imageStyle: 'wide',
+      caption: [run(`Caption of ${block}`)],
+      alternative: { kind: 'decorative' },
+      ...over,
+    });
+    const tableBlock = (block: string, over: object = {}) => ({
+      type: 'table',
+      id: block,
+      caption: [run(`Caption of ${block}`)],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [{ content: [{ type: 'paragraph', id: `${block}p`, content: [] }] }] }],
+      ...over,
+    });
+    const content = parseContentDocument({
+      schemaVersion: 1,
+      title: 'Survey',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        tableBlock('t1'),
+        tableBlock('t2', { numbered: false }),
+        figure('f1', { numbered: false }),
+        tableBlock('t3'),
+        figure('f2'),
+        // Nested in a list, as anywhere else: still marked, still no number.
+        {
+          type: 'list',
+          id: 'l1',
+          kind: 'unordered',
+          items: [{ content: [figure('f3', { numbered: false })] }],
+        },
+        figure('f4'),
+      ],
+    });
+    const contributions = contributionsOf(content);
+    expect(contributions.filter((each) => each.sequence !== 'footnote')).toEqual([
+      { block: 't1', sequence: 'table', numbered: true, caption: 'Caption of t1' },
+      { block: 't2', sequence: 'table', numbered: false, caption: 'Caption of t2' },
+      { block: 'f1', sequence: 'figure', numbered: false, caption: 'Caption of f1' },
+      { block: 't3', sequence: 'table', numbered: true, caption: 'Caption of t3' },
+      { block: 'f2', sequence: 'figure', numbered: true, caption: 'Caption of f2' },
+      { block: 'f3', sequence: 'figure', numbered: false, caption: 'Caption of f3' },
+      { block: 'f4', sequence: 'figure', numbered: true, caption: 'Caption of f4' },
+    ]);
+    const numbered = table([section('one', [reference('survey')])], { survey: contributions });
+    // No entry at all for an unnumbered one: no number, no counter value, nothing to list.
+    expect(
+      numbered.entries
+        .filter((entry) => entry.block !== null)
+        .map((entry) => [entry.block, entry.label]),
+    ).toEqual([
+      ['t1', 'Table 1.1'],
+      ['t3', 'Table 1.2'],
+      ['f2', 'Figure 1.1'],
+      ['f4', 'Figure 1.2'],
+    ]);
+  });
+
+  it('CNT-047 STR-071 gives an unnumbered block equation no number, and the next one the number it would have taken', () => {
     const content = parseContentDocument({
       schemaVersion: 1,
       title: 'Maths',
@@ -308,7 +373,7 @@ describe('numbering an outline', () => {
   );
 
   it(
-    'STR-070 gives no number to a caption in appendix matter before any numbered appendix has started, ' +
+    'STR-071 gives no number to a caption in appendix matter before any numbered appendix has started, ' +
       'rather than a bare one that would repeat a body caption of its own',
     () => {
       const outline = [
@@ -352,7 +417,7 @@ describe('numbering an outline', () => {
   );
 
   it(
-    'STR-070 does not consume a counter value for a caption an appendix rule withholds, so a continuous ' +
+    'STR-071 does not consume a counter value for a caption an appendix rule withholds, so a continuous ' +
       "counter is not inflated by the time a numbered appendix's first caption prints",
     () => {
       // A layout's rule, not the default scheme: figure never restarts in appendix matter, but
@@ -426,7 +491,7 @@ describe('numbering an outline', () => {
     ]);
   });
 
-  it('STR-070 withholds a front caption before any numbered front section, spending no value', () => {
+  it('STR-071 withholds a front caption before any numbered front section, spending no value', () => {
     const outline = [
       section('dedication', [reference('p')], { matter: 'front', numbered: false }),
       section('foreword', [reference('q')], { matter: 'front' }),

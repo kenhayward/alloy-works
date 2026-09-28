@@ -240,6 +240,83 @@ describe('a figure in the PDF (figures 3)', () => {
       expect(item.y, item.text).toBeGreaterThanOrEqual(72 - 0.5);
     }
   });
+
+  it('sets figures and their list, none marked unnumbered, as template 13 set them, so what was published publishes the same', async () => {
+    const images = [
+      await imageOf(RED, { width: 800, height: 600 }, 'png', null),
+      await imageOf(GERMAN, { width: 600, height: 400 }, 'jpeg', {
+        text: 'Zwei Formen',
+        language: 'de',
+      }),
+      await imageOf(TALL, { width: 500, height: 2000 }, 'png', {
+        text: 'A tall shape',
+        language: 'en-GB',
+      }),
+    ];
+    const assets = new Map(images.map((each) => [each.version, each.asset]));
+    const stored = new Map(images.map((each) => [each.asset.object, each.bytes]));
+    const assembled = assemble(inputOf(assets));
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    // Template 13 reads `publishing/13`, which has no `listed`: the same document, as it was made.
+    const asThirteen = JSON.parse(JSON.stringify(assembled.document), (key, value: unknown) =>
+      key === 'listed' ? undefined : value,
+    ) as { schema: string };
+    asThirteen.schema = 'publishing/13';
+    const compiled = async (file: string, data: unknown) =>
+      readPdf(
+        await typst.compile(
+          file,
+          JSON.stringify(data),
+          at,
+          await rootImages(assets, async (key) => stored.get(key)!),
+        ),
+      );
+    const before = await compiled(PUBLICATION_TEMPLATE[13].file, asThirteen);
+    const after = await compiled(
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+      assembled.document,
+    );
+    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(14);
+    expect(after.elements).toMatchObject({ TOC: 1, TOCI: 4 });
+    expect(after.pages).toBe(before.pages);
+    expect(after.taggedText).toEqual(before.taggedText);
+    expect(after.artifactText).toEqual(before.artifactText);
+    expect(after.elements).toEqual(before.elements);
+    expect(after.roles).toEqual(before.roles);
+    expect(after.figures).toEqual(before.figures);
+  }, 120_000);
+
+  it('STR-071 sets a figure marked unnumbered under its caption alone, numbers the next as the first and lists only that, and passes veraPDF', async () => {
+    const red = await imageOf(RED, { width: 800, height: 600 }, 'png', null);
+    const assets = new Map([[red.version, red.asset]]);
+    const assembled = assemble(
+      inputOf(assets, [
+        { ...figure('f1', RED, { kind: 'own', text: 'A red rule' }, 'A divider'), numbered: false },
+        figure('f2', RED, { kind: 'own', text: 'Two red squares' }, 'Our shapes'),
+      ]),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const marked = await typst.compile(
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+      JSON.stringify(assembled.document),
+      at,
+      await rootImages(assets, async () => red.bytes),
+    );
+    const read = await readPdf(marked);
+    expect(await checkPdfUa1(marked)).toMatchObject({ compliant: true, failedRules: 0 });
+    // Each still a Figure with its caption; the unnumbered one's with no label before it.
+    expect(read.elements).toMatchObject({ Figure: 2, Caption: 2 });
+    const pages = read.taggedText.map((page) => page.join(' ').replace(/\s+/g, ' '));
+    const list = pages.findIndex((page) => page.includes('Figures'));
+    const body = pages.filter((_, at) => at !== list).join(' ');
+    expect(body).toContain('A divider');
+    expect(body).not.toMatch(/Figure \S+ A divider/);
+    expect(body).toContain('Figure 1.1 Our shapes');
+    // The list lists the numbered one alone.
+    expect(read.elements).toMatchObject({ TOC: 1, TOCI: 1 });
+    expect(pages[list]).toContain('Figure 1.1 Our shapes');
+    expect(pages[list]).not.toContain('A divider');
+  }, 120_000);
 });
 
 describe('an image in a line of text in the PDF (figures 5)', () => {

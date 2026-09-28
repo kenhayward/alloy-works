@@ -238,8 +238,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   a **Table** panel offers how many **Header rows** and **Header columns** it has, and **Row above**,
   **Row below**, **Column before**, **Column after**, **Delete row**, **Delete column**, **Merge cells**
   (over cells you have selected by dragging), **Split cell**, **Delete table**, and **Add note** and
-  **Remove note** for a note on the table as a whole, written beneath it; a button that would
-  do nothing says it is unavailable. `F6` reaches the panel like the other regions. A table pasted
+  **Remove note** for a note on the table as a whole, written beneath it, and a **Numbered** box:
+  untick it for a table that should take no number, such as one used only for layout, and the next
+  table takes the number it would have had. It keeps its caption, which a table still needs to be
+  published. A button that would do nothing says it is unavailable. `F6` reaches the panel like the other regions. A table pasted
   from a web page, Word, Google Docs or Markdown arrives as a table, with its caption, header rows and
   columns and merged cells.
 
@@ -313,7 +315,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   a figure, a **Figure** panel in the `F6` ring sets its alternative text: **Use the image's
   description**, showing it and its language, or saying the figure cannot be published until it is
   given one where the image has none; **Describe it here**, in the component's language, which stores
-  nothing until something is typed; or **Decorative**. **Replace image** gives it another image through
+  nothing until something is typed; or **Decorative**. Its **Numbered** box, unticked, leaves the
+  figure without a number, as a table's does. **Replace image** gives it another image through
   the same dialog, keeping its caption and its place, and **Delete figure** removes it. A figure copied
   within the product pastes as a figure, and a published document prints it (see Publishing). An
   image cannot be pasted from outside the product or dropped.
@@ -349,7 +352,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   table and footnote its components hold, by number and caption, and every numbered equation, by its
   number; a component opened on its own lists its own figures, tables, footnotes and numbered
   equations, by kind and caption, since only a document numbers them. An equation left unnumbered is
-  not listed. **Show as** offers the forms the chosen target has - **Number**, **Title**, **Number and
+  not listed; a figure or a table left unnumbered is, by its caption, and offers **Title**, **Page**
+  and **Above or below** but no number, since it has none. **Show as** offers the forms the chosen target has - **Number**, **Title**, **Number and
   title**, **Page** and **Above or below**, a footnote and an equation having no title - and a line
   says what the reference will show. **Insert** places it after any words you have selected, in a paragraph, a list, a
   quotation, a table's cell, a caption, a term, an attribution, a table's note or a footnote's text,
@@ -445,7 +449,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   `2.1` - and a move renumbers everything at once. Untick **Numbered** to leave a node and everything
   under it out of the section numbering. Figures, tables, equations and footnotes are numbered too -
   figures and tables per chapter, equations and footnotes straight through, and each appendix on its
-  own - and the service answers every number with where it came from. A number that depends on a component you may
+  own - and the service answers every number with where it came from. A figure or a table whose
+  **Numbered** box is unticked takes no number and uses none up, and is left out of the lists. A number that depends on a component you may
   not read is left out rather than guessed. **The numbers are the ones the document will publish
   with**: the panel numbers with the very scheme its layout carries, not with a scheme of the page's
   own, so what you see in the outline is what comes out of the PDF.
@@ -681,6 +686,12 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   split, and no label. A table whose caption is empty is refused, naming it, because the caption is what names it to a reader; so
   is one whose header cell is merged down into rows that are not header rows, which would make the
   PDF read a row of data as more header.
+
+  **A table or a figure left unnumbered** prints under its caption alone, still its caption to a
+  screen reader, and the next one takes the number it would have had. It is not in the list of tables
+  or of figures, in the PDF or in Word, where it is not counted either. A reference to it names it by
+  its caption; one asking for its number shows in the editor as _Table not numbered - choose another
+  form_, drawn apart as a broken one is, and is refused when you publish, naming it, since it has none.
 
   **A figure prints** with its number and its caption below it, no wider than the text and no taller
   than 60 per cent of the page's text area, so a tall image is made smaller rather than running off
@@ -1001,8 +1012,7 @@ Named explicitly so nobody has to read the source to find out:
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
 - No document view that sets a document as it will publish: its page shows the outline you build
-  beside the text in reading order, each component opening in place to be edited. No reading view. No reuse or transclusion. No way to
-  make a figure or a table unnumbered: every one takes a number.
+  beside the text in reading order, each component opening in place to be edited. No reading view. No reuse or transclusion.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
   quotations, preformatted text, tables and their notes, figures, images in a line of text,
   footnotes, cross-references and equations, and a Word document of all of that: no

@@ -35,6 +35,8 @@ export interface TableAt {
   readonly columns: number;
   /** Whether the table has a note beneath it (footnotes 1, ruling R11). */
   readonly note: boolean;
+  /** Whether it takes a number, which the Table panel's Numbered box shows (STR-071). */
+  readonly numbered: boolean;
 }
 
 /** The innermost table the selection stands in - its caption or any cell - or null. */
@@ -53,6 +55,7 @@ export function tableAt(state: EditorState): TableAt | null {
       rows: map.height,
       columns: map.width,
       note: node.childCount > 2,
+      numbered: node.attrs.numbered !== false,
     };
   }
   return null;
@@ -222,6 +225,23 @@ export function setTableHeaders(counts: { rows?: number; columns?: number }): Co
       dispatch(
         state.tr.setNodeMarkup(table.pos, undefined, { ...node.attrs, headerRows, headerColumns }),
       );
+    }
+    return true;
+  };
+}
+
+/**
+ * **Numbered**, from the Table panel (STR-071): marks the table the cursor stands in unnumbered, so it
+ * takes no number and uses up none, or numbered again. Its caption stays, and stays required
+ * (TAB-034). One step for the undo history; declined where it already is what it is asked to be.
+ */
+export function setTableNumbered(numbered: boolean): Command {
+  return (state, dispatch) => {
+    const table = tableAt(state);
+    if (table === null || table.numbered === numbered) return false;
+    if (dispatch) {
+      const node = state.doc.nodeAt(table.pos)!;
+      dispatch(state.tr.setNodeMarkup(table.pos, undefined, { ...node.attrs, numbered }));
     }
     return true;
   };

@@ -29,7 +29,7 @@ import { createTypst, typstBinaryPath } from './typst.js';
  * The default theme's 0.4 (themes.md, ET-H): the five styles it gives an author to choose - Lead,
  * Centred and Small print for running text, Banded for a table and Half width for a figure - each used
  * in one publication, through the real path: `assemble` under the default theme as the store reads
- * it, then template 13 for the PDF and `writeDocx` for Word, each checked by its own validator and
+ * it, then template 14 for the PDF and `writeDocx` for Word, each checked by its own validator and
  * read back. The projections are generic over a theme's styles; this is the check that these five are
  * ones both outputs can set.
  */

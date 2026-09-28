@@ -298,20 +298,35 @@ that happen to say the same thing.
 Seven, and the vocabulary is closed. Every addition is a construct that has to survive comparison,
 conditional resolution, translation and three output formats.
 
-| Node           | Carries                                                                                                                                                                                                         |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `paragraph`    | Inline content, and a style name                                                                                                                                                                                |
-| `list`         | A kind - ordered, unordered, definition - and items holding block content, each item on a definition list also carrying the `term` it defines as inline content. An ordered list carries start and format       |
-| `table`        | Rows and cells, declared header rows and columns, cell spans, a caption, optional key columns, an optional note. [Tables, before the first is stored](#tables-before-the-first-is-stored) proposes what changes |
-| `figure`       | An asset reference, an image style name, a caption, and an alternative-text state                                                                                                                               |
-| `preformatted` | Text with whitespace significant, and an optional language label                                                                                                                                                |
-| `blockquote`   | Block content, and an optional attribution that may carry a citation                                                                                                                                            |
-| `equation`     | MathML, and numbered or explicitly unnumbered                                                                                                                                                                   |
+| Node           | Carries                                                                                                                                                                                                                                                                      |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `paragraph`    | Inline content, and a style name                                                                                                                                                                                                                                             |
+| `list`         | A kind - ordered, unordered, definition - and items holding block content, each item on a definition list also carrying the `term` it defines as inline content. An ordered list carries start and format                                                                    |
+| `table`        | Rows and cells, declared header rows and columns, cell spans, a caption, optional key columns, an optional note, and `numbered: false` where its author marked it unnumbered. [Tables, before the first is stored](#tables-before-the-first-is-stored) proposes what changes |
+| `figure`       | An asset reference, an image style name, a caption, an alternative-text state, and `numbered: false` where its author marked it unnumbered                                                                                                                                   |
+| `preformatted` | Text with whitespace significant, and an optional language label                                                                                                                                                                                                             |
+| `blockquote`   | Block content, and an optional attribution that may carry a citation                                                                                                                                                                                                         |
+| `equation`     | MathML, and numbered or explicitly unnumbered                                                                                                                                                                                                                                |
 
 Two are absent on purpose. **`admonition`** is CNT-120, which is T2 and takes its closed vocabulary
 from an admonition style catalogue that does not exist yet. **A bound table** arrives with T2's
 bindings; the spike built one for gate case 3, and what transferred from that case is the key-column
 anchoring CNT-107 now requires of an authored table.
+
+**A figure or a table explicitly unnumbered** (issue #129, STR-071; W14.4, decision W-H). Each
+carries `numbered`, **stored only as `false`**: absent is numbered, and `numbered: true` is refused,
+so a numbered one has one spelling and one digest. An equation says `numbered` always (CNT-047),
+because it was stored that way from its first version; a figure and a table were stored without it,
+and a required member would have been a migration. Optional, the member is additive, as the
+definition list's `term` was: every table and figure stored before it stays valid and its canonical
+form - and so its version digest - unchanged, `CURRENT_SCHEMA_VERSION` stays 1, and the migration
+chain stays empty (`document.test.ts` pins the canonical form of both, written out). Every write path
+is held to the one shape `parseContentDocument` parses: the editor's `fromEditor` writes the member
+only when the node's `numbered` attribute is false; the product's own clipboard carries it through
+admission, which spreads a block rather than rebuilding it; the readers never write one, since
+nothing outside the product can say a figure or a table is unnumbered; and the service's saves are
+refused `content_invalid` for `numbered: true`. A caption is still required at publish of an
+unnumbered one, for a table (TAB-034) and a figure (CNT-017) alike.
 
 **What CNT-023 forbids, exactly.** CNT-023 says empty blocks used for vertical spacing must not be
 representable; CNT-124 says a new component is exactly one empty paragraph. Both hold, and the rule

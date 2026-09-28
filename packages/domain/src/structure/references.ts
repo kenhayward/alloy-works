@@ -41,6 +41,12 @@ export interface ReferenceTarget {
    * one (`cross_reference_form_unavailable`), and `targetForms` offers neither.
    */
   readonly titleHoldsEquation?: true;
+  /**
+   * Set where the target is a figure or a table the author marked unnumbered (STR-071), or, in the
+   * editor, a block equation (CNT-047): it has no number anywhere, rather than one not known here, so
+   * `targetForms` offers no number form of it and a reference names it by its caption.
+   */
+  readonly unnumbered?: true;
 }
 
 /** Every form, in the order the stored enum declares them. */
@@ -74,16 +80,18 @@ export function formsFor(kind: ReferenceKind): readonly CrossReferenceDisplay[] 
 
 /**
  * **The forms a target is offered in**: its kind's (`formsFor`), less `title` and `numberAndTitle`
- * for a section whose title holds an equation, which the publish would refuse. The one place the
+ * for a section whose title holds an equation, and less `number` and `numberAndTitle` for a figure or
+ * a table marked unnumbered (STR-071), each of which the publish would refuse. The one place the
  * Reference dialog, and anything else offering forms, reads them from, so what is offered is what
  * publishes. A number not yet known still offers the number forms: the page numbers what the editor
  * cannot, and `printed` falls back meanwhile.
  */
 export function targetForms(target: ReferenceTarget): readonly CrossReferenceDisplay[] {
-  const forms = formsFor(target.kind);
-  return target.titleHoldsEquation
-    ? forms.filter((form) => form !== 'title' && form !== 'numberAndTitle')
-    : forms;
+  return formsFor(target.kind).filter(
+    (form) =>
+      !(target.titleHoldsEquation && (form === 'title' || form === 'numberAndTitle')) &&
+      !(target.unnumbered && (form === 'number' || form === 'numberAndTitle')),
+  );
 }
 
 /**
@@ -109,7 +117,8 @@ export function kindWord(kind: ReferenceKind): string {
 /**
  * The sequences whose members a reference may be pointed at from the dialog, and their kinds. An
  * equation is offered where it is numbered alone: one the author left unnumbered takes no number, and
- * is pointed at by nothing the dialog offers (equations 2, ruling R7).
+ * is pointed at by nothing the dialog offers (equations 2, ruling R7). A figure or a table the author
+ * marked unnumbered is offered by its caption, which is what a reference to it prints (STR-071).
  */
 const OFFERED: Readonly<Record<string, ReferenceKind>> = {
   figure: 'figure',
@@ -153,6 +162,8 @@ export interface DocumentTargetsInput {
  * A section title's own footnotes are not offered: a `node` target names the section, and no target
  * names a footnote in a title. A block equation is offered where it is numbered, by its number
  * (equations 2, ruling R7); one left unnumbered is not, and an inline equation is no target at all.
+ * A figure or a table the author marked unnumbered is offered by its caption, with no label and no
+ * number form (STR-071).
  */
 export function documentTargets({
   outline,
@@ -208,7 +219,9 @@ export function documentTargets({
     if (!own && (component === editing.component || occurs.get(component) !== 1)) return;
     for (const contribution of held) {
       const kind = OFFERED[contribution.sequence];
-      if (kind === undefined || !contribution.numbered) continue;
+      if (kind === undefined) continue;
+      const captioned = contribution.caption !== undefined;
+      if (!contribution.numbered && !captioned) continue;
       const caption = contribution.caption;
       targets.push({
         target: own
@@ -218,6 +231,7 @@ export function documentTargets({
         label: labelOf(node.id, contribution.block),
         title: kind !== 'footnote' && caption !== undefined && hasText(caption) ? caption : null,
         relative,
+        ...(contribution.numbered ? {} : { unnumbered: true as const }),
       });
     }
   });
@@ -356,8 +370,9 @@ export interface Reading {
  * at any depth, a quotation, a table's cell - and a footnote wherever `contributionsOf` finds one. A
  * figure, a table, a footnote and a block equation take their label from the numbering table - an
  * equation the author left unnumbered has none, and a number form of it fails as a paragraph's does
- * (equations 2, ruling R7); any other block - a paragraph, a list, a quotation, preformatted text - is
- * a `block`, with neither label nor title, which a page or a relative form can still name (XR-C). **So is a footnote's own paragraph** (CNT-125: any
+ * (equations 2, ruling R7), and so has a figure or a table marked unnumbered, whose caption is what a
+ * title form of it prints (STR-071); any other block - a paragraph, a list, a quotation, preformatted
+ * text - is a `block`, with neither label nor title, which a page or a relative form can still name (XR-C). **So is a footnote's own paragraph** (CNT-125: any
  * block), set in its note at the foot of the page its text stands on: a label at the start of it, a
  * page reference to it and a link to it were measured against the pinned engine - a note carried on
  * to the next page included - and print and land on the page that paragraph stands on (the final

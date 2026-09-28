@@ -1,5 +1,6 @@
 import type { BlockNode, ContentDocument } from '@alloy-works/domain';
 import type { Node } from 'prosemirror-model';
+import { undo } from 'prosemirror-history';
 import { TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
 import { CellSelection } from 'prosemirror-tables';
 import { describe, expect, it } from 'vitest';
@@ -7,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { blockCommand } from './blocks.js';
 import { fromEditor, toEditor } from './mapping.js';
 import { createEditorState, placeholderDecorations } from './state.js';
-import { setTableHeaders, tableAt, tableCommand } from './tables.js';
+import { setTableHeaders, setTableNumbered, tableAt, tableCommand } from './tables.js';
 
 const counter = (prefix = 'n') => {
   let next = 0;
@@ -311,5 +312,48 @@ describe('a table in the editor', () => {
           (decoration as unknown as { type: { attrs: { class: string } } }).type.attrs.class,
       );
     expect(classes).toEqual(['aw-empty']);
+  });
+
+  describe('numbered, or marked unnumbered (issue #129)', () => {
+    const inCaption = (document: ContentDocument) => {
+      const state = stateOf(document);
+      return state.apply(
+        state.tr.setSelection(TextSelection.create(state.doc, inside(state.doc, 'caption'))),
+      );
+    };
+
+    it('opens a table marked unnumbered and stores it back exactly, and a numbered one with no member', () => {
+      const unnumbered: BlockNode = { ...readings, numbered: false };
+      expect(fromEditor(stateOf(documentOf(unnumbered)).doc).content).toEqual([unnumbered]);
+      expect(fromEditor(stateOf(documentOf(readings)).doc).content).toEqual([readings]);
+      expect(fromEditor(stateOf(documentOf(readings)).doc).content[0]).not.toHaveProperty(
+        'numbered',
+      );
+    });
+
+    it('says whether the table the cursor stands in is numbered, as the Table panel reads it', () => {
+      expect(tableAt(inCaption(documentOf(readings)))).toMatchObject({ numbered: true });
+      expect(tableAt(inCaption(documentOf({ ...readings, numbered: false })))).toMatchObject({
+        numbered: false,
+      });
+    });
+
+    it('marks it unnumbered and numbered again, one undoable step each, keeping its caption', () => {
+      const state = inCaption(documentOf(readings));
+      const off = run(state, setTableNumbered(false));
+      expect(off.handled).toBe(true);
+      expect(fromEditor(off.next.doc).content).toEqual([{ ...readings, numbered: false }]);
+      // Asked for what it already is, it declines, as the header counts do.
+      expect(run(off.next, setTableNumbered(false)).handled).toBe(false);
+      const on = run(off.next, setTableNumbered(true));
+      expect(fromEditor(on.next.doc).content).toEqual([readings]);
+      let back = off.next;
+      undo(off.next, (tr) => (back = off.next.apply(tr)));
+      expect(fromEditor(back.doc).content).toEqual([readings]);
+      // Nowhere near a table, there is nothing to mark.
+      expect(
+        run(stateOf(documentOf(paragraph('p1', 'x')), 1), setTableNumbered(false)).handled,
+      ).toBe(false);
+    });
   });
 });

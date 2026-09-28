@@ -311,6 +311,70 @@ describe('pasting', () => {
       alternative: figure.alternative,
     });
   });
+
+  describe('a figure or a table marked unnumbered (issue #129)', () => {
+    const caption = (value: string) => [{ type: 'text' as const, value, marks: [] }];
+    const table = {
+      type: 'table' as const,
+      id: 's1',
+      style: 'table',
+      caption: caption('Layout only'),
+      headerRows: 0,
+      headerColumns: 0,
+      numbered: false as const,
+      rows: [{ cells: [{ content: [paragraph('s2', 'Cell')], colspan: 1, rowspan: 1 }] }],
+    };
+    const figure = {
+      type: 'figure' as const,
+      id: 's3',
+      asset: '00000000-0000-4000-8000-00000000a551',
+      imageStyle: 'figure',
+      caption: caption('Decoration'),
+      alternative: { kind: 'decorative' as const },
+      numbered: false as const,
+    };
+
+    it('keeps them unnumbered through a copy and a paste within the product', () => {
+      const source = stateOf([table, figure]);
+      const copied = productClipboard(source, 0, source.doc.content.size)!;
+      const pasted = stored(
+        paste(stateOf([paragraph('b1', '')]), { [PRODUCT_CLIPBOARD_TYPE]: copied }),
+      );
+      expect(pasted.filter((block) => block.type !== 'paragraph')).toMatchObject([
+        { type: 'table', caption: table.caption, numbered: false },
+        { type: 'figure', caption: figure.caption, numbered: false },
+      ]);
+    });
+
+    it("refuses one the product's own type spells numbered: true, which the store would not take", () => {
+      const outcome = pasteInto(
+        stateOf([paragraph('b1', 'York')]),
+        readClipboard(
+          clipboard({
+            [PRODUCT_CLIPBOARD_TYPE]: JSON.stringify({
+              format: 'alloy-works/content',
+              schemaVersion: 1,
+              content: [{ ...figure, numbered: true }],
+            }),
+          }),
+          'blocks',
+        ),
+        counter(),
+      );
+      expect(outcome.ok).toBe(false);
+    });
+
+    it('pastes a table from HTML numbered, the member absent, since nothing outside says otherwise', () => {
+      const pasted = stored(
+        paste(stateOf([paragraph('b1', '')]), {
+          'text/html': '<table><caption>Prices</caption><tr><td>1</td></tr></table>',
+        }),
+      );
+      const found = pasted.find((block) => block.type === 'table');
+      expect(found).toMatchObject({ caption: caption('Prices') });
+      expect(found).not.toHaveProperty('numbered');
+    });
+  });
 });
 
 describe('pasting into a table', () => {

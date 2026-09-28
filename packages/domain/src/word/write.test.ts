@@ -2643,6 +2643,70 @@ describe('writeDocx: the lists after the contents (Word 2, M9)', () => {
     ).toBe(false);
   });
 
+  it('STR-071 writes a figure or a table marked unnumbered with its caption and no field, so Word counts it not and lists it nowhere, the next takes the number it would have had, and a reference to it prints its caption', () => {
+    const marked = writtenOf(
+      [
+        figure('f1', RED, 'Shapes at rest', { numbered: false }),
+        readings({ style: 'table', numbered: false }),
+        figure('f2', BLUE, 'A blue one', { alternative: { kind: 'decorative' } }),
+        {
+          type: 'table',
+          id: 't2',
+          style: 'table',
+          caption: [text('Prices')],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [{ cells: [cell('p1', 'York'), cell('p2', '4')] }],
+        },
+        {
+          type: 'paragraph',
+          id: 'r1',
+          style: 'body',
+          content: [
+            text('As in '),
+            {
+              type: 'crossReference',
+              id: 'x1',
+              target: { kind: 'block', block: 't1' },
+              display: 'title',
+            },
+          ],
+        },
+      ],
+      { assets: IMAGES },
+    );
+    const [, lists, body] = sections(marked.docx);
+    // A figure's image stands in a paragraph of the caption's style too, holding no words.
+    const captions = body!.paragraphs.filter(
+      (each) => styleOf(each) === 'caption' && textOf(each) !== '',
+    );
+    expect(captions.map(textOf)).toEqual([
+      'Shapes at rest',
+      'Readings at noon',
+      'Figure 1.1 A blue one',
+      'Table 1.1 Prices',
+    ]);
+    // No SEQ field for either unnumbered caption, so Word's own count and its lists never meet them.
+    expect(captions.map(fieldCodes)).toEqual([
+      [],
+      [],
+      [`STYLEREF 1 ${BS}s`, `SEQ Figure ${BS}* arabic ${BS}s 1`],
+      [`STYLEREF 1 ${BS}s`, `SEQ Table ${BS}* arabic ${BS}s 1`],
+    ]);
+    const shown = lists!.paragraphs.map(textOf);
+    expect(shown.slice(shown.indexOf('Figures'))).toEqual([
+      'Figures',
+      'Figure 1.1 A blue one',
+      'Tables',
+      'Table 1.1 Prices',
+    ]);
+    // A reference to the unnumbered table is a field Word updates, prefilled with its caption.
+    const referring = body!.paragraphs.find((each) => textOf(each).startsWith('As in '))!;
+    expect(textOf(referring)).toBe('As in Readings at noon');
+    expect(fieldCodes(referring)).toHaveLength(1);
+    expect(fieldCodes(referring)[0]).toMatch(/^REF _Ref\d+ /);
+  });
+
   it('stands the lists in a front section of their own where the layout sets no contents, numbered as front matter', () => {
     const alone = writtenOf([figure('f1', RED, 'Shapes at rest')], {
       assets: IMAGES,

@@ -3,6 +3,21 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.120.0 - 2026-09-28 (PR #317)
+
+### Added
+
+- **A table or a figure can be left unnumbered.** Untick **Numbered** in the Table panel or the
+  Figure panel for a table used only for layout, or a captioned image that should not count as a
+  figure. It keeps its caption, which it still needs to be published, and prints under that caption
+  alone, in the PDF and in Word; the next table or figure takes the number it would have had, and it
+  is left out of the lists of tables and of figures. The Reference dialog still offers it, by its
+  caption, for its title, its page or above or below. A reference that asks for its number shows as
+  unavailable in the editor, telling you to choose another form, and is refused by name when you
+  publish, since it has none. So does a reference asking for the number of an equation left
+  unnumbered, and one asking for something its target never has, such as a footnote's title, says
+  so. Publications already made are unchanged (issue #129).
+
 ## 0.119.0 - 2026-09-28 (PR #320)
 
 ### Added

@@ -373,6 +373,51 @@ describe('what a document offers a reference', () => {
     ]);
   });
 
+  it('STR-071 offers a figure or a table marked unnumbered by its caption and no number, and the next by the number it would have had', () => {
+    const targets = offered([section('method', 'Method', [occurrence('ada', ADA)])], {
+      ada: [
+        { ...table('at1', 'Layout only'), numbered: false },
+        table('at2', 'Totals'),
+        { ...figure('af1', 'Decoration'), numbered: false },
+        figure('af2', 'Readings'),
+        // An unnumbered equation has no caption to be named by, and is still not offered.
+        { block: 'ae1', sequence: 'equation', numbered: false },
+      ],
+    });
+    expect(targets.filter((each) => each.kind !== 'section')).toEqual([
+      {
+        target: { kind: 'block', block: 'at1' },
+        kind: 'table',
+        label: null,
+        title: 'Layout only',
+        relative: null,
+        unnumbered: true,
+      },
+      {
+        target: { kind: 'block', block: 'at2' },
+        kind: 'table',
+        label: 'Table 1.1',
+        title: 'Totals',
+        relative: null,
+      },
+      {
+        target: { kind: 'block', block: 'af1' },
+        kind: 'figure',
+        label: null,
+        title: 'Decoration',
+        relative: null,
+        unnumbered: true,
+      },
+      {
+        target: { kind: 'block', block: 'af2' },
+        kind: 'figure',
+        label: 'Figure 1.1',
+        title: 'Readings',
+        relative: null,
+      },
+    ]);
+  });
+
   it('says nothing is above or below where the occurrence being edited is not in the outline', () => {
     const targets = offered(
       [section('method', 'Method'), occurrence('grace', GRACE), occurrence('ada', ADA)],
@@ -421,6 +466,20 @@ describe('the forms a target is offered in', () => {
     // The publish refuses `title` and `numberAndTitle` of one (`cross_reference_form_unavailable`):
     // its words without the equation are not what the author wrote.
     expect(targetForms(target(true))).toEqual(['number', 'page', 'relative']);
+  });
+
+  it('STR-071 offers no number form for a figure or a table marked unnumbered, which has none to print', () => {
+    // A number not known still offers the number forms (the page numbers what the editor cannot);
+    // a figure the author said is unnumbered has no number anywhere, and the publish prints none.
+    const notKnown: ReferenceTarget = {
+      target: { kind: 'block', block: 'af1' },
+      kind: 'figure',
+      label: null,
+      title: 'Decoration',
+      relative: null,
+    };
+    expect(targetForms({ ...notKnown, unnumbered: true })).toEqual(['title', 'page', 'relative']);
+    expect(targetForms(notKnown)).toEqual(formsFor('figure'));
   });
 });
 
@@ -766,6 +825,71 @@ describe('resolving a reference in the document that publishes it', () => {
     // none to print, and a page and a place alone, as a paragraph.
     expect(resolver(block('e1'), reading)).toEqual(found('e1', 'equation', 'Equation 1', null));
     expect(resolver(block('e2'), reading)).toEqual(found('e2', 'equation', null, null));
+  });
+
+  it('STR-071 binds a reference to a figure or a table marked unnumbered to its caption and no number, and the next to the number it would have had', () => {
+    const run = (value: string) => [text(value)];
+    const marked: ContentDocument = parseContentDocument({
+      schemaVersion: 1,
+      title: 'Survey',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'table',
+          id: 'st1',
+          caption: run('Layout only'),
+          headerRows: 0,
+          headerColumns: 0,
+          numbered: false,
+          rows: [{ cells: [{ content: [paragraph('sc1', text('1'))] }] }],
+        },
+        {
+          type: 'table',
+          id: 'st2',
+          caption: run('Prices'),
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [{ cells: [{ content: [paragraph('sc2', text('2'))] }] }],
+        },
+        {
+          type: 'figure',
+          id: 'sf1',
+          asset: '00000000-0000-4000-8000-00000000a551',
+          imageStyle: 'figure',
+          caption: run('Decoration'),
+          alternative: { kind: 'decorative' },
+          numbered: false,
+        },
+      ],
+    });
+    const resolver = resolving([stored('method', 'Method', [placed('survey', ADA)])], {
+      survey: marked,
+    });
+    const reading = { node: id('survey') };
+    const unnumbered = resolver(block('st1'), reading);
+    expect(unnumbered).toEqual(
+      bound({ node: id('survey'), block: 'st1', kind: 'table', label: null, title: 'Layout only' }),
+    );
+    expect(resolver(block('st2'), reading)).toEqual(
+      bound({
+        node: id('survey'),
+        block: 'st2',
+        kind: 'table',
+        label: 'Table 1.1',
+        title: 'Prices',
+      }),
+    );
+    expect(resolver(block('sf1'), reading)).toEqual(
+      bound({ node: id('survey'), block: 'sf1', kind: 'figure', label: null, title: 'Decoration' }),
+    );
+    // What it can print is its caption, a page and a place: never a number, which it has none of.
+    if (!unnumbered.ok) throw new Error('expected the unnumbered table to resolve');
+    expect(printableForms(unnumbered.target)).toEqual(['title', 'page', 'relative']);
+    const { kind, label, title } = unnumbered.target;
+    expect(
+      printed({ target: block('st1'), kind, label, title, relative: null }, 'title', null),
+    ).toBe('Layout only');
   });
 
   it('fails a target the occurrence it is bound to does not hold', () => {

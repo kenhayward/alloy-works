@@ -1230,9 +1230,12 @@ export function assemble(given: AssembleInput): Assembled {
                 { kind: 'note', block: block.id },
               );
         const noteSays = note.some((run) => !('text' in run) || run.text.trim() !== '');
-        const label =
-          numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
-            ?.label ?? null;
+        // No entry at all for a table the author marked unnumbered (STR-071): no label, and no place in
+        // the list of tables. One the scheme withholds a number from has an entry, and is listed.
+        const entry = numbering.entries.find(
+          (each) => each.node === node && each.block === block.id,
+        );
+        const label = entry?.label ?? null;
         if (label !== null) check(label, node, block.id, captionFamilies('table'));
         const { columns, starts } = gridOf(block);
         const scopeAt = (row: number, column: number): PublishedCell['scope'] => {
@@ -1273,6 +1276,7 @@ export function assemble(given: AssembleInput): Assembled {
                 scope: scopeAt(rowIndex, starts[rowIndex]![cellIndex]!),
               })),
             })),
+            listed: entry !== undefined,
             note: noteSays ? note : null,
           },
         ];
@@ -1307,9 +1311,11 @@ export function assemble(given: AssembleInput): Assembled {
           indent,
           { kind: 'caption', block: block.id },
         );
-        const label =
-          numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
-            ?.label ?? null;
+        // As a table's: none for a figure marked unnumbered (STR-071), which no list lists.
+        const entry = numbering.entries.find(
+          (each) => each.node === node && each.block === block.id,
+        );
+        const label = entry?.label ?? null;
         if (label !== null) check(label, node, block.id, captionFamilies('figure'));
 
         const asset = input.assets.get(block.asset);
@@ -1373,6 +1379,7 @@ export function assemble(given: AssembleInput): Assembled {
             alternative,
             placement: imageStyle.placement,
             alignment: ALIGNMENTS[imageStyle.alignment],
+            listed: entry !== undefined,
           },
         ];
       }
