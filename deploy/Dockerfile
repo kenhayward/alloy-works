@@ -6,6 +6,18 @@
 #
 # Debian rather than Alpine: glibc is the surface native modules are built against, and image size is
 # not what matters for a system that ships as a compose file.
+
+# veraPDF, the checker every publication's PDF is checked by (W14.1, decision W-A), pinned by digest:
+# the image the worker's suite checks with (apps/worker/src/testing/verapdf-server.ts), which
+# apps/worker/src/image.test.ts holds this equal to. The worker stage copies veraPDF's jars and
+# launcher out of it, which are the same on every architecture; the image itself is published for
+# x86-64 alone, and its Java runtime is built for musl, so the worker runs them on Debian's own. It is
+# taken as the one platform it is published for, VERAPDF_PLATFORM, so a worker built for arm64 takes
+# the same jars rather than asking for an image that does not exist.
+ARG VERAPDF_IMAGE=verapdf/cli@sha256:d5ee329657cf9bc4b2400392dd54c7d0a0ce9980ff6fa2da5590eebeec007cdb
+ARG VERAPDF_PLATFORM=linux/amd64
+FROM --platform=${VERAPDF_PLATFORM} ${VERAPDF_IMAGE} AS verapdf
+
 FROM node:24-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH ELECTRON_SKIP_BINARY_DOWNLOAD=1
 RUN corepack enable
@@ -89,6 +101,15 @@ RUN apt-get update \
  && rm -rf /tmp/typst.tar.xz "/tmp/typst-${arch}-unknown-linux-musl" \
  && apt-get purge -y curl xz-utils && apt-get autoremove -y \
  && typst --version
+# veraPDF, which the worker keeps warm as a child of its own (src/verapdf.ts), on Debian's Java 17:
+# veraPDF 1.30.2 asks for 11 or later, and Debian builds this for every architecture the worker is,
+# where the runtime in veraPDF's own image is x86-64 and musl alone. Only veraPDF's jars and launcher
+# are copied from its image. The launcher finds `java` on the path, since nothing here sets JAVA_HOME.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openjdk-17-jre-headless \
+ && rm -rf /var/lib/apt/lists/*
+COPY --from=verapdf /opt/verapdf /opt/verapdf
+RUN /opt/verapdf/verapdf --version
 WORKDIR /app
 COPY --from=build --chown=node:node /prod/worker ./
 USER node

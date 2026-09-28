@@ -641,7 +641,15 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   not approved** - at the top of every page, and once where a screen reader reads it - because nothing
   can approve one yet. Publications are kept and never changed: publishing again makes another. The
   document lists its publications beneath the outline, each with the version, who published it and
-  when, and each has its own page with a download. Who may read a publication is decided on the
+  when, and each has its own page with a download. **Every PDF is checked for accessibility** by
+  veraPDF against PDF/UA-1 just after it is published, and its page says what was found: **Checked for
+  PDF/UA-1 by veraPDF 1.30.2: passed.**, or how many rules it failed, with each rule listed by its
+  clause and in veraPDF's words; until the check has run, which is moments after publishing, the page
+  says **Not yet checked for accessibility.** **Download the full report** saves veraPDF's whole
+  report, which is kept with the publication. A check that cannot run is tried again, and a
+  publication whose check gave up is checked again up to about fifteen minutes later; one whose
+  check has given up three times is left, and its page says **Could not be checked for
+  accessibility.** PDFs published before checking began are checked soon after it arrives. Who may read a publication is decided on the
   publication, so somebody given a single document does not see its publications unless given them
   too. When a document cannot be published you are told every reason at once, each at its place in the
   outline: a component you may not read, without saying which; a footnote or any other block that

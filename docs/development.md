@@ -79,7 +79,7 @@ where the service is, since it only returns people to addresses it knows:
 Each environment holds the stand-in's client secret itself: `pnpm dev:setup` seals it into the
 environment's own schema with `SECRET_OBJECT_STORE_KEY`, and the service opens it with the same key, so
 the service will not start without that variable, which `service.env.example` sets. No
-`SECRET_STAND_IN` is read any more. **A database `pnpm dev:setup` prepared before 0.114.1** named the
+`SECRET_STAND_IN` is read any more. **A database `pnpm dev:setup` prepared before 0.115.1** named the
 secret instead, and signing in through the stand-in there answers that the route is closed, with a line
 in the service's log saying the sign-in must be configured again: run `pnpm dev:setup` again, which
 seals it.
@@ -483,6 +483,16 @@ publication, and the image is fetched once per machine:
 ```bash
 pnpm --filter @alloy-works/worker fetch-verapdf   # verapdf/cli, pulled by digest, needs Docker running
 ```
+
+The worker checks every publication's PDF with veraPDF after recording it, running
+`/opt/verapdf/verapdf`, where the worker image holds it beside Debian's Java 17. Run from source, a
+worker has no veraPDF there unless one is installed, with a Java runtime of 11 or later, and
+`VERAPDF_COMMAND` in `deploy/worker.env` names its launcher: without one, each check is tried three
+times and given up, and the publication's page says it is not yet checked. Each sweep
+(`SWEEP_INTERVAL_MS`, ten minutes by default) queues a check that gave up again, five minutes or more
+after its publication was recorded, so installing veraPDF later checks them without publishing again.
+The worker in the compose stack checks every publication, and keeps veraPDF's whole report beside it,
+which the publication's page offers as **Download the full report**.
 
 The worker runs every publish, too: with it stopped, a document asked to publish stays queued (see the
 publishing steps under [The service](#the-service)). With the service signed in to (above), ask for a

@@ -23,6 +23,21 @@ describe("the worker's configuration", () => {
     expect(config.workerId).toMatch(/\S/);
   });
 
+  it('runs veraPDF from where the image holds it, unless told where else', () => {
+    expect(loadWorkerConfig(env).verapdfCommand).toBe('/opt/verapdf/verapdf');
+    expect(
+      loadWorkerConfig({ ...env, VERAPDF_COMMAND: '/usr/local/verapdf/verapdf' }).verapdfCommand,
+    ).toBe('/usr/local/verapdf/verapdf');
+    expect(describeWorkerConfig(loadWorkerConfig(env))).toMatchObject({
+      verapdfCommand: '/opt/verapdf/verapdf',
+    });
+  });
+
+  it("gives veraPDF's JVM the deployment's JAVA_OPTS, and none where it names none", () => {
+    expect(loadWorkerConfig(env).verapdfJavaOptions).toBeUndefined();
+    expect(loadWorkerConfig({ ...env, JAVA_OPTS: '-Xmx1g' }).verapdfJavaOptions).toBe('-Xmx1g');
+  });
+
   it('refuses to start without somewhere to keep what it makes', () => {
     expect(() => loadWorkerConfig({ DATABASE_URL: env.DATABASE_URL })).toThrow(WorkerConfigError);
     expect(() => loadWorkerConfig({ ...env, SECRET_OBJECT_STORE_KEY: 'too-short' })).toThrow(

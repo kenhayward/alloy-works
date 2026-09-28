@@ -20,7 +20,7 @@ export const signedInAddressQuery = (prefix: string) => `
  * Points a tenant at its organisation's identity provider and permits the route, run as an
  * administrator. The client secret is sealed with `key` to this tenant and to sign-in before it is
  * written, so the row holds this environment's secret and no other's, and opens for nobody but this
- * tenant; a name left from before 0040 is cleared. `groupsClaim` names the ID token claim carrying the
+ * tenant; a name left from before 0042 is cleared. `groupsClaim` names the ID token claim carrying the
  * provider's group values (IAM-009, GP-A): `groups` for a new configuration, and left as it was when a
  * configuration is replaced without one.
  */

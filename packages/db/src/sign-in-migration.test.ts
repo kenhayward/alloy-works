@@ -11,18 +11,18 @@ import { openSecret } from './seal.js';
 import { configureOrganisationSignIn } from './sign-in.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 
-describe('migration 0040, over a sign-in configured before it', () => {
+describe('migration 0042, over a sign-in configured before it', () => {
   let db: TestDatabase;
   let before: string;
 
   beforeAll(async () => {
     db = await freshDatabase();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
-    // Every migration up to 0039 and not 0040, so a tenant can name its secret as it used to.
-    before = await mkdtemp(join(tmpdir(), 'aw-before-0040-'));
+    // Every migration up to 0041 and not 0042, so a tenant can name its secret as it used to.
+    before = await mkdtemp(join(tmpdir(), 'aw-before-0042-'));
     await cp(new URL('../migrations/', import.meta.url), before, {
       recursive: true,
-      filter: (source) => !source.endsWith('0040_sealed_sign_in_secret.sql'),
+      filter: (source) => !source.endsWith('0042_sealed_sign_in_secret.sql'),
     });
   });
 
@@ -46,7 +46,7 @@ describe('migration 0040, over a sign-in configured before it', () => {
       `insert into ${table} (issuer, client_id, secret_name) values ('https://idp.example', 'alloy', 'stand_in')`,
     );
 
-    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual(['0040_sealed_sign_in_secret']);
+    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual(['0042_sealed_sign_in_secret']);
 
     const read = async () =>
       (

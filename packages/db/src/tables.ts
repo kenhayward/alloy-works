@@ -9,6 +9,8 @@ import type { ColumnType, Generated, Transaction } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
 import type { AssetUploadTable } from './assets-tables.js';
 import type {
+  PublicationCheckGivenUpTable,
+  PublicationCheckTable,
   PublicationInputTable,
   PublicationOutputTable,
   PublicationAssetTable,
@@ -88,11 +90,11 @@ export interface IdentityProviderTable {
   issuer: string;
   client_id: string;
   /**
-   * The secret's name in the service's store, from a configuration written before 0040; null for one
+   * The secret's name in the service's store, from a configuration written before 0042; null for one
    * written since. Kept to be read, never to sign in with: such an environment is configured again.
    */
   secret_name: string | null;
-  /** The client secret, sealed to this tenant and to sign-in (0040); null only beside a name. */
+  /** The client secret, sealed to this tenant and to sign-in (0042); null only beside a name. */
   sealed_secret: string | null;
   /** The ID token claim carrying the provider's group values (0039): `groups` unless configured. */
   groups_claim: Generated<string>;
@@ -437,6 +439,8 @@ export interface TenantTables {
   publication: PublicationTable;
   publication_input: PublicationInputTable;
   publication_output: PublicationOutputTable;
+  publication_check: PublicationCheckTable;
+  publication_check_given_up: PublicationCheckGivenUpTable;
   document_template: DocumentTemplateTable;
   definition_name: DefinitionNameTable;
   publication_request_asset: PublicationRequestAssetTable;

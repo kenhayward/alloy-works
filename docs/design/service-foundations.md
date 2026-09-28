@@ -113,12 +113,17 @@ credential copied into this one does not open as a client secret, and nothing na
 environment could hold. The provider's discovered metadata is kept by issuer and holds no secret: every
 start and every exchange makes a configuration of its own from the environment's client id and secret,
 so two environments configuring the same client of the same provider with different secrets each
-exchange with their own, and a secret configured afresh is the one the next exchange uses.
+exchange with their own, and a secret configured afresh is the one the next exchange uses. The
+provider's published keys, which are public, are kept by issuer the same way. A sealed secret is
+opened only with its whole 16-byte tag and 12-byte IV, which the column's check holds it to as well,
+and a sealing key of the wrong length is reported as the key, by its variable,
+`SECRET_OBJECT_STORE_KEY`, without which the service does not start.
 
 **An environment configured before secrets were sealed** named its secret in the service's secret store
 instead. Its row keeps the name, to be read, but the service never reads a secret by name again: the
 environment signs nobody in through its provider - the route answers as closed, and the log says the
-sign-in must be configured again, never with a secret - until an operator configures it again with the
+sign-in must be configured again, once for each environment while the process runs so that anybody
+starting a sign-in cannot flood it, and never with a secret - until an operator configures it again with the
 secret, which seals it and clears the name (`pnpm dev:setup` does this for the development
 environments). Moving a named secret into the row automatically, at start-up or at a first sign-in,
 was rejected: it would seal whatever the row named, another environment's secret included, and make

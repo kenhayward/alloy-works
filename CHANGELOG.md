@@ -3,7 +3,7 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.114.1 - 2026-09-28 (PR #313)
+## 0.115.1 - 2026-09-28 (PR #TBD)
 
 ### Fixed
 
@@ -15,6 +15,20 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   before. An environment set up before this change stops offering sign-in through its own provider
   until its sign-in is configured again, and the service's log says so; in development,
   `pnpm dev:setup` does this for you (issue #312).
+
+## 0.115.0 - 2026-09-28 (PR #313)
+
+### Added
+
+- **Every PDF you publish is checked for accessibility.** Moments after a publication is made, veraPDF
+  checks its PDF against PDF/UA-1, the standard for accessible PDF, and the publication's page says
+  what it found: that it passed, or how many rules it failed, with each rule listed in veraPDF's own
+  words. **Download the full report** saves veraPDF's whole report, which is kept with the publication.
+  Until the check has run, the page says the PDF is not yet checked. Publishing is not slowed down by
+  the check, and a check that cannot run is tried again, and again up to about fifteen minutes later
+  if it still could not. A PDF that could not be checked after three such tries says so on its page:
+  **Could not be checked for accessibility.** PDFs published before this release are checked too,
+  soon after it arrives.
 
 ## 0.114.0 - 2026-09-28 (PR #311)
 

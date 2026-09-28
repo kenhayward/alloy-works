@@ -1,33 +1,15 @@
 import { inject } from 'vitest';
+import { verdictOf, type Checker, type VeraPdfVerdict } from '../verapdf.js';
 
 export { VERAPDF_IMAGE } from './verapdf-server.js';
-
-export interface VeraPdfVerdict {
-  readonly compliant: boolean;
-  readonly profile: string;
-  readonly failedRules: number;
-  /** Each failed rule as `clause-test`, for a failure to name. */
-  readonly failures: readonly string[];
-}
-
-interface Report {
-  report?: {
-    jobs?: {
-      validationResult?: {
-        compliant: boolean;
-        profileName: string;
-        details: { failedRules: number; ruleSummaries: { clause: string; testNumber: number }[] };
-      }[];
-    }[];
-  };
-}
+export { verdictOf, type VeraPdfVerdict };
 
 /**
  * A PDF checked against veraPDF's PDF/UA-1 validation profile, by the run's one warm veraPDF
  * (verapdf-setup.ts). A check that could not happen throws with veraPDF's own words; it never falls
  * back to something that did not check.
  */
-export async function checkPdfUa1(pdf: Buffer): Promise<VeraPdfVerdict> {
+export async function checkPdfUa1(pdf: Uint8Array): Promise<VeraPdfVerdict> {
   const response = await fetch(`${inject('verapdf')}/check`, {
     method: 'POST',
     body: new Uint8Array(pdf),
@@ -38,18 +20,11 @@ export async function checkPdfUa1(pdf: Buffer): Promise<VeraPdfVerdict> {
 }
 
 /**
- * The verdict in veraPDF's JSON report, printed with this exit code. A file veraPDF could not parse
- * leaves a job with no validation result, which is a check that did not happen, not a verdict.
+ * The `check_pdf` job's checker in a test: the run's one warm veraPDF, in its pinned image, in the
+ * stead of the worker's own child process, which speaks the same protocol (src/verapdf.ts). Closing it
+ * leaves the run's veraPDF to the run.
  */
-export function verdictOf(stdout: string, exit: number): VeraPdfVerdict {
-  const result = (JSON.parse(stdout) as Report).report?.jobs?.[0]?.validationResult?.[0];
-  if (result === undefined) {
-    throw new Error(`veraPDF produced no validation result (exit ${exit})`);
-  }
-  return {
-    compliant: result.compliant,
-    profile: result.profileName,
-    failedRules: result.details.failedRules,
-    failures: result.details.ruleSummaries.map((rule) => `${rule.clause}-${rule.testNumber}`),
-  };
-}
+export const suiteChecker: Checker = {
+  check: checkPdfUa1,
+  close: async () => {},
+};
