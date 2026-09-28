@@ -8,6 +8,7 @@ import { settingsRoutes } from './settings.js';
 import type { RouteContract } from './contract.js';
 import { documentRoutes } from './documents.js';
 import { editingRoutes } from './editing.js';
+import { groupRoutes } from './groups.js';
 import { invitationRoutes } from './invitations.js';
 import { managingAccessRoutes } from './managing-access.js';
 import { publishingRoutes } from './publishing.js';
@@ -264,6 +265,7 @@ export const routes = {
   ...editingRoutes,
   ...managingAccessRoutes,
   ...invitationRoutes,
+  ...groupRoutes,
   ...assetRoutes,
   ...templateRoutes,
   ...definitionRoutes,

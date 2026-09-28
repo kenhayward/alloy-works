@@ -45,7 +45,10 @@ export function grantView(listed: ListedGrant): GrantView {
 
 /** What each refusal says, for a person managing access rather than for somebody reading the code. */
 const REFUSALS = new Map<GrantRefusal | 'grant.last_administrator', string>([
-  ['grant.duplicate', 'That role is already granted to that person here, with that effect.'],
+  [
+    'grant.duplicate',
+    'That role is already granted to that person or group here, with that effect.',
+  ],
   [
     'grant.allow_without_read',
     'A role that does not include read can only be denied, not allowed.',
@@ -55,7 +58,7 @@ const REFUSALS = new Map<GrantRefusal | 'grant.last_administrator', string>([
     'A role that includes administer cannot be denied across the whole environment.',
   ],
   ['grant.role_missing', 'There is no such role in this environment.'],
-  ['grant.subject_missing', 'There is no such person in this environment.'],
+  ['grant.subject_missing', 'There is no such person or group in this environment.'],
   [
     'grant.external_at_tenant',
     'Someone from outside the organisation can be granted access to a space or an item, never the whole environment.',
@@ -131,7 +134,7 @@ export function managingAccessHandlers() {
       const body = request.body as GrantBody;
       const answer = await grant(trx, {
         roleId: body.role,
-        subject: { principal: body.subject.principal },
+        subject: body.subject,
         level: target,
         effect: body.effect,
         grantedBy: principalId,

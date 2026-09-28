@@ -7,6 +7,11 @@ export interface ProviderSettings {
   readonly issuer: string;
   readonly clientId: string;
   readonly clientSecret: string;
+  /**
+   * The ID token claim carrying the provider's group values (IAM-009, GP-A): the organisation's
+   * provider's configuration names it. Absent for Google, which asserts none.
+   */
+  readonly groupsClaim?: string;
 }
 
 export interface SignInStart {
@@ -24,6 +29,18 @@ export interface Identity {
   readonly name: string | null;
   /** The Workspace domain managing the account (Google's `hd`); null for a personal account. */
   readonly hostedDomain: string | null;
+  /**
+   * The group values the provider asserted in the configured claim, each once. None where no claim is
+   * configured, where the claim is absent, or where it is not a list; a member that is not a string is
+   * dropped (GP-B).
+   */
+  readonly groups: readonly string[];
+}
+
+/** A claim's group values: a list's strings, each once, or none for anything that is not a list. */
+export function groupValues(claim: unknown): readonly string[] {
+  if (!Array.isArray(claim)) return [];
+  return [...new Set(claim.filter((value): value is string => typeof value === 'string'))];
 }
 
 /** Anything that stops a sign-in: its message is safe to show, and the cause is for the log. */
@@ -114,6 +131,8 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
         emailVerified: claims.email_verified === true,
         name: typeof claims.name === 'string' ? claims.name : null,
         hostedDomain: typeof claims.hd === 'string' ? claims.hd : null,
+        // From the ID token alone, under the basic scopes: no scope is ever asked for groups (IAM-044).
+        groups: provider.groupsClaim === undefined ? [] : groupValues(claims[provider.groupsClaim]),
       };
     },
   };

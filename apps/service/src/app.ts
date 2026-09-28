@@ -18,6 +18,7 @@ import {
   enqueueJob,
   findApiToken,
   loadFacts,
+  syncProviderGroups,
   type SignInRoute,
   type Tenant,
   type TenantDatabase,
@@ -53,6 +54,7 @@ import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
 import { admitGoogleAccount } from './google.js';
 import { createHttp, type HttpOptions } from './http.js';
+import { groupHandlers } from './groups.js';
 import { invitationHandlers } from './invitations.js';
 import { managingAccessHandlers } from './managing-access.js';
 import {
@@ -234,7 +236,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
       trx.selectFrom('identity_provider').selectAll().executeTakeFirst(),
     );
     return (
-      row && { issuer: row.issuer, clientId: row.client_id, clientSecret: secret(row.secret_name) }
+      row && {
+        issuer: row.issuer,
+        clientId: row.client_id,
+        clientSecret: secret(row.secret_name),
+        groupsClaim: row.groups_claim,
+      }
     );
   }
 
@@ -302,14 +309,27 @@ export function buildApp(options: AppOptions): FastifyInstance {
     }
   }
 
-  /** Starts a session for the principal, and sends the browser on into the application. */
+  /**
+   * Starts a session for the principal, and sends the browser on into the application. `groups` are
+   * the values the organisation's provider asserted, which the principal's provider memberships are
+   * brought into line with in the session's own transaction (IAM-009, GP-B): a session never begins
+   * with memberships the sign-in has not settled. The Google route passes none, and changes none.
+   *
+   * Not in the transaction that found or claimed the principal: a claim holds an invitation's row,
+   * which a withdrawal takes after the epoch, and bringing memberships into line may take the epoch,
+   * so the two in one transaction could wait on each other in a cycle. Here the epoch is the first lock.
+   */
   async function signInAs(
     reply: FastifyReply,
     tenant: Tenant,
     principalId: string,
     route: SignInRoute,
+    groups?: readonly string[],
   ): Promise<FastifyReply> {
-    const token = await db.withTenant(tenant, (trx) => createSession(trx, principalId, route));
+    const token = await db.withTenant(tenant, async (trx) => {
+      if (groups !== undefined) await syncProviderGroups(trx, principalId, groups);
+      return createSession(trx, principalId, route);
+    });
     reply.setCookie(SESSION_COOKIE, token, { ...COOKIE, maxAge: SESSION_POLICY.absoluteMs / 1000 });
     return reply.redirect('/', 302);
   }
@@ -326,6 +346,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...editingHandlers(),
     ...managingAccessHandlers(),
     ...invitationHandlers(),
+    ...groupHandlers(),
     ...settingsHandlers(db, tenantOf),
     ...tokenHandlers(db, tenantOf, principalOf),
 
@@ -411,7 +432,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
           .returning('id')
           .executeTakeFirstOrThrow();
       });
-      return signInAs(reply, tenant, principal.id, 'organisation');
+      return signInAs(reply, tenant, principal.id, 'organisation', identity.groups);
     },
 
     startGoogleSignIn: async (request, reply) => {

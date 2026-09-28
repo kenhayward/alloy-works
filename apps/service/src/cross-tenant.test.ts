@@ -8,6 +8,7 @@ import {
   createAssetUpload,
   createDocument,
   createDefinition,
+  createGroup,
   createTemplate,
   createTenant,
   DEFAULT_LAYOUT_ID,
@@ -21,6 +22,7 @@ import {
   recordAsset,
   recordPublication,
   requestPublication,
+  setGroupMembers,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -136,6 +138,8 @@ const OTHER_TENANT_IDS: Readonly<
   getAssetVersion: async (tenant, db) => ({ id: (await assetIn(tenant, db)).version }),
   getAssetVersionContent: async (tenant, db) => ({ id: (await assetIn(tenant, db)).version }),
   withdrawInvitation: async (tenant, db) => ({ id: await invitationIdIn(tenant, db) }),
+  setGroupMembers: async (tenant, db) => ({ id: await groupIdIn(tenant, db) }),
+  deleteGroup: async (tenant, db) => ({ id: await groupIdIn(tenant, db) }),
   createTemplate: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getTemplate: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
   recordTemplateVersion: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
@@ -198,6 +202,8 @@ const VALID_INPUT: Readonly<
   getIteration: { query: `session=${SESSION}` },
   cutVersion: { payload: { session: SESSION, openedFrom: SESSION } },
   invite: { payload: { email: 'ivy@example.com' } },
+  createGroup: { payload: { name: 'Elsewhere' } },
+  setGroupMembers: { payload: { principals: [] } },
   createToken: { payload: { name: 'Elsewhere', scopes: [], expiresAt: IN_A_MONTH } },
   setEditingSettings: { payload: { iterationRetentionDays: 7 } },
   makeGrant: {
@@ -508,6 +514,26 @@ const invitationIdIn = (tenant: Tenant, db: TenantDatabase) =>
     });
     if (!('invited' in made)) throw new Error(`refused: ${made.refused}`);
     return made.invited.id;
+  });
+
+/** One of environment B's own groups, holding one of its own principals. */
+const groupIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const member = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await createGroup(trx, `Elsewhere ${randomUUID()}`);
+    if (!('group' in made)) throw new Error(`refused: ${made.refused}`);
+    const filled = await setGroupMembers(trx, made.group.id, [member.id]);
+    if (!('set' in filled)) throw new Error(`refused: ${filled.refused}`);
+    return made.group.id;
   });
 
 /** A personal token in `tenant`, of a principal of its own, kept as its hash as any token is. */
@@ -838,6 +864,48 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
 
     expect((await reader(a)).grants).toBe(ours.grants);
     expect((await reader(b)).grants).toBe(theirs.grants);
+  });
+
+  it("will not fill a group with another environment's person, nor grant to another environment's group", async () => {
+    const theirs = await tenantDb.withTenant(b, async (trx) => ({
+      person: (await trx.selectFrom('principal').select('id').executeTakeFirstOrThrow()).id,
+      group: (await trx.selectFrom('access_group').select('id').executeTakeFirstOrThrow()).id,
+    }));
+    const ours = await app.inject({
+      method: 'POST',
+      url: '/v1/groups',
+      headers: { host: A, cookie: fromA },
+      payload: { name: 'Ours alone' },
+    });
+    expect(ours.statusCode, ours.body).toBe(200);
+    const group = ours.json<{ group: { id: string } }>().group.id;
+
+    const filled = await app.inject({
+      method: 'PUT',
+      url: `/v1/groups/${group}/members`,
+      headers: { host: A, cookie: fromA },
+      payload: { principals: [theirs.person] },
+    });
+    expect(filled.statusCode).toBe(409);
+    expect(filled.json()).toMatchObject({ code: 'group_member_missing' });
+
+    const reader = await tenantDb.withTenant(a, async (trx) => (await findRole(trx, 'Reader'))!.id);
+    const granted = await app.inject({
+      method: 'POST',
+      url: '/v1/grants',
+      headers: { host: A, cookie: fromA },
+      payload: { role: reader, subject: { group: theirs.group }, level: 'tenant', effect: 'allow' },
+    });
+    expect(granted.statusCode).toBe(409);
+    expect(granted.json()).toMatchObject({ code: 'grant_subject_missing' });
+
+    const listed = await app.inject({
+      url: '/v1/groups?limit=100',
+      headers: { host: A, cookie: fromA },
+    });
+    expect(listed.json<{ items: { id: string }[] }>().items.map((each) => each.id)).toEqual([
+      group,
+    ]);
   });
 
   it('leaves the session working where it was issued, whatever was tried elsewhere', async () => {

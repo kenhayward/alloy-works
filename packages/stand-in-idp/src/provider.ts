@@ -14,6 +14,12 @@ export interface StandInUser {
    * has none, whatever its address.
    */
   readonly hostedDomain?: string;
+  /**
+   * The directory groups the user is in, sent as a `groups` claim in the ID token, as an organisation's
+   * provider is configured to send them (access.md, GP-A). Read at each sign-in, so a test holding the
+   * user can change them between two. None, when absent: the claim is left out.
+   */
+  readonly groups?: readonly string[];
 }
 
 export interface StandInClient {
@@ -44,11 +50,13 @@ export interface StandInProvider {
 
 /**
  * Invented people, the only ones the stand-in knows. Alice's account is managed by a Workspace domain.
- * Ivy is nobody's principal in `pnpm dev:setup`'s environments, so she is the one to invite.
+ * Ivy is nobody's principal in `pnpm dev:setup`'s environments, so she is the one to invite. Ada and
+ * Grace are in the directory's groups, so a group standing for `authors` or `publishers` fills at their
+ * sign-in; Alice and Ivy are in none.
  */
 export const STAND_IN_USERS: readonly StandInUser[] = [
-  { id: 'ada', name: 'Ada', email: 'ada@example.com' },
-  { id: 'grace', name: 'Grace', email: 'grace@example.com' },
+  { id: 'ada', name: 'Ada', email: 'ada@example.com', groups: ['authors'] },
+  { id: 'grace', name: 'Grace', email: 'grace@example.com', groups: ['authors', 'publishers'] },
   { id: 'alice', name: 'Alice', email: 'alice@example.org', hostedDomain: 'example.org' },
   { id: 'ivy', name: 'Ivy', email: 'ivy@example.com' },
 ];
@@ -141,8 +149,14 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
     adapter: memoryAdapter(),
     jwks: { keys: [signingKey] },
     pkce: { required: () => true },
-    // `hd` rides on the openid scope, as Google sends it: present only for a Workspace account.
-    claims: { openid: ['sub', 'hd'], email: ['email', 'email_verified'], profile: ['name'] },
+    // `hd` rides on the openid scope, as Google sends it: present only for a Workspace account. So do
+    // `groups`, as an organisation's provider is configured to send them without a scope of their own
+    // (GP-A): the service never asks for one (IAM-044).
+    claims: {
+      openid: ['sub', 'hd', 'groups'],
+      email: ['email', 'email_verified'],
+      profile: ['name'],
+    },
     // Put the claims in the ID token, as Google does, rather than only behind the userinfo endpoint.
     conformIdTokenClaims: false,
     ttl: {
@@ -166,6 +180,7 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
             email: user.email,
             email_verified: user.emailVerified ?? true,
             ...(user.hostedDomain === undefined ? {} : { hd: user.hostedDomain }),
+            ...(user.groups === undefined ? {} : { groups: user.groups }),
           }),
         }
       );

@@ -747,6 +747,16 @@ describe('routes that check a permission', () => {
       payload: { email: 'ivy@example.com' },
     }),
     withdrawInvitation: () => ({ url: `/v1/invitations/${MISSING}`, status: 403 }),
+    // A group is an administrator's of the whole environment, so it is refused before it is looked
+    // for: 403, never 404, whether or not the group exists.
+    listGroups: () => ({ url: '/v1/groups', status: 403 }),
+    createGroup: () => ({ url: '/v1/groups', status: 403, payload: { name: 'Mine' } }),
+    setGroupMembers: () => ({
+      url: `/v1/groups/${MISSING}/members`,
+      status: 403,
+      payload: { principals: [] },
+    }),
+    deleteGroup: () => ({ url: `/v1/groups/${MISSING}`, status: 403 }),
     setEditingSettings: () => ({
       url: '/v1/settings/editing',
       status: 403,

@@ -235,7 +235,7 @@ describe('making, listing and removing grants through the service', () => {
     await expect(refusal(base)).resolves.toMatchObject({
       status: 409,
       code: 'grant_duplicate',
-      message: 'That role is already granted to that person here, with that effect.',
+      message: 'That role is already granted to that person or group here, with that effect.',
     });
     await expect(refusal({ ...base, role: roles.Editing })).resolves.toMatchObject({
       status: 409,
@@ -257,7 +257,11 @@ describe('making, listing and removing grants through the service', () => {
     await expect(refusal({ ...base, subject: { principal: MISSING } })).resolves.toMatchObject({
       status: 409,
       code: 'grant_subject_missing',
-      message: 'There is no such person in this environment.',
+      message: 'There is no such person or group in this environment.',
+    });
+    await expect(refusal({ ...base, subject: { group: MISSING } })).resolves.toMatchObject({
+      status: 409,
+      code: 'grant_subject_missing',
     });
   });
 
@@ -327,7 +331,7 @@ describe('making, listing and removing grants through the service', () => {
     expect((await call('ada', 'DELETE', `/v1/grants/${gracesId}`)).statusCode).toBe(200);
   });
 
-  it('refuses a body that is not exactly a grant: an unknown member, a group, an uppercase id', async () => {
+  it('refuses a body that is not exactly a grant: an unknown member, two subjects, an uppercase id', async () => {
     const base = {
       role: roles.Reader,
       subject: { principal: ids.grace },
@@ -336,7 +340,8 @@ describe('making, listing and removing grants through the service', () => {
     };
     for (const body of [
       { ...base, expiresAt: '2030-01-01T00:00:00Z' },
-      { ...base, subject: { group: MISSING } },
+      { ...base, subject: { principal: ids.grace, group: MISSING } },
+      { ...base, subject: { group: 'ABCDEF00-0000-4000-8000-000000000000' } },
       { ...base, role: roles.Reader!.toUpperCase() },
       { ...base, level: `space:${quality.toUpperCase()}` },
       { ...base, effect: 'maybe' },

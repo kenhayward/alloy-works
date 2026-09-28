@@ -46,7 +46,32 @@ describe('the OpenID Connect client', () => {
       emailVerified: true,
       name: 'Ada',
       hostedDomain: null,
+      groups: [],
     });
+  });
+
+  it('IAM-044 reads the groups a provider asserts from the ID token, having asked for openid, email and profile alone', async () => {
+    const organisation = { ...provider, groupsClaim: 'groups' };
+    const start = await oidc.start(organisation, REDIRECT);
+    expect(SCOPES).toBe('openid email profile');
+    expect(new URL(start.url).searchParams.get('scope')).toBe('openid email profile');
+    const back = await completeAtStandIn(start.url, 'grace', idp.issuer);
+    expect(await oidc.finish(organisation, back, start)).toMatchObject({
+      subject: 'grace',
+      groups: ['authors', 'publishers'],
+    });
+  });
+
+  it('reads the claim it is configured with, and no groups where it is told of none, as for Google', async () => {
+    for (const [settings, groups] of [
+      [{ ...provider, groupsClaim: 'roles' }, []],
+      [provider, []],
+      [{ ...provider, groupsClaim: 'groups' }, ['authors']],
+    ] as const) {
+      const start = await oidc.start(settings, REDIRECT);
+      const back = await completeAtStandIn(start.url, 'ada', idp.issuer);
+      expect((await oidc.finish(settings, back, start)).groups).toEqual(groups);
+    }
   });
 
   it('refuses a response carrying a state it did not send', async () => {
@@ -66,6 +91,39 @@ describe('the OpenID Connect client', () => {
     const start = await oidc.start(provider, REDIRECT, { state: 'signed-by-the-caller' });
     expect(start.state).toBe('signed-by-the-caller');
     expect(new URL(start.url).searchParams.get('state')).toBe('signed-by-the-caller');
+  });
+
+  it('counts a claim that is not a list as no groups, and drops from a list whatever is not a string', async () => {
+    const odd = await startStandInProvider({
+      clients: [{ clientId: 'alloy', clientSecret: 'stand-in-secret', redirectUris: [REDIRECT] }],
+      users: [
+        { id: 'ada', name: 'Ada', email: 'ada@example.com', groups: 'authors' as never },
+        {
+          id: 'grace',
+          name: 'Grace',
+          email: 'grace@example.com',
+          groups: ['authors', 7, null, { name: 'publishers' }, 'publishers'] as never,
+        },
+      ],
+    });
+    try {
+      const settings = {
+        issuer: odd.issuer,
+        clientId: 'alloy',
+        clientSecret: 'stand-in-secret',
+        groupsClaim: 'groups',
+      };
+      for (const [user, groups] of [
+        ['ada', []],
+        ['grace', ['authors', 'publishers']],
+      ] as const) {
+        const start = await oidc.start(settings, REDIRECT);
+        const back = await completeAtStandIn(start.url, user, odd.issuer);
+        expect((await oidc.finish(settings, back, start)).groups, user).toEqual(groups);
+      }
+    } finally {
+      await odd.close();
+    }
   });
 
   it('says which Workspace domain manages an account, as Google does', async () => {

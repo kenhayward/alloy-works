@@ -20,6 +20,7 @@ const account = (subject: string, email: string, extra: Partial<Identity> = {}):
   emailVerified: true,
   name: subject,
   hostedDomain: null,
+  groups: [],
   ...extra,
 });
 

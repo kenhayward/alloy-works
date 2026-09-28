@@ -33,6 +33,13 @@ describe('wireCode', () => {
     expect(wireCode('invitation.accepted')).toBe('invitation_accepted');
   });
 
+  it('spells every refusal where a group is made or filled with an underscore too', () => {
+    expect(wireCode('group.name_taken')).toBe('group_name_taken');
+    expect(wireCode('group.value_taken')).toBe('group_value_taken');
+    expect(wireCode('group.from_provider')).toBe('group_from_provider');
+    expect(wireCode('group.member_missing')).toBe('group_member_missing');
+  });
+
   it('spells every refusal where a publication is asked for with an underscore too', () => {
     expect(wireCode('format.unsupported')).toBe('format_unsupported');
     expect(wireCode('page_reference.without_pdf')).toBe('page_reference_without_pdf');
