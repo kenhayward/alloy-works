@@ -53,6 +53,16 @@ export interface Sent {
   readonly revision: number;
 }
 
+/**
+ * The last answer the service gave this window to a save under a session: the sequence, and whether
+ * it was accepted - acknowledged, once or again - or refused as behind the service, stale or
+ * conflicting (re-review of W11.3, D1).
+ */
+export interface Answer {
+  readonly sequence: number;
+  readonly accepted: boolean;
+}
+
 /** Bumped whenever the record is written otherwise, so an older build's is offered, not replayed. */
 export const STORED_FORMAT = 2;
 
@@ -72,6 +82,15 @@ const keyFor = (componentId: string) => `${STEPS_PREFIX}${componentId}`;
  */
 const sentKeyFor = (componentId: string, session: string) =>
   `${EDITING_PREFIX}sent:${componentId}:${session}`;
+
+/**
+ * The last answer to a save under one session of one component, only ever rising, and written whenever
+ * one arrives - after the page has gone as well as before - so a save the service holds at the number
+ * this window last sent is taken for this window's own only where the service said so to it (re-review
+ * of W11.3, D1): a sequence sent is not a sequence accepted.
+ */
+const answerKeyFor = (componentId: string, session: string) =>
+  `${EDITING_PREFIX}acked:${componentId}:${session}`;
 
 const LOWERCASE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const KINDS: readonly HistoryKind[] = ['new', 'join', 'none', 'undo', 'redo'];
@@ -94,6 +113,9 @@ const isChange = (value: unknown): value is RecordedChange =>
 
 const isSent = (value: unknown): value is Sent =>
   isObject(value) && isCount(value.sequence) && isCount(value.revision);
+
+const isAnswer = (value: unknown): value is Answer =>
+  isObject(value) && isCount(value.sequence) && typeof value.accepted === 'boolean';
 
 /**
  * A kept session, or null for anything that is not one written as this build writes it: text that is
@@ -230,6 +252,34 @@ function keepSent(componentId: string, session: string, sent: Sent, storage?: St
   }
 }
 
+/** The last answer this window was given to a save under a session; null where none is kept. */
+export function answerFor(componentId: string, session: string, storage?: Store): Answer | null {
+  try {
+    const read: unknown = JSON.parse(
+      storeOf(storage).getItem(answerKeyFor(componentId, session)) ?? 'null',
+    );
+    return isAnswer(read) ? { sequence: read.sequence, accepted: read.accepted } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Keeps `answer` as the last under the session, where it is to a sequence no earlier than what is
+ * kept: a later answer to the same sequence replaces an earlier one.
+ */
+function keepAnswer(componentId: string, session: string, answer: Answer, storage?: Store) {
+  if (!mayKeepEditing()) return;
+  const kept = answerFor(componentId, session, storage);
+  if (kept !== null && kept.sequence > answer.sequence) return;
+  try {
+    storeOf(storage).setItem(answerKeyFor(componentId, session), JSON.stringify(answer));
+  } catch {
+    // Unkept, a reload takes the service's save at this number for somebody else's, and offers what
+    // is on screen: a notice that may be false, never a loss.
+  }
+}
+
 /**
  * Where the text offered on opening is kept, one per component per window, until the author dismisses
  * it (re-review of W11.3): by then the record it came from is forgotten, so this is its only copy, and
@@ -320,21 +370,36 @@ export function freshSession(start: {
  * leaves above the record's own: the larger of those, so the next save is judged above all of them;
  * whether anything is on screen the service has not got - anything changed since the last send, or a
  * last send it never accepted; and whether the service is **ahead**, holding a save under this session
- * that this window never sent - another page holding the same session, a duplicated tab - over which
- * nothing may be sent or resumed (final review of W11.3, D1).
+ * that this window may not have sent - another page holding the same session, a duplicated tab - over
+ * which nothing may be sent or resumed (final review of W11.3, D1).
+ *
+ * Ahead where the service holds a later save than this window sent; and where it holds one at the very
+ * number this window last sent, unless `answer`, the last answer this window was given (`answerFor`),
+ * says the service accepted that number from it: a save sent is not a save accepted, and another page
+ * may have saved that number first, refusing this window's (re-review of W11.3, D1). And ahead where
+ * that number was refused, whatever the service is asked. Taken for ahead, what was kept is offered: the
+ * worst of it is a notice of newer text that was this window's own, never a save taken for this
+ * window's that was not.
  */
 export function continuing(
   kept: StoredSession,
   latest: number | null,
   sentLater: Sent | null = null,
+  answer: Answer | null = null,
 ): { readonly sequence: number; readonly unsent: boolean; readonly ahead: boolean } {
   const accepted = latest ?? 0;
   const last =
     sentLater !== null && sentLater.sequence > kept.sent.sequence ? sentLater : kept.sent;
+  const answered = answer !== null && answer.sequence === last.sequence;
+  const acknowledged = answered && answer.accepted;
+  const refused = answered && !answer.accepted;
   return {
     sequence: Math.max(last.sequence, accepted),
     unsent: last.revision !== kept.revision || accepted !== last.sequence,
-    ahead: accepted > last.sequence,
+    ahead:
+      accepted > last.sequence ||
+      (accepted > 0 && accepted === last.sequence && !acknowledged) ||
+      (last.sequence > 0 && refused),
   };
 }
 
@@ -369,6 +434,13 @@ export interface Recorder {
   values(values: Readonly<Record<string, unknown>>): void;
   /** A sequence was taken for a save of everything as it stands now: written at once. */
   sent(sequence: number): void;
+  /**
+   * The service accepted the save at `sequence`, once or again: kept at once, beside what was sent,
+   * even once the page has gone (re-review of W11.3, D1).
+   */
+  accepted(sequence: number): void;
+  /** The service refused the save at `sequence` as behind it, stale or conflicting: as `accepted`. */
+  refused(sequence: number): void;
   /** The session claimed afresh, under a new id, from which nothing has been sent. */
   rebind(session: string): void;
   /**
@@ -381,7 +453,8 @@ export interface Recorder {
   /**
    * The page is gone: what is waiting is written, and nothing it is told from here on is, so a save
    * its session queued as it went never writes an older record over the one the next page keeps -
-   * though the sequence that save takes is still kept as sent under its session.
+   * though the sequence that save takes is still kept as sent under its session, and the answer to
+   * it as answered.
    */
   close(): void;
 }
@@ -526,6 +599,12 @@ export function createRecorder(
       kept = { ...kept, sent: { sequence, revision: kept.revision } };
       keepSent(componentId, kept.session, kept.sent, storage);
       write();
+    },
+    accepted(sequence) {
+      keepAnswer(componentId, kept.session, { sequence, accepted: true }, storage);
+    },
+    refused(sequence) {
+      keepAnswer(componentId, kept.session, { sequence, accepted: false }, storage);
     },
     rebind(session) {
       // Nothing has been sent under the new id, so whatever has changed is the service's to have yet:

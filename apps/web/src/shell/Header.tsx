@@ -2,7 +2,7 @@ import { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Administration } from '../admin/Administration.js';
-import { forgetEditing } from '../editor/editing-storage.js';
+import { forgetEditing, keepEditingAgain } from '../editor/editing-storage.js';
 import { THEMES } from '../theme/themes.js';
 import styles from './Header.module.css';
 import type { ModuleName } from './moduleOf.js';
@@ -123,15 +123,42 @@ export function Header({
     };
   }, [client]);
 
+  /** Whether the service says nobody is signed in: false where it says somebody is, or says nothing. */
+  const nobodySignedIn = async () => {
+    try {
+      const { response } = await client.GET('/v1/me');
+      return response.status === 401;
+    } catch {
+      return false;
+    }
+  };
+
   const signOut = async () => {
     // What the editor keeps in this window for a reload is the author's alone: nobody who signs in
     // on the same tab after them is given it (final review of W11.3, D2).
     forgetEditing();
-    await client.POST('/v1/sign-out');
-    // And again, for anything written while the sign-out was on its way - though nothing the editor
-    // keeps is written once the first has run (re-review of W11.3).
-    forgetEditing();
-    onSignedOut();
+    // Signed out where the service says so - ended now, or there was no session to end - or where,
+    // with no answer to the sign-out itself, it says nobody is signed in.
+    let ended = false;
+    try {
+      const { response } = await client.POST('/v1/sign-out');
+      ended = response.ok || response.status === 401;
+    } catch {
+      // No answer: asked below whether the author is signed in still.
+    } finally {
+      if (!ended) ended = await nobodySignedIn();
+    }
+    if (ended) {
+      // And again, for anything written while the sign-out was on its way - though nothing the editor
+      // keeps is written once the first has run (re-review of W11.3).
+      forgetEditing();
+      onSignedOut();
+      return;
+    }
+    // Still signed in, or nothing says otherwise: the page goes on, and keeps what it edits again,
+    // rather than keeping nothing for the rest of it (re-review of W11.3, M2). What was forgotten was
+    // the author's own, and the page still holds it; the editor writes it whole at its next change.
+    keepEditingAgain();
   };
 
   return (

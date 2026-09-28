@@ -71,6 +71,7 @@ import { uploadImage } from './upload.js';
 import { heldSentence } from './held.js';
 import { editingSessionFor, sessionService, storedSessionId } from './service.js';
 import {
+  answerFor,
   continuing,
   createRecorder,
   forgetOffered,
@@ -292,6 +293,13 @@ export function ComponentEditor({
   // dismisses it, through claims, saves and reloads, since by then it is kept nowhere else (re-review
   // of W11.3). `kept`, above, is a refusal's, and a claim that succeeds after it clears it.
   const [offered, setOffered] = useState<string | null>(null);
+  // The same, and for which component and whom, as the page last showed it: a component opened over
+  // again reads it from here rather than from storage, which may have refused to keep it.
+  const offeredShown = useRef<{
+    readonly component: string;
+    readonly principal: string;
+    readonly text: string;
+  } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   // Said through the application's status bar, its one live region, where there is one (interface
   // slice 15); a component opened in place in a document shares it with the document's own notices.
@@ -780,6 +788,9 @@ export function ComponentEditor({
               stored,
               askedSession.current === stored.session ? (component.sequence ?? null) : null,
               sentFor(component.id, stored.session),
+              // What the service said to this window of the last it sent: a save it holds at that
+              // number is this window's only where it said so (re-review of W11.3, D1).
+              answerFor(component.id, stored.session),
             ),
           }
         : null;
@@ -817,12 +828,26 @@ export function ComponentEditor({
       setValuesDrawn((drawn) => drawn + 1);
     }
     // Offered where it says anything the version does not, beside whatever this window offered before
-    // and the author has not dismissed, and kept until they do (re-review of W11.3).
+    // and the author has not dismissed, and kept until they do (re-review of W11.3). What this page
+    // already shows for the component comes first: storage may have refused to keep it, and the record
+    // it came from is forgotten by now, so a component opened over again - for a new client, or the
+    // same component read again - would otherwise read nothing back and lose it (re-review of W11.3,
+    // M3).
     const differs = (text: string | null) => (text !== textOfDoc(opened.doc) ? text : null);
-    const already = readOffered(component.id, principalId);
+    const offeredKept = readOffered(component.id, principalId);
+    const shown =
+      offeredShown.current?.component === component.id &&
+      offeredShown.current.principal === principalId
+        ? offeredShown.current.text
+        : null;
+    const already = shown ?? offeredKept;
     const offeredNow = offeredWith(offeredWith(already, differs(offering)), differs(offeredBehind));
+    offeredShown.current =
+      offeredNow === null
+        ? null
+        : { component: component.id, principal: principalId, text: offeredNow };
     setOffered(offeredNow);
-    if (offeredNow !== null && offeredNow !== already) {
+    if (offeredNow !== null && offeredNow !== offeredKept) {
       keepOffered(component.id, principalId, offeredNow);
     }
     if (differs(offering) !== null) setNotice(KEPT_OFFERED);
@@ -844,6 +869,8 @@ export function ComponentEditor({
       ),
       sequence: startAt,
       onSent: (sequence) => keeping.sent(sequence),
+      onAccepted: (sequence) => keeping.accepted(sequence),
+      onSaveRefused: (sequence) => keeping.refused(sequence),
       clock: clockRef.current,
       timing: timingRef.current,
       version: { id: component.version.id, number: component.version.number },
@@ -1657,6 +1684,7 @@ export function ComponentEditor({
                   type="button"
                   onClick={() => {
                     setOffered(null);
+                    offeredShown.current = null;
                     forgetOffered(componentId);
                     surface?.focus();
                   }}

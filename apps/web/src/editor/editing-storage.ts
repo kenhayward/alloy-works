@@ -52,9 +52,10 @@ export function forgetEditing(storage?: Store): void {
 }
 
 /**
- * Keeps again, as a page that has just loaded does. Nothing in the application calls it - a sign-out
- * reloads the page - but the renderer's test set-up does, since every test stands for a page of its
- * own.
+ * Keeps again, as a page that has just loaded does: called by a sign-out that did not happen, the
+ * author still signed in, so the page they go on editing in keeps what it edits for the rest of it
+ * (re-review of W11.3, M2) - a sign-out that did happen reloads the page. The renderer's test set-up
+ * calls it too, since every test stands for a page of its own.
  */
 export function keepEditingAgain(): void {
   forgotten = false;

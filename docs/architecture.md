@@ -828,7 +828,11 @@ changed. A write the storage refuses first forgets every other component's recor
 stops keeping anything, and removes what was kept, until the next reset. Every sequence sent is also
 kept under `alloy-works:editing-sent:<componentId>:<session>`, only ever rising, written by a save sent
 after the page has gone as well - so a page's last save is not taken on the next page for somebody
-else's. A cut, a restore, a refused claim and Done editing reset the record, and a page's session told of
+else's - and the last answer the service gave to one under
+`alloy-works:editing-acked:<componentId>:<session>`, its sequence and whether it was accepted, once or
+again, or refused as stale or conflicting, only ever rising and written by an answer that arrives after
+the page has gone as well, since `createSession`'s `onAccepted` and `onSaveRefused` are told of a save
+the page sent as it went too. A cut, a restore, a refused claim and Done editing reset the record, and a page's session told of
 a save after its page has gone writes no record. On opening, the component's `GET` names the session id
 the window keeps for the component, whether or not a record is kept, and answers `sequence`; a page that
 goes on under that id starts above it and above the last this window kept as sent under it. `readKept` gives a record only to the principal it was kept for,
@@ -841,9 +845,11 @@ composition, each undo and redo replayed as the command and checked against the 
 history's depth checked after each change, and the history closed at the end; the state is then
 reconfigured with the surface's plugins, and a node selected whole is replaced by a caret beside it.
 Where the service's sequence for the session is above the last this window kept as sent - the record's
-or the rising one's - another page holding the same session has saved past it: `behind` sends and claims
-nothing and goes to `lost` as a stale save does, with Continue and Recover, and the replayed text kept to
-copy. Otherwise the session starts from the larger of the last sequence sent and the service's, and
+or the rising one's - or equal to it without an answer accepting that sequence, or that sequence was
+refused, another page holding the same session may have saved that number first: a sequence sent is not a
+sequence accepted. `behind` sends and claims nothing and goes to `lost` as a stale save does, with
+Continue and Recover, and the replayed text kept to copy; where the save the service holds was this
+window's own after all, whose answer never reached it, the notice is false and nothing is lost. Otherwise the session starts from the larger of the last sequence sent and the service's, and
 `resume` claims again under the same id, neither fresh nor moving, holding the changes as unsent unless
 the service accepted the last send and nothing changed after it. A refusal puts the latest version back
 on screen, the changes offered as text where any were unsent, as any refused claim does. A record that
@@ -857,7 +863,9 @@ duplicate goes on under the session it copied, as a second window of the same au
 service's sequence refuses whichever of the two sends second. `apps/web/src/editor/editing-storage.ts`'s
 `forgetEditing` removes every `alloy-works:editing-` key as the Header signs out, and again just before
 it reloads the page, and sets the flag `mayKeepEditing` answers, which every write of a record, a sent
-sequence, an offered text or a session id asks first, so nothing is written for the rest of the page. The
+sequence, an answer, an offered text or a session id - one a fresh claim mints among them - asks first,
+so nothing is written for the rest of the page; a sign-out with no answer, where `/v1/me` does not say
+nobody is signed in, reloads nothing and sets the flag back with `keepEditingAgain`. The
 renderer's tests clear session storage, and that flag, around every test, since jsdom keeps one storage
 for a whole file.
 

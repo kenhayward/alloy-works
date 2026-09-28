@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { mayKeepEditing } from '../editor/editing-storage.js';
 import { Header, initialsOf } from './Header.js';
 
 /** The service, as far as the header band is concerned. */
@@ -123,6 +124,48 @@ describe('the header band', () => {
 
     await waitFor(() => expect(signedOutNow).toHaveBeenCalled());
     expect(sessionStorage.getItem(steps)).toBeNull();
+  });
+
+  it('goes on keeping what the editor keeps where the sign-out failed and the author is still signed in', async () => {
+    const asked = serviceThat(signedIn);
+    let meAsked = 0;
+    const failing = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      if (request.method === 'POST') throw new TypeError('Failed to fetch');
+      if (new URL(request.url).pathname === '/v1/me') meAsked += 1;
+      return asked(request);
+    }) as unknown as typeof fetch;
+    const signedOutNow = vi.fn();
+    render(<Header module="Components" fetch={failing} onSignedOut={signedOutNow} />);
+    await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
+    const before = meAsked;
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    // Asked again whether anybody is signed in, and they are: the page goes on keeping.
+    await waitFor(() => expect(meAsked).toBe(before + 1));
+    await waitFor(() => expect(mayKeepEditing()).toBe(true));
+    expect(signedOutNow).not.toHaveBeenCalled();
+  });
+
+  it('signs out, keeping nothing more, where the sign-out had no answer but the author is signed out', async () => {
+    const answers = { ...signedIn } as Record<string, unknown>;
+    const asked = serviceThat(answers);
+    const failing = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      if (request.method === 'POST') {
+        // The session ended, but the answer never came back.
+        answers['/v1/me'] = signedOut['/v1/me'];
+        throw new TypeError('Failed to fetch');
+      }
+      return asked(request);
+    }) as unknown as typeof fetch;
+    const signedOutNow = vi.fn();
+    render(<Header module="Components" fetch={failing} onSignedOut={signedOutNow} />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    await waitFor(() => expect(signedOutNow).toHaveBeenCalled());
+    expect(mayKeepEditing()).toBe(false);
   });
 
   it('returns to Home from the mark, which opens no menu', () => {

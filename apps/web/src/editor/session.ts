@@ -235,6 +235,14 @@ export interface SessionOptions {
   readonly sequence?: number;
   /** Told each sequence as it is taken for a save of what is on screen now, for the kept session. */
   readonly onSent?: (sequence: number) => void;
+  /**
+   * Told each sequence the service accepts, once or again, for the kept session: a reload takes the
+   * service's save at the number it last sent for its own only where it was told this (re-review of
+   * W11.3, D1). Told after the page has gone as well as before.
+   */
+  readonly onAccepted?: (sequence: number) => void;
+  /** Told each sequence the service refuses as behind it, stale or conflicting: as `onAccepted`. */
+  readonly onSaveRefused?: (sequence: number) => void;
 }
 
 export interface Session {
@@ -465,6 +473,18 @@ export function createSession(options: SessionOptions): Session {
     publish();
   };
 
+  /**
+   * Tells the kept session how the service answered the save at `sequence`, whether or not the page is
+   * still here to hear it otherwise: accepted, or refused as behind it. Nothing else the service
+   * answers says anything of what it holds at that number.
+   */
+  const answered = (sequence: number, result: SaveResult) => {
+    if (result.ok) options.onAccepted?.(sequence);
+    else if (result.code === 'iteration_stale' || result.code === 'iteration_conflict') {
+      options.onSaveRefused?.(sequence);
+    }
+  };
+
   /** One claim, raced against `timing.claimMs`, its request aborted once the race is lost. */
   const claimWithin = async (move: boolean, fresh: boolean): Promise<ClaimResult> => {
     const controller = new AbortController();
@@ -523,6 +543,9 @@ export function createSession(options: SessionOptions): Session {
       timedOut,
     ]);
     cancel(timer);
+    // Told before anything else, and even once disposed: the page that sent it may have gone, and the
+    // next is to know whether the service took this number from it (re-review of W11.3, D1).
+    answered(sent, result);
     if (disposed) return false;
     if (result.ok) {
       failures = 0;
@@ -956,6 +979,22 @@ export function createSession(options: SessionOptions): Session {
     },
     view,
     dispose() {
+      /**
+       * The last save, sent as the page goes and never retried; its answer is still told, since only
+       * that says whether the service took this number from this window (re-review of W11.3, D1).
+       */
+      const sendAsGone = (
+        at: number,
+        openedFrom: string,
+        body: ContentDocument,
+        held: Readonly<Record<string, unknown>> | undefined,
+      ) => {
+        options.onSent?.(at);
+        void service
+          .save(at, openedFrom, body, undefined, held)
+          .then((result) => answered(at, result))
+          .catch(() => {});
+      };
       // Best effort: an unmount must not drop a change silently (fix round 1, finding 4). Fired before
       // `disposed` is set, so the guards inside `send` do not refuse it - but nothing here awaits the
       // result, retries it, or publishes a view for it: whatever would show either is already gone.
@@ -1006,13 +1045,11 @@ export function createSession(options: SessionOptions): Session {
             // typing silently instead of racing anything.
             void alreadyInFlight.then(() => {
               sequence += 1;
-              options.onSent?.(sequence);
-              void service.save(sequence, openedFrom, body, undefined, held).catch(() => {});
+              sendAsGone(sequence, openedFrom, body, held);
             });
           } else {
             sequence += 1;
-            options.onSent?.(sequence);
-            void service.save(sequence, openedFrom, body, undefined, held).catch(() => {});
+            sendAsGone(sequence, openedFrom, body, held);
           }
         }
       }

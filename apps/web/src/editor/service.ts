@@ -196,8 +196,11 @@ export function sessionService(
       if (fresh) {
         current = crypto.randomUUID();
         try {
-          // As `editingSessionFor`'s: the fallback is resolved inside the try (fix round 1, finding 6).
-          (storage ?? globalThis.sessionStorage).setItem(storageKeyFor(componentId), current);
+          // As `editingSessionFor`'s: the fallback is resolved inside the try (fix round 1, finding 6),
+          // and nothing is kept once the author has signed out on this page (re-review of W11.3, M1).
+          if (mayKeepEditing()) {
+            (storage ?? globalThis.sessionStorage).setItem(storageKeyFor(componentId), current);
+          }
         } catch {
           // Unavailable storage does not stop the session; it just is not remembered across a reload.
         }

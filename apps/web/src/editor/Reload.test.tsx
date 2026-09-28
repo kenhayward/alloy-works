@@ -7,6 +7,7 @@ import {
   type Transaction,
 } from '@alloy-works/editor';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ComponentEditor } from './ComponentEditor.js';
@@ -19,6 +20,8 @@ const ADA = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
 const GRACE = 'f1e2d3c4-b5a6-4978-8899-aabbccddeeff';
 const STEPS = `alloy-works:editing-steps:${COMPONENT}`;
 const SESSION_KEY = `alloy-works:editing-session:${COMPONENT}`;
+/** The last answer this window was given to a save under `session`. */
+const answerKey = (session: string) => `alloy-works:editing-acked:${COMPONENT}:${session}`;
 
 const paragraph = (id: string, text: string, ...more: unknown[]) => ({
   type: 'paragraph',
@@ -95,6 +98,8 @@ interface Save {
  */
 function service() {
   const accepted = new Map<string, number>();
+  /** What each session's latest accepted save held, as the service's digest of it tells them apart. */
+  const held = new Map<string, string>();
   const saves: Save[] = [];
   const claims: { session: string; move?: boolean }[] = [];
   const state = {
@@ -172,10 +177,18 @@ function service() {
       const session = saving[1]!;
       const sequence = Number(saving[2]);
       const latest = accepted.get(session) ?? 0;
-      if (sequence <= latest) {
+      if (sequence < latest) {
         return json(409, { code: 'iteration_stale', message: 'stale', traceId: 't', latest });
       }
+      // The same number again: acknowledged again where it holds the same, refused where it does not,
+      // as packages/db/src/editing.ts answers.
+      if (sequence === latest) {
+        return held.get(session) === JSON.stringify(body)
+          ? json(200, { sequence, lock: lockOf(session) })
+          : json(409, { code: 'iteration_conflict', message: 'conflict', traceId: 't', latest });
+      }
       accepted.set(session, sequence);
+      held.set(session, JSON.stringify(body));
       saves.push({ session, sequence, body: body as Save['body'] });
       return json(200, { sequence, lock: lockOf(session) });
     }
@@ -235,8 +248,18 @@ function service() {
     });
   };
   /** How many saves are waiting to be answered. */
-  const held = () => waiting.length;
-  return { client, state, saves, claims, accepted, release, held };
+  const waitingSaves = () => waiting.length;
+  /**
+   * A save from another page holding the same session - a duplicated tab, whose storage is its own -
+   * accepted at `sequence` with `content`.
+   */
+  const elsewhere = (session: string, sequence: number, content: unknown) => {
+    const saved = { openedFrom: state.version.id, content };
+    accepted.set(session, sequence);
+    held.set(session, JSON.stringify(saved));
+    saves.push({ session, sequence, body: saved });
+  };
+  return { client, state, saves, claims, accepted, release, held: waitingSaves, elsewhere };
 }
 
 type Service = ReturnType<typeof service>;
@@ -679,6 +702,80 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     expect(stack.saves).toHaveLength(2);
   });
 
+  it('CNT-068 opens behind, not saved and with its text offered, where its last save was refused because another page of the same session saved that number first', async () => {
+    const stack = service();
+    const view = await openPage(stack, quick);
+    type(view, ' Mind', 19);
+    await waitFor(() => expect(stack.saves).toHaveLength(1));
+    const held = stack.saves[0]!.session;
+    // Another page holding the same session - a duplicated tab - saves the next number first, so this
+    // page's save of it is refused as conflicting.
+    stack.elsewhere(held, 2, document(paragraph('b1', 'Unbox the printer. Keep the box.')));
+    type(view, ' the cable.', 24);
+    await screen.findByText(/^Newer text was saved from another window/);
+    const claimed = stack.claims.length;
+    const saved = stack.saves.length;
+
+    const again = await reload(stack, quick);
+    await screen.findByText(/^Newer text was saved from another window/);
+    expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
+    expect(screen.getByLabelText('Text from before this page opened')).toHaveValue(
+      'Unbox the printer. Mind the cable.',
+    );
+    expect(screen.getByText('Not saved')).toBeInTheDocument();
+    expect(screen.queryByText('Saved')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
+    expect(stack.claims).toHaveLength(claimed);
+    expect(stack.saves).toHaveLength(saved);
+  });
+
+  it('opens behind, with its text offered, where its last save, sent as the page went, was never answered and the service holds another at that number', async () => {
+    const stack = service();
+    const view = await openPage(stack);
+    type(view, ' Mind the cable.', 19);
+    await editing();
+    const held = stack.state.lock!;
+    const claimed = stack.claims.length;
+
+    // The page goes, sending its last save as it does, which never arrives; another page holding the
+    // same session saves that number meanwhile.
+    const again = await reload(stack, designTiming, {
+      meanwhile: () =>
+        stack.elsewhere(held, 1, document(paragraph('b1', 'Unbox the printer. Keep the box.'))),
+    });
+    await screen.findByText(/^Newer text was saved from another window/);
+    expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
+    expect(screen.getByLabelText('Text from before this page opened')).toHaveValue(
+      'Unbox the printer. Mind the cable.',
+    );
+    expect(stack.claims).toHaveLength(claimed);
+  });
+
+  it('goes on as saved where its last save, sent as the page went, was acknowledged only after the page had gone', async () => {
+    const stack = service();
+    const view = await openPage(stack);
+    type(view, ' Mind the cable.', 19);
+    await editing();
+    const held = stack.state.lock!;
+    // The page goes without a reload, so its last save arrives, and is answered once it has gone.
+    cleanup();
+    await waitFor(() => expect(stack.saves).toHaveLength(1));
+    await waitFor(() =>
+      expect(JSON.parse(sessionStorage.getItem(answerKey(held)) ?? 'null')).toEqual({
+        sequence: 1,
+        accepted: true,
+      }),
+    );
+
+    const again = await reload(stack);
+    await editing();
+    expect(textOf(again)).toBe('Unbox the printer. Mind the cable.');
+    await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
+    expect(screen.queryByText(/^Newer text was saved/)).toBeNull();
+    expect(screen.queryByLabelText('Text from before this page opened')).toBeNull();
+    expect(stack.saves).toHaveLength(1);
+  });
+
   it('CNT-069 replays and goes on after a crash, which fires no pagehide, as after any reload', async () => {
     const stack = service();
     const view = await openPage(stack);
@@ -798,6 +895,54 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     await editing();
     expect(offered()).toBeNull();
     expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull();
+  });
+
+  it('keeps offering the text it offered on opening where storage refuses to keep it, when the page opens the component over again, under StrictMode', async () => {
+    const stack = service();
+    const view = await openPage(stack);
+    type(view, ' Mind the cable.', 19);
+    await editing();
+    stack.state.page += 1;
+    window.dispatchEvent(new Event('pagehide'));
+    cleanup();
+    // What an older build kept, which is offered and not replayed; and storage that is full for it.
+    rewriteKept((kept) => ({ ...kept, format: 1 }));
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
+      this: Storage,
+      key: string,
+      value: string,
+    ) {
+      if (key.startsWith('alloy-works:editing-offered:')) {
+        throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+      }
+      setItem.call(this, key, value);
+    });
+
+    // Each surface the page mounts, in order.
+    const mounted: EditorView[] = [];
+    const page = (client: ReturnType<Service['client']>) => (
+      <StrictMode>
+        <ComponentEditor
+          componentId={COMPONENT}
+          client={client}
+          principalId={ADA}
+          timing={designTiming}
+          onView={(each) => mounted.push(each)}
+        />
+      </StrictMode>
+    );
+    const { rerender } = render(page(stack.client()));
+    const offered = () => screen.queryByLabelText('Text from before this page opened');
+    await waitFor(() => expect(offered()).toHaveValue('Unbox the printer. Mind the cable.'));
+    // Opened over again by the page - given another client, as a parent drawn afresh gives one - with
+    // nothing kept to read it back from: what was offered is offered still.
+    const before = mounted.length;
+    rerender(page(stack.client()));
+    // Once at once, for the new client, and once more for the component it reads again.
+    await waitFor(() => expect(mounted.length).toBeGreaterThanOrEqual(before + 2));
+    await screen.findByLabelText('Title');
+    expect(offered()).toHaveValue('Unbox the printer. Mind the cable.');
   });
 
   it('offers what was kept as text to copy where it will not replay, and opens as a page opened afresh does', async () => {

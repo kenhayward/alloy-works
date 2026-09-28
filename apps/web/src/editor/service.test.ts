@@ -2,6 +2,7 @@ import { createApiClient } from '@alloy-works/api-client';
 import type { ContentDocument } from '@alloy-works/domain';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { forgetEditing } from './editing-storage.js';
 import { editingSessionFor, sessionService } from './service.js';
 
 const COMPONENT = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
@@ -203,6 +204,26 @@ describe('sessionService', () => {
       await service.save(1, 'v1', doc('Unbox'));
       const savedPath = requests[1]!.path;
       expect(savedPath).toBe(`/v1/components/${COMPONENT}/iterations/${sent.session}/1`);
+    });
+
+    it('keeps no id it mints for a reload once the author has signed out on this page (re-review of W11.3)', async () => {
+      const storage = memoryStorage();
+      const { client, requests } = harness(() =>
+        json(200, {
+          lock: {
+            holder: { id: ADA, name: 'Ada' },
+            expectedRelease: 't',
+            yours: true,
+            session: SESSION,
+          },
+        }),
+      );
+      forgetEditing();
+      const service = sessionService(client, COMPONENT, SESSION, ADA, storage);
+      await service.claim(false, true);
+      expect((requests[0]!.body as { session: string }).session).not.toBe(SESSION);
+      expect(storage.peek(`alloy-works:editing-session:${COMPONENT}`)).toBeUndefined();
+      expect(storage.peek(`alloy-works:editing-sessions:${COMPONENT}`)).toBeUndefined();
     });
 
     it('tells the kept session the id it mints, and nothing when claiming under the one it has (W11.3)', async () => {

@@ -24,10 +24,11 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **A reload never saves over newer text.** A reload that finds newer text saved from another tab
   sends nothing over it, and offers **Continue** and **Recover** as a refused save does. A copy of a tab
   carries on as another window of yours does: whichever of the two saves second stops, says newer text
-  was saved from another window, and keeps what it had below for you to copy. A reload after a crash
-  carries on as any reload does.
+  was saved from another window, and keeps what it had below for you to copy - and reloading it does not
+  take what it had for saved. A reload after a crash carries on as any reload does.
 - **Signing out forgets what a reload would bring back**, so nobody who signs in on the same tab after
-  you is given it, and nothing is kept again until the page has reloaded.
+  you is given it, and nothing is kept again until the page has reloaded. If signing out fails and you
+  are still signed in, the page carries on keeping what you edit.
 - If what a reload finds cannot be brought back as it was, it is kept below for you to copy rather than
   lost without a word, and it stays there - through editing, saving and further reloads - until you
   choose **Dismiss**.

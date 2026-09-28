@@ -11,6 +11,7 @@ import { forgetEditing } from './editing-storage.js';
 import type { Clock } from './session.js';
 import { editingSessionFor } from './service.js';
 import {
+  answerFor,
   continuing,
   createRecorder,
   forgetOffered,
@@ -113,6 +114,17 @@ function opened(text = 'Unbox the printer.') {
 
 const fresh = (doc: EditorState['doc']) => createEditorState({ doc, newIdentifier: counter() });
 
+/** A session kept with nothing sent and nothing changed. */
+const freshKept = () =>
+  freshSession({
+    principal: ADA,
+    session: SESSION,
+    version: 'v1',
+    doc: opened(),
+    values: {},
+    sequence: 0,
+  });
+
 /**
  * A surface with a recorder on it, as the component editor runs one; writing at once unless a clock
  * and a delay are given.
@@ -168,6 +180,7 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
     live.type(' Mind', 19, 1_000);
     live.type(' the cable.', 24, 1_100);
     live.recorder.sent(4);
+    live.recorder.accepted(4);
     live.recorder.values({ code: 'B2' });
     live.type(' Then wait.', 35, 9_000);
 
@@ -184,7 +197,11 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
     expect(kept.changes.map((change) => change.history)).toEqual(['new', 'new']);
     expect(kept.revision).toBe(4);
     // Something changed after the last sequence was sent: the values, and the last change.
-    expect(continuing(kept, 4)).toEqual({ sequence: 4, unsent: true, ahead: false });
+    expect(continuing(kept, 4, null, answerFor(COMPONENT, SESSION))).toEqual({
+      sequence: 4,
+      unsent: true,
+      ahead: false,
+    });
   });
 
   it('replays what it keeps into the document and the history the session had', () => {
@@ -200,9 +217,14 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
     const live = recording();
     live.type(' Mind', 19, 1_000);
     live.recorder.sent(3);
+    live.recorder.accepted(3);
     const kept = readStoredSession(COMPONENT)!;
-    // The service has what was sent, and nothing has changed since.
-    expect(continuing(kept, 3)).toEqual({ sequence: 3, unsent: false, ahead: false });
+    // The service has what was sent, acknowledged to this window, and nothing has changed since.
+    expect(continuing(kept, 3, null, answerFor(COMPONENT, SESSION))).toEqual({
+      sequence: 3,
+      unsent: false,
+      ahead: false,
+    });
     // What was sent never arrived.
     expect(continuing(kept, 2)).toEqual({ sequence: 3, unsent: true, ahead: false });
     expect(continuing(kept, null)).toEqual({ sequence: 3, unsent: true, ahead: false });
@@ -215,16 +237,68 @@ describe('the session kept for a reload (component-editor.md, "Undo across a rel
     const kept = readStoredSession(COMPONENT)!;
     // Another page holding the same session - a duplicated tab - saved past it: nothing goes on.
     expect(continuing(kept, 7)).toMatchObject({ ahead: true });
-    // Unless it was this window's own last save, sent as its page went, after the record was closed.
+    // Unless it was this window's own last save, sent as its page went, after the record was closed,
+    // and acknowledged to it once the page had gone.
     live.recorder.close();
     live.recorder.sent(7);
     expect(readStoredSession(COMPONENT)!.sent.sequence).toBe(3);
-    expect(continuing(kept, 7, sentFor(COMPONENT, SESSION))).toEqual({
-      sequence: 7,
+    expect(continuing(kept, 7, sentFor(COMPONENT, SESSION))).toMatchObject({ ahead: true });
+    live.recorder.accepted(7);
+    expect(continuing(kept, 7, sentFor(COMPONENT, SESSION), answerFor(COMPONENT, SESSION))).toEqual(
+      { sequence: 7, unsent: false, ahead: false },
+    );
+    expect(
+      continuing(kept, 8, sentFor(COMPONENT, SESSION), answerFor(COMPONENT, SESSION)),
+    ).toMatchObject({ ahead: true });
+  });
+
+  it('takes a save the service holds at the number it last sent for somebody else unless the service acknowledged it to this window, and never where it refused it (re-review of W11.3, D1)', () => {
+    const live = recording();
+    live.type(' Mind', 19, 1_000);
+    live.recorder.sent(3);
+    const kept = () => readStoredSession(COMPONENT)!;
+    const answer = () => answerFor(COMPONENT, SESSION);
+    // Sent, and never answered: what the service holds at that number may be another page's.
+    expect(continuing(kept(), 3, null, answer())).toMatchObject({ ahead: true });
+    live.recorder.accepted(3);
+    expect(continuing(kept(), 3, null, answer())).toEqual({
+      sequence: 3,
       unsent: false,
       ahead: false,
     });
-    expect(continuing(kept, 8, sentFor(COMPONENT, SESSION))).toMatchObject({ ahead: true });
+    // An answer to an earlier number says nothing of the last.
+    live.recorder.sent(4);
+    expect(continuing(kept(), 4, null, answer())).toMatchObject({ ahead: true });
+    // Refused, as another page of the same session saved that number first: behind it, whatever the
+    // service is asked or answers.
+    live.recorder.refused(4);
+    expect(continuing(kept(), 4, null, answer())).toMatchObject({ ahead: true });
+    expect(continuing(kept(), null, null, answer())).toMatchObject({ ahead: true });
+    // Nothing of the kind before anything is sent, or where the service has nothing yet.
+    expect(continuing(freshKept(), 0, null, null)).toMatchObject({ ahead: false });
+    expect(continuing(freshKept(), null, null, null)).toMatchObject({ ahead: false });
+  });
+
+  it('keeps the last answer to a save under a session only ever rising, written after the page has gone, and nothing once signed out', () => {
+    const live = recording();
+    live.type(' Mind', 19, 1_000);
+    live.recorder.sent(4);
+    live.recorder.close();
+    live.recorder.accepted(4);
+    expect(answerFor(COMPONENT, SESSION)).toEqual({ sequence: 4, accepted: true });
+    live.recorder.accepted(3);
+    live.recorder.refused(2);
+    expect(answerFor(COMPONENT, SESSION)).toEqual({ sequence: 4, accepted: true });
+    live.recorder.refused(5);
+    expect(answerFor(COMPONENT, SESSION)).toEqual({ sequence: 5, accepted: false });
+    expect(answerFor(COMPONENT, OTHER)).toBeNull();
+    sessionStorage.setItem(`alloy-works:editing-acked:${COMPONENT}:${OTHER}`, '{"sequence":-1}');
+    expect(answerFor(COMPONENT, OTHER)).toBeNull();
+
+    forgetEditing();
+    expect(answerFor(COMPONENT, SESSION)).toBeNull();
+    live.recorder.accepted(6);
+    expect(answerFor(COMPONENT, SESSION)).toBeNull();
   });
 
   it('keeps the last sequence sent under a session only ever rising, whatever sends it', () => {

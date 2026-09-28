@@ -120,7 +120,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   not brought back, and **Recover** has what was saved of it. A reload after newer text was saved from
   another tab never saves over it: what you had is kept below for you to copy, with **Continue** and
   **Recover**. A copy of the tab carries on as another window of yours does, and whichever of the two
-  saves second stops and keeps what it had for you to copy. Text a reload offers you to copy stays
+  saves second stops and keeps what it had for you to copy, and still does after a reload. Text a
+  reload offers you to copy stays
   there, through editing, saving and further reloads, until you **Dismiss** it. Signing out
   forgets it all, so nobody signing in on the same tab after you is given it. Pasting is refused rather than
   put in unexamined. A pause longer than fifteen minutes lets somebody else start editing, but if
