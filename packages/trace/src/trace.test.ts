@@ -72,6 +72,8 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1470);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 495, from 494 (2026-09-28): W14.6 - word-output.md claims PUB-100. IAM-075 stays unclaimed:
+    // service-foundations.md names a sign-in client secret as the store that is not tenant-scoped.
     // 494, from 493 (2026-09-28): document-view.md claims IAM-080, IAM-023's T1 half; publishing.md's PUB-003 claim moved to PUB-098.
     // 493, from 492 (2026-09-27): W10.0 - publishing.md claims CNT-150, the preview beside the text.
     // 492, from 483 (2026-09-27): W9.0 - document-view.md claims CNT-072, CNT-073, CNT-154, CNT-105,
@@ -202,7 +204,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(494);
+    ).toBe(495);
   });
 });
 
@@ -552,6 +554,9 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 507, from 502 (2026-09-28): W14.6 - PUB-100 in three files, domain's word/write.test.ts, the
+  // worker's word.test.ts and apps/web's PublicationPage.test.tsx; IAM-080 in apps/web's
+  // DocumentPage.test.tsx, retitled; and SCH-008 in packages/db's tenant-database.test.ts.
   // 502, from 500 (2026-09-28): W12.4 - IAM-029 in apps/web's access/AccessPanel.test.tsx, where an
   // administrator chooses a person and reads every permission with its answer on a document, a
   // template, a space and the environment; and IAM-030 in apps/service's access-routes.test.ts, where
@@ -641,7 +646,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(502);
+    expect(model.citations).toHaveLength(507);
   });
 
   it('cites no identifier the corpus does not hold', () => {

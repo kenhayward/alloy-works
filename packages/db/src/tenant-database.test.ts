@@ -109,6 +109,53 @@ describe('the tenant database', () => {
     ).rejects.toThrow(/permission denied/);
   });
 
+  it("SCH-008 keeps the search projection in each tenant's own schema, which another tenant's runtime role cannot read or write even by naming it", async () => {
+    for (const table of ['search_entry', 'search_text']) {
+      // Its own is there to read; the other tenant's refuses it outright.
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`select count(*) from ${sql.table(table)}`.execute(trx),
+        ),
+        table,
+      ).resolves.toBeDefined();
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`select * from ${sql.id(development.schema, table)}`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`delete from ${sql.id(development.schema, table)}`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
+    }
+  });
+
+  it("keeps publications - their requests, records, inputs and outputs - in each tenant's own schema, which another tenant's runtime role cannot read even by naming them", async () => {
+    for (const table of [
+      'publication_request',
+      'publication',
+      'publication_input',
+      'publication_output',
+      'publication_asset',
+    ]) {
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`select count(*) from ${sql.table(table)}`.execute(trx),
+        ),
+        table,
+      ).resolves.toBeDefined();
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`select * from ${sql.id(development.schema, table)}`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
+    }
+  });
+
   it('cannot rewrite its own migration history', async () => {
     await expect(
       service.withTenant(production, (trx) => sql`delete from schema_migration`.execute(trx)),

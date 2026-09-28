@@ -3,6 +3,21 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.116.0 - 2026-09-28 (PR #313)
+
+### Added
+
+- **A publication's page says everything its Word document cannot carry for a screen reader.**
+  The PDF tells a screen reader that a quotation is a quotation, that preformatted text and inline
+  code are code, that a quoted phrase is a quotation and that a definition list is a list, and reads
+  an image's description in the language it is written in. Word has no way to say these, so the page
+  now says which of them the Word document holds, once each, counting the places.
+- **Numbered equations and maths in Word are explained on the publication's page.** Each numbered
+  equation is named as set in Word as a table of one row, which a screen reader announces as a
+  table. A Word document with equations says once that Word reads them aloud in its own words rather
+  than the description written for them, and that the characters of Word's maths typeface, Cambria
+  Math, are not checked.
+
 ## 0.113.3 - 2026-09-28 (PR #310)
 
 ### Fixed

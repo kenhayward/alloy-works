@@ -3377,7 +3377,7 @@ describe('the address of every node', () => {
       expect(within(modeOf()).getByRole('radio', { name: 'Reading' })).toBeChecked();
     });
 
-    it('CNT-105 offers Authoring to whoever may change the document or a component it places, and to nobody else', async () => {
+    it('CNT-105 IAM-080 offers Authoring to whoever may change the document or a component it places, and to nobody else', async () => {
       // Neither: no switch at all, and the page reads.
       const { shown } = await openAs({ document: false, component: false });
       expect(screen.queryByRole('radiogroup', { name: 'Mode' })).toBeNull();

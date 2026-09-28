@@ -103,6 +103,31 @@ last of the editor's T1 features, a spelling checker in the desktop app and a sy
 3. IAM-080 cited by the W9 test that shows it.
 4. Tests: PUB-100, IAM-075, IAM-080.
 
+**W14.6, as built.** Nine report kinds, `outputReportSchema`'s new members, written by `writeDocx`
+and worded on the publication's page: `description_language_lost`, `quotation_not_structure`,
+`preformatted_not_structure`, `definition_list_not_structure`, `quoted_phrase_not_structure` and
+`inline_code_not_structure`, each by its place - the node and the block, a quoted phrase's or inline
+code's the block of runs, a heading's none - and said once for each; `equation_numbered_as_table`,
+by its place and label; and, once for a document setting an equation, `equation_alternative_lost` and
+`maths_coverage_unchecked`, the Word family named. Three are more than W-J named, found by reading
+every construct template 13 tags against the writer: a **definition list**, which the PDF tags as a
+list and Word sets as paragraphs; **inline code**, which the PDF tags `Code`; and an **equation's
+alternative**, which the PDF's `Formula` carries and OMML has no place for. **The maths face's
+characters are reported once per document, not per character**: Cambria Math is not a face the
+product ships and its coverage is not kept as data, so which characters Word draws from another face
+cannot honestly be said here. The page says each kind named by a place alone once, counting its
+places (`reportLines`), rather than a sentence per place. **PUB-100 is claimed** by word-output.md,
+read clause by clause in its Accessibility section, and cited by `word/write.test.ts`'s three report
+tests, the web page's and the worker's two tests over the whole document, which carry every clause
+and name every kind. **IAM-075 is not claimed**: service-foundations.md's "Tenant scope of every
+store" shows the search projection, objects, publications, the object store's credentials, sessions,
+tokens and the caches scoped, but a sign-in client secret is read from the service's one secret store
+by the name a tenant's row gives, and the OpenID Connect configurations are kept by issuer and client
+with the secret they were discovered with, so two tenants naming one client share one secret. The
+stores' new tests cite nothing but SCH-008, since citing an unclaimed requirement fails `trace
+check`; each is ready to cite IAM-075 when the claim is made. **IAM-080** is cited by the W9 test
+that offers Authoring only where the permissions give it.
+
 ## W14.7: The spelling checker and the symbol palette
 
 1. `setSpellCheckLanguages` on the platform bridge; the shell's pure mapping, pinned by a test; the
