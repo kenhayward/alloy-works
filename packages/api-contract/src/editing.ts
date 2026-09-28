@@ -2,6 +2,7 @@ import { storableEverywhere } from '@alloy-works/domain';
 import { z } from 'zod';
 import { ComponentParams, Lock, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
+import { nextCursor, pageQuery } from './listing.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
 /** An iteration's address: the component, the editing session, and the session's sequence number. */
@@ -56,6 +57,47 @@ export type CutBody = z.infer<typeof CutBody>;
 
 export const ReleaseQuery = z.object({ session: LowercaseUuid, openedFrom: LowercaseUuid });
 export type ReleaseQuery = z.infer<typeof ReleaseQuery>;
+
+/**
+ * Reading iterations back (component-editor.md, "Recovery, as W11 builds it"): the caller's own, while
+ * the editing session named here holds the lock (RC-A).
+ */
+const HoldingSession = LowercaseUuid.describe(
+  'The editing session asking, which must hold the lock on the component',
+);
+
+export const IterationListQuery = z.object({ session: HoldingSession, ...pageQuery });
+export type IterationListQuery = z.infer<typeof IterationListQuery>;
+
+export const SavedIterationParams = z.object({ id: z.uuid(), iteration: LowercaseUuid });
+export type SavedIterationParams = z.infer<typeof SavedIterationParams>;
+
+export const SavedIterationQuery = z.object({ session: HoldingSession });
+export type SavedIterationQuery = z.infer<typeof SavedIterationQuery>;
+
+const IterationSummary = z.object({
+  id: z.string(),
+  session: z.string().describe("The editing session that wrote it, one of the caller's own"),
+  sequence: z.number().int(),
+  createdAt: z.string().describe('When the service accepted it'),
+  openedFrom: z
+    .object({ id: z.string(), number: z.string().describe('`revision.version`, as `0.2`') })
+    .describe('The version the session that wrote it had opened'),
+});
+
+export const IterationList = z.object({
+  items: z.array(IterationSummary).describe('Newest first, with no content (RC-E)'),
+  next: nextCursor,
+});
+export type IterationList = z.infer<typeof IterationList>;
+
+export const SavedIteration = IterationSummary.extend({
+  content: z
+    .record(z.string(), z.unknown())
+    .describe('The whole content document, as stored: migrated and validated by its reader'),
+  values: z.record(z.string(), z.unknown()).describe("The component's values it was saved with"),
+});
+export type SavedIteration = z.infer<typeof SavedIteration>;
 
 export const CutAnswer = z.object({
   outcome: z
@@ -196,6 +238,56 @@ export const editingRoutes = {
       403: forbidden,
       404: notFound,
       409: refused,
+    },
+  },
+  listIterations: {
+    operationId: 'listIterations',
+    method: 'GET',
+    path: '/v1/components/{id}/iterations',
+    summary:
+      "The caller's own retained iterations of the component, newest first, while their session holds the lock",
+    tenantScoped: true,
+    access: edit,
+    params: ComponentParams,
+    query: IterationListQuery,
+    responses: {
+      200: { description: 'A page of iterations, with no content', schema: IterationList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: forbidden,
+      404: notFound,
+      409: {
+        description: 'lock_held or lock_required: the session named does not hold the lock',
+        schema: EditingRefusal,
+      },
+    },
+  },
+  getIteration: {
+    operationId: 'getIteration',
+    method: 'GET',
+    path: '/v1/components/{id}/iterations/{iteration}',
+    summary:
+      "One of the caller's own retained iterations, content and values, while their session holds the lock",
+    tenantScoped: true,
+    access: edit,
+    params: SavedIterationParams,
+    query: SavedIterationQuery,
+    responses: {
+      200: { description: 'The iteration, whole', schema: SavedIteration },
+      401: unauthenticated,
+      403: forbidden,
+      404: {
+        description:
+          "No such component or iteration, or one that is not the caller's own or is no longer kept",
+        schema: ErrorBody,
+      },
+      409: {
+        description: 'lock_held or lock_required: the session named does not hold the lock',
+        schema: EditingRefusal,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

@@ -152,6 +152,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/components/{id}/iterations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's own retained iterations of the component, newest first, while their session holds the lock */
+        get: operations["listIterations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/components/{id}/iterations/{iteration}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the caller's own retained iterations, content and values, while their session holds the lock */
+        get: operations["getIteration"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components/{id}/iterations/{session}/{sequence}": {
         parameters: {
             query?: never;
@@ -2223,6 +2257,11 @@ export interface operations {
                             /** @description The holding session, told only to its own principal */
                             session: string | null;
                         } | null;
+                        /** @description The caller's own newest iteration opened from the latest version, work saved and never made a version, by its time alone; null where there is none */
+                        unsaved: {
+                            /** @description When the service accepted it */
+                            savedAt: string;
+                        } | null;
                         /** @description The component type its latest version records, at the current version */
                         type: {
                             id: string;
@@ -2311,6 +2350,340 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listIterations: {
+        parameters: {
+            query: {
+                session: string & (unknown & unknown);
+                cursor?: string;
+                limit?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of iterations, with no content */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Newest first, with no content (RC-E) */
+                        items: {
+                            id: string;
+                            /** @description The editing session that wrote it, one of the caller's own */
+                            session: string;
+                            sequence: number;
+                            /** @description When the service accepted it */
+                            createdAt: string;
+                            /** @description The version the session that wrote it had opened */
+                            openedFrom: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                            };
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not edit it */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description lock_held or lock_required: the session named does not hold the lock */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        holder?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        expectedRelease?: string;
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        latest?: number;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getIteration: {
+        parameters: {
+            query: {
+                session: string & (unknown & unknown);
+            };
+            header?: never;
+            path: {
+                id: string;
+                iteration: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The iteration, whole */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @description The editing session that wrote it, one of the caller's own */
+                        session: string;
+                        sequence: number;
+                        /** @description When the service accepted it */
+                        createdAt: string;
+                        /** @description The version the session that wrote it had opened */
+                        openedFrom: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                        };
+                        /** @description The whole content document, as stored: migrated and validated by its reader */
+                        content: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The component's values it was saved with */
+                        values: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not edit it */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component or iteration, or one that is not the caller's own or is no longer kept */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description lock_held or lock_required: the session named does not hold the lock */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        holder?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        expectedRelease?: string;
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        latest?: number;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
                     };
                 };
             };
@@ -9632,6 +10005,11 @@ export interface operations {
                             yours: boolean;
                             /** @description The holding session, told only to its own principal */
                             session: string | null;
+                        } | null;
+                        /** @description The caller's own newest iteration opened from the latest version, work saved and never made a version, by its time alone; null where there is none */
+                        unsaved: {
+                            /** @description When the service accepted it */
+                            savedAt: string;
                         } | null;
                         /** @description The component type its latest version records, at the current version */
                         type: {

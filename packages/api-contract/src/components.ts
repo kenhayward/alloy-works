@@ -172,6 +172,12 @@ export const ComponentView = z.object({
     .describe("The latest version's content document (content-model.md), exactly as stored"),
   mayEdit: z.boolean().describe('Whether the caller may take the lock and write'),
   lock: Lock.nullable(),
+  unsaved: z
+    .object({ savedAt: z.string().describe('When the service accepted it') })
+    .nullable()
+    .describe(
+      "The caller's own newest iteration opened from the latest version, work saved and never made a version, by its time alone; null where there is none",
+    ),
   type: z
     .object({ id: z.string(), name: z.string() })
     .describe('The component type its latest version records, at the current version'),

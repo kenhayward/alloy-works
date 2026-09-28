@@ -321,5 +321,12 @@ describe('reading iterations back for Recovery', () => {
     // Made a version: the iterations are of the version before, and nothing is unsaved.
     await ada.cut();
     expect(await uncut('ada')).toBeNull();
+
+    // Changed and changed back: what was saved last is what the latest version holds, so nothing
+    // saved is missing from a version, whatever came before it.
+    await ada.save('Unbox the printer, keep the box and the manual.');
+    expect(await uncut('ada')).not.toBeNull();
+    await ada.save('Unbox the printer and keep the box.');
+    expect(await uncut('ada')).toBeNull();
   });
 });

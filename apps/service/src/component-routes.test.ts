@@ -256,6 +256,8 @@ describe('finding and opening components through the service', () => {
         content: paragraphs('Unbox the printer.'),
         mayEdit: true,
         lock: null,
+        // Nothing saved and never made a version, by anybody.
+        unsaved: null,
         // The starter type, Topic, assigns no schema: no fields, and no values.
         type: { id: STARTER_COMPONENT_TYPE_ID, name: 'Topic' },
         fields: [],

@@ -1,4 +1,6 @@
+import { parseContentDocument } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import { iterationDigest } from './editing.js';
 import {
   checkedLimit,
   isListingRequest,
@@ -149,6 +151,10 @@ export async function readIteration(
  * iteration opened from its latest version, or null. Only the time: nothing of the work leaves the
  * store until the lock is held. An iteration opened from the latest version has no later cut, so the
  * sweep keeps it and there is no window to ask about.
+ *
+ * Null too where that newest iteration holds exactly what the latest version holds, content and
+ * values, by the iteration's own digest: text changed and changed back, then Done editing with
+ * nothing to cut, left nothing a version lacks, and offering to recover it would be noise.
  */
 export async function newestUncutIteration(
   trx: TenantTransaction,
@@ -159,12 +165,14 @@ export async function newestUncutIteration(
   if (!latest) return null;
   const row = await trx
     .selectFrom('iteration')
-    .select('created_at')
+    .select(['created_at', 'digest'])
     .where('artifact_id', '=', owner.artifactId)
     .where('principal_id', '=', owner.principalId)
     .where('opened_from', '=', latest.id)
     .orderBy('created_at', 'desc')
     .limit(1)
     .executeTakeFirst();
-  return row?.created_at ?? null;
+  if (!row) return null;
+  const latestHolds = iterationDigest(parseContentDocument(latest.content), latest.values);
+  return row.digest === latestHolds ? null : row.created_at;
 }

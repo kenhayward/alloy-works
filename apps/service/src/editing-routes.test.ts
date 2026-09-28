@@ -591,4 +591,157 @@ describe('writing in an editing session through the service', () => {
       expect(statuses).toEqual([200, 200, 200]);
     });
   });
+
+  describe('reading iterations back for Recovery', () => {
+    type Listed = {
+      items: {
+        id: string;
+        session: string;
+        sequence: number;
+        createdAt: string;
+        openedFrom: { id: string; number: string };
+      }[];
+      next: string | null;
+    };
+
+    /** Claims for a session of `who`, moving it from their own other one, and saves each text. */
+    const saving = async (
+      who: string,
+      made: { id: string; openedFrom: string },
+      ...texts: string[]
+    ) => {
+      const session = randomUUID();
+      const claimed = await call(who, 'POST', `/v1/components/${made.id}/lock`, {
+        session,
+        move: true,
+      });
+      expect(claimed.statusCode, claimed.body).toBe(200);
+      for (const [at, text] of texts.entries()) {
+        const saved = await call(
+          who,
+          'PUT',
+          `/v1/components/${made.id}/iterations/${session}/${at + 1}`,
+          { openedFrom: made.openedFrom, content: paragraphs(text) },
+        );
+        expect(saved.statusCode, saved.body).toBe(200);
+      }
+      return session;
+    };
+
+    const listed = (who: string | undefined, id: string, session: string, more = '') =>
+      call(who, 'GET', `/v1/components/${id}/iterations?session=${session}${more}`);
+
+    it('CNT-174 answers the writer their own iterations while they hold the lock, from any session of theirs, newest first and content only one at a time', async () => {
+      const made = await component();
+      const first = await saving('ada', made, 'Unbox', 'Unbox the printer and keep the box.');
+      // Ada's second window, which moved the lock to itself.
+      const second = await saving('ada', made, 'Plug it in.');
+
+      const page = await listed('ada', made.id, second);
+      expect(page.statusCode, page.body).toBe(200);
+      const { items, next } = page.json<Listed>();
+      expect(next).toBeNull();
+      expect(items.map((each) => [each.session, each.sequence])).toEqual([
+        [second, 1],
+        [first, 2],
+        [first, 1],
+      ]);
+      expect(items[0]).toEqual({
+        id: expect.any(String),
+        session: second,
+        sequence: 1,
+        createdAt: expect.any(String),
+        openedFrom: { id: made.openedFrom, number: '0.1' },
+      });
+
+      const one = await call(
+        'ada',
+        'GET',
+        `/v1/components/${made.id}/iterations/${items[1]!.id}?session=${second}`,
+      );
+      expect(one.statusCode, one.body).toBe(200);
+      expect(one.json()).toEqual({
+        ...items[1],
+        content: paragraphs('Unbox the printer and keep the box.'),
+        values: {},
+      });
+    });
+
+    it('CNT-174 refuses the writer without the lock, and never answers anybody else, a reader, or a component they may not read', async () => {
+      const made = await component();
+      const first = await saving('ada', made, 'Unbox the printer.');
+      const [mine] = (await listed('ada', made.id, first)).json<Listed>().items;
+      const one = (who: string | undefined, session: string) =>
+        call(who, 'GET', `/v1/components/${made.id}/iterations/${mine!.id}?session=${session}`);
+
+      // Moved to Ada's other window: the first is refused as any write from it is.
+      const second = await saving('ada', made);
+      for (const response of [await listed('ada', made.id, first), await one('ada', first)]) {
+        expect(response.statusCode).toBe(409);
+        expect(response.json()).toMatchObject({ code: 'lock_held', holder: { id: ids.ada } });
+      }
+
+      // Nobody holds it now.
+      await tenantDb.withTenant(tenant, (trx) =>
+        trx.deleteFrom('component_lock').where('artifact_id', '=', made.id).execute(),
+      );
+      for (const response of [await listed('ada', made.id, second), await one('ada', second)]) {
+        expect(response.statusCode).toBe(409);
+        expect(response.json()).toMatchObject({ code: 'lock_required' });
+      }
+
+      // Grace takes it, and is answered her own, which is nothing: never her predecessor's.
+      const hers = await saving('grace', made);
+      const graces = await listed('grace', made.id, hers);
+      expect(graces.statusCode).toBe(200);
+      expect(graces.json()).toEqual({ items: [], next: null });
+      const asked = await one('grace', hers);
+      expect(asked.statusCode).toBe(404);
+      expect(asked.body).not.toContain('Unbox');
+      // Ada, while Grace holds it, is told who.
+      const held = await listed('ada', made.id, first);
+      expect(held.statusCode).toBe(409);
+      expect(held.json()).toMatchObject({ code: 'lock_held', holder: { id: ids.grace } });
+
+      // A reader may not edit, so may not ask; a component nobody here may read is not there.
+      expect((await listed('alice', made.id, randomUUID())).statusCode).toBe(403);
+      expect((await one('alice', randomUUID())).statusCode).toBe(403);
+      expect((await listed('grace', hidden, hers)).statusCode).toBe(404);
+      expect((await listed(undefined, made.id, hers)).statusCode).toBe(401);
+    });
+
+    it('pages the listing over a cursor it gave out, and refuses one it did not', async () => {
+      const made = await component();
+      const session = await saving('ada', made, 'One.', 'Two.', 'Three.');
+      const first = (await listed('ada', made.id, session, '&limit=2')).json<Listed>();
+      expect(first.items.map((each) => each.sequence)).toEqual([3, 2]);
+      expect(first.next).toEqual(expect.any(String));
+      const second = await listed('ada', made.id, session, `&limit=2&cursor=${first.next}`);
+      expect(second.json<Listed>().items.map((each) => each.sequence)).toEqual([1]);
+      expect(second.json<Listed>().next).toBeNull();
+
+      const people = (await call('ada', 'GET', '/v1/people?limit=1')).json<{ next: string }>();
+      const foreign = await listed('ada', made.id, session, `&cursor=${people.next}`);
+      expect(foreign.statusCode).toBe(400);
+    });
+
+    it("tells the component's caller, and nobody else, when they last saved work never made a version", async () => {
+      const made = await component();
+      const unsaved = async (who: string) =>
+        (await call(who, 'GET', `/v1/components/${made.id}`)).json<{ unsaved: unknown }>().unsaved;
+      expect(await unsaved('ada')).toBeNull();
+
+      const session = await saving('ada', made, 'Unbox the printer and keep the box.');
+      const [newest] = (await listed('ada', made.id, session)).json<Listed>().items;
+      expect(await unsaved('ada')).toEqual({ savedAt: newest!.createdAt });
+      expect(await unsaved('grace')).toBeNull();
+      expect(await unsaved('alice')).toBeNull();
+
+      await call('ada', 'POST', `/v1/components/${made.id}/versions`, {
+        session,
+        openedFrom: made.openedFrom,
+      });
+      expect(await unsaved('ada')).toBeNull();
+    });
+  });
 });

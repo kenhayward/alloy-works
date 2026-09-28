@@ -16,6 +16,7 @@ import {
   listReadableComponents,
   listVersions,
   listSpacesFor,
+  newestUncutIteration,
   readLock,
   type LockState,
   type StoredVersion,
@@ -234,6 +235,8 @@ export function componentHandlers(
         // cannot exist yet; nothing has had a chance to make one.
         mayEdit: decide('edit', facts).allowed,
         lock: null,
+        // Nothing has been saved of a component made a moment ago.
+        unsaved: null,
         ...(await metadataView(trx, version)),
       };
     },
@@ -323,6 +326,9 @@ export function componentHandlers(
         .where('a.id', '=', id)
         .executeTakeFirstOrThrow();
       const lock = await readLock(trx, id);
+      // The caller's own, and only its time (RC-F): what a closed tab left that was never made a
+      // version, offered as Recover. What it holds is read only under the lock.
+      const unsaved = await newestUncutIteration(trx, { artifactId: id, principalId });
       return {
         id,
         space,
@@ -331,6 +337,7 @@ export function componentHandlers(
         // What the renderer offers from: the same decision a write would be refused by.
         mayEdit: decide('edit', facts).allowed,
         lock: lock ? lockView(lock, principalId) : null,
+        unsaved: unsaved === null ? null : { savedAt: unsaved.toISOString() },
         ...(await metadataView(trx, version)),
       };
     },

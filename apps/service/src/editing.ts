@@ -4,17 +4,26 @@ import type {
   CutAnswer,
   CutBody,
   IterationBody,
+  IterationListQuery,
   IterationParams,
   ReleaseQuery,
+  SavedIterationParams,
+  SavedIterationQuery,
 } from '@alloy-works/api-contract';
 import {
   claimLock,
   cutVersion,
+  holding,
+  isHolderRefusal,
   latestVersion,
+  listIterations,
+  readIteration,
   releaseLock,
   saveIteration,
   type HolderRefusal,
+  type IterationSummary,
   type StoredVersion,
+  type TenantTransaction,
 } from '@alloy-works/db';
 import {
   hasText,
@@ -27,6 +36,7 @@ import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { lockView, versionView } from './components.js';
 import type { AppError } from './errors.js';
+import { cursorFor, pageAsked } from './listing.js';
 import { refused } from './wire-codes.js';
 
 /** Every refusal a session's write can meet from the store. */
@@ -89,6 +99,31 @@ function refuse(refusal: Refusal): AppError {
   }
 }
 
+/** An iteration as the API lists it: when, from which of the caller's sessions, against what. */
+function iterationView(iteration: IterationSummary) {
+  return {
+    id: iteration.id,
+    session: iteration.sessionId,
+    sequence: iteration.sequence,
+    createdAt: iteration.createdAt.toISOString(),
+    openedFrom: { ...iteration.openedFrom },
+  };
+}
+
+/**
+ * Reading an iteration back needs the lock, held by the session asking (RC-A): refused as a write
+ * from a session that does not hold it is, `lock_held` naming the holder or `lock_required`.
+ */
+async function mustHold(
+  trx: TenantTransaction,
+  artifactId: string,
+  principal: string,
+  session: string,
+): Promise<void> {
+  const held = await holding(trx, { artifactId, principal, session });
+  if (isHolderRefusal(held)) throw refuse(held);
+}
+
 /**
  * The handlers for writing in an editing session. Each runs in the transaction `edit` was decided in.
  * None changes a fact a decision reads - a lock, an iteration and a version are not grants, roles,
@@ -141,6 +176,41 @@ export function editingHandlers() {
       });
       if (answer.answer !== 'accepted') throw refuse(answer);
       return { sequence: answer.sequence, lock: lockView(answer.lock, principalId) };
+    },
+
+    /**
+     * The caller's own retained iterations of the component, newest first, a page at a time, while
+     * their session holds the lock (component-editor.md, "Recovery, as W11 builds it"). Only ever the
+     * caller's own: another author who holds the lock later is answered theirs, never this one's.
+     */
+    listIterations: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+      const { id } = request.params as ComponentParams;
+      const query = request.query as IterationListQuery;
+      const asked = pageAsked('iterations', query);
+      await mustHold(trx, id, principalId, query.session);
+      const page = await listIterations(trx, { artifactId: id, principalId, ...asked });
+      return {
+        items: page.items.map(iterationView),
+        next: cursorFor('iterations', asked.sort, asked.order, page.snapshot, page.next),
+      };
+    },
+
+    /** One of them, content and values (RC-E); any other id is a 404, whoever's it is. */
+    getIteration: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+      const params = request.params as SavedIterationParams;
+      const query = request.query as SavedIterationQuery;
+      await mustHold(trx, params.id, principalId, query.session);
+      const iteration = await readIteration(trx, {
+        artifactId: params.id,
+        principalId,
+        iterationId: params.iteration,
+      });
+      if (!iteration) throw notFound();
+      return {
+        ...iterationView(iteration),
+        content: iteration.content as Record<string, unknown>,
+        values: iteration.values,
+      };
     },
 
     cutVersion: async (
