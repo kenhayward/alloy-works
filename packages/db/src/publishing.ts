@@ -889,6 +889,12 @@ export async function recordPublication(
     const id = await insertPublication(trx, request, input);
     // Found by its words from the moment it is recorded, as a version is (search.md; SCH-066).
     await indexPublication(trx, id);
+    // Its PDF checked by veraPDF afterwards, by a job queued now, in this transaction (W14.1, W-B): a
+    // worker that dies once the record commits leaves the check queued, never lost, and a record
+    // rolled back takes its check with it.
+    if (input.outputs.some((each) => each.format === 'pdf')) {
+      await enqueueJob(trx, 'check_pdf', id);
+    }
     await sql`release savepoint record_publication`.execute(trx);
     return id;
   } catch (error) {
@@ -1215,9 +1221,193 @@ export async function sweepPreviews(trx: TenantTransaction): Promise<string[]> {
     union select object_key from asset_upload
       where object_key = any(${keys}::text[]) and state in ('checking', 'ready')
     union select content ->> 'object' from artifact_version
-      where kind = 'asset' and content ->> 'object' = any(${keys}::text[])`.execute(trx);
+      where kind = 'asset' and content ->> 'object' = any(${keys}::text[])
+    union select report_key from publication_check where report_key = any(${keys}::text[])`.execute(
+    trx,
+  );
   const kept = new Set(named.rows.map((row) => row.key));
   return keys.filter((key) => !kept.has(key));
+}
+
+/** One rule a PDF failed, as veraPDF numbers it: the clause of ISO 14289-1, and its test within it. */
+export interface FailedRule {
+  readonly clause: string;
+  readonly test: number;
+  /** What the rule asks for, in veraPDF's words. */
+  readonly description?: string;
+}
+
+/** The most rules a check records: PDF/UA-1's profile has fewer, so a longer list is no report (0040). */
+export const MAX_FAILED_RULES = 200;
+
+/** The longest description of a rule a check keeps; veraPDF's own are a sentence or two. */
+const MAX_RULE_DESCRIPTION = 1000;
+
+/** veraPDF's whole report, as it wrote it, kept in the tenant's store by its hash (PUB-091). */
+export interface KeptReport {
+  readonly key: string;
+  readonly sha256: string;
+  readonly bytes: number;
+}
+
+/** What veraPDF found of a publication's PDF, as the `check_pdf` job records it (0040, W-C). */
+export interface NewPublicationCheck {
+  readonly publicationId: string;
+  /** veraPDF's own version, as its report names it. */
+  readonly checkerVersion: string;
+  readonly compliant: boolean;
+  readonly failedRules: readonly FailedRule[];
+  /** The report the summary above was read from, already in the store. */
+  readonly report: KeptReport;
+}
+
+/** A PDF's check as a reader is shown it: veraPDF at its version, against PDF/UA-1, and when. */
+export interface StoredPublicationCheck {
+  readonly checker: 'verapdf';
+  readonly checkerVersion: string;
+  readonly profile: 'ua1';
+  readonly compliant: boolean;
+  readonly failedRules: readonly FailedRule[];
+  /** veraPDF's whole report, where the store keeps it. */
+  readonly report: KeptReport;
+  readonly checkedAt: Date;
+}
+
+/**
+ * The PDF a `check_pdf` job checks: its key and digest in the tenant's store, or `checked` where a
+ * check is already recorded, which a second run of the job leaves as it is. Undefined where the
+ * publication has no PDF, or there is no such publication.
+ */
+export async function publicationToCheck(
+  trx: TenantTransaction,
+  publicationId: string,
+): Promise<{ readonly key: string; readonly sha256: string } | 'checked' | undefined> {
+  if (!UUID.test(publicationId)) return undefined;
+  const row = await trx
+    .selectFrom('publication_output as o')
+    .leftJoin('publication_check as c', (join) =>
+      join.onRef('c.publication_id', '=', 'o.publication_id').onRef('c.format', '=', 'o.format'),
+    )
+    .select(['o.object_key', 'o.sha256', 'c.checked_at'])
+    .where('o.publication_id', '=', publicationId)
+    .where('o.format', '=', 'pdf')
+    .executeTakeFirst();
+  if (!row) return undefined;
+  if (row.checked_at !== null) return 'checked';
+  return { key: row.object_key, sha256: row.sha256 };
+}
+
+/** How long after its publication is recorded its check may take (ADR-0030), before a sweep asks again. */
+export const CHECK_WITHIN_MS = 5 * 60_000;
+
+/**
+ * The most publications one sweep queues a check for, or leaves, in one tenant: the rest wait for the
+ * next. The first sweep after 0040 finds every publication recorded before it unchecked, with no check
+ * ever queued, and checks them a hundred at a time.
+ */
+export const RECHECK_LIMIT = 100;
+
+/**
+ * How many of a publication's checks may give up before the sweep leaves it for good (0041): the one
+ * queued as it was recorded, and two the sweep queued again. Each gives up after the queue's three
+ * attempts: nine in all, the last at least fifteen minutes after the publication was recorded, since
+ * the sweep asks again only five minutes on, and sweeps ten minutes apart by default.
+ */
+export const CHECK_GIVE_UPS = 3;
+
+/**
+ * The publications whose PDF is still unchecked this long after they were recorded, whose check is
+ * not among `waiting` - the subjects of the tenant's `check_pdf` jobs still to run, which the caller
+ * reads from the queue first - and which the sweep has not left for good (0041). Its check gave up,
+ * then, after its last attempt, or was never queued, as for a publication recorded before 0040: the
+ * sweep queues another, or leaves it. Oldest first, and at most a hundred. Recorded is when its
+ * request was finished, by the database's clock, or when it was published where the request has gone.
+ */
+export async function publicationsToCheckAgain(
+  trx: TenantTransaction,
+  options: { readonly now: Date; readonly waiting: readonly string[] },
+): Promise<string[]> {
+  const before = new Date(options.now.getTime() - CHECK_WITHIN_MS);
+  const recorded = sql<Date>`coalesce(r.finished_at, p.published_at)`;
+  const rows = await trx
+    .selectFrom('publication as p')
+    .innerJoin('publication_output as o', (join) =>
+      join.onRef('o.publication_id', '=', 'p.id').on('o.format', '=', 'pdf'),
+    )
+    .leftJoin('publication_request as r', 'r.id', 'p.request_id')
+    .leftJoin('publication_check as c', (join) =>
+      join.onRef('c.publication_id', '=', 'o.publication_id').onRef('c.format', '=', 'o.format'),
+    )
+    .leftJoin('publication_check_given_up as g', (join) =>
+      join.onRef('g.publication_id', '=', 'o.publication_id').onRef('g.format', '=', 'o.format'),
+    )
+    .select('p.id')
+    .where('c.publication_id', 'is', null)
+    .where('g.publication_id', 'is', null)
+    .where(recorded, '<=', before)
+    .where(sql<boolean>`p.id <> all(${[...options.waiting]}::uuid[])`)
+    .orderBy(recorded)
+    .orderBy('p.id')
+    .limit(RECHECK_LIMIT)
+    .execute();
+  return rows.map((row) => row.id);
+}
+
+/**
+ * Records that the sweep left a publication's PDF unchecked for good, its checks having given up
+ * `giveUps` times, once: `recorded`, or `already` where another sweep did first, which is kept.
+ */
+export async function recordCheckGivenUp(
+  trx: TenantTransaction,
+  publicationId: string,
+  giveUps: number,
+): Promise<'recorded' | 'already'> {
+  const inserted = await trx
+    .insertInto('publication_check_given_up')
+    .values({ publication_id: publicationId, format: 'pdf', give_ups: giveUps })
+    .onConflict((conflict) => conflict.columns(['publication_id', 'format']).doNothing())
+    .executeTakeFirst();
+  return inserted.numInsertedOrUpdatedRows === 1n ? 'recorded' : 'already';
+}
+
+/**
+ * Records what veraPDF found of a publication's PDF, once: `recorded`, or `already` where a check was
+ * recorded before - by an earlier run of the same job, whose lease ran out - which is kept as it is.
+ * The rules are held to the bound 0040 holds them to, and each description to a thousand characters.
+ */
+export async function recordPublicationCheck(
+  trx: TenantTransaction,
+  check: NewPublicationCheck,
+): Promise<'recorded' | 'already'> {
+  if (check.failedRules.length > MAX_FAILED_RULES) {
+    throw new Error(
+      `A check records at most ${MAX_FAILED_RULES} failed rules, and this one has ${check.failedRules.length}`,
+    );
+  }
+  const failedRules = check.failedRules.map(({ clause, test, description }) => ({
+    clause,
+    test,
+    ...(description === undefined
+      ? {}
+      : { description: description.slice(0, MAX_RULE_DESCRIPTION) }),
+  }));
+  const inserted = await trx
+    .insertInto('publication_check')
+    .values({
+      publication_id: check.publicationId,
+      format: 'pdf',
+      checker: 'verapdf',
+      checker_version: check.checkerVersion,
+      profile: 'ua1',
+      compliant: check.compliant,
+      failed_rules: JSON.stringify(failedRules),
+      report_key: check.report.key,
+      report_sha256: check.report.sha256,
+      report_bytes: check.report.bytes,
+    })
+    .onConflict((conflict) => conflict.columns(['publication_id', 'format']).doNothing())
+    .executeTakeFirst();
+  return inserted.numInsertedOrUpdatedRows === 1n ? 'recorded' : 'already';
 }
 
 /** A publication as a reader is shown it: its record, and its outputs by key. */
@@ -1244,6 +1434,13 @@ export interface StoredPublication {
     readonly producer: 'typst' | 'word';
     readonly producerVersion: string;
     readonly report: OutputReport;
+    /** What veraPDF found of the PDF, once it has been checked; none before, and none for Word. */
+    readonly check: StoredPublicationCheck | null;
+    /**
+     * Whether the PDF's check was given up for good (0041): its checks gave up as often as the sweep
+     * queues them, and none is coming. Never for Word. A check recorded afterwards is what stands.
+     */
+    readonly checkGaveUp: boolean;
   }[];
 }
 
@@ -1298,6 +1495,25 @@ export async function readPublication(
     ])
     .where('publication_id', '=', id)
     .execute();
+  const checks = await trx
+    .selectFrom('publication_check')
+    .select([
+      'format',
+      'checker_version',
+      'compliant',
+      'failed_rules',
+      'report_key',
+      'report_sha256',
+      'report_bytes',
+      'checked_at',
+    ])
+    .where('publication_id', '=', id)
+    .execute();
+  const givenUp = await trx
+    .selectFrom('publication_check_given_up')
+    .select('format')
+    .where('publication_id', '=', id)
+    .execute();
   // In the order the publication names its formats, the PDF first.
   const order = (format: PublishingFormat) => row.formats.indexOf(format);
   return {
@@ -1315,7 +1531,35 @@ export async function readPublication(
         // Written only by `recordPublication`, which parsed it, and by 0027 as empty: a report that
         // does not parse is a broken store, thrown, as a component that does not read is.
         report: parseOutputReport(each.report),
+        check: checkOf(checks.find((check) => check.format === each.format)),
+        checkGaveUp: givenUp.some((row) => row.format === each.format),
       })),
+  };
+}
+
+/** A check as it is stored: 0040's checks hold its failed rules to their shape. */
+function checkOf(
+  row:
+    | {
+        readonly checker_version: string;
+        readonly compliant: boolean;
+        readonly failed_rules: unknown;
+        readonly report_key: string;
+        readonly report_sha256: string;
+        readonly report_bytes: number;
+        readonly checked_at: Date;
+      }
+    | undefined,
+): StoredPublicationCheck | null {
+  if (row === undefined) return null;
+  return {
+    checker: 'verapdf',
+    checkerVersion: row.checker_version,
+    profile: 'ua1',
+    compliant: row.compliant,
+    failedRules: row.failed_rules as FailedRule[],
+    report: { key: row.report_key, sha256: row.report_sha256, bytes: row.report_bytes },
+    checkedAt: row.checked_at,
   };
 }
 
