@@ -11,12 +11,15 @@ import {
 import {
   DEV_SERVER_URL,
   PLATFORM_INFO_CHANNEL,
+  SPELL_CHECK_LANGUAGES_CHANNEL,
   describePlatform,
   isTrustedFrame,
   navigationDecision,
   opensExternally,
   redirectDecision,
   resolveRendererTarget,
+  spellCheckerChoice,
+  spellingMenu,
   type RendererTarget,
 } from './shell.js';
 
@@ -49,6 +52,32 @@ function createWindow(): void {
   });
 
   window.once('ready-to-show', () => window.show());
+
+  // The spelling checker's suggestions (W-K): the menu is decided in shell.ts, and carried out here.
+  window.webContents.on('context-menu', (_event, params) => {
+    const items = spellingMenu(params);
+    if (items.length === 0) return;
+    Menu.buildFromTemplate(
+      items.map((item) => {
+        switch (item.kind) {
+          case 'separator':
+            return { type: 'separator' };
+          case 'none':
+            return { label: item.label, enabled: false };
+          case 'replace':
+            return {
+              label: item.label,
+              click: () => window.webContents.replaceMisspelling(item.text),
+            };
+          case 'add':
+            return {
+              label: item.label,
+              click: () => window.webContents.session.addWordToSpellCheckerDictionary(item.word),
+            };
+        }
+      }),
+    ).popup({ window });
+  });
   window.on('closed', () => {
     mainWindow = null;
   });
@@ -138,6 +167,24 @@ function fromRenderer(event: Electron.IpcMainInvokeEvent): boolean {
 ipcMain.handle(PLATFORM_INFO_CHANNEL, (event) => {
   if (!fromRenderer(event)) throw new Error('Refused: not the renderer.');
   return describePlatform(process.versions);
+});
+
+// The spelling checker's languages (CNT-178): what the renderer sent is checked in shell.ts, never
+// trusted, and a refusal is logged without what was sent.
+ipcMain.handle(SPELL_CHECK_LANGUAGES_CHANNEL, (event, requested: unknown) => {
+  // The renderer's own frame alone, as every handler (issue #309).
+  if (!fromRenderer(event)) throw new Error('Refused: not the renderer.');
+  const { session } = event.sender;
+  const choice = spellCheckerChoice(
+    requested,
+    session.availableSpellCheckerLanguages,
+    process.platform,
+  );
+  if (choice.kind === 'refused') {
+    console.warn('Refused a request for spelling languages that was not a short list of tags.');
+  } else if (choice.kind === 'set') {
+    session.setSpellCheckerLanguages([...choice.languages]);
+  }
 });
 
 void app.whenReady().then(() => {

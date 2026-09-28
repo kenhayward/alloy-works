@@ -1,11 +1,16 @@
 import type { BlockNode, ContentDocument } from '@alloy-works/domain';
 import type { Node as ProseNode } from 'prosemirror-model';
-import type { EditorState } from 'prosemirror-state';
+import { EditorState, NodeSelection, TextSelection } from 'prosemirror-state';
 import { DecorationSet, type Decoration } from 'prosemirror-view';
 import { describe, expect, it } from 'vitest';
 
 import { toEditor } from './mapping.js';
-import { setStyleCheck, unresolvedDecorations, type StyleCheck } from './resolution.js';
+import {
+  setStyleCheck,
+  textWhereAt,
+  unresolvedDecorations,
+  type StyleCheck,
+} from './resolution.js';
 import { createEditorState } from './state.js';
 
 const ASSET = '00000000-0000-4000-8000-0000000000a1';
@@ -227,5 +232,104 @@ describe('what will not resolve, marked where it stands (STY-070)', () => {
     expect(marked(state)).toBe(0);
     setStyleCheck({ state, dispatch: (tr) => (state = state.apply(tr)) }, check);
     expect(marked(state)).toBe(1);
+  });
+});
+
+describe('where the text at the cursor stands, for the face that sets it (W14.7, W-M)', () => {
+  /** The first position holding this text, and the state with the caret there, or over it. */
+  const at = (state: EditorState, text: string, length = 0) => {
+    let found = -1;
+    state.doc.descendants((node, pos) => {
+      if (found === -1 && node.isText && node.text!.includes(text)) {
+        found = pos + node.text!.indexOf(text);
+      }
+      return found === -1;
+    });
+    if (found === -1) throw new Error(`no ${text}`);
+    return state.apply(
+      state.tr.setSelection(TextSelection.create(state.doc, found, found + length)),
+    );
+  };
+
+  it("names a paragraph's style and place, a role's text, and code where inline code or preformatted text sets it", () => {
+    const state = opened([
+      paragraph('b1', 'Kept', 'lead'),
+      { type: 'blockquote', id: 'q1', content: [paragraph('b2', 'Quoted')] },
+      {
+        type: 'paragraph',
+        id: 'b3',
+        style: 'body',
+        content: [
+          { type: 'text', value: 'Run ', marks: [] },
+          { type: 'text', value: 'npm', marks: [{ type: 'inlineCode', id: 'c1' }] },
+        ],
+      },
+      { type: 'preformatted', id: 'p1', text: 'select 1' },
+      {
+        type: 'figure',
+        id: 'f1',
+        asset: ASSET,
+        imageStyle: 'half-width',
+        caption: [{ type: 'text', value: 'Tray', marks: [] }],
+        alternative: { kind: 'decorative' },
+      },
+    ]);
+    expect(textWhereAt(at(state, 'ept'))).toEqual({
+      paragraph: { style: 'lead', place: 'text' },
+      role: null,
+      code: false,
+      inlineCode: false,
+    });
+    expect(textWhereAt(at(state, 'uoted'))).toMatchObject({
+      paragraph: { style: 'body', place: 'quotation' },
+    });
+    // In the inline code run, and over it: what typing there would be set as.
+    expect(textWhereAt(at(state, 'pm'))).toMatchObject({ code: true, inlineCode: true });
+    expect(textWhereAt(at(state, 'npm', 3))).toMatchObject({ code: true, inlineCode: true });
+    expect(textWhereAt(at(state, 'un '))).toMatchObject({ code: false, inlineCode: false });
+    expect(textWhereAt(at(state, 'elect'))).toEqual({
+      paragraph: null,
+      role: 'preformatted',
+      code: true,
+      inlineCode: false,
+    });
+    expect(textWhereAt(at(state, 'ray'))).toMatchObject({ paragraph: null, role: 'caption' });
+  });
+
+  it("names a footnote's own paragraph in the footnote's place, and nothing where no text is typed", () => {
+    const withNote = opened([
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [
+          { type: 'text', value: 'Unbox', marks: [] },
+          {
+            type: 'footnote',
+            id: 'n1',
+            anchor: { kind: 'span' },
+            content: [paragraph('fp1', 'Note', 'small')],
+          },
+        ],
+      },
+    ]);
+    let footnote: ProseNode | undefined;
+    withNote.doc.descendants((node) => {
+      if (node.type.name === 'footnote') footnote = node;
+      return footnote === undefined;
+    });
+    const note = EditorState.create({ doc: footnote! });
+    expect(
+      textWhereAt(note.apply(note.tr.setSelection(TextSelection.create(note.doc, 2)))),
+    ).toMatchObject({ paragraph: { style: 'small', place: 'footnote' }, role: null });
+    // Over something selected whole, no text is typed, so there is nothing to say.
+    let placed = -1;
+    withNote.doc.descendants((node, pos) => {
+      if (node.type.name === 'footnote') placed = pos;
+    });
+    const whole = withNote.apply(
+      withNote.tr.setSelection(NodeSelection.create(withNote.doc, placed)),
+    );
+    expect(textWhereAt(whole)).toBeNull();
   });
 });

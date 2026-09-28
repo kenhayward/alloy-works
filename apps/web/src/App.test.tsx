@@ -7,6 +7,7 @@ import type { PlatformBridge } from './platform/bridge.js';
 
 const desktopBridge: PlatformBridge = {
   getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
+  setSpellCheckLanguages: async () => {},
 };
 
 /** These tests are about the page around them, so the parts that call the service stand aside. */
@@ -110,7 +111,10 @@ describe('App', () => {
 
   it('says so while the bridge has not answered yet', async () => {
     vi.stubGlobal('fetch', signedIn);
-    const pending: PlatformBridge = { getPlatformInfo: () => new Promise(() => {}) };
+    const pending: PlatformBridge = {
+      getPlatformInfo: () => new Promise(() => {}),
+      setSpellCheckLanguages: async () => {},
+    };
     render(<App bridge={pending} environment={noPanel} workspace={noWorkspace} />);
 
     await openAbout();

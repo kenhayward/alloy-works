@@ -82,7 +82,7 @@ noticed and explained rather than discovered at a refusal.
 | **MET-011** | Creating a component requires a component type, offered with the tenant's default preselected; the version row's type column is not nullable, and no iteration or version changes it                                                                                                                                                                                                                                                                                                                                           |
 | **CNT-149** | "Creating a component" takes a title, a base language and a base direction, in a space the author chose from those `GET /v1/spaces` says they may create in; the component exists at `0.1` from the moment it is created                                                                                                                                                                                                                                                                                                       |
 | **MET-033** | A fixed field is read-only in the panel, naming the schema that fixes it, and the service refuses an iteration or a cut whose value for it differs from the default, naming field and schema                                                                                                                                                                                                                                                                                                                                   |
-| **CNT-057** | An insertion palette of mathematical, Greek, and scientific and technical symbols, as a keyboard-navigable grid that inserts characters                                                                                                                                                                                                                                                                                                                                                                                        |
+| **CNT-057** | An insertion palette of mathematical, Greek, and scientific and technical symbols, as a keyboard-navigable grid that inserts characters, dimming those the typeface at the cursor lacks (W-M)                                                                                                                                                                                                                                                                                                                                  |
 | **CNT-077** | Every command is in a keymap and in the toolbar; the toolbar is a single tab stop with arrow-key movement, and `F6` moves between the regions of the view                                                                                                                                                                                                                                                                                                                                                                      |
 | **CNT-164** | Emphasis, strong, underline, subscript, superscript, inline code and a quoted phrase are each applied and removed from the toolbar and by a shortcut in the keymap ([What an author can do with each thing in the model](#what-an-author-can-do-with-each-thing-in-the-model)); nothing on the surface chooses a typeface, a size or a colour, and the model has no member to hold one (content-model.md, CNT-008)                                                                                                             |
 | **CNT-048** | An equation's alternative is generated from its MathML wherever a generator is available - when an equation is made or changed, in the component's language where the generator speaks it (publishing.md, EQ-D) - stored as `alttext`, and always editable                                                                                                                                                                                                                                                                     |
@@ -90,7 +90,7 @@ noticed and explained rather than discovered at a refusal.
 | **CNT-046** | An equation is made in every context the statement names - running text, a table's cell, a footnote and a caption on the surface, and a section's heading in the outline's title field - and publishing.md's equations 2 sets each in the PDF                                                                                                                                                                                                                                                                                  |
 | **CNT-098** | The surface sets `spellcheck`, so the delivery's own checker marks spelling as the author types                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | **CNT-147** | A run carrying a language mark whose language differs from the component's base language is rendered with `spellcheck="false"`, so a passage in another language is never flagged                                                                                                                                                                                                                                                                                                                                              |
-| **CNT-148** | The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker                                                                                                                                                                                                                                                                                                                                                 |
+| **CNT-178** | The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, where the platform lets it, and on macOS, which chooses its own, the product says so; so neither lacks a checker                                                                                                                                                                                                                                                           |
 | **CNT-152** | A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; **OK anyway** then applies it                                                                                                                                                                                                                                                                                                                                   |
 
 **What CNT-067 and CNT-090 are answered with, and what they are not** (W11.2 and its final review).
@@ -116,17 +116,38 @@ context. The test places one in each and shows each stored; that the publish set
 **What CNT-147's test shows, and what it does not.** The test asserts the attribute the product sets:
 a run whose language mark differs from the component's base language is rendered with
 `spellcheck="false"`, and a run marked with the base language is not. It never shows a checker obeying
-it, because no delivery's checker is under test here - CNT-148 is the bridge that gives the desktop
-shell one, and it is not built. Whether a checker honours the attribute is the accessibility suite's
+it, because no delivery's checker is under test here - CNT-178 is the bridge that gives the desktop
+shell one, built in W14.7. Whether a checker honours the attribute is the accessibility suite's
 (CNT-139).
 
-**CNT-147 and CNT-148 are new, and the change they come from is part of this design's review.** Native
-spellcheck ignores an element's `lang`, in Chromium and in Firefox, so CNT-099 - check each run against
-its own language - and CNT-101 - the browser supplies the checker - could not both be met. The decision
-was to keep the native checker, so CNT-099 is superseded by CNT-147 and CNT-101 by CNT-148, which say
-what native checking can honestly promise. In the web delivery that is less than it sounds: a page
-cannot choose which dictionaries the browser uses, so a component in a language the author's browser
-has not enabled is checked against whatever it has.
+**What CNT-178's tests show, and what they do not** (W14.7, decision W-K). CNT-178 superseded
+CNT-148 in W14.7's final review: CNT-148 asked for the base languages on every platform, which macOS
+does not allow. The editor's test shows the surface keeping `spellcheck` for the browser's checker
+and the bridge told the component's base language as it opens and as it changes, through a fake
+bridge; the shell's shows each language mapped to a dictionary Electron has.
+`setSpellCheckLanguages` takes the base languages of every component open, held by `spellingFor` in
+`apps/web/src/platform/spelling.ts`; a run in another language is not checked at all (CNT-147), so
+its language is not asked for. The main process checks the request - at most eight tags, each in the
+stored model's shape, or refused whole - and a tag with no dictionary of its own falls back to its
+language's, then to that language's usual one, `en-US` for English. No test drives Electron's
+checker itself: that the dictionaries set are the ones Chromium marks words with is Electron's, and
+is checked by running the app. **macOS is the exception, and it is said rather than hidden**:
+Electron uses the system's checker there, which chooses its languages itself, and
+`setSpellCheckerLanguages` does nothing, so the shell sets nothing on macOS. A component there is
+still checked - the desktop does not lack a checker - but by the languages macOS chooses, not by its
+base language as the bridge asks, and features.md says so, which is what CNT-178 asks there. The
+window's context menu offers the checker's suggestions and **Add to dictionary**, decided by
+`spellingMenu` in `shell.ts`; a word added is kept in the app's own dictionary and cannot yet be
+removed.
+
+**CNT-147 and CNT-148 are new, and the change they come from is part of this design's review.**
+Native spellcheck ignores an element's `lang`, in Chromium and in Firefox, so CNT-099 - check each
+run against its own language - and CNT-101 - the browser supplies the checker - could not both be
+met. The decision was to keep the native checker, so CNT-099 is superseded by CNT-147 and CNT-101 by
+CNT-148, which say what native checking can honestly promise (CNT-148 since superseded by CNT-178,
+for macOS). In the web delivery that is less than it sounds: a page cannot choose which dictionaries
+the browser uses, so a component in a language the author's browser has not enabled is checked
+against whatever it has.
 
 **CNT-152 is a warning, not a refusal, and the editor asks the publishing rule rather than keeping a
 copy of it.** The content model takes any well-formed BCP 47 tag and CNT-140 requires a script
@@ -183,7 +204,7 @@ to API-008) - are [service-foundations.md](service-foundations.md)'s.
 | `packages/domain`       | Unchanged in role: the content model, the admission pipeline, [metadata.md](metadata.md)'s rules and the theme resolver, imported by the renderer and the service |
 | `packages/api-contract` | The routes below                                                                                                                                                  |
 | `apps/service`          | The routes, the lock, iterations and versions, per [storage-and-versioning.md](storage-and-versioning.md)                                                         |
-| `apps/desktop`          | One bridge call to set the platform checker's languages (CNT-148), decided in `shell.ts` as a pure function                                                       |
+| `apps/desktop`          | One bridge call to set the platform checker's languages (CNT-178), decided in `shell.ts` as a pure function                                                       |
 
 **`packages/editor` is a workspace rather than a folder in `apps/web`** because most of it is testable
 without a browser: `prosemirror-model` and `prosemirror-state` run in Node, so the mapping, the identity
@@ -1040,10 +1061,15 @@ undo, a refusal putting the surface back, or a version cut, and never this field
   language label, stands after the list panel while the cursor is in such a block, and is absent
   everywhere else. So the ring is built from the regions actually rendered, and the wrap is over those.
 - **Nested and transient editors are inline, not modal.** Opening a footnote moves focus into it;
-  `Escape` closes it and returns focus to the node it was opened from. The symbol palette is a popup
-  grid: `Escape` or inserting a symbol returns focus to where the cursor was. **An equation is opened
-  in a dialog**, as built by equations 1, as a link or a reference is: the rest of the component is
-  inert while it stands, and focus returns to what opened it.
+  `Escape` closes it and returns focus to the node it was opened from. The symbol palette is a
+  dialog of three grids, one a group (W14.7, decision W-L): `Escape`, **Close** or inserting a
+  symbol returns focus to where the cursor was - the surface, or the footnote's text it was opened
+  over - never to the button that opened it. Each grid is one tab stop, the arrow keys moving within
+  it and `Home` and `End` to its ends, and `Tab` moving on to the next. A symbol the typeface at the
+  cursor lacks (W-M) stays in its grid, `aria-disabled` but reachable by the arrows, named as not in
+  that family and pointing to an equation. **An equation is opened in a dialog**, as built by
+  equations 1, as a link or a reference is: the rest of the component is inert while it stands, and
+  focus returns to what opened it.
 - **Equations** are reached as any atom is, selected whole by an arrow, and opened with `Enter`; the
   LaTeX field has `spellcheck="false"` and an accessible name, and its error is its description; the
   description field is labelled, and says why when it is empty. The equation on the surface is native

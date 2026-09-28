@@ -3,7 +3,7 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.116.0 - 2026-09-28 (PR #313)
+## 0.116.0 - 2026-09-28 (PR #TBD)
 
 ### Added
 
@@ -21,6 +21,38 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   table. A Word document with equations says once that Word reads them aloud in its own words rather
   than the description written for them, and that the characters of Word's maths typeface, Cambria
   Math, are not checked.
+
+## 0.115.0 - 2026-09-28 (PR #313)
+
+### Added
+
+- **Every PDF you publish is checked for accessibility.** Moments after a publication is made, veraPDF
+  checks its PDF against PDF/UA-1, the standard for accessible PDF, and the publication's page says
+  what it found: that it passed, or how many rules it failed, with each rule listed in veraPDF's own
+  words. **Download the full report** saves veraPDF's whole report, which is kept with the publication.
+  Until the check has run, the page says the PDF is not yet checked. Publishing is not slowed down by
+  the check, and a check that cannot run is tried again, and again up to about fifteen minutes later
+  if it still could not. A PDF that could not be checked after three such tries says so on its page:
+  **Could not be checked for accessibility.** PDFs published before this release are checked too,
+  soon after it arrives.
+
+## 0.114.0 - 2026-09-28 (PR #311)
+
+### Added
+
+- **Spelling is checked in the desktop app, in the component's own language.** On Windows and Linux
+  the desktop app now checks what you type against the dictionary for the component's base language,
+  or the nearest one it has, and switches when you change the language; with several components open
+  it checks against all their languages. Right-click a misspelt word for suggestions or to add it to
+  the app's own dictionary, where it is kept and cannot yet be removed. In a browser, spelling is
+  checked by the browser's own checker, as before. On macOS the desktop app uses the system's
+  spelling checker, which chooses its languages itself.
+- **A palette of symbols.** **Symbols** on the formatting toolbar, or `Ctrl+Shift+M`, opens
+  mathematical, Greek, and scientific and technical characters to type where your cursor was, each
+  named as a screen reader says it and reachable with the arrow keys; `Escape` puts you back without
+  typing anything. Symbols the typeface where you are typing does not have - such as for all or the
+  number sets in the default theme - are dimmed and type nothing, since a publication could not set
+  them; set those in an equation.
 
 ## 0.113.3 - 2026-09-28 (PR #310)
 

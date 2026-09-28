@@ -42,12 +42,14 @@ import { strFromU8, unzipSync } from 'fflate';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, loadPinnedFonts, PINNED_FONT_FILES, type PinnedFonts } from './fonts.js';
+import { checkJob } from './jobs/check.js';
 import { publishJob } from './jobs/publish.js';
 import { PUBLICATION_TEMPLATE } from './template.js';
 import { checkOoxml } from './testing/ooxml.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
 import { askedOf, fieldOf } from './testing/word.js';
-import { checkPdfUa1, type VeraPdfVerdict } from './testing/verapdf.js';
+import { checkPdfUa1, suiteChecker, type VeraPdfVerdict } from './testing/verapdf.js';
+import { processNextBesideChecks } from './testing/work.js';
 import { createTypst, typstBinaryPath, type Typst } from './typst.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 
@@ -88,16 +90,20 @@ describe('publishing a document, from the request to the stored PDF', () => {
     error: (details) => logged.push(details),
   };
 
+  /** The next job but the checks each publication queues, which are run and passed over (W14.1). */
   const work = (over: Partial<Parameters<typeof processNext>[0]> = {}) =>
-    processNext({
-      queue,
-      db: worker,
-      handlers,
-      workerId: 'worker-1',
-      leaseMs: 60_000,
-      log,
-      ...over,
-    });
+    processNextBesideChecks(
+      {
+        queue,
+        db: worker,
+        handlers,
+        workerId: 'worker-1',
+        leaseMs: 60_000,
+        log,
+        ...over,
+      },
+      checkJob({ db: worker, stores, checker: suiteChecker }),
+    );
 
   /** The queue, retrying at once rather than after its back-off. */
   const eager = (): JobQueue => ({
