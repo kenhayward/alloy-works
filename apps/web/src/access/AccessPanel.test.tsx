@@ -1,10 +1,11 @@
 import { createApiClient } from '@alloy-works/api-client';
+import { permissions } from '@alloy-works/domain';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AccessPanel } from './AccessPanel.js';
-import type { ShownGrant } from './describe.js';
+import type { AccessAt, ShownGrant } from './describe.js';
 
 /** A grant exactly as the service lists one, with the members the panel does not show. */
 type GrantView = ShownGrant & {
@@ -14,6 +15,10 @@ type GrantView = ShownGrant & {
 };
 
 const COMPONENT = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
+const DOCUMENT = '7b1d2c9f-7a4f-4e3b-8e47-3b5a2d0f8c21';
+const TEMPLATE = '8c2e3d0a-8b5a-4f4c-9f58-4c6b3e1a9d32';
+const AUTHORS = '9d3f4e1b-9c6b-4a5d-8a69-5d7c4f2b0e43';
+const READERS = 'ae4a5f2c-ad7c-4b6e-9b7a-6e8d5a3c1f54';
 const GENERAL = '5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a';
 const ADA = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
 const GRACE = '1b2c3d4e-5f60-4718-8a9b-0c1d2e3f4a5b';
@@ -54,6 +59,24 @@ const roles = [
   { id: AUTHOR, name: 'Author', permissions: ['read', 'create', 'edit', 'comment', 'suggest'] },
   { id: EDITING, name: 'Editing', permissions: ['edit'] },
   { id: ADMINISTRATOR, name: 'Administrator', permissions: ['read', 'administer'] },
+];
+
+/** A group exactly as `GET /v1/groups` lists one. */
+const groups = [
+  {
+    id: AUTHORS,
+    name: 'Authors',
+    source: 'tenant',
+    providerValue: null,
+    members: [{ id: GRACE, name: 'Grace', email: 'grace@example.test' }],
+  },
+  {
+    id: READERS,
+    name: 'Readers',
+    source: 'provider',
+    providerValue: 'readers',
+    members: [],
+  },
 ];
 
 const grantOf = (
@@ -97,8 +120,16 @@ function service(
     invited: boolean;
   }[] = [...people];
   const invitations: ReturnType<typeof invitationOf>[] = [];
-  const levels = options.levels ?? [`artifact:${COMPONENT}`, `space:${GENERAL}`, 'tenant'];
+  const levels = options.levels ?? [
+    `artifact:${COMPONENT}`,
+    `artifact:${DOCUMENT}`,
+    `artifact:${TEMPLATE}`,
+    `space:${GENERAL}`,
+    'tenant',
+  ];
   const asked: { route: string; body: unknown }[] = [];
+  // Each read naming a level, and the level it named.
+  const levelsAsked: { route: string; level: string }[] = [];
   let made = 0;
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -106,6 +137,8 @@ function service(
     const route = `${request.method} ${url.pathname}`;
     const text = request.method === 'POST' ? await request.clone().text() : '';
     asked.push({ route, body: text === '' ? undefined : JSON.parse(text) });
+    const level = url.searchParams.get('level');
+    if (level !== null) levelsAsked.push({ route, level });
     const override = options.override?.[route];
     if (override) return override(request, url);
     switch (route) {
@@ -124,6 +157,42 @@ function service(
           mayEdit: false,
           lock: null,
         });
+      case `GET /v1/documents/${DOCUMENT}`:
+        return json(200, {
+          id: DOCUMENT,
+          space: { id: GENERAL, name: 'General' },
+          version: {
+            id: 'v1',
+            number: '0.1',
+            author: ADA,
+            createdAt: '2026-09-17T09:00:00.000Z',
+            note: null,
+          },
+          outline: { title: 'The printer guide', nodes: [] },
+          values: {},
+          fields: { document: [], section: [] },
+          schemas: [],
+          mayEdit: true,
+          mayPublish: false,
+        });
+      case `GET /v1/templates/${TEMPLATE}`:
+        return json(200, {
+          id: TEMPLATE,
+          space: { id: GENERAL, name: 'General' },
+          version: {
+            id: 'v1',
+            number: '0.1',
+            author: ADA,
+            createdAt: '2026-09-17T09:00:00.000Z',
+            note: null,
+          },
+          definition: { name: 'Service manual' },
+          mayDesign: true,
+        });
+      case 'GET /v1/groups':
+        // Listed only to whoever administers the whole environment.
+        if (!levels.includes('tenant')) return refused(403, 'forbidden');
+        return json(200, { items: groups, next: null });
       case 'GET /v1/principals':
         return json(200, { items: everybody, next: null });
       case 'GET /v1/invitations':
@@ -146,18 +215,27 @@ function service(
       case 'POST /v1/grants': {
         const body = JSON.parse(text) as {
           role: string;
-          subject: { principal: string };
+          subject: { principal: string } | { group: string };
           level: string;
           effect: 'allow' | 'deny';
         };
         made += 1;
-        const grant = grantOf(
-          `90000000-0000-4000-8000-00000000000${made}`,
-          body.level,
-          roles.find((each) => each.id === body.role)!,
-          everybody.find((each) => each.id === body.subject.principal)! as (typeof people)[number],
-          body.effect,
-        );
+        const role = roles.find((each) => each.id === body.role)!;
+        const id = `90000000-0000-4000-8000-00000000000${made}`;
+        const subject = body.subject;
+        const grant: GrantView =
+          'group' in subject
+            ? {
+                ...grantOf(id, body.level, role, people[0]!, body.effect),
+                subject: { group: { id: subject.group, name: groupName(subject.group) } },
+              }
+            : grantOf(
+                id,
+                body.level,
+                role,
+                everybody.find((each) => each.id === subject.principal)! as (typeof people)[number],
+                body.effect,
+              );
         grants.push(grant);
         return json(200, { grant });
       }
@@ -188,13 +266,15 @@ function service(
       }
     }
   }) as unknown as typeof fetch;
-  return { fetching, asked, grants };
+  return { fetching, asked, grants, levelsAsked };
 }
 
-const panel = (fetching: typeof fetch) =>
+const groupName = (id: string) => groups.find((each) => each.id === id)?.name ?? 'Unknown';
+
+const panel = (fetching: typeof fetch, at: AccessAt = { kind: 'component', id: COMPONENT }) =>
   render(
     <AccessPanel
-      componentId={COMPONENT}
+      at={at}
       client={createApiClient({ baseUrl: 'http://dev.acme.alloy.test', fetch: fetching })}
     />,
   );
@@ -708,7 +788,7 @@ describe('access to a component', () => {
     expect(address).toHaveValue('');
   });
 
-  it('IAM-030 names, for each answer about a chosen person, the level that decided it and the grants that did', async () => {
+  it('IAM-030 names, for each answer about a chosen person, the level that decided it and the grants that did, a group by its name', async () => {
     const { fetching } = service({
       override: {
         'GET /v1/access/explain': (_request, url) => {
@@ -731,14 +811,16 @@ describe('access to a component', () => {
                     effect: 'allow',
                     subject: { principal: GRACE },
                     through: null,
+                    groupName: null,
                     expiresAt: null,
                   },
                   {
                     id: 'g2',
                     role: 'Author',
                     effect: 'allow',
-                    subject: { group: 'e1' },
-                    through: 'e1',
+                    subject: { group: AUTHORS },
+                    through: AUTHORS,
+                    groupName: 'Authors',
                     expiresAt: null,
                   },
                 ],
@@ -767,7 +849,7 @@ describe('access to a component', () => {
         .map((cell) => cell.textContent),
     ).toEqual([
       'Allowed',
-      'Allowed at the space General, by Author allowed to Grace; Author allowed to a group.',
+      'Allowed at the space General, by Author allowed to Grace; Author allowed to the group Authors.',
     ]);
   });
 
@@ -792,6 +874,7 @@ describe('access to a component', () => {
                     effect: 'deny',
                     subject: { principal: ALICE },
                     through: null,
+                    groupName: null,
                     expiresAt: null,
                   },
                 ],
@@ -1322,5 +1405,236 @@ describe('access to a component', () => {
     expect(
       await screen.findByText('There is nothing here, or nothing you may read.'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('access everywhere', () => {
+  /**
+   * An explanation as the service answers one for `target`, whose chain is `chain`: reading allowed at
+   * the environment by a grant to the group Authors, and nothing else granted anywhere.
+   */
+  const explanationOf = (target: string, chain: readonly string[]) => ({
+    principal: GRACE,
+    target,
+    permissions: permissions.map((permission) =>
+      permission === 'read'
+        ? {
+            permission,
+            allowed: true,
+            reason: 'allowed',
+            level: 'tenant',
+            checked: chain,
+            grants: [
+              {
+                id: 'g1',
+                role: 'Author',
+                effect: 'allow',
+                subject: { group: AUTHORS },
+                through: AUTHORS,
+                groupName: 'Authors',
+                expiresAt: null,
+              },
+            ],
+          }
+        : {
+            permission,
+            allowed: false,
+            reason: 'not_granted',
+            level: null,
+            checked: chain,
+            grants: [],
+          },
+    ),
+  });
+
+  it('IAM-029 lets an administrator choose a person and read every permission, with its answer, on a document, a template, a space and the environment', async () => {
+    const places: {
+      at: AccessAt;
+      heading: string;
+      caption: string;
+      chain: string[];
+      nowhere: string;
+    }[] = [
+      {
+        at: { kind: 'document', id: DOCUMENT },
+        heading: 'Access to The printer guide',
+        caption: 'What Grace may do with this document',
+        chain: [`artifact:${DOCUMENT}`, `space:${GENERAL}`, 'tenant'],
+        nowhere: 'this document, the space General, the whole environment',
+      },
+      {
+        at: { kind: 'template', id: TEMPLATE },
+        heading: 'Access to Service manual',
+        caption: 'What Grace may do with this template',
+        chain: [`artifact:${TEMPLATE}`, `space:${GENERAL}`, 'tenant'],
+        nowhere: 'this template, the space General, the whole environment',
+      },
+      {
+        at: { kind: 'space', id: GENERAL, name: 'General' },
+        heading: 'Access to the space General',
+        caption: 'What Grace may do in the space General',
+        chain: [`space:${GENERAL}`, 'tenant'],
+        nowhere: 'the space General, the whole environment',
+      },
+      {
+        at: { kind: 'tenant' },
+        heading: 'Access to the whole environment',
+        caption: 'What Grace may do in the whole environment',
+        chain: ['tenant'],
+        nowhere: 'the whole environment',
+      },
+    ];
+    for (const place of places) {
+      const explained: string[] = [];
+      const { fetching } = service({
+        override: {
+          'GET /v1/access/explain': (_request, url) => {
+            expect(url.searchParams.get('principal')).toBe(GRACE);
+            const target = url.searchParams.get('target')!;
+            explained.push(target);
+            return json(200, explanationOf(target, place.chain));
+          },
+        },
+      });
+      const { unmount } = panel(fetching, place.at);
+      expect(await screen.findByRole('heading', { name: place.heading })).toBeInTheDocument();
+      const explaining = section('What someone may do here');
+      await userEvent.selectOptions(
+        within(explaining).getByRole('combobox', { name: 'Whose access' }),
+        GRACE,
+      );
+      await userEvent.click(within(explaining).getByRole('button', { name: 'Show' }));
+
+      const table = await within(explaining).findByRole('table', { name: place.caption });
+      // Asked of the place itself: the artifact, the space or the environment.
+      expect(explained).toEqual([place.chain[0]]);
+      // Every permission, each with its answer and why.
+      const rows = within(table)
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) => [...row.querySelectorAll('th, td')].map((cell) => cell.textContent ?? ''));
+      expect(rows).toEqual(
+        permissions.map((permission) =>
+          permission === 'read'
+            ? [
+                'read',
+                'Allowed',
+                'Allowed at the whole environment, by Author allowed to the group Authors.',
+              ]
+            : [
+                permission.replaceAll('_', ' '),
+                'Refused',
+                `Refused: nothing grants it at ${place.nowhere}.`,
+              ],
+        ),
+      );
+      unmount();
+    }
+  });
+
+  it('lists and offers only the levels above what it is opened on: a space and the environment, or the environment alone', async () => {
+    const { fetching } = service();
+    const { unmount } = panel(fetching, { kind: 'space', id: GENERAL, name: 'General' });
+    await screen.findByRole('heading', { name: 'Access to the space General' });
+    await within(section('The space General')).findByText('Nothing is granted here.');
+    expect(screen.queryByRole('region', { name: /^This / })).toBeNull();
+    expect(
+      within(screen.getByRole('combobox', { name: 'Where' }))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['The space General', 'The whole environment']);
+    unmount();
+
+    const again = service();
+    panel(again.fetching, { kind: 'tenant' });
+    await screen.findByRole('heading', { name: 'Access to the whole environment' });
+    await within(section('The whole environment')).findByText('Nothing is granted here.');
+    expect(screen.queryByRole('region', { name: /^The space/ })).toBeNull();
+    // People and roles chosen from as the environment's administrators may choose them.
+    expect(
+      again.levelsAsked.filter(
+        (each) => each.route === 'GET /v1/principals' || each.route === 'GET /v1/roles',
+      ),
+    ).toEqual([
+      { route: 'GET /v1/principals', level: 'tenant' },
+      { route: 'GET /v1/roles', level: 'tenant' },
+    ]);
+  });
+
+  it('says so, and offers nothing, to someone who may not manage access to the space it is opened on', async () => {
+    const { fetching } = service({
+      override: { 'GET /v1/roles': () => refused(403, 'forbidden') },
+    });
+    panel(fetching, { kind: 'space', id: GENERAL, name: 'General' });
+    expect(
+      await screen.findByText('You may not manage access to the space General.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Give' })).toBeNull();
+  });
+
+  it('offers a group beside a person to whoever administers the environment, and gives the group the role', async () => {
+    const { fetching, asked } = service();
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    await within(section('The space General')).findByText('Nothing is granted here.');
+    const giving = screen.getByRole('form', { name: 'Give access' });
+
+    // A person, until a group is chosen instead.
+    expect(within(giving).getByRole('radio', { name: 'A person' })).toBeChecked();
+    await userEvent.click(await within(giving).findByRole('radio', { name: 'A group' }));
+    expect(within(giving).queryByRole('combobox', { name: 'Person' })).toBeNull();
+    const group = within(giving).getByRole('combobox', { name: 'Group' });
+    expect(
+      within(group)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Choose a group', 'Authors', "Readers, from the organisation's sign-in"]);
+    await userEvent.selectOptions(group, AUTHORS);
+    await userEvent.selectOptions(within(giving).getByRole('combobox', { name: 'Role' }), AUTHOR);
+    await userEvent.selectOptions(
+      within(giving).getByRole('combobox', { name: 'Where' }),
+      `space:${GENERAL}`,
+    );
+    await userEvent.click(within(giving).getByRole('button', { name: 'Give' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Allowed Author to the group Authors on the space General.',
+    );
+    expect(
+      asked.filter((each) => each.route === 'POST /v1/grants').map((each) => each.body),
+    ).toEqual([
+      { role: AUTHOR, subject: { group: AUTHORS }, level: `space:${GENERAL}`, effect: 'allow' },
+    ]);
+    await waitFor(() =>
+      expect(within(section('The space General')).getByRole('listitem')).toHaveTextContent(
+        'Allowed Author to the group Authors',
+      ),
+    );
+  });
+
+  it('asks for a group when giving to a group and none is chosen, and sends nothing', async () => {
+    const { fetching, asked } = service();
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    await userEvent.click(await screen.findByRole('radio', { name: 'A group' }));
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Choose a group, a role and where.');
+    expect(asked.some((each) => each.route === 'POST /v1/grants')).toBe(false);
+  });
+
+  it('offers a space administrator persons only, and says nothing of groups', async () => {
+    const { fetching, asked } = service({ levels: [`artifact:${COMPONENT}`, `space:${GENERAL}`] });
+    panel(fetching);
+    await within(await screen.findByRole('region', { name: 'The whole environment' })).findByText(
+      'You may not manage access here.',
+    );
+    await waitFor(() => expect(asked.some((each) => each.route === 'GET /v1/groups')).toBe(true));
+    // After the refusal has come back and been read.
+    await within(section('The space General')).findByText('Nothing is granted here.');
+    expect(screen.getByRole('combobox', { name: 'Person' })).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'A group' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: 'Group' })).toBeNull();
+    expect(screen.queryByText(/group/i)).toBeNull();
   });
 });

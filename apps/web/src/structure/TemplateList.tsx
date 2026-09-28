@@ -1,6 +1,7 @@
 import type { TemplateList as Listing, createApiClient } from '@alloy-works/api-client';
 import { useCallback, useState } from 'react';
 
+import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { whenChanged } from '../editor/changed.js';
 import { ListLayout } from '../layouts/ListLayout.js';
 import { Facet, More, SortChooser, toggled, type SortOption } from '../listing/Listing.js';
@@ -8,6 +9,7 @@ import { usePagedListing } from '../listing/usePagedListing.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import styles from './DocumentList.module.css';
+import { templateAccessLink } from './links.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Item = Listing['items'][number];
@@ -22,7 +24,8 @@ const SORTS: readonly SortOption[] = [
 /**
  * The templates the signed-in person may read (SCH-064), in layout A: each one's name, space, version
  * and when it last changed, a page at a time, sorted and filtered by space on the service. Making and
- * changing a template is the API's; a document is made from one on the documents list.
+ * changing a template is the API's; a document is made from one on the documents list. Each offers
+ * Manage access to whoever may administer it, since no page shows a template on its own yet.
  */
 export function TemplateList({ client }: { readonly client: Client }) {
   const [sort, setSort] = useState<SortOption>(SORTS[0]!);
@@ -122,8 +125,16 @@ export function TemplateList({ client }: { readonly client: Client }) {
               <tbody>
                 {listing.items.map((item) => (
                   <tr key={item.id}>
-                    {/* No page shows a template on its own yet: its name, not a link. */}
-                    <td className={styles['title']}>{item.name}</td>
+                    {/* No page shows a template on its own yet: its name, not a link, and its access. */}
+                    <td className={styles['title']}>
+                      {item.name}{' '}
+                      <ManageAccessLink
+                        client={client}
+                        target={`artifact:${item.id}`}
+                        href={templateAccessLink(item.id)}
+                        label={`Manage access to ${item.name}`}
+                      />
+                    </td>
                     <td className={styles['muted']}>{item.space.name}</td>
                     <td>{item.version.number}</td>
                     <td className={styles['muted']}>

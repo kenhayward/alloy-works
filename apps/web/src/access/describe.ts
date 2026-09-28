@@ -43,6 +43,21 @@ export interface ShownInvitation {
   readonly acceptedAt: string | null;
 }
 
+/** A group as `GET /v1/groups` lists one. */
+export interface ShownGroup {
+  readonly id: string;
+  readonly name: string;
+  /** `tenant`: the environment's own, its members named here. `provider`: the sign-in's to fill. */
+  readonly source: 'tenant' | 'provider';
+  /** The value of the organisation's sign-in claim it stands for; null for the environment's own. */
+  readonly providerValue: string | null;
+  readonly members: readonly {
+    readonly id: string;
+    readonly name: string | null;
+    readonly email: string | null;
+  }[];
+}
+
 /** A role as `GET /v1/roles` lists one. */
 export interface ShownRole {
   readonly id: string;
@@ -62,10 +77,28 @@ export interface ExplainedPermission {
     readonly effect: 'allow' | 'deny';
     readonly subject: { readonly principal: string } | { readonly group: string };
     readonly through: string | null;
+    /** The name of the group it came through; null for a grant made to the person. */
+    readonly groupName: string | null;
   }[];
 }
 
-/** A level access is managed at, for one component: how a target is spelled, and how it is said. */
+/**
+ * What the Access panel is opened on (access.md, GP-E): an artifact of any kind, a space, or the
+ * whole environment. A space is named by whoever opens it, since it is chosen from a list of them.
+ */
+export type AccessAt =
+  | { readonly kind: 'component' | 'document' | 'template'; readonly id: string }
+  | { readonly kind: 'space'; readonly id: string; readonly name: string }
+  | { readonly kind: 'tenant' };
+
+/** How an access target is spelled to the service: `artifact:<id>`, `space:<id>` or `tenant`. */
+export function targetOf(at: AccessAt): string {
+  if (at.kind === 'tenant') return 'tenant';
+  if (at.kind === 'space') return `space:${at.id}`;
+  return `artifact:${at.id}`;
+}
+
+/** A level access is managed at: how a target is spelled, and how it is said. */
 export interface Place {
   readonly target: string;
   /** As a heading: "This component". */
@@ -74,19 +107,33 @@ export interface Place {
   readonly named: string;
 }
 
-/** The component, its space and the environment: every level a grant reaching it can be made at. */
-export function placesFor(component: {
-  readonly id: string;
-  readonly space: { readonly id: string; readonly name: string };
-}): Place[] {
+const spacePlace = (space: { readonly id: string; readonly name: string }): Place => ({
+  target: `space:${space.id}`,
+  label: `The space ${space.name}`,
+  named: `the space ${space.name}`,
+});
+
+const TENANT: Place = {
+  target: 'tenant',
+  label: 'The whole environment',
+  named: 'the whole environment',
+};
+
+/**
+ * Every level a grant reaching what the panel is opened on can be made at, nearest first: an
+ * artifact, the space it is in, and the environment; a space and the environment; or the environment.
+ */
+export function placesFor(
+  at: AccessAt,
+  space?: { readonly id: string; readonly name: string },
+): Place[] {
+  if (at.kind === 'tenant') return [TENANT];
+  if (at.kind === 'space') return [spacePlace(at), TENANT];
+  if (space === undefined) throw new Error('An artifact is placed in its space');
   return [
-    { target: `artifact:${component.id}`, label: 'This component', named: 'this component' },
-    {
-      target: `space:${component.space.id}`,
-      label: `The space ${component.space.name}`,
-      named: `the space ${component.space.name}`,
-    },
-    { target: 'tenant', label: 'The whole environment', named: 'the whole environment' },
+    { target: `artifact:${at.id}`, label: `This ${at.kind}`, named: `this ${at.kind}` },
+    spacePlace(space),
+    TENANT,
   ];
 }
 
@@ -168,6 +215,25 @@ export function describeInvitation(invitation: ShownInvitation): string {
   return `${invitation.email}${outside}${until}`;
 }
 
+/** A group exactly as `GET /v1/groups` lists one, checked rather than assumed. */
+export function isShownGroup(value: unknown): value is ShownGroup {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    (value.source === 'tenant' || value.source === 'provider') &&
+    (value.providerValue === null || typeof value.providerValue === 'string') &&
+    Array.isArray(value.members) &&
+    value.members.every(
+      (member) =>
+        isRecord(member) &&
+        typeof member.id === 'string' &&
+        (member.name === null || typeof member.name === 'string') &&
+        (member.email === null || typeof member.email === 'string'),
+    )
+  );
+}
+
 /** A role exactly as `GET /v1/roles` lists one, checked rather than assumed. */
 export function isShownRole(value: unknown): value is ShownRole {
   return (
@@ -207,6 +273,7 @@ export function isExplainedPermission(value: unknown): value is ExplainedPermiss
       return false;
     }
     if (grant.through !== null && typeof grant.through !== 'string') return false;
+    if (grant.groupName !== null && typeof grant.groupName !== 'string') return false;
     return true;
   });
 }
@@ -261,12 +328,14 @@ export function explainAnswer(
     places.find((place) => place.target === target)?.named ?? target;
   const grants = answer.grants
     .map((reached) => {
+      // A group by its name (IAM-030), and "a group" only where the service could not name it.
+      const group = reached.groupName === null ? 'a group' : `the group ${reached.groupName}`;
       const person = 'principal' in reached.subject ? people.get(reached.subject.principal) : null;
-      const who = 'group' in reached.subject ? 'a group' : person ? personName(person) : 'a person';
-      // Naming who it reached "through a group" only makes sense when the grant is to a person: a
-      // grant already made to a group is not reached "through" anything, whatever `through` holds.
+      const who = 'group' in reached.subject ? group : person ? personName(person) : 'a person';
+      // Naming the group it reached them "through" only makes sense when the grant is to a person: a
+      // grant already made to a group names that group, whatever `through` holds.
       const through =
-        'principal' in reached.subject && reached.through !== null ? ' through a group' : '';
+        'principal' in reached.subject && reached.through !== null ? ` through ${group}` : '';
       const effect = reached.effect === 'allow' ? 'allowed' : 'denied';
       return `${reached.role} ${effect} to ${who}${through}`;
     })

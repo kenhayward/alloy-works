@@ -126,6 +126,12 @@ export const AccessExplanation = z.object({
               z.object({ group: z.string() }),
             ]),
             through: z.string().nullable().describe('The group it reached the principal through'),
+            groupName: z
+              .string()
+              .nullable()
+              .describe(
+                'The name of the group the grant was made to, which is the group it came through; null for a grant made to the principal',
+              ),
             expiresAt: z.string().nullable(),
           }),
         )

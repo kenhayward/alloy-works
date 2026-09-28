@@ -160,6 +160,7 @@ export {
   addToGroup,
   createGroup,
   deleteGroup,
+  groupNames,
   listGroups,
   readGroup,
   setGroupMembers,

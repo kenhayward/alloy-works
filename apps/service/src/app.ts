@@ -17,6 +17,7 @@ import {
   claimInvitation,
   enqueueJob,
   findApiToken,
+  groupNames,
   loadFacts,
   syncProviderGroups,
   type SignInRoute,
@@ -161,8 +162,14 @@ export type Handlers = {
       ) => Promise<Success<(typeof routes)[K]> | FastifyReply>;
 };
 
-/** A decided grant as the explanation publishes it. */
-function explained(decision: Decision): AccessExplanation['permissions'][number] {
+/**
+ * A decision as the explanation publishes it: each grant with the name of the group it came through,
+ * from `names`, so a view names the group rather than an identifier (IAM-030).
+ */
+function explained(
+  decision: Decision,
+  names: ReadonlyMap<string, string>,
+): AccessExplanation['permissions'][number] {
   return {
     permission: decision.permission,
     allowed: decision.allowed,
@@ -175,6 +182,7 @@ function explained(decision: Decision): AccessExplanation['permissions'][number]
       effect: reached.effect,
       subject: reached.subject,
       through: reached.through,
+      groupName: reached.through === null ? null : (names.get(reached.through) ?? null),
       expiresAt: reached.expiresAt && reached.expiresAt.toISOString(),
     })),
   };
@@ -657,17 +665,23 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const { principal } = request.query as ExplainQuery;
       const facts = await loadFacts(trx, principal, target);
       if (!facts) throw notFound();
+      // administer by "at its level or above" (final review, item B): the same rule GET /v1/access
+      // and the route helper use, so this explains the decision that actually governs the permission,
+      // not a plain nearest-level walk that could show a denial "or above" already overrides.
+      const decisions = permissions.map((permission) =>
+        permission === 'administer' ? administerOrAbove(facts) : decide(permission, facts),
+      );
+      // Every group a deciding grant came through, named in one read under the same lock.
+      const names = await groupNames(
+        trx,
+        decisions.flatMap((decision) =>
+          decision.grants.flatMap((reached) => (reached.through === null ? [] : [reached.through])),
+        ),
+      );
       return {
         principal,
         target: formatLevel(target),
-        // administer by "at its level or above" (final review, item B): the same rule GET /v1/access
-        // and the route helper use, so this explains the decision that actually governs the permission,
-        // not a plain nearest-level walk that could show a denial "or above" already overrides.
-        permissions: permissions.map((permission) =>
-          explained(
-            permission === 'administer' ? administerOrAbove(facts) : decide(permission, facts),
-          ),
-        ),
+        permissions: decisions.map((decision) => explained(decision, names)),
       };
     },
   };

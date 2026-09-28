@@ -16842,7 +16842,13 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 393,
+      "line": 446,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-030",
+      "file": "apps/service/src/access-routes.test.ts",
+      "line": 396,
       "kind": "title"
     },
     {
@@ -17290,15 +17296,21 @@
       "kind": "title"
     },
     {
+      "id": "IAM-029",
+      "file": "apps/web/src/access/AccessPanel.test.tsx",
+      "line": 1450,
+      "kind": "title"
+    },
+    {
       "id": "IAM-030",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
-      "line": 711,
+      "line": 791,
       "kind": "title"
     },
     {
       "id": "IAM-031",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
-      "line": 774,
+      "line": 856,
       "kind": "title"
     },
     {
@@ -17550,127 +17562,127 @@
     {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2261,
+      "line": 2293,
       "kind": "title"
     },
     {
       "id": "CNT-072",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3219,
+      "line": 3251,
       "kind": "title"
     },
     {
       "id": "CNT-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3239,
+      "line": 3271,
       "kind": "title"
     },
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3881,
+      "line": 3913,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4038,
+      "line": 4070,
       "kind": "title"
     },
     {
       "id": "CNT-105",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3332,
+      "line": 3364,
       "kind": "title"
     },
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4775,
+      "line": 4807,
       "kind": "title"
     },
     {
       "id": "CNT-154",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3332,
+      "line": 3364,
       "kind": "title"
     },
     {
       "id": "CNT-156",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3363,
+      "line": 3395,
       "kind": "title"
     },
     {
       "id": "CNT-158",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3516,
+      "line": 3548,
       "kind": "title"
     },
     {
       "id": "CNT-162",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3499,
+      "line": 3531,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4336,
+      "line": 4368,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 508,
+      "line": 519,
       "kind": "title"
     },
     {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3675,
+      "line": 3707,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4540,
+      "line": 4572,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4376,
+      "line": 4408,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3050,
+      "line": 3082,
       "kind": "title"
     },
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3699,
+      "line": 3731,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3096,
+      "line": 3128,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 888,
+      "line": 899,
       "kind": "title"
     },
     {
       "id": "STR-065",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2594,
+      "line": 2626,
       "kind": "title"
     },
     {
