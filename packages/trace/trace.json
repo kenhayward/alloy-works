@@ -16920,7 +16920,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 550,
+      "line": 554,
       "kind": "title"
     },
     {
@@ -17005,6 +17005,12 @@
       "id": "CNT-173",
       "file": "apps/service/src/editing-routes.test.ts",
       "line": 285,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-174",
+      "file": "apps/service/src/editing-routes.test.ts",
+      "line": 634,
       "kind": "title"
     },
     {
@@ -17428,6 +17434,18 @@
       "kind": "title"
     },
     {
+      "id": "CNT-067",
+      "file": "apps/web/src/editor/Recovery.test.tsx",
+      "line": 234,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-090",
+      "file": "apps/web/src/editor/Recovery.test.tsx",
+      "line": 267,
+      "kind": "title"
+    },
+    {
       "id": "CNT-068",
       "file": "apps/web/src/editor/SaveIndicator.test.tsx",
       "line": 9,
@@ -17448,13 +17466,13 @@
     {
       "id": "CNT-066",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 228,
+      "line": 277,
       "kind": "title"
     },
     {
       "id": "CNT-070",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 284,
+      "line": 333,
       "kind": "title"
     },
     {
@@ -18169,6 +18187,18 @@
       "id": "VER-008",
       "file": "packages/db/src/record-version.test.ts",
       "line": 119,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-090",
+      "file": "packages/db/src/recovery.test.ts",
+      "line": 211,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-174",
+      "file": "packages/db/src/recovery.test.ts",
+      "line": 177,
       "kind": "title"
     },
     {

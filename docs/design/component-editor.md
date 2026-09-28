@@ -723,12 +723,19 @@ unsent changes still held locally. From there it can move the lock back and save
 Iterations either session saved stay visible to that author, because the holder is the principal
 (VER-002).
 
-**Built, this is not yet true without Recovery.** This slice has no lock event and no Recovery to move the
-lock back from: a window that loses the lock this way simply finds itself refused on its next save, with
-no route back to what it already saved. What it already saved is not lost - the iteration is kept, for
-thirty days, and never swept while it is the artifact's latest (VER-003) - but nothing here shows either
-window that the other's saves exist, so a version can be cut from one window while the other's later work
-sits unreachable until Recovery ships. See [Changed while planning the build](#changed-while-planning-the-build).
+**Built, with Recovery (W11.2), this is true from a window opened afresh, not yet in the window that
+loses the lock.** There is still no lock event: a window that loses the lock this way finds itself refused
+on its next save and goes to `lost`, keeping what it had not sent as text to copy, with no Recovery of its
+own. What either window saved is not lost - it is kept until the next version after the one it was opened
+from is cut, and for the tenant's window after that (VER-003) - and it is its author's to read from any
+window of theirs that holds the lock (RC-A). So opening the component again, by a reload of either window
+or in a new one, says when the author last saved work that was never made a version and offers
+**Recover**, which moves the lock to that window and lists both windows' saves, each marked as this
+window's or another's, to restore. Two gaps remain. Recovery is offered where a save was refused as
+stale, beside **Continue**, but not in the window that lost the lock to a move; and it is offered only
+while the newest of the author's saves is on the latest version, so once a version is cut from one window,
+the other's earlier saves are kept, and listed by any Recovery opened later, but nothing offers them. See
+[Changed while planning the build](#changed-while-planning-the-build).
 
 ### Recovery
 
