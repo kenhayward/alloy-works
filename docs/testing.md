@@ -240,8 +240,8 @@ whole run**: veraPDF's undocumented `--servermode` reads a PDF's path per line a
 its report, and `apps/worker/src/testing/verapdf-server.ts` starts it on the first check and serves it
 to every test file over 127.0.0.1 (the global setup, `verapdf-setup.ts`). After it starts, a check
 costs tens of milliseconds. `verapdf.test.ts` pins the flag: an image that dropped it fails there by
-name. It runs in the worker's test suite on every change to the template or the engine - not on every
-publication, which is a later slice's. Of the corpus's cases, veraPDF checks two against PDF/UA-1:
+name. It runs in the worker's test suite on every change to the template or the engine; the check on every
+publication is W14.1's, the `check_pdf` job of [#313](https://github.com/kenhayward/alloy-works/pull/313). Of the corpus's cases, veraPDF checks two against PDF/UA-1:
 six heading levels, which it must pass, and the PDF not made to PDF/UA-1, which it must fail. The
 sixteen character probes are not checked against PDF/UA-1 at all - each is compared only to what the
 pinned Typst itself would refuse, character by character.
@@ -277,12 +277,15 @@ figures, 150 tables, 150 numbered equations, 150 footnotes and 2,400 paragraphs 
 through the store; its pages and parts are read back off the PDF, not assumed, and it came to 311 pages
 when it was declared. It is published eleven times through the worker suite's own harness,
 `requestPublication` and then `processNext` running the publish job to the recorded publication; the
-first warms the worker and is reported, not held, and the other ten are the samples.
+first warms the worker and is reported and held to the maximum of thirty seconds alone, and the other
+ten are the samples. With ten samples the nearest-rank p95 is the slowest of them, so every sample is
+held to ten seconds. The measured span leaves out the HTTP route that asks for the publish and the
+time a request waits in the queue for a worker.
 
 It is part of the ordinary worker suite, since it takes about twenty seconds, and needs nothing the
 suite does not. **It binds where `CI` is not `true`, and records only on CI's runner**, as STR-063's
 navigation budget does (`apps/service/src/test/budget.ts`): a shared runner's speed is not the declared
-reference configuration. Either way the configuration it ran on - CPU, operating system, memory, Node,
+reference configuration, and a green CI run does not show the budget met. Either way the configuration it ran on - CPU, operating system, memory, Node,
 Typst and PostgreSQL - the document's pages and parts, and the p50, p95, maximum and each sample's
 request and job times are written into the test's `meta`, which the JSON reporter carries into
 `.trace-results/worker.json`, and printed at the end of the run. To measure it alone:
@@ -293,9 +296,15 @@ pnpm --filter @alloy-works/worker exec vitest run src/publishing-budget.test.ts
 ```
 
 Run alone, on nothing else, when the number is to be quoted: the suite's other files run beside it and
-slow it. W14.2 measured a p95 of 1.4 to 1.6 seconds alone, over four runs, and 1.8 seconds beside the rest of the suite, on an
-Intel Core Ultra 7 270K Plus with 24 logical CPUs and 64 GB, Windows 11, Node 24.16.0, Typst 0.15.1 and
-PostgreSQL 17 in Docker.
+slow it.
+
+### The reference configuration
+
+PUB-102's budget is stated against a declared reference configuration. **The reference configuration
+is: Intel Core Ultra 7 270K Plus, 24 logical CPUs, 64 GB, Windows 11, Node 24.16.0, Typst 0.15.1,
+PostgreSQL 17 in Docker.** A run on another machine binds as this one does, but its numbers are that
+machine's; a number quoted for the budget is quoted from this configuration. W14.2 measured a p95 of
+1.4 to 1.6 seconds on it alone, over four runs, and 1.8 seconds beside the rest of the suite.
 
 ## The Open XML validator
 

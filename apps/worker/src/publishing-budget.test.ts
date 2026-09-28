@@ -44,8 +44,9 @@ import { processNext, type WorkerLog } from './worker.js';
  */
 const BUDGET = { p95: 10_000, max: 30_000 } as const;
 /**
- * Held to both bounds on a named machine, and recorded only on a shared CI runner, whose speed varies
- * from run to run by more than a budget can absorb - W-D, as STR-063's navigation budget is
+ * Held to both bounds on a developer's machine, and stated against the reference configuration that
+ * docs/testing.md declares; recorded only on a shared CI runner, whose speed varies from run to run
+ * by more than a budget can absorb - W-D, as STR-063's navigation budget is
  * (`apps/service/src/test/budget.ts`). `CI` is the variable GitHub Actions sets to `true`.
  */
 const BINDS = process.env['CI'] !== 'true';
@@ -65,7 +66,12 @@ const BLOCKS_PER_COMPONENT = 100;
  * engine or the theme move it a little, and fails a change that makes it another document.
  */
 const PAGES = { least: 270, most: 330 } as const;
-/** The publishes measured, after one to warm the worker that is reported and not held. */
+/**
+ * The publishes measured, after one to warm the worker, which is reported and held to the maximum
+ * alone: PUB-102 allows no measured sample above thirty seconds, the first among them. With ten
+ * samples the nearest-rank 95th percentile is the tenth, the slowest, so the p95 bound holds every
+ * sample to ten seconds; a larger count would let the slowest one past it.
+ */
 const SAMPLES = 10;
 
 /** An equation in the one form the MathML reader writes, with the words it is spoken by. */
@@ -445,8 +451,11 @@ describe('PUB-102 publishes the 300-page reference document within the budget', 
     expect(configuration.postgres).not.toBe('');
 
     if (BINDS) {
+      // Nearest rank over ten samples: the 95th percentile is the maximum (SAMPLES).
       expect(percentile(totals, 95)).toBeLessThanOrEqual(BUDGET.p95);
       expect(Math.max(...totals)).toBeLessThanOrEqual(BUDGET.max);
+      // The warm-up is a measured sample too, and PUB-102 allows none above thirty seconds.
+      expect(first.total).toBeLessThanOrEqual(BUDGET.max);
     }
   }, 900_000);
 });

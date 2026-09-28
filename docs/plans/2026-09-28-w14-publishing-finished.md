@@ -109,6 +109,18 @@ Core Ultra 7 270K Plus, 24 logical CPUs, 64 GB, Windows 11, Node 24.16.0, Typst 
 and 0.1 in the request, and 1.82 beside the rest of the worker suite. The test takes about twenty
 seconds, so it runs in the ordinary suite rather than behind an opt-in.
 
+**W14.2's final review.** The Word check's `deep` and `deep-captions` fixtures, nine levels deep, asked
+for the PDF and Word and so were refused by `assemble`; each now asks for Word alone, which nothing it
+asserts depended on. The warm-up publish is held to the maximum too, since PUB-102 allows no measured
+sample above thirty; with ten samples the nearest-rank p95 is the slowest. The reference configuration
+is declared in `docs/testing.md`, and publishing.md points at it and says, as STR-063 does, that a
+green CI run does not show the budget met, and that the span leaves out the HTTP route and the queue.
+The refusal's words offer Word alone only to a publish under a layout with a Word page:
+`failureWords` takes whether Word is offered, `Publishing` passes its layout's, and a preview, always a
+PDF, passes nothing. A request made before layouts is not refused `heading_too_deep`, as its other
+refusals under a layout are gated, since template 1 is frozen and a request queued before W14.2 keeps
+saying what it always said.
+
 ## W14.3: The regression corpus, and the order
 
 1. The spike's nine cases ported; a case for each publishing defect filed; the keep rules' cases moved

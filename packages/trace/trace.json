@@ -15744,11 +15744,11 @@
         },
         {
           "id": "PUB-103",
-          "howItIsMet": "Every PDF is tagged to PDF/UA-1 and checked by veraPDF against its profile (PUB-091). Every node is a heading at its depth, a section's title or a component's, and the pinned Typst tags one below the sixth level as a paragraph, which veraPDF passes (measured, the regression corpus): so `assemble` refuses each node nested deeper than six levels where a PDF is asked for, `heading_too_deep`, naming it, and Word, which numbers and tags nine, publishes it (ADR-0031, W-E). The corpus's six-level case passes veraPDF with `H1` to `H6` tagged"
+          "howItIsMet": "Every PDF is tagged to PDF/UA-1 and checked by veraPDF against its profile (PUB-091). Every node is a heading at its depth, a section's title or a component's, and the pinned Typst tags one below the sixth level as a paragraph, which veraPDF passes (measured, the regression corpus): so `assemble` refuses each node nested deeper than six levels where a PDF is asked for under a layout, `heading_too_deep`, naming it, and Word, which numbers and tags nine, publishes it (ADR-0031, W-E). A request made before layouts keeps saying what it always said, as its other refusals do, and is not refused so. The page's words offer Word alone only to a publish under a layout with a Word page: a preview is always a PDF, and a layout with no Word page makes none. The corpus's six-level case passes veraPDF with `H1` to `H6` tagged"
         },
         {
           "id": "PUB-102",
-          "howItIsMet": "The reference document is declared in `apps/worker/src/publishing-budget.test.ts`: 30 chapters, each placing a component of 100 blocks - 150 each of figures, tables, numbered equations and footnotes, and 2,400 paragraphs of prose - set to 311 pages. It is published eleven times from `requestPublication` to the publication `processNext` records, the first reported and the other ten held to a p95 of ten seconds and a maximum of thirty on a named machine and recorded only on CI's runner (W-D), with the configuration and the document's pages and parts written beside the result in `.trace-results/worker.json`. The conformance report joins the publication after it is recorded, as a job of its own (ADR-0030), outside the measured span"
+          "howItIsMet": "The reference document is declared in `apps/worker/src/publishing-budget.test.ts`: 30 chapters, each placing a component of 100 blocks - 150 each of figures, tables, numbered equations and footnotes, and 2,400 paragraphs of prose - set to 311 pages. It is published eleven times from `requestPublication` to the publication `processNext` records, the first reported and held to the maximum and the other ten held to a p95 of ten seconds and a maximum of thirty on a developer's machine, stated against [the reference configuration](../testing.md#the-reference-configuration) that `docs/testing.md` declares, and recorded only on CI's runner (W-D), with the configuration and the document's pages and parts written beside the result in `.trace-results/worker.json`. As with STR-063, a run on CI's runner is held to neither bound, so a green CI run does not show the budget met. The measured span runs from `requestPublication` to the recorded publication, in process: it leaves out the HTTP route that asks for the publish and the time a request waits in the queue for a worker. The conformance report joins the publication after it is recorded, as a job of its own (ADR-0030), outside the measured span"
         },
         {
           "id": "PUB-037",
@@ -18027,7 +18027,7 @@
     {
       "id": "PUB-102",
       "file": "apps/worker/src/publishing-budget.test.ts",
-      "line": 143,
+      "line": 149,
       "kind": "title"
     },
     {
@@ -18153,7 +18153,7 @@
     {
       "id": "PUB-029",
       "file": "apps/worker/src/word-check.test.ts",
-      "line": 2301,
+      "line": 2303,
       "kind": "title"
     },
     {
@@ -19263,31 +19263,31 @@
     {
       "id": "AST-014",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2063,
+      "line": 2082,
       "kind": "title"
     },
     {
       "id": "CNT-037",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2634,
+      "line": 2653,
       "kind": "title"
     },
     {
       "id": "CNT-042",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2592,
+      "line": 2611,
       "kind": "title"
     },
     {
       "id": "CNT-049",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3811,
+      "line": 3830,
       "kind": "title"
     },
     {
       "id": "CNT-081",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3627,
+      "line": 3646,
       "kind": "title"
     },
     {
@@ -19305,13 +19305,13 @@
     {
       "id": "PUB-005",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6342,
+      "line": 6361,
       "kind": "title"
     },
     {
       "id": "PUB-033",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2063,
+      "line": 2082,
       "kind": "title"
     },
     {
@@ -19335,7 +19335,7 @@
     {
       "id": "PUB-103",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5650,
+      "line": 5669,
       "kind": "title"
     },
     {
@@ -19353,55 +19353,55 @@
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3603,
+      "line": 3622,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3327,
+      "line": 3346,
       "kind": "title"
     },
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3710,
+      "line": 3729,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3221,
+      "line": 3240,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3250,
+      "line": 3269,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3273,
+      "line": 3292,
       "kind": "title"
     },
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4900,
+      "line": 4919,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4900,
+      "line": 4919,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4924,
+      "line": 4943,
       "kind": "title"
     },
     {

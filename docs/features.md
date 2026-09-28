@@ -651,8 +651,9 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   number; a defined term, which has no control and no published form yet; a character no typeface
   can set; or, for a PDF, a heading nested more than six levels deep - a section or a component seven
   levels down or more - which an accessible PDF cannot tag as a heading, so a screen reader would read
-  it as an ordinary paragraph. Move it up a level, or publish the document to Word alone, which keeps
-  all nine levels an outline can have.
+  it as an ordinary paragraph. Move it up a level, or, where the layout makes Word, publish the
+  document to Word alone, which keeps all nine levels an outline can have; a preview, which is always
+  a PDF, and a layout with no Word page say only to move it up.
 
   **A long document publishes quickly.** A 300-page document of prose, figures, tables, equations and
   footnotes publishes in about a second and a half on a developer's machine, from asking for it to the

@@ -150,8 +150,8 @@ export const publishFailureCodes = [
   // before its schema 6, or none, for a request made before layouts - naming no place, since nothing
   // in the document mends it. A preview otherwise would say it is a draft, or say so in English.
   'preview_words_missing',
-  // compose, from W14.2 (W-E, ADR-0031): where a PDF is asked for, a node - a section or a component
-  // - nested deeper than six levels, naming it. PDF/UA-1's headings stop at `H6`, and the pinned
+  // compose, from W14.2 (W-E, ADR-0031): where a PDF is asked for under a layout, a node - a section
+  // or a component - nested deeper than six levels, naming it. PDF/UA-1's headings stop at `H6`, and the pinned
   // engine tags a seventh level as a paragraph, so a reader would not be told it is a heading
   // (PUB-103). Word numbers and tags nine levels, and publishes it.
   'heading_too_deep',

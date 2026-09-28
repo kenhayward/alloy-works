@@ -9,17 +9,17 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 - **Publishing a long document is measured, and quick.** A 300-page document of prose, figures,
   tables, equations and footnotes publishes to PDF in about a second and a half on a developer's
-  machine, from asking for it to the publication being recorded. The worker's tests measure it every
-  time they run, against a limit of ten seconds, and record the machine it was measured on beside the
-  result.
+  machine, from asking for it to the publication being recorded. The worker's tests measure it and
+  hold it to ten seconds on a developer's machine, and record the machine it was measured on beside
+  the result.
 
 ### Changed
 
 - **A heading nested more than six levels deep is refused for a PDF, by name.** An accessible PDF can
   tag six levels of heading, so a section or a component seven or more levels down used to be read
   aloud as an ordinary paragraph. Publishing a PDF now stops and names each one at its place in the
-  outline, saying to move it up a level or to publish to Word alone. A Word document still publishes
-  every level an outline can have, down to Heading 9.
+  outline, saying to move it up a level, or, where the layout makes Word, to publish to Word alone. A
+  Word document still publishes every level an outline can have, down to Heading 9.
 
 ## 0.114.0 - 2026-09-28 (PR #311)
 

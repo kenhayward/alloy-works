@@ -2010,8 +2010,9 @@ Serif`, `Liberation Mono` or `STIX Two Math`) since themes 1, which set the glyp
   required, at least one. The PDF engine's own refusals - a line, caption or image too wide for the
   PDF's measure, a table's header spanning its body, a footnote or a reference target in a header
   row, a missing continuation label's words and, since W14.2, a node nested deeper than six levels
-  (`heading_too_deep`, naming it: PDF/UA-1 has six heading levels and the pinned Typst tags a seventh
-  as a paragraph, ADR-0031) - are tagged as they are made and said only where `pdf` is asked for,
+  under a layout (`heading_too_deep`, naming it: PDF/UA-1 has six heading levels and the pinned Typst
+  tags a seventh as a paragraph, ADR-0031; a request made before layouts keeps publishing as it
+  always did) - are tagged as they are made and said only where `pdf` is asked for,
   and since Word 3 none of them drops its construct from the published document, so Word publishes
   a deeper node at its own heading level, to its ninth.
   Since Word 4 every `equation_unrenderable` reason is said for every format, since a refusal leaves

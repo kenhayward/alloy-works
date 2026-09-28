@@ -1606,6 +1606,25 @@ describe('assemble for a request made before layouts', () => {
       nodes: [],
     });
   });
+
+  it('keeps publishing a heading nested deeper than six levels, as it always did, refusing it only under a layout (W14.2)', () => {
+    // A request made before layouts keeps saying what it always said: template 1 is frozen, and a
+    // request queued before W14.2 is not refused for a reason it was never told of.
+    const at = (depth: number) => `level${String.fromCharCode(96 + depth)}`;
+    const chain = (depth: number): object => ({
+      ...section(at(depth), `Level ${depth}`),
+      children: depth === 8 ? [reference('calib')] : [chain(depth + 1)],
+    });
+    const assembled = assemble(before({ outline: outline([chain(1)]) }));
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    interface Deep {
+      readonly depth: number;
+      readonly children: readonly Deep[];
+    }
+    const deepest = (nodes: readonly Deep[]): number =>
+      Math.max(0, ...nodes.map((node) => Math.max(node.depth, deepest(node.children))));
+    expect(deepest(assembled.document.nodes)).toBe(9);
+  });
 });
 
 describe('a quotation and preformatted text, published (editor 5)', () => {
