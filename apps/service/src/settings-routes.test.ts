@@ -1,7 +1,6 @@
 // apps/service/src/settings-routes.test.ts
 import {
   bootstrapCluster,
-  configureOrganisationSignIn,
   createSpace,
   createTenant,
   createTenantDatabase,
@@ -19,7 +18,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
-import { signIn } from './test/sign-in.js';
+import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 const HOST = 'acme.alloy.test';
 const PATH = '/v1/settings/editing';
@@ -59,10 +58,9 @@ describe("the environment's editing settings through the service", () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: [HOST],
     });
-    await configureOrganisationSignIn(db.adminUrl, tenant, {
+    await configureStandIn(db.adminUrl, tenant, {
       issuer: idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
     });
     tenantDb = createTenantDatabase(db.serviceUrl);
     app = buildApp({
@@ -70,9 +68,9 @@ describe("the environment's editing settings through the service", () => {
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets({
-        SECRET_STAND_IN: 'stand-in-secret',
         SECRET_SIGN_IN_STATE: 'test-only-state-key-0123456789abcdef',
       }),
+      sealingKey: TEST_SEALING_KEY,
     });
     for (const user of ['ada', 'grace', 'alice', 'ivy']) {
       cookies[user] = await signIn(app, HOST, user, idp.issuer);

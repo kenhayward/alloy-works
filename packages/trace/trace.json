@@ -16973,229 +16973,229 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 446,
+      "line": 445,
       "kind": "title"
     },
     {
       "id": "IAM-030",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 396,
+      "line": 395,
       "kind": "title"
     },
     {
       "id": "API-003",
       "file": "apps/service/src/app.test.ts",
-      "line": 83,
+      "line": 85,
       "kind": "title"
     },
     {
       "id": "IAM-053",
       "file": "apps/service/src/app.test.ts",
-      "line": 124,
+      "line": 126,
       "kind": "title"
     },
     {
       "id": "AST-001",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 223,
+      "line": 222,
       "kind": "rule"
     },
     {
       "id": "AST-001",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 217,
+      "line": 216,
       "kind": "title"
     },
     {
       "id": "AST-002",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 217,
+      "line": 216,
       "kind": "title"
     },
     {
       "id": "AST-026",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 310,
+      "line": 309,
       "kind": "title"
     },
     {
       "id": "AST-035",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 290,
+      "line": 289,
       "kind": "title"
     },
     {
       "id": "AST-038",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 217,
+      "line": 216,
       "kind": "title"
     },
     {
       "id": "AST-040",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 273,
+      "line": 272,
       "kind": "rule"
     },
     {
       "id": "AST-040",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 268,
+      "line": 267,
       "kind": "title"
     },
     {
       "id": "CNT-143",
       "file": "apps/service/src/component-creation.test.ts",
-      "line": 223,
+      "line": 222,
       "kind": "title"
     },
     {
       "id": "MET-011",
       "file": "apps/service/src/component-creation.test.ts",
-      "line": 177,
+      "line": 176,
       "kind": "title"
     },
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 625,
+      "line": 624,
       "kind": "title"
     },
     {
       "id": "MET-008",
       "file": "apps/service/src/definition-routes.test.ts",
-      "line": 186,
+      "line": 185,
       "kind": "rule"
     },
     {
       "id": "MET-024",
       "file": "apps/service/src/definition-routes.test.ts",
-      "line": 122,
+      "line": 121,
       "kind": "title"
     },
     {
       "id": "MET-031",
       "file": "apps/service/src/definition-routes.test.ts",
-      "line": 158,
+      "line": 157,
       "kind": "rule"
     },
     {
       "id": "MET-037",
       "file": "apps/service/src/definition-routes.test.ts",
-      "line": 197,
+      "line": 196,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 516,
+      "line": 515,
       "kind": "rule"
     },
     {
       "id": "CNT-160",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 385,
+      "line": 384,
       "kind": "title"
     },
     {
       "id": "STR-054",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 242,
+      "line": 241,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 550,
+      "line": 549,
       "kind": "title"
     },
     {
       "id": "STR-061",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 214,
+      "line": 213,
       "kind": "title"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 447,
+      "line": 446,
       "kind": "rule"
     },
     {
       "id": "API-039",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 343,
+      "line": 342,
       "kind": "rule"
     },
     {
       "id": "API-039",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 314,
+      "line": 313,
       "kind": "title"
     },
     {
       "id": "CNT-071",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 371,
+      "line": 370,
       "kind": "title"
     },
     {
       "id": "CNT-173",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 285,
+      "line": 284,
       "kind": "title"
     },
     {
       "id": "CNT-174",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 634,
+      "line": 633,
       "kind": "title"
     },
     {
       "id": "COL-005",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 412,
+      "line": 411,
       "kind": "rule"
     },
     {
       "id": "VER-009",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 237,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "IAM-059",
       "file": "apps/service/src/first-administrator.test.ts",
-      "line": 123,
+      "line": 122,
       "kind": "title"
     },
     {
       "id": "IAM-041",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 195,
+      "line": 197,
       "kind": "title"
     },
     {
       "id": "IAM-043",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 144,
+      "line": 146,
       "kind": "rule"
     },
     {
       "id": "IAM-043",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 141,
+      "line": 143,
       "kind": "title"
     },
     {
       "id": "IAM-054",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 220,
+      "line": 222,
       "kind": "rule"
     },
     {
       "id": "IAM-054",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 216,
+      "line": 218,
       "kind": "title"
     },
     {
@@ -17207,13 +17207,13 @@
     {
       "id": "IAM-071",
       "file": "apps/service/src/grant-routes.test.ts",
-      "line": 294,
+      "line": 293,
       "kind": "rule"
     },
     {
       "id": "IAM-009",
       "file": "apps/service/src/group-routes.test.ts",
-      "line": 151,
+      "line": 150,
       "kind": "title"
     },
     {
@@ -17237,37 +17237,37 @@
     {
       "id": "API-008",
       "file": "apps/service/src/idempotency-routes.test.ts",
-      "line": 139,
+      "line": 138,
       "kind": "rule"
     },
     {
       "id": "API-008",
       "file": "apps/service/src/idempotency-routes.test.ts",
-      "line": 118,
+      "line": 117,
       "kind": "title"
     },
     {
       "id": "IAM-072",
       "file": "apps/service/src/invitation-routes.test.ts",
-      "line": 149,
+      "line": 147,
       "kind": "title"
     },
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 231,
+      "line": 230,
       "kind": "title"
     },
     {
       "id": "STR-063",
       "file": "apps/service/src/navigation-budget.test.ts",
-      "line": 125,
+      "line": 124,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/service/src/numbering-routes.test.ts",
-      "line": 242,
+      "line": 241,
       "kind": "title"
     },
     {
@@ -17279,49 +17279,49 @@
     {
       "id": "STY-035",
       "file": "apps/service/src/presentation-routes.test.ts",
-      "line": 110,
+      "line": 109,
       "kind": "title"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 423,
+      "line": 422,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 358,
+      "line": 357,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 451,
+      "line": 450,
       "kind": "rule"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 659,
+      "line": 658,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 601,
+      "line": 600,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 540,
+      "line": 539,
       "kind": "rule"
     },
     {
       "id": "PUB-095",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 468,
+      "line": 467,
       "kind": "rule"
     },
     {
@@ -17333,31 +17333,31 @@
     {
       "id": "SCH-039",
       "file": "apps/service/src/search-routes.test.ts",
-      "line": 100,
+      "line": 99,
       "kind": "title"
     },
     {
       "id": "IAM-039",
       "file": "apps/service/src/session-routes.test.ts",
-      "line": 82,
+      "line": 81,
       "kind": "title"
     },
     {
       "id": "VER-004",
       "file": "apps/service/src/settings-routes.test.ts",
-      "line": 119,
+      "line": 117,
       "kind": "title"
     },
     {
       "id": "IAM-007",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 92,
+      "line": 123,
       "kind": "title"
     },
     {
       "id": "IAM-043",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 153,
+      "line": 184,
       "kind": "rule"
     },
     {
@@ -17369,61 +17369,61 @@
     {
       "id": "API-037",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 248,
+      "line": 247,
       "kind": "rule"
     },
     {
       "id": "IAM-018",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 208,
+      "line": 207,
       "kind": "title"
     },
     {
       "id": "TPL-004",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 236,
+      "line": 235,
       "kind": "rule"
     },
     {
       "id": "TPL-006",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 182,
+      "line": 181,
       "kind": "title"
     },
     {
       "id": "TPL-013",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 469,
+      "line": 468,
       "kind": "rule"
     },
     {
       "id": "TPL-055",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 486,
+      "line": 485,
       "kind": "rule"
     },
     {
       "id": "IAM-034",
       "file": "apps/service/src/token-routes.test.ts",
-      "line": 279,
+      "line": 278,
       "kind": "rule"
     },
     {
       "id": "IAM-034",
       "file": "apps/service/src/token-routes.test.ts",
-      "line": 266,
+      "line": 265,
       "kind": "title"
     },
     {
       "id": "IAM-035",
       "file": "apps/service/src/token-routes.test.ts",
-      "line": 308,
+      "line": 307,
       "kind": "title"
     },
     {
       "id": "IAM-062",
       "file": "apps/service/src/token-routes.test.ts",
-      "line": 555,
+      "line": 554,
       "kind": "title"
     },
     {

@@ -1,6 +1,5 @@
 import {
   bootstrapCluster,
-  configureOrganisationSignIn,
   createSpace,
   createTenant,
   createTenantDatabase,
@@ -18,7 +17,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
-import { signIn } from './test/sign-in.js';
+import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 const HOST = 'acme.alloy.test';
 
@@ -70,10 +69,9 @@ describe('a mutating request with an idempotency key', () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: [HOST],
     });
-    await configureOrganisationSignIn(db.adminUrl, tenant, {
+    await configureStandIn(db.adminUrl, tenant, {
       issuer: idp.issuer,
       clientId: 'alloy',
-      secretName: 'stand_in',
     });
     tenantDb = createTenantDatabase(db.serviceUrl);
     await tenantDb.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: idp.issuer }));
@@ -81,7 +79,8 @@ describe('a mutating request with an idempotency key', () => {
       db: tenantDb,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
     });
     // Grace authors in General; Quality she may read and not create in, until she is granted it.
     cookie = await signIn(app, HOST, 'grace', idp.issuer);
