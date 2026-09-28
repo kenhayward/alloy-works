@@ -56,6 +56,12 @@
   font-size: var(--size-card-title);
 }
 
+/* A heading focus is moved to, as a person's tokens open or close, rather than a stop of its own. */
+.shown h3:focus,
+.shown h4:focus {
+  outline: none;
+}
+
 .shown h4 {
   margin: var(--space-16) 0 var(--space-8);
   color: var(--muted);
@@ -75,6 +81,10 @@
 
 .strong {
   font-weight: 600;
+}
+
+.act {
+  text-align: end;
 }
 
 .foot {

@@ -13,7 +13,7 @@ import { invitationRoutes } from './invitations.js';
 import { managingAccessRoutes } from './managing-access.js';
 import { publishingRoutes } from './publishing.js';
 import { templateRoutes } from './templates.js';
-import { tokenRoutes } from './tokens.js';
+import { administeredTokenRoutes, tokenRoutes } from './tokens.js';
 import {
   AccessAnswers,
   AccessExplanation,
@@ -277,6 +277,7 @@ export const routes = {
   ...presentationRoutes,
   ...settingsRoutes,
   ...tokenRoutes,
+  ...administeredTokenRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

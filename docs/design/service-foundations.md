@@ -223,13 +223,17 @@ W12 builds the rest of this section ([W12](../plans/2026-09-28-w12-identity.md))
 **Revoked by deleting its row** (IAM-035, IAM-055):
 
 - The owner revokes their own with `DELETE /v1/tokens/{id}`.
-- A tenant administrator lists and revokes anybody's, which is how tokens go when a person leaves.
+- A tenant administrator lists and revokes anybody's, which is how tokens go when a person leaves:
+  `GET /v1/principals/{id}/tokens` and `DELETE /v1/principals/{id}/tokens/{token}`, each taking a
+  session alone.
 - The row is read on every request, so a revoked token is refused at the next one, and nothing asks the
   issuer.
 - A principal removed takes their tokens with them.
 
-**Shown on the account page.** It lists the person's tokens by name, with their scopes, their expiry and
-when each was last used. It issues one, showing the secret once with a way to copy it, and revokes one.
+**Shown from the account chip's API tokens**, a modal, since there is no account page. It lists the
+person's tokens by name, with their scopes, their expiry and when each was last used. It issues one,
+showing the secret once with a way to copy it, and revokes one. An administrator reaches anybody's from
+Administration's People.
 
 #### Decisions for Ken
 

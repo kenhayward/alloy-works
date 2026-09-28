@@ -87,7 +87,8 @@ A 44px header band across the top, then a row of panes filling the rest of the v
 
 In the band, left to right: the mark, a link to Home, where each module is chosen; a hairline; the current module's
 name at 70% opacity; then, pushed right, the environment name and the account chip. The account chip
-holds Administration, Theme and Sign out. Module pages sit 4px under the band.
+holds API tokens, Administration, Theme and Sign out. API tokens is a modal, as Administration is,
+built in W12.2 ahead of any drawing of it. Module pages sit 4px under the band.
 
 **Three modules**, each with a colour used only on its Home card and inside
 itself: Components (`--module-components`), Documents (`--module-documents`), Publications

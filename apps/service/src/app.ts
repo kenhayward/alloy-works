@@ -79,6 +79,7 @@ import { signState, verifyState } from './sign-in-state.js';
 import { streamToViewer } from './stream.js';
 import { cachedResolver } from './tenants.js';
 import {
+  administeredTokenHandlers,
   bearerSecret,
   isBearer,
   tokenHandlers,
@@ -355,6 +356,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...groupHandlers(),
     ...settingsHandlers(db, tenantOf),
     ...tokenHandlers(db, tenantOf, principalOf),
+    ...administeredTokenHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),
 

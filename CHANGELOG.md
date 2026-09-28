@@ -35,6 +35,25 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   keys, and refuses one that does not match. A directory that says somebody is in more than 1,000 groups
   has the first 1,000 followed and the rest ignored.
 
+## 0.111.0 - 2026-09-28 (PR #301)
+
+### Added
+
+- **API tokens in the account menu.** Choose **API tokens** from the menu under your name to see your
+  tokens: what each may do besides reading, the day and time it stops working, and when it was last
+  used, or never.
+- **New token.** Give it a name, tick what it may do besides reading - reading is always allowed - and
+  choose the day it works until the start of: 90 days away unless you change it, and no more than a
+  year. The token is shown once, with a **Copy** button and a warning that it will not be shown again. Nothing
+  keeps it in the browser, and it is gone when you close the dialog.
+- **Revoke, after asking.** Each token has **Revoke**, which asks first; the next request made with the
+  token is refused.
+- **Administrators revoke anybody's tokens.** In Administration, under People and invitations,
+  **Tokens** beside a person lists theirs, each with **Revoke**, so a person's tokens can go when they
+  leave without waiting for each to expire. Through the API, `GET /v1/principals/{id}/tokens` lists them
+  and `DELETE /v1/principals/{id}/tokens/{token}` revokes one; both need you to administer the
+  environment and to be signed in, never a token.
+
 ## 0.110.0 - 2026-09-28 (PR #300)
 
 ### Added
