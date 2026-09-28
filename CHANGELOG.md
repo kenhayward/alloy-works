@@ -8,10 +8,11 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 ### Added
 
 - **API tokens in the account menu.** Choose **API tokens** from the menu under your name to see your
-  tokens: what each may do besides reading, when it expires, and when it was last used, or never.
-- **New token, from the page.** Give it a name, tick what it may do besides reading - reading is always
-  allowed - and choose when it expires: 90 days away unless you change it, and no more than a year. The
-  token is shown once, with a **Copy** button and a warning that it will not be shown again. Nothing
+  tokens: what each may do besides reading, the day and time it stops working, and when it was last
+  used, or never.
+- **New token.** Give it a name, tick what it may do besides reading - reading is always allowed - and
+  choose the day it works until the start of: 90 days away unless you change it, and no more than a
+  year. The token is shown once, with a **Copy** button and a warning that it will not be shown again. Nothing
   keeps it in the browser, and it is gone when you close the dialog.
 - **Revoke, after asking.** Each token has **Revoke**, which asks first; the next request made with the
   token is refused.

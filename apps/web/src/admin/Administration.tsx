@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { refusal, TokenTable, type ShownToken } from '../account/TokenTable.js';
 import { permissionName } from '../access/describe.js';
@@ -131,6 +131,13 @@ function PersonTokens({
   const [revoked, setRevoked] = useState<ReadonlySet<string>>(new Set());
   const [status, setStatus] = useState('');
   const name = nameOf(person);
+  const heading = useRef<HTMLHeadingElement>(null);
+
+  // The Tokens button, which had focus, has gone with the people: focus comes here, inside the dialog,
+  // rather than falling to the page, where Escape would not close Administration.
+  useEffect(() => {
+    heading.current?.focus();
+  }, []);
 
   const revoke = async (token: ShownToken) => {
     const gone = () => setRevoked((was) => new Set(was).add(token.id));
@@ -157,7 +164,7 @@ function PersonTokens({
       <button type="button" onClick={onBack}>
         Back to people
       </button>
-      <h4>{`Tokens of ${name}`}</h4>
+      <h4 ref={heading} tabIndex={-1}>{`Tokens of ${name}`}</h4>
       <Shown read={read} failed="The tokens could not be loaded.">
         {(rows) => (
           <TokenTable
@@ -195,6 +202,10 @@ export function Administration({
 }) {
   const [shown, setShown] = useState<Section>('Environment');
   const [tokensOf, setTokensOf] = useState<PersonRow | null>(null);
+  /** Whose tokens were last left by Back to people, so focus goes back to their Tokens button. */
+  const [leftFrom, setLeftFrom] = useState<string | null>(null);
+  const backTo = useRef<HTMLButtonElement>(null);
+  const sectionHeading = useRef<HTMLHeadingElement>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
 
   useEffect(() => {
@@ -242,6 +253,13 @@ export function Administration({
   );
   const roles = useListing<RoleRow>(loads.roles, shown === 'Roles');
 
+  // Back to people takes itself away: focus goes to the Tokens button it was reached from, or to the
+  // section's heading where that is not shown, and never falls out of the dialog.
+  useEffect(() => {
+    if (tokensOf !== null || leftFrom === null) return;
+    (backTo.current ?? sectionHeading.current)?.focus();
+  }, [tokensOf, leftFrom]);
+
   return (
     <Modal labelledBy="administration-heading" onClose={onClose}>
       <div className={styles['administration']}>
@@ -259,6 +277,7 @@ export function Administration({
               onClick={() => {
                 setShown(section);
                 setTokensOf(null);
+                setLeftFrom(null);
               }}
             >
               {section}
@@ -266,7 +285,9 @@ export function Administration({
           ))}
         </nav>
         <div className={styles['shown']}>
-          <h3>{shown}</h3>
+          <h3 ref={sectionHeading} tabIndex={-1}>
+            {shown}
+          </h3>
           {shown === 'Environment' && (
             <dl>
               <dt>Name</dt>
@@ -294,7 +315,14 @@ export function Administration({
             </Shown>
           )}
           {shown === 'People and invitations' && tokensOf !== null && (
-            <PersonTokens client={client} person={tokensOf} onBack={() => setTokensOf(null)} />
+            <PersonTokens
+              client={client}
+              person={tokensOf}
+              onBack={() => {
+                setLeftFrom(tokensOf.id);
+                setTokensOf(null);
+              }}
+            />
           )}
           {shown === 'People and invitations' && tokensOf === null && (
             <>
@@ -317,6 +345,7 @@ export function Administration({
                           <td className={styles['act']}>
                             {!person.invited && (
                               <button
+                                ref={person.id === leftFrom ? backTo : undefined}
                                 type="button"
                                 aria-label={`Tokens of ${nameOf(person)}`}
                                 onClick={() => setTokensOf(person)}

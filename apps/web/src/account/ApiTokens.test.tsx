@@ -1,4 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
+import { tokenScopes } from '@alloy-works/domain';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -96,10 +97,17 @@ describe('API tokens, from the account chip', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'API tokens' });
     const table = await within(dialog).findByRole('table', { name: 'Your tokens' });
+    // "May do", not "May", which beside dates reads as the month.
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((each) => each.textContent),
+    ).toEqual(['Name', 'May do', 'Works until', 'Last used', 'Revoke']);
     const [, first, second] = within(table).getAllByRole('row');
     expect(within(first!).getByRole('cell', { name: 'Nightly import' })).toBeInTheDocument();
     expect(within(first!).getByRole('cell', { name: 'read, edit, publish' })).toBeInTheDocument();
-    expect(within(first!).getByRole('cell', { name: /December/ })).toBeInTheDocument();
+    // The moment it stops, to the minute: a token stops as its day begins, not as it ends.
+    expect(within(first!).getByRole('cell', { name: /December.*\d{2}:\d{2}/ })).toBeInTheDocument();
     expect(within(first!).getByRole('cell', { name: /September/ })).toBeInTheDocument();
     expect(within(second!).getByRole('cell', { name: 'read' })).toBeInTheDocument();
     expect(within(second!).getByRole('cell', { name: 'never' })).toBeInTheDocument();
@@ -119,11 +127,30 @@ describe('API tokens, from the account chip', () => {
     // Focus moves into the dialog, on its first field.
     expect(within(form).getByRole('textbox', { name: 'Name' })).toHaveFocus();
     expect(within(form).getByText(/Reading is always allowed/)).toBeInTheDocument();
+    // Exactly the scopes a token may hold, in the access page's words: reading is not one of them.
+    const offered = within(form)
+      .getAllByRole('checkbox')
+      .map((each) => each.closest('label')?.textContent);
+    expect(offered).toEqual([
+      'Create',
+      'Edit',
+      'Comment',
+      'Suggest',
+      'Approve',
+      'Publish',
+      'Design',
+      'Manage definitions',
+      'Administer',
+    ]);
+    expect(offered).toHaveLength(tokenScopes.length);
+    expect(within(form).queryByRole('checkbox', { name: 'Read' })).toBeNull();
     await user.type(within(form).getByRole('textbox', { name: 'Name' }), 'Publish on merge');
     await user.click(within(form).getByRole('checkbox', { name: 'Edit' }));
     await user.click(within(form).getByRole('checkbox', { name: 'Publish' }));
     // Ninety days away unless changed.
-    expect(within(form).getByLabelText('Expires on')).toHaveValue(dateField(daysFromToday(90)));
+    expect(within(form).getByLabelText('Works until the start of')).toHaveValue(
+      dateField(daysFromToday(90)),
+    );
     await user.click(within(form).getByRole('button', { name: 'Create token' }));
 
     const shown = await screen.findByRole('dialog', { name: 'Copy your token' });
@@ -202,7 +229,7 @@ describe('API tokens, from the account chip', () => {
     await screen.findByRole('table', { name: 'Your tokens' });
     await user.click(screen.getByRole('button', { name: 'New token' }));
 
-    const expiry = screen.getByLabelText('Expires on');
+    const expiry = screen.getByLabelText('Works until the start of');
     expect(expiry).toHaveAttribute('type', 'date');
     expect(expiry).toHaveAttribute('min', dateField(daysFromToday(1)));
     expect(expiry).toHaveAttribute('max', dateField(daysFromToday(365)));
@@ -223,6 +250,73 @@ describe('API tokens, from the account chip', () => {
     expect(asked.find((each) => each.method === 'POST')?.body).toMatchObject({
       expiresAt: daysFromToday(365).toISOString(),
     });
+  });
+
+  it('offers no day a year away that is more than 365 days from now, where the clocks go back in between', async () => {
+    // In New York, 9 March 2026 is summer time and 9 March 2027 is not yet: the start of the one is 365
+    // days and an hour after the start of the other. Half an hour into the first, the start of the
+    // second is 365 days and half an hour away, which the service refuses.
+    const zone = process.env['TZ'];
+    process.env['TZ'] = 'America/New_York';
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-03-09T04:30:00.000Z'));
+    try {
+      expect(new Date(2027, 2, 9).toISOString()).toBe('2027-03-09T05:00:00.000Z');
+      const user = userEvent.setup();
+      const { client, asked } = service();
+      render(<ApiTokens client={client} onClose={vi.fn()} />);
+      await screen.findByRole('table', { name: 'Your tokens' });
+      await user.click(screen.getByRole('button', { name: 'New token' }));
+
+      const expiry = screen.getByLabelText('Works until the start of');
+      expect(expiry).toHaveAttribute('max', '2027-03-08');
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Script');
+      await user.clear(expiry);
+      await user.type(expiry, '2027-03-09');
+      await user.click(screen.getByRole('button', { name: 'Create token' }));
+      expect(
+        await screen.findByText('Choose an expiry from tomorrow to a year from today.'),
+      ).toBeInTheDocument();
+      expect(asked.filter((each) => each.method === 'POST')).toEqual([]);
+
+      await user.clear(expiry);
+      await user.type(expiry, '2027-03-08');
+      await user.click(screen.getByRole('button', { name: 'Create token' }));
+      expect(await screen.findByDisplayValue(SECRET)).toBeInTheDocument();
+      expect(asked.find((each) => each.method === 'POST')?.body).toMatchObject({
+        expiresAt: '2027-03-08T05:00:00.000Z',
+      });
+    } finally {
+      vi.useRealTimers();
+      if (zone === undefined) delete process.env['TZ'];
+      else process.env['TZ'] = zone;
+    }
+  });
+
+  it('says so, and how to copy it by hand, when the token cannot be copied', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn(async () => {
+      throw new DOMException('Denied', 'NotAllowedError');
+    });
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const { client } = service();
+    render(<ApiTokens client={client} onClose={vi.fn()} />);
+    await screen.findByRole('table', { name: 'Your tokens' });
+    await user.click(screen.getByRole('button', { name: 'New token' }));
+    await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Script');
+    await user.click(screen.getByRole('button', { name: 'Create token' }));
+    const shown = await screen.findByRole('dialog', { name: 'Copy your token' });
+
+    await user.click(within(shown).getByRole('button', { name: 'Copy' }));
+    expect(writeText).toHaveBeenCalledWith(SECRET);
+    expect(
+      await within(shown).findByText(
+        'The token could not be copied. Select it and copy it yourself.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(shown).queryByText('Copied.')).toBeNull();
+    // Still there to select.
+    expect(within(shown).getByRole('textbox', { name: 'Token' })).toHaveValue(SECRET);
   });
 
   it("says in the service's own words why a token was not issued, and keeps the form", async () => {

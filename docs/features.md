@@ -522,10 +522,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   preview, and does nothing else. `GET /v1/tokens` lists yours, with when each was last used, and
   `DELETE /v1/tokens/{id}` revokes one: the next request with it is refused. A token cannot issue, list
   or revoke tokens, sign out, open the event stream or ask for a sample; those take a signed-in session.
-- **API tokens on the page.** **API tokens**, in the account chip, lists your tokens with what each may
-  do, when it expires and when it was last used. **New token** asks for a name, what it may do besides
-  reading, which it always may, and an expiry from tomorrow to a year away, 90 days unless you change
-  it; the token is then shown once, with **Copy**, and is gone when the dialog closes: nothing keeps it
+- **API tokens, from the account chip.** **API tokens**, in the account chip, lists your tokens with
+  what each may do, the moment it stops working and when it was last used. **New token** asks for a
+  name, what it may do besides reading, which it always may, and the day it works until the start of,
+  from tomorrow to a year away, 90 days unless you change it; the token is then shown once, with **Copy**, and is gone when the dialog closes: nothing keeps it
   in the browser. **Revoke** asks first, and the next request with the token is refused.
 - **An administrator revokes anybody's tokens.** In Administration's People, **Tokens** beside a person
   lists theirs, each with **Revoke**, which is how a person's tokens go when they leave, without waiting

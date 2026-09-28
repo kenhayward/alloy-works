@@ -597,12 +597,17 @@ see and revoke. A principal removed takes their tokens with them.
 **On the page.** `apps/web/src/account/`: `ApiTokens`, a modal from the account chip, lists the person's
 tokens - their name, what each may do in the access page's words, reading first, its expiry and its last
 use or `never` - and holds New token, a dialog opened beside it rather than inside it, so it closes
-alone: a name, the scopes as checkboxes, and an expiry as a date from tomorrow to a year away, 90 days
-unless changed, sent as the start of that day so the last day it offers is never more than 365 days
-off. The answer's secret is shown in that dialog, with Copy, and lives in its state alone: never in
+alone: a name, the scopes as checkboxes, and the day it works until the start of, from tomorrow to a
+year away, 90 days unless changed, sent as the start of that day. The form refuses a start more than
+365 days of milliseconds from now, as the service does, and offers as its last the last day whose start
+is not: a year from today, or the day before where the clocks go back once more than they go forward in
+between and it is not yet an hour past midnight, when a year of calendar days is 365 days and an hour.
+The list shows the expiry to the minute, under Works until, and what each may do under May do. The
+answer's secret is shown in that dialog, with Copy, and lives in its state alone: never in
 storage, the address or a log, and gone however the dialog closes. `TokenTable` is the list, each row
 with Revoke, which asks first in a dialog of its own and keeps focus in the list once the row has gone;
-Administration's People gives each person who has signed in a Tokens button showing theirs in it. A
+Administration's People gives each person who has signed in a Tokens button showing theirs in it,
+focus moving to their heading and back to the button, so it never falls out of the dialog. A
 refusal is said in the service's own `message` where it gave one.
 
 ## The editor and its session

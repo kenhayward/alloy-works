@@ -23,6 +23,20 @@ export const day = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
 
 /**
+ * A moment as a person reads it, to the minute, in their own time zone and words: when a token stops,
+ * which is as a day begins where the form made it, so its day alone would read as a day it still works.
+ */
+export const moment = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  });
+
+/**
  * What a token may do, in the access page's words: reading always, since reading is never masked
  * (service-foundations.md, TK-B), and then its scopes.
  */
@@ -85,8 +99,8 @@ export function TokenTable({
           <thead>
             <tr>
               <th scope="col">Name</th>
-              <th scope="col">May</th>
-              <th scope="col">Expires</th>
+              <th scope="col">May do</th>
+              <th scope="col">Works until</th>
               <th scope="col">Last used</th>
               <th scope="col">
                 <span className={styles['hidden']}>Revoke</span>
@@ -98,7 +112,7 @@ export function TokenTable({
               <tr key={token.id}>
                 <td className={styles['name']}>{token.name}</td>
                 <td className={styles['muted']}>{mayDo(token)}</td>
-                <td>{day(token.expiresAt)}</td>
+                <td>{moment(token.expiresAt)}</td>
                 <td>{token.lastUsedAt === null ? 'never' : day(token.lastUsedAt)}</td>
                 <td className={styles['act']}>
                   <button

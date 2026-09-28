@@ -15,8 +15,12 @@ type Client = ReturnType<typeof createApiClient>;
 
 /** How far away a new token's expiry is unless the person changes it. */
 const DEFAULT_DAYS = 90;
-/** The furthest it may be: the service refuses more (IAM-034, TK-C). */
-const MAX_DAYS = 365;
+/**
+ * The furthest it may be, in milliseconds from now: the service refuses more (IAM-034, TK-C). Counted as
+ * the service counts it, not in days of the calendar, which across a change of the clocks can be an
+ * hour longer than 365 of these.
+ */
+const MAX_MS = 365 * 86_400_000;
 
 /** A day this many days after today's, at its start, in the person's own time zone. */
 function daysFromToday(days: number): Date {
@@ -31,9 +35,16 @@ function dateField(date: Date): string {
 }
 
 /**
- * The start of the day a date field names, or null for none. A token expires as that day begins, so
- * the last day it may name, a year from today, is never more than 365 days from now.
+ * The last day whose start is no more than 365 days from now: a year from today, or the day before it
+ * where the clocks go back once more than they go forward in between and it is not yet an hour past
+ * midnight, when the start of the day a year away is more than 365 days off.
  */
+function latestExpiry(): Date {
+  const yearAway = daysFromToday(365);
+  return yearAway.getTime() > Date.now() + MAX_MS ? daysFromToday(364) : yearAway;
+}
+
+/** The start of the day a date field names, or null for none: a token stops as that day begins. */
 function fromDateField(value: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return null;
@@ -96,7 +107,11 @@ function NewToken({
       return;
     }
     const expiresAt = fromDateField(expiry);
-    if (expiresAt === null || expiresAt < daysFromToday(1) || expiresAt > daysFromToday(MAX_DAYS)) {
+    if (
+      expiresAt === null ||
+      expiresAt < daysFromToday(1) ||
+      expiresAt.getTime() > Date.now() + MAX_MS
+    ) {
       setProblem('Choose an expiry from tomorrow to a year from today.');
       return;
     }
@@ -148,12 +163,12 @@ function NewToken({
             />
           </label>
           <label>
-            Expires on
+            Works until the start of
             <input
               type="date"
               value={expiry}
               min={dateField(daysFromToday(1))}
-              max={dateField(daysFromToday(MAX_DAYS))}
+              max={dateField(latestExpiry())}
               onChange={(event) => setExpiry(event.target.value)}
             />
           </label>
