@@ -16920,7 +16920,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 549,
+      "line": 550,
       "kind": "title"
     },
     {
@@ -17185,6 +17185,12 @@
       "id": "IAM-039",
       "file": "apps/service/src/session-routes.test.ts",
       "line": 82,
+      "kind": "title"
+    },
+    {
+      "id": "VER-004",
+      "file": "apps/service/src/settings-routes.test.ts",
+      "line": 111,
       "kind": "title"
     },
     {
@@ -17668,6 +17674,12 @@
       "kind": "title"
     },
     {
+      "id": "VER-003",
+      "file": "apps/worker/src/iteration-sweep.test.ts",
+      "line": 150,
+      "kind": "title"
+    },
+    {
       "id": "PUB-007",
       "file": "apps/worker/src/layout.test.ts",
       "line": 300,
@@ -18084,7 +18096,7 @@
     {
       "id": "VER-001",
       "file": "packages/db/src/editing.test.ts",
-      "line": 301,
+      "line": 300,
       "kind": "title"
     },
     {
@@ -18157,6 +18169,18 @@
       "id": "VER-008",
       "file": "packages/db/src/record-version.test.ts",
       "line": 119,
+      "kind": "title"
+    },
+    {
+      "id": "VER-003",
+      "file": "packages/db/src/retention.test.ts",
+      "line": 198,
+      "kind": "title"
+    },
+    {
+      "id": "VER-004",
+      "file": "packages/db/src/retention.test.ts",
+      "line": 287,
       "kind": "title"
     },
     {

@@ -550,6 +550,9 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 480, from 476 (2026-09-28): W11.1 - VER-003 in packages/db's retention.test.ts and apps/worker's
+  // iteration-sweep.test.ts, and VER-004 in packages/db's retention.test.ts and apps/service's
+  // settings-routes.test.ts.
   // 476, from 475 (2026-09-27): W10.3 - CNT-150 in the document page's test, where a preview asked
   // for from the page opens beside the text with an editor open in place kept.
   // 475, from 474 (2026-09-27): W10.2 - PUB-005 in tests/e2e's stack.test.ts, where a preview of a
@@ -614,7 +617,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(476);
+    expect(model.citations).toHaveLength(480);
   });
 
   it('cites no identifier the corpus does not hold', () => {

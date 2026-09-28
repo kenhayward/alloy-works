@@ -103,6 +103,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0034_default_theme_choices',
       '0035_previews',
       '0036_preview_sweep',
+      '0037_iteration_retention',
     ]);
 
     // The component and its version are as they were.
@@ -203,6 +204,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0034_default_theme_choices',
       '0035_previews',
       '0036_preview_sweep',
+      '0037_iteration_retention',
     ]);
 
     const { rows } = await queryAs(

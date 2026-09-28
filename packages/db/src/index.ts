@@ -217,6 +217,15 @@ export {
   type WithdrawalAnswer,
 } from './invitations.js';
 export {
+  editingPolicy,
+  ITERATION_RETENTION_BOUNDS,
+  iterationRetained,
+  setEditingPolicy,
+  sweepIterations,
+  type EditingPolicy,
+  type EditingPolicyAnswer,
+} from './retention.js';
+export {
   claimLock,
   ITERATION_RETENTION_DAYS,
   iterationDigest,

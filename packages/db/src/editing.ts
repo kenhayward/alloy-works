@@ -20,13 +20,10 @@ import { latestVersion, type StoredVersion } from './versions.js';
 export const LOCK_PERIOD_MINUTES = 15;
 
 /**
- * How long an iteration is kept after it is written (VER-003). VER-Q01 has no number; this is one.
- *
- * This only sizes the window `expires_at` is set from at insert; it does not by itself make a row
- * removable. VER-003 keeps an iteration until the component's next version is cut, and for this window
- * after that, so a sweep may remove a row only once it is past `expires_at` AND a later version of its
- * artifact exists - never on `expires_at` alone, which would delete the only copy of unsaved work while
- * its session is still open.
+ * The window a tenant starts with (VER-004): how many days an iteration is kept after the next version
+ * is cut from its component. VER-Q01 has no number; this is one. The tenant's own is `editing_policy`'s
+ * (0037), whose column default this must equal, and which the sweep reads when it runs (retention.ts):
+ * nothing is decided at insert, when the cut has not happened.
  */
 export const ITERATION_RETENTION_DAYS = 30;
 
@@ -291,7 +288,6 @@ export async function saveIteration(
       sequence: input.sequence,
       opened_from: current.id,
       created_at: sql<Date>`clock_timestamp()`,
-      expires_at: sql<Date>`clock_timestamp() + make_interval(days => ${ITERATION_RETENTION_DAYS})`,
       content: JSON.stringify(content),
       metadata_values: JSON.stringify(values),
       digest,

@@ -231,6 +231,12 @@ export interface ThemeDefaultTable {
   set_at: ColumnType<Date, never, Date>;
 }
 
+/** The tenant's one editing policy (0037): read, and its window changed, never inserted or removed. */
+export interface EditingPolicyTable {
+  singleton: ColumnType<boolean, never, never>;
+  iteration_retention_days: ColumnType<number, never, number>;
+}
+
 export interface AccessPolicyTable {
   singleton: Generated<boolean>;
   external_default_days: Generated<number>;
@@ -301,7 +307,10 @@ export interface ComponentLockTable {
   expires_at: Date;
 }
 
-/** Insert and read, nothing else (VER-001): every column's update type is `never`, as the grant is. */
+/**
+ * Insert, read, and the sweep's delete (VER-001, VER-003): every column's update type is `never`, as
+ * the grant is, and a delete is refused by trigger before the iteration's window has passed (0037).
+ */
 export interface IterationTable {
   id: ColumnType<string, never, never>;
   artifact_id: ColumnType<string, string, never>;
@@ -311,7 +320,6 @@ export interface IterationTable {
   sequence: ColumnType<number, number, never>;
   opened_from: ColumnType<string, string, never>;
   created_at: ColumnType<Date, Date | undefined, never>;
-  expires_at: ColumnType<Date, Date, never>;
   content: ColumnType<unknown, string, never>;
   metadata_values: ColumnType<Record<string, unknown>, string, never>;
   digest: ColumnType<string, string, never>;
@@ -394,6 +402,7 @@ export interface TenantTables {
   artifact_version: ArtifactVersionTable;
   version_definition: VersionDefinitionTable;
   access_policy: AccessPolicyTable;
+  editing_policy: EditingPolicyTable;
   role: RoleTable;
   access_group: AccessGroupTable;
   group_member: GroupMemberTable;

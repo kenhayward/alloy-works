@@ -21203,6 +21203,292 @@
         }
       }
     },
+    "/v1/settings/editing": {
+      "get": {
+        "operationId": "getEditingSettings",
+        "summary": "The environment's editing settings: how long saved changes are kept",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The editing settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "iterationRetentionDays": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 365,
+                      "description": "How many days an iteration is kept after the next version of its component is made: 1 to 365, 30 unless changed"
+                    }
+                  },
+                  "required": [
+                    "iterationRetentionDays"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "setEditingSettings",
+        "summary": "Change the environment's editing settings",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "iterationRetentionDays": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 365,
+                    "description": "How many days an iteration is kept after the next version of its component is made: 1 to 365, 30 unless changed"
+                  }
+                },
+                "required": [
+                  "iterationRetentionDays"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The editing settings, as changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "iterationRetentionDays": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 365,
+                      "description": "How many days an iteration is kept after the next version of its component is made: 1 to 365, 30 unless changed"
+                    }
+                  },
+                  "required": [
+                    "iterationRetentionDays"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A window that is not a whole number of days from 1 to 365",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sign-in/google": {
       "get": {
         "operationId": "startGoogleSignIn",
