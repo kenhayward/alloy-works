@@ -34,7 +34,7 @@ describe('cachedResolver', () => {
     expect(asked).toHaveLength(2);
   });
 
-  it('answers each hostname with its own tenant, never one it remembered for another host', async () => {
+  it('IAM-075 answers each hostname with its own tenant, never one it remembered for another host', async () => {
     const beta: Tenant = { id: 'beta', schema: 't_beta', role: 't_beta' };
     const asked: string[] = [];
     const resolver = cachedResolver(

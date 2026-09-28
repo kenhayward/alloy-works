@@ -69,7 +69,7 @@ describe("a tenant's own corner of the object store", () => {
     expect(elsewhere.key).not.toBe(once.key);
   });
 
-  it("has a credential the store itself refuses another tenant's objects to", async () => {
+  it("IAM-075 has a credential the store itself refuses another tenant's objects to", async () => {
     // Straight at the store, with no key check of ours in the way: the policy is what refuses this.
     const theirs = await forB.put(bytes('b only'), 'application/pdf');
     const mine = await forA.put(bytes('a only'), 'application/pdf');
@@ -105,7 +105,7 @@ describe("a tenant's own corner of the object store", () => {
     }
   });
 
-  it("holds a client for each tenant, signing with that tenant's own credential, so no tenant's handle writes with another's", async () => {
+  it("IAM-075 holds a client for each tenant, signing with that tenant's own credential, so no tenant's handle writes with another's", async () => {
     // A fresh set of stores, asked for each tenant in turn and then the first again: each handle's
     // client stays its own tenant's, which the store's policy refuses on any other prefix.
     const fresh = createObjectStores(store.settings, store.sealingKey);
@@ -123,7 +123,7 @@ describe("a tenant's own corner of the object store", () => {
     }
   });
 
-  it("refuses a key that is not this tenant's before it asks the store", async () => {
+  it("IAM-075 refuses a key that is not this tenant's before it asks the store", async () => {
     await expect(forA.get(`${b.role}/sha256/${'0'.repeat(64)}`)).rejects.toThrow(/this tenant/);
     await expect(forA.signedLink('../elsewhere', 60)).rejects.toThrow(/this tenant/);
     await expect(forA.remove(`${b.role}/sha256/${'0'.repeat(64)}`)).rejects.toThrow(/this tenant/);

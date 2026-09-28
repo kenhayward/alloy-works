@@ -2507,6 +2507,59 @@ describe('requesting and recording a publication', () => {
     ).rejects.toThrow(/at most 200/);
   });
 
+  it("IAM-075 refuses a publication's output, a preview's PDF and a check's report kept in another tenant's store, and takes each in its own", async () => {
+    const other = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Development' },
+      hostnames: ['dev.acme.alloy.test'],
+    });
+    const elsewhere = <T extends { key: string; sha256: string }>(kept: T): T => ({
+      ...kept,
+      key: `${other.role}/sha256/${kept.sha256}`,
+    });
+
+    // An output, refused in the other tenant's store and recorded in this one's.
+    const request = await requestedAs(['pdf']);
+    await expect(
+      service.withTenant(production, (trx) =>
+        recordPublication(trx, { ...recording(request), outputs: [elsewhere(pdfOutput('9'))] }),
+      ),
+    ).rejects.toThrow(/keyed in its own tenant's store/);
+    const published = await service.withTenant(production, (trx) =>
+      recordPublication(trx, { ...recording(request), outputs: [pdfOutput('9')] }),
+    );
+    expect(published).toBeDefined();
+
+    // A check's report, the same.
+    await expect(
+      service.withTenant(production, (trx) =>
+        recordPublicationCheck(trx, {
+          ...failedCheck(published!),
+          report: elsewhere(keptReport('8')),
+        }),
+      ),
+    ).rejects.toThrow(/a report is kept in its own tenant's store/);
+    expect(
+      await service.withTenant(production, (trx) =>
+        recordPublicationCheck(trx, { ...failedCheck(published!), report: keptReport('8') }),
+      ),
+    ).toBe('recorded');
+
+    // A preview's PDF, the same.
+    const preview = await service.withTenant(production, async (trx) =>
+      previewed(trx, await documentWith(trx, []), ada),
+    );
+    const finish = (pdf: { key: string; sha256: string; bytes: number }) =>
+      service.withTenant(production, (trx) =>
+        sql`update publication_request set state = 'done', finished_at = now(),
+              preview_key = ${pdf.key}, preview_sha256 = ${pdf.sha256},
+              preview_bytes = ${pdf.bytes}, expires_at = now() + interval '1 hour'
+            where id = ${preview}`.execute(trx),
+      );
+    await expect(finish(elsewhere(previewPdf('7')))).rejects.toThrow(/its own tenant's store/);
+    await expect(finish(previewPdf('7'))).resolves.toBeDefined();
+  });
+
   it('keeps a check as long as its publication, which the runtime role cannot delete, and deletes it with it', async () => {
     const id = await service.withTenant(production, async (trx) => {
       const made = (await recordPublication(trx, recording(await requestedAs(['pdf']))))!;

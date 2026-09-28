@@ -29,6 +29,16 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   one Word table: Word lost the second table's title and put no space between them. They now stand
   apart, spaced as in the PDF.
 
+## 0.120.1 - 2026-09-28 (PR #321)
+
+### Changed
+
+- **The search index, caches, secrets and publications are now each shown to belong to one
+  environment.** The search index, the files in the object store, publications and the checks run on
+  them, each environment's secrets, the queue of background work and the service's caches are each
+  checked by a test that another environment cannot read or change them. Nothing about how the
+  product works has changed; this is the evidence that it keeps each environment apart.
+
 ## 0.120.0 - 2026-09-28 (PR #317)
 
 ### Added

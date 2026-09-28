@@ -380,6 +380,32 @@ a table that does not exist stayed green; each now lists, as the migrator, every
 table from the catalogue - exactly the two tenants' - and keeps the refusal as its own assertion.
 Pointed at a table that does not exist, and at `platform.tenant`, each went red.
 
+**IAM-075, claimed after #314 and #315 merged.** With each environment's sign-in client secret sealed
+into its own `identity_provider` row and the provider's metadata kept without a secret (#314), the
+gap was closed, and service-foundations.md claims IAM-075 store by store. Thirteen tests cite it: the
+existing tests of the search projection, the object store's credential, prefix and clients, both
+seal schemes, the hostname cache, idempotent answers and the sign-in exchanges; the publications
+schema test widened to the request's assets and occurrences and the checks; and one new test holding
+each environment's secrets - the sealed object store credential and sign-in secret, sessions, tokens
+and sign-ins in flight - in its own schema. Both schema tests went red with a temporary migration
+granting another tenant's role the schema and `publication_check` and `identity_provider`. The
+provider's metadata and published keys are kept by issuer, shared by every environment using that
+provider, and are read as scoped because they hold nothing of any tenant's; the Google client's
+secret is the product's (IAM-041).
+
+**From IAM-075's final review (#321):** the claim said every store was the tenant's own, where
+IAM-075 asks for indexes, caches, secrets and publications; it now says so, and names the platform
+directory - organisations, tenants and hostnames, read by the login roles and never by a tenant's -
+and the logs (ADM-022) as outside it. The shared job queue, `platform.job`, had gone unnamed: it is a
+row of the store table now, cited by the queue's cross-tenant insert refusal, its per-tenant answer
+of what waits, and a new test that a tenant's runtime role can neither read, change nor remove a job,
+red under a temporary grant of all three. The two schema tests tried only a read; each now tries a
+delete as well, red under a temporary grant of the schema's usage and the tables' delete. And the
+Publications row's clause that a key outside the tenant's prefix is refused at commit was cited by
+nothing: a new test refuses an output, a preview's PDF and a check's report kept in another
+tenant's store and takes each in its own, red with each of the three triggers dropped in turn.
+Seventeen tests cite IAM-075.
+
 ## W14.7: The spelling checker and the symbol palette
 
 1. `setSpellCheckLanguages` on the platform bridge; the shell's pure mapping, pinned by a test; the
