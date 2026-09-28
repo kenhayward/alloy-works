@@ -302,6 +302,11 @@ interface Paragraph {
   /** What it states over its style for Word to space it so (`spacingOverrides`). */
   spacing?: SpacingOverride;
   /**
+   * The empty paragraph a tenth of a point high between two tables (W14.5), which Word would otherwise
+   * read as one: its spaces the PDF's gap between them, and no line of its own.
+   */
+  readonly spacer?: boolean;
+  /**
    * The empty paragraph a point high after a table that ends a section, which carries the section's
    * properties or closes the body, since Word ends each with a paragraph (Word 2, ruling R7).
    */
@@ -454,6 +459,12 @@ type Bookmarked =
       readonly place: Bookmark;
       readonly words: Bookmark;
       readonly anchored: Bookmark | null;
+      /**
+       * A table whose caption is below it (W14.5): holding nothing at the head of its first cell,
+       * where the PDF places the table, which above and below and a page are read from - its
+       * caption, after the cells, would put a reference inside the table below it in Word.
+       */
+      readonly begins: Bookmark | null;
     };
 
 /**
@@ -503,7 +514,12 @@ function bookmarksOf(document: PublishedDocument): Map<string, Bookmarked> {
           const words = next();
           // A floated figure's in its anchor's paragraph, after the box that holds its caption.
           const anchored = each.type === 'figure' && each.placement === 'float' ? next() : null;
-          named.set(each.anchor, { kind: 'caption', place, words, anchored });
+          const begins =
+            each.type === 'table' &&
+            document.theme?.tables[each.style]?.captionPosition === 'bottom'
+              ? next()
+              : null;
+          named.set(each.anchor, { kind: 'caption', place, words, anchored, begins });
         }
         if (each.type === 'table') {
           for (const row of each.rows) for (const cell of row.cells) cell.blocks.forEach(block);
@@ -692,6 +708,24 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   const partIds = new Map(
     headerParts.parts.map((part) => [part.name, relationships.add(part.kind, part.name)]),
   );
+  // Two tables one straight after the other - a table ending in its cells, or a numbered equation's
+  // row, and a table whose caption is below it (W14.5) - are one table to Word, the second's caption
+  // title lost and no gap between them. An empty paragraph a tenth of a point high parts them, spaced
+  // below by the first's space after and above by the second's space before and leading (below).
+  for (const section of sections) {
+    for (let at = section.body.length - 1; at > 0; at -= 1) {
+      if (isTable(section.body[at - 1]!) && isTable(section.body[at]!)) {
+        const text = theme.places.text;
+        section.body.splice(at, 0, {
+          style: text,
+          theme: text,
+          content: '',
+          spacer: true,
+          wanted: { before: 0, after: 0 },
+        });
+      }
+    }
+  }
   // Over the whole body in order, since Word asks a paragraph's neighbours across a section's break as
   // it does within one.
   const inOrder = sections.flatMap((section) => section.body);
@@ -1589,6 +1623,13 @@ class Writer {
     caption.wanted = below
       ? { before: cell.spaceAfter + captionStyle.spaceBefore, after: captionStyle.spaceAfter }
       : { after: captionStyle.spaceAfter + cell.spaceBefore + leading(cell) };
+    // Where its caption is below it, where it begins - the head of its first cell - is named for
+    // above and below and its page, as the PDF places it (W14.5).
+    const begins = below ? this.bookmarkOf(table.anchor, 'caption')?.begins : undefined;
+    const first = cells?.[0]?.cells[0]?.paragraphs[0];
+    if (begins !== undefined && begins !== null && first !== undefined) {
+      first.content = bookmarked(begins, '') + first.content;
+    }
     // Its cells before its note, so that the drawings in them are numbered in the order they stand.
     const written: WordTable = {
       kind: 'table',
@@ -2532,11 +2573,16 @@ class Writer {
         );
       case 'relative':
         return field(
-          `REF ${(target.kind === 'caption' ? (target.anchored ?? place) : place).name} ${BACKSLASH}p`,
+          `REF ${(target.kind === 'caption' ? (target.anchored ?? target.begins ?? place) : place).name} ${BACKSLASH}p`,
           run.text ?? '',
         );
+      // A table whose caption is below it is on the page it begins on, as the PDF gives it (W14.5).
       case 'page':
-        return field(`PAGEREF ${place.name}`, '', numeral);
+        return field(
+          `PAGEREF ${(target.kind === 'caption' ? (target.begins ?? place) : place).name}`,
+          '',
+          numeral,
+        );
     }
   }
 
@@ -2871,14 +2917,19 @@ function paragraphXml(paragraph: Paragraph, sectionProperties?: string): string 
     (paragraph.bidi === true ? '<w:bidi/>' : '') +
     (paragraph.closing === true
       ? '<w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/>'
-      : before === undefined && after === undefined && paragraph.box === undefined
+      : before === undefined &&
+          after === undefined &&
+          paragraph.box === undefined &&
+          paragraph.spacer !== true
         ? ''
         : '<w:spacing' +
           (before === undefined ? '' : ` w:before="${twips(before)}"`) +
           (after === undefined ? '' : ` w:after="${twips(after)}"`) +
           // A floated figure's anchor a tenth of a point high: measured, the text after it stands
-          // where it stood after a frame.
-          (paragraph.box === undefined ? '' : ' w:line="2" w:lineRule="exact"') +
+          // where it stood after a frame. A spacer between two tables likewise.
+          (paragraph.box === undefined && paragraph.spacer !== true
+            ? ''
+            : ' w:line="2" w:lineRule="exact"') +
           '/>') +
     (paragraph.indent === undefined ? '' : indentXml(paragraph.indent)) +
     (paragraph.spacing?.contextual === false ? '<w:contextualSpacing w:val="0"/>' : '') +

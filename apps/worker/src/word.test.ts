@@ -952,7 +952,16 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     expect(words).toBe('Table 2.1 Keys');
   });
 
-  it("STY-079 writes a table's caption below it and a figure's above it where their styles place them, each numbered by Word's fields as before, which the Open XML SDK finds nothing wrong with", async () => {
+  it("STY-079 writes a table's caption below it and a figure's above it where their styles place them, each numbered by Word's fields as before, never one table straight after another, which the Open XML SDK finds nothing wrong with", async () => {
+    const footed = (name: string) => ({
+      type: 'table',
+      id: name,
+      style: 'footed',
+      caption: [text(`Footed ${name}`)],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [cell(`In ${name}`)] }],
+    });
     const restyled = (source: typeof READINGS, change: (block: object) => object) =>
       parseContentDocument({
         ...(JSON.parse(JSON.stringify(source)) as object),
@@ -965,9 +974,19 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
         [id('readings'), restyled(READINGS, (block) => ({ ...block, style: 'footed' }))],
         [
           id('figures'),
-          restyled(FIGURED, (block) =>
-            (block as { id?: string }).id === 'f1' ? { ...block, imageStyle: 'headed' } : block,
-          ),
+          parseContentDocument({
+            ...(JSON.parse(JSON.stringify(FIGURED)) as object),
+            content: [
+              ...(FIGURED.content as readonly object[]).map((block) =>
+                (block as { id?: string }).id === 'f1' ? { ...block, imageStyle: 'headed' } : block,
+              ),
+              // After the Keys table, which ends in its cells, a table whose caption is below it,
+              // then a numbered equation's row and another: none of them one table to Word.
+              footed('t9'),
+              displayed('e9', 'numbered'),
+              footed('t10'),
+            ],
+          }),
         ],
       ]),
     };
@@ -1000,6 +1019,13 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     expect(document.lastIndexOf('SEQ Figure', squares)).toBeGreaterThan(at('The shapes Ada drew.'));
     expect(at('<wp:inline', squares)).toBeGreaterThan(squares);
     expect(document.lastIndexOf('<wp:inline', squares)).toBeLessThan(at('The shapes Ada drew.'));
+    // Two tables never meet: a paragraph stands between each table and the next.
+    expect(document).not.toMatch(/<\/w:tbl>\s*<w:tbl>/);
+    expect(
+      document.match(
+        /<\/w:tbl><w:p><w:pPr><w:pStyle w:val="[^"]+"\/><w:spacing[^>]*w:line="2" w:lineRule="exact"/g,
+      ),
+    ).toHaveLength(2);
   });
 
   it("writes each footnote as Word's own - in text, in a cell and, for Word alone, in a table's header row, which the PDF refuses - which the Open XML SDK finds nothing wrong with (Word 3)", async () => {

@@ -815,8 +815,7 @@ at 2, is the same catalogue and records nothing.
 **The default theme's 0.5**, seeded by migration 0043, binds new versions of the table and image
 catalogues at `catalogue/3`, each 0.4's with every style stating the side it always had - `table` and
 `Banded` above, `figure` and `Half width` below - and is otherwise 0.4. It reads style for style as
-0.4 does, so nothing published moves, and a request made under 0.4 still publishes under it. 0043 is
-numbered after the gap the pending #312 fix takes, 0042. Its guard is 0034's: an environment that
+0.4 does, so nothing published moves, and a request made under 0.4 still publishes under it. Its guard is 0034's: an environment that
 recorded its own table or image catalogue, or its own theme, after 0.4 keeps it, and its catalogue/2
 styles read with their captions where they always stood.
 
@@ -834,12 +833,19 @@ styles read with their captions where they always stood.
 - **Word.** The writer writes the caption paragraph before the table or the figure's image, or after
   it, as the style says, its `SEQ` field unchanged. A caption above is kept with what it captions; a
   table whose caption is below begins with its cells, and the paragraph before it carries the space
-  the PDF puts above them, as a caption above does. A floated figure's box holds the caption and the
-  image in the order they stand.
+  the PDF puts above them, as a caption above does. Such a table is never written straight after
+  another table, which Word would read as one: a paragraph a tenth of a point high parts them,
+  carrying the PDF's gap. Above, below and its page are read from a bookmark at the head of its first
+  cell, where the PDF places the table, rather than from its caption after the cells. A floated
+  figure's box holds the caption and the image in the order they stand
+  ([word-output.md](word-output.md)).
 - **The editor.** The markup stands a table's caption before its cells and a figure's after its image,
   so a style placing a caption there needs nothing; one placing it on the other side stacks the
   block's parts and orders the caption there, a table's note staying last (`projectCss`). The caption is
-  typed in place wherever it is shown.
+  typed in place wherever it is shown. **CSS `order` moves the caption only as it is drawn**: the
+  document keeps its order, so where a style draws a caption on the other side, the arrow keys still
+  move through it in document order - out of a table's caption drawn below it, the down arrow goes into
+  its first cell, above. No style in T1 draws one there, so no author meets it yet.
 
 **What this does not do.** Nothing in T1 edits a theme, and the default's styles keep the sides they
 always had, so an author sees a caption moved only under a theme whose style moves it - written through

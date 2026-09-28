@@ -257,9 +257,10 @@ describe('a figure in the PDF (figures 3)', () => {
     const stored = new Map(images.map((each) => [each.asset.object, each.bytes]));
     const assembled = assemble(inputOf(assets));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    // Template 13 reads `publishing/13`, which has no `listed`: the same document, as it was made.
+    // Template 13 reads `publishing/13`, which has no `listed` and no caption's side (W14.5): the
+    // same document, as it was made.
     const asThirteen = JSON.parse(JSON.stringify(assembled.document), (key, value: unknown) =>
-      key === 'listed' ? undefined : value,
+      key === 'listed' || key === 'captionPosition' ? undefined : value,
     ) as { schema: string };
     asThirteen.schema = 'publishing/13';
     const compiled = async (file: string, data: unknown) =>
@@ -276,7 +277,7 @@ describe('a figure in the PDF (figures 3)', () => {
       PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
       assembled.document,
     );
-    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(14);
+    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(15);
     expect(after.elements).toMatchObject({ TOC: 1, TOCI: 4 });
     expect(after.pages).toBe(before.pages);
     expect(after.taggedText).toEqual(before.taggedText);

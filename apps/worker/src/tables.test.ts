@@ -200,30 +200,25 @@ describe('a table in the PDF (tables 2)', () => {
   }, 120_000);
 
   it('sets a document holding no table marked unnumbered as template 13 set it, so what was published publishes the same', async () => {
-    // Template 13 reads `publishing/13`, which has no `listed`, and template 14 `publishing/14`, which
-    // has no caption's side (W14.5): the same document, as each was made.
+    // Template 13 reads `publishing/13`, which has no `listed` and no caption's side (W14.5): the same
+    // document, as it was made, against what the current template makes of it.
     const assembled = assemble(inputOf([readings]));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    const as = (schema: string, dropped: readonly string[]) => {
-      const document = JSON.parse(JSON.stringify(assembled.document), (key, value: unknown) =>
-        dropped.includes(key) ? undefined : value,
-      ) as { schema: string };
-      document.schema = schema;
-      return JSON.stringify(document);
-    };
+    const asThirteen = JSON.parse(JSON.stringify(assembled.document), (key, value: unknown) =>
+      key === 'listed' || key === 'captionPosition' ? undefined : value,
+    ) as { schema: string };
+    asThirteen.schema = 'publishing/13';
     const [before, after] = await Promise.all([
+      typst.compile(PUBLICATION_TEMPLATE[13].file, JSON.stringify(asThirteen), at).then(readPdf),
       typst
         .compile(
-          PUBLICATION_TEMPLATE[13].file,
-          as('publishing/13', ['listed', 'captionPosition']),
+          PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+          JSON.stringify(assembled.document),
           at,
         )
         .then(readPdf),
-      typst
-        .compile(PUBLICATION_TEMPLATE[14].file, as('publishing/14', ['captionPosition']), at)
-        .then(readPdf),
     ]);
-    expect(TEMPLATE_READING['publishing/14']).toBe(14);
+    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(15);
     expect(after.pages).toBe(before.pages);
     expect(after.taggedText).toEqual(before.taggedText);
     expect(after.artifactText).toEqual(before.artifactText);

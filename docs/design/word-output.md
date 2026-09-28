@@ -1338,15 +1338,29 @@ entry, so `captionRuns` writes its caption with **no `SEQ` field** and its words
 caption the scheme withholds a number from. Word counts `SEQ` fields, so it never counts one, the next
 of its kind takes the number the PDF gives it, and `numbering_not_in_word`, which follows the numbering
 table's entries, meets none; and Word's lists are `TOC \c` fields over those `SEQ` names, so it is in
-no list either, as the PDF's template 14 leaves it out of its own. **A caption on its style's side**
-(W14.5, STY-079): the caption paragraph is written before the table, or the figure's image, or after
-it, as the table or image style places it, its `SEQ` field unchanged. A caption above is kept with what
-it captions; below a table it stands before the note, and the paragraph before a table whose caption is
-below carries the space the PDF puts above its cells, as a caption above does; a floated figure's box
-holds its caption and its image in the order they stand ([themes.md](themes.md#where-a-caption-sits)). A reference to one is a field at its
+no list either, as the PDF's template 14 leaves it out of its own. A reference to one is a field at its
 bookmark, prefilled with its caption, a title form's words; a number form of one fails the publish for
-both outputs, `cross_reference_form_unavailable`. The Word writer needed no change: `write.test.ts`
-and the worker's `word.test.ts`, which the Open XML SDK checks, show it.
+both outputs, `cross_reference_form_unavailable`. For W14.4 the Word writer needed no change:
+`write.test.ts` and the worker's `word.test.ts`, which the Open XML SDK checks, show it.
+
+**A caption on its style's side** (W14.5, STY-079; [themes.md](themes.md#where-a-caption-sits)) is
+W14.5's change to the writer. The caption paragraph is written before the table, or the figure's image,
+or after it, as the table or image style places it, its `SEQ` field unchanged. A caption above is kept
+with what it captions; below a table it stands before the note, and the paragraph before a table whose
+caption is below carries the space the PDF puts above its cells, as a caption above does; a floated
+figure's box holds its caption and its image in the order they stand. Two consequences of a table that
+now begins in its cells:
+
+- **Two tables never meet.** Word reads two `w:tbl` one straight after the other as one table, the
+  second's `w:tblCaption` lost and no gap between them, so a table ending in its cells - its caption
+  above, no note - or a numbered equation's row, followed by a table whose caption is below, is parted
+  by an empty paragraph a tenth of a point high, exactly, carrying the first's space after above it and
+  the second's space before and leading below it: the PDF's gap between them.
+- **Above, below and a page are read where the table begins.** The PDF places a table where it begins,
+  so a reference inside a table whose caption is below it prints above. Its caption's bookmark, after
+  the cells, would have Word print below, so such a table has a third bookmark, holding nothing, at the
+  head of its first cell's first paragraph - as a floated figure's is where its box is anchored - which
+  `REF \p` and `PAGEREF` name; the number and the title are still read from the caption's two.
 
 ## Open questions
 

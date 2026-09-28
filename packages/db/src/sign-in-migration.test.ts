@@ -18,11 +18,15 @@ describe('migration 0042, over a sign-in configured before it', () => {
   beforeAll(async () => {
     db = await freshDatabase();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
-    // Every migration up to 0041 and not 0042, so a tenant can name its secret as it used to.
+    // Every tenant migration up to 0041 and none after, so a tenant can name its secret as it used
+    // to, and the migrations after 0042 (0043, W14.5) stay after it.
     before = await mkdtemp(join(tmpdir(), 'aw-before-0042-'));
     await cp(new URL('../migrations/', import.meta.url), before, {
       recursive: true,
-      filter: (source) => !source.endsWith('0042_sealed_sign_in_secret.sql'),
+      filter: (source) => {
+        const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
+        return numbered === null || Number(numbered[1]) < 42;
+      },
     });
   });
 
@@ -46,7 +50,10 @@ describe('migration 0042, over a sign-in configured before it', () => {
       `insert into ${table} (issuer, client_id, secret_name) values ('https://idp.example', 'alloy', 'stand_in')`,
     );
 
-    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual(['0042_sealed_sign_in_secret']);
+    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
+      '0042_sealed_sign_in_secret',
+      '0043_default_theme_caption_placement',
+    ]);
 
     const read = async () =>
       (

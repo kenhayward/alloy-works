@@ -280,7 +280,7 @@ against the member**: the store's one catalogue writer, `addCatalogueVersion`, w
 the reader reads it, at 3, answers a 0.4 row given again at 2 unchanged and refuses a caption stated at
 2; the migrations write literals the domain's test recomputes; no route and no dev setup writes a
 catalogue, and the renderer reads through `readTheme`. The default theme's **0.5**, seeded by
-**migration 0043** (0042 is the pending #312 fix's), binds new table and image catalogue versions,
+**migration 0043**, binds new table and image catalogue versions,
 0.4's with each side stated, on 0034's guard. It reads style for style as 0.4 does. `publishing/15`
 carries `captionPosition` on the theme's table and image styles and on a figure, `top` or `bottom`;
 `PUBLISHING_SCHEMA_14` freezes `publishing/14`; **template 15** is template 14 with each caption's
@@ -289,7 +289,9 @@ measured: a table's `Caption` stays its first child below the cells too, and a f
 `Caption` and its `Figure`; veraPDF passes both sides. A document under the default theme is set by
 template 15 exactly as by template 14. The Word writer writes the caption paragraph on the style's
 side, a caption above kept with what it captions, and the paragraph before a table whose caption is
-below carrying the space above its cells. **The editor reads the theme through `projectCss`**, whose
+below carrying the space above its cells; from the final review, two tables that would meet are parted
+by an empty paragraph a tenth of a point high, which Word would otherwise read as one table, and such a
+table is named for above, below and its page at the head of its first cell, where the PDF places it. **The editor reads the theme through `projectCss`**, whose
 markup stands a table's caption first and a figure's last, so only the other side is written: the
 block's parts stacked and the caption ordered there, a table's note last. The design, with what it does
 not do, is [themes.md's](../design/themes.md#where-a-caption-sits), which claims STY-079 and STR-025;

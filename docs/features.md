@@ -775,7 +775,7 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   headers and Word repeats them on every page, its caption above it or below it as its style says,
   and its note beneath. A figure is its image, sized for the Word page, with its description or marked
   decorative, and its caption below or above it as its style says; a floated figure stands at the head
-  of its page with its caption beside its image as in the PDF;
+  of its page with its caption above or below its image as in the PDF;
   an image in a line of text or a table's cell stays in its line. Figures and tables are numbered by
   Word, so moving one renumbers the rest, and the lists of figures and of tables follow the
   contents, their pages filled in by Word as the contents' are. What Word cannot carry of a table is

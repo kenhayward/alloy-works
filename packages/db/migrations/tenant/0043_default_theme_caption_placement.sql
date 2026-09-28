@@ -8,9 +8,6 @@
 -- literals for 0015's reason: default-theme.test.ts recomputes all three in TypeScript and fails if a
 -- row disagrees.
 --
--- Numbered 0043, not 0042: the fix pending as #312 takes 0042. The runner applies whatever a schema
--- has not applied, in name order, so the gap is harmless whichever merges first.
---
 -- Each is inserted only where the environment still has the product's own chain at the version
 -- before - 0034's, by its identifier and its content hash, unauthored, and nothing after it - as 0034
 -- inserted 0.4 over 0.3. An environment that has recorded a version of its own of either keeps it as

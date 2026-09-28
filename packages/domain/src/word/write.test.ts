@@ -2645,6 +2645,122 @@ describe('writeDocx: a caption where its style places it (W14.5)', () => {
     expect(spacing(caption)?.['w:after']).toBeUndefined();
     expect(spacing(image)?.['w:before'] ?? '0').toBe('0');
   });
+
+  /** An equation to number, whose row Word writes as a table of its own. */
+  const EQUATION =
+    '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x squared">' +
+    '<msup><mi>x</mi><mn>2</mn></msup></math>';
+  /** A table of one cell under this style, its every identifier its own. */
+  const small = (name: string, style: string, ...cells: unknown[][]) => ({
+    type: 'table',
+    id: name,
+    style,
+    caption: [text(`Caption ${name}`)],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: (cells.length === 0 ? [[text(`Cell ${name}`)]] : cells).map((runs, at) => ({
+      cells: [
+        {
+          content: [paragraph(`${name}c${at}`, ...(runs as ReturnType<typeof text>[]))],
+          colspan: 1,
+          rowspan: 1,
+        },
+      ],
+    })),
+  });
+  /** The document's tables and paragraphs in order, and the two tables' neighbours. */
+  const between = (content: unknown[]) => {
+    const { docx } = tabledOf(content, { theme: captionedTheme });
+    const blocks = blocksOf(docx);
+    const tables = blocks.flatMap((each, at) => (each.name === 'w:tbl' ? [at] : []));
+    return { blocks, tables };
+  };
+
+  it("never writes a table whose caption is below it straight after another table, which Word would read as one table: a paragraph a tenth of a point high stands between them, carrying the PDF's space", () => {
+    // A table ending in its cells - its caption above, no note - then one beginning in its cells.
+    const { blocks, tables } = between([
+      said('before'),
+      small('t1', 'table'),
+      small('t2', 'footed'),
+      said('after'),
+    ]);
+    expect(tables).toHaveLength(2);
+    expect(tables[1]! - tables[0]!).toBe(2);
+    const spacer = blocks[tables[0]! + 1]!;
+    expect(spacer.name).toBe('w:p');
+    expect(textOf(spacer)).toBe('');
+    // The cells' space after above it; the cells' space before, and the leading Word sets inside the
+    // next table's first cell, below it: the PDF's gap between the two (`apart`), and no line of its
+    // own but a tenth of a point.
+    expect(spacing(spacer)).toMatchObject({
+      'w:before': twips(2.75),
+      'w:after': twips(3.35),
+      'w:line': '2',
+      'w:lineRule': 'exact',
+    });
+    // Each still names itself by its own caption, which Word reads as the table's title.
+    const captions = tables.map(
+      (at) => first(first(blocks[at]!, 'w:tblPr')!, 'w:tblCaption')!.attrs['w:val'],
+    );
+    expect(captions).toEqual(['Table 1.1 Caption t1', 'Table 1.2 Caption t2']);
+  });
+
+  it("stands the same paragraph between a numbered equation's row and a table whose caption is below it", () => {
+    const { blocks, tables } = between([
+      said('before'),
+      { type: 'equation', id: 'e1', mathml: EQUATION, numbered: true },
+      small('t2', 'footed'),
+      said('after'),
+    ]);
+    // The equation's row is a table of its own, its number beside it.
+    expect(tables).toHaveLength(2);
+    const spacer = blocks[tables[0]! + 1]!;
+    expect(spacer.name).toBe('w:p');
+    expect(textOf(spacer)).toBe('');
+    expect(spacing(spacer)).toMatchObject({ 'w:line': '2', 'w:lineRule': 'exact' });
+    expect(tables[1]! - tables[0]!).toBe(2);
+  });
+
+  it('names a table whose caption is below it for above and below, and for its page, where it begins - its first cell - as the PDF places it, both from inside the table and from outside it', () => {
+    const xref = (name: string, display: string) => ({
+      type: 'crossReference',
+      id: name,
+      target: { kind: 'block', block: 't3' },
+      display,
+    });
+    const { docx } = tabledOf(
+      [
+        paragraph('p1', text('See '), xref('x1', 'relative'), text(' on '), xref('x2', 'page')),
+        small('t3', 'footed', [text('First')], [text('Then '), xref('x3', 'relative')]),
+      ],
+      { theme: captionedTheme },
+    );
+    const xml = new TextDecoder().decode(docx.files['word/document.xml']);
+    const relative = [...xml.matchAll(/REF (_Ref[0-9]+) \\p/g)].map((each) => each[1]);
+    const page = [...xml.matchAll(/PAGEREF (_Ref[0-9]+)/g)].map((each) => each[1]);
+    expect(relative).toHaveLength(2);
+    expect(new Set([...relative, ...page]).size).toBe(1);
+    const [name] = relative;
+    const start = xml.indexOf(`<w:bookmarkStart w:id="`, xml.indexOf('<w:tbl>'));
+    // Its bookmark holds nothing, at the head of the table's first cell's first paragraph.
+    expect(xml.slice(start)).toMatch(
+      new RegExp(`^<w:bookmarkStart w:id="[0-9]+" w:name="${name}"/>`),
+    );
+    expect(xml.lastIndexOf('<w:p>', start)).toBeGreaterThan(xml.indexOf('<w:tc>'));
+    expect(xml.indexOf('First')).toBeGreaterThan(start);
+    // So the reference before the table reads below, and the one inside it above, as the PDF prints.
+    const results = (at: number) => {
+      const code = xml.indexOf(`REF ${name} \\p`, at);
+      const separate = xml.indexOf('w:fldCharType="separate"', code);
+      return /<w:t[^>]*>([^<]*)<\/w:t>/.exec(xml.slice(separate))?.[1];
+    };
+    expect(xml.indexOf(`REF ${name} \\p`)).toBeLessThan(start);
+    expect(results(0)).toBe('below');
+    expect(xml.indexOf(`REF ${name} \\p`, start)).toBeGreaterThan(start);
+    expect(results(start)).toBe('above');
+    // And the caption, after the cells, still holds the bookmarks a number and a title are read from.
+    expect(xml.indexOf('>Caption t3<')).toBeGreaterThan(xml.indexOf('</w:tbl>'));
+  });
 });
 
 // ---------------------------------------------------------------------------------------------------
