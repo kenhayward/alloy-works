@@ -19,6 +19,9 @@ declare global {
 
 export const browserBridge: PlatformBridge = {
   getPlatformInfo: async () => ({ delivery: 'web', runtime: 'Browser' }),
+  // The browser's own checker marks the surface, which sets `spellcheck`, with the dictionaries the
+  // author's browser has enabled: a page cannot choose them.
+  setSpellCheckLanguages: async () => {},
 };
 
 export function resolveBridge(host: BridgeHost = window): PlatformBridge {

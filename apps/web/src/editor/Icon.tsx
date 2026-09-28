@@ -7,6 +7,8 @@ const LETTERS: Record<string, string> = {
   Underline: 'U',
   Subscript: 'x\u2082',
   Superscript: 'x\u00b2',
+  // Omega, which word processors draw on the button that inserts a symbol (W14.7).
+  Symbols: String.fromCodePoint(0x3a9),
   'Quoted phrase': '\u201c\u201d',
 };
 

@@ -88,6 +88,7 @@ const LABELS = [
   'Footnote',
   'Reference',
   'Equation',
+  'Symbols',
 ];
 
 /** The seven marks that apply where they stand; the two after them open a dialog first. */

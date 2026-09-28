@@ -32,6 +32,12 @@
   transform: translateY(2px);
 }
 
+.letter[data-letter='Symbols'] {
+  font:
+    600 14px Georgia,
+    serif;
+}
+
 .path {
   display: block;
   flex-shrink: 0;

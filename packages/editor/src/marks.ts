@@ -231,6 +231,21 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     shortcutSaid: 'Ctrl or Cmd, Shift and E',
     prompts: true,
   },
+  // W14.7, decision W-L: the symbol palette, prompting as Equation does, for the character only the
+  // author can choose. On Shift and M, and not a Ctrl-Alt chord, for Equation's reason. Checked for
+  // its plan: nothing in this registry, the base keymap or the renderer takes it. Chromium's
+  // profile menu and Firefox's Responsive Design Mode sit on it, and neither is among the keys a
+  // browser reserves, so a page that takes the key first keeps it. Whether an input method or a
+  // desktop takes it before the page was not checked; the toolbar's button is the way in wherever one
+  // does.
+  {
+    kind: 'block',
+    action: 'symbol',
+    label: 'Symbols',
+    shortcut: 'Mod-Shift-m',
+    shortcutSaid: 'Ctrl or Cmd, Shift and M',
+    prompts: true,
+  },
 ];
 
 /**
