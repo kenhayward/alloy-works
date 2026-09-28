@@ -57,6 +57,17 @@ generated from them and committed, and the renderer's client is generated from t
 IAM-002, isolation at the data layer across every container, is owned by [system.md](system.md); the
 database roles below are how the service and workers meet it.
 
+**IAM-075 is not claimed.** It asks that search indexes, caches, secrets and publications each be
+tenant-scoped. [Tenant scope of every store](#tenant-scope-of-every-store) shows each store and how
+it is scoped: the search projection, objects, publications and the caches are; the object store's
+credentials, sessions and API tokens are; **a sign-in client secret is not**. The organisation's
+provider's secret is read from the service's one secret store by a name the tenant's
+`identity_provider` row gives, and nothing ties a name to a tenant - two tenants' rows may name one
+secret, as the test harnesses' do, and a row could name another tenant's - while the OpenID Connect
+configurations are kept by issuer and client, each holding the secret it was first discovered with,
+so two tenants naming one client of one issuer share the first one's secret. The claim waits for
+sign-in secrets held per tenant, which is Ken's to decide (W14.6's report).
+
 **IAM-079 is not claimed.** It asks an organisation to share billing, administration and
 identity-provider configuration across its tenants, and is T3. The table below gives the organisation
 those three, and step 1 of the organisation's own provider reads a provider configured for a tenant
@@ -512,6 +523,30 @@ the new ones start. The runner runs as its own step before a deployment, never a
   a log, a trace or an error, and a test proves it for each (ADM-008).
 - **Logs and traces** are structured, through OpenTelemetry, and carry the tenant id and trace id,
   never content (ADM-022).
+
+### Tenant scope of every store
+
+IAM-075 asks for more than the content to be tenant-scoped: every index, cache, secret and
+publication too. Each store the service and the worker keep, as built at W14.6, and what scopes it:
+
+| Store                          | Scoped by                                                                                                                                                                                                                                      | Shown by                                                                                                                                                                               |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The search projection          | `search_entry` and `search_text` in the tenant's schema, written in the transaction that writes a version, and reached only through `withTenant` as the tenant's runtime role, which no other schema admits (SCH-008)                          | `packages/db/src/tenant-database.test.ts`, "SCH-008 keeps the search projection in each tenant's own schema"                                                                           |
+| Objects                        | A credential per tenant, which the store's own policy allows the tenant's key prefix and nothing else; every key checked against the prefix before the store is asked                                                                          | `packages/objects/src/store.test.ts`, "has a credential the store itself refuses another tenant's objects to" and "refuses a key that is not this tenant's"                            |
+| Publications                   | `publication_request`, `publication`, its inputs, assets and outputs in the tenant's schema; an output's or a preview's key refused at commit unless it is in the tenant's own prefix                                                          | `tenant-database.test.ts`, "keeps publications ... in each tenant's own schema"; `packages/db/src/publishing.test.ts`, an output and a preview keyed in another tenant's store refused |
+| Secrets: the object store's    | Each tenant's credential sealed under the tenant's id in its own schema, and opened only for that tenant                                                                                                                                       | `packages/objects/src/seal.test.ts`, "does not open for another tenant, however it got there"                                                                                          |
+| Secrets: sessions and tokens   | A session's and an API token's secret kept as a hash in the tenant's schema, looked up in the schema the hostname resolves to                                                                                                                  | `apps/service/src/cross-tenant.test.ts`, every authenticated route refusing another environment's session and token                                                                    |
+| Secrets: sign-in               | **Not scoped.** The organisation's provider's client secret is read from the service's one secret store by the name the tenant's `identity_provider` row gives; the Google client's is the product's, one for every tenant by design (IAM-041) | nothing: this is the gap                                                                                                                                                               |
+| Caches: hostnames              | `cachedResolver` keeps a tenant it found by the lower-cased hostname it was found for, and never a miss                                                                                                                                        | `apps/service/src/tenants.test.ts`, "answers each hostname with its own tenant, never one it remembered for another host"                                                              |
+| Caches: object store clients   | `createObjectStores` keeps a client per tenant id, reused only while the credential read from that tenant's schema is the one it was made with                                                                                                 | `store.test.ts`, "holds a client for each tenant, signing with that tenant's own credential"                                                                                           |
+| Caches: idempotent answers     | `idempotency_record`, a mutating request's recorded answer, in the tenant's schema and keyed by its principal and key                                                                                                                          | `packages/db/src/idempotency.test.ts`, "keeps each principal's keys their own, in their own environment"                                                                               |
+| Caches: sign-in configurations | **Not scoped.** `createOidcClient` keeps each provider's discovered configuration by issuer and client identifier, with the secret it was discovered with                                                                                      | nothing: part of the same gap                                                                                                                                                          |
+
+There is no content cache: every read of content is a query in the tenant's own transaction. The
+two gaps are one: a sign-in secret belongs to a provider's client, not to a tenant. Holding it per
+tenant - sealed in the tenant's schema as the object store's credential is, or read from the secret
+store under the tenant's id - and keying the configurations by tenant as well would close both, and
+is what IAM-075's claim waits for.
 
 ## Workspace
 

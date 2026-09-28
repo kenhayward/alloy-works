@@ -1267,10 +1267,8 @@ describe('writeDocx: two typefaces of one family', () => {
         face.wordFamily = 'Times New Roman';
       }),
     });
-    expect(substituted.report).toEqual([
+    expect(substituted.report.filter((each) => each.kind === 'face_substituted')).toEqual([
       { kind: 'face_substituted', family: 'Liberation Serif', wordFamily: 'Times New Roman' },
-      { kind: 'no_page_cited_output' },
-      { kind: 'pages_cite_the_pdf' },
     ]);
   });
 });
@@ -1279,13 +1277,17 @@ describe('writeDocx: the report (ruling R13)', () => {
   afterEach(() => vi.useRealTimers());
 
   it('says every Word output cites the PDF for its pages, and a Word-only one that it carries no page-cited output', () => {
-    expect(plain.report).toEqual([
+    // Words alone, which Word carries whole: nothing else is said of them.
+    const words = [paragraph('w1', text('Ada wrote this first.'))];
+    // But once, the titles the PDF tags as headings, which Word keeps out of its contents.
+    const titles = { kind: 'titles_not_headings', titles: ['document', 'contents'] };
+    expect(writtenOf(words).report).toEqual([
+      titles,
       { kind: 'no_page_cited_output' },
       { kind: 'pages_cite_the_pdf' },
     ]);
-    // Without Method, whose seventh level the PDF refuses (W14.2), so that both can be made.
-    const shallow = { ...OUTLINE, nodes: OUTLINE.nodes.filter((node) => node.id !== id('method')) };
-    expect(written({ outline: shallow }, ['pdf', 'docx']).report).toEqual([
+    expect(writtenOf(words, {}, ['pdf', 'docx']).report).toEqual([
+      titles,
       { kind: 'pages_cite_the_pdf' },
     ]);
   });
@@ -1316,18 +1318,25 @@ function bodyOf(docx: Package): { body: Element[]; at: (text: string) => Element
 }
 
 /** One component under one section, written for Word: what each block's test reads. */
-const writtenOf = (content: unknown[], over: Parameters<typeof written>[0] = {}): Written =>
-  written({
-    ...over,
-    outline: parseOutlineDocument({
-      schemaVersion: OUTLINE_SCHEMA_VERSION,
-      title: 'The dosing report',
-      language: 'en-GB',
-      direction: 'ltr',
-      nodes: [reference('blocks', 9)],
-    }),
-    occurrences: new Map([[id('blocks'), component('Blocks', content)]]),
-  });
+const writtenOf = (
+  content: unknown[],
+  over: Parameters<typeof written>[0] = {},
+  formats?: Parameters<typeof written>[1],
+): Written =>
+  written(
+    {
+      ...over,
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        nodes: [reference('blocks', 9)],
+      }),
+      occurrences: new Map([[id('blocks'), component('Blocks', content)]]),
+    },
+    formats,
+  );
 
 const list = (name: string, kind: string, items: unknown[], over: object = {}) => ({
   type: 'list',
@@ -2111,20 +2120,24 @@ describe('writeDocx: tables (Word 2, ruling R7)', () => {
 
   it('R7 reports each table Word could not set as its style asks: a header column lost, a header its style does not repeat repeated, a continuation label left out, each by its place and label', () => {
     const place = { node: id('blocks'), block: 't1', label: 'Table 1.1' };
+    const titles = { kind: 'titles_not_headings', titles: ['document', 'contents'] };
     expect(tabled.report).toEqual([
       { kind: 'header_column_lost', ...place },
       { kind: 'header_repeated', ...place },
       { kind: 'continuation_label_omitted', ...place },
+      titles,
       { kind: 'no_page_cited_output' },
       { kind: 'pages_cite_the_pdf' },
     ]);
     // Under the default's style, repeated and unlabelled, only the header column; with none, nothing.
     expect(tabledOf([readings({ style: 'table' })]).report).toEqual([
       { kind: 'header_column_lost', ...place },
+      titles,
       { kind: 'no_page_cited_output' },
       { kind: 'pages_cite_the_pdf' },
     ]);
     expect(tabledOf([readings({ style: 'table', headerColumns: 0 })]).report).toEqual([
+      titles,
       { kind: 'no_page_cited_output' },
       { kind: 'pages_cite_the_pdf' },
     ]);
@@ -4089,8 +4102,301 @@ describe('writeDocx: equations (Word 4, rulings R4 and R5)', () => {
     expect(unlisted.report.filter((each) => each.kind === 'equation_flattened')).toEqual([]);
   });
 
+  it("PUB-100 names each numbered equation Word sets as a table of one row by its place and label, and once for a document setting an equation the alternatives Word's own maths reading replaces and the characters of the Word face it sets them in, which nothing checks (W-J)", () => {
+    // Every numbered equation the document publishes, in the order the text meets them - front
+    // matter's, a list item's and a quotation's among them, and the appendix's two in a row, which
+    // Word joins into one table - each by its node and its label.
+    const numbered: { node: string; block: string; label: string }[] = [];
+    const visit = (value: unknown, node: string) => {
+      if (Array.isArray(value)) value.forEach((each) => visit(each, node));
+      else if (typeof value === 'object' && value !== null) {
+        const record = value as Record<string, unknown>;
+        if (record['type'] === 'equation' && typeof record['label'] === 'string') {
+          numbered.push({ node, block: record['id'] as string, label: record['label'] });
+        }
+        Object.values(record).forEach((each) => visit(each, node));
+      }
+    };
+    const walk = (nodes: readonly PublishedDocument['nodes'][number][]) => {
+      for (const node of nodes) {
+        visit(node.blocks, node.id);
+        walk(node.children);
+      }
+    };
+    walk(equations.document.nodes);
+    expect(numbered.map((each) => each.block)).toEqual(['f1', 'e1', 'e4', 'e3', 'a1', 'a2']);
+    expect(equations.report.filter((each) => each.kind === 'equation_numbered_as_table')).toEqual(
+      numbered.map((each) => ({ kind: 'equation_numbered_as_table', ...each })),
+    );
+    // The maths once, however many equations the document sets: after what the text meets.
+    const maths = [
+      { kind: 'equation_alternative_lost' },
+      { kind: 'maths_coverage_unchecked', wordFamily: 'Cambria Math' },
+    ];
+    expect(equations.report.slice(-5)).toEqual([
+      ...maths,
+      { kind: 'titles_not_headings', titles: ['document', 'contents', 'lists'] },
+      { kind: 'no_page_cited_output' },
+      { kind: 'pages_cite_the_pdf' },
+    ]);
+    // A maths face Word embeds is the face `assemble` judged every character against: only the
+    // alternatives are said.
+    const embedded = equated({
+      theme: themeWith((inputs) => {
+        const face = inputs.theme.typefaces.find((each) => each.id === 'maths')!;
+        face.embedding = { pdf: true, word: true };
+        delete face.wordFamily;
+      }),
+    });
+    expect(embedded.report).toContainEqual({ kind: 'equation_alternative_lost' });
+    expect(embedded.report.some((each) => each.kind === 'maths_coverage_unchecked')).toBe(false);
+    // A document setting no equation says none of it.
+    for (const kind of [
+      'equation_numbered_as_table',
+      'equation_alternative_lost',
+      'maths_coverage_unchecked',
+    ]) {
+      expect(plain.report.some((each) => each.kind === kind)).toBe(false);
+    }
+  });
+
   it('reports no substitution of the maths face, and writes no equation, where the document sets none', () => {
     expect(plain.report.some((each) => each.kind === 'face_substituted')).toBe(false);
     expect(xml(plain.docx, 'word/document.xml')).not.toContain('<m:oMath');
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------
+// W14.6: what Word cannot carry of the PDF's structure, named (W-J).
+// ---------------------------------------------------------------------------------------------------
+
+describe("writeDocx: the report names what Word cannot carry of the PDF's structure (W14.6, W-J)", () => {
+  // Each mark an identifier of its own, which a document holds once.
+  let marks = 0;
+  const quoted = () => ({ type: 'quotedPhrase', id: `k${(marks += 1)}` });
+  const code = () => ({ type: 'inlineCode', id: `k${(marks += 1)}` });
+  const quote = (name: string, blocks: unknown[], attribution: unknown[] | null = null) => ({
+    type: 'blockquote',
+    id: name,
+    content: blocks,
+    ...(attribution === null ? {} : { attribution }),
+  });
+  const structural = [
+    'quotation_not_structure',
+    'preformatted_not_structure',
+    'definition_list_not_structure',
+    'quoted_phrase_not_structure',
+    'inline_code_not_structure',
+  ];
+
+  it('PUB-100 names each quotation, preformatted block and definition list, which the PDF tags as a BlockQuote, Code and a list and Word sets as paragraphs, by its place; and each place holding a quoted phrase or inline code, which the PDF tags as a Quote and Code and Word sets as runs, once - in text, a quotation, a term, a caption, a cell and a footnote', () => {
+    const carried = tabledOf([
+      paragraph(
+        'p1',
+        text('Set '),
+        text('"twice"', quoted()),
+        text(' in '),
+        text('a.cfg', code()),
+        text(' and '),
+        text('"again"', quoted()),
+      ),
+      quote('q1', [paragraph('q1a', text('"so"', quoted()))], [text('Ada')]),
+      { type: 'preformatted', id: 'c1', text: 'x = 1' },
+      list('d1', 'definition', [{ term: [text('b.cfg', code())], content: [said('a file')] }]),
+      list('l1', 'unordered', [item(quote('q2', [said('nested')]))]),
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [text('Keys in '), text('c.cfg', code())],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [
+              { content: [paragraph('t1a', text('"key"', quoted()))], colspan: 1, rowspan: 1 },
+            ],
+          },
+        ],
+      },
+      paragraph('p2', text('Noted'), {
+        type: 'footnote',
+        id: 'n1',
+        anchor: { kind: 'span' },
+        content: [paragraph('n1a', text('d.cfg', code()))],
+      }),
+      said('plain words'),
+    ]);
+    const node = id('blocks');
+    const at = (kind: string, block: string) => ({ kind, node, block });
+    const reported = carried.report.filter((each) => structural.includes(each.kind));
+    expect(reported).toHaveLength(11);
+    expect(reported).toEqual(
+      expect.arrayContaining([
+        at('quoted_phrase_not_structure', 'p1'),
+        at('inline_code_not_structure', 'p1'),
+        at('quotation_not_structure', 'q1'),
+        at('quoted_phrase_not_structure', 'q1a'),
+        at('preformatted_not_structure', 'c1'),
+        at('definition_list_not_structure', 'd1'),
+        at('inline_code_not_structure', 'd1'),
+        at('quotation_not_structure', 'q2'),
+        at('inline_code_not_structure', 't1'),
+        at('quoted_phrase_not_structure', 't1a'),
+        // A footnote's paragraph is a place of its own, in the node its mark stands in.
+        at('inline_code_not_structure', 'n1a'),
+      ]),
+    );
+    // A bulleted or a numbered list is Word's own list, and plain words are words: nothing is said.
+    const listed = tabledOf([list('l2', 'ordered', [item(said('one'))]), said('two')]);
+    expect(listed.report.filter((each) => structural.includes(each.kind))).toEqual([]);
+  });
+
+  it("PUB-100 names each image whose description is in a language other than the document's, by its figure or the block its line is in, since Word's description holds no language - a figure's, an image in a line's and a cell's, its own description in its component's language among them - and none described in the document's or decorative", () => {
+    const GREEN = '00000000-0000-4000-8000-0000000093ee';
+    const assets = new Map<string, PublishingAsset>([
+      ...IMAGES,
+      [
+        GREEN,
+        {
+          object: `t_acme/sha256/${'ef'.repeat(32)}`,
+          format: 'png',
+          width: 400,
+          height: 300,
+          alternative: { text: 'Un carré vert', language: 'fr-FR' },
+        },
+      ],
+    ]);
+    const described = written({
+      layout: UNLISTED,
+      assets,
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        nodes: [reference('blocks', 9), reference('german', 10)],
+      }),
+      occurrences: new Map([
+        [
+          id('blocks'),
+          component('Blocks', [
+            figure('f1', GREEN, 'In French'),
+            figure('f2', RED, 'In English'),
+            figure('f3', GREEN, 'Decorative', { alternative: { kind: 'decorative' } }),
+            paragraph('p1', text('Press '), image(GREEN), text(' and '), image(GREEN)),
+            paragraph('p2', text('Press '), image(RED)),
+            {
+              type: 'table',
+              id: 't1',
+              style: 'table',
+              caption: [text('Keys')],
+              headerRows: 0,
+              headerColumns: 0,
+              rows: [
+                {
+                  cells: [{ content: [paragraph('c1', image(GREEN))], colspan: 1, rowspan: 1 }],
+                },
+              ],
+            },
+          ]),
+        ],
+        [
+          id('german'),
+          component(
+            'Grüße',
+            [
+              figure('g1', RED, 'Eigen', {
+                alternative: { kind: 'own', text: 'Zwei rote Quadrate' },
+              }),
+              figure('g2', RED, 'Geerbt'),
+            ],
+            { language: 'de-DE' },
+          ),
+        ],
+      ]),
+    });
+    const lost = (node: string, block: string) => ({
+      kind: 'description_language_lost',
+      node: id(node),
+      block,
+    });
+    expect(described.report.filter((each) => each.kind === 'description_language_lost')).toEqual([
+      lost('blocks', 'f1'),
+      lost('blocks', 'p1'),
+      lost('blocks', 'c1'),
+      lost('german', 'g1'),
+    ]);
+    // Its language is written on the run holding its drawing, as template 13 sets the image in its
+    // description's language; a description in the document's, or none, states none. Whether a screen
+    // reader reads `descr` in it is not measured, so the report still names each (the final review).
+    const drawn = all(described.docx.xml('word/document.xml'), 'w:r').filter(
+      (run) => first(run, 'w:drawing') !== undefined,
+    );
+    const languageOf = (run: Element) => first(run, 'w:lang')?.attrs['w:val'] ?? null;
+    expect(
+      drawn.map((run) => [first(run, 'wp:docPr')!.attrs['descr'] ?? null, languageOf(run)]),
+    ).toEqual([
+      ['Un carré vert', 'fr-FR'],
+      [expect.any(String), null],
+      [null, null],
+      ['Un carré vert', 'fr-FR'],
+      ['Un carré vert', 'fr-FR'],
+      [expect.any(String), null],
+      ['Un carré vert', 'fr-FR'],
+      ['Zwei rote Quadrate', 'de-DE'],
+      [expect.any(String), null],
+    ]);
+  });
+
+  it("PUB-100 names once the titles template 13 tags as headings that Word sets as body text, kept out of Word's contents - the document's always, the contents' and the lists' where they stand (the final review)", () => {
+    const titles = (docx: Written) =>
+      docx.report.filter((each) => each.kind === 'titles_not_headings');
+    const unheaded = (...named: string[]) => [{ kind: 'titles_not_headings', titles: named }];
+    // The default layout: the contents, and a list after it where a caption stands in one.
+    expect(titles(writtenOf([said('w1')]))).toEqual(unheaded('document', 'contents'));
+    const figured = writtenOf([figure('f1', RED, 'Shapes at rest')], { assets: IMAGES });
+    expect(titles(figured)).toEqual(unheaded('document', 'contents', 'lists'));
+    // Each in its role's style, body text to Word, which is what keeps it out of the contents.
+    const { at } = bodyOf(figured.docx);
+    for (const title of ['The dosing report', 'Contents', 'Figures']) {
+      expect(isHeading(at(title)), title).toBe(false);
+    }
+    // No contents; no list; neither.
+    const without = (contents: boolean, lists: boolean, content: unknown[]) =>
+      writtenOf(content, {
+        assets: IMAGES,
+        layout: layoutWith((layout) => {
+          if (!contents) layout.matter.contents = null;
+          if (!lists) layout.matter.lists = [];
+        }),
+      });
+    expect(titles(without(false, true, [figure('f1', RED, 'Shapes')]))).toEqual(
+      unheaded('document', 'lists'),
+    );
+    expect(titles(without(true, false, [figure('f1', RED, 'Shapes')]))).toEqual(
+      unheaded('document', 'contents'),
+    );
+    expect(titles(without(false, false, [said('w1')]))).toEqual(unheaded('document'));
+  });
+
+  it('PUB-100 names a list after the contents Word cannot link to its captions, which the PDF always links: a list of figures, one of them floated, by its sequence; and no other (the final review)', () => {
+    const unlinked = (docx: Written) =>
+      docx.report.filter((each) => each.kind === 'list_not_linked');
+    const floated = writtenOf(
+      [
+        figure('f1', RED, 'Shapes at rest'),
+        readings({ style: 'table' }),
+        figure('f3', BLUE, 'Blue on top', { imageStyle: 'floated' }),
+        figure('f4', BLUE, 'Blue again', { imageStyle: 'floated' }),
+      ],
+      { assets: IMAGES, theme: floatedTheme },
+    );
+    expect(unlinked(floated)).toEqual([{ kind: 'list_not_linked', sequence: 'figure' }]);
+    const standing = writtenOf(
+      [figure('f1', RED, 'Shapes at rest'), readings({ style: 'table' })],
+      { assets: IMAGES, theme: floatedTheme },
+    );
+    expect(unlinked(standing)).toEqual([]);
   });
 });

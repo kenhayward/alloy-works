@@ -16963,6 +16963,10 @@
         {
           "id": "CNT-128",
           "howItIsMet": "A hyperlink is a PDF link (publishing.md) and a `w:hyperlink` here; every T1 format has links, so no theme rendering stands in"
+        },
+        {
+          "id": "PUB-100",
+          "howItIsMet": "Headings at their outline levels, bulleted and numbered lists as Word's lists, header rows marked `w:tblHeader`, descriptions in `descr` or flagged decorative, every run's language, links and footnotes are Word's own; and the report names, by its place, each structure the PDF tags that Word has no place for, and once the titles it sets as body text and a list it cannot link ([Accessibility](#accessibility-pub-100))"
         }
       ]
     }
@@ -17707,6 +17711,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-100",
+      "file": "apps/web/src/publishing/PublicationPage.test.tsx",
+      "line": 284,
+      "kind": "title"
+    },
+    {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
       "line": 2293,
@@ -17776,6 +17786,12 @@
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
       "line": 4368,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-080",
+      "file": "apps/web/src/structure/DocumentPage.test.tsx",
+      "line": 3380,
       "kind": "title"
     },
     {
@@ -18009,13 +18025,13 @@
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1241,
+      "line": 1254,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1160,
+      "line": 1169,
       "kind": "title"
     },
     {
@@ -18171,25 +18187,31 @@
     {
       "id": "CNT-045",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1481,
+      "line": 1511,
       "kind": "title"
     },
     {
       "id": "PUB-066",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1025,
+      "line": 1055,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-100",
+      "file": "apps/worker/src/word.test.ts",
+      "line": 1161,
       "kind": "title"
     },
     {
       "id": "TAB-039",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1064,
+      "line": 1094,
       "kind": "title"
     },
     {
       "id": "TAB-049",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1064,
+      "line": 1094,
       "kind": "title"
     },
     {
@@ -18562,6 +18584,12 @@
       "id": "VER-056",
       "file": "packages/db/src/templates.test.ts",
       "line": 157,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-008",
+      "file": "packages/db/src/tenant-database.test.ts",
+      "line": 132,
       "kind": "title"
     },
     {
@@ -19809,19 +19837,19 @@
     {
       "id": "PUB-025",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2767,
+      "line": 2780,
       "kind": "title"
     },
     {
       "id": "PUB-026",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3184,
+      "line": 3197,
       "kind": "title"
     },
     {
       "id": "PUB-031",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2449,
+      "line": 2462,
       "kind": "title"
     },
     {
@@ -19833,13 +19861,19 @@
     {
       "id": "PUB-067",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3702,
+      "line": 3715,
       "kind": "title"
     },
     {
       "id": "PUB-069",
       "file": "packages/domain/src/word/write.test.ts",
       "line": 1116,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-100",
+      "file": "packages/domain/src/word/write.test.ts",
+      "line": 4105,
       "kind": "title"
     },
     {
