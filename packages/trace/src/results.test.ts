@@ -168,7 +168,7 @@ describe('checking that a set of reports agree with each other', () => {
     expect(checkCoherence(reports, ['trace', 'e2e'])).toEqual([]);
   });
 
-  it('does not require tests/browser to have a report, since pnpm test excludes it too', () => {
+  it('does not require tests/browser to have a report, since pnpm test never runs its stack suite', () => {
     const reports = [{ name: 'trace', report: report([], {}) }];
 
     expect(checkCoherence(reports, ['trace', 'e2e', 'browser'])).toEqual([]);

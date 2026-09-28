@@ -89,7 +89,11 @@ export interface NamedReport {
 
 const HOUR_MS = 60 * 60 * 1000;
 
-/** The suites `pnpm test` leaves out because they drive a running stack: `pnpm test:e2e`'s and `pnpm test:browser`'s. */
+/**
+ * The reports `pnpm test` never writes, because their suites drive a running stack: `pnpm test:e2e`'s
+ * and `pnpm test:browser`'s. (The browser workspace's own `test`, its pin's tests, writes
+ * `browser-pin.json` and is part of `pnpm test`.)
+ */
 const NEEDS_THE_STACK: ReadonlySet<string> = new Set(['e2e', 'browser']);
 
 /**
@@ -103,7 +107,7 @@ const NEEDS_THE_STACK: ReadonlySet<string> = new Set(['e2e', 'browser']);
  *
  * Returns one legible sentence per problem found, naming the report; an empty array means the set
  * agrees with itself. `tests/e2e` and `tests/browser` are exempt from the "no report at all" check -
- * `pnpm test` excludes both on purpose, since each needs the whole stack up - but not from the failure
+ * `pnpm test` never writes either report, since each suite needs the whole stack up - but not from the failure
  * or staleness checks, which are exactly what catch an `e2e.json` that has not been refreshed in weeks
  * or a browser run that failed.
  */

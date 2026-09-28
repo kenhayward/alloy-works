@@ -284,7 +284,7 @@ describe('the outline in a browser', () => {
     });
   });
 
-  it("STR-006 is edited by pointer, with the browser's own drag and drop, each read back from the service", async ({
+  it("STR-006 is edited by pointer: every operation, moves by the browser's own drag and drop, each read back from the service", async ({
     task,
   }) => {
     const client = api();
@@ -316,6 +316,57 @@ describe('the outline in a browser', () => {
       await announced(page, 'Moved Alpha after Beta.');
       expect(await held(client, document)).toEqual(['Gamma', ['Beta', 'Beta one'], 'Alpha']);
       await checkAxe(page, 'a section dropped at the end', task.meta, { within: OUTLINE_PANEL });
+
+      // Insert: Alpha chosen by a click, **Add section** clicked, a title typed and **Add** clicked.
+      await row('Alpha').click();
+      await expect(item(tree, 'Alpha').getAttribute('aria-selected')).resolves.toBe('true');
+      await page.getByRole('button', { name: 'Add section' }).click();
+      await page.getByLabel('New section title').fill('Delta');
+      await page.getByRole('button', { name: 'Add', exact: true }).click();
+      await announced(page, 'Added Delta.');
+      expect(await held(client, document)).toEqual([
+        'Gamma',
+        ['Beta', 'Beta one'],
+        'Alpha',
+        'Delta',
+      ]);
+      await checkAxe(page, 'a section added by pointer', task.meta, { within: OUTLINE_PANEL });
+
+      // Retitle: a click into **Title**, the words typed, and a click away, which commits them.
+      const title = page.getByRole('textbox', { name: 'Title' });
+      await title.click();
+      await page.keyboard.press('ControlOrMeta+a');
+      await page.keyboard.type('Epsilon');
+      await page.locator('#document-title').click();
+      await announced(page, 'Renamed Delta to Epsilon.');
+      expect(await held(client, document)).toEqual([
+        'Gamma',
+        ['Beta', 'Beta one'],
+        'Alpha',
+        'Epsilon',
+      ]);
+      await checkAxe(page, 'a section retitled by pointer', task.meta, { within: OUTLINE_PANEL });
+
+      // Starts on: the select clicked open and a choice made. Its list is drawn by the browser
+      // outside the page, where no pointer event can reach, so the choice is made as the list makes
+      // it - the option selected and the change announced to the page.
+      const startsOn = page.getByLabel('Starts on');
+      await startsOn.click();
+      await startsOn.selectOption({ label: 'A new page' });
+      await announced(page, 'Epsilon now starts on a new page.');
+      const epsilon = find(nodesOf(await readDocument(client, document.id)), 'Epsilon');
+      expect(epsilon.pageBreak).toBe('page');
+      await checkAxe(page, 'a section set to start on a new page by pointer', task.meta, {
+        within: OUTLINE_PANEL,
+      });
+
+      // Remove: **Remove section** clicked, and the question's **Remove** clicked.
+      await page.getByRole('button', { name: 'Remove section' }).click();
+      const question = page.getByRole('group', { name: 'Confirm removal' });
+      await question.getByRole('button', { name: 'Remove', exact: true }).click();
+      await announced(page, 'Removed Epsilon.');
+      expect(await held(client, document)).toEqual(['Gamma', ['Beta', 'Beta one'], 'Alpha']);
+      await checkAxe(page, 'a section removed by pointer', task.meta, { within: OUTLINE_PANEL });
     });
   });
 
@@ -363,6 +414,29 @@ describe('the outline in a browser', () => {
     // Each act one version, and the service holds what the last one made.
     expect(new Set(versions).size).toBe(versions.length);
     expect(await held(client, document)).toEqual(['Alpha', 'Beta']);
+  });
+
+  it("keeps both of two spaces typed in a section's title, stored and drawn (issue #325)", async () => {
+    const client = api();
+    const document = await makeDocument(client, 'The outline with two spaces', ['Alpha']);
+    await withPage(async (page) => {
+      await open(page, document);
+      const title = page.getByRole('textbox', { name: 'Title' });
+      await title.click();
+      await page.keyboard.press('ControlOrMeta+a');
+      await page.keyboard.type('Two  spaces');
+      await page.keyboard.press('Enter');
+      // The accessibility tree reads a sentence with its spaces collapsed, so only its start is sure.
+      await announced(page, 'Renamed Alpha to Two');
+
+      expect(titleOf(nodesOf(await readDocument(client, document.id))[0]!)).toBe('Two  spaces');
+      // What keeps them: the field's own rule, which a browser computes and jsdom never did.
+      expect(await title.evaluate((field) => getComputedStyle(field).whiteSpace)).toBe(
+        'break-spaces',
+      );
+      // And what the author sees: `innerText` is the text as laid out, spaces collapsed or not.
+      expect(await title.evaluate((field) => (field as HTMLElement).innerText)).toBe('Two  spaces');
+    });
   });
 
   it('sends one move for two Alt+Down pressed before the first is answered', async () => {

@@ -22,8 +22,8 @@ Exceptions - throwaway spikes, generated code, pure configuration - need a human
 | `tests/e2e`       | Vitest | node        | The whole system in containers, driven over HTTP                    |
 | `tests/browser`   | Vitest | node        | The renderer in a pinned Chromium, against the whole system         |
 
-`pnpm test` runs every suite but the last two, which need a running stack; `pnpm test:e2e` and
-`pnpm test:browser` run those. The reporter is **pinned explicitly** in every `vitest.config`: left
+`pnpm test` runs every suite but the last two, which need a running stack - apart from the browser
+workspace's pin tests, which need none; `pnpm test:e2e` and `pnpm test:browser` run those. The reporter is **pinned explicitly** in every `vitest.config`: left
 implicit, some runners print nothing a test logged on Windows while the identical run on Linux
 prints all of it, which makes a local run look pristine while CI drowns.
 
@@ -558,8 +558,11 @@ pnpm test:browser
 
 It is **left out of `pnpm test`** for the reason the end-to-end suite is, and `packages/trace` exempts
 its report from "no report at all" as it exempts e2e's, while still refusing one that failed or is
-stale. Its report is `.trace-results/browser.json`. Its files run one at a time, since every file
-drives the one stack.
+stale; CI's gate job refuses to run without it, and without e2e's. Its report is
+`.trace-results/browser.json`. Its files run one at a time, since every file drives the one stack.
+The workspace has two configurations: `vitest.config.ts`, the suite, run by its `test:browser` script,
+and `vitest.pin.config.ts`, the pin's tests alone, which need no stack and are its `test` script - so
+`pnpm test` runs them on every machine, into `.trace-results/browser-pin.json`.
 
 **Vitest runs it, over `playwright-core` as a library** - not Playwright Test, whose report
 `packages/trace` would not read. A test takes a page from `withPage` (`src/testing/page.ts`): a fresh
@@ -568,9 +571,11 @@ browser context, signed in, at a desktop viewport, closed after the test.
 **The browser is pinned as Typst is.** `src/chromium-release.ts` names Chrome for Testing's
 `chrome-headless-shell` at the build the installed `playwright-core` names in its own `browsers.json`,
 with a sha256 per platform; `fetch-chromium` downloads it from Google's public Chrome for Testing
-bucket, checks the hash and unpacks it into `tests/browser/.tools/`, and the suite launches that
-executable by path and no other. `chromium-release.test.ts` holds the pin equal to `browsers.json`, so
-a Playwright upgrade without a new pin fails by name. To move the pin: upgrade `playwright-core`, set
+bucket, checks the hash (`checkArchive`) and unpacks it into `tests/browser/.tools/`, and the suite
+launches that executable by path and no other. Once it has unpacked a checked archive it writes the
+hash beside it, and a later run - or a CI cache restored - is trusted only while that marker names the
+pin (`isFetched`); otherwise it fetches again. `chromium-release.test.ts` holds the pin equal to
+`browsers.json`, so a Playwright upgrade without a new pin fails `pnpm test` by name. To move the pin: upgrade `playwright-core`, set
 the version and revision its `browsers.json` names, run `fetch-chromium --print-hashes`, which
 downloads every platform's archive and prints each one's hash, and copy those in. CI caches `.tools`
 keyed on the pin file, so a new pin downloads once. On Linux the build needs the shared libraries
@@ -628,10 +633,13 @@ gate's own job with the rest ([CI, branches and releases](ci-and-releases.md)).
 each act read back from the service: by keyboard alone - insert, move, promote and demote, retitle in
 **Title**, **Starts on**, and remove after its question - with no pointer press sent, the focus kept
 where the act was made, each act's announcement read from the live region, and every `Alt` and arrow
-key taken by the tree before the browser can act on it; by pointer, with the browser's own drag and
-drop onto a node, onto the gap before one and onto **Move to the end of the document**; and through
-the API. axe checks the outline panel in each state. A fourth test shows structure.md's known limit:
-two `Alt+Down` pressed before the first is answered send one move.
+key taken by the tree before the browser can act on it; by pointer - moves by the browser's own drag
+and drop onto a node, onto the gap before one and onto **Move to the end of the document**, then a
+node chosen by a click, **Add section**, **Title** clicked into and left, **Starts on** and
+**Remove section** with its question's **Remove**; and through the API. axe checks the outline panel in
+each state. Another test shows structure.md's known limit: two `Alt+Down` pressed before the first is
+answered send one move. And one holds issue #325 fixed: two spaces typed in a section's title are
+stored, computed as `break-spaces` and drawn as two.
 
 **What it cannot see.** Headless Chromium has no browser interface, so `Alt+Left` is never Back there
 whatever the page does: the test shows the tree prevented the key's default, which is what keeps it

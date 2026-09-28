@@ -1,8 +1,20 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { archiveUrl, CHROMIUM_RELEASE, type ChromiumPlatform } from './chromium-release.js';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  archiveUrl,
+  checkArchive,
+  CHROMIUM_RELEASE,
+  fetchedExecutable,
+  isFetched,
+  markerPath,
+  type ChromiumPlatform,
+} from './chromium-release.js';
 
 /** What the installed `playwright-core` says it drives, read from its own `browsers.json`. */
 function playwrightsHeadlessShell(): { revision: string; browserVersion: string } {
@@ -30,6 +42,60 @@ describe('the pinned Chromium', () => {
     for (const asset of Object.values(CHROMIUM_RELEASE.assets)) {
       expect(asset.sha256).toMatch(/^[0-9a-f]{64}$/);
     }
+  });
+
+  it('refuses an archive whose hash is not the pinned one, naming both hashes', () => {
+    const archive = Buffer.from('not the archive Chrome for Testing publishes');
+    const hash = createHash('sha256').update(archive).digest('hex');
+
+    expect(() => checkArchive(archive, 'linux-x64')).toThrow(
+      new RegExp(`${hash}.*${CHROMIUM_RELEASE.assets['linux-x64'].sha256}`),
+    );
+  });
+
+  it("answers the verified hash for an archive that is the pinned one's", () => {
+    // No real archive is at hand without a download, so the pin is stood in for by a hash taken here.
+    const archive = Buffer.from('an archive');
+    const hash = createHash('sha256').update(archive).digest('hex');
+
+    expect(checkArchive(archive, 'linux-x64', hash)).toBe(hash);
+  });
+
+  describe('an existing fetch, trusted only while its marker names the pinned hash', () => {
+    let root: URL;
+    const platform: ChromiumPlatform = 'linux-x64';
+    beforeEach(async () => {
+      root = pathToFileURL(`${await mkdtemp(join(tmpdir(), 'alloy-chromium-'))}/`);
+    });
+    afterEach(async () => {
+      await rm(fileURLToPath(root), { recursive: true, force: true });
+    });
+    const executable = async () => {
+      const path = fetchedExecutable(root, platform);
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, '');
+    };
+
+    it('is not trusted with no executable', () => {
+      expect(isFetched(root, platform)).toBe(false);
+    });
+
+    it('is not trusted with an executable and no marker, as a cache from before the marker has', async () => {
+      await executable();
+      expect(isFetched(root, platform)).toBe(false);
+    });
+
+    it('is not trusted when the marker names another hash, as after the pin moves', async () => {
+      await executable();
+      await writeFile(markerPath(root), 'f'.repeat(64));
+      expect(isFetched(root, platform)).toBe(false);
+    });
+
+    it('is trusted when the executable is there and the marker names the pinned hash', async () => {
+      await executable();
+      await writeFile(markerPath(root), CHROMIUM_RELEASE.assets[platform].sha256);
+      expect(isFetched(root, platform)).toBe(true);
+    });
   });
 
   it("is fetched from Chrome for Testing's public bucket, under the pinned version", () => {

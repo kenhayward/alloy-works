@@ -36,7 +36,9 @@ job's end-to-end and browser suites, each uploaded as an artifact (`trace-result
 `trace-results-system`) and downloaded into one `.trace-results/` before the gate runs. It runs unless
 the run was cancelled, so a failed suite is read and refused rather than skipped, and a whole-system
 job that wrote no report at all - the stack never came up - fails its download rather than passing
-without it. It is **not** `continue-on-error`, and neither is the browser step. That is
+without it. A step before the gate fails unless both `e2e.json` and `browser.json` are there, since
+`pnpm trace gate` itself exempts those two from "no report at all": without it, a run whose browser
+step never ran would pass on the other reports alone. It is **not** `continue-on-error`, and neither is the browser step. That is
 safe precisely because of what the gate checks: `docs/specification/baselines/` declares the
 requirements this release is answerable for, each with its own evidence, so the gate passes on the
 day the baseline lands - it fails only when a later change breaks a requirement the baseline already

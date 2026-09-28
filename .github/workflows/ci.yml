@@ -245,5 +245,18 @@ jobs:
           name: trace-results-system
           path: .trace-results
 
+      # Both suites that drive the stack must have reported. `pnpm trace gate` exempts their reports
+      # from "no report at all", since `pnpm test` never writes them, so without this a run whose
+      # browser step never ran - the stack came up and the end-to-end step died with nothing written -
+      # would pass the gate on the build job's reports alone.
+      - name: Both system reports
+        run: |
+          for report in e2e browser; do
+            if [ ! -f ".trace-results/$report.json" ]; then
+              echo "::error::.trace-results/$report.json is missing: the whole-system job did not report its $report suite"
+              exit 1
+            fi
+          done
+
       - name: Traceability gate
         run: pnpm trace gate

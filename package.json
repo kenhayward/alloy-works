@@ -16,11 +16,11 @@
     "trace": "pnpm --filter @alloy-works/trace trace",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test --filter=!@alloy-works/e2e --filter=!@alloy-works/browser",
+    "test": "turbo run test --filter=!@alloy-works/e2e",
     "lint": "eslint .",
     "format": "prettier --check .",
     "test:e2e": "turbo run test --filter=@alloy-works/e2e",
-    "test:browser": "turbo run test --filter=@alloy-works/browser"
+    "test:browser": "turbo run test:browser --filter=@alloy-works/browser"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

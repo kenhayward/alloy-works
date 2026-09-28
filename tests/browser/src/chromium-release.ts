@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 /**
@@ -72,4 +74,42 @@ export function fetchedExecutable(
       root,
     ),
   );
+}
+
+/**
+ * The archive downloaded, held to the pin: its sha256, answered when it is the pinned one's, and a
+ * refusal naming both hashes when it is not. `pinned` is the platform's pin unless given.
+ */
+export function checkArchive(
+  archive: Buffer,
+  platform: ChromiumPlatform,
+  pinned: string = CHROMIUM_RELEASE.assets[platform].sha256,
+): string {
+  const sha256 = createHash('sha256').update(archive).digest('hex');
+  if (sha256 !== pinned) {
+    throw new Error(`${archiveName(platform)} hashed ${sha256}, not the pinned ${pinned}`);
+  }
+  return sha256;
+}
+
+/**
+ * The file `fetch-chromium` writes once it has unpacked a checked archive, holding the hash it was
+ * checked against: what is in `.tools/`, from a cache or an earlier run, is trusted only while this
+ * names the pin.
+ */
+export function markerPath(root: URL): string {
+  return fileURLToPath(
+    new URL(`.tools/chromium-${CHROMIUM_RELEASE.version}/verified-sha256`, root),
+  );
+}
+
+/**
+ * Whether the pinned build is already unpacked here: its executable present and its marker naming the
+ * platform's pinned hash. Anything else - no marker, as a cache from before there was one, or another
+ * hash, as after the pin moves - is fetched again.
+ */
+export function isFetched(root: URL, platform: ChromiumPlatform = currentPlatform()): boolean {
+  const marker = markerPath(root);
+  if (!existsSync(fetchedExecutable(root, platform)) || !existsSync(marker)) return false;
+  return readFileSync(marker, 'utf8').trim() === CHROMIUM_RELEASE.assets[platform].sha256;
 }

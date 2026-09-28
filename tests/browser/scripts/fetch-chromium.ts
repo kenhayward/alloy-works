@@ -1,5 +1,7 @@
 // Fetches the pinned Chromium into .tools/, checked against the hash in chromium-release.ts. Run once
 // on a new machine; CI runs it too, from a cache keyed on the pin, so every run drives the one build.
+// What is already there - from a cache or an earlier run - is used only while the marker written
+// beside it after the last check names the pinned hash (`isFetched`); anything else is fetched again.
 //
 // `--print-hashes` downloads every platform's archive and prints its sha256 instead, which is how the
 // pin's hashes are taken: from the archives themselves, never from memory.
@@ -13,28 +15,31 @@ import { promisify } from 'node:util';
 import {
   archiveName,
   archiveUrl,
+  checkArchive,
   CHROMIUM_RELEASE,
   currentPlatform,
   fetchedExecutable,
   fetchedHome,
+  isFetched,
+  markerPath,
   type ChromiumPlatform,
 } from '../src/chromium-release.js';
 
 const run = promisify(execFile);
 const root = new URL('../', import.meta.url);
 
-async function download(platform: ChromiumPlatform): Promise<{ archive: Buffer; sha256: string }> {
+async function download(platform: ChromiumPlatform): Promise<Buffer> {
   const url = archiveUrl(platform);
   console.log(`Fetching ${url}`);
   const response = await fetch(url);
   if (!response.ok) throw new Error(`${url} answered ${response.status}`);
-  const archive = Buffer.from(await response.arrayBuffer());
-  return { archive, sha256: createHash('sha256').update(archive).digest('hex') };
+  return Buffer.from(await response.arrayBuffer());
 }
 
 if (process.argv.includes('--print-hashes')) {
   for (const platform of Object.keys(CHROMIUM_RELEASE.assets) as ChromiumPlatform[]) {
-    const { archive, sha256 } = await download(platform);
+    const archive = await download(platform);
+    const sha256 = createHash('sha256').update(archive).digest('hex');
     console.log(`${platform}  ${archiveName(platform)}  ${archive.length} bytes  sha256 ${sha256}`);
   }
   process.exit(0);
@@ -42,16 +47,13 @@ if (process.argv.includes('--print-hashes')) {
 
 const platform = currentPlatform();
 const executable = fetchedExecutable(root, platform);
-if (existsSync(executable)) {
-  console.log(`Chromium ${CHROMIUM_RELEASE.version} is already at ${executable}`);
+if (isFetched(root, platform)) {
+  console.log(`Chromium ${CHROMIUM_RELEASE.version} is already at ${executable}, checked`);
   process.exit(0);
 }
 
-const { archive, sha256 } = await download(platform);
-const pinned = CHROMIUM_RELEASE.assets[platform].sha256;
-if (sha256 !== pinned) {
-  throw new Error(`${archiveName(platform)} hashed ${sha256}, not the pinned ${pinned}`);
-}
+const archive = await download(platform);
+const sha256 = checkArchive(archive, platform);
 
 const tools = fileURLToPath(new URL('.tools/', root));
 const home = fetchedHome(root);
@@ -74,4 +76,7 @@ if (process.platform === 'win32') {
 await rm(archivePath, { force: true });
 if (!existsSync(executable)) throw new Error(`The archive held no ${executable}`);
 if (process.platform !== 'win32') await chmod(executable, 0o755);
+// Written last, once everything above has succeeded: a run that fails part-way leaves no marker, and
+// the next run fetches again rather than trusting half an unpacking.
+await writeFile(markerPath(root), sha256);
 console.log(`Chromium ${CHROMIUM_RELEASE.version} is at ${executable}`);

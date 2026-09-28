@@ -384,7 +384,7 @@ pnpm lint          # eslint, flat config at the root
 pnpm format        # prettier --check (pnpm exec prettier --write . to fix)
 pnpm typecheck     # tsc --noEmit across every workspace
 pnpm build         # domain (emits dist/) then the renderer and the shell
-pnpm test          # every suite but the end-to-end and browser ones, which need a running stack
+pnpm test          # every suite but the end-to-end and browser ones, which need a running stack (the pin's tests run)
 pnpm test:e2e      # the whole system, after the stack is up (see deploy/README.md)
 pnpm test:browser  # the renderer in the pinned Chromium, after the stack is up (see docs/testing.md)
 pnpm dev:web       # the renderer alone, in a browser, on :5173

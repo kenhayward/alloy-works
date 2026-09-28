@@ -541,7 +541,7 @@ pnpm lint          # eslint, flat config at the root, across every workspace
 pnpm format        # prettier --check (use `pnpm exec prettier --write .` to fix)
 pnpm typecheck     # tsc --noEmit in every workspace
 pnpm build         # domain (emits dist/) then the renderer and the shell
-pnpm test          # every suite in every workspace, apart from the end-to-end and browser ones
+pnpm test          # every suite in every workspace, apart from those needing the stack (below)
 pnpm test:e2e      # the whole system, which needs the stack up first
 pnpm test:browser  # the renderer in the pinned Chromium, against the stack (below)
 ```

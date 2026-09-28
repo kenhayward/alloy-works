@@ -63,7 +63,7 @@
         "ALLOY_E2E_STORE_AT"
       ]
     },
-    "@alloy-works/browser#test": {
+    "@alloy-works/browser#test:browser": {
       "dependsOn": ["^build"],
       "outputs": [],
       "cache": false,
