@@ -732,16 +732,22 @@ the web delivery. Where a platform lags, say so plainly rather than implying par
 
 ## 12. Phasing
 
-Six tranches, ordered by dependency and by risk. Each is a usable increment, not a layer.
+Eight tranches. The first six are ordered by dependency and by risk, each a usable increment, not a
+layer. T7 and T8 hold what was deferred from them - the administration and the library, and Word's
+fidelity to the PDF - and are numbered after them without being promised after them: a row in either
+moves into an earlier tranche, by name, when that tranche's design finds it needs it
+([ADR-0033](../decisions/0033-t2-is-the-data-spine.md)).
 
-| Tranche                    | Contains                                                                                                                                                                                                                                                                                                                                                                       |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **T1 - The spine**         | Tenancy and organisations, identity, RBAC, spaces, components with immutable versions, documents with outlines, the editor, numbering and cross-references, authored tables and figures with alternative text, style catalogues and themes, templates with their structure outline, metadata schemas and component types, search, PDF and Word publishing, the OpenAPI surface |
-| **T2 - The data**          | Connections, query definitions, parameters, inline and block bindings, provenance, revising a bound value by hand, tabular presentation and field formatting                                                                                                                                                                                                                   |
-| **T3 - The collaboration** | Presence, soft locks, threads, mentions, suggestions, notifications, baselines, comparison, workflow and audit, and lifecycles for components as well as documents                                                                                                                                                                                                             |
-| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, parameterised bulk generation, relationships and graph queries, and revisions that diverge - more than one effective at once, and bringing a line back                                                                                                                                                          |
-| **T5 - The intelligence**  | Template prompts, the tool-enabled assistant and interactive chat, retrieval grounding, AI governance and cost controls, the hardened MCP facade                                                                                                                                                                                                                               |
-| **T6 - The interchange**   | Word import and breakout, citation styles, external reference sources, translation and XLIFF                                                                                                                                                                                                                                                                                   |
+| Tranche                                     | Contains                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **T1 - The spine**                          | Tenancy and organisations, identity, RBAC, spaces, components with immutable versions, documents with outlines, the editor, numbering and cross-references, authored tables and figures with alternative text, style catalogues and themes, templates with their structure outline, metadata schemas and component types, search, PDF and Word publishing, the OpenAPI surface |
+| **T2 - The data**                           | Connections, query definitions, parameters, inline and block bindings, provenance, revising a bound value by hand, tabular presentation and field formatting                                                                                                                                                                                                                   |
+| **T3 - The collaboration**                  | Presence, soft locks, threads, mentions, suggestions, notifications, baselines, comparison, workflow and audit, and lifecycles for components as well as documents                                                                                                                                                                                                             |
+| **T4 - The reuse**                          | Transclusion, where-used, variables, conditions and profiling, parameterised bulk generation, relationships and graph queries, and revisions that diverge - more than one effective at once, and bringing a line back                                                                                                                                                          |
+| **T5 - The intelligence**                   | Template prompts, the tool-enabled assistant and interactive chat, retrieval grounding, AI governance and cost controls, the hardened MCP facade                                                                                                                                                                                                                               |
+| **T6 - The interchange**                    | Word import and breakout, citation styles, external reference sources, translation and XLIFF                                                                                                                                                                                                                                                                                   |
+| **T7 - The administration and the library** | Administration through the API, SCIM and federation with more than one identity provider, moving content between spaces, the assets library, reference libraries and vocabularies with the fields that draw on them, derived styles and admonitions, adding styles and themes without a release, and export and import of catalogues, spaces and tenants                       |
+| **T8 - Word fidelity**                      | Word held to the PDF's rendering by measurement, Word as a first-class output, and the keep rules shown holding in Word's own pages                                                                                                                                                                                                                                            |
 
 T1 alone is a single-author product that already publishes better than a word processor, which is
 what makes it a shippable increment rather than a foundation nobody can evaluate.
@@ -765,10 +771,16 @@ Five things cut across the order:
 - **Word export is a T1 deliverable and Word import is a T6 one.** They are different problems, and
   only the export is on the critical path: it is the stated fidelity bar, and ADR-0005 commits to
   designing the schema against its mapping - so that mapping has to be exercised while the schema
-  can still change cheaply.
-- **A thin AI slice rides along from T2** - draft assistance in the editor, grounded in the current
-  document - so the governance model in 7.6 is exercised against real use early rather than designed
-  in the abstract and discovered to be wrong at T5.
+  can still change cheaply. What T1 delivers is every construct carried as Word's own structure;
+  Word's rendering measured against the PDF's and held to it is T8's
+  ([ADR-0032](../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md),
+  [ADR-0033](../decisions/0033-t2-is-the-data-spine.md)).
+- **A thin AI slice lands first in T5** - draft assistance in the editor, grounded in the current
+  document - so the governance model in 7.6 is exercised against real use before the rest of the
+  assistant is built on it, rather than designed in the abstract and discovered to be wrong once
+  everything depends on it. It was to ride along from T2, but even a thin slice needs the model
+  endpoints, governance and cost controls T5 builds, and opens a second product surface T2 has no
+  other reason to open ([ADR-0033](../decisions/0033-t2-is-the-data-spine.md)).
 - **Some of the model exists before the capability that uses it does.** A reference records which of
   three modes it takes from T1, including tracking a component's latest approved revision - but
   nothing can be approved until lifecycle arrives in T3. The same is true of the marks for

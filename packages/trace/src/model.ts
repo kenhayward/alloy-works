@@ -18,7 +18,7 @@ export const SUPERSEDED_BY = /^Superseded by ([A-Z]{3}-\d{3})$/;
  */
 export const RESERVED_AREA = 'ZZZ';
 
-export const TRANCHES = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'Constraint'] as const;
+export const TRANCHES = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'Constraint'] as const;
 
 /** `must` is binding, `should` is a strong default an implementer may argue against in a decision
  * record. A row that says neither commits to nothing and is a defect in the corpus, not a state to

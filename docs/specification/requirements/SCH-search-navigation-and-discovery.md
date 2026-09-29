@@ -42,7 +42,7 @@ leaking through a count or a ranking.
 | **SCH-056** | Terms must be searchable                                                                                                                                                                                                                                     | T6      | Specified             |
 | **SCH-002** | Search must cover content, metadata, titles, captions and alternative text                                                                                                                                                                                   | T1      | Specified             |
 | **SCH-003** | Search must cover the current version by default, with earlier versions and baselines searchable on request                                                                                                                                                  | T3      | Specified             |
-| **SCH-004** | An asset must be findable by its caption, alt text and filename as well as its metadata (**AST-027**)                                                                                                                                                        | T2      | Specified             |
+| **SCH-004** | An asset must be findable by its caption, alt text and filename as well as its metadata (**AST-027**)                                                                                                                                                        | T7      | Specified             |
 | **SCH-038** | A thread must be indexed by message as well as whole, must be filtered by the permissions of what it is anchored to and by whether it is internal (**COL-038**), and must re-index incrementally as messages accumulate rather than by re-reading the thread | T3      | Specified             |
 | **SCH-053** | A section found by search must show the document it belongs to and the components it places, so that a section in an existing document is a route to reusing those components (**REU-054**)                                                                  | T4      | Specified             |
 
@@ -69,7 +69,7 @@ MET-001 makes a field one shared definition: `jurisdiction` reached through a co
 | **SCH-006** | A user must not be able to infer the existence of something they may not read - not from a result, a count, a facet value, or a ranking                                                                                                                                                            | Constraint | Superseded by SCH-032 |
 | **SCH-007** | Counts and facet totals must be computed over what the user may see, even where that is more expensive                                                                                                                                                                                             | Constraint | Specified             |
 | **SCH-008** | An index must be tenant-scoped (**IAM-075**), and a query must be incapable of addressing another tenant's index                                                                                                                                                                                   | Constraint | Specified             |
-| **SCH-009** | A permission change must take effect in search promptly, and the delay must be stated rather than assumed                                                                                                                                                                                          | T2         | Specified             |
+| **SCH-009** | A permission change must take effect in search promptly, and the delay must be stated rather than assumed                                                                                                                                                                                          | T7         | Specified             |
 | **SCH-010** | Every access-filtering path must be covered by a test that searches as a user without permission and finds nothing                                                                                                                                                                                 | T1         | Specified             |
 | **SCH-032** | A user must not be able to infer the existence of something they may not read from a result, a count or a facet value. Ranking may use statistics from the whole tenant, so the order of results can be influenced by content the user cannot read - a residual risk stated to tenants, not hidden | Constraint | Specified             |
 
@@ -164,9 +164,9 @@ one join cheaper.
 | ID          | Requirement                                                                                                                                                                                                              | Tranche    | Status                |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------- |
 | **SCH-027** | New and changed content must become findable within a stated interval, and that interval must be a budget rather than a hope                                                                                             | T1         | Superseded by SCH-050 |
-| **SCH-028** | Indexing must be resumable and re-runnable without downtime                                                                                                                                                              | T2         | Specified             |
+| **SCH-028** | Indexing must be resumable and re-runnable without downtime                                                                                                                                                              | T7         | Specified             |
 | **SCH-029** | An index must be rebuildable from the content it describes, and must never be the only copy of anything                                                                                                                  | Constraint | Specified             |
-| **SCH-030** | Indexing failures must be visible to an administrator, because content that silently fails to index is content that has disappeared                                                                                      | T2         | Specified             |
+| **SCH-030** | Indexing failures must be visible to an administrator, because content that silently fails to index is content that has disappeared                                                                                      | T7         | Specified             |
 | **SCH-031** | Search must degrade to a stated, communicated behaviour when the index is unavailable, never to wrong results                                                                                                            | Constraint | Specified             |
 | **SCH-050** | New and changed content must become findable within a stated interval - provisionally p95 within 60 seconds, never above five minutes - as a budget rather than a hope                                                   | T1         | Superseded by SCH-066 |
 | **SCH-066** | New and changed content must become findable by its words within a stated interval - provisionally p95 within 60 seconds, never above five minutes - as a budget rather than a hope                                      | T1         | Specified             |
@@ -288,3 +288,21 @@ changes; a row split by tranche is superseded by its T1 half, and the rest becom
 | Requirements     | 53, of which 3 superseded | 67, of which 9 superseded |
 | Non-requirements | 4                         | 4                         |
 | Open questions   | 6, of which 3 settled     | 6, of which 3 settled     |
+
+### Ken's re-tranching of T2, 2026-09-29
+
+Not a review. Ken narrowed T2 to the data spine - connections, query definitions, parameters,
+bindings, provenance, revising a bound value by hand, tabular presentation and field formatting,
+and only what those directly depend on - and moved the rest of what T2 held to a new tranche, T7,
+the administration and the library, and Word's fidelity to the PDF to T8, the last, recorded by
+[ADR-0033](../../decisions/0033-t2-is-the-data-spine.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                                                                                                                                                          | Change                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| SCH-055, query definitions searchable, is the data's own                                                                                                                                                                | Kept in T2                                            |
+| SCH-004 finds assets, which move; SCH-009 (a permission change reaching search promptly), SCH-028 (resumable indexing) and SCH-030 (indexing failures shown to an administrator) are search's operation, not the data's | **SCH-004, SCH-009, SCH-028 and SCH-030 moved to T7** |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 67, of which 9 superseded | 67, of which 9 superseded |

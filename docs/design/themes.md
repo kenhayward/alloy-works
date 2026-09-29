@@ -96,7 +96,7 @@ conformance suite.
 | **PUB-106** | Widow and orphan control, keep-with-next and keep-together are paragraph style properties, each passed to Typst as its own rule - the two costs, `sticky`, `breakable: false` - as measured; the publishing regression corpus's four keep cases show each holding in the PDF wherever the page allows ([Themes in the PDF](#themes-in-the-pdf))                                                     |
 
 **PUB-092 is superseded by PUB-106, its PDF half, which is claimed, and PUB-107, its Word half, in
-T2** ([ADR-0032](../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md)). The rules are passed to
+T8** ([ADR-0032](../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md), [ADR-0033](../decisions/0033-t2-is-the-data-spine.md)). The rules are passed to
 Word as well, as `w:widowControl`, `w:keepNext` and `w:keepLines`, and the corpus's cases read each
 from the same style as the PDF's, on or stated off; what nothing measures is where Word itself breaks
 a page, which PUB-107 asks. The Word check (`word-check.test.ts`) is where it could be measured, and
@@ -106,8 +106,8 @@ PUB-107 is not claimed.
 pinned files' character maps, so the PDF fails a character its faces cannot set, but Word sets
 equations in Cambria Math, a face the product does not hold, and silently borrows a character Cambria
 Math lacks from a face nobody declared. Refusing that character for Word needs Cambria Math's coverage
-as data (the W15 plan's W15-K), which W15.4 would have built and ADR-0032 moved to T2 with the rest of
-Word's fidelity.
+as data (the W15 plan's W15-K), which W15.4 would have built and ADR-0032 moved out of T1 with the rest of
+Word's fidelity, now T8's ([ADR-0033](../decisions/0033-t2-is-the-data-spine.md)).
 
 **STY-075 is not claimed**: the scripts the supported locales admit have no list until LOC-038
 declares one, and which faces answer it is decided then. STY-074, its T1 half, is claimed.
@@ -130,7 +130,7 @@ are not: 1,186 differences of ten kinds are left, the largest a table's step at 
 named with its size and where it goes in word-output.md's
 [Word measured](word-output.md#word-measured-w152). The claim waits for them, beside PUB-023, which
 word-output.md says waits for it. W15 stopped after W15.2 (Ken, 2026-09-29), and STY-081 and PUB-023
-are T2's ([ADR-0032](../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md)).
+are T8's ([ADR-0032](../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md), [ADR-0033](../decisions/0033-t2-is-the-data-spine.md)).
 
 **STY-060 is not claimed either**, though both lists it asks for exist and are exact - the editor's
 empty, Word's holding STY-052's substitution alone (`EDITOR_DEVIATIONS` and `WORD_DEVIATIONS` in the
@@ -544,7 +544,7 @@ of two marks of the nine**; themes 1's character catalogue covers all nine and i
 **Since W14.3** themes 1's four pagination cases live in the publishing regression corpus, each also
 reading its rule from the same style as Word's; STY-008's keeping half is cited there, as it was in
 `themes.test.ts`. PUB-092 was uncited for the gap named beside the table above; since ADR-0032 its PDF
-half, PUB-106, is claimed and cited on the four cases, and its Word half, PUB-107, is T2's.
+half, PUB-106, is claimed and cited on the four cases, and its Word half, PUB-107, is T8's.
 
 ### What was built
 
@@ -1007,7 +1007,7 @@ pinned Chromium both trim.
 and #333. With both fixed, the test in `styles.test.ts` cites STY-080, which it answers whole. **STY-081
 is not claimed**: Word is measured against the PDF by the same kit since W15.2, where Word is, and
 does not agree yet (above, [Requirements owned](#requirements-owned)); word-output.md says PUB-023
-waits for it. Both are T2's since ADR-0032.
+waits for it. Both left T1 by ADR-0032, and are T8's since ADR-0033.
 
 ## Where a caption sits
 

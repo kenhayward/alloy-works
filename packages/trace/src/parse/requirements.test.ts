@@ -83,6 +83,19 @@ describe('parsing an area document', () => {
     expect(() => parseAreaDocument(document, text)).toThrow(/ZZZ-invented-area\.md:1/);
   });
 
+  // T7 and T8 arrived with the re-tranching of 2026-09-29 (ADR-0033): T2 narrowed to the data spine,
+  // the rest of it a tranche of its own, and Word's fidelity to the PDF the last.
+  it('reads a row in T7 and a row in T8, the two tranches after T6', () => {
+    const text = [
+      '| **ZZZ-009** | A widget must be importable | T7 | Specified |',
+      '| **ZZZ-010** | A widget must look the same in Word | T8 | Specified |',
+    ].join('\n');
+
+    const tranches = parseAreaDocument(document, text).requirements.map((row) => row.tranche);
+
+    expect(tranches).toEqual(['T7', 'T8']);
+  });
+
   it('refuses a statement that binds nothing', () => {
     const text = '| **ZZZ-005** | A widget is quite nice | T1 | Specified |';
 

@@ -272,7 +272,7 @@ It holds, in its own describe blocks:
   foot of a small page on a grid of 12pt lines, and each read from the same style as the Word writer's
   own rule, `w:keepNext`, `w:keepLines` and `w:widowControl`. They cite PUB-106, the rules holding in
   the PDF, and STY-008 where they show a style's keeping; not PUB-107, which asks Word's own pages to
-  show the rules holding, since nothing measures where Word itself breaks a page (T2's, ADR-0032).
+  show the rules holding, since nothing measures where Word itself breaks a page (T8's, ADR-0032 and ADR-0033).
 
 A defect that was not in publishing output has no case here: the content model's (#88, a caption held
 as a string; #122 to #125), the editor's and the paste's, and the worker's retrying of a job its
@@ -836,10 +836,11 @@ at p95 and no sample above 500; and CNT-179, the whole time to open it, 1 second
   Desktop and the pinned Chromium beside it. To measure them alone:
   `pnpm --filter @alloy-works/browser exec vitest run src/budgets.test.ts`, with the stack's variables
   set as above, on a machine running nothing else.
-- **STR-072 is not claimed, and its tests cite nothing**: opened cold, the document misses its number
-  (below), and the row names no starting point; the cold open is recorded and not held until Ken
-  decides whether it is in STR-072 (B-K). Opened from the list, and every act, are held to it. CNT-179's
-  cold open is held to CNT-179's, which it meets.
+- **STR-072 is opening from within the application**, from the documents list, and not a cold load
+  (Ken, 2026-09-29; [ADR-0033](decisions/0033-t2-is-the-data-spine.md)), so the open's test and the
+  acts' test cite it. The interface's share of a cold open is recorded beside the open from the list
+  and not held, since it is above 250 ms at p95 (below) and STR-072 does not ask it; CNT-179's cold
+  open, the whole time a reader waits, is held to CNT-179's, which it meets.
 
 W13.3 measured them on the reference configuration, Chromium 153.0.8010.12 and the stack at
 0.125.0, with no other stack of the suite's running; beside it Docker was running
@@ -847,20 +848,20 @@ alloy-works (5), diariz (8), hawser (1), portainer_agent (1), which the run reco
 idle. Twenty samples each, forty for a retitle, **Starts on** and a move; every warm-up inside the
 maximum:
 
-| Budget                                    | Measured, p95 / max (ms) | Number (ms) | Met    |
-| ----------------------------------------- | ------------------------ | ----------- | ------ |
-| STR-072, opening from the list, interface | 197.9 / 223.9            | 250 / 500   | Yes    |
-| STR-072, opening cold, interface          | 334.3 / 338.2            | 250 / 500   | **No** |
-| STR-072, an insert, interface             | 85.2 / 87.3              | 250 / 500   | Yes    |
-| STR-072, a removal, interface             | 114.8 / 120.5            | 250 / 500   | Yes    |
-| STR-072, a retitle, interface             | 73.0 / 88.9              | 250 / 500   | Yes    |
-| STR-072, Starts on, interface             | 60.0 / 82.5              | 250 / 500   | Yes    |
-| STR-072, a move, interface                | 123.9 / 135.5            | 250 / 500   | Yes    |
-| STR-072, a demotion, interface            | 90.2 / 110.1             | 250 / 500   | Yes    |
-| STR-072, a promotion, interface           | 87.7 / 99.4              | 250 / 500   | Yes    |
-| CNT-179, opening from the list, whole     | 332.3 / 361.5            | 1000 / 2000 | Yes    |
-| CNT-179, opening cold, whole              | 432.8 / 449.9            | 1000 / 2000 | Yes    |
-| CNT-179, a jump, whole                    | 24.0 / 27.3              | 250 / 500   | Yes    |
+| Budget                                    | Measured, p95 / max (ms) | Number (ms) | Met      |
+| ----------------------------------------- | ------------------------ | ----------- | -------- |
+| STR-072, opening from the list, interface | 197.9 / 223.9            | 250 / 500   | Yes      |
+| Opening cold, interface, recorded only    | 334.3 / 338.2            | 250 / 500   | Not held |
+| STR-072, an insert, interface             | 85.2 / 87.3              | 250 / 500   | Yes      |
+| STR-072, a removal, interface             | 114.8 / 120.5            | 250 / 500   | Yes      |
+| STR-072, a retitle, interface             | 73.0 / 88.9              | 250 / 500   | Yes      |
+| STR-072, Starts on, interface             | 60.0 / 82.5              | 250 / 500   | Yes      |
+| STR-072, a move, interface                | 123.9 / 135.5            | 250 / 500   | Yes      |
+| STR-072, a demotion, interface            | 90.2 / 110.1             | 250 / 500   | Yes      |
+| STR-072, a promotion, interface           | 87.7 / 99.4              | 250 / 500   | Yes      |
+| CNT-179, opening from the list, whole     | 332.3 / 361.5            | 1000 / 2000 | Yes      |
+| CNT-179, opening cold, whole              | 432.8 / 449.9            | 1000 / 2000 | Yes      |
+| CNT-179, a jump, whole                    | 24.0 / 27.3              | 250 / 500   | Yes      |
 
 **The margin is less than one run shows.** The open from the list is the budget nearest its number,
 and it moves with the machine: the final review's run on the same machine, before the fixture held
