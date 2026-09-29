@@ -10,6 +10,7 @@ import {
   readAreaArguments,
   readDraftInput,
   recordRun,
+  type Git,
   resolveOutputPath,
   runGate,
   writeListing,
@@ -432,6 +433,14 @@ describe('a local run, recorded and gated by the CLI', () => {
     mkdirSync(join(root, '.trace-results'));
     return root;
   }
+  /** The commit a run is recorded at, and a repository whose tree is clean and which holds it. */
+  const COMMIT = 'c0ffee'.padEnd(40, '0');
+  const git = (over: Partial<Git> = {}): Git => ({
+    head: () => COMMIT,
+    status: () => '',
+    ancestry: () => 'ancestor',
+    ...over,
+  });
   const writeReport = (root: string, name: string, report: unknown) =>
     writeFileSync(join(root, '.trace-results', `${name}.json`), JSON.stringify(report));
   const recorded = (root: string) => join(root, 'docs', 'audits', '0.0.2', 'word.json');
@@ -440,12 +449,14 @@ describe('a local run, recorded and gated by the CLI', () => {
     const root = repository();
     try {
       writeReport(root, 'worker', workerReport());
-      expect(recordRun(root, ['0.0.2', 'word'])).toBe(0);
+      expect(recordRun(root, ['0.0.2', 'word'], git())).toBe(0);
       const written = readFileSync(recorded(root), 'utf8');
       expect(written).not.toContain('Somewhere');
       expect(written).not.toContain('message');
       expect(JSON.parse(written)).toMatchObject({
         success: true,
+        commit: COMMIT,
+        clean: true,
         counts: { total: 2, passed: 2, failed: 0, skipped: 0 },
       });
     } finally {
@@ -457,7 +468,7 @@ describe('a local run, recorded and gated by the CLI', () => {
     const root = repository();
     try {
       writeReport(root, 'worker', workerReport(false));
-      expect(recordRun(root, ['0.0.2', 'word'])).toBe(1);
+      expect(recordRun(root, ['0.0.2', 'word'], git())).toBe(1);
       expect(existsSync(recorded(root))).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -468,7 +479,7 @@ describe('a local run, recorded and gated by the CLI', () => {
     const root = repository();
     try {
       writeReport(root, 'worker', workerReport(true, 1));
-      expect(recordRun(root, ['0.0.2', 'word'])).toBe(1);
+      expect(recordRun(root, ['0.0.2', 'word'], git())).toBe(1);
       expect(existsSync(recorded(root))).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -478,12 +489,41 @@ describe('a local run, recorded and gated by the CLI', () => {
   it('refuses where there is no report to reduce, or no release and name a record can have', () => {
     const root = repository();
     try {
-      expect(recordRun(root, ['0.0.2', 'word'])).toBe(1);
+      expect(recordRun(root, ['0.0.2', 'word'], git())).toBe(1);
       writeReport(root, 'worker', workerReport());
-      expect(recordRun(root, ['0.0.2'])).toBe(1);
-      expect(recordRun(root, ['../0.0.2', 'word'])).toBe(1);
-      expect(recordRun(root, ['0.0.2', 'Word Run'])).toBe(1);
+      expect(recordRun(root, ['0.0.2'], git())).toBe(1);
+      expect(recordRun(root, ['../0.0.2', 'word'], git())).toBe(1);
+      expect(recordRun(root, ['0.0.2', 'Word Run'], git())).toBe(1);
       expect(existsSync(join(root, 'docs', 'audits'))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // The final review of W15.1: the report says where it was run, and a run is recorded only from a
+  // clean tree, soon after it ran.
+  it('refuses to record from a working tree with uncommitted changes, writing nothing', () => {
+    const root = repository();
+    try {
+      writeReport(root, 'worker', workerReport());
+      expect(
+        recordRun(root, ['0.0.2', 'word'], git({ status: () => ' M apps/worker/src/a.test.ts' })),
+      ).toBe(1);
+      expect(existsSync(recorded(root))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses a report of a run more than four hours old, writing nothing', () => {
+    const root = repository();
+    try {
+      const now = Date.now();
+      writeReport(root, 'worker', { ...workerReport(), startTime: now - 5 * 60 * 60 * 1000 });
+      expect(recordRun(root, ['0.0.2', 'word'], git(), now)).toBe(1);
+      expect(existsSync(recorded(root))).toBe(false);
+      writeReport(root, 'worker', { ...workerReport(), startTime: now - 3 * 60 * 60 * 1000 });
+      expect(recordRun(root, ['0.0.2', 'word'], git(), now)).toBe(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -493,7 +533,7 @@ describe('a local run, recorded and gated by the CLI', () => {
     const root = repository();
     try {
       writeReport(root, 'worker', workerReport());
-      expect(recordRun(root, ['0.0.2', 'word'])).toBe(0);
+      expect(recordRun(root, ['0.0.2', 'word'], git())).toBe(0);
       // CI's own run, where the Word test is skipped.
       writeReport(root, 'worker', {
         ...workerReport(),
@@ -501,10 +541,22 @@ describe('a local run, recorded and gated by the CLI', () => {
           { assertionResults: [{ fullName: 'Word measured QQQ-001 holds', status: 'skipped' }] },
         ],
       });
-      // No record beside the report yet: the row names one.
-      expect(runGate(root, ran, undefined)).toBe(1);
+      // No record beside the report yet: the row names one. Then an empty one, which records nothing.
+      expect(runGate(root, ran, undefined, git())).toBe(1);
+      writeFileSync(join(root, 'docs', 'audits', '0.0.2', 'word.md'), '');
+      expect(runGate(root, ran, undefined, git())).toBe(1);
       writeFileSync(join(root, 'docs', 'audits', '0.0.2', 'word.md'), '# A run\n');
-      expect(runGate(root, ran, undefined)).toBe(0);
+      expect(runGate(root, ran, undefined, git())).toBe(0);
+      // The run's commit is asked of this branch's history, by the report's own commit.
+      const asked: string[] = [];
+      const elsewhere = git({
+        ancestry: (commit) => {
+          asked.push(commit);
+          return 'not-ancestor';
+        },
+      });
+      expect(runGate(root, ran, undefined, elsewhere)).toBe(1);
+      expect(asked).toEqual([COMMIT]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

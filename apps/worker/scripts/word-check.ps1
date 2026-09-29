@@ -35,11 +35,13 @@
 # assert nothing a measurement needs, and no copy saved. Word cannot be pinned, so its version and build
 # are read on every run and recorded (W15-E).
 #
-# Tracks the WINWORD process it started and stops only that one, if Quit leaves it running. Where
-# starting Word started no process of its own, it attached to one somebody else runs, and it closes
-# only its own documents and leaves that Word alone.
+# It drives a Word of its own and never a person's (the final review of W15.1; word-own.ps1): while any
+# Word is running it refuses, before it asks COM for Word, since COM would hand it that Word and the
+# check hides the Word it drives; and it drives only the WINWORD process that starting Word started,
+# releasing any other without touching it. It stops only that process, if Quit leaves it running.
 param([Parameter(Mandatory = $true)][string]$Folder, [switch]$ExportOnly)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'word-own.ps1')
 
 # Word's enumerations, by the values this uses.
 $wdActiveEndSectionNumber = 2
@@ -307,8 +309,16 @@ function Update($doc) {
 
 $files = @(Get-ChildItem -Path $Folder -Filter '*.docx' | Where-Object { $_.BaseName -notlike '*-saved' } | Sort-Object Name)
 $before = @(Get-Process WINWORD -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
-$word = New-Object -ComObject Word.Application
-$mine = @(Get-Process WINWORD -ErrorAction SilentlyContinue | Where-Object { $before -notcontains $_.Id } | ForEach-Object { $_.Id })
+$refusal = Get-WordRefusal $before
+if ($refusal) { throw $refusal }
+$word = [Activator]::CreateInstance([type]::GetTypeFromProgID('Word.Application'))
+$own = Get-OwnWord -Before $before -After @(Get-Process WINWORD -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
+if ($null -eq $own) {
+  # Somebody's Word started between the look and the ask, and COM handed it over: let it go untouched.
+  [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($word)
+  throw (Get-WordRefusal @(Get-Process WINWORD -ErrorAction SilentlyContinue | ForEach-Object { $_.Id }))
+}
+$mine = @($own)
 $word.Visible = $false
 $word.DisplayAlerts = 0
 $results = @()

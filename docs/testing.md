@@ -504,7 +504,11 @@ a fraction where the heading and the caption stand and as its runs alone in the 
 measurement needs of Word and no more: `word-check.ps1 -ExportOnly` opens each document, updates its
 contents and every field, repaginates, exports Word's own PDF and reports Word's `Version` and `Build` -
 Word updates itself and cannot be pinned, so both are read on every run - with none of the check's
-reads and no copy saved. `apps/worker/src/word-export.test.ts`, behind the same switch, holds it over
+reads and no copy saved. It starts a Word of its own and never takes over one already running: if
+Word is open, it refuses and asks for it to be closed, since the check runs Word hidden. What it cannot
+avoid is what Word writes into its own registry settings on every document it opens - its Reading
+Locations, its Resiliency timestamps and its usage-metrics store - as it would for a person.
+`apps/worker/src/word-export.test.ts`, behind the same switch, holds it over
 the conformance kit's measured fixture under the default theme and layout, written by `writeDocx` and
 compiled through the current template from one `assemble`, and reads Word's PDF with the kit's reader:
 every token of the fixture found in it, each face by its embedded program's PostScript name, and each

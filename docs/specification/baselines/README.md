@@ -102,23 +102,31 @@ A `local-run` row is for a requirement only a run where Word is can verify (the
 tests naming it are skipped there, and a skip never verifies. The whole worker suite is run on the
 reference machine with `ALLOY_WORD_CHECK=1`, and `pnpm trace record-run <version> <name>` reduces its
 report, `.trace-results/worker.json`, to `docs/audits/<version>/<name>.json` - each test's full name and
-status, the counts and the start time, and no path, no message and nothing of the machine - refusing
-a failed run and a run of fewer of the worker's test files than it has. The person writes the record
-beside it, `<name>.md`: who ran it, when, the commit, Word's version and build, and what Word showed.
+status, the counts and the start time, stamped with `git rev-parse HEAD` and whether the working tree
+was clean, and no path, no message and nothing of the machine. It refuses a failed run, a run of fewer
+of the worker's test files than it has, a report more than four hours old, and a working tree with
+uncommitted changes. The person writes the record beside it, `<name>.md`: who ran it, when, the
+commit, Word's version and build, and what Word showed.
 
 **The gate meets a `local-run` requirement** when it is eligible as any other is - in force and
-touched by no corpus problem; the record and the report are there and of this release; the report is
-a run that did not fail; by that report the requirement is Verified - a test title cites it, and every
-test naming it passed and none was skipped; and in CI's own results no test naming it failed, a skip
-being expected there. Where one of these does not hold it says which. `pnpm trace verify` is
-unchanged, and reads `.trace-results` alone: in CI such a requirement reads Covered, and after a local
-run with Word, Verified. The evidence pack names the record and the report's counts, and lists the
-report's tests naming the requirement.
+touched by no corpus problem; the record and the report are there and of this release, and the record
+is not empty; the report has the shape `record-run` writes - its commit, its tree's state and counts
+that agree with its tests; it covers every one of the worker's test files; it was recorded from a
+clean tree, at a commit in this branch's history where the clone holds the history to ask (CI's
+shallow checkout does not, and the pack names the commit); the run did not fail; a test title under
+`apps/worker/src/` cites the requirement; by that report it is Verified - every test naming it passed
+and none was skipped; and in CI's own results no test naming it failed, a skip being expected there.
+Where one of these does not hold it says which. `pnpm trace verify` is unchanged, and reads
+`.trace-results` alone: in CI such a requirement reads Covered, and after a local run with Word,
+Verified. The evidence pack names the record, the run's commit and tree, and the report's counts, and
+lists the report's tests naming the requirement.
 
-**What the gate cannot see** is that the run was made at this release's commit: the report carries no
-commit, and the record names it. What holds it is the procedure - the run is made on the release's
-commit and recorded before its baseline cites it - which a reviewer checks against the record, as an
-attestation's.
+**What the gate cannot see.** The report is data somebody committed, and the gate takes it as written:
+it holds the report to the shape and the counts `record-run` writes, but a report typed by hand to that
+shape reads the same, and nothing in it proves that the tests it lists ran, where it says, or on Word.
+**A reviewer trusts it as far as the person who committed it**, as with an attestation - which is why
+the row names that person and the record says what they saw, and why the procedure holds the rest: the
+run is made at the release's commit, from a clean tree, and recorded before its baseline cites it.
 
 `test` is the default precisely so that the common case costs nothing: most requirements are
 verified by a test naming them, and a table with 1,306 rows saying so would be the "new column in

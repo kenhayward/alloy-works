@@ -1,6 +1,6 @@
 // The query surface over the committed corpus. Thin by design: what is worth testing lives in
 // format.ts and state.ts, which are pure and tested without a process.
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { EOL } from 'node:os';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
@@ -23,7 +23,7 @@ import {
   nextIdentifier,
   search,
 } from './format.js';
-import { gate } from './gate.js';
+import { gate, type LocalRunFacts } from './gate.js';
 import { type Baseline, localRunDeclared, type TraceModel, TRANCHES, validate } from './model.js';
 import { type AreaIndexEntry, parseAreaIndex } from './parse/areas.js';
 import { parseBaseline } from './parse/baseline.js';
@@ -387,6 +387,45 @@ function readIn(root: string): (record: string) => string | undefined {
   return (record) => (exists(record) ? readFileSync(join(root, record), 'utf8') : undefined);
 }
 
+/**
+ * What the CLI asks of git for a local run, handed in so a test can answer for a repository of its
+ * own: the commit checked out, `git status --porcelain`, and whether a commit is in this branch's
+ * history - `unknown` where git cannot say, as in CI's shallow checkout or outside a repository.
+ */
+export interface Git {
+  readonly head: () => string;
+  readonly status: () => string;
+  readonly ancestry: (commit: string) => 'ancestor' | 'not-ancestor' | 'unknown';
+}
+
+/** Git, asked of the repository at `root`. */
+export function gitIn(root: string): Git {
+  const run = (...args: string[]) => execFileSync('git', args, { cwd: root, encoding: 'utf8' });
+  return {
+    head: () => run('rev-parse', 'HEAD').trim(),
+    status: () => run('status', '--porcelain'),
+    ancestry: (commit) => {
+      const asked = spawnSync('git', ['merge-base', '--is-ancestor', commit, 'HEAD'], {
+        cwd: root,
+      });
+      return asked.status === 0 ? 'ancestor' : asked.status === 1 ? 'not-ancestor' : 'unknown';
+    },
+  };
+}
+
+/** The oldest a run's report may be when it is recorded: a whole run takes minutes, not hours. */
+const LOCAL_RUN_FRESH_MS = 4 * 60 * 60 * 1000;
+
+/** The worker's test files, which a local run of its whole suite covers. */
+function workerTestFiles(root: string): number {
+  return testFilesIn(root).filter((file) => file.startsWith('apps/worker/src/')).length;
+}
+
+/** What the gate is told of the repository at `root` for a `local-run` row. */
+function localRunFacts(root: string, git: Git): LocalRunFacts {
+  return { testFiles: workerTestFiles(root), ancestry: git.ancestry };
+}
+
 /** The worker's report, which a local run of its whole suite on a machine with Word writes. */
 const LOCAL_RUN_REPORT = 'worker';
 
@@ -402,7 +441,12 @@ const RECORD_NAME = /^[a-z0-9-]+$/;
  * which the Word check alone leaves - since the gate is told the whole suite ran. Exported so a test
  * can run it over a repository of its own.
  */
-export function recordRun(root: string, args: readonly string[]): number {
+export function recordRun(
+  root: string,
+  args: readonly string[],
+  git: Git = gitIn(root),
+  now: number = Date.now(),
+): number {
   const [version, name] = args;
   if (version === undefined || name === undefined) {
     return fail('record-run needs a release and a name, such as record-run 0.126.0 word.');
@@ -419,14 +463,28 @@ export function recordRun(root: string, args: readonly string[]): number {
       `No ${DEFAULT_RESULTS_DIR}/${LOCAL_RUN_REPORT}.json. Run the whole worker suite with ALLOY_WORD_CHECK=1 first.`,
     );
   }
+  // Recorded at a commit a reviewer can check out, and only from a tree that is that commit.
+  if (git.status().trim() !== '') {
+    return fail(
+      'The working tree has uncommitted changes - refusing to record a run of it. Commit them, run ' +
+        'the whole worker suite again, and record that run.',
+    );
+  }
   const raw = JSON.parse(readFileSync(path, 'utf8')) as unknown;
-  const reduced = reduceRun(raw);
+  const reduced = reduceRun(raw, { commit: git.head(), clean: true });
+  if (now - reduced.startTime > LOCAL_RUN_FRESH_MS) {
+    const hours = ((now - reduced.startTime) / (60 * 60 * 1000)).toFixed(1);
+    return fail(
+      `${DEFAULT_RESULTS_DIR}/${LOCAL_RUN_REPORT}.json is of a run ${hours} hours ago - refusing to ` +
+        'record it. Run the whole worker suite again and record that run.',
+    );
+  }
   if (!reduced.success) {
     return fail(
       `${DEFAULT_RESULTS_DIR}/${LOCAL_RUN_REPORT}.json reports a failed run - refusing to record it.`,
     );
   }
-  const files = testFilesIn(root).filter((file) => file.startsWith('apps/worker/src/')).length;
+  const files = workerTestFiles(root);
   if (reduced.testResults.length < files) {
     return fail(
       `${DEFAULT_RESULTS_DIR}/${LOCAL_RUN_REPORT}.json reports ${reduced.testResults.length} of the worker's ` +
@@ -438,7 +496,8 @@ export function recordRun(root: string, args: readonly string[]): number {
   writeFileSync(join(root, record), `${JSON.stringify(reduced, null, 2)}\n`);
   const { total, passed, failed, skipped } = reduced.counts;
   console.log(
-    `Wrote ${record}: ${total} tests, ${passed} passed, ${failed} failed, ${skipped} skipped.`,
+    `Wrote ${record}: ${total} tests, ${passed} passed, ${failed} failed, ${skipped} skipped, ` +
+      `at commit ${reduced.commit}.`,
   );
   return 0;
 }
@@ -464,7 +523,12 @@ function localRuns(root: string, baseline: Baseline): Map<string, string> {
  * `.trace-results` and the records its attestations name, all read under `root`. Exported so a test can
  * run it over a repository of its own; `main` runs it over this one.
  */
-export function runGate(root: string, model: TraceModel, argument: string | undefined): number {
+export function runGate(
+  root: string,
+  model: TraceModel,
+  argument: string | undefined,
+  git: Git = gitIn(root),
+): number {
   const files = baselineFiles(root);
   if (files.length === 0) return fail(`No baseline in docs/specification/${BASELINES_DIR}.`);
 
@@ -493,7 +557,14 @@ export function runGate(root: string, model: TraceModel, argument: string | unde
     return 1;
   }
 
-  const result = gate(baseline, model, results.outcomes, recordIn(root), readIn(root));
+  const result = gate(
+    baseline,
+    model,
+    results.outcomes,
+    recordIn(root),
+    readIn(root),
+    localRunFacts(root, git),
+  );
   const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
   console.log(formatGate(result, includedIds));
   return result.met === result.total && result.declarationProblems.length === 0 ? 0 : 1;
@@ -683,6 +754,7 @@ function main(argv: string[]): number {
           results.outcomes,
           recordIn(REPO_ROOT),
           readIn(REPO_ROOT),
+          localRunFacts(REPO_ROOT, gitIn(REPO_ROOT)),
         );
         if (result.met !== result.total || result.declarationProblems.length > 0) {
           const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));

@@ -290,15 +290,23 @@ export async function readPaint(bytes: Buffer): Promise<Paint> {
           const [x2, y2] = apply(ctm, extent[2]!, extent[3]!);
           const box: Box = [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
           const how = names[painting] ?? '';
-          if (/^(eoFill|fill|fillStroke|eoFillStroke)$/.test(how)) {
+          // pdf.js's names for painting a path: `B`, `B*`, `b` and `b*` both fill and stroke it.
+          const filled =
+            /^(eoFill|fill|fillStroke|eoFillStroke|closeFillStroke|closeEOFillStroke)$/.test(how);
+          const stroked =
+            /^(stroke|closeStroke|fillStroke|eoFillStroke|closeFillStroke|closeEOFillStroke)$/.test(
+              how,
+            );
+          if (filled) {
             fills.push({ page: number, fill, box });
-            // A rule painted as a filled rectangle, as Word paints a table's: as thick as it is thin.
+            // A rule painted as a filled rectangle, as Word paints a table's: as thick as it is thin -
+            // unless it is stroked as well, which records it as the rule it is, once.
             const thickness = Math.min(box[2] - box[0], box[3] - box[1]);
-            if (thickness > 0 && thickness <= THIN) {
+            if (!stroked && thickness > 0 && thickness <= THIN) {
               strokes.push({ page: number, stroke: fill, box, width: thickness });
             }
           }
-          if (/^(stroke|closeStroke|fillStroke|eoFillStroke)$/.test(how)) {
+          if (stroked) {
             const scale = Math.sqrt(Math.abs(ctm[0] * ctm[3] - ctm[1] * ctm[2]));
             strokes.push({ page: number, stroke, box, width: lineWidth * scale });
           }

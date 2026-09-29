@@ -1,7 +1,7 @@
 import type { Problem } from './check.js';
 import type { GateResult } from './gate.js';
 import { localRunDeclared, TRANCHES, type Baseline, type TraceModel } from './model.js';
-import { readRun, type TestOutcome } from './results.js';
+import { readRecordedRun, type TestOutcome } from './results.js';
 import { type Trace, traceOf } from './state.js';
 
 export interface PackDocument {
@@ -65,13 +65,16 @@ function evidenceFor(
   const declared = baseline.verification.find((row) => row.id === id);
   if (declared?.kind === 'attestation') return `Attested by ${declared.by}`;
   if (declared?.kind === 'local-run') {
-    const run = readRun(runs?.get(id) ?? '');
+    const read = readRecordedRun(runs?.get(id) ?? '');
     const at = localRunDeclared(declared.by, baseline.name);
     const report = 'report' in at ? at.report : 'beside its record';
-    if (run === undefined) return `Run locally by ${declared.by}; its report ${report} not read`;
-    const { total, passed, failed, skipped } = run.counts;
+    if ('refused' in read) return `Run locally by ${declared.by}; its report ${report} not read`;
+    const { commit, clean, files, counts } = read.run;
+    const { total, passed, failed, skipped } = counts;
     return (
-      `Run locally by ${declared.by}; its report ${report} holds ${total} tests: ` +
+      `Run locally by ${declared.by}, at commit ${commit} from ` +
+      `${clean ? 'a clean working tree' : 'a working tree with uncommitted changes'}; ` +
+      `its report ${report} holds ${total} tests in ${files} test file${files === 1 ? '' : 's'}: ` +
       `${passed} passed, ${failed} failed, ${skipped} skipped`
     );
   }
@@ -246,7 +249,8 @@ function results(input: PackInput): PackDocument {
       const verdict = verdictFor(inclusion.id, result);
 
       if (declared?.kind === 'local-run') {
-        const named = readRun(input.runs?.get(inclusion.id) ?? '')?.outcomes.get(inclusion.id);
+        const read = readRecordedRun(input.runs?.get(inclusion.id) ?? '');
+        const named = 'run' in read ? read.run.outcomes.get(inclusion.id) : undefined;
         return named === undefined
           ? [
               [

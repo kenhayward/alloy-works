@@ -11,7 +11,7 @@ import {
   type VERIFICATION_KINDS,
   type Verification,
 } from './model.js';
-import { readRun, type TestOutcome } from './results.js';
+import { readRecordedRun, type TestOutcome } from './results.js';
 import { traceOf } from './state.js';
 
 export type Unmet = { id: string; kind: (typeof VERIFICATION_KINDS)[number]; why: string };
@@ -42,6 +42,20 @@ export interface DeclarationProblem {
  * somebody switches off. `pnpm trace gate` (stage 3, task 4) is what turns this into output and an
  * exit code.
  */
+/**
+ * What the gate is told of the repository for a `local-run` row, asked rather than read so it stays
+ * pure: how many test files the worker's suite has, which a whole run of it must cover; and whether a
+ * commit is in this branch's history - `unknown` where the clone holds no history to ask, as CI's
+ * shallow checkout does not.
+ */
+export interface LocalRunFacts {
+  readonly testFiles: number;
+  readonly ancestry: (commit: string) => 'ancestor' | 'not-ancestor' | 'unknown';
+}
+
+/** Where a local run's tests are: the worker's suite, the one suite run where Word is. */
+const LOCAL_RUN_TESTS = 'apps/worker/src/';
+
 export interface GateResult {
   readonly baseline: string;
   readonly declaredAt: string;
@@ -68,6 +82,8 @@ export function gate(
    * `recordExists` is, so the gate stays pure; asked only for a path of this release a row names.
    */
   readRecord: (path: string) => string | undefined,
+  /** For a `local-run` row: the worker's test files and the commit's place in history. */
+  facts: LocalRunFacts,
 ): GateResult {
   const requirementById = new Map(
     model.requirements.map((requirement) => [requirement.id, requirement]),
@@ -201,15 +217,39 @@ export function gate(
       if (!recordExists(declared.record)) {
         return `${id}'s local run names its record ${declared.record}, which is not there`;
       }
+      if ((readRecord(declared.record) ?? '').trim() === '') {
+        return `${id}'s local run's record ${declared.record} is empty`;
+      }
       const text = recordExists(declared.report) ? readRecord(declared.report) : undefined;
       if (text === undefined) {
         return `${id}'s local run has no report ${declared.report} beside its record - run pnpm trace record-run`;
       }
-      const run = readRun(text);
-      if (run === undefined) {
-        return `${id}'s local run's report ${declared.report} is not a report of a run`;
+      const read = readRecordedRun(text);
+      if ('refused' in read) {
+        return read.refused === 'miscounted'
+          ? `${id}'s local run's report ${declared.report} counts other tests than it holds`
+          : `${id}'s local run's report ${declared.report} is not a report of a run`;
+      }
+      const { run } = read;
+      if (run.files < facts.testFiles) {
+        return (
+          `${id}'s local run's report ${declared.report} covers ${run.files} of the worker's ` +
+          `${facts.testFiles} test files - the whole suite is the run`
+        );
+      }
+      if (!run.clean) {
+        return `${id}'s local run was made from a working tree with uncommitted changes, by its report ${declared.report}`;
+      }
+      if (facts.ancestry(run.commit) === 'not-ancestor') {
+        return `${id}'s local run was made at ${run.commit}, which is not in this branch's history`;
       }
       if (!run.success) return `${id}'s local run failed, by its report ${declared.report}`;
+      const inWorker = model.citations.some(
+        (each) => each.id === id && each.kind === 'title' && each.file.startsWith(LOCAL_RUN_TESTS),
+      );
+      if (!inWorker) {
+        return `${id} is cited by no test title under ${LOCAL_RUN_TESTS}, where a local run's tests are`;
+      }
       if (traceOf(id, model, run.outcomes)?.state !== 'Verified') {
         const there = run.outcomes.get(id);
         return there === undefined

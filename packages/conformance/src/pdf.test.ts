@@ -217,6 +217,14 @@ describe("the reader, over what Word's PDF is made of, in PDFs of its own", () =
     expect(paint.fills).toHaveLength(3);
   });
 
+  it('reads a thin rectangle both filled and stroked as one rule, not two', async () => {
+    const paint = await readPaint(
+      onePage('0 0 0 rg 0 0 0 RG 0.5 w 72 700 400 0.96 re B\n72 650 400 0.96 re b*'),
+    );
+    expect(paint.strokes).toHaveLength(2);
+    expect(paint.fills).toHaveLength(2);
+  });
+
   it('moves each character on by the character spacing the run is set with, as a reader sees it', async () => {
     const plain = await readPaint(onePage('BT /F1 10 Tf 1 0 0 1 72 700 Tm (AB CD) Tj ET'));
     const spaced = await readPaint(onePage('BT /F1 10 Tf 2 Tc 1 0 0 1 72 700 Tm (AB CD) Tj ET'));

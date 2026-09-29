@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { checkCoherence, parseResults, readRun, reduceRun, reportsForEvidence } from './results.js';
+import {
+  checkCoherence,
+  parseResults,
+  readRecordedRun,
+  reduceRun,
+  reportsForEvidence,
+} from './results.js';
 
 const NOW = 1_800_000_000_000;
 
@@ -241,10 +247,15 @@ describe('reducing a local run for its record', () => {
     ],
   };
 
-  it('keeps each test by its full name and status, the counts and the start time, and nothing more', () => {
-    expect(reduceRun(full)).toEqual({
+  const COMMIT = 'c0ffee'.padEnd(40, '0');
+  const at = { commit: COMMIT, clean: true };
+
+  it('keeps each test by its full name and status, the counts, the start time and the commit it was recorded at, and nothing more', () => {
+    expect(reduceRun(full, at)).toEqual({
       success: true,
       startTime: NOW,
+      commit: COMMIT,
+      clean: true,
       counts: { total: 3, passed: 1, failed: 0, skipped: 2 },
       testResults: [
         {
@@ -256,20 +267,21 @@ describe('reducing a local run for its record', () => {
         },
       ],
     });
-    const written = JSON.stringify(reduceRun(full));
+    const written = JSON.stringify(reduceRun(full, at));
     for (const kept of ['Somewhere', 'Ada/', 'message', 'duration', 'meta', 'title"']) {
       expect(written).not.toContain(kept);
     }
   });
 
   it('reads back as the report it was reduced from, to the same outcomes', () => {
-    const reduced = readRun(JSON.stringify(reduceRun(full)));
-    expect(reduced?.success).toBe(true);
-    expect(reduced?.counts).toEqual({ total: 3, passed: 1, failed: 0, skipped: 2 });
-    expect(reduced?.outcomes).toEqual(parseResults([full]));
+    const read = readRecordedRun(JSON.stringify(reduceRun(full, at)));
+    if ('refused' in read) throw new Error(`refused: ${read.refused}`);
+    expect(read.run).toMatchObject({ success: true, commit: COMMIT, clean: true, files: 1 });
+    expect(read.run.counts).toEqual({ total: 3, passed: 1, failed: 0, skipped: 2 });
+    expect(read.run.outcomes).toEqual(parseResults([full]));
   });
 
   it('refuses a report that is not a Vitest report', () => {
-    expect(() => reduceRun({ success: true })).toThrow(/testResults/);
+    expect(() => reduceRun({ success: true }, at)).toThrow(/testResults/);
   });
 });

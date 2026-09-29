@@ -17,13 +17,19 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   follows the letter spacing Word adds to some lines.
 - **A quick Word export for measuring.** The Word check can now open each document in Word, update
   it and export Word's own PDF without its slower readings, reporting Word's version and build every
-  time, since Word cannot be pinned to one.
+  time, since Word cannot be pinned to one. The check now always starts a Word of its own: if Word is
+  already open it stops and asks you to close it, rather than taking over your Word and hiding its
+  windows as it could before.
 - **A release can now count a check only a machine with Word can run.** A release's list of what it
   answers for can name a local run - who ran it, when, and its record - and `pnpm trace record-run`
   keeps the run's results beside that record, test names and results only, with no file paths or
-  messages. The release check counts such a requirement only when that record and its results are
-  there for this release, the run passed, every test naming the requirement passed in it with none
-  skipped, and none failed in the automatic checks.
+  messages, stamped with the commit it ran at - and only from a clean working copy, soon after the run.
+  The release check counts such a requirement only when that record and its results are there for
+  this release, the record is not empty, the results cover the whole of the worker's tests and agree
+  with their own counts, the run was made from a clean working copy at a commit in the branch's
+  history, the run passed, every test naming the requirement passed in it with none skipped, and none
+  failed in the automatic checks. The results are taken as the person who committed them wrote them,
+  as a signed-off check is.
 
 ## 0.125.3 - 2026-09-29 (PR #347)
 

@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Problem } from './check.js';
-import { gate } from './gate.js';
+import { gate, type LocalRunFacts } from './gate.js';
 
 /** No record under docs/audits/ is there: these baselines name none, or name one to be refused. */
 const noRecords = (): boolean => false;
 /** And none is read: a local-run's report is handed over only where a test hands one. */
 const unread = (): undefined => undefined;
+/** And no local run to be told of. */
+const noRun: LocalRunFacts = { testFiles: 0, ancestry: () => 'unknown' };
 import type { Baseline, Requirement, TraceModel } from './model.js';
 import { packDocuments } from './pack.js';
 
@@ -52,7 +54,7 @@ describe('packing the evidence pack', () => {
       designs: [{ document: 'one.md', owns: [{ id: 'ZZZ-001', howItIsMet: 'a' }] }],
       citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
     });
-    const result = gate(b, m, outcomes(), noRecords, unread);
+    const result = gate(b, m, outcomes(), noRecords, unread, noRun);
 
     const documents = packDocuments({
       version: '9.9.9',
@@ -82,6 +84,7 @@ describe('packing the evidence pack', () => {
       new Map([['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a'] }]]),
       noRecords,
       unread,
+      noRun,
     );
 
     const [readme] = packDocuments({
@@ -110,6 +113,7 @@ describe('packing the evidence pack', () => {
       new Map([['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a'] }]]),
       noRecords,
       unread,
+      noRun,
     );
 
     const [, matrix] = packDocuments({
@@ -139,6 +143,7 @@ describe('packing the evidence pack', () => {
       new Map([['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a'] }]]),
       noRecords,
       unread,
+      noRun,
     );
 
     const documents = packDocuments({
@@ -162,7 +167,7 @@ describe('packing the evidence pack', () => {
       id: 'ZZZ-003',
       detail: 'allocated more than once, invented for the fixture',
     };
-    const result = { ...gate(b, m, outcomes(), noRecords, unread), problems: [problem] };
+    const result = { ...gate(b, m, outcomes(), noRecords, unread, noRun), problems: [problem] };
 
     const [, , gaps] = packDocuments({
       version: '9.9.9',
@@ -181,7 +186,7 @@ describe('packing the evidence pack', () => {
     const m = model({
       requirements: [requirement('ZZZ-001'), requirement('ZZZ-002', { tranche: 'T2' })],
     });
-    const result = gate(b, m, outcomes(), noRecords, unread);
+    const result = gate(b, m, outcomes(), noRecords, unread, noRun);
 
     const [, , gaps] = packDocuments({
       version: '9.9.9',
@@ -198,7 +203,7 @@ describe('packing the evidence pack', () => {
   it("gaps.md names an excluded requirement's id and reason, which is not a statement leak", () => {
     const b = baseline({ excluded: [{ id: 'ZZZ-002', reason: 'invented exclusion reason' }] });
     const m = model({});
-    const result = gate(b, m, outcomes(), noRecords, unread);
+    const result = gate(b, m, outcomes(), noRecords, unread, noRun);
 
     const [, , gaps] = packDocuments({
       version: '9.9.9',
@@ -221,7 +226,7 @@ describe('packing the evidence pack', () => {
     const m = model({
       requirements: [requirement('ZZZ-001'), requirement('ZZZ-002')],
     });
-    const result = gate(b, m, outcomes(), noRecords, unread);
+    const result = gate(b, m, outcomes(), noRecords, unread, noRun);
 
     const [, , gaps] = packDocuments({
       version: '9.9.9',
@@ -240,7 +245,7 @@ describe('packing the evidence pack', () => {
       verification: [{ id: 'ZZZ-001', kind: 'attestation', by: 'Ada Lovelace, 2026-09-13' }],
     });
     const m = model({});
-    const result = gate(b, m, outcomes(), noRecords, unread);
+    const result = gate(b, m, outcomes(), noRecords, unread, noRun);
 
     const [, matrix] = packDocuments({
       version: '9.9.9',
@@ -256,7 +261,7 @@ describe('packing the evidence pack', () => {
 
   // W15-D: the pack names a local run's record and the counts of the report reduced beside it, and
   // lists the tests in that report that name the requirement.
-  it("names the record of a local run and its report's counts in matrix.md, and its tests in results.md", () => {
+  it("names the record of a local run, its commit and its report's counts in matrix.md, and its tests in results.md", () => {
     const by = 'Ada, 2026-09-30, docs/audits/9.9.9/word.md';
     const b = baseline({
       name: '9.9.9',
@@ -266,11 +271,14 @@ describe('packing the evidence pack', () => {
     const m = model({
       requirements: [requirement('QQQ-001')],
       designs: [{ document: 'one.md', owns: [{ id: 'QQQ-001', howItIsMet: 'a' }] }],
-      citations: [{ id: 'QQQ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
+      citations: [{ id: 'QQQ-001', file: 'apps/worker/src/a.test.ts', line: 1, kind: 'title' }],
     });
+    const commit = 'c0ffee'.padEnd(40, '0');
     const report = JSON.stringify({
       success: true,
       startTime: 1_790_000_000_000,
+      commit,
+      clean: true,
       counts: { total: 3, passed: 2, failed: 0, skipped: 1 },
       testResults: [
         {
@@ -292,6 +300,7 @@ describe('packing the evidence pack', () => {
       outcomes(),
       (path) => path in records,
       (path) => records[path],
+      { testFiles: 1, ancestry: () => 'ancestor' },
     );
     expect(result.met).toBe(1);
 
@@ -305,7 +314,7 @@ describe('packing the evidence pack', () => {
     });
 
     expect(matrix?.body).toContain(
-      `Run locally by ${by}; its report docs/audits/9.9.9/word.json holds 3 tests: 2 passed, 0 failed, 1 skipped`,
+      `Run locally by ${by}, at commit ${commit} from a clean working tree; its report docs/audits/9.9.9/word.json holds 3 tests in 1 test file: 2 passed, 0 failed, 1 skipped`,
     );
     expect(results?.body).toContain(
       '| **QQQ-001** | local-run | Word measured QQQ-001 holds | Met |',
@@ -315,7 +324,7 @@ describe('packing the evidence pack', () => {
   it('marks an unmet requirement in matrix.md with its reason, not a bare pass/fail flag', () => {
     const b = baseline({});
     const m = model({});
-    const result = gate(b, m, outcomes(), noRecords, unread);
+    const result = gate(b, m, outcomes(), noRecords, unread, noRun);
 
     const [, matrix] = packDocuments({
       version: '9.9.9',
@@ -353,7 +362,7 @@ describe('packing the evidence pack', () => {
         },
       ],
     ]);
-    const result = gate(b, m, testOutcomes, noRecords, unread);
+    const result = gate(b, m, testOutcomes, noRecords, unread, noRun);
 
     const [, , , results] = packDocuments({
       version: '9.9.9',
@@ -382,6 +391,7 @@ describe('packing the evidence pack', () => {
       new Map([['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a'] }]]),
       noRecords,
       unread,
+      noRun,
     );
 
     const [, matrix] = packDocuments({
