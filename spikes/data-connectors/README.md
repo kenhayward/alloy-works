@@ -22,8 +22,8 @@ Three networks, as [the brief](../../docs/specification/spikes/Data_Connector_Sp
 
 | Container        | Static IP      | Published        | What it is                                                                                       |
 | ---------------- | -------------- | ---------------- | ------------------------------------------------------------------------------------------------ |
-| `platform-pg`    | 172.31.10.11   | 127.0.0.1:15701  | Postgres standing for the platform's own database - a target case 1 must not reach from a source |
-| `seaweedfs`      | 172.31.10.12   | 127.0.0.1:15704  | Object store standing for the tenant's - another case 1 target                                   |
+| `platform-pg`    | 172.31.10.11   | -                | Postgres standing for the platform's own database - a target case 1 must not reach from a source |
+| `seaweedfs`      | 172.31.10.12   | -                | Object store standing for the tenant's - another case 1 target                                   |
 | `metadata`       | 172.31.10.13   | -                | Stand-in cloud metadata endpoint; the declared metadata address (Docker will not route 169.254) |
 | `idp`            | 172.31.10.14   | -                | Stand-in identity provider (phase-1 stub; phase 2 mints subject tokens here)                     |
 | `caller`         | .10/.20/.30    | 127.0.0.1:15706  | Placement A: reaches sources itself, and sits on the platform network - only code stops it       |
@@ -36,6 +36,11 @@ Three networks, as [the brief](../../docs/specification/spikes/Data_Connector_Sp
 
 The `caller` and `connector` run the same `agent.mjs`; the only difference is which networks compose
 attaches. That is the point of case 1 - the boundary is a fact of the network, not a branch in code.
+
+`platform-pg` and `seaweedfs` publish **no** host port on purpose. On Docker Desktop a published
+port is reachable from a sibling network, which would let the `connector` reach the platform's
+Postgres through the host and defeat the boundary case 1 tests (this is itself a case 1 finding).
+Inspect those two with `docker exec` rather than a published port.
 
 ## Bringing it up and down
 

@@ -43,7 +43,10 @@ services:
     networks:
       aw-dc-platform:
         ipv4_address: 172.31.10.11
-    ports: ["127.0.0.1:15701:5432"]
+    # No published host port ON PURPOSE: on Docker Desktop a published port is reachable from
+    # sibling networks (see the case 1 finding on the published-port leak), which would let the
+    # connector reach the platform's Postgres and defeat the boundary case 1 tests. Inspect this
+    # container with `docker exec` instead.
     volumes: ["platform-pg-data:/var/lib/postgresql"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -57,7 +60,7 @@ services:
     networks:
       aw-dc-platform:
         ipv4_address: 172.31.10.12
-    ports: ["127.0.0.1:15704:8333"]
+    # No published host port, same reason as platform-pg above (the published-port leak).
     volumes: ["seaweed-data:/data"]
 
   metadata:
@@ -154,7 +157,7 @@ services:
     environment:
       PORT: "80"
       API_TOKEN: "fake-api-bearer-token-for-the-spike"
-      REDIRECT_TO: "http://172.31.10.11:5432/"
+      REDIRECT_TO: "http://172.31.10.13/latest/meta-data/iam/security-credentials/"
     networks:
       aw-dc-sources:
         ipv4_address: 172.31.20.23

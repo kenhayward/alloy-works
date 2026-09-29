@@ -88,7 +88,7 @@ async function httpQuery(spec, secret, timeoutMs) {
     });
     const body = await res.text();
     let json = null; try { json = JSON.parse(body); } catch {}
-    return { ok: res.ok, status: res.status, rows: json?.rows ?? json ?? null };
+    return { ok: res.ok, status: res.status, finalUrl: res.url, body: body.slice(0, 200), rows: json?.rows ?? json ?? null };
   } finally {
     clearTimeout(t);
   }

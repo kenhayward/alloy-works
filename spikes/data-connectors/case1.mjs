@@ -63,31 +63,52 @@ async function guardVerdicts() {
 // C - the DAT-006 oracle: conn-test reasons for hostile connections must be uniform and name no
 // internal address; and the raw probe outcome classes show what an ungated test WOULD leak.
 async function oracle() {
-  const cases = [
-    ['refused port (platform pg wrong port)', ADDR.platformPg, 6543],
-    ['open internal service (platform pg)', ADDR.platformPg, 5432],
-    ['filtered/unreachable address', '172.31.99.99', 5432],
-    ['unknown host', 'no-such-host.invalid', 5432],
+  // Two families: hosts the guard DENIES (internal), and hosts the guard ALLOWS but that fail to
+  // connect (a private source that is down/wrong). The oracle is closed only if every reason in each
+  // family is identical and names no address. The raw probe classes show what an ungated test leaks.
+  const denied = [
+    ['internal, refused port (platform pg :6543)', ADDR.platformPg, 6543],
+    ['internal, open service (platform pg :5432)', ADDR.platformPg, 5432],
+    ['internal, metadata endpoint', ADDR.metadata, 80],
   ];
-  const out = { connTestReasons: {}, rawProbeClasses: {} };
-  for (const [name, host, port] of cases) {
+  const allowedButFail = [
+    ['allowed private, refused port (source-pg :6543)', ADDR.sourcePg, 6543],
+    ['allowed private, dark address (:5432)', '172.31.20.200', 5432],
+    ['allowed private, wrong password (source-pg :5432)', ADDR.sourcePg, 5432, 'wrong-password'],
+  ];
+  const out = { deniedReasons: {}, allowedFailReasons: {}, rawProbeClasses: {} };
+  for (const [name, host, port] of denied) {
     const spec = { ...pgSpec(), host, port };
     const t = await post(CALLER, '/conn-test', { spec, guard: true });
-    out.connTestReasons[name] = t.json.result?.reason ?? t.json;
-    const p = await post(CALLER, '/probe', { host, port });
-    out.rawProbeClasses[name] = p.json.outcome;
+    out.deniedReasons[name] = t.json.result?.reason ?? t.json;
+    out.rawProbeClasses[name] = (await post(CALLER, '/probe', { host, port })).json.outcome;
+  }
+  for (const [name, host, port, badpw] of allowedButFail) {
+    const spec = { ...pgSpec(), host, port };
+    if (badpw) spec.sealedSecret = (await import('./config.mjs')).seal(spec.tenantId, badpw);
+    const t = await post(CALLER, '/conn-test', { spec, guard: true });
+    out.allowedFailReasons[name] = t.json.result?.reason ?? t.json;
+    out.rawProbeClasses[name] = (await post(CALLER, '/probe', { host, port })).json.outcome;
   }
   return out;
 }
 
-// D - redirect from an allowed host (fake-api) to a denied one (platform pg).
+// D - redirect from an allowed host (fake-api) to a denied one (the metadata endpoint). The guard
+// runs once, on the initial host; a followed redirect is never re-guarded. Run through both
+// placements: on A the redirect reaches the platform; on C the network blocks it regardless.
 async function redirect() {
   const out = {};
-  for (const follow of [false, true]) {
-    const spec = { ...httpSpec(), url: 'http://fake-api/redirect', followRedirects: follow };
-    const r = await post(CALLER, '/query', { spec });
-    out[follow ? 'followRedirects=true' : 'followRedirects=false'] =
-      { status: r.status, result: r.json.result ?? r.json.error ?? null };
+  for (const [base, role] of [[CALLER, 'A/caller'], [CONNECTOR, 'C/connector']]) {
+    out[role] = {};
+    for (const follow of [false, true]) {
+      const spec = { ...httpSpec(), url: 'http://fake-api/redirect', followRedirects: follow, timeoutMs: 3000 };
+      const r = await post(base, '/query', { spec, exposeSink: true });
+      // Show whether the redirect target's body (the fake metadata credential) came back.
+      out[role][follow ? 'followRedirects=true' : 'followRedirects=false'] =
+        { status: r.status, ok: r.json.result?.ok ?? null, httpStatus: r.json.result?.status ?? null,
+          finalUrl: r.json.result?.finalUrl ?? null, bodyReached: r.json.result?.body ?? null,
+          error: r.json.error ?? null };
+    }
   }
   return out;
 }
