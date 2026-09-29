@@ -8096,9 +8096,27 @@
       "area": "PUB",
       "statement": "Widow and orphan control, keep-with-next and keep-together must be declared by style, passed to each engine as that engine's own rule, and shown by the publishing regression corpus to hold wherever the page allows",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by PUB-106",
       "document": "PUB-publishing-and-output.md",
       "line": 84
+    },
+    {
+      "id": "PUB-106",
+      "area": "PUB",
+      "statement": "Widow and orphan control, keep-with-next and keep-together must be declared by style, passed to the PDF's engine as that engine's own rule, and shown by the publishing regression corpus to hold in the PDF wherever the page allows",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 85
+    },
+    {
+      "id": "PUB-107",
+      "area": "PUB",
+      "statement": "Widow and orphan control, keep-with-next and keep-together declared by style must be passed to Word as Word's own rule, and the publishing regression corpus's cases, opened in Word, must show them holding in Word's own pages wherever the page allows",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 86
     },
     {
       "id": "PUB-019",
@@ -8107,7 +8125,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 85
+      "line": 87
     },
     {
       "id": "PUB-020",
@@ -8116,7 +8134,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 86
+      "line": 88
     },
     {
       "id": "PUB-021",
@@ -8125,7 +8143,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 87
+      "line": 89
     },
     {
       "id": "PUB-022",
@@ -8134,7 +8152,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-096",
       "document": "PUB-publishing-and-output.md",
-      "line": 88
+      "line": 90
     },
     {
       "id": "PUB-096",
@@ -8143,7 +8161,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 89
+      "line": 91
     },
     {
       "id": "PUB-097",
@@ -8152,7 +8170,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 90
+      "line": 92
     },
     {
       "id": "PUB-068",
@@ -8161,7 +8179,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 91
+      "line": 93
     },
     {
       "id": "PUB-069",
@@ -8170,7 +8188,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 92
+      "line": 94
     },
     {
       "id": "PUB-070",
@@ -8179,16 +8197,16 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 93
+      "line": 95
     },
     {
       "id": "PUB-023",
       "area": "PUB",
       "statement": "Word must be a first-class output, not a convenience export",
-      "tranche": "T1",
+      "tranche": "T2",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 110
+      "line": 118
     },
     {
       "id": "PUB-024",
@@ -8197,7 +8215,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 111
+      "line": 119
     },
     {
       "id": "PUB-025",
@@ -8206,7 +8224,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 112
+      "line": 120
     },
     {
       "id": "PUB-026",
@@ -8215,7 +8233,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 113
+      "line": 121
     },
     {
       "id": "PUB-027",
@@ -8224,7 +8242,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 114
+      "line": 122
     },
     {
       "id": "PUB-028",
@@ -8233,7 +8251,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 115
+      "line": 123
     },
     {
       "id": "PUB-029",
@@ -8242,7 +8260,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 116
+      "line": 124
     },
     {
       "id": "PUB-065",
@@ -8251,7 +8269,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 117
+      "line": 125
     },
     {
       "id": "PUB-066",
@@ -8260,7 +8278,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 118
+      "line": 126
     },
     {
       "id": "PUB-067",
@@ -8269,7 +8287,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 119
+      "line": 127
     },
     {
       "id": "PUB-078",
@@ -8278,7 +8296,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 120
+      "line": 128
     },
     {
       "id": "PUB-030",
@@ -8287,7 +8305,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-090",
       "document": "PUB-publishing-and-output.md",
-      "line": 137
+      "line": 150
     },
     {
       "id": "PUB-090",
@@ -8296,7 +8314,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-103",
       "document": "PUB-publishing-and-output.md",
-      "line": 138
+      "line": 151
     },
     {
       "id": "PUB-103",
@@ -8305,7 +8323,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 139
+      "line": 152
     },
     {
       "id": "PUB-104",
@@ -8314,7 +8332,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-105",
       "document": "PUB-publishing-and-output.md",
-      "line": 140
+      "line": 153
     },
     {
       "id": "PUB-105",
@@ -8323,7 +8341,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 141
+      "line": 154
     },
     {
       "id": "PUB-031",
@@ -8332,7 +8350,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 142
+      "line": 155
     },
     {
       "id": "PUB-032",
@@ -8341,7 +8359,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 143
+      "line": 156
     },
     {
       "id": "PUB-033",
@@ -8350,7 +8368,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 144
+      "line": 157
     },
     {
       "id": "PUB-034",
@@ -8359,7 +8377,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 145
+      "line": 158
     },
     {
       "id": "PUB-035",
@@ -8368,7 +8386,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-100",
       "document": "PUB-publishing-and-output.md",
-      "line": 146
+      "line": 159
     },
     {
       "id": "PUB-100",
@@ -8377,7 +8395,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 147
+      "line": 160
     },
     {
       "id": "PUB-101",
@@ -8386,7 +8404,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 148
+      "line": 161
     },
     {
       "id": "PUB-036",
@@ -8395,7 +8413,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-091",
       "document": "PUB-publishing-and-output.md",
-      "line": 149
+      "line": 162
     },
     {
       "id": "PUB-091",
@@ -8404,7 +8422,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 150
+      "line": 163
     },
     {
       "id": "PUB-080",
@@ -8413,7 +8431,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 151
+      "line": 164
     },
     {
       "id": "PUB-037",
@@ -8422,7 +8440,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 170
+      "line": 183
     },
     {
       "id": "PUB-038",
@@ -8431,7 +8449,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 171
+      "line": 184
     },
     {
       "id": "PUB-039",
@@ -8440,7 +8458,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 172
+      "line": 185
     },
     {
       "id": "PUB-040",
@@ -8449,7 +8467,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 173
+      "line": 186
     },
     {
       "id": "PUB-041",
@@ -8458,7 +8476,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 174
+      "line": 187
     },
     {
       "id": "PUB-042",
@@ -8467,7 +8485,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 175
+      "line": 188
     },
     {
       "id": "PUB-043",
@@ -8476,7 +8494,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 191
+      "line": 204
     },
     {
       "id": "PUB-063",
@@ -8485,7 +8503,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 192
+      "line": 205
     },
     {
       "id": "PUB-064",
@@ -8494,7 +8512,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-085",
       "document": "PUB-publishing-and-output.md",
-      "line": 193
+      "line": 206
     },
     {
       "id": "PUB-085",
@@ -8503,7 +8521,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-102",
       "document": "PUB-publishing-and-output.md",
-      "line": 194
+      "line": 207
     },
     {
       "id": "PUB-102",
@@ -8512,7 +8530,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 195
+      "line": 208
     },
     {
       "id": "PUB-044",
@@ -8521,7 +8539,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 196
+      "line": 209
     },
     {
       "id": "PUB-045",
@@ -8530,7 +8548,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 197
+      "line": 210
     },
     {
       "id": "PUB-082",
@@ -8539,7 +8557,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 198
+      "line": 211
     },
     {
       "id": "PUB-046",
@@ -8548,7 +8566,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 199
+      "line": 212
     },
     {
       "id": "PUB-075",
@@ -8557,7 +8575,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 200
+      "line": 213
     },
     {
       "id": "PUB-076",
@@ -8566,7 +8584,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 201
+      "line": 214
     },
     {
       "id": "PUB-077",
@@ -8575,7 +8593,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 202
+      "line": 215
     },
     {
       "id": "PUB-047",
@@ -8584,7 +8602,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 227
+      "line": 240
     },
     {
       "id": "PUB-093",
@@ -8593,7 +8611,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 228
+      "line": 241
     },
     {
       "id": "PUB-048",
@@ -8602,7 +8620,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 229
+      "line": 242
     },
     {
       "id": "PUB-049",
@@ -8611,7 +8629,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 230
+      "line": 243
     },
     {
       "id": "PUB-050",
@@ -8620,7 +8638,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 231
+      "line": 244
     },
     {
       "id": "PUB-057",
@@ -8629,7 +8647,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 232
+      "line": 245
     },
     {
       "id": "PUB-058",
@@ -8638,7 +8656,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 233
+      "line": 246
     },
     {
       "id": "PUB-059",
@@ -8647,7 +8665,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 234
+      "line": 247
     },
     {
       "id": "PUB-060",
@@ -8656,7 +8674,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 235
+      "line": 248
     },
     {
       "id": "PUB-073",
@@ -8665,7 +8683,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 236
+      "line": 249
     },
     {
       "id": "PUB-074",
@@ -8674,7 +8692,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 237
+      "line": 250
     },
     {
       "id": "PUB-081",
@@ -8683,7 +8701,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 238
+      "line": 251
     },
     {
       "id": "PUB-083",
@@ -8692,7 +8710,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 239
+      "line": 252
     },
     {
       "id": "PUB-084",
@@ -8701,7 +8719,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 240
+      "line": 253
     },
     {
       "id": "PUB-051",
@@ -8710,7 +8728,7 @@
       "tranche": "Constraint",
       "status": "Superseded by PUB-072",
       "document": "PUB-publishing-and-output.md",
-      "line": 270
+      "line": 283
     },
     {
       "id": "PUB-052",
@@ -8719,7 +8737,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 271
+      "line": 284
     },
     {
       "id": "PUB-053",
@@ -8728,7 +8746,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 272
+      "line": 285
     },
     {
       "id": "PUB-071",
@@ -8737,7 +8755,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 273
+      "line": 286
     },
     {
       "id": "PUB-072",
@@ -8746,7 +8764,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 274
+      "line": 287
     },
     {
       "id": "PUB-094",
@@ -8755,7 +8773,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 275
+      "line": 288
     },
     {
       "id": "PUB-079",
@@ -8764,7 +8782,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 276
+      "line": 289
     },
     {
       "id": "PUB-054",
@@ -8773,7 +8791,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 292
+      "line": 305
     },
     {
       "id": "PUB-055",
@@ -8782,7 +8800,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 293
+      "line": 306
     },
     {
       "id": "PUB-056",
@@ -8791,7 +8809,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 294
+      "line": 307
     },
     {
       "id": "REL-001",
@@ -11560,7 +11578,7 @@
       "id": "STY-081",
       "area": "STY",
       "statement": "Every style property that both Word and the PDF render must be verified, by an automated suite, to render in a Word document at the value the PDF of the same content renders it, within the same tolerances as STY-080, a difference allowed only where STY-060's list of approved deviations names it",
-      "tranche": "T1",
+      "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 199
@@ -11599,7 +11617,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 220
+      "line": 225
     },
     {
       "id": "STY-040",
@@ -11608,7 +11626,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 221
+      "line": 226
     },
     {
       "id": "STY-041",
@@ -11617,7 +11635,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 222
+      "line": 227
     },
     {
       "id": "STY-042",
@@ -11626,7 +11644,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 223
+      "line": 228
     },
     {
       "id": "STY-045",
@@ -11635,7 +11653,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 224
+      "line": 229
     },
     {
       "id": "STY-046",
@@ -11644,7 +11662,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 225
+      "line": 230
     },
     {
       "id": "STY-047",
@@ -11653,7 +11671,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 226
+      "line": 231
     },
     {
       "id": "STY-048",
@@ -11662,7 +11680,7 @@
       "tranche": "T1",
       "status": "Superseded by STY-074",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 227
+      "line": 232
     },
     {
       "id": "STY-074",
@@ -11671,7 +11689,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 228
+      "line": 233
     },
     {
       "id": "STY-075",
@@ -11680,7 +11698,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 229
+      "line": 234
     },
     {
       "id": "STY-049",
@@ -11689,7 +11707,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 230
+      "line": 235
     },
     {
       "id": "STY-052",
@@ -11698,7 +11716,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 231
+      "line": 236
     },
     {
       "id": "STY-062",
@@ -11707,7 +11725,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 232
+      "line": 237
     },
     {
       "id": "STY-043",
@@ -11716,7 +11734,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 266
+      "line": 271
     },
     {
       "id": "STY-044",
@@ -11725,7 +11743,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 267
+      "line": 272
     },
     {
       "id": "STY-071",
@@ -11734,7 +11752,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 268
+      "line": 273
     },
     {
       "id": "STY-073",
@@ -11743,7 +11761,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 269
+      "line": 274
     },
     {
       "id": "TAB-001",
@@ -13761,25 +13779,25 @@
       "id": "PUB-N01",
       "statement": "**Not a prepress system.** No imposition, colour separation, trapping or bleed management",
       "document": "PUB-publishing-and-output.md",
-      "line": 300
+      "line": 313
     },
     {
       "id": "PUB-N02",
       "statement": "**No web publishing channel, and no anonymous distribution.** The output is documents, not a site. A report meant for the public goes on a web server, and the product's involvement ends at the file ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "document": "PUB-publishing-and-output.md",
-      "line": 301
+      "line": 314
     },
     {
       "id": "PUB-N03",
       "statement": "**No editing of output.** A published artifact is produced from a baseline; correcting it means correcting the document and publishing again",
       "document": "PUB-publishing-and-output.md",
-      "line": 302
+      "line": 315
     },
     {
       "id": "PUB-N04",
       "statement": "**Google Docs is not held to the fidelity bar**, and must not be sold as though it were",
       "document": "PUB-publishing-and-output.md",
-      "line": 303
+      "line": 316
     },
     {
       "id": "REL-N01",
@@ -13899,31 +13917,31 @@
       "id": "STY-N01",
       "statement": "**No per-document and no per-author overrides.** A document that needs a different look uses a different theme (CNT-N08)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 275
+      "line": 280
     },
     {
       "id": "STY-N02",
       "statement": "**No page geometry.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 276
+      "line": 281
     },
     {
       "id": "STY-N03",
       "statement": "**No stylesheet or code supplied by a tenant.** Extension is declarative, from a fixed set of properties. Arbitrary style code would be an injection surface and would make every output format a rendering engine",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 277
+      "line": 282
     },
     {
       "id": "STY-N04",
       "statement": "**Not a design tool.** A theme is configured, not drawn",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 278
+      "line": 283
     },
     {
       "id": "STY-N05",
       "statement": "**No inverting content in dark mode.** The application's chrome may go dark; the document canvas stays the theme's paper and ink, because a theme's colours were chosen for paper",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 279
+      "line": 284
     },
     {
       "id": "TAB-N01",
@@ -14641,35 +14659,35 @@
       "question": "**Which pagination and PDF engine?**",
       "settledBy": "**Settled.** Typst, rendering the resolved content model through one fixed template. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)",
       "document": "PUB-publishing-and-output.md",
-      "line": 309
+      "line": 322
     },
     {
       "id": "PUB-Q02",
       "question": "**Does Google Docs export survive at all?** It exists because customers ask for it and cannot express what the product is for, and it now has a second problem: writing to a user's Google Docs needs Drive scopes, which are restricted, which means app verification and a periodic security assessment - exactly what IAM-044 and [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md) were taken to avoid",
       "settledBy": "Whether a customer wants it enough to accept both that it is visibly worse and that it carries a compliance cost nothing else in the product does",
       "document": "PUB-publishing-and-output.md",
-      "line": 310
+      "line": 323
     },
     {
       "id": "PUB-Q03",
       "question": "**Is PDF/A required, and at which conformance level?** Archival and submission requirements differ by regime, and the levels are not interchangeable",
       "settledBy": "The first customer with a submission requirement that names one",
       "document": "PUB-publishing-and-output.md",
-      "line": 311
+      "line": 324
     },
     {
       "id": "PUB-Q04",
       "question": "**How is preview made fast enough (CNT-096) while using the same pipeline (PUB-006)?**",
       "settledBy": "**Settled.** Typst compiles incrementally, reusing unchanged layout between compiles: an edit reaches page 40 of a 300-page document in under half a second, whatever page it is on. The one difference is PUB-061. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md). Since [ADR-0027](../../decisions/0027-the-warm-range-preview-leaves-t1.md) this answers T3's warm preview; T1's is the whole document, compiled cold, and CNT-096 is withdrawn",
       "document": "PUB-publishing-and-output.md",
-      "line": 312
+      "line": 325
     },
     {
       "id": "PUB-Q05",
       "question": "**Can an incremental compilation be made byte-identical to a clean one (PUB-076)?** Reusing layout between compiles is what makes preview fast; producing the same bytes either way is what makes PUB-043 checkable",
       "settledBy": "Measurement against the engine. If it cannot, the answer is that preview compiles incrementally and publication always compiles clean - which costs seconds on a path that already takes thirty",
       "document": "PUB-publishing-and-output.md",
-      "line": 313
+      "line": 326
     },
     {
       "id": "REL-Q01",
@@ -14823,35 +14841,35 @@
       "question": "**Are catalogues tenant-wide, or per space?** A consultancy working for two clients may need two house styles that authors must not confuse",
       "settledBy": "Whether early customers serve more than one end client from one tenant. Likely yes in this market",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 285
+      "line": 290
     },
     {
       "id": "STY-Q02",
       "question": "**Does STY-N03 survive a real house style?** Declarative properties cover most of typography and none of the last five per cent somebody's brand guideline insists on",
       "settledBy": "The first house style that cannot be expressed. The answer is probably to widen the declared property set rather than open an escape hatch",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 286
+      "line": 291
     },
     {
       "id": "STY-Q03",
       "question": "**Who supplies typefaces, and who holds the licence?**",
       "settledBy": "**Settled.** Product-supplied faces are open-licence only; a customer's brand face is supplied by the customer under the customer's own licence. See [ADR-0010](../../decisions/0010-open-licence-typefaces-only.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 287
+      "line": 292
     },
     {
       "id": "STY-Q04",
       "question": "**Does a theme need variants - screen against print, light against dark?**",
       "settledBy": "**Settled for the editor.** No: the canvas stays paper when the application goes dark (STY-N05). Whether the HTML reading format needs a screen palette is left to its design. See [themes.md](../../design/themes.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 288
+      "line": 293
     },
     {
       "id": "STY-Q05",
       "question": "**What contrast ratio binds a customer's own brand palette (STY-069)?** A house style whose colours fail 4.5:1 is a real thing, and refusing it outright refuses the customer",
       "settledBy": "Legal and commercial advice with the first brand that fails. The likely answer is that the product's own themes must pass while a tenant's are warned rather than refused, which is a different requirement from the one written today",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 289
+      "line": 294
     },
     {
       "id": "TAB-Q01",
@@ -16938,10 +16956,6 @@
           "howItIsMet": "The domain's theme reader refuses a text colour below 4.5:1, or 3:1 for large text, against any background it can stand on, and the store refuses what the reader refuses, so a theme is checked when it is saved ([Themes in the PDF](#themes-in-the-pdf), TH-G)"
         },
         {
-          "id": "STY-049",
-          "howItIsMet": "Glyph coverage is checked at resolution, against the pinned files' character maps, before any renderer runs"
-        },
-        {
           "id": "STY-050",
           "howItIsMet": "Vertical space between two blocks is the first block's space after plus the second block's space before, in every output"
         },
@@ -17004,6 +17018,10 @@
         {
           "id": "TAB-032",
           "howItIsMet": "The same, from the table's side"
+        },
+        {
+          "id": "PUB-106",
+          "howItIsMet": "Widow and orphan control, keep-with-next and keep-together are paragraph style properties, each passed to Typst as its own rule - the two costs, `sticky`, `breakable: false` - as measured; the publishing regression corpus's four keep cases show each holding in the PDF wherever the page allows ([Themes in the PDF](#themes-in-the-pdf))"
         }
       ]
     },
@@ -18220,6 +18238,12 @@
       "id": "PUB-103",
       "file": "apps/worker/src/regression.test.ts",
       "line": 164,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-106",
+      "file": "apps/worker/src/regression.test.ts",
+      "line": 1287,
       "kind": "title"
     },
     {

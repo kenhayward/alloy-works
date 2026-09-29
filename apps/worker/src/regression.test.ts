@@ -1284,13 +1284,13 @@ describe('the publishing defects still open, each pinned as it stands until the 
   }, 120_000);
 });
 
-describe('the keep rules: declared by a paragraph style, passed to each engine as its own rule, and holding in the PDF wherever the page allows', () => {
+describe('PUB-106 the keep rules: declared by a paragraph style, passed to each engine as its own rule, and holding in the PDF wherever the page allows', () => {
   // Moved here from `themes.test.ts`, where themes 1 measured them: each a nine-line paragraph set
   // across the foot of a small page, on a grid of 12pt lines, so a count of fillers is a count of
   // lines. And each rule, read from the same style, reaches Word as Word's own: `w:keepNext`,
   // `w:keepLines` and `w:widowControl`, off where the style says off, since a parent would hand it down.
-  // PUB-092 is not cited: it asks each engine's pages to show the rules holding, and nothing here
-  // measures where Word itself breaks a page (themes.md names the gap).
+  // PUB-106 is PUB-092's PDF half. PUB-107, its Word half, is not cited: it asks Word's own pages to
+  // show the rules holding, and nothing here measures where Word breaks a page (T2's, ADR-0032).
 
   it('STY-008 keeps a heading with what follows it where its style says, and leaves it alone at the foot where it does not', async () => {
     // A heading on the last line of a page, then a paragraph: kept with the next, the heading goes

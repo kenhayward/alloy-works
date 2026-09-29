@@ -77,6 +77,8 @@ K8's caption placement is built in W14, W8 having shipped without it.
 6. **Identity, the browser suite, and publishing's last rows (W12, W13, W14).**
 7. **Word measured (W15)**, after W13.4, whose reader and comparison it shares: STY-081, PUB-092 and
    PUB-023 each waited for Word's own rendering to be measured, which no workstream above held.
+   Measured in W15.2, and Word did not agree yet: W15 stopped there, and Word's fidelity to the PDF
+   left T1 ([ADR-0032](../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md)).
 
 ## The week
 
@@ -133,4 +135,4 @@ This table is updated as each workstream lands.
 | W12 | Identity                           | Built (PRs #299 to #305; [plan](2026-09-28-w12-identity.md)); K3 decided by ADR-0028                                                                                            |
 | W13 | A browser suite                    | Built (PRs #324, #326, #327, #334, #337, #340; [plan](2026-09-28-w13-browser-suite.md)); STR-072 unclaimed, its cold open missing 250 ms (Ken, B-K); STY-080 with #331 and #333 |
 | W14 | Publishing, finished               | Built (PRs #311, #313, #315 to #317, #320 to #322; [plan](2026-09-28-w14-publishing-finished.md)); PUB-092 unclaimed, Word pages unmeasured                                     |
-| W15 | Word measured                      | Planned ([plan](2026-09-29-w15-word-measured.md))                                                                                                                               |
+| W15 | Word measured                      | Done (PRs #346, #348, #349; [plan](2026-09-29-w15-word-measured.md)); stopped after W15.2 by ADR-0032: STY-081, PUB-023 and PUB-107 (PUB-092's Word half) moved to T2           |

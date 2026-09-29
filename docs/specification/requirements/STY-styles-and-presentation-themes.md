@@ -196,7 +196,7 @@ one day, and a theme change months later re-renders something that was signed.
 | **STY-038** | Style resolution must be deterministic: the same content, style and theme version must always produce the same appearance                                                                                                                                                                                                                                                                                                                                                                                                            | Constraint | Specified             |
 | **STY-053** | Every style property must be verified, by an automated suite, to render the same measured value in each output format that renders it - in the editor, in PDF and in Word                                                                                                                                                                                                                                                                                                                                                            | T1         | Superseded by STY-080 |
 | **STY-080** | Every style property that both the editor and the PDF render must be verified, by an automated suite over the default theme and generated ones, to render in the editor at the value the PDF of the same content renders it: each length - where text starts, the step between two baselines, a size, a rule's width and where it runs, an image's size - within half a point, and each face, weight, posture, colour, underline and fill exactly. A difference is allowed only where STY-060's list of approved deviations names it | T1         | Specified             |
-| **STY-081** | Every style property that both Word and the PDF render must be verified, by an automated suite, to render in a Word document at the value the PDF of the same content renders it, within the same tolerances as STY-080, a difference allowed only where STY-060's list of approved deviations names it                                                                                                                                                                                                                              | T1         | Specified             |
+| **STY-081** | Every style property that both Word and the PDF render must be verified, by an automated suite, to render in a Word document at the value the PDF of the same content renders it, within the same tolerances as STY-080, a difference allowed only where STY-060's list of approved deviations names it                                                                                                                                                                                                                              | T2         | Specified             |
 | **STY-058** | The editor must render every declared property of every paragraph and character style as the theme declares it, not a sample of them, so that STY-080's suite tests nothing STY-036 did not oblige (CNT-082, CNT-097)                                                                                                                                                                                                                                                                                                                | T1         | Specified             |
 | **STY-060** | The conformance suites (STY-080, STY-081) must each carry an explicit list of approved cross-format deviations - the Word typeface substitution in STY-052 is the only one today - and a deviation not on that list must fail. Determinism (STY-038) is a claim about one format given one input, never that every format renders identically                                                                                                                                                                                        | Constraint | Specified             |
 | **STY-070** | Where a style or a glyph will not resolve, the editor must render an explicit unresolvable marker rather than a silent default, so that the failure appears while somebody can still fix it (STY-027 and STY-049 are the publish behaviours)                                                                                                                                                                                                                                                                                         | T1         | Specified             |
@@ -207,6 +207,11 @@ measured value in the editor and in Word as in the PDF; STY-052 mandates a subst
 licence forbids embedding.
 Without a list of sanctioned deviations the suite either fails on exactly the faces STY-052 exists to
 serve, or quietly excuses whatever it happens to find.
+
+**STY-081 is T2's, and its suite is built.** Word was measured against the PDF in T1 by the kit and
+the tolerances STY-080 is measured by, and does not agree yet; the measurement stays as an exact
+record of what is left, and closing it moves to T2
+([ADR-0032](../../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md)).
 
 **STY-070 completes the fail-loud philosophy at the end where somebody can act.** Publishing refuses
 a missing style (STY-027) or a missing glyph (STY-049); until now the editor could have shown a
@@ -433,3 +438,22 @@ against the PDF now, and Word waits for Word itself. The rows arrived as issue #
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 79, of which 5 superseded | 81, of which 6 superseded |
+
+### Ken's answer to Word measured (W15.2), 2026-09-29
+
+Not a review. W15.2 of the [W15 plan](../../plans/2026-09-29-w15-word-measured.md) measured Word's
+own rendering against the PDF of the same content, in Word 16.0 build 16.0.20326, by the kit and the
+tolerances STY-080 is measured by, and left 1,186 differences of ten kinds after four fixes on Word's
+side. Ken decided that W15 stops after W15.2 and that Word's fidelity to the PDF leaves T1, recorded
+by [ADR-0032](../../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md). A row moving tranche whole
+keeps its identifier, and only its tranche changes.
+
+| What was found                                                                                                                                                                                          | Change                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STY-081's suite exists and runs where Word is, and finds Word short of the PDF in ten kinds: closing them is two slices on Word's side, one changing published PDFs by ADR-0014's rule, and Ken's calls | **STY-081 moved to T2**, with PUB-023. The measurement stays, a characterization of exactly what W15.2 left, failing anything else                                                 |
+| STY-060 asks each suite for its list of approved deviations, and a deviation on neither to fail. The editor's holds; Word's holds what is left by kind rather than failing it                           | Not changed, a constraint: its Word half is met when STY-081's suite fails every difference not on its list, in T2                                                                 |
+| STY-049 refuses a character the theme's faces cannot set; Word draws a maths character Cambria Math lacks from another face                                                                             | Not changed, a constraint. Judging Cambria Math's coverage was W15.4's and is not built; the report still names the unchecked maths face once for a document that sets an equation |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 81, of which 6 superseded | 81, of which 6 superseded |
