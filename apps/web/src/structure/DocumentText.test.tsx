@@ -273,6 +273,28 @@ describe("the document's text", () => {
       expect(shown).toEqual(['Table 2.1', '1 Introduction']);
     });
 
+    it('numbers each reference again when the outline changes under the same identifiers', () => {
+      // The contexts are kept per outline, their targets computed when first asked (W13.3): an
+      // outline moved under the same nodes must not be shown against the one before it.
+      const contributions = new Map([
+        [PRINTER_NODE, [{ block: 't1', sequence: 'table', numbered: true, caption: 'Readings' }]],
+      ]);
+      const props = {
+        scheme: defaultLayout.scheme,
+        names,
+        texts,
+        contributions,
+      } as const;
+      const { rerender } = render(<DocumentText outline={outline} {...props} />);
+      const shown = () =>
+        [...document.querySelectorAll('[data-reference]')].map((each) => each.textContent);
+      expect(shown()).toEqual(['Table 2.1', '1 Introduction']);
+
+      const moved: OutlineView = { ...outline, nodes: [outline.nodes[1]!, outline.nodes[0]!] };
+      rerender(<DocumentText outline={moved} {...props} />);
+      expect(shown()).toEqual(['Table 1.1', '2 Introduction']);
+    });
+
     it('shows a reference naming its own component, as a paste from another leaves it, as the block of its own it is', () => {
       const [first, ...rest] = referring.content;
       const pasted = {
