@@ -81,7 +81,6 @@ conformance suite.
 | **STY-050** | Vertical space between two blocks is the first block's space after plus the second block's space before, in every output                                                                                                                                                                                             |
 | **STY-051** | Line spacing is a minimum baseline-to-baseline distance in points, and means that distance in every output                                                                                                                                                                                                           |
 | **STY-052** | A typeface whose licence forbids embedding in Word declares a permitted face for Word output, and the publish report names the substitution                                                                                                                                                                          |
-| **STY-053** | The conformance suite below                                                                                                                                                                                                                                                                                          |
 | **STY-054** | A typeface artifact carries its ascent and descent; the CSS projection and the Typst template both use them to put a line's extra space above it                                                                                                                                                                     |
 | **STY-055** | `wordRun` computes Word's reading of each run and pins the canonical value directly wherever the two differ                                                                                                                                                                                                          |
 | **CNT-082** | The CSS projection renders block spacing by the same rule as the output (STY-050)                                                                                                                                                                                                                                    |
@@ -107,6 +106,21 @@ dropped, as word-output.md says of Word.
 
 **STY-075 is not claimed**: the scripts the supported locales admit have no list until LOC-038
 declares one, and which faces answer it is decided then. STY-074, its T1 half, is claimed.
+
+**STY-080 is not claimed: two properties both outputs render still differ.** STY-053 was split (the
+W13 plan's B-M), and STY-080, the editor measured against the PDF, is built in the browser suite
+([The theme in the editor, measured](#the-theme-in-the-editor-measured)), which measures every property
+it names but two, and those two the editor and the page set differently: **the step into a line held
+open by something taller than its text** - an image in the line, an equation, a list's marker in a
+larger style than its item's - which the page opens by what stands above its text's own edge and the
+editor does not (issue #331), up to 1.9pt; and **where the document view stands a section's heading**,
+after its number and apart from the next by its own spacing rather than the heading style's (issue
+#333), 4 to 7pt. W13.4's final review found the claim partial on these, and it was dropped; the test
+cites nothing until both are fixed and measured.
+
+**STY-081 is not claimed: Word is not measured against the PDF yet.** It needs Word itself, and the
+Word check (`word-check.test.ts`), which opens the writer's documents in Word, is where it will be
+measured. Until then the claim stands dropped, beside PUB-023, which word-output.md says waits for it.
 
 **PUB-027's claim has a cost the Word writer pays** (the final review of Word 1, M5). Every style is a
 real Word style, and a run names a mark's character style rather than carrying its formatting, but
@@ -350,14 +364,15 @@ two words bold and bold italic, and the spacing matching the PDF.
 
 ## Keeping the three in agreement
 
-**The conformance suite is how agreement is kept** (STY-053). For each property in the set, a fixture
+**The conformance suite is how agreement is kept** (STY-080 for the editor, STY-081 for Word, each
+against the PDF). For each property in the set, a fixture
 document exercises it at several values, and each projection's output is measured rather than read:
 
-| Target | How a value is measured                                                                                                |
-| ------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Typst  | From the PDF: each character's text matrix gives its baseline, not its bounding box                                    |
-| Word   | LibreOffice renders the `.docx` to PDF and is measured the same way - a proxy; confirmed in Word itself under PUB-029  |
-| Editor | Chromium: a zero-size marker at each line's start gives the baseline, and computed styles give size, weight and colour |
+| Target | How a value is measured                                                                                                                                                                                         |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Typst  | From the PDF: each character's text matrix gives its baseline, not its bounding box                                                                                                                             |
+| Word   | LibreOffice renders the `.docx` to PDF and is measured the same way - a proxy; confirmed in Word itself under PUB-029                                                                                           |
+| Editor | Chromium: a zero-size marker at each line's start gives the baseline, and computed styles give size, weight and colour. Built by W13.4 ([The theme in the editor, measured](#the-theme-in-the-editor-measured)) |
 
 The fixtures are generated as well as hand-written: random valid property values, resolved and
 projected, with the three measurements compared. A projection that agrees on the values somebody
@@ -392,7 +407,7 @@ applies. Both were caught by the harness, which is also how it is known that the
 **Checked in Word, by eye:** the fixture's output opened in Word matches the PDF, including both
 pinned words and the spacing. **Still not measured:** Word to the point, and more than one face -
 one fixture with one face is not every theme.
-The conformance suite this becomes (STY-053) needs generated values, more faces - in particular faces
+The conformance suite this becomes (STY-080 and STY-081) needs generated values, more faces - in particular faces
 whose metric tables disagree with each other, where renderers may choose different ones - and Word.
 
 ## Themes in the PDF
@@ -580,7 +595,8 @@ seeded. Building it changed these things here:
   and note, a note's second paragraph and the page's frame, each by the line model.
 - **`spikes/theme-conformance/` no longer runs against the model**: it calls the prototype's
   `resolveTheme`, `exampleTheme` and `resolveStyle`, which the model replaced. It stays the record of
-  what ADR-0014 measured, above; the conformance suite STY-053 asks for is still to be built.
+  what ADR-0014 measured, above. The conformance suite's editor half, toward STY-080, is the browser
+  suite's since W13.4 ([The theme in the editor, measured](#the-theme-in-the-editor-measured)).
 
 **The Word projection is built**, by Word 1: what it writes and what Word showed of it are in
 [the Word output design's "What was built"](word-output.md#what-was-built).
@@ -806,6 +822,121 @@ Taken as recommended, on Ken's instruction of 2026-09-27 to continue with W8, an
 CNT-122 was the missing half; the publish half was built by themes 2. STY-039's claim is restated for
 the faces in `packages/fonts`. STR-025 was not claimed then (ET-J); W14.5 claims it, with STY-079, in
 [Where a caption sits](#where-a-caption-sits).
+
+## The theme in the editor, measured
+
+Built by W13.4 of [W13](../plans/2026-09-28-w13-browser-suite.md), under its decision B-M, toward
+STY-080, which it does not yet answer in full (above): the conformance suite's editor half, which [Keeping the three in agreement](#keeping-the-three-in-agreement)
+designed and ADR-0014's prototype seeded. It is `tests/browser/src/styles.test.ts`, in the browser suite
+([ADR-0029](../decisions/0029-a-browser-suite-in-ci-and-attested-audits.md)), against the whole system
+in containers.
+
+**What is measured, and against what.** One component, made through the API, holds a token - a word
+no other text holds - at the head of every block and run the theme styles: a paragraph in each style
+an author can choose for running text, a run of each of the nine marks, a bulleted list with a list in
+it and a numbered one counted from nine, a quotation with its attribution, preformatted text with and
+without its label, a table in each table style with a caption, header rows and columns, bands and a
+note, a figure in each figure style, an equation and an image in a line, and a footnote. It is placed, under five nested sections, in a document made from a template naming each of
+five themes: the default; _Contrary_, which differs from the default in every property the editor
+projects; and three generated from seeds, the seeds in the test's record. Each document is published
+through the stack, and its PDF read by pdf.js - a small copy of the worker suite's `readPaint`, which
+places every run by its text matrix - and each token is found the last time it is painted outside an
+artifact. The same document is opened in the document view's Reading mode, at 100%, in the pinned
+Chromium, and each token measured by a zero-size marker set before its first letter - its baseline and
+where it starts - and by its element's computed style. The comparison, in points: where each token
+starts across the measure, each step from one baseline to the next in the order the page reads them,
+each size, each image's size and where it stands, and each table rule's width - as far as it is painted,
+the outer rule's half outside the table included - and where it runs against its cell's text, all within
+half a point; and each face, weight, posture, colour, underline and what stands behind the text - a fill,
+a band, the paper - and the face an equation is drawn in, exactly. It waits for the page to be drawn
+whole - its own title the document's, every token, image and face in - so it never measures the screen
+before.
+
+**The themes are written into the stack's database** by `@alloy-works/db`'s own writers,
+`addCatalogueVersion` and `addThemeVersion`, as B-C's one exception allows: nothing in T1 makes a theme
+through a route. The writers refuse whatever the reader refuses, contrast among it, so a generator the
+store would not take is narrowed to what it takes: text dark enough on fills and paper light enough
+for any size, line spacing at least 1.2 of its size, rules no wider than twice a table's padding.
+Nothing creates a theme or a catalogue artifact but a migration, so the suite copies the default's rows
+as each new artifact's first version and writes the theme it measures as the next - fixed artifacts,
+so a later run writes nothing where a theme has not changed.
+
+**What the measurement found, and what changed.** Its first run, under the default theme alone, found
+twenty-eight differences of half a point to twenty points, and the other four themes more. What was the
+editor's own is fixed in the projection (`projectCss`), filed as issue #329; what was not is below.
+
+- **A block's spaces were borders**, which a browser snaps to whole device pixels - up to three quarters
+  of a point lost at every block whose space was not a whole number of pixels. They are padding, named
+  once each as `--aw-before` and `--aw-after` so that contextual spacing can take either away, with the
+  fill painted between them as a positioned gradient.
+- **A block's first baseline moved with its size**, because a browser rounds a face's ascent and descent
+  to whole pixels. Where the renderer knows a face's cap height - `@alloy-works/fonts` records each
+  pinned file's, held to the file by a test - and the browser can (`@supports (text-box: trim-both cap
+alphabetic)`), each block is trimmed to its first line's cap height and its last line's baseline,
+  which a browser measures exactly, and the rest is padding. Elsewhere the half-leading model above
+  stands, within the pixel rounding.
+- **The application's and the editor stylesheet's own look reached the canvas**: a table header's
+  capitals and tracking and its surface, the space around a list, a table and a figure, preformatted
+  text in the browser's own monospace. Each stands down on the canvas.
+- **Tables** are set as the template sets them: a rule takes no room, half of it drawn by each cell beside
+  its line as an inset shadow and the outer rule's other half outside the table; a cell's first block
+  takes no space or leading above it and its last none after it; the table stands apart from its
+  neighbours as its cells' place does; the header column's rule runs through the header rows; and the
+  corner takes the header column's fill and weight where the header row has none.
+- **Lists** stand their items their place's leading apart, with that place's spaces around the list as a
+  whole, and each item's text where the engine sets it: a column of markers as wide as the widest - a
+  bullet, or the widest number right-aligned - then half an em, the list a grid and each item a row of
+  it through `subgrid`, found by the final review, 6.4pt out under the default theme; and its markers
+  in the place's weight and posture too, which the re-review's measurement of the markers found missing; **a quotation's attribution** stands inside the quotation's indents; **preformatted text's
+  label** stands above its block, out of its fill; **a figure** is aligned in its band by its margins and
+  stands apart from its neighbours as its caption does; **an image in a line** stands on its baseline;
+  and **a mark in another face or at another size** does not open its line.
+- **The canvas has room either side of the measure**, 6pt at 100%, where a table's outer rule stands half
+  outside the table: scrolling sideways clipped it at the measure (the final review).
+- **A block's fill is a colour where it has no spaces of its own**, so that axe-core reads it as the
+  text's background and checks its contrast; where it has spaces, it is still the gradient painted
+  between them, which axe cannot read and hands to a person as `incomplete` (docs/testing.md).
+
+**Outside STY-080, and why.** STY-080 asks that every style property both outputs render be the same
+in each, and that a difference be allowed only where STY-060's list names it. That list is empty between
+the editor and the PDF - its one entry, the Word face STY-052 substitutes, is Word's and STY-081's - and
+the test holds it so (`APPROVED_DEVIATIONS` in `compare.ts`). What the comparison leaves out is not a
+difference it forgives: each is something one output does not render as a style property, so outside
+what STY-080 asks.
+
+| Left out                                                                                                                         | Why it is outside STY-080                                                                                                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| How far a script is lowered or raised                                                                                            | No theme sets it: the engine takes it from the face's own tables, the browser from its own rule ([What was built](#what-was-built); issue #332). Which way a script moves, which the theme's `position` says, is compared                                       |
+| A footnote's place, and where the line holding its anchor starts                                                                 | Not a style: the page sets a footnote at its foot, the document view beside its anchor, lengthening that line with its words. A footnote's face, size, weight, posture and colour are compared                                                                  |
+| Where a line holding an equation starts, where its paragraph is centred or set to the end                                        | The equation's width is each renderer's maths engine's, not the theme's, and it moves the start of such a line; where the paragraph is set from its start, where the line starts is compared. The equation's face, which is the theme's, is compared            |
+| A floated figure                                                                                                                 | The editor has no page to float one to (STY-037). The generated themes place figures as blocks                                                                                                                                                                  |
+| An edge of a table's cell where the page breaks the table                                                                        | Pagination (STY-037): the page frames each part of a broken table in its outer rule and repeats its header; the editor has no page                                                                                                                              |
+| A caption's and a footnote's fill, padding and indents; a first-line indent on centred or preformatted text, or in a list's item | The PDF does not set them (issue #330), so no output but the editor renders them; the themes measured state none of them until the PDF sets them or refuses them by name                                                                                        |
+| Which bullet or numbering a list's marker draws                                                                                  | The template's (issue #158), not a style property. Where the marker ends - a number right-aligned in the list's column - and its face, weight, posture, size and colour, which the list's place's style sets, are compared, as is where each item's text starts |
+
+**Named gaps, which both outputs render and which differ.** Measured and not compared, each with its
+issue, and the reason STY-080 is not claimed ([Requirements owned](#requirements-owned)):
+
+| Gap                                                                                                                                  | Measured                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The step into a line holding something taller than its text - an image, an equation, a list's marker in a larger style than its item | The page opens the line by what stands above its text's own edge; the editor, where it trims a first line, not at all (issue #331). Up to 1.9pt. The generated themes scale no mark above its text for the same reason |
+| Where the document view stands a section's heading                                                                                   | After its number and apart from the next section by the view's own spacing, not the heading style's (issue #333). 4 to 7pt. A heading's face, size, weight, posture and colour are compared                            |
+
+**Measured.** Over the five themes, the largest difference each property showed: a list's marker's end
+0.02pt; a size 0.01pt; where
+text starts 0.29pt, which is text a browser and the engine measure a hundredth of a point apart in each
+word of an aligned line; a step between baselines 0.04pt; an image's size and start 0.02pt; a rule's
+position 0.02pt and its width nought - on Windows, and the same to a hundredth in a Linux container,
+as CI runs it. Thirty-two further seeds, tried while the slice was built, all agreed within half a
+point, and sixteen of them again after the final review's lists, canvas and fills, with list items'
+starts compared, a step then at most 0.05pt. On a browser that cannot trim a line to its cap height, a step can be up to
+three quarters of a point out, from the rounding above; the desktop shell's Electron and the suite's
+pinned Chromium both trim.
+
+**What W13.4 claims.** Nothing: STY-080 waits for issues #331 and #333, and the test in
+`styles.test.ts` cites nothing until it answers STY-080 whole. **STY-081 is not claimed**: Word measured against the PDF needs Word itself, and the
+Word check, which opens the writer's documents in Word, is where it will be measured; word-output.md
+says PUB-023 waits for it.
 
 ## Where a caption sits
 

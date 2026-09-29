@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { faceUrl } from './faces.js';
+import { capHeight, faceUrl } from './faces.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -53,10 +53,14 @@ function keptZoom(): Zoom {
  * The canvas's own rules, beside the theme's: the text is the layout's measure wide, times the zoom
  * (CNT-115), whether the canvas holds the text - the editing surface - or is the text itself - a
  * document's read text; and a column narrower than that scrolls sideways rather than setting shorter
- * lines than the page will. The layout's, not the theme's, so written here rather than projected.
+ * lines than the page will, with room either side for what the page draws beyond the measure. The
+ * layout's, not the theme's, so written here rather than projected.
  */
 const CANVAS_CSS =
-  '.aw-canvas { overflow-x: auto; }\n' +
+  // A table's outer rule stands half outside the table - up to 6pt of a 12pt rule - which scrolling
+  // sideways clips at the canvas's padding edge: so the canvas has that much room either side of the
+  // measure, which stays its content box (found by the browser suite, W13.4's review).
+  '.aw-canvas { overflow-x: auto; padding-inline: calc(6pt * var(--aw-zoom)); }\n' +
   '.aw-canvas .aw-text, .aw-canvas.aw-text { box-sizing: content-box; ' +
   'width: calc(var(--aw-measure) * var(--aw-zoom)); max-width: none; }\n' +
   // A document's headings stand at the measure too, as the page sets them (document-view.md).
@@ -140,7 +144,7 @@ export function PresentationProvider({
         }
         const projected = projectFontFaces(read.theme, faceUrl);
         // The faces, then the theme's own rules, which name them (STY-058).
-        setFaces(projected.css + CANVAS_CSS + projectCss(read.theme));
+        setFaces(projected.css + CANVAS_CSS + projectCss(read.theme, { capHeight }));
         setPresentation({
           state: 'ready',
           theme: read.theme,

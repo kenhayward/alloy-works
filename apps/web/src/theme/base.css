@@ -27,6 +27,16 @@ body {
   line-height: 1.5;
 }
 
+/*
+ * The page scrolls under the sticky header band, so whatever the browser scrolls into view - a field a
+ * click focuses, a node the outline jumps to - stops below the band, never beneath it (WCAG 2.4.11,
+ * focus not obscured). Found by the browser suite: a component opened in place scrolled its header's
+ * chips under the band, where axe's target-size found them crowded.
+ */
+html {
+  scroll-padding-top: var(--header-height);
+}
+
 h1 {
   margin: 0 0 var(--space-16);
   font-size: var(--size-page-title);

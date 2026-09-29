@@ -1,4 +1,5 @@
-import { PINNED_FONT_FILES } from '@alloy-works/fonts';
+import type { Typeface } from '@alloy-works/domain';
+import { capHeightOfFile, PINNED_FONT_FILES } from '@alloy-works/fonts';
 import monoBold from '@alloy-works/fonts/files/LiberationMono-Bold.ttf?url';
 import monoBoldItalic from '@alloy-works/fonts/files/LiberationMono-BoldItalic.ttf?url';
 import monoItalic from '@alloy-works/fonts/files/LiberationMono-Italic.ttf?url';
@@ -33,3 +34,15 @@ const BY_HASH: ReadonlyMap<string, string> = new Map(
 
 /** Where the renderer holds the file a theme names by this hash; undefined for one it does not hold. */
 export const faceUrl = (sha256: string): string | undefined => BY_HASH.get(sha256);
+
+/**
+ * A face's cap height, as a fraction of its em, from the pinned file the theme names for its regular
+ * weight - every file of a family the product pins has the same - or undefined where the renderer holds
+ * no such file. What the projection trims a line to (`projectCss`).
+ */
+export function capHeight(face: Typeface): number | undefined {
+  const file =
+    face.files.find((each) => each.weight === 'regular' && each.posture === 'normal') ??
+    face.files[0];
+  return file === undefined ? undefined : capHeightOfFile(file.sha256);
+}
