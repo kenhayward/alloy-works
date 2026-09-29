@@ -117,20 +117,20 @@ undone, since the code already exists.
 
 This table is updated as each workstream lands.
 
-| #   | Workstream                         | Status                                                                                                                                      |
-| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| W1  | Test debt                          | Built (PRs #239, #241, #243); the rewordings cited in PR #244; API-003 waits on #240 in W2                                                  |
-| W2  | Small fixes                        | Built (PRs #249, #251, #252, #255; [plan](2026-09-26-w2-small-fixes.md))                                                                    |
-| W3  | Word output                        | Built (PRs #231, #236, #237, #238)                                                                                                          |
-| W4  | Templates                          | Built (PRs #256, #257, #258, #259, #260; [plan](2026-09-27-w4-templates.md))                                                                |
-| W5  | Definitions and the metadata panel | Built (PRs #261, #262, #265, #266, #267, #268; [plan](2026-09-27-w5-definitions.md))                                                        |
-| W6  | Search                             | Built (PRs #269 to #273; [plan](2026-09-27-w6-search.md))                                                                                   |
-| W7  | Listings and the API               | Built (PRs #274 to #278; [plan](2026-09-27-w7-listings.md))                                                                                 |
-| W8  | The theme in the editor            | Built (PRs #279 to #285; [plan](2026-09-27-w8-theme-in-the-editor.md)); STR-025 with STY-079 built in W14 (#322)                            |
-| W9  | The document view                  | Built (PRs #286 to #290; [plan](2026-09-27-w9-document-view.md), [design](../design/document-view.md))                                      |
-| W10 | Preview                            | Built (PRs #291 to #294; [plan](2026-09-27-w10-preview.md)); K2 decided by ADR-0027                                                         |
-| W11 | Recovery                           | Built (PRs #295 to #298; [plan](2026-09-28-w11-recovery.md))                                                                                |
-| W12 | Identity                           | Built (PRs #299 to #305; [plan](2026-09-28-w12-identity.md)); K3 decided by ADR-0028                                                        |
-| W13 | A browser suite                    | Planned ([plan](2026-09-28-w13-browser-suite.md))                                                                                           |
-| W14 | Publishing, finished               | Built (PRs #311, #313, #315 to #317, #320 to #322; [plan](2026-09-28-w14-publishing-finished.md)); PUB-092 unclaimed, Word pages unmeasured |
-| W15 | Word measured                      | Planned ([plan](2026-09-29-w15-word-measured.md))                                                                                           |
+| #   | Workstream                         | Status                                                                                                                                                                          |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W1  | Test debt                          | Built (PRs #239, #241, #243); the rewordings cited in PR #244; API-003 waits on #240 in W2                                                                                      |
+| W2  | Small fixes                        | Built (PRs #249, #251, #252, #255; [plan](2026-09-26-w2-small-fixes.md))                                                                                                        |
+| W3  | Word output                        | Built (PRs #231, #236, #237, #238)                                                                                                                                              |
+| W4  | Templates                          | Built (PRs #256, #257, #258, #259, #260; [plan](2026-09-27-w4-templates.md))                                                                                                    |
+| W5  | Definitions and the metadata panel | Built (PRs #261, #262, #265, #266, #267, #268; [plan](2026-09-27-w5-definitions.md))                                                                                            |
+| W6  | Search                             | Built (PRs #269 to #273; [plan](2026-09-27-w6-search.md))                                                                                                                       |
+| W7  | Listings and the API               | Built (PRs #274 to #278; [plan](2026-09-27-w7-listings.md))                                                                                                                     |
+| W8  | The theme in the editor            | Built (PRs #279 to #285; [plan](2026-09-27-w8-theme-in-the-editor.md)); STR-025 with STY-079 built in W14 (#322)                                                                |
+| W9  | The document view                  | Built (PRs #286 to #290; [plan](2026-09-27-w9-document-view.md), [design](../design/document-view.md))                                                                          |
+| W10 | Preview                            | Built (PRs #291 to #294; [plan](2026-09-27-w10-preview.md)); K2 decided by ADR-0027                                                                                             |
+| W11 | Recovery                           | Built (PRs #295 to #298; [plan](2026-09-28-w11-recovery.md))                                                                                                                    |
+| W12 | Identity                           | Built (PRs #299 to #305; [plan](2026-09-28-w12-identity.md)); K3 decided by ADR-0028                                                                                            |
+| W13 | A browser suite                    | Built (PRs #324, #326, #327, #334, #337, #340; [plan](2026-09-28-w13-browser-suite.md)); STR-072 unclaimed, its cold open missing 250 ms (Ken, B-K); STY-080 with #331 and #333 |
+| W14 | Publishing, finished               | Built (PRs #311, #313, #315 to #317, #320 to #322; [plan](2026-09-28-w14-publishing-finished.md)); PUB-092 unclaimed, Word pages unmeasured                                     |
+| W15 | Word measured                      | Planned ([plan](2026-09-29-w15-word-measured.md))                                                                                                                               |

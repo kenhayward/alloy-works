@@ -22,6 +22,17 @@ export const INLINE_EQUATION = {
 /** `\frac{a}{b}`, as a block. The backslash is built, so no tool on the way can read it as an escape. */
 const BLOCK_LATEX = `${String.fromCharCode(92)}frac{a}{b}`;
 
+/** A numbered block equation, the fraction above, as the Equation dialog writes one, as block `id`. */
+export function blockEquation(id: string) {
+  return {
+    type: 'equation',
+    id,
+    mathml: `<math xmlns="${MATHML}" alttext="a over b" display="block"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>`,
+    latex: BLOCK_LATEX,
+    numbered: true,
+  } as const;
+}
+
 function text(value: string, marks: readonly object[] = []) {
   return { type: 'text', value, marks };
 }
@@ -168,13 +179,7 @@ export function everyBlock(figure: string, image: string): readonly unknown[] {
       content: [paragraph('b16', 'A quoted passage.')],
       attribution: [text('Grace')],
     },
-    {
-      type: 'equation',
-      id: 'b17',
-      mathml: `<math xmlns="${MATHML}" alttext="a over b" display="block"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>`,
-      latex: BLOCK_LATEX,
-      numbered: true,
-    },
+    blockEquation('b17'),
     paragraph('b18', 'The last paragraph.'),
   ];
 }
