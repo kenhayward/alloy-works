@@ -30,6 +30,13 @@ describe("the reader, over the PDF's own of the measured fixture", () => {
     expect(every.filter((token) => !measured.has(token))).toEqual([]);
   });
 
+  it('reads the underline mark as underlined, and nothing else', async () => {
+    const measured = measurePdf(await readPaint(read('measured-typst.pdf')), every, MARGIN);
+    expect(
+      [...measured.values()].filter((each) => each.underline).map((each) => each.token),
+    ).toEqual(['Zm3']);
+  });
+
   it('reads its faces as the file names them', async () => {
     const paint = await readPaint(read('measured-typst.pdf'));
     const measured = measurePdf(paint, every, MARGIN);
@@ -215,6 +222,42 @@ describe("the reader, over what Word's PDF is made of, in PDFs of its own", () =
       { stroke: '#808080', width: 0.48 },
     ]);
     expect(paint.fills).toHaveLength(3);
+  });
+
+  it("reads a thin strip in a fill's own colour against that fill as part of it, not a rule, as Word paints a cell's fill about its margins and a panel's border in its fill", async () => {
+    const paint = await readPaint(
+      onePage(
+        [
+          // A banded cell's fill, a strip of its colour above it where its margin is, and a
+          // border in its colour down its side, a point clear of it, as Word leaves a panel's; then
+          // a grey rule under it, which is a rule.
+          '0.949 0.949 0.949 rg 72 600 200 20 re f',
+          '72 620 200 1.2 re f',
+          '70.56 600 0.48 21.2 re f',
+          '0.502 0.502 0.502 rg 72 599.52 200 0.48 re f',
+        ].join('\n'),
+      ),
+    );
+    expect(paint.strokes.map((each) => each.stroke)).toEqual(['#808080']);
+    expect(paint.fills).toHaveLength(4);
+  });
+
+  it("reads a word underlined by a rule beneath it, never by the strip of a cell's fill Word paints beneath its words", async () => {
+    const paint = await readPaint(
+      onePage(
+        [
+          // A cell filled in two pieces, as Word fills one, the lower a strip just beneath the
+          // baseline; its word is not underlined. A word beside it is, by a thin rule in its colour.
+          '0.851 0.851 0.851 rg 72 702 200 14 re f',
+          '72 699.5 200 2.5 re f',
+          'q 0 0 0 rg BT /F1 11 Tf 1 0 0 1 80 702 Tm (Zt21) Tj ET Q',
+          'q 0 0 0 rg BT /F1 11 Tf 1 0 0 1 300 702 Tm (Zm3) Tj ET 300 700.5 30 0.6 re f Q',
+        ].join('\n'),
+      ),
+    );
+    const measured = measurePdf(paint, ['Zt21', 'Zm3'], MARGIN);
+    expect(measured.get('Zt21')!.underline).toBe(false);
+    expect(measured.get('Zm3')!.underline).toBe(true);
   });
 
   it('reads a thin rectangle both filled and stroked as one rule, not two', async () => {

@@ -518,8 +518,30 @@ embeds subsets of Microsoft's faces, which ADR-0010 keeps out of the repository,
 only where Word is. The kit keeps the Typst PDF of the fixture in `packages/conformance/src/fixtures/`,
 and its own tests, in CI, hold the reader to what Word's PDF is made of - `___WRD_EMBED_SUB_<n>` faces,
 colours restored by `Q`, rules painted as filled rectangles, character spacing - in PDFs they write
-themselves, embedding only the pinned Liberation faces. So the one switch runs the check
-and the export, and will run W15.2's measurement: **for a release, run the whole worker suite with it
+themselves, embedding only the pinned Liberation faces.
+
+**Word measured** (W15.2): `apps/worker/src/word-measure.test.ts`, behind the same switch, holds Word
+to the PDF by the measures `tests/browser` holds the editor by (STY-081's suite). It writes the kit's
+fixture under eight themes - the default, the contrary one, W13.4's three by `ALLOY_BROWSER_STYLE_SEEDS`
+or 1301 to 1303, and Word's own three, 1501 to 1503 - both ways from one `assemble`, has Word export
+all eight in one session, and compares each pair by the kit: every length within half a point, and
+every face, weight, posture, colour, underline and fill exactly, but the maths face STY-060's list for
+Word approves. It takes about twenty seconds, and leaves both PDFs of each theme, every token's two
+measurements and `found.json`, every difference with the kind it is of, in `alloy-works-word-measure`
+under the system's temporary folder, which is where a failure is read; Word's version and build, the
+seeds, how many values each theme compared and its largest difference per property go into the test's
+`meta` and are printed. **Word does not agree with the PDF yet**, and the test is a characterization
+of what W15.2 left (`LEFT`, checked by `testing/word-left.ts`, whose own tests run in CI): ten kinds,
+each held exactly as measured - how many differences it holds, the largest of each length and no
+other property, and two of them each difference by name, a colour held only so - and a difference of
+no kind fails. So it is green while nothing moves, fails on one more difference of any kind however
+small, cites nothing, and is where a change to the writer that moves Word shows
+([word-output.md](design/word-output.md#word-measured-w152) has the kinds). A kind is changed only by
+hand, with the run that shows why. The three Word files take
+turns at Word through a lock file under the system's temporary folder (`testing/word-turn.ts`),
+since each starts a Word of its own and the script refuses while one runs; a lock whose process has
+ended, or left empty a while, is taken away by one waiter at a time. So the one switch runs the
+check, the export and the measurement: **for a release, run the whole worker suite with it
 on** (`ALLOY_WORD_CHECK=1 pnpm --filter @alloy-works/worker test`) and then
 `pnpm trace record-run <version> word`, which reduces that run's `.trace-results/worker.json` to
 `docs/audits/<version>/word.json` for a baseline's `local-run` row

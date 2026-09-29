@@ -899,8 +899,9 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     const numbering = strFromU8(parts['word/numbering.xml']!);
     expect(numbering.match(/<w:abstractNum /g)).toHaveLength(9);
     expect(numbering).toContain('<w:start w:val="0"/><w:numFmt w:val="decimal"/>');
-    // The widest preformatted line's characters set closer, in the place CT_RPr gives it.
-    expect(strFromU8(parts['word/document.xml']!).match(/<w:spacing w:val="-4"\/>/g)).toHaveLength(
+    // The widest preformatted line's characters set closer, in the place CT_RPr gives it: three
+    // twentieths, since its panel's text stands at the padding (W15.2).
+    expect(strFromU8(parts['word/document.xml']!).match(/<w:spacing w:val="-3"\/>/g)).toHaveLength(
       2,
     );
     // The three figures and the two images in a line, each a drawing in its line numbered in order -

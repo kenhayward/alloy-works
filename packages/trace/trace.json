@@ -18345,49 +18345,49 @@
     {
       "id": "PUB-029",
       "file": "apps/worker/src/word-check.test.ts",
-      "line": 2305,
+      "line": 2306,
       "kind": "title"
     },
     {
       "id": "CNT-045",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1650,
+      "line": 1651,
       "kind": "title"
     },
     {
       "id": "PUB-066",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1194,
+      "line": 1195,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1300,
+      "line": 1301,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "apps/worker/src/word.test.ts",
-      "line": 937,
+      "line": 938,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "apps/worker/src/word.test.ts",
-      "line": 985,
+      "line": 986,
       "kind": "title"
     },
     {
       "id": "TAB-039",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1233,
+      "line": 1234,
       "kind": "title"
     },
     {
       "id": "TAB-049",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1233,
+      "line": 1234,
       "kind": "title"
     },
     {
@@ -19971,7 +19971,7 @@
     {
       "id": "CNT-085",
       "file": "packages/domain/src/theme/ooxml.test.ts",
-      "line": 454,
+      "line": 465,
       "kind": "title"
     },
     {
@@ -20061,85 +20061,85 @@
     {
       "id": "CNT-084",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1103,
+      "line": 1121,
       "kind": "title"
     },
     {
       "id": "CNT-085",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1059,
+      "line": 1077,
       "kind": "title"
     },
     {
       "id": "CNT-128",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1085,
+      "line": 1103,
       "kind": "title"
     },
     {
       "id": "PUB-024",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 616,
+      "line": 634,
       "kind": "title"
     },
     {
       "id": "PUB-025",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3157,
+      "line": 3214,
       "kind": "title"
     },
     {
       "id": "PUB-026",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3574,
+      "line": 3631,
       "kind": "title"
     },
     {
       "id": "PUB-031",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2468,
+      "line": 2525,
       "kind": "title"
     },
     {
       "id": "PUB-034",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1103,
+      "line": 1121,
       "kind": "title"
     },
     {
       "id": "PUB-067",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 4092,
+      "line": 4149,
       "kind": "title"
     },
     {
       "id": "PUB-069",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1118,
+      "line": 1136,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 4482,
+      "line": 4539,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2959,
+      "line": 3016,
       "kind": "title"
     },
     {
       "id": "STY-052",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1207,
+      "line": 1225,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2613,
+      "line": 2670,
       "kind": "title"
     },
     {
