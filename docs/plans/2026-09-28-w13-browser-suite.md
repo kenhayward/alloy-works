@@ -282,7 +282,7 @@ Only these could change the plan; everything else is built as written.
    with the stack and Chromium named.
 6. Tests: STR-072 and CNT-179, each on its measuring test.
 
-**W13.3, as built** (PR #TBD). What question 2 found, and what departs from the above:
+**W13.3, as built** (PR #340). What question 2 found, and what departs from the above:
 
 - **Question 2 stopped the slice, as B-K said it would.** Measured first on the reference machine,
   the open met both numbers - its interface's share 243 ms at p95, the whole 343 ms - and a move met
