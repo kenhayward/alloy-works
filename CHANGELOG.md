@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.127.3 - 2026-09-29 (PR #356)
+
+### Added
+
+- **Connecting to your data starts with an experiment, written down before it runs.** Before the
+  data release is designed, a short, time-boxed experiment will settle the questions that are hard to
+  change later: where a query against your database, web service or spreadsheet runs, and how it is
+  kept from reaching anything inside our own systems; what "running as you" can honestly mean for
+  each kind of source, including when a document is published after you have signed out; and how a
+  value taken from your data is recorded so that it reads back the same every time. The brief names
+  the requirements it may send back for rewording, rather than quietly working around them.
+
 ## 0.127.2 - 2026-09-29 (PR #355)
 
 ### Changed
