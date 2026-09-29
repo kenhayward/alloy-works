@@ -543,10 +543,9 @@ describe('projectCss', () => {
       `padding-block-start: max(${NONE}, ${lifted})`,
       `text-indent: 0 each-line`,
       // Lifted, it reaches over the foot of what stands above it, which is that block's to be clicked:
-      // what it lifts is clipped away, which a pointer passes through. Above what follows, so that a
-      // footnote's editor, drawn beneath it, stays over the next paragraph as it was.
+      // what it lifts is clipped away, which a pointer passes through. Nothing raises it over what else
+      // stands on the canvas - a footnote opened above it, a component's label (the re-review).
       'position: relative',
-      'z-index: 1',
       `clip-path: inset(calc(-1 * var(--aw-lift, ${NONE})) -100em -100em)`,
     ]);
     // The lines of its own text it begins and ends with say nothing to a screen reader.

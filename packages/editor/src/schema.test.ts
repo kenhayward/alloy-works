@@ -429,7 +429,8 @@ describe('the editor stylesheet', () => {
           ),
       );
     const weight = (selector: string) => {
-      const bare = selector.replace(/::[\w-]+/g, '').replace(/:not\(([^)]*)\)/g, ' $1');
+      // `:not()` and `:has()` weigh what they hold, and nothing of their own.
+      const bare = selector.replace(/::[\w-]+/g, '').replace(/:(?:not|has)\(([^)]*)\)/g, ' $1');
       return {
         ids: (bare.match(/#[\w-]+/g) ?? []).length,
         classes: (bare.match(/\.[\w-]+|\[[^\]]+\]|:(?!:)[\w-]+/g) ?? []).length,
@@ -647,6 +648,23 @@ describe('the editor stylesheet, for preformatted text (editor 5)', () => {
     expect(rule).toMatch(/tab-size:\s*8;/);
     expect(rule).toMatch(/white-space:\s*pre;/);
     expect(css).toMatch(/\.ProseMirror footer\.aw-empty::before\s*\{[^}]*content:\s*'Attribution'/);
+  });
+
+  it("stands a paragraph whose footnote is open over the paragraphs after it, and draws a chosen image's outline inside it (the re-review of issue #331)", () => {
+    // A paragraph holding an image in a line is clipped, which makes it a stacking context painted in
+    // the order of the text: a footnote's editor, drawn beneath the paragraph it is in, stood under the
+    // next such paragraph until its own paragraph was raised. And the clip, a line above the image,
+    // cut the top of an outline drawn outside it.
+    const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    expect(css).toMatch(/\.ProseMirror p:has\(\.aw-footnote-editor\)\s*\{[^}]*z-index:\s*2;/);
+    const chosen = /\.aw-inline-image-holder\.ProseMirror-selectednode\s*\{([^}]*)\}/.exec(
+      css,
+    )?.[1];
+    expect(chosen).toMatch(/outline:\s*2px solid/);
+    expect(chosen).toMatch(/outline-offset:\s*-2px;/);
   });
 
   it('says what an empty caption is for, and tells a table header cell from a data cell', () => {

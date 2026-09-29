@@ -675,7 +675,10 @@ stored, computed as `break-spaces` and drawn as two.
 
 `canvas.test.ts` holds what a person does on the canvas that the measured style cannot see (the
 final review of issues #331 and #333): a click on the lower half of the line above a paragraph holding
-an image puts the caret in that line; a component's label stands at the column's edge, clear of its
+an image puts the caret in that line; a footnote opened in a paragraph above one holding an image,
+of words or holding one itself, stands over it and takes a click in its words; a chosen image's
+outline lies within what its paragraph shows, at 100% and 50%; a component's **Open** takes the
+pointer in a 700-pixel window with boundaries shown; a component's label stands at the column's edge, clear of its
 heading's words; and a component opened in place is the column's width, not clipped, with its text
 reachable by the pointer and its toolbar in no more rows than the column lays it in, at 100% and 50%.
 

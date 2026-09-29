@@ -344,10 +344,12 @@
 }
 
 /* An inline image selected whole - which is how the panel for it opens - is outlined, so an author
- * can see which it is: the browser draws no selection over a replaced element of its own. */
+ * can see which it is: the browser draws no selection over a replaced element of its own. Inside its
+ * holder, since the theme clips the paragraph holding it a line above the text, which cut the top of
+ * an outline drawn outside (the re-review of issue #331). */
 .aw-inline-image-holder.ProseMirror-selectednode {
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: -2px;
 }
 
 /* A footnote (footnotes 1, ruling R8): its mark is a small raised asterisk with no number - the
@@ -355,6 +357,13 @@
  * is in, over what follows, as ProseMirror's footnote pattern draws it. */
 .ProseMirror p {
   position: relative;
+}
+
+/* The paragraph whose footnote is open stands over the paragraphs after it, which its editor covers:
+ * one holding an image in a line is clipped by the theme, which makes it a stacking context painted in
+ * the order of the text, over an editor drawn in an earlier paragraph (the re-review of issue #331). */
+.ProseMirror p:has(.aw-footnote-editor) {
+  z-index: 2;
 }
 
 .aw-footnote-mark {

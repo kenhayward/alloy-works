@@ -1562,7 +1562,9 @@ line stands in `span.aw-inline-image-holder` on the surface (`imageView`) and in
 the image. A paragraph holding either, where the browser trims, begins and ends with a line of its own
 text as `::before` and `::after`, generated content with empty alternative text, lifted by `--aw-lift`,
 which every block's margin above carries, and clipped by `clip-path` where it is lifted, so a pointer
-over the line above reaches that line; it is positioned at `z-index: 1`, over what follows. A list's
+over the line above reaches that line. The clip makes it a stacking context at no `z-index`; the editor
+stylesheet raises `.ProseMirror p:has(.aw-footnote-editor)` to 2, so an open footnote stays over the
+paragraphs after its own, and draws a chosen inline image's outline inside its holder. A list's
 marker is trimmed and padded to hold its item's row open. On the canvas the document view's headings
 are blocks spaced by their heading style alone, each in a `.measured` holder the measure wide, inside
 sections and components as wide as the column (`DocumentText.module.css`).

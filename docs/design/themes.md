@@ -929,7 +929,10 @@ measurement found, and what changed:
     Neither invisible line says anything to a screen reader. Lifted, the paragraph reached over the
     foot of the line above it and took its clicks - the lower half of that line put the caret in the
     lifted paragraph (the final review) - so what it lifts is clipped away, which a pointer passes
-    through, and it stands above what follows, as a footnote's editor drawn beneath it did. A
+    through. The clip makes it a stacking context, painted in the order of the text and raised no
+    further: raising it had stood it over a footnote opened in the paragraph above and over a
+    component's label (the re-review), so the editor stylesheet raises the paragraph whose footnote is
+    open instead, and draws a chosen image's outline inside it, clear of the clip. A
     paragraph marked as not resolving (STY-070) is left as it is, so its label stays its first line.
   - **A list's marker** is trimmed to its cap height and its baseline and padded to the list's leading
     and its own top above it and its descender below, so the row of the list's grid its item stands in

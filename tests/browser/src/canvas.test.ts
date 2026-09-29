@@ -6,10 +6,12 @@ import { makeComponent, png, uploadImage } from './testing/fixtures.js';
 import { withPage } from './testing/page.js';
 
 /**
- * **The canvas as a person uses it**, beside what `styles.test.ts` measures (the final review of
- * issues #331 and #333): a line held open as the page holds it must not take the clicks meant for the
- * line above it, and the document view's headings, set as the page sets them, must leave a component's
- * label beside its heading and the editor opened in place its whole width, at 100% and at 50%.
+ * **The canvas as a person uses it**, beside what `styles.test.ts` measures (the final review and the
+ * re-review of issues #331 and #333): a line held open as the page holds it must not take the clicks
+ * meant for the line above it, nor stand over a footnote opened above it or a component's label, nor
+ * cut a chosen image's outline; and the document view's headings, set as the page sets them, must leave
+ * a component's label beside its heading and the editor opened in place its whole width, at 100% and at
+ * 50%.
  */
 
 const WORDS = 'The unit is lifted from its box by the two handles at its sides and set down level.';
@@ -31,6 +33,65 @@ async function withAnImage(client: Client, name: string): Promise<string> {
     ]),
     paragraph('canvas-after', [text(`Zc2 ${WORDS}`)]),
   ]);
+}
+
+/** An image in a line, as the stored model holds one. */
+const inline = (asset: string) => ({
+  type: 'image',
+  asset,
+  imageStyle: 'inline',
+  alternative: { kind: 'inherited' },
+});
+
+/** A footnote holding one paragraph of words. */
+const footnote = (id: string) => ({
+  type: 'footnote',
+  id,
+  anchor: { kind: 'span' },
+  content: [paragraph(`${id}-text`, [text(`Zn ${WORDS}`)])],
+});
+
+/**
+ * A component whose paragraph `Zc0`, of words or holding an image, has a footnote, and is followed by
+ * two paragraphs each holding an image in its line.
+ */
+async function withANote(client: Client, name: string, above: 'words' | 'image'): Promise<string> {
+  const image = await uploadImage(client, inject('session'), png(60, 40, [30, 90, 200]));
+  return makeComponent(client, `${name} ${new Date().toISOString()}`, [
+    paragraph('canvas-noted', [
+      text(`Zc0 ${WORDS} `),
+      ...(above === 'image' ? [inline(image)] : []),
+      footnote('canvas-note'),
+      text(' noted'),
+    ]),
+    paragraph('canvas-image', [text('Zc1 before '), inline(image), text(` after ${WORDS}`)]),
+    paragraph('canvas-image-2', [text('Zc2 before '), inline(image), text(` after ${WORDS}`)]),
+  ]);
+}
+
+/** Opens a component on its own page, at `zoom`, and waits for its text and every image, sized. */
+async function openComponent(page: Page, component: string, zoom: '1' | '0.5' = '1') {
+  await page.goto(`${SERVICE}/#/components/${component}`);
+  const surface = page.getByRole('textbox', { name: /^Content of / });
+  await surface.getByText(/^Zc1 /).waitFor();
+  await page.getByLabel('Zoom').selectOption(zoom);
+  await expect
+    .poll(() =>
+      surface.evaluate(
+        (root, zoomed) =>
+          root.closest('.aw-canvas')?.getAttribute('style')?.includes(`--aw-zoom: ${zoomed}`) ===
+            true &&
+          [...root.querySelectorAll('img')].every(
+            (image) => image.complete && image.style.width !== '',
+          ),
+        zoom,
+      ),
+    )
+    .toBe(true);
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+  return surface;
 }
 
 /** A document of one section placing `component`. */
@@ -104,6 +165,97 @@ describe('the canvas as a person uses it', () => {
         return (element?.closest('p')?.textContent ?? '').slice(0, 3);
       });
       expect(at, 'the paragraph the caret is in').toBe('Zc0');
+    });
+  });
+
+  for (const above of ['words', 'image'] as const) {
+    it(`keeps a footnote opened in a paragraph of ${above === 'words' ? 'words' : 'an image'} over the paragraph holding an image below it, where a click in it lands in it (the re-review of issue #331)`, async () => {
+      const client = api();
+      const component = await withANote(client, `A note above an image, from ${above}`, above);
+      await withPage(async (page) => {
+        const surface = await openComponent(page, component);
+        await surface.getByRole('img', { name: 'Footnote' }).click();
+        const note = page.getByRole('textbox', { name: 'Footnote text' });
+        await note.waitFor();
+        // The middle of the note's first line of words, which stands over the paragraph below the one
+        // it is in.
+        const target = await note.evaluate((element) => {
+          const range = document.createRange();
+          range.selectNodeContents(element.querySelector('p')!);
+          const line = [...range.getClientRects()].find((each) => each.width > 0)!;
+          return { x: line.left + line.width / 2, y: line.top + line.height / 2 };
+        });
+        const hit = await page.evaluate(
+          ({ x, y }) =>
+            document.elementFromPoint(x, y)?.closest('[aria-label="Footnote text"]') !== null,
+          target,
+        );
+        expect(hit, 'the note is what stands at its own middle').toBe(true);
+        await page.mouse.click(target.x, target.y);
+        const at = await page.evaluate(() => {
+          const node = window.getSelection()?.anchorNode;
+          const element =
+            node?.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element);
+          return element?.closest('[aria-label="Footnote text"]') !== null;
+        });
+        expect(at, 'the caret is in the note').toBe(true);
+      });
+    });
+  }
+
+  for (const zoom of ['1', '0.5'] as const) {
+    it(`draws a chosen image's outline whole, inside what its paragraph shows, at ${Number(zoom) * 100}% (the re-review of issue #331)`, async () => {
+      const client = api();
+      const component = await withAnImage(client, `An image chosen at ${zoom}`);
+      await withPage(async (page) => {
+        const surface = await openComponent(page, component, zoom);
+        await surface.locator('img.aw-inline-image').first().click();
+        const holder = surface.locator('.aw-inline-image-holder.ProseMirror-selectednode');
+        await holder.waitFor();
+        const drawn = await holder.evaluate((element) => {
+          const style = getComputedStyle(element);
+          const width = parseFloat(style.outlineWidth);
+          const offset = parseFloat(style.outlineOffset);
+          const box = element.getBoundingClientRect();
+          // The outline's outer edge, and the top of what the paragraph shows: its box less what it
+          // is lifted by, which its clip takes away.
+          const paragraph = element.closest('p')!;
+          const lifted = Math.min(0, parseFloat(getComputedStyle(paragraph).marginTop));
+          return {
+            outline: box.top - offset - width,
+            shown: paragraph.getBoundingClientRect().top - lifted,
+            width,
+            style: style.outlineStyle,
+          };
+        });
+        expect(drawn.style).toBe('solid');
+        expect(drawn.width).toBeGreaterThan(0);
+        expect(drawn.outline, JSON.stringify(drawn)).toBeGreaterThanOrEqual(drawn.shown - 0.01);
+      });
+    });
+  }
+
+  it("leaves a component's Open to the pointer where its boundaries are shown in a narrow window, over a paragraph holding an image (the re-review of issue #331)", async () => {
+    const client = api();
+    const image = await uploadImage(client, inject('session'), png(60, 40, [30, 90, 200]));
+    const component = await makeComponent(client, `Opened narrow ${new Date().toISOString()}`, [
+      paragraph('canvas-first', [text('Zc0 '), inline(image), text(` ${WORDS}`)]),
+      paragraph('canvas-image', [text('Zc1 before '), inline(image), text(` after ${WORDS}`)]),
+    ]);
+    const placed = await placing(client, 'Opened narrow', component);
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 700, height: 900 });
+      await openDocument(page, placed, 'Reading', '1');
+      await page.getByLabel('Show boundaries').check();
+      const open = page.locator('section.aw-canvas [data-label] a', { hasText: 'Open' });
+      await open.waitFor();
+      const hit = await open.evaluate((link) => {
+        const box = link.getBoundingClientRect();
+        return link.contains(
+          document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2),
+        );
+      });
+      expect(hit, 'Open is what stands at its own middle').toBe(true);
     });
   });
 

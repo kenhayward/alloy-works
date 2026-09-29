@@ -701,7 +701,9 @@ function imageRules(): string[] {
  * clicked (the final review of issue #331): a click on the lower half of the line above put the caret in
  * the lifted paragraph, which comes later and so is hit first. What it lifts is clipped away, which a
  * pointer passes through, and nothing is painted there but the invisible line. A clip makes it a
- * stacking context, so it stands above what follows, as a footnote's editor drawn beneath it did.
+ * stacking context, painted in the order of the text; nothing raises it further, since what must stand
+ * over it - a footnote's editor opened above it, a component's label - is raised itself (the editor
+ * stylesheet raises a paragraph whose footnote is open; the re-review).
  *
  * A footnote's paragraph, which the document view sets in its anchor's line, and one marked as not
  * resolving, whose label is its first line (STY-070), are left as they are, whatever style it names.
@@ -736,7 +738,6 @@ function growerRules(
       `padding-block-start: max(${NONE}, ${lifted})`,
       `text-indent: ${zoomed(p.firstLineIndent)} each-line`,
       'position: relative',
-      'z-index: 1',
       `clip-path: inset(calc(-1 * ${LIFT}) -100em -100em)`,
       ...(filled ? ['background-color: transparent', ...BETWEEN_SPACES] : []),
     ].join('; ')}; }`,

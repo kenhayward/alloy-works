@@ -22,7 +22,9 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   style says, so a document reads as closely spaced as it prints (issue #333). A component's label
   stays beside its heading, and a component opened in place keeps the column's width at any zoom.
 - **A click lands in the line you clicked.** Clicking the lower half of the last line above a
-  paragraph holding an image put the cursor in the image's paragraph instead (issue #331).
+  paragraph holding an image put the cursor in the image's paragraph instead; a footnote opened just
+  above such a paragraph stays on top of it and takes your clicks, a component's Open stays clickable
+  in a narrow window, and a chosen image's outline is drawn whole (issue #331).
 - **The editor is now shown to match the PDF in full.** With both fixed, the browser tests measure
   every setting both the editor and the PDF show - where lines stand, where text starts, sizes, faces,
   colours, fills, rules and images - and all agree within half a point, the largest difference under a
